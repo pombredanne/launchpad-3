@@ -113,6 +113,14 @@
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_project"/>
   <adapter
+      for="lp.registry.interfaces.distribution.IDistribution"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_distribution"/>
+  <adapter
+      for="lp.registry.interfaces.distroseries.IDistroSeries"
+      provides="lp.code.interfaces.branchcollection.IBranchCollection"
+      factory="lp.code.adapters.branchcollection.branch_collection_for_distro_series"/>
+  <adapter
       for="lp.registry.interfaces.sourcepackage.ISourcePackage"
       provides="lp.code.interfaces.branchcollection.IBranchCollection"
       factory="lp.code.adapters.branchcollection.branch_collection_for_source_package"/>
@@ -145,6 +153,14 @@
       for="lp.registry.interfaces.project.IProject"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
       factory="lp.code.adapters.revisioncache.revision_cache_for_project"/>
+  <adapter
+      for="lp.registry.interfaces.distribution.IDistribution"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_distribution"/>
+  <adapter
+      for="lp.registry.interfaces.distroseries.IDistroSeries"
+      provides="lp.code.interfaces.revisioncache.IRevisionCache"
+      factory="lp.code.adapters.revisioncache.revision_cache_for_distro_series"/>
   <adapter
       for="lp.registry.interfaces.sourcepackage.ISourcePackage"
       provides="lp.code.interfaces.revisioncache.IRevisionCache"
@@ -186,9 +202,10 @@
                     registrant
                     source_branch
                     target_branch
-                    dependent_branch
+                    prerequisite_branch
                     whiteboard
                     queue_status
+                    private
                     reviewer
                     reviewed_revision_id
                     queuer
@@ -244,6 +261,11 @@
                     createComment
                     createCommentFromMessage"/>
   </class>
+  <adapter
+      factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
+      name="commit_message"/>
+
+
   <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
     <allow interface="canonical.launchpad.interfaces.IMessageJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
@@ -338,6 +360,9 @@
       provides="lp.code.interfaces.branchlookup.ILinkedBranchTraverser">
     <allow interface="lp.code.interfaces.branchlookup.ILinkedBranchTraverser"/>
   </securedutility>
+  <adapter factory="lp.code.model.branchlookup.ProductTraversable" />
+  <adapter factory="lp.code.model.branchlookup.DistributionTraversable" />
+  <adapter factory="lp.code.model.branchlookup.DistroSeriesTraversable" />
   <securedutility
       class="lp.code.model.branchscanner.BranchScanner"
       provides="lp.code.interfaces.branchscanner.IBranchScanner">
@@ -414,6 +439,7 @@
                     getMergeQueue
                     revisions_since
                     code_is_browseable
+                    browse_source_url
                     code_import
                     bzr_identity
                     canBeDeleted
@@ -428,6 +454,7 @@
                     getSubscriptionsByLevel
                     getBranchRevision
                     getMainlineBranchRevisions
+                    getMergeProposals
                     getStackedBranches
                     getStackedBranchesWithIncompleteMirrors
                     createBranchRevision
@@ -458,6 +485,7 @@
                     needs_upgrading
                     getUpgradeFormat
                     isBranchMergeable
+                    visibleByUser
                     "/>
     <require
         permission="launchpad.Edit"
@@ -522,6 +550,22 @@
   <class class="lp.code.model.branch.BranchSet">
     <allow interface="lp.code.interfaces.branch.IBranchSet"/>
   </class>
+  <securedutility
+      class="lp.code.model.branch.BranchSet"
+      provides="lp.code.interfaces.branch.IBranchSet">
+    <allow interface="lp.code.interfaces.branch.IBranchSet"/>
+  </securedutility>
+
+  <!-- BranchListingQueryOptimiser -->
+
+  <class class="lp.code.model.branchlistingqueryoptimiser.BranchListingQueryOptimiser">
+    <allow interface="lp.code.interfaces.branch.IBranchListingQueryOptimiser"/>
+  </class>
+  <securedutility
+      class="lp.code.model.branchlistingqueryoptimiser.BranchListingQueryOptimiser"
+      provides="lp.code.interfaces.branch.IBranchListingQueryOptimiser">
+    <allow interface="lp.code.interfaces.branch.IBranchListingQueryOptimiser"/>
+  </securedutility>
 
   <!-- BranchVisibilityPolicy -->
 
@@ -534,11 +578,6 @@
   <class class="lp.code.adapters.branch.BranchDelta">
     <allow interface="lp.code.interfaces.branch.IBranchDelta"/>
   </class>
-  <securedutility
-      class="lp.code.model.branch.BranchSet"
-      provides="lp.code.interfaces.branch.IBranchSet">
-    <allow interface="lp.code.interfaces.branch.IBranchSet"/>
-  </securedutility>
   <securedutility
       class="lp.code.model.branch.BranchCloud"
       provides="lp.code.interfaces.branch.IBranchCloud">
@@ -841,6 +880,15 @@
     <allow interface="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJobSource"/>
   </securedutility>
   <class class="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob">
+    <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+  </class>
+
+  <securedutility
+      component="lp.code.model.branchjob.BranchUpgradeJob"
+      provides="lp.code.interfaces.branchjob.IBranchUpgradeJobSource">
+    <allow interface="lp.code.interfaces.branchjob.IBranchUpgradeJobSource"/>
+  </securedutility>
+  <class class="lp.code.model.branchjob.BranchUpgradeJob">
     <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
   </class>
 

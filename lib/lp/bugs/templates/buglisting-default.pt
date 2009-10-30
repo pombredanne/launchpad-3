@@ -45,7 +45,7 @@
   <tal:side metal:fill-slot="side">
     <div id="involvement" class="portlet involvement">
       <ul>
-        <li>
+        <li style="border: 0">
           <a href="+filebug" class="menu-link-filebug sprite bugs">
             Report a bug
           </a>
@@ -62,6 +62,9 @@
       <tal:releasecriticalbugs
           tal:condition="view/shouldShowReleaseCriticalPortlet"
           tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+      <tal:milestonecriticalbugs
+        tal:condition="view/shouldShowReleaseCriticalPortlet"
+        tal:content="structure context/@@+portlet-bugtasklist-milestonebugs" />
      </tal:do_not_show_portlets_advanced_form>
   </tal:side>
 </body>

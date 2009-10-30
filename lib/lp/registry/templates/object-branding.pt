@@ -10,12 +10,12 @@
       <div class="top-portlet">
         <div metal:use-macro="context/@@launchpad_form/form">
           <p metal:fill-slot="extra_info">
-            These images are used to throughout Launchpad to represent
+            These images are used throughout Launchpad to represent
             <span tal:replace="context/displayname">Ubuntu Linux</span>.
             Changing them here will affect every page related to
             <span tal:replace="context/displayname">Ubuntu Linux</span> as
-            <strong>exactly</strong> the well as listings which include it.
-            You must use correct size of image.
+            well as listings which include it.
+            You must use <strong>exactly</strong> the correct size of image.
           </p>
         </div>
       </div>

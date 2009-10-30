@@ -8,11 +8,12 @@ __metaclass__ = type
 __all__ = [
     'SpecificationDependencyAddView',
     'SpecificationDependencyRemoveView',
+    'SpecificationDependencyTreeView',
     ]
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, canonical_url, LaunchpadFormView)
+    action, canonical_url, LaunchpadFormView, LaunchpadView)
 from lp.blueprints.interfaces.specificationdependency import (
     ISpecificationDependency, ISpecificationDependencyRemoval)
 
@@ -62,6 +63,10 @@ class SpecificationDependencyAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SpecificationDependencyRemoveView(LaunchpadFormView):
     schema = ISpecificationDependencyRemoval
@@ -73,3 +78,15 @@ class SpecificationDependencyRemoveView(LaunchpadFormView):
     def continue_action(self, action, data):
         self.context.removeDependency(data['dependency'])
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+
+class SpecificationDependencyTreeView(LaunchpadView):
+    label = "Blueprint dependency tree"
+
+    @property
+    def page_title(self):
+        return self.label

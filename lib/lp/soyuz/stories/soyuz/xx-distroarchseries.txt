@@ -15,8 +15,8 @@ feature in 'DistroArchSeries Actions'.
     >>> anon_browser.getLink('4.10').click()
     >>> anon_browser.getLink('i386').click()
 
-    >>> anon_browser.title
-    'The Warty Warthog Release for i386 (x86) in Launchpad'
+    >>> print anon_browser.title
+    i386 : 4.10 : Ubuntu
 
 We present only minimal information in this page, its main feature is
 to allow binary package searching.
@@ -194,8 +194,8 @@ architectures in this DistroSeries.
 
     >>> admin_browser.open("http://launchpad.dev/ubuntu/hoary")
     >>> admin_browser.getLink("Add architecture").click()
-    >>> admin_browser.title
-    'Add a port of The Hoary Hedgehog Release'
+    >>> print admin_browser.title
+    Add a port of The Hoary Hedgehog...
 
 Ubuntu hoary already has i386 & hppa distroarchseries and should not
 allow duplications.
@@ -246,8 +246,8 @@ An administrator can open new distinct architecture, for instance,
 When the new architecture has been created, it is displayed to the
 administrator.
 
-    >>> admin_browser.title
-    'The Hoary Hedgehog Release for amd64 (amd64) in Launchpad'
+    >>> print admin_browser.title
+    amd64 : 5.04 : Ubuntu
 
 And other users can see the just-created architecture listed in the
 distroseries page.

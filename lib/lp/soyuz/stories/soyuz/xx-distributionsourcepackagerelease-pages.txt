@@ -38,8 +38,8 @@ The `DistributionSourcePackageRelease` page is accessed from the
 
 Its title describes exactly what it is about.
 
-    >>> print anon_browser.title
-    testing-dspr 1.0 (source) in ubuntutest
+    >>> anon_browser.title
+    '\xe2\x80\x9ctesting-dspr\xe2\x80\x9d package : ubuntutest'
 
 Its application bar has enabled entries for Code, Bugs and Answers, and
 they all point to the `DistributionSourcePackage` (parent) url.
@@ -48,12 +48,12 @@ they all point to the `DistributionSourcePackage` (parent) url.
     Hierarchy: ubuntutest > ?testing-dspr? package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntutest/+source/testing-dspr
-    * Code - http://code.launchpad.dev/ubuntutest/+source/testing-dspr
+    * Branches - http://code.launchpad.dev/ubuntutest/+source/testing-dspr
     * Bugs - http://bugs.launchpad.dev/ubuntutest/+source/testing-dspr
     * Blueprints - not linked
     * Translations - not linked
     * Answers - http://answers.launchpad.dev/ubuntutest/+source/testing-dspr
-    Main heading: testing-dspr 1.0 (source) in ubuntutest
+    Main heading: ?testing-dspr? 1.0 source package in ubuntutest
 
 The first section presented ('top-porlet') contains the source package
 release changelog. It shows the reason why this version of the package
@@ -162,13 +162,15 @@ of this source in the context distribution are listed.
 
     >>> anon_browser.getLink('See full publishing history').click()
 
-    >>> print anon_browser.title
-    testing-dspr 1.0 (source) in ubuntutest
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> print backslashreplace(anon_browser.title)
+    Publishing history : \u201ctesting-dspr\u201d package : ubuntutest
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    testing-dspr 1.0 (source) in ubuntutest
-    ...
-    Publishing history of testing-dspr 1.0 (source) in ubuntutest
+    Publishing history of “testing-dspr” 1.0 source package in ubuntutest
+    ubuntutest
+    “testing-dspr” package
+    Publishing history
     Date  Status     Target     Pocket   Component  Section  Version
     ...   Published  Breezy...  release  main       base     1.0
     ...
@@ -230,8 +232,9 @@ produced by this source. Each binary links to its specific
 `DistroSeriesBinaryPackage` page.
 
     >>> print extract_text(
-    ...     find_portlet(anon_browser.contents, 'Binary packages'))
-    Binary packages
+    ...     find_portlet(anon_browser.contents,
+    ...     'Binary packages built by this source'))
+    Binary packages built by this source
     foo-bin:
     No summary available for foo-bin in ubuntutest breezy-autotest.
     No description available for foo-bin in ubuntutest breezy-autotest.
@@ -262,7 +265,42 @@ package caches (see doc/package-cache.txt).
 
     >>> anon_browser.reload()
     >>> print extract_text(
-    ...     find_portlet(anon_browser.contents, 'Binary packages'))
-    Binary packages
+    ...     find_portlet(anon_browser.contents,
+    ...     'Binary packages built by this source'))
+    Binary packages built by this source
     foo-bin: Foo app is great
     Well ... it does nothing, though
+
+The full change log can be viewed as follows:
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/ubuntutest/+source/testing-dspr')
+    >>> user_browser.getLink('View full change log').click()
+    >>> print user_browser.url
+    http://launchpad.dev/ubuntutest/+source/testing-dspr/+changelog
+
+    >>> print_tag_with_id(user_browser.contents, 'body_testing-dspr_1.0')
+    Testing!!!
+    biscuit@canonical.com
+    LP: #1234
+    celso.providelo@canonical.com
+
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Change log for “testing-dspr” package in ubuntutest
+    ubuntutest
+    “testing-dspr” package
+    Change log
+    0.9
+    Pending in breezy-autotest-release
+    ...
+    None
+    1.0
+    Published in breezy-autotest-release
+    ...
+    Testing!!!
+    biscuit@canonical.com
+    LP: #1234
+    celso.providelo@canonical.com
+    Available diffs
+    0.9 to 1.0
+    (7 bytes)

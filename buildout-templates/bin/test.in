@@ -1,4 +1,4 @@
-#!${buildout:executable}
+#! /usr/bin/env ${buildout:directory}/bin/py
 ##############################################################################
 #
 # Copyright (c) 2004 Zope Corporation and Contributors.
@@ -14,7 +14,11 @@
 ##############################################################################
 """Test script
 """
-import sys, os, time, logging, warnings, re
+
+# NOTE: This is a generated file.  The original is in
+# buildout-templates/bin/test.in
+
+import logging, os, re, sys, time, warnings
 
 BUILD_DIR = '${buildout:directory}'
 
@@ -30,16 +34,16 @@ if os.getsid(0) == os.getsid(os.getppid()):
 
 # Make tests run in a timezone no launchpad developers live in.
 # Our tests need to run in any timezone.
-# (No longer actually required, as PQM does this)
+# (This is no longer actually required, as PQM does this.)
 os.environ['TZ'] = 'Asia/Calcutta'
 time.tzset()
 
-# Enable Storm's C extensions
+# Enable Storm's C extensions.
 os.environ['STORM_CEXTENSIONS'] = '1'
 
-sys.path[0:0] = [${string-paths}]
-
-# Set PYTHONPATH environment variable for spawned processes
+# Set PYTHONPATH environment variable for spawned processes.
+# This is the kind of use case for the site.py fork we have in lib (see the
+# comment in that file). :-(
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
 # Set a flag if this is the main testrunner process
@@ -134,14 +138,13 @@ pgsql.installFakeConnect()
 from zope.testing import testrunner
 from zope.testing.testrunner import options
 
-defaults = [
+defaults = {
     # Find tests in the tests and ftests directories
-    '--tests-pattern=^f?tests$',
-    '--test-path=${buildout:directory}/lib',
-    '--package=canonical',
-    '--package=lp',
-    '--layer=!MailmanLayer',
-    ]
+    'tests_pattern': '^f?tests$',
+    'test_path': ['${buildout:directory}/lib'],
+    'package': ['canonical', 'lp', 'devscripts'],
+    'layer': ['!(MailmanLayer|WindmillLayer)'],
+    }
 
 # Monkey-patch os.listdir to randomise the results
 original_listdir = os.listdir
@@ -202,7 +205,22 @@ if __name__ == '__main__':
     options.parser.add_option(
         '--subunit', action='callback', callback=use_subunit)
 
-    local_options = options.get_options(args=args, defaults=defaults)
+    # tests_pattern is a regexp, so the parsed value is hard to compare
+    # with the default value in the loop below.
+    options.parser.defaults['tests_pattern'] = defaults['tests_pattern']
+    local_options = options.get_options(args=args)
+    # Set our default options, if the options aren't specified.
+    for name, value in defaults.items():
+        parsed_option = getattr(local_options, name)
+        if ((parsed_option == []) or
+            (parsed_option == options.parser.defaults.get(name))):
+            # The option probably wasn't specified on the command line,
+            # let's replace it with our default value. It could be that
+            # the real default (as specified in
+            # zope.testing.testrunner.options) was specified, and we
+            # shouldn't replace it with our default, but it's such and
+            # edge case, so we don't have to care about it.
+            options.parser.defaults[name] = value
 
     # Turn on Layer profiling if requested.
     from canonical.testing import profiled
@@ -216,7 +234,7 @@ if __name__ == '__main__':
     try:
         there = os.getcwd()
         os.chdir('${buildout:directory}')
-        result = testrunner.run(defaults)
+        result = testrunner.run([])
     finally:
         os.chdir(there)
     # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.

@@ -16,8 +16,6 @@ updating the counts of every LFA, in order to get through the backlog.
 
 __metaclass__ = type
 
-import os
-
 # pylint: disable-msg=W0403
 import _pythonpath
 
@@ -26,55 +24,36 @@ from zope.component import getUtility
 from storm.sqlobject import SQLObjectNotFound
 
 from canonical.config import config
-from lp.services.worlddata.interfaces.country import ICountrySet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from lp.services.scripts.base import LaunchpadCronScript
-from lp.services.apachelogparser.base import (
-    create_or_update_parsedlog_entry, get_files_to_parse, parse_file)
 from canonical.launchpad.scripts.librarian_apache_log_parser import (
     DBUSER, get_library_file_id)
-from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.services.apachelogparser.script import ParseApacheLogs
 
 
-class ParseLibrarianApacheLogs(LaunchpadCronScript):
+class ParseLibrarianApacheLogs(ParseApacheLogs):
+    """An Apache log parser for LibraryFileAlias downloads."""
 
-    def main(self):
-        root = config.librarianlogparser.logs_root
-        files_to_parse = get_files_to_parse(root, os.listdir(root))
+    def setUpUtilities(self):
+        """See `ParseApacheLogs`."""
+        self.libraryfilealias_set = getUtility(ILibraryFileAliasSet)
 
-        libraryfilealias_set = getUtility(ILibraryFileAliasSet)
-        country_set = getUtility(ICountrySet)
-        for fd, position in files_to_parse.items():
-            downloads, parsed_bytes = parse_file(
-                fd, position, self.logger, get_library_file_id)
-            # Use a while loop here because we want to pop items from the dict
-            # in order to free some memory as we go along. This is a good
-            # thing here because the downloads dict may get really huge.
-            while downloads:
-                file_id, daily_downloads = downloads.popitem()
-                try:
-                    lfa = libraryfilealias_set[file_id]
-                except SQLObjectNotFound:
-                    # This file has been deleted from the librarian, so don't
-                    # try to store download counters for it.
-                    continue
-                for day, country_downloads in daily_downloads.items():
-                    for country_code, count in country_downloads.items():
-                        try:
-                            country = country_set[country_code]
-                        except NotFoundError:
-                            # We don't know the country for the IP address
-                            # where this request originated.
-                            country = None
-                        lfa.updateDownloadCount(day, country, count)
-            fd.seek(0)
-            first_line = fd.readline()
-            fd.close()
-            create_or_update_parsedlog_entry(first_line, parsed_bytes)
-            self.txn.commit()
-            self.logger.info('Finished parsing %s' % fd)
+    @property
+    def root(self):
+        """See `ParseApacheLogs`."""
+        return config.librarianlogparser.logs_root
 
-        self.logger.info('Done parsing apache log files for librarian')
+    def getDownloadKey(self, path):
+        """See `ParseApacheLogs`."""
+        return get_library_file_id(path)
+
+    def getDownloadCountUpdater(self, file_id):
+        """See `ParseApacheLogs`."""
+        try:
+            return self.libraryfilealias_set[file_id].updateDownloadCount
+        except SQLObjectNotFound:
+            # This file has been deleted from the librarian, so don't
+            # try to store download counters for it.
+            return None
 
 
 if __name__ == '__main__':

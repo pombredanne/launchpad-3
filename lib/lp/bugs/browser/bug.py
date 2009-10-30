@@ -239,10 +239,7 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        if self.context.bug.linked_branches.count() > 0:
-            text = 'Link another branch'
-        else:
-            text = 'Link a related branch'
+        text = 'Link a related branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
@@ -283,17 +280,17 @@ class BugContextMenu(ContextMenu):
         """Create a question from this bug."""
         text = 'Convert to a question'
         enabled = self.context.bug.getQuestionCreatedFromBug() is None
-        return Link('+create-question', text, enabled=enabled)
+        return Link('+create-question', text, enabled=enabled, icon='add')
 
     def removequestion(self):
         """Remove the created question from this bug."""
         text = 'Convert back to a bug'
         enabled = self.context.bug.getQuestionCreatedFromBug() is not None
-        return Link('+remove-question', text, enabled=enabled)
+        return Link('+remove-question', text, enabled=enabled, icon='remove')
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'Activity log'
+        text = 'See full activity log'
         return Link('+activity', text)
 
     def affectsmetoo(self):
@@ -936,5 +933,5 @@ def bug_description_xhtml_representation(context, field, request):
     def renderer(value):
         nomail  = formatter(value).obfuscate_email()
         html    = formatter(nomail).text_to_html()
-        return html
+        return html.encode('utf-8')
     return renderer

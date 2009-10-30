@@ -315,6 +315,9 @@ class NotificationTestView1(LaunchpadView):
     in the test suite, as this page is useful for adjusting the visual style
     of the notifications
     """
+
+    label = page_title = 'Notification test'
+
     def initialize(self):
         response = self.request.response
 

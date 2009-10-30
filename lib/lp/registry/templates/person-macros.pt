@@ -23,14 +23,6 @@
           No contact email
         </tal:no_preferredemail>
 
-        <div tal:condition="view/can_contact">
-          <img src="/@@/mail" alt="email"/>
-          <a href="+contactuser"
-            tal:attributes="title view/contact_link_title"
-            tal:content="view/specific_contact_text"
-            >Contact this person</a>
-        </div>
-
         <tal:emails repeat="email view/visible_email_addresses">
           <div style="white-space: nowrap">
             <img src="/@@/mail" alt="mail" />
@@ -77,6 +69,17 @@
       </dl>
 
     </div>
+  </div>
+</metal:macro>
+
+<!-- contact macro -->
+<metal:macro define-macro="contact">
+  <div class="portlet" id="contact-user"
+    tal:condition="view/can_contact">
+    <a href="+contactuser" class="sprite mail"
+      tal:attributes="title view/contact_link_title"
+      tal:content="view/specific_contact_text">Contact
+        this person</a>
   </div>
 </metal:macro>
 

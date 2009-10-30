@@ -111,21 +111,21 @@ class POFileFacets(POTemplateFacets):
 class POFileMenuMixin:
     """Mixin class to share code between navigation and action menus."""
 
-    def description(self):
-        text = 'Description'
-        return Link('', text)
+    def details(self):
+        text = 'Translation details'
+        return Link('+details', text, icon='info')
 
     def translate(self):
         text = 'Translate'
-        return Link('+translate', text, icon='languages')
+        return Link('+translate', text, icon='language')
 
     @enabled_with_permission('launchpad.Edit')
     def upload(self):
-        text = 'Upload a file'
-        return Link('+upload', text, icon='edit')
+        text = 'Upload translation'
+        return Link('+upload', text, icon='add')
 
     def download(self):
-        text = 'Download'
+        text = 'Download translation'
         return Link('+export', text, icon='download')
 
 
@@ -133,7 +133,7 @@ class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     """Navigation menus for `IPOFile` objects."""
     usedfor = IPOFile
     facet = 'translations'
-    links = ('description', 'translate', 'upload', 'download')
+    links = ('details', 'translate', 'upload', 'download')
 
 
 class POFileBaseView(LaunchpadView):
@@ -443,6 +443,17 @@ class POFileView(LaunchpadView):
         return managers
 
 
+class POFileDetailsView(POFileView):
+    """View for the detail page of a POFile"""
+
+    page_title = _("Details")
+
+    @property
+    def label(self):
+        return _("Details for %s translation") % (
+                    self.context.language.englishname)
+
+
 class TranslationMessageContainer:
     def __init__(self, translation, pofile):
         self.data = translation
@@ -492,6 +503,8 @@ class POFileFilteredView(LaunchpadView):
 
     DEFAULT_BATCH_SIZE = 50
 
+    page_title = "Contributions"
+
     @property
     def _person_name(self):
         """Person's display name.  Graceful about unknown persons."""
@@ -500,6 +513,7 @@ class POFileFilteredView(LaunchpadView):
         else:
             return self.person.displayname
 
+    @property
     def page_title(self):
         """See `LaunchpadView`."""
         return smartquote('Translations by %s in "%s"') % (
@@ -544,6 +558,8 @@ class POFileFilteredView(LaunchpadView):
 class POFileUploadView(POFileView):
     """A basic view for a `POFile`."""
 
+    page_title = "Upload translation"
+
     def initialize(self):
         self.form = self.request.form
         self.process_form()
@@ -553,10 +569,8 @@ class POFileUploadView(POFileView):
         return canonical_url(self.context)
 
     @property
-    def page_title(self):
-        return "Upload %s translation for %s" % (
-            self.context.language.englishname,
-            self.context.potemplate.displayname)
+    def label(self):
+        return "Upload %s translation" % self.context.language.englishname
 
     def process_form(self):
         """Handle a form submission to request a translation file upload."""
@@ -919,6 +933,8 @@ class POFileTranslateView(BaseTranslationView):
 
 class POExportView(BaseExportView):
 
+    page_title = "Download translation"
+
     def modifyFormat(self, format):
         pochanged = self.request.form.get("pochanged")
         if format == 'PO' and pochanged == 'POCHANGED':
@@ -936,7 +952,5 @@ class POExportView(BaseExportView):
         return canonical_url(self.context)
 
     @property
-    def page_title(self):
-        return "Download %s translation of %s" % (
-            self.context.language.englishname,
-            self.context.potemplate.displayname)
+    def label(self):
+        return "Download %s translation" % self.context.language.englishname

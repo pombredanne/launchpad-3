@@ -2,16 +2,21 @@ Any user can see a release for a series.
 
     >>> anon_browser.open('http://launchpad.dev/firefox/trunk/0.9.2')
     >>> print anon_browser.title
-    Mozilla Firefox 0.9.2 "One (secure) Tree Hill"
+    Series trunk : Mozilla Firefox
 
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(find_tag_by_id(content, 'Release-details'))
+    Milestone information
     Project: Mozilla Firefox ...
     Series: trunk
-    Release version: 0.9.2
-    Release code name: One (secure) Tree Hill
+    Version: 0.9.2
+    Code name: One (secure) Tree Hill
     Expected:
-    Released: 2004-10-15 ...
+    Released: 2004-10-15
+    Registrant: Foo Bar
+    Release registered: 2005-06-06
+    Active: No. Drivers cannot target bugs and blueprints to this milestone.
+    Download RDF metadata
 
 Any user can see a table describing the files that are associated with the
 release. Each file is linked.

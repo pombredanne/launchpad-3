@@ -10,10 +10,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
@@ -39,10 +36,6 @@
       });
     </script>
   </metal:block>
-
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/team/@@+portlet-details" />
-</metal:portlets>
 
 <metal:macros fill-slot="bogus">
   <metal:macro define-macro="person">
@@ -91,11 +84,7 @@
 </metal:macros>
 
 <div metal:fill-slot="main">
-
       <div tal:condition="view/isActive">
-
-        <h1>Active member <tal:who replace="context/person/displayname" /></h1>
-
         <p>
           <metal:person use-macro="template/macros/person" />
           is an <em>Active Member</em> of
@@ -163,8 +152,6 @@
       </div>
 
       <div tal:condition="view/isInactive">
-
-        <h1>Inactive member <tal:who replace="context/person/displayname" /></h1>
         <p tal:condition="view/isExpired">
           <metal:person use-macro="template/macros/person" />
           is an <em>Expired Member</em> of
@@ -248,8 +235,6 @@
       </div>
 
       <div tal:condition="view/isProposed">
-
-        <h1>Proposed member <tal:who replace="context/person/displayname" /></h1>
         <p>
           <metal:person use-macro="template/macros/person" />
           wants to join this team.
@@ -296,9 +281,6 @@
       </div>
 
       <div tal:condition="view/isDeclined">
-
-        <h1>Declined member <tal:who replace="context/person/displayname"
-        /></h1>
         <p>
           <metal:person use-macro="template/macros/person" />
           asked to join this team, but the request was declined.
@@ -306,17 +288,15 @@
 
       </div>
 
-      <div tal:condition="context/status/enumvalue:INVITED">
-        <h1>Invited member</h1>
-        <p>
+      <div tal:condition="view/isInvited">
+        <p id="not-responded">
           <metal:person use-macro="template/macros/person" />
           has been invited to join this team, but hasn't responded to the
           invitation yet.
         </p>
       </div>
 
-      <div tal:condition="context/status/enumvalue:INVITATION_DECLINED">
-        <h1>Invited member</h1>
+      <div tal:condition="view/isInvitationDeclined">
         <p>
           <metal:person use-macro="template/macros/person" />
           has been invited to join this team, but has declined the invitation.

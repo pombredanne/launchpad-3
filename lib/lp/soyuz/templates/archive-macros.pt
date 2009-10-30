@@ -209,13 +209,19 @@ div.package-details {
     Presents a table listing all the package copy requests for a copy
     archive.
   </tal:comment>
-  <tal:block define="requests view/package_copy_requests">
+
+  <div id="package-copy-request-list" class="portlet"
+       tal:define="requests view/package_copy_requests">
+    <h2>Copy archive contents</h2>
+
     <p tal:condition="not: requests">
       There are currently no requests to copy packages into this archive.
     </p>
+
     <tal:request_list tal:condition="requests">
-      <table id="package-requests"
-        tal:attributes="summary string:Package copy requests for ${context/name}">
+      <table id="package-requests" class="listing"
+        tal:attributes="summary
+                        string:Package copy requests for ${context/name}">
         <thead>
           <tr>
             <th>Copied from</th>
@@ -237,7 +243,8 @@ div.package-details {
             </td>
             <td>
               <tal:distroseries
-                  replace="request/source_distroseries/displayname" />-<tal:src_pocket
+                  replace="request/source_distroseries/displayname"
+                />-<tal:src_pocket
                   replace="request/source_pocket/name/fmt:lower" />
               <tal:component condition="request/source_component">
                (<tal:src_component_name
@@ -251,7 +258,8 @@ div.package-details {
         </tbody>
       </table>
     </tal:request_list>
-  </tal:block>
+  </div> <!-- package-copy-request-list -->
+
 </metal:package_copy_request_list>
 
 <metal:package_counters define-macro="package-counters">
@@ -363,12 +371,17 @@ div.package-details {
             ago
           </span><br />
           <span tal:replace="update/status">Successful</span>
+          <span tal:condition="update/builds"
+                class="build-details">
+            <a tal:repeat="build update/builds"
+               tal:attributes="href build/fmt:url"
+               tal:content="build/arch_tag">i386</a>
+          </span>
         </li>
       </ul>
     </tal:updates>
     </div>
   </tal:latest_updates>
 </metal:latest_updates_portlet>
-
 
 </tal:root>

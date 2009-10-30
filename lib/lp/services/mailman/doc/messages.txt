@@ -1,4 +1,6 @@
-= Messages =
+========
+Messages
+========
 
 Launchpad uses a custom set of message templates that it installs
 in mailman/templates/site. The installation conforms to the standard

@@ -22,7 +22,6 @@
 
 <body>
 
-<!-- side slot -->
 <div metal:fill-slot="side"
      tal:define="overview_menu context/menu:overview">
 
@@ -31,59 +30,47 @@
     <span tal:content="view/visibility_info">Viewable by team members.</span>
   </div>
 
-  <ul id="join-team"
-      class="super-add-action"
-      tal:define="link context/menu:overview/join"
-      tal:condition="link/enabled"
-      >
-    <li>
-      <a tal:attributes="href link/fmt:url"
-         tal:content="link/text" />
-    </li>
-  </ul>
+  <metal:contact use-macro="context/@@+person-macros/contact">
+    Contact this team
+  </metal:contact>
 
   <tal:menu replace="structure view/@@+global-actions" />
   <tal:polls replace="structure context/@@+portlet-polls" />
 
 </div>
 
-<!-- heading slot. -->
-<div metal:fill-slot="heading">
-    <div tal:attributes="class view/public_private_css">
-      <tal:comment condition="nothing">
-        Display striped image.
-      </tal:comment>
-    </div>
-
-    <div
-      class="description"
-      tal:condition="context/homepage_content"
-      tal:content="structure context/homepage_content/fmt:text-to-html"
-    />
-
-    <div
-      class="description"
-      tal:content="structure context/teamdescription/fmt:text-to-html"
-    />
-    <ul class="horizontal">
-      <li
-        tal:define="link context/menu:overview/projects"
-        tal:condition="link/enabled"
-        tal:content="structure link/fmt:link" />
-      <li
-        tal:define="link context/menu:overview/maintained"
-        tal:condition="link/enabled"
-        tal:content="structure link/fmt:link" />
-      <li
-        tal:define="link context/menu:overview/ppa"
-        tal:condition="link/enabled"
-        tal:content="structure link/fmt:link" />
-    </ul>
-</div>
-
-<!-- main slot. -->
 <div metal:fill-slot="main"
      tal:define="overview_menu context/menu:overview">
+
+  <div tal:attributes="class view/public_private_css">
+    <tal:comment condition="nothing">
+      Display striped image.
+    </tal:comment>
+  </div>
+
+  <div
+    class="description"
+    tal:condition="context/homepage_content"
+    tal:content="structure context/homepage_content/fmt:text-to-html"
+  />
+
+  <div
+    class="description"
+    tal:content="structure context/teamdescription/fmt:text-to-html"
+  />
+  <ul class="horizontal">
+    <tal:comment condition="nothing">
+      This link name is different from the menu, since it refers
+      to several pages that are all accessible when you click on this link.
+    </tal:comment>
+    <li
+      tal:define="link context/menu:overview/related_software_summary"
+      tal:condition="link/enabled">
+      <a class="sprite info" tal:attributes="href link/fmt:url">
+        Related software and packages
+      </a>
+    </li>
+  </ul>
 
   <div class="yui-g">
     <div class="first yui-u">

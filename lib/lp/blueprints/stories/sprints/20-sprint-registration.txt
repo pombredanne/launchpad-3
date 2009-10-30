@@ -10,8 +10,8 @@ It should be possible to register yourself to attend the sprint:
     >>> browser.url
     'http://launchpad.dev/sprints/ubz/+attend'
 
-    >>> browser.title
-    'Register your attendance at Ubuntu Below Zero'
+    >>> print browser.title
+    Register your attendance : Ubuntu Below Zero : Meetings
 
 Invalid dates, for instance entering a starting date after the ending date,
 are reported as errors to the users. (See also the tests in

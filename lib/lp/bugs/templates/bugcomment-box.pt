@@ -55,7 +55,7 @@
 
   <div class="boardCommentBody">
     <ul tal:condition="comment/bugattachments" style="margin-bottom: 1em">
-      <li tal:repeat="attachment comment/bugattachments" class="download">
+      <li tal:repeat="attachment comment/bugattachments" class="download-attachment">
         <a tal:attributes="href attachment/libraryfile/http_url"
            tal:content="attachment/title" class="sprite download-icon">foo.txt</a>
         (<span

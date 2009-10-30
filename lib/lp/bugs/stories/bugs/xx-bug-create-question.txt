@@ -29,7 +29,7 @@ is really a question. He chooses to make a question from it.
     'Bug #10 in linux-source-2.6.15 (Ubuntu): ...another test bug...'
     >>> user_browser.getLink('Convert to a question').click()
     >>> user_browser.title
-    'Convert this bug to a question'
+    'Convert this bug to a question...
 
 The 'Convert this to a question' page explains what will happen if No
 Privileges Person chooses to make the bug into a question. There is a
@@ -88,12 +88,11 @@ No Privileges Person looks at the page heading and sees that Foo Bar
 is the bug owner. He sees the link to the question in the 'Related
 questions' portlet, and uses it to go to the question page.
 
-    >>> print extract_text(
-    ...     find_tags_by_class(str(content), 'sprite bug-medium')[-1])
-    Bug #10:
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/ubuntu/.../+bug/10
 
     >>> portlet = find_portlet(user_browser.contents, 'Related questions')
-    >>> question_anchor = portlet.div.a
+    >>> question_anchor = portlet.a
     >>> question_anchor
     <a href=".../ubuntu/+source/linux-source-2.6.15/+question/...">another
     test bug</a>
@@ -104,7 +103,7 @@ No Privileges Person case see that the question was created from a
 bug. He uses the link to Related bug to return to the bug.
 
     >>> user_browser.title
-    'linux-source-2.6.15 in ubuntu question #...: ...another test bug...'
+    'Questions : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'original-bug'))
@@ -128,10 +127,11 @@ into a question.
 
     >>> user_browser.open('http://bugs.launchpad.dev/thunderbird/+bug/9')
     >>> user_browser.title
-    'Bug #9 in Mozilla Thunderbird: ...Thunderbird crashes...'
+    'Bug #9 in Mozilla Thunderbird: \xe2\x80\x9cThunderbird
+    crashes\xe2\x80\x9d'
     >>> user_browser.getLink('Convert to a question').click()
-    >>> user_browser.title
-    'Convert this bug to a question'
+    >>> print user_browser.title
+    Convert this bug to a question...
     >>> find_main_content(user_browser.contents).p
     <p>
     This bug cannot be converted into a question.
@@ -158,7 +158,7 @@ or a bookmark, he sees that he cannot create the question again.
     ...     'http://bugs.launchpad.dev'
     ...     '/ubuntu/+source/linux-source-2.6.15/+bug/10/+create-question')
     >>> user_browser.title
-    'Convert this bug to a question'
+    'Convert this bug to a question...
     >>> find_main_content(user_browser.contents).p
     <p>
     This bug cannot be converted into a question.
@@ -202,10 +202,11 @@ the 'Convert back to a bug' link. No Privileges Person decides to
 reactivate a bug report.
 
     >>> user_browser.title
-    'Bug #12 in Jokosher: ...Copy, Cut and Delete operations should work...'
+    'Bug #12 in Jokosher: \xe2\x80\x9cCopy, Cut and Delete operations should
+    work on selections\xe2\x80\x9d'
     >>> user_browser.getLink('Convert back to a bug').click()
-    >>> user_browser.title
-    'Bug #12 - Convert this question back to a bug'
+    >>> print user_browser.title
+    Bug #12 - Convert this...
 
 The 'Convert back to a bug' page explains what will happen if No
 Privileges Person chooses to reactivate the bug. There is an optional
@@ -237,11 +238,11 @@ it is still in the Open status.
     >>> user_browser.getLink(
     ...     'Copy, Cut and Delete operations should work on '
     ...     'selections').click()
-    >>> user_browser.title
-    'Jokosher question #16: ...Copy, Cut and Delete operations should work...'
+    >>> print user_browser.title
+    Questions : Jokosher
 
-    >>> content = find_main_content(user_browser.contents)
-    >>> print extract_text(content(['img'], src='/@@/question')[0].parent)
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'registration'))
     Open Question #..., asked ... by Foo Bar
 
 No Privileges Person uses his browser's back button to view the bug
@@ -272,8 +273,8 @@ question to remove.
 
     >>> user_browser.open(
     ...     'http://bugs.launchpad.dev/jokosher/+bug/12/+remove-question')
-    >>> user_browser.title
-    'Bug #12 - Convert this question back to a bug'
+    >>> print user_browser.title
+    Bug #12 - Convert this...
     >>> find_main_content(user_browser.contents).p
     <p>
     The bug was not converted to a question. There is nothing to change. ...

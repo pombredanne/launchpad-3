@@ -6,10 +6,13 @@ __metaclass__ = type
 import unittest
 
 from zope.interface import implements
+from zope.i18nmessageid import Message
 
+from canonical.launchpad.browser.launchpad import Hierarchy
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
 from lp.testing import login, TestCase
@@ -58,6 +61,26 @@ class TestExtraBreadcrumbForLeafPageOnHierarchyView(BaseBreadcrumbTestCase):
         urls = self._getBreadcrumbsURLs(
             downloads_url, [self.root, self.product])
         self.assertEquals(urls, [self.product_url, downloads_url])
+        texts = self._getBreadcrumbsTexts(
+            downloads_url, [self.root, self.product])
+        self.assertEquals(texts[-1],
+                          '%s project files' % self.product.displayname)
+
+    def test_zope_i18n_Messages_are_interpolated(self):
+        # Views can use zope.i18nmessageid.Message as their title when they
+        # want to i18n it, but when that's the case we need to
+        # translate/interpolate the string.
+        class TestView:
+            """A test view that uses a Message as its page_title."""
+            page_title = Message(
+                '${name} test', mapping={'name': 'breadcrumb'})
+            __name__ = 'test-page'
+        test_view = TestView()
+        request = LaunchpadTestRequest()
+        request.traversed_objects = [self.product, test_view]
+        hierarchy_view = Hierarchy(self.product, request)
+        breadcrumb = hierarchy_view.makeBreadcrumbForRequestedPage()
+        self.assertEquals(breadcrumb.text, 'breadcrumb test')
 
 
 class TestExtraVHostBreadcrumbsOnHierarchyView(BaseBreadcrumbTestCase):

@@ -33,14 +33,13 @@ in the right column.
     >>> right_column = find_tags_by_class(
     ...     browser.contents, 'three column right')[0]
     >>> print extract_text(right_column)
-    Preferred languages
+    Your preferred languages
     Afrikaans
     Sotho, Southern
     Xhosa
     Zulu
     ...
-    Change your preferred language...
+    Change your preferred languages...
 
     >>> right_column.findAll('a')[-1]
-    <a href="/+editmylanguages">
-    ...Change your preferred language...
+    <a href="/+editmylanguages"...Change your preferred languages...

@@ -44,6 +44,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
@@ -132,7 +134,7 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
                    'answers', 'translations']
 
     def branches(self):
-        text = 'Code'
+        text = 'Branches'
         return Link('', text, enabled=self.context.hasProducts())
 
     def bugs(self):
@@ -189,7 +191,7 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
     usedfor = IProject
     facet = 'overview'
     links = [
-        'branding', 'driver', 'reassign', 'top_contributors', 'mentorship',
+        'branding', 'driver', 'reassign', 'top_contributors',
         'announce', 'announcements', 'branch_visibility', 'rdf',
         'new_product', 'administer', 'milestones']
 
@@ -201,15 +203,6 @@ class ProjectOverviewMenu(ProjectEditMenuMixin, ApplicationMenu):
     def top_contributors(self):
         text = 'More contributors'
         return Link('+topcontributors', text, icon='info')
-
-    def mentorship(self):
-        text = 'Mentoring available'
-
-        # We disable this link if the project has no products. This is for
-        # consistency with the way the overview buttons behave in the same
-        # circumstances.
-        return Link('+mentoring', text, icon='info',
-                    enabled=self.context.hasProducts())
 
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
@@ -276,29 +269,11 @@ class ProjectEditNavigationMenu(NavigationMenu, ProjectEditMenuMixin):
     links = ('branding', 'reassign', 'driver', 'administer')
 
 
-class ProjectSpecificationsMenu(ApplicationMenu):
-
+class ProjectSpecificationsMenu(NavigationMenu,
+                                HasSpecificationsMenuMixin):
     usedfor = IProject
     facet = 'specifications'
     links = ['listall', 'doc', 'assignments', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def doc(self):
-        text = 'List documentation'
-        summary = 'Show all completed informational specifications'
-        return Link('+documentation', text, summary, icon="info")
-
-    def assignments(self):
-        text = 'Assignments'
-        return Link('+assignments', text, icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
 
 
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
@@ -551,6 +526,7 @@ class ProjectAddView(LaunchpadFormView):
         ]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
     label = _('Register a project group with Launchpad')
+    page_title = label
     project = None
 
     @action(_('Add'), name='add')

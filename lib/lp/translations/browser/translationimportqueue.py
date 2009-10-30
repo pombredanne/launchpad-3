@@ -424,11 +424,8 @@ class TranslationImportQueueNavigation(GetitemNavigation):
 
 class TranslationImportQueueView(HasTranslationImportsView):
     """The global Translation Import Queue."""
-    @property
-    def page_title(self):
-        """See `HasTranslationImportsView`."""
-        # There's no useful context here, so dumb down the title.
-        return "Translation import queue"
+
+    label = "Translation import queue"
 
     def initialize(self):
         """Useful initialization for this view class."""

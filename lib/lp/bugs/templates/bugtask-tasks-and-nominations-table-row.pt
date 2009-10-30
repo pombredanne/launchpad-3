@@ -129,7 +129,7 @@
               Unassigned
             </tal:unassigned>
           </span>
-          <button class="lazr-btn yui-activator-act">
+          <button class="lazr-btn yui-activator-act yui-activator-hidden">
             Edit
           </button>
           <div class="yui-activator-message-box yui-activator-hidden" />
@@ -171,8 +171,9 @@
     </tal:not-conjoined-task>
   </tr>
   <script type="text/javascript"
-    tal:define="milestone_value python: context.milestone and context.milestone.name or ''"
-    tal:content="string:
+          class="bugtasks-table-row-init-script"
+          tal:condition="not:view/many_bugtasks"
+          tal:content="string:
     YUI().use('event', 'bugs.bugtask_index', function(Y) {
         Y.on('load',
              function(e) {

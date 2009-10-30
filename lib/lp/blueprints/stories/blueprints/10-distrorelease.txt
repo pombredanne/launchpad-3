@@ -45,7 +45,9 @@ The page contains a link back to the blueprint, in case you change your mind.
     >>> back_link = browser.getLink('Test Specification')
     >>> back_link.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/testspec'
- 
+    >>> browser.getLink('Cancel').url
+    'http://blueprints.launchpad.dev/ubuntu/+spec/testspec'
+
 We are able to target a specification to a distroseries. We expect to be
 redirected back to the spec page when we are done.
 

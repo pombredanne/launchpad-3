@@ -44,7 +44,7 @@ any sources.
     http://launchpad.dev/~no-priv/+archive/ppa/+edit-dependencies
 
     >>> print no_priv_browser.title
-    Edit dependencies for PPA for No Privileges Person
+    Edit dependencies for PPA for No Privileges Person...
 
 Only Celso and an administrator can access the 'Edit dependencies'
 page for Celso's PPA.
@@ -56,14 +56,14 @@ page for Celso's PPA.
     >>> print cprov_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
     >>> print cprov_browser.title
-    Edit dependencies for PPA for Celso Providelo
+    Edit dependencies for PPA for Celso Providelo...
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
     >>> admin_browser.getLink('Edit dependencies').click()
     >>> print admin_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+edit-dependencies
     >>> print admin_browser.title
-    Edit dependencies for PPA for Celso Providelo
+    Edit dependencies for PPA for Celso Providelo...
 
 Once accessed the page provides a way to remove recorded dependencies
 via the POST form.
@@ -205,14 +205,14 @@ aware of this condition.
     http://launchpad.dev/~no-priv/+archive/ppa
 
 When accessed by their owners, a PPA depending on disabled archives
-will additionally show an warning. This way PPA maintainer can react
-to this problem.
+will additionally show an warning for uploaders . This way PPA
+maintainer can react to this problem.
 
     >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
-    >>> ui_dependencies = find_tag_by_id(
-    ...     cprov_browser.contents, 'archive-dependencies')
+    >>> upload_hint = find_tag_by_id(
+    ...     cprov_browser.contents, 'upload-hint')
     >>> print extract_text(
-    ...     first_tag_by_class(str(ui_dependencies), 'message warning'))
+    ...     first_tag_by_class(str(upload_hint), 'message warning'))
     This PPA depends on disabled archives. it may cause spurious
     build failures or binaries with unexpected contents.
 
@@ -494,7 +494,7 @@ index page (see `IArchivedependency.title`).
 
     >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
     >>> print admin_browser.title
-    PPA for Celso Providelo
+    PPA for Celso Providelo : Celso Providelo
 
     >>> print_tag_with_id(admin_browser.contents, 'archive-dependencies')
     Dependencies:
@@ -518,7 +518,7 @@ PPA context page and the action won't be executed.
 
     >>> admin_browser.getLink("Cancel").click()
     >>> print admin_browser.title
-    PPA for Celso Providelo
+    PPA for Celso Providelo : Celso Providelo
 
 The dependencies were not modified.
 

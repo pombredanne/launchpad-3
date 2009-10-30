@@ -2,7 +2,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  define="milestone_menu view/milestone/menu:context;
+  define="milestone_menu view/milestone/menu:navigation;
           milestone view/milestone">
   <tr>
     <td>
@@ -57,12 +57,13 @@
         <tal:cannot-edit condition="not: context/required:launchpad.Edit">
           not yet released
         </tal:cannot-edit>
-        <tal:can-edit condition="milestone_menu/create_release/enabled">
-          <a tal:replace="structure milestone_menu/create_release/fmt:icon" />
-          <a
-            tal:attributes="href milestone_menu/create_release/fmt:url;
-                            title  milestone_menu/create_release/summary"
-            >Release now</a>
+        <tal:can-edit
+          define="link view/milestone/menu:overview/create_release"
+          condition="link/enabled">
+          <a style="white-space: nowrap"
+            tal:attributes="href link/fmt:url;
+                            title link/summary;
+                            class string:sprite ${link/icon}">Release now</a>
         </tal:can-edit>
         </tal:not-yet>
       </tal:no-release>
@@ -70,7 +71,8 @@
     <td>
       <tal:summary
         content="structure milestone/summary/fmt:shorten/80" />
-      <tal:bug-blueprint-details condition="not: view/show_series_context">
+      <tal:bug-blueprint-details
+          condition="view/should_show_bugs_and_blueprints">
       <tal:bugtasks condition="view/bugtasks">
         <br tal:omit-tag="not: view/milestone/summary" />
         Bugs targeted:

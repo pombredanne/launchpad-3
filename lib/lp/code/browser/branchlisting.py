@@ -12,6 +12,7 @@ __all__ = [
     'DistributionSourcePackageBranchesView',
     'DistroSeriesBranchListingView',
     'GroupedDistributionSourcePackageBranchesView',
+    'CodeVHostBreadcrumb',
     'PersonBranchesMenu',
     'PersonCodeSummaryView',
     'PersonOwnedBranchesView',
@@ -63,6 +64,7 @@ from canonical.launchpad.webapp.authorization import (
     check_permission, precache_permission_for_objects)
 from canonical.launchpad.webapp.badge import Badge, HasBadgeBase
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadDropdownWidget
 
@@ -73,7 +75,7 @@ from lp.code.enums import (
     BranchLifecycleStatus, BranchLifecycleStatusFilter, BranchType)
 from lp.code.interfaces.branch import (
     bazaar_identity, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchBatchNavigator)
+    IBranchBatchNavigator, IBranchListingQueryOptimiser)
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchtarget import IBranchTarget
@@ -85,10 +87,11 @@ from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPerson, IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
-from lp.registry.interfaces.productseries import IProductSeriesSet
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
+
 
 def get_plural_text(count, singular, plural):
     """Return 'singular' if 'count' is 1, 'plural' otherwise."""
@@ -96,6 +99,11 @@ def get_plural_text(count, singular, plural):
         return singular
     else:
         return plural
+
+
+class CodeVHostBreadcrumb(Breadcrumb):
+    rootsite = 'code'
+    text = 'Branches'
 
 
 class BranchBadges(HasBadgeBase):
@@ -146,20 +154,25 @@ class BranchListingItem(BranchBadges):
     delegates(IBranch, 'context')
 
     def __init__(self, branch, last_commit, now, show_bug_badge,
-                 show_blueprint_badge, is_dev_focus,
-                 associated_product_series, show_mp_badge):
+                 show_blueprint_badge, show_mp_badge,
+                 associated_product_series, suite_source_packages, is_dev_focus):
         BranchBadges.__init__(self, branch)
         self.last_commit = last_commit
         self.show_bug_badge = show_bug_badge
         self.show_blueprint_badge = show_blueprint_badge
         self.show_merge_proposals = show_mp_badge
         self._now = now
-        self.is_development_focus = is_dev_focus
         self.associated_product_series = associated_product_series
+        self.suite_source_packages = suite_source_packages
+        self.is_development_focus = is_dev_focus
 
     def associatedProductSeries(self):
         """Override the IBranch.associatedProductSeries."""
         return self.associated_product_series
+
+    def associatedSuiteSourcePackages(self):
+        """Override the IBranch.associatedSuiteSourcePackages."""
+        return self.suite_source_packages
 
     @property
     def active_series(self):
@@ -307,7 +320,7 @@ class BranchListingItemsMixin:
     # Requires the following attributes:
     #   visible_branches_for_view
     def __init__(self, user):
-        self._dev_series_map = {}
+        self._distro_series_map = {}
         self._now = datetime.now(pytz.UTC)
         self.view_user = user
 
@@ -319,7 +332,7 @@ class BranchListingItemsMixin:
     def branch_sparks(self):
         """Return a simplejson string for [id, url] for branch sparks."""
         spark_lines = []
-        for count, branch in enumerate(self._branches_for_current_batch):
+        for count, branch in enumerate(self.visible_branches_for_view):
             if self.view.showSparkLineForBranch(branch):
                 element_id = 'b-%s' % (count + 1)
                 element_url = canonical_url(branch, view_name='+spark')
@@ -327,26 +340,20 @@ class BranchListingItemsMixin:
         return simplejson.dumps(spark_lines)
 
     @cachedproperty
-    def _branches_for_current_batch(self):
-        """Get all the branches from the BatchNavigator."""
-        branches = list(self.currentBatch())
-        # XXX: TimPenhey 2009-04-08 bug=324546
-        # Until there is an API to do this nicely, shove the launchpad.view
-        # permission into the request cache directly.  This is done because
-        # the security proxy sometimes causes extra requests to be made.
-        request = self.view.request
-        precache_permission_for_objects(request, 'launchpad.View', branches)
-        return branches
+    def _query_optimiser(self):
+        """Return the branch listing query optimiser utility."""
+        return getUtility(IBranchListingQueryOptimiser)
+
+    @cachedproperty
+    def _visible_branch_ids(self):
+        """Return a list of the branch ids that are visible."""
+        return [branch.id for branch in self.visible_branches_for_view]
 
     @cachedproperty
     def product_series_map(self):
-        """Return a map of branch id to a list of product series.
-
-        While this code is still valid with package branches is it a query
-        that isn't needed.
-        """
-        series_resultset = getUtility(IProductSeriesSet).getSeriesForBranches(
-            self.visible_branches_for_view)
+        """Return a map from branch id to a list of product series."""
+        series_resultset = self._query_optimiser.getProductSeriesForBranches(
+            self._visible_branch_ids)
         result = {}
         for series in series_resultset:
             result.setdefault(series.branch.id, []).append(series)
@@ -368,20 +375,58 @@ class BranchListingItemsMixin:
                 series.insert(0, dev_focus)
         return series
 
-    def getDevFocusBranch(self, branch):
-        """Get the development focus branch that relates to `branch`."""
-        # XXX: 2009-07-02 TimPenhey spec=package-branches We need to determine
-        # here what constitutes a dev focus branch for package branches, and
-        # that perhaps this should also refer to targets instead of using
-        # product.
-        if branch.product is None:
-            return None
+    @cachedproperty
+    def official_package_links_map(self):
+        """Return a map from branch id to a list of package links."""
+        links = self._query_optimiser.getOfficialSourcePackageLinksForBranches(
+            self._visible_branch_ids)
+        result = {}
+        for link in links:
+            result.setdefault(link.branch.id, []).append(link)
+        return result
+
+    def getSuiteSourcePackages(self, branch):
+        """Get the associated SuiteSourcePackages for the branch.
+
+        If there is more than one, they are sorted by pocket.
+        """
+        links = [link.suite_sourcepackage for link in
+                 self.official_package_links_map.get(branch.id, [])]
+        return sorted(links, key=attrgetter('pocket'))
+
+    def getDistroDevelSeries(self, distribution):
+        """Since distribution.currentseries hits the DB every time, cache it."""
+        self._distro_series_map = {}
         try:
-            return self._dev_series_map[branch.product]
+            return self._distro_series_map[distribution]
         except KeyError:
-            result = branch.product.development_focus.branch
-            self._dev_series_map[branch.product] = result
+            result = distribution.currentseries
+            self._distro_series_map[distribution] = result
             return result
+
+    def isBranchDevFocus(self, branch,
+                         associated_product_series, suite_source_packages):
+        """Is the branch the development focus?
+
+        For product branches this means that the branch is linked to the
+        development focus series.
+
+        For package branches this means that the branch is linked to the
+        release pocket of the development series.
+        """
+        # Refactor this code to work for model.branch too?
+        # Do we care if a non-product branch is linked to the product series?
+        # Do we care if a non-package branch is linked to the package?
+        # A) not right now.
+        for series in associated_product_series:
+            if series.product.development_focus == series:
+                return True
+        for ssp in suite_source_packages:
+            if (ssp.pocket == PackagePublishingPocket.RELEASE and
+                ssp.distroseries == self.getDistroDevelSeries(
+                    ssp.distribution)):
+                return True
+        return False
 
     @cachedproperty
     def branch_ids_with_bug_links(self):
@@ -431,11 +476,13 @@ class BranchListingItemsMixin:
         show_blueprint_badge = branch.id in self.branch_ids_with_spec_links
         show_mp_badge = branch.id in self.branch_ids_with_merge_proposals
         associated_product_series = self.getProductSeries(branch)
-        is_dev_focus = (self.getDevFocusBranch(branch) == branch)
+        suite_source_packages = self.getSuiteSourcePackages(branch)
+        is_dev_focus = self.isBranchDevFocus(
+            branch, associated_product_series, suite_source_packages)
         return BranchListingItem(
             branch, last_commit, self._now, show_bug_badge,
-            show_blueprint_badge, is_dev_focus,
-            associated_product_series, show_mp_badge)
+            show_blueprint_badge, show_mp_badge,
+            associated_product_series, suite_source_packages, is_dev_focus)
 
     def decoratedBranches(self, branches):
         """Return the decorated branches for the branches passed in."""
@@ -461,20 +508,8 @@ class BranchListingBatchNavigator(TableBatchNavigator,
         return self.view._getCollection().visibleByUser(self.view.user)
 
     @cachedproperty
-    def branch_sparks(self):
-        return simplejson.dumps([
-                ('b-%s' % (count+1),
-                 canonical_url(branch, view_name='+spark'))
-                for count, branch
-                in enumerate(self.visible_branches_for_view)
-                ])
-
-    @cachedproperty
     def visible_branches_for_view(self):
         branches = list(self.currentBatch())
-        # XXX: TimPenhey 2009-04-08 bug=324546
-        # Until there is an API to do this nicely, shove the launchpad.view
-        # permission into the request cache directly.
         request = self.view.request
         precache_permission_for_objects(request, 'launchpad.View', branches)
         return branches
@@ -508,7 +543,7 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
     # shown in the branch listings.
     show_series_links = False
     extra_columns = []
-    heading_template = 'Bazaar branches for %(displayname)s'
+    label_template = 'Bazaar branches for %(displayname)s'
     # no_sort_by is a sequence of items from the BranchListingSort
     # enumeration to not offer in the sort_by widget.
     no_sort_by = ()
@@ -526,15 +561,14 @@ class BranchListingView(LaunchpadFormView, FeedsMixin):
         )
 
     @property
-    def heading(self):
-        return self.heading_template % {
+    def label(self):
+        return self.label_template % {
             'displayname': self.context.displayname,
             'title': getattr(self.context, 'title', 'no-title')}
 
-    @property
-    def page_title(self):
-        # The page title uses the view heading.
-        return self.heading
+    # Provide a default page_title for distros and other things without
+    # breadcrumbs..
+    page_title = label
 
     @property
     def initial_values(self):
@@ -962,7 +996,8 @@ class PersonBaseBranchListingView(BranchListingView):
 class PersonRegisteredBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's registered branches."""
 
-    heading_template = 'Bazaar branches registered by %(displayname)s'
+    page_title = _('Registered')
+    label_template = 'Bazaar branches registered by %(displayname)s'
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
 
     def _getCollection(self):
@@ -972,7 +1007,8 @@ class PersonRegisteredBranchesView(PersonBaseBranchListingView):
 class PersonOwnedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's owned branches."""
 
-    heading_template = 'Bazaar branches owned by %(displayname)s'
+    page_title = _('Owned')
+    label_template = 'Bazaar branches owned by %(displayname)s'
     no_sort_by = (BranchListingSort.DEFAULT, BranchListingSort.OWNER)
 
     def _getCollection(self):
@@ -982,7 +1018,8 @@ class PersonOwnedBranchesView(PersonBaseBranchListingView):
 class PersonSubscribedBranchesView(PersonBaseBranchListingView):
     """View for branch listing for a person's subscribed branches."""
 
-    heading_template = 'Bazaar branches subscribed to by %(displayname)s'
+    page_title = _('Subscribed')
+    label_template = 'Bazaar branches subscribed to by %(displayname)s'
     no_sort_by = (BranchListingSort.DEFAULT,)
 
     def _getCollection(self):
@@ -1106,7 +1143,7 @@ class ProductBranchListingView(BranchListingView):
 
     show_series_links = True
     no_sort_by = (BranchListingSort.PRODUCT,)
-    heading_template = 'Bazaar branches of %(displayname)s'
+    label_template = 'Bazaar branches of %(displayname)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProduct(self.context)
@@ -1320,7 +1357,7 @@ class ProjectBranchesView(BranchListingView):
 
     no_sort_by = (BranchListingSort.DEFAULT,)
     extra_columns = ('author', 'product')
-    heading_template = 'Bazaar branches of %(displayname)s'
+    label_template = 'Bazaar branches of %(displayname)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).inProject(self.context)
@@ -1359,7 +1396,7 @@ class BaseSourcePackageBranchesView(BranchListingView):
 class DistributionSourcePackageBranchesView(BaseSourcePackageBranchesView):
     """A general listing of all branches in the distro source package."""
 
-    heading_template = 'Bazaar branches for %(title)s'
+    label_template = 'Bazaar branches for %(title)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).inDistributionSourcePackage(
@@ -1385,10 +1422,10 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
     """A view that groups branches into distro series."""
 
     @property
-    def heading(self):
+    def label(self):
         return 'Bazaar branches for %s' % self.context.title
 
-    page_title = heading
+    page_title = label
 
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
@@ -1543,7 +1580,7 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
 
 class SourcePackageBranchesView(BranchListingView):
 
-    heading_template = 'Bazaar branches of %(displayname)s'
+    label_template = 'Bazaar branches of %(displayname)s'
 
     # XXX: JonathanLange 2009-03-03 spec=package-branches: This page has no
     # menu yet -- do we need one?
@@ -1608,8 +1645,8 @@ class PersonProductBaseBranchesView(PersonBaseBranchListingView):
         return self.context.person
 
     @property
-    def heading(self):
-        return self.heading_template % {
+    def label(self):
+        return self.label_template % {
             'person': self.context.person.displayname,
             'product': self.context.product.displayname}
 
@@ -1636,7 +1673,7 @@ class PersonProductOwnedBranchesView(PersonProductBaseBranchesView):
                   BranchListingSort.OWNER,
                   BranchListingSort.PRODUCT)
 
-    heading_template = 'Bazaar Branches of %(product)s owned by %(person)s'
+    label_template = 'Bazaar Branches of %(product)s owned by %(person)s'
 
     def _getCollection(self):
         return getUtility(IAllBranches).ownedBy(
@@ -1646,7 +1683,7 @@ class PersonProductOwnedBranchesView(PersonProductBaseBranchesView):
 class PersonProductRegisteredBranchesView(PersonProductBaseBranchesView):
     """Branch listing for a person's registered branches of a product."""
 
-    heading_template = (
+    label_template = (
         'Bazaar Branches of %(product)s registered by %(person)s')
 
     def _getCollection(self):
@@ -1657,7 +1694,7 @@ class PersonProductRegisteredBranchesView(PersonProductBaseBranchesView):
 class PersonProductSubscribedBranchesView(PersonProductBaseBranchesView):
     """Branch listing for a person's subscribed branches of a product."""
 
-    heading_template = (
+    label_template = (
         'Bazaar Branches of %(product)s subscribed to by %(person)s')
 
     def _getCollection(self):

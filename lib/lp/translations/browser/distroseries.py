@@ -35,7 +35,8 @@ from lp.translations.interfaces.potemplate import IPOTemplateSet
 
 class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
     schema = IDistroSeries
-
+    page_title = "Settings"
+    label = "Translation settings"
     field_names = ['hide_all_translations', 'defer_translation_imports']
 
     @property
@@ -45,17 +46,6 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(self.context)
-
-    @property
-    def label(self):
-        return "Translation settings"
-
-    @property
-    def page_title(self):
-        return "Change translation settings for %s %s" % (
-            self.context.distribution.displayname,
-            self.context.displayname)
-
 
     @action("Change")
     def change_action(self, action, data):
@@ -67,7 +57,8 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
 class DistroSeriesLanguagePackView(LaunchpadEditFormView):
     """Browser view to manage used language packs."""
     schema = IDistroSeries
-    label = ""
+    label = "Language packs"
+    page_title = "Language packs"
 
     def is_langpack_admin(self, action=None):
         """Find out if the current user is a Language Packs Admin.
@@ -75,7 +66,7 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
         This group of users have launchpad.LanguagePacksAdmin rights on
         the DistroSeries but are not general Rosetta admins.
 
-        :returns: True if the user is a Language Pack Admin (but not a 
+        :returns: True if the user is a Language Pack Admin (but not a
             Rosetta admin)."""
         return (check_permission("launchpad.LanguagePacksAdmin",
                                  self.context) and not
@@ -110,7 +101,6 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
-        self.page_title = "Language packs for %s" % self.displayname
         if self.is_langpack_admin():
             self.adminlabel = 'Request a full language pack export of %s' % (
                 self.displayname)
@@ -172,16 +162,17 @@ class DistroSeriesTemplatesView(LaunchpadView):
     """Show a list of all templates for the DistroSeries."""
 
     is_distroseries = True
+    label = "Translation templates"
+    page_title = "All templates"
 
     def iter_templates(self):
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(distroseries=self.context)
 
-    def can_administer(self, template):
-        return check_permission('launchpad.Admin', template)
-
 
 class DistroSeriesView(LaunchpadView, TranslationsMixin):
+
+    label = "Translation status by language"
 
     def initialize(self):
         self.displayname = '%s %s' % (
@@ -248,6 +239,10 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
 
+    @property
+    def is_translation_focus(self):
+        """Is this DistroSeries the translation focus."""
+        return self.context.distribution.translation_focus == self.context
 
 class DistroSeriesTranslationsMenu(NavigationMenu):
 

@@ -15,7 +15,7 @@ import datetime
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import In, Sum
+from storm.expr import Sum
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc
@@ -33,7 +33,7 @@ from lp.bugs.model.bugtask import BugTask
 from lp.services.worlddata.model.language import Language
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
-from canonical.launchpad.database.packaging import Packaging
+from lp.registry.model.packaging import Packaging
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
 from lp.translations.model.pofile import POFile
@@ -53,7 +53,7 @@ from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.packaging import PackagingType
+from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
@@ -62,8 +62,6 @@ from lp.blueprints.interfaces.specification import (
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.webapp.publisher import canonical_url
@@ -571,6 +569,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
+            status=self.status.title,
             uri=canonical_url(self, path_only_if_possible=True),
             landmarks=landmarks)
 
@@ -593,12 +592,3 @@ class ProductSeriesSet:
             return ProductSeries.get(series_id)
         except SQLObjectNotFound:
             return default
-
-    def getSeriesForBranches(self, branches):
-        """See `IProductSeriesSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        branch_ids = [branch.id for branch in branches]
-        return store.find(
-            ProductSeries,
-            In(ProductSeries.branchID, branch_ids)).order_by(
-            ProductSeries.name)

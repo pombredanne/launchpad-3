@@ -7,16 +7,18 @@ __metaclass__ = type
 
 from datetime import timedelta
 from pprint import pformat
+import re
 import unittest
+
+from lazr.uri import URI
 
 from storm.expr import Asc, Desc
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.launchpad.testing.systemdocs import create_initialized_view
 from lp.code.browser.branchlisting import (
-    BranchListingBatchNavigator, BranchListingSort, BranchListingView,
-    GroupedDistributionSourcePackageBranchesView, PersonOwnedBranchesView,
+    BranchListingSort, BranchListingView,
+    GroupedDistributionSourcePackageBranchesView,
     SourcePackageBranchesView)
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
@@ -25,6 +27,8 @@ from lp.registry.model.person import Owner
 from lp.registry.model.product import Product
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import TestCase, TestCaseWithFactory, time_counter
+from lp.testing.views import create_initialized_view
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
@@ -107,20 +111,6 @@ class TestPersonOwnedBranchesView(TestCaseWithFactory):
         self.bug.linkBranch(self.branches[0], self.barney)
         self.spec = self.factory.makeSpecification()
         self.spec.linkBranch(self.branches[1], self.barney)
-
-    def test_branch_sparks(self):
-        # branch_sparks should return a simplejson list for the branches with
-        # the value being [id, url]
-        branch_sparks = ('['
-        '["b-1", "http://code.launchpad.dev/~barney/bambam/branch9/+spark"], '
-        '["b-2", "http://code.launchpad.dev/~barney/bambam/branch10/+spark"], '
-        '["b-3", "http://code.launchpad.dev/~barney/bambam/branch11/+spark"], '
-        '["b-4", "http://code.launchpad.dev/~barney/bambam/branch12/+spark"], '
-        '["b-5", "http://code.launchpad.dev/~barney/bambam/branch13/+spark"]'
-        ']')
-
-        view = create_initialized_view(self.barney, name="+branches")
-        self.assertEqual(view.branches().branch_sparks, branch_sparks)
 
     def test_branch_ids_with_bug_links(self):
         # _branches_for_current_batch should return a list of all branches in
@@ -319,6 +309,45 @@ class TestGroupedDistributionSourcePackageBranchesView(TestCaseWithFactory):
         series, branches, official = self.makeBranches(6, 4)
         expected = official[:3] + branches
         self.assertGroupBranchesEqual(expected, series)
+
+
+class TestDevelopmentFocusPackageBranches(TestCaseWithFactory):
+    """Make sure that the bzr_identity of the branches are correct."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_package_development_focus(self):
+        # Check the bzr_identity of a development focus package branch.
+        branch = self.factory.makePackageBranch()
+        series_set = removeSecurityProxy(getUtility(IMakeOfficialBranchLinks))
+        sspb = series_set.new(
+            branch.distroseries, PackagePublishingPocket.RELEASE,
+            branch.sourcepackagename, branch, branch.owner)
+        identity = "lp://dev/%s/%s" % (
+            branch.distribution.name, branch.sourcepackagename.name)
+        self.assertEqual(identity, branch.bzr_identity)
+        # Now confirm that we get the same through the view.
+        view = create_initialized_view(branch.distribution, name='+branches')
+        # There is only one branch.
+        batch = view.branches()
+        [view_branch] = batch.branches
+        self.assertEqual(identity, view_branch.bzr_identity)
+
+
+class TestProductSeriesTemplate(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_product_series_link(self):
+        # The link from a series branch's listing to the series goes to the
+        # series on the main site, not the code site.
+        branch = self.factory.makeProductBranch()
+        series = self.factory.makeProductSeries(product=branch.product)
+        series.branch = branch
+        browser = self.getUserBrowser(
+            canonical_url(branch.product, rootsite='code'))
+        link = browser.getLink(re.compile('^' + series.name + '$'))
+        self.assertEqual('launchpad.dev', URI(link.url).host)
 
 
 def test_suite():

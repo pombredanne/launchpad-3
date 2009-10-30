@@ -124,6 +124,8 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
 
     field_names = ['time_starts', 'time_ends']
 
+    label = "Register your attendance"
+
     @property
     def initial_values(self):
         """Show committed attendance, or default to the sprint times."""
@@ -141,10 +143,16 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
         time_starts, time_ends = self.getDates(data)
         self.context.attend(self.user, time_starts, time_ends)
 
+    @property
+    def cancel_url(self):
+        """Canceling goes back to the sprint page."""
+        return canonical_url(self.context)
+
 
 class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     """A view used to register someone else's attendance at a sprint."""
 
+    label = 'Register someone else'
     field_names = ['attendee', 'time_starts', 'time_ends']
 
     @property

@@ -18,10 +18,6 @@
   </tal:devmode>
 </metal:block>
 
-<tal:heading metal:fill-slot="heading">
-  <h1 tal:content="view/page_title"/>
-</tal:heading>
-
 <tal:side metal:fill-slot="side">
     <tal:menu replace="structure view/@@+global-actions" />
 
@@ -152,11 +148,7 @@
                tal:replace="structure row/series_package/menu:overview/set_upstream/fmt:link"/>
             <tal:has_packaging condition="row/packaging">
               <img tal:replace="structure row/packaging/productseries/image:icon"/>
-              <tal:title replace="row/packaging/productseries/title"/>
-              <a tal:attributes="
-                href row/series_package/menu:overview/edit_packaging/url">
-                <img src="/@@/edit"/>
-              </a>
+              <a tal:replace="structure row/packaging/productseries/fmt:link"/>
               <form style="display: inline"
                     method="POST"
                     tal:condition="row/hidden_packaging_field"
@@ -165,6 +157,11 @@
                 <tal:hidden replace="structure row/hidden_packaging_field" />
                 <tal:action replace="structure view/renderDeletePackagingAction" />
               </form>
+              <a tal:attributes="
+                href row/series_package/menu:overview/edit_packaging/url;
+                title string:Edit upsteam link">
+                <img src="/@@/edit"/>
+              </a>
             </tal:has_packaging>
           </div><!--float right-->
         </td>
@@ -219,7 +216,7 @@
       </tal:rows>
     </table>
     <script
-       tal:content="string:LP.client.cache['archive_context_url'] = '${archive/fmt:url}';"/>
+       tal:content="string:LP.client.cache['archive_context_url'] = '${archive/fmt:url}';"></script>
     <metal:js use-macro="archive/@@+macros/expandable-table-js"/>
 
     <p style="float:right; padding-top:1em">

@@ -43,8 +43,9 @@ to review the state of the translation.
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+source/evolution/+pots/evolution-2.2/es/+translate')
-    >>> user_browser.title
-    'Translating evolution-2.2 in ... package "evolution" into Spanish'
+    >>> print user_browser.title
+    Spanish (es) : Template ...evolution-2.2... : ...evolution... package :
+    Translations : 5.04 : Ubuntu
 
 He can see that there are 22 messages.
 
@@ -118,8 +119,9 @@ translations into Australian English.
     ...     '+source/evolution/+pots/evolution-2.2/en_AU/+translate')
     >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
     >>> user_browser.getControl('Change').click()
-    >>> user_browser.title
-    'Translating evolution-2.2 in ... "evolution" into English (Australia)'
+    >>> print user_browser.title
+    English (Australia) (en_AU) : Template ...evolution-2.2... :
+    ...evolution... package : Translations : 5.04 : Ubuntu
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
@@ -183,8 +185,9 @@ navigation.
     ...     'evolution/trunk/+pots/evolution-2.2/en_AU/+translate')
     >>> user_browser.getControl(name='show', index=1).value = ['untranslated']
     >>> user_browser.getControl('Change').click()
-    >>> user_browser.title
-    'Translating evolution-2.2 in Evolution trunk into English (Australia)'
+    >>> print user_browser.title
+    English (Australia) (en_AU) : Template ...evolution-2.2... :
+    Translations : Series trunk : Evolution
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
@@ -411,8 +414,7 @@ suggestions.
 
     >>> text = extract_text(find_main_content(user_browser.contents))
     >>> print text.encode('UTF-8')
-    Description...
-    Template ...
+    Translating...
     English: current addressbook folder
     Current Chinese (China): (no translation yet)
     Suggestions:

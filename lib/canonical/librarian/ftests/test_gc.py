@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import shutil
 import sys
 import os
 from subprocess import Popen, PIPE, STDOUT
@@ -15,6 +16,7 @@ from datetime import datetime, timedelta
 from pytz import utc
 from sqlobject import SQLObjectNotFound
 from storm.locals import SQL, AutoReload
+import transaction
 from zope.component import getUtility
 
 from canonical.config import config
@@ -29,8 +31,17 @@ from canonical.testing import LaunchpadZopelessLayer
 
 
 class MockLogger:
+    def __init__(self, fail_on_error=True, fail_on_warning=True):
+        self.fail_on_error = fail_on_error
+        self.fail_on_warning = fail_on_warning
+
     def error(self, *args, **kw):
-        raise RuntimeError("An error was indicated: %r %r" % (args, kw))
+        if self.fail_on_error:
+            raise RuntimeError("An error was indicated: %r %r" % (args, kw))
+
+    def warning(self, *args, **kw):
+        if self.fail_on_warning:
+            raise RuntimeError("A warning was indicated: %r %r" % (args, kw))
 
     def debug(self, *args, **kw):
         #print '%r %r' % (args, kw)
@@ -509,6 +520,75 @@ class TestLibrarianGarbageCollection(TestCase):
         for content_id in (row[0] for row in cur.fetchall()):
             path = librariangc.get_file_path(content_id)
             self.failUnless(os.path.exists(path))
+
+    def test_deleteUnwantedFilesIgnoresNoise(self):
+        # Directories with invalid names in the storage area are
+        # ignored. They are reported as warnings though, so don't let
+        # warnings fail this test.
+        librariangc.log = MockLogger(fail_on_warning=False)
+
+        # Not a hexidecimal number.
+        noisedir1_path = os.path.join(config.librarian_server.root, 'zz')
+
+        # Too long
+        noisedir2_path = os.path.join(config.librarian_server.root, '111')
+
+        # Long non-hexadecimal number
+        noisedir3_path = os.path.join(config.librarian_server.root, '11.bak')
+
+        try:
+            os.mkdir(noisedir1_path)
+            os.mkdir(noisedir2_path)
+            os.mkdir(noisedir3_path)
+
+            # Files in the noise directories.
+            noisefile1_path = os.path.join(noisedir1_path, 'abc')
+            noisefile2_path = os.path.join(noisedir2_path, 'def')
+            noisefile3_path = os.path.join(noisedir2_path, 'ghi')
+            open(noisefile1_path, 'w').write('hello')
+            open(noisefile2_path, 'w').write('there')
+            open(noisefile3_path, 'w').write('testsuite')
+
+            # Pretend it is tomorrow to ensure the files don't count as
+            # recently created, and run the delete_unwanted_files process.
+            org_time = librariangc.time
+            def tomorrow_time():
+                return org_time() + 24 * 60 * 60 + 1
+            try:
+                librariangc.time = tomorrow_time
+                librariangc.delete_unwanted_files(self.con)
+            finally:
+                librariangc.time = org_time
+
+            # None of the rubbish we created has been touched.
+            self.assert_(os.path.isdir(noisedir1_path))
+            self.assert_(os.path.isdir(noisedir2_path))
+            self.assert_(os.path.isdir(noisedir3_path))
+            self.assert_(os.path.exists(noisefile1_path))
+            self.assert_(os.path.exists(noisefile2_path))
+            self.assert_(os.path.exists(noisefile3_path))
+        finally:
+            # We need to clean this up ourselves, as the standard librarian
+            # cleanup only removes files it knows where valid to avoid
+            # accidents.
+            shutil.rmtree(noisedir1_path)
+            shutil.rmtree(noisedir2_path)
+            shutil.rmtree(noisedir3_path)
+
+    def test_delete_unwanted_files_bug437084(self):
+        # There was a bug where delete_unwanted_files() would die
+        # if the last file found on disk was unwanted.
+        self.layer.switchDbUser(dbuser='testadmin')
+        content = 'foo'
+        self.client.addFile(
+            'foo.txt', len(content), StringIO(content), 'text/plain')
+        # Roll back the database changes, leaving the file on disk.
+        transaction.abort()
+
+        self.layer.switchDbUser(config.librarian_gc.dbuser)
+
+        # This should cope.
+        librariangc.delete_unwanted_files(self.con)
 
     def test_cronscript(self):
         script_path = os.path.join(

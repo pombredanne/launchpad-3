@@ -1,20 +1,30 @@
 = A person's +editlanguages page =
 
 Carlos is a translator who translates things into Spanish with Rosetta.
-He is on Rosetta About page and wants to change his preferred languages.
+He comes to the main Translations page and wants to change his preferred
+languages.
 
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
-    >>> browser.open('http://translations.launchpad.dev/translations/+about')
+    >>> browser.open('http://translations.launchpad.dev/')
 
-So, he looks for the 'Your preferred languages' portlet for the
-'Select Languages...' link, and clicks on that which will take him to
-his +editlanguages page.
+So he looks for the "preferred languages" section on the page.  This
+lists his current preferences.
 
-    >>> portlet = find_portlet(browser.contents, 'Your languages')
-    >>> print extract_text(portlet.find('ul'))
+    >>> def find_languages_section(page):
+    ...     """Return the preferred-languages section on page as text."""
+    ...     tag = find_tag_by_id(page, 'preferred-languages')
+    ...     return extract_text(tag)
+
+    >>> print find_languages_section(browser.contents)
+    Your preferred languages
     Catalan
     Spanish
-    >>> browser.getLink('Select Languages...').click()
+    &... Change your preferred languages...
+
+The 'Change your preferred languages' link takes him to his
++editlanguages page.
+
+    >>> browser.getLink(id="change-languages").click()
     >>> print extract_text(find_main_content(browser.contents).find('h1'))
     Your language preferences
 
@@ -40,25 +50,20 @@ his preferences, Spanish will no longer be selected, and Welsh will.
 
 After he submits the form, he should again be redirected back to
 Rosetta's About page. The 'Your preferred languages' portlet displays
-his two translatable languages. The page displays two messages
-confirming his changes. The 'Your preferred languages' portlet
-displays his translatable languages.
+his two translatable languages. The page also displays two messages
+confirming his changes.
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print message.renderContents()
     Added Welsh to your preferred languages.<br
     />Removed Spanish from your preferred languages.
 
-    # XXX: salgado 2006-11-21 bug 98437:
-    # This test is commented out because redirects will not work
-    # because the HTTP_REFFERER is localhost.
-    #>>> browser.url
-    #'http://launchpad.dev/translations/+about'
-    >>> browser.open('http://translations.launchpad.dev/translations/+about')
-    >>> portlet = find_portlet(browser.contents, 'Your languages')
-    >>> print extract_text(portlet.find('ul'))
+    >>> browser.open('http://translations.launchpad.dev/')
+    >>> print find_languages_section(browser.contents)
+    Your preferred languages
     Catalan
     Welsh
+    &...
 
 Joao, a Brazilian, travels to Liechtenstein for business and views the
 languages page from there.
@@ -222,7 +227,7 @@ The nag message links to the languages editing page.
 
     >>> noi_browser.getLink(id='set-languages').click()
     >>> print noi_browser.title
-    Your language preferences
+    Language preferences...
 
 Once Noi has set one or more preferred languages, the nag message goes
 away.

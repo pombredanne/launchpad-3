@@ -10,7 +10,7 @@ import queue.
 The import queue is linked from the translations page for distribution.
 
     >>> user_browser.open('http://translations.launchpad.dev/ubuntu')
-    >>> user_browser.getLink('Import queue').click()
+    >>> user_browser.getLink('Ubuntu import queue').click()
 
 There is no content for Ubuntu.
 
@@ -30,7 +30,7 @@ There is no content for Ubuntu.
 The import queue is linked from the translations page for distribution series.
 
     >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-    >>> user_browser.getLink('Import queue').click()
+    >>> user_browser.getLink('Hoary import queue').click()
 
 And obviously, given that the ubuntu distribution had no content, Hoary, an
 Ubuntu distro series has also no content.
@@ -51,7 +51,7 @@ Ubuntu distro series has also no content.
 The import queue is linked from the translations page for products.
 
     >>> user_browser.open('http://translations.launchpad.dev/evolution')
-    >>> user_browser.getLink('Import queue').click()
+    >>> user_browser.getLink('Evolution import queue').click()
 
 This time, we do have content for this product:
 
@@ -84,7 +84,7 @@ There are two entries in the list.
 The import queue is linked from the translations page for product series.
 
     >>> user_browser.open('http://translations.launchpad.dev/evolution/trunk')
-    >>> user_browser.getLink('Import queue').click()
+    >>> user_browser.getLink('import queue').click()
 
 This time, we do have content for this product:
 

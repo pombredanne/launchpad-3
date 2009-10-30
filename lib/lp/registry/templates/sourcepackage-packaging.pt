@@ -3,24 +3,13 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:rightportlets fill-slot="portlets_two">
-  <div tal:replace="structure context/@@+portlet-upstream" />
-</metal:rightportlets>
-
-
 <div metal:fill-slot="main">
-
-  <h1>Upstream links for <span tal:replace="context/displayname">foobar in
-  hoary</span></h1>
 
   <p>
     Linking distribution packages to upstream series allows
@@ -53,14 +42,14 @@
 	<tr tal:attributes="
           class python: packaging == context.packaging and 'highlight' or None">
 
-          <td tal:content="packaging/distroseries/distribution/displayname">
-            ubuntu
+          <td>
+            <a tal:replace="structure packaging/distroseries/distribution/fmt:link" />
           </td>
-          <td tal:content="packaging/distroseries/displayname">
-            hoary
+          <td>
+            <a tal:replace="structure packaging/distroseries/fmt:link" />
           </td>
-          <td tal:content="packaging/productseries/title">
-            evolution main
+          <td>
+            <a tal:replace="structure packaging/productseries/fmt:link" />
           </td>
 
         </tr>

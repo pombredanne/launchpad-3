@@ -43,6 +43,18 @@ class TestRevisionCacheAdaptation(TestCaseWithFactory):
         cache = IRevisionCache(person, None)
         self.assertIsNot(None, cache)
 
+    def test_distribution(self):
+        # A distribution can be adapted to a revision cache.
+        distribution = self.factory.makeDistribution()
+        cache = IRevisionCache(distribution, None)
+        self.assertIsNot(None, cache)
+
+    def test_distro_series(self):
+        # A distro series can be adapted to a revision cache.
+        distro_series = self.factory.makeDistroRelease()
+        cache = IRevisionCache(distro_series, None)
+        self.assertIsNot(None, cache)
+
     def test_source_package(self):
         # A source package can be adapted to a revision cache.
         source_package = self.factory.makeSourcePackage()

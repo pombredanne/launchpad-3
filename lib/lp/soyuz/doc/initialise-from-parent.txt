@@ -139,12 +139,12 @@ was superseded in hoary and won't be inherited by the initialised
 distroseries.
 
   >>> pmount_source = hoary.getSourcePackage('pmount').currentrelease
-  >>> pmount_source.title
-  u'pmount 0.1-2 (source) in ubuntu hoary'
+  >>> print pmount_source.title
+  "pmount" 0.1-2 source package in The Hoary Hedgehog Release
 
   >>> pmount_source = foobuntu.getSourcePackage('pmount').currentrelease
-  >>> pmount_source.title
-  u'pmount 0.1-2 (source) in ubuntutest foobuntu'
+  >>> print pmount_source.title
+  "pmount" 0.1-2 source package in The Foobuntu
 
 
 Since pmount_0.1-2 source is published we can safely look up for the

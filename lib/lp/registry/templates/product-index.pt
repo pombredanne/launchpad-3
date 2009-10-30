@@ -5,11 +5,14 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad">
-  <body>
-    <tal:heading metal:fill-slot="heading">
-      <h1 tal:replace="structure view/title_edit_widget">project title</h1>
-    </tal:heading>
+  <tal:registering metal:fill-slot="registering">
+    Registered
+    <tal:created replace="context/datecreated/fmt:approximatedate" />
+    by
+    <tal:registrant replace="structure context/registrant/fmt:link" />
+  </tal:registering>
 
+  <body>
     <tal:main metal:fill-slot="main"
       define="overview_menu context/menu:overview">
       <div class="top-portlet">
@@ -33,6 +36,7 @@
           detailed information about the open source project in question.
         </div>
 
+        <div tal:replace="structure overview_menu/branding/fmt:link" />
         <ul id="external-links" class="horizontal"
           tal:condition="view/has_external_links">
           <li tal:condition="view/should_display_homepage">
@@ -59,7 +63,10 @@
 
               <dl id="owner" tal:condition="context/owner">
                 <dt>Maintainer:</dt>
-                <dd><a tal:replace="structure context/owner/fmt:link" /></dd>
+                <dd>
+                  <a tal:replace="structure context/owner/fmt:link" />
+                  <a tal:replace="structure overview_menu/reassign/fmt:icon" />
+                </dd>
               </dl>
 
               <dl id="aliases" tal:condition="context/aliases">
@@ -73,9 +80,13 @@
               <dl id="driver">
                 <dt>Driver:</dt>
                 <dd tal:condition="view/effective_driver">
-                  <a tal:replace="structure view/effective_driver/fmt:link" /></dd>
+                  <a tal:replace="structure view/effective_driver/fmt:link" />
+                  <a tal:replace="structure overview_menu/reassign/fmt:icon" />
+                </dd>
                 <dd tal:condition="not: view/effective_driver">
-                  Not yet appointed.</dd>
+                  Not yet appointed.
+                  <a tal:replace="structure overview_menu/reassign/fmt:icon" />
+                </dd>
               </dl>
 
               <dl id="uses" tal:define="uses_launchpad view/uses_launchpad_for">
@@ -119,14 +130,7 @@
             </div>
 
             <p>
-              <a tal:replace="structure  overview_menu/rdf/fmt:link" />
-            </p>
-
-            <p id="registrant">
-              Registered
-              <tal:created replace="context/datecreated/fmt:approximatedate" />
-              by
-              <tal:registrant replace="structure context/registrant/fmt:link" />
+              <a tal:replace="structure overview_menu/rdf/fmt:link" />
             </p>
 
             <div id="project-admin-whiteboard" class="whiteboard"

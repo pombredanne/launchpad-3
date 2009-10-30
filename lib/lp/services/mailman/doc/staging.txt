@@ -20,8 +20,7 @@ informing them of their new list.  We can ignore these.
 
     >>> from canonical.launchpad.ftests import login, logout
 
-    >>> login('foo.bar@canonical.com')
-    >>> from zope.component import getUtility
+    >>> login('admin@canonical.com')
 
     >>> owner = factory.makePerson()
     >>> team_one = factory.makeTeam(owner=owner, name='staging-one')
@@ -127,7 +126,7 @@ sync script has to deal with.
     >>> from canonical.launchpad.interfaces import (
     ...     EmailAddressStatus, IEmailAddressSet, IPersonSet)
     >>> from zope.component import getUtility
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> team = getUtility(IPersonSet).getByName('staging-two')
     >>> email = getUtility(IEmailAddressSet).new(
     ...     'contact@example.com', team, EmailAddressStatus.VALIDATED)
@@ -199,7 +198,8 @@ launchpad.conf file.
     ...     stdout=PIPE, stderr=PIPE,
     ...     cwd=LayerProcessController.appserver_config.root,
     ...     env=dict(LPCONFIG='testrunner-appserver',
-    ...              PYTHONPATH=os.pathsep.join(sys.path)))
+    ...              PYTHONPATH=os.pathsep.join(sys.path),
+    ...              PATH=os.environ.get('PATH')))
     >>> stdout, stderr = proc.communicate()
 
     # Ignore stdout and stderr, but print the return code.  stdout should be

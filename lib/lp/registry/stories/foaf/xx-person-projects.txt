@@ -16,8 +16,8 @@ The +related-software page displays a table with links to open bugs,
 unimplemented specs and open questions.
 
     >>> anon_browser.getLink('Show related projects').click()
-    >>> print anon_browser.title
-    Software related to Ubuntu Team
+    >>> anon_browser.title
+    'Software related to Ubuntu Team...
 
     >>> related_projects = find_tag_by_id(
     ...     anon_browser.contents, 'related-projects')
@@ -44,7 +44,7 @@ accessible through the main navigation menu.
     >>> print anon_browser.url
     http://launchpad.dev/~mark/+related-software
     >>> print anon_browser.title
-    Software related to Mark Shuttleworth
+    Software related to Mark Shuttleworth...
 
 In the case of a person that owns/drives more than
 config.launchpad.default_batch_size, a message is displayed and the

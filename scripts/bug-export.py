@@ -4,10 +4,10 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 # pylint: disable-msg=W0403
 
+import _pythonpath
+
 import sys
 import optparse
-
-import _pythonpath
 
 from zope.component import getUtility
 from canonical.lp import initZopeless

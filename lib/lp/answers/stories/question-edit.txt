@@ -11,8 +11,13 @@ menu item. You need to be logged in to perform that action:
 
     >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
     >>> user_browser.getLink('Edit question').click()
-    >>> user_browser.url
-    '.../firefox/+question/2/+edit'
+    >>> print user_browser.url
+    http://answers.launchpad.dev/firefox/+question/2/+edit
+
+There is a cancel link should the user decide otherwise:
+
+    >>> print user_browser.getLink('Cancel').url
+    http://answers.launchpad.dev/firefox/+question/2
 
 When we post the form, we should be redirected back to the question page.
 
@@ -22,10 +27,10 @@ When we post the form, we should be redirected back to the question page.
     >>> user_browser.getControl('Description').value = description
     >>> summary = "Problem showing the SVG demo on W3C web site"
     >>> user_browser.getControl('Summary').value = summary
-    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('Save Changes').click()
 
-    >>> user_browser.url
-    '.../firefox/+question/2'
+    >>> print user_browser.url
+    http://answers.launchpad.dev/firefox/+question/2
 
 And viewing that page should show the updated information.
 
@@ -41,7 +46,7 @@ You can even modify the title and description of 'Answered' and
 
     >>> def print_question_status(browser):
     ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'question-details'))
+    ...         find_tag_by_id(browser.contents, 'registration'))
 
     >>> user_browser.open('http://launchpad.dev/ubuntu/+question/3')
     >>> print_question_status(user_browser)
@@ -61,7 +66,7 @@ Any logged in user can change the question source package on the
     >>> user_browser.getLink('Edit question').click()
     >>> user_browser.getControl(
     ...     name='field.target.package').value = 'linux-source-2.6.15'
-    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('Save Changes').click()
 
 Product questions ignore sourcepackage information if it is submitted:
 
@@ -69,7 +74,7 @@ Product questions ignore sourcepackage information if it is submitted:
     >>> user_browser.getLink('Edit question').click()
     >>> user_browser.getControl(
     ...     name='field.target.package').value = 'linux-source-2.6.15'
-    >>> user_browser.getControl('Continue').click()
+    >>> user_browser.getControl('Save Changes').click()
 
 
 == Changing Other Metadata ==
@@ -85,7 +90,7 @@ edit the Status Whiteboard using the 'Edit Question' page.
 
     >>> browser.getControl('Assignee').value = 'name16'
     >>> browser.getControl('Status Whiteboard').value = 'Some note'
-    >>> browser.getControl('Continue').click()
+    >>> browser.getControl('Save Changes').click()
 
     >>> soup = find_main_content(browser.contents)
     >>> print soup.first('b', text='Whiteboard:').findNext('td').renderContents()

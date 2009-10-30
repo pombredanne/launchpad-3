@@ -196,9 +196,6 @@ all the 'private' information is exposed.
     >>> empty_request = LaunchpadTestRequest(form={})
     >>> admin_view = getMultiAdapter((frog, empty_request), name="+index")
 
-    >>> print admin_view.context
-    <security proxied lp.soyuz.model.builder.Builder ...>
-
     >>> print admin_view.context.builderok
     True
 
@@ -218,36 +215,6 @@ all the 'private' information is exposed.
     ...     datetime.datetime.now(pytz.UTC) - datetime.timedelta(10))
     >>> print admin_view.current_build_duration
     10 days...
-
-When accessing the same view as a unprivileged user, No-Priv, the
-sensitive information is hidden (the context class is 'cloaked', see
-browser/builder.py for futher information on this) and the builder
-shows up as 'Building private build'.
-
-    >>> login('no-priv@canonical.com')
-    >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
-
-    >>> print nopriv_view.context
-    <lp.soyuz.browser.builder.HiddenBuilder ...>
-
-    >>> print nopriv_view.context.builderok
-    False
-
-    >>> print nopriv_view.context.currentjob
-    None
-
-    >>> print nopriv_view.context.failnotes
-    None
-
-    >>> print nopriv_view.context.status
-    Building private build
-
-    >>> print nopriv_view.current_build_duration
-    None
-
-XXX cprov 20080214: this is clearly a counterintuitive way to identify
-builders building private jobs. We will certainly have to fine-tune it
-before public release.
 
 Once the private job is gone, Frog 'real' details are exposed publicly
 again.

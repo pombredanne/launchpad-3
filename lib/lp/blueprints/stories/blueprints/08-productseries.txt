@@ -16,6 +16,8 @@ First we load the page to target to the series.
     >>> back_link = browser.getLink('Support Native SVG Objects')
     >>> back_link.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
+    >>> browser.getLink('Cancel').url
+    'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
 
 We can see two potential series candidates, the "trunk" and the "1.0" series.
 

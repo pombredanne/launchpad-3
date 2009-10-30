@@ -20,11 +20,11 @@ __all__ = [
 from zope.component import getUtility
 
 from lp.archivepublisher.deathrow import getDeathRow
-from lp.services.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadCronScript
 from lp.registry.interfaces.distribution import IDistributionSet
 
 
-class DeathRowProcessor(LaunchpadScript):
+class DeathRowProcessor(LaunchpadCronScript):
 
     def add_my_options(self):
         self.parser.add_option(

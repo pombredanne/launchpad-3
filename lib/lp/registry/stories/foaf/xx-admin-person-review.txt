@@ -11,7 +11,7 @@ their information.
     http://launchpad.dev/~salgado/+review
 
     >>> print admin_browser.title
-    Review Guilherme Salgado
+    Review person...
 
     >>> admin_browser.getControl(
     ...     'Display Name', index=0).value = 'The one and only Salgado'
@@ -32,7 +32,7 @@ The review page has a link to the review account page.
 
     >>> link.click()
     >>> print admin_browser.title
-    Review The one and only Salgado
+    Review person's account...
 
 The +reviewaccount page displays account information that is normally
 hidden from the UI.
@@ -67,7 +67,7 @@ Launchpad, and can change the account too.
     >>> admin_browser.getLink('Administer').click()
     >>> admin_browser.getLink(url='+reviewaccount').click()
     >>> print admin_browser.title
-    Review The one and only Salgado
+    Review person's account...
 
     >>> control = admin_browser.getControl(name='field.status_comment')
     >>> print control.value

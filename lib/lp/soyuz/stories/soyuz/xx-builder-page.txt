@@ -17,7 +17,7 @@ builder state. In the sampledata, the builder 'bob' is building
     >>> print extract_text(find_portlet(
     ...     anon_browser.contents, 'View full history Current status'))
     View full history Current status
-    i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
+    Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
     Started ... ago.
     Buildlog
     Dummy sampledata entry, not processing
@@ -31,7 +31,7 @@ outdated information.
     >>> print extract_text(find_portlet(
     ...     user_browser.contents, 'View full history Current status'))
     View full history Current status
-    i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
+    Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
     Started ... ago.
     Buildlog
     Dummy sampledata entry, not processing
@@ -114,7 +114,7 @@ Celso changes the builder title and the change takes effect immediately.
     # We use backslashreplace because the page title includes smart quotes.
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> print backslashreplace(cprov_browser.title)
-    Change details for builder \u201cBob The Builder\u201d
+    Change details for...
 
     >>> title = cprov_browser.getControl(name="field.title")
     >>> original_title = title.value
@@ -124,7 +124,7 @@ Celso changes the builder title and the change takes effect immediately.
     # Submitting the change details form redirects to the index page
     # for the builder.
     >>> print backslashreplace(cprov_browser.title)
-    Builder \u201cDonkey builder\u201d
+    Donkey builder : Build Farm
 
 Then restores it once he realises his mistake.
 
@@ -196,7 +196,7 @@ transient failures or is used for another purpose.
     >>> cprov_browser.open('http://launchpad.dev/+builds')
     >>> cprov_browser.getLink('bob').click()
     >>> print backslashreplace(cprov_browser.title)
-    Builder \u201cBob The Builder\u201d
+    Bob The Builder : Build Farm
 
 Celso can toggle the active bit using the Change details form.
 
@@ -237,7 +237,7 @@ But Celso can access the deactivated builder via its URL.
 
     >>> cprov_browser.open('http://launchpad.dev/+builds/bob')
     >>> print backslashreplace(cprov_browser.title)
-    Builder \u201cBob The Builder\u201d
+    Bob The Builder : Build Farm
 
 
 == Actions permissions ==

@@ -4,7 +4,9 @@
 """Helper functions for code testing live here."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'make_linked_package_branch',
+    ]
 
 
 from datetime import timedelta
@@ -19,6 +21,25 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import time_counter
+
+
+def make_linked_package_branch(factory, distribution=None,
+                               sourcepackagename=None):
+    """Make a new package branch and make it official."""
+    distro_series = factory.makeDistroRelease(distribution)
+    source_package = factory.makeSourcePackage(
+        sourcepackagename=sourcepackagename, distroseries=distro_series)
+    branch = factory.makePackageBranch(sourcepackage=source_package)
+    pocket = PackagePublishingPocket.RELEASE
+    # It is possible for the param to be None, so reset to the factory
+    # generated one.
+    sourcepackagename = source_package.sourcepackagename
+    # We don't care about who can make things official, so get rid of the
+    # security proxy.
+    series_set = removeSecurityProxy(getUtility(IMakeOfficialBranchLinks))
+    series_set.new(
+        distro_series, pocket, sourcepackagename, branch, branch.owner)
+    return branch
 
 
 def consistent_branch_names():

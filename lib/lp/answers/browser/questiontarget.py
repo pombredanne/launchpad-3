@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AnswersVHostBreadcrumb',
     'AskAQuestionButtonView',
     'ManageAnswerContactView',
     'SearchQuestionsView',
@@ -108,6 +109,10 @@ class UserSupportLanguagesMixin:
 class QuestionCollectionLatestQuestionsView:
     """View used to display the latest questions on a question target."""
 
+    @property
+    def page_title(self):
+        return 'Latest questions for %s' % (self.context.displayname)
+
     @cachedproperty
     def getLatestQuestions(self, quantity=5):
         """Return <quantity> latest questions created for this target. This
@@ -149,6 +154,39 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                   orientation='horizontal')
 
     template = ViewPageTemplateFile('../templates/question-listing.pt')
+
+    @property
+    def page_title(self):
+        """Heading to display above the search results."""
+
+        if IQuestionSet.providedBy(self.context):
+            return _(
+                'Questions matching "${search_text}"',
+                mapping=dict(search_text=self.search_text))
+
+        replacements = dict(
+            context=self.context.displayname,
+            search_text=self.search_text)
+        # Check if the set of selected status has a special title.
+        status_set_title = self.status_title_map.get(
+            frozenset(self.status_filter))
+        if status_set_title:
+            replacements['status'] = status_set_title
+            if self.search_text:
+                return _('${status} questions matching "${search_text}" '
+                         'for ${context}', mapping=replacements)
+            else:
+                return _('${status} questions for ${context}',
+                         mapping=replacements)
+        else:
+            if self.search_text:
+                return _('Questions matching "${search_text}" for '
+                         '${context}', mapping=replacements)
+            else:
+                return _('Questions for ${context}',
+                         mapping=replacements)
+
+    label = page_title
 
     @property
     def display_target_column(self):
@@ -226,36 +264,6 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     def context_is_project(self):
         """Return True when the context is a project."""
         return IProject.providedBy(self.context)
-
-    @property
-    def pagetitle(self):
-        """Page title."""
-        return self.pageheading
-
-    @property
-    def pageheading(self):
-        """Heading to display above the search results."""
-        replacements = dict(
-            context=self.context.displayname,
-            search_text=self.search_text)
-        # Check if the set of selected status has a special title.
-        status_set_title = self.status_title_map.get(
-            frozenset(self.status_filter))
-        if status_set_title:
-            replacements['status'] = status_set_title
-            if self.search_text:
-                return _('${status} questions matching "${search_text}" '
-                         'for ${context}', mapping=replacements)
-            else:
-                return _('${status} questions for ${context}',
-                         mapping=replacements)
-        else:
-            if self.search_text:
-                return _('Questions matching "${search_text}" for '
-                         '${context}', mapping=replacements)
-            else:
-                return _('Questions for ${context}',
-                         mapping=replacements)
 
     @property
     def unspoken_languages(self):
@@ -447,7 +455,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     matching_faqs_count = 0
 
     @property
-    def pageheading(self):
+    def page_title(self):
         """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions you asked matching "${search_text}" for '
@@ -457,6 +465,8 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
         else:
             return _('Questions you asked about ${context}',
                      mapping={'context': self.context.displayname})
+
+    label = page_title
 
     @property
     def empty_listing_message(self):
@@ -486,7 +496,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     matching_faqs_count = 0
 
     @property
-    def pageheading(self):
+    def page_title(self):
         """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions matching "${search_text}" needing your '
@@ -496,6 +506,8 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
         else:
             return _('Questions needing your attention for ${context}',
                      mapping={'context': self.context.displayname})
+
+    label = page_title
 
     @property
     def empty_listing_message(self):
@@ -544,7 +556,7 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
                 canonical_url(self.context, rootsite='answers'))
 
     @property
-    def pageheading(self):
+    def page_title(self):
         """See `SearchQuestionsView`."""
         mapping = dict(context=self.context.displayname,
                        search_text=self.search_text,
@@ -556,6 +568,8 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
         else:
             return _('${language} questions in ${context}',
                       mapping=mapping)
+
+    label = page_title
 
     @property
     def empty_listing_message(self):
@@ -594,6 +608,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
     def page_title(self):
         return 'Answer contact for %s' % self.context.title
 
+    label = page_title
     custom_widget('answer_contact_teams', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
@@ -829,17 +844,6 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
         return Link('+answer-contact', text, icon='edit')
 
 
-class QuestionTargetOnAnswersVHostBreadcrumb(Breadcrumb):
+class AnswersVHostBreadcrumb(Breadcrumb):
     rootsite = 'answers'
-
-    @property
-    def text(self):
-        return 'Questions for %s' % self.context.title
-
-
-class PersonOnAnswersVHostBreadcrumb(Breadcrumb):
-    rootsite = 'answers'
-
-    @property
-    def text(self):
-        return 'Questions involving %s' % self.context.displayname
+    text = 'Questions'

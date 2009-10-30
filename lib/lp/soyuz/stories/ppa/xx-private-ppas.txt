@@ -117,15 +117,15 @@ one because he is not a member of that team, nor an admin.
     >>> cprov_browser.getLink("PPA for Celso Providelo").click()
 
     >>> print cprov_browser.title
-    PPA for Celso Providelo
+    PPA for Celso Providelo : Celso Providelo
 
 When a non-privileged user browses to a profile page for a person or
 team that has a private PPA for which he is not authorised to see, the
 link to the PPA page is not present.
 
     >>> browser.open("http://launchpad.dev/~landscape-developers")
-    >>> print_tag_with_id(browser.contents, 'ppas')
-    Personal package archives
+    >>> print find_tag_by_id(browser.contents, 'ppas')
+    None
 
     >>> browser.getLink("PPA for Landscape Developers").click()
     Traceback (most recent call last):

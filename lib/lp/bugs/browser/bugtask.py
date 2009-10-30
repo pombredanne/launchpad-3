@@ -91,7 +91,9 @@ from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, enabled_with_permission,
     GetitemNavigation, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, NavigationMenu, redirection, stepthrough)
+from canonical.lazr.utils import smartquote
 from lazr.uri import URI
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
 from lp.bugs.interfaces.bugactivity import IBugActivity
@@ -113,7 +115,8 @@ from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, IStructuralObjectPresentation)
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -152,8 +155,8 @@ from canonical.widgets.bugtask import (
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.lazrjs import (
-    InlineEditPickerWidget, TextAreaEditorWidget,
-    TextLineEditorWidget, vocabulary_to_choice_edit_items)
+    TextAreaEditorWidget, TextLineEditorWidget,
+    vocabulary_to_choice_edit_items)
 from canonical.widgets.project import ProjectScopeWidget
 
 from lp.registry.vocabularies import MilestoneVocabulary
@@ -491,6 +494,8 @@ class BugTaskTextView(LaunchpadView):
 class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
     """View class for presenting information about an `IBugTask`."""
 
+    override_title_breadcrumbs = True
+
     def __init__(self, context, request):
         LaunchpadView.__init__(self, context, request)
 
@@ -501,6 +506,12 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             self.context = getUtility(ILaunchBag).bugtask
         else:
             self.context = context
+
+    @property
+    def page_title(self):
+        return smartquote('%s: "%s"') % (
+            IStructuralObjectPresentation(self.context).getMainHeading(),
+            self.context.bug.title)
 
     def initialize(self):
         """Set up the needed widgets."""
@@ -1796,6 +1807,13 @@ class BugTaskListingItem:
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
 
+    @property
+    def last_significant_change_date(self):
+        """The date of the last significant change."""
+        return (self.bugtask.date_closed or self.bugtask.date_fix_committed or
+                self.bugtask.date_inprogress or self.bugtask.date_left_new or
+                self.bugtask.datecreated)
+
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
@@ -1943,7 +1961,8 @@ class BugTaskSearchListingMenu(NavigationMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def securitycontact(self):
-        return Link('+securitycontact', 'Change security contact', icon='edit')
+        return Link(
+            '+securitycontact', 'Change security contact', icon='edit')
 
     def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
@@ -2676,6 +2695,63 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         url = "%s/+expirable-bugs" % canonical_url(self.context)
         return dict(count=count, url=url, label=label)
 
+    @property
+    def new_bugs_info(self):
+        """Return a dict with new bugs info."""
+        return dict(
+            count=self.context.new_bugtasks.count,
+            url=get_buglisting_search_filter_url(
+                status=BugTaskStatus.NEW.title))
+
+    @property
+    def open_bugs_info(self):
+        """Return a dict with open bugs info."""
+        return dict(
+            count=self.context.open_bugtasks.count,
+            url=canonical_url(
+                self.context, rootsite='bugs', view_name='+bugs'))
+
+    @property
+    def critical_bugs_info(self):
+        """Return a dict with critical bugs info."""
+        return dict(
+            count=self.context.critical_bugtasks.count,
+            url=get_buglisting_search_filter_url(
+                status=[status.title for status
+                        in UNRESOLVED_BUGTASK_STATUSES],
+                importance=BugTaskImportance.CRITICAL.title))
+
+    @property
+    def my_bugs_info(self):
+        """Return a dict with info on bugs assigned to the user, or None."""
+        if self.user:
+            return dict(
+                count=self.context.searchTasks(
+                    BugTaskSearchParams(
+                        user=self.user, assignee=self.user,
+                        status=any(*UNRESOLVED_BUGTASK_STATUSES),
+                        omit_dupes=True)).count(),
+                url=get_buglisting_search_filter_url(assignee=self.user.name))
+        else:
+            return None
+
+    @property
+    def hot_bugtasks(self):
+        """Return the 10 most recently updated bugtasks for this target."""
+        params = BugTaskSearchParams(
+            orderby="-date_last_updated", omit_dupes=True, user=self.user)
+        return list(self.context.searchTasks(params)[:10])
+
+    @property
+    def addquestion_url(self):
+        """Return the URL for the +addquestion view for the context."""
+        if IQuestionTarget.providedBy(self.context):
+            return canonical_url(
+                self.context, rootsite='answers', view_name='+addquestion')
+        else:
+            return None
+
+
 
 class BugNominationsView(BugTaskSearchListingView):
     """View for accepting/declining bug nominations."""
@@ -2872,6 +2948,7 @@ class BugTasksAndNominationsView(LaunchpadView):
         # Cache some values, so that we don't have to recalculate them
         # for each bug task.
         self.bugtasks = list(self.context.bugtasks)
+        self.many_bugtasks = len(self.bugtasks) >= 10
         self.cached_milestone_source = CachedMilestoneSourceFactory()
         self.user_is_subscribed = self.context.isSubscribed(self.user)
         distro_packages = {}
@@ -2936,6 +3013,8 @@ class BugTasksAndNominationsView(LaunchpadView):
             (context, self.request), name='+edit-form')
         view.edit_view.milestone_source = self.cached_milestone_source
         view.edit_view.user_is_subscribed = self.user_is_subscribed
+        # Hint to optimize when there are many bugtasks.
+        view.many_bugtasks = self.many_bugtasks
         return view
 
     def getBugTaskAndNominationViews(self):
@@ -3047,6 +3126,7 @@ class BugTaskTableRowView(LaunchpadView):
     is_conjoined_slave = None
     is_converted_to_question = None
     target_link_title = None
+    many_bugtasks = False
 
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
@@ -3245,6 +3325,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
                        "importance", "status"]
     schema = IFrontPageBugTaskSearch
     custom_widget('scope', ProjectScopeWidget)
+    page_title = 'Search'
 
     def initialize(self):
         """Initialize the view for the request."""
@@ -3277,6 +3358,10 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     def getSearchPageHeading(self):
         """Return the heading to search all Bugs."""
         return "Search all bug reports"
+
+    @property
+    def label(self):
+        return self.getSearchPageHeading()
 
 
 class BugTaskPrivacyAdapter:

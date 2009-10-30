@@ -3,24 +3,21 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
 <body>
 
-<metal:portlets fill-slot="portlets">
+<metal:side fill-slot="side">
+  <div tal:replace="structure context/@@+global-actions" />
   <div tal:replace="structure context/@@+portlet-answercontacts|nothing" />
   <div tal:replace="structure context/@@+portlet-details|nothing" />
-</metal:portlets>
+</metal:side>
 
 
 <div metal:fill-slot="main"
      tal:define="faqs view/getMatchingFAQs">
-  <h1 i18n:translate="" tal:content="view/heading">FAQs</h1>
 
   <div>
     <form method="get" id="question-search-form" action=""
@@ -67,19 +64,5 @@
   </p>
 </div>
 
-<metal:help fill-slot="help">
-  <p>This listing displays the FAQs in a particular project. 
-  </p>
-  <p>You can enter keywords and hit the <b>Search</b> button to restrict the
-    listing to FAQs matching those keywords.
-  </p>
-  <p>If you hover the mouse over a FAQ's title, the beginning of its content
-    will pop-up after a few seconds.
-  </p>
-  <p>
-    The project owner and answer contacts can add a new FAQ from the
-    'Create a new FAQ' link.
-  </p>
-</metal:help>
 </body>
 </html>

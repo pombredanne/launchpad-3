@@ -10,13 +10,12 @@ home page.
     >>> browser.open('http://launchpad.dev/~ubuntu-team')
     >>> browser.getLink('Add one of my teams').click()
     >>> browser.title
-    'Propose/add one of your teams to another one'
+    'Propose/add one of your teams to another one...
 
 For moderated teams, it's only possible to propose another team as a member.
 The proposal will have to be reviewed by a team administrator.
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'candidates'))
-    Propose these teams as members
     This is a moderated team, so one of its administrators will have
     to review any memberships you propose.
     Launchpad Administrators

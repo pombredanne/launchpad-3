@@ -15,8 +15,9 @@ Here are some imports we need to get this test running.
     ...     ITranslationImportQueue, RosettaImportStatus)
     >>> from lp.registry.model.sourcepackagename import SourcePackageName
     >>> from lp.translations.model.potemplate import POTemplateSubset
-    >>> from lp.translations.scripts.po_import import (
-    ...     AutoApproveProcess, ImportProcess)
+    >>> from lp.translations.scripts.po_import import TranslationsImport
+    >>> from lp.translations.scripts.import_queue_gardener import (
+    ...     ImportQueueGardener)
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
@@ -230,15 +231,16 @@ Let's override the default good path with one we know is the right one.
 
     >>> pofile.setPathIfUnique(u'po/cy.po')
 
-It's newly created, so it has no translated messages yet.
+It's newly created, so it has only one translation which is the translation
+credits.
 
     >>> pofile.getPOTMsgSetTranslated().count()
-    0
+    1
 
 And the statistics reflect it.
 
-    >>> pofile.currentCount()
-    0
+    >>> pofile.rosettaCount()
+    1
 
 
 === Import With Errors ===
@@ -324,9 +326,9 @@ And the statistics reflect it.
 Here's a current message: i.e. it has a corresponding current message
 set in the PO template.
 
-    >>> message = pofile.translation_messages[0]
-    >>> message.potmsgset.msgid_singular.msgid
-    u'foo'
+    >>> message = pofile.translation_messages[1]
+    >>> print message.potmsgset.singular_text
+    foo
 
 And should be accepted by our validator.
 
@@ -385,7 +387,7 @@ doesn't send it out for published uploads (indicated with subject of None).
     >>> print body
     Hello Mark Shuttleworth,
     <BLANKLINE>
-    On ..., you uploaded 4
+    On ..., you uploaded 5
     Welsh (cy) translations for firefox in Mozilla Firefox trunk in Launchpad.
     <BLANKLINE>
     There were problems with 1 of these translations.
@@ -398,7 +400,7 @@ doesn't send it out for published uploads (indicated with subject of None).
     <BLANKLINE>
     <BLANKLINE>
     <BLANKLINE>
-    The other 3 translations have been accepted.
+    The other 4 translations have been accepted.
     <BLANKLINE>
     ...
 
@@ -522,16 +524,17 @@ We must approve the entry to be able to import it.
 
     >>> entry.setStatus(RosettaImportStatus.APPROVED)
 
-At this point, the statistics note that we have 3 translations coming
-from imported files (currentCount), and none updated or added in
-Launchpad Translations.
+At this point, the statistics note that we have 2 translations coming
+from imported files (currentCount), and none updated in Launchpad
+Translations. The translation credits message is counted as translated in
+rosetta.
 
     >>> pofile.currentCount()
     2
     >>> pofile.updatesCount()
     0
     >>> pofile.rosettaCount()
-    0
+    1
 
 We do the import.
 
@@ -643,12 +646,15 @@ And run the import script.
 
     >>> import email
     >>> from lp.services.mail import stub
-    >>> process = ImportProcess(transaction, FakeLogger())
-    >>> process.run()
+    >>> process = TranslationsImport('poimport', test_args=[])
+    >>> process.logger = FakeLogger()
+    >>> process.main()
+    DEBUG   Starting the import process.
     INFO    Importing: Template "firefox" in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Import requests completed.
+    DEBUG   Finished the import process.
 
 The import script also generates an email similar to the ones we saw
 composed before, but also sends it.
@@ -673,7 +679,7 @@ composed before, but also sends it.
     <BLANKLINE>
     The Launchpad team
 
-Now the auto-approval script runs. This can happen anytime, since it's
+Now the queue gardener runs. This can happen anytime, since it's
 asynchronous to the po-import script. The script tries to approve any
 entries that have not been approved, but look like they could be,
 without human intervention. This involves a bit of guesswork about what
@@ -682,9 +688,13 @@ that it thinks should be blocked, and also purges deleted or completed
 entries from the queue. Running at this point, all it does is purge the
 two hand-approved Welsh translations that have just been imported.
 
-    >>> process = AutoApproveProcess(transaction, FakeLogger())
-    >>> process.run()
-    INFO    Removed 2 entries from the queue.
+    >>> import logging
+    >>> from canonical.launchpad.ftests.logger import MockLogger
+    >>> process = ImportQueueGardener('approver', test_args=[])
+    >>> process.logger = MockLogger()
+    >>> process.logger.setLevel(logging.INFO)
+    >>> process.main()
+    log>    Removed 2 entries from the queue.
     >>> transaction.commit()
 
 If users upload two versions of the same file, they are imported in the
@@ -761,13 +771,15 @@ It's in the queue now.
     >>> print entry.status.name
     NEEDS_REVIEW
 
-The auto-approval script runs again. This time it sees the two
-submitted translations and approves them for import based on some
-heuristic intelligence.
+The queue gardener runs again. This time it sees the two submitted
+translations and approves them for import based on some heuristic
+intelligence.
 
-    >>> process = AutoApproveProcess(transaction, FakeLogger())
-    >>> process.run()
-    INFO    The automatic approval system approved some entries.
+    >>> process = ImportQueueGardener('approver', test_args=[])
+    >>> process.logger = MockLogger()
+    >>> process.logger.setLevel(logging.INFO)
+    >>> process.main()
+    log>    The automatic approval system approved some entries.
     >>> print entry.status.name
     APPROVED
     >>> syncUpdate(entry)
@@ -775,11 +787,14 @@ heuristic intelligence.
 Now that these submissions have been approved, the next run of the
 import script picks them up and processes them.
 
-    >>> process = ImportProcess(transaction, FakeLogger())
-    >>> process.run()
+    >>> process = TranslationsImport('poimport', test_args=[])
+    >>> process.logger = FakeLogger()
+    >>> process.main()
+    DEBUG   Starting the import process.
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) ... of firefox in Mozilla Firefox trunk
     INFO    Import requests completed.
+    DEBUG   Finished the import process.
 
     >>> print entry.status.name
     IMPORTED
@@ -859,8 +874,10 @@ So if we try to import now, nothing happens. Our request remains on the
 queue, but doesn't become a candidate for processing until warty
 imports are resumed.
 
-    >>> process = ImportProcess(transaction, FakeLogger())
-    >>> process.run()
+    >>> process = TranslationsImport('poimport', test_args=[])
+    >>> process.logger = FakeLogger()
+    >>> process.main()
+    DEBUG Starting the import process.
     INFO No requests pending.
 
     >>> print entry.status.name
@@ -1032,10 +1049,13 @@ The import fails.  The importer would like to send Kermit an email about
 this, but is unable to.  This is unfortunate, but does not faze the
 importer.  It completes normally.
 
-    >>> process = ImportProcess(transaction, FakeLogger())
-    >>> process.run()
+    >>> process = TranslationsImport('poimport', test_args=[])
+    >>> process.logger = FakeLogger()
+    >>> process.main()
+    DEBUG Starting the import process.
     INFO Importing: Lao ...
     INFO Import requests completed.
+    DEBUG Finished the import process.
 
     >>> print entry.status.name
     FAILED

@@ -35,6 +35,5 @@ Any logged-in user can edit a bugtask.
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open("http://launchpad.dev/firefox/+bug/6/+editstatus")
-    >>> browser.title
-    'Bug #6 in Mozilla Firefox...'
-
+    >>> print browser.title
+    Bug #6 in Mozilla Firefox...

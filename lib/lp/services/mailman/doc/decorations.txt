@@ -117,8 +117,7 @@ This url should exactly match the link given on the team's overview page.
     >>> browser = Browser('no-priv@canonical.com:test')
     >>> browser.open('http://launchpad.dev:8085/~itest-one')
     >>> browser.getLink(id='mailing-list-archive')
-    <Link text='Mailing list archive'
-          url='http://lists.launchpad.dev/itest-one'>
+    <Link text='View archive' url='http://lists.launchpad.dev/itest-one'>
     >>> print message['list-archive']
     <http://lists.launchpad.dev/itest-one>
 

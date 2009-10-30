@@ -28,11 +28,11 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from zope.event import notify
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Bytes, Choice, Datetime, Int, Object, Text, TextLine)
+    Bytes, Bool, Choice, Datetime, Int, Object, Text, TextLine)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice, Summary, Whiteboard
-from canonical.launchpad.interfaces import IBug
+from canonical.launchpad.interfaces import IBug, IPrivacy
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
@@ -41,9 +41,10 @@ from lp.services.job.interfaces.job import IJob, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, operation_parameters,
-    operation_returns_entry, rename_parameters_as, REQUEST_USER)
+    call_with, export_as_webservice_entry, export_factory_operation,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_entry, rename_parameters_as,
+    REQUEST_USER)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -85,7 +86,7 @@ BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
     )
 
 
-class IBranchMergeProposal(Interface):
+class IBranchMergeProposal(IPrivacy):
     """Branch merge proposals show intent of landing one branch on another."""
 
     export_as_webservice_entry()
@@ -113,13 +114,22 @@ class IBranchMergeProposal(Interface):
             description=_(
                 "The branch that the source branch will be merged into.")))
 
-    dependent_branch = exported(
+    prerequisite_branch = exported(
         Reference(
             title=_('Dependent Branch'),
             schema=IBranch, required=False, readonly=True,
             description=_("The branch that the source branch branched from. "
                           "If this is the same as the target branch, then "
                           "leave this field blank.")))
+
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. The value is determined by the involved branches.
+    private = exported(
+        Bool(
+            title=_("Proposal is confidential"), required=False,
+            readonly=True, default=False,
+            description=_(
+                "If True, this proposal is visible only to subscribers.")))
 
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
@@ -161,7 +171,8 @@ class IBranchMergeProposal(Interface):
         Summary(
             title=_("Commit Message"), required=False,
             description=_("The commit message that should be used when "
-                          "merging the source branch.")))
+                          "merging the source branch."),
+            strip_text=True))
 
     queue_position = exported(
         Int(
@@ -445,7 +456,8 @@ class IBranchMergeProposal(Interface):
         vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface))
     @call_with(owner=REQUEST_USER)
-    @export_write_operation()
+    # ICodeReviewComment supplied as Interface to avoid circular imports.
+    @export_factory_operation(Interface, [])
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None):
         """Create an ICodeReviewComment associated with this merge proposal.
@@ -473,11 +485,11 @@ class IBranchMergeProposal(Interface):
 
     @operation_parameters(
         diff_content=Bytes(), source_revision_id=TextLine(),
-        target_revision_id=TextLine(), dependent_revision_id=TextLine(),
+        target_revision_id=TextLine(), prerequisite_revision_id=TextLine(),
         conflicts=Text())
     @export_write_operation()
     def updatePreviewDiff(diff_content, source_revision_id,
-                          target_revision_id, dependent_revision_id=None,
+                          target_revision_id, prerequisite_revision_id=None,
                           conflicts=None):
         """Update the preview diff for this proposal.
 
@@ -490,8 +502,8 @@ class IBranchMergeProposal(Interface):
             source branch.
         :param target_revision_id: The revision id that was used from the
             target branch.
-        :param dependent_revision_id: The revision id that was used from the
-            dependent branch.
+        :param prerequisite_revision_id: The revision id that was used from the
+            prerequisite branch.
         :param conflicts: Text describing the conflicts if any.
         """
 

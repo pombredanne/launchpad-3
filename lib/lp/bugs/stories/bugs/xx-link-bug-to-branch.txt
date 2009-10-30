@@ -11,9 +11,7 @@ link a branch to a bug.
     http://bugs.launchpad.dev/firefox/+bug/1/+addbranch
     >>> print extract_text(find_tag_by_id(
     ...    user_browser.contents, 'maincontent'))
-    Bug #1 in Mozilla Firefox: "Firefox does not support SVG"
-    ...
-    Add a branch to bug #1
+    Add a branch to bug #1...
     Linking a Bazaar branch to a bug allows you to notify others of
     work to fix this bug.
     ...
@@ -30,24 +28,13 @@ a related branch.
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1
-    >>> print extract_text(find_tag_by_id(
-    ...    user_browser.contents, 'mainarea'))
+    >>> print extract_text(user_browser.contents)
+    Bug #1...
     Successfully registered branch main for this bug.
     ...
     Related branches
     lp://dev/~name12/firefox/main (Development)
     ...
-
-The text "Link a related branch" has now changed to "Link another branch".
-
-    >>> user_browser.getLink('Link a related branch')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-    >>> user_browser.getLink('Link another branch')
-    <Link text='Link another branch'
-        url='http://bugs.launchpad.dev/firefox/+bug/1/+addbranch'>
 
 We can delete existing links between a bug and a branch.
 
@@ -57,8 +44,7 @@ We can delete existing links between a bug and a branch.
     >>> link.click()
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'maincontent'))
-    Mozilla Firefox...
-    Remove bug branch link
+    Remove bug branch link...
     Are you sure you want to remove the link between Bug #1: Firefox does
     not support SVG and the branch lp://dev/~name12/firefox/main?
     ...

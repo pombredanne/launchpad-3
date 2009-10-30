@@ -12,7 +12,7 @@ The product page has a link to help translate it.
     ...     url='http://translations.launchpad.dev/evolution')
     >>> link.click()
     >>> print user_browser.title
-    Translations of The Evolution Groupware Application in Launchpad
+    Translations : Evolution
 
 
 Links and Programming languages
@@ -336,5 +336,3 @@ home page.
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'aliases'))
     Also known as: iceweasel, snowchicken
-
-

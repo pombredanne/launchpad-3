@@ -5,6 +5,7 @@ Remove this section when the old templates and these declarations are gone.
 
 */
 #maincontent {
+    clear: both;
     float: left;
     width: 100%;
     margin-right: -25%;
@@ -207,7 +208,7 @@ span.nolink {
     }
 .footer {
     clear: both;
-    margin-top: 2em;
+    margin-top: 4em;
     padding-top: 0.5em;
     }
 .footer .lp-arcana {
@@ -217,6 +218,7 @@ span.nolink {
     -webkit-border-radius: 3px 3px 0 0;
     -khtml-border-radius: 3px 3px 0 0;
     border-radius: 3px 3px 0 0;
+    height:2em;
     }
 .footer .lp-arcana img {
     vertical-align: middle;
@@ -228,16 +230,26 @@ span.nolink {
     margin: 3em 3em 1em 3em;
     text-align: center;
     }
+.footer .lp-branding {
+    float: left;
+    }
+.portlet-border {
+    border-top: 1px solid #EBEBEB;
+    padding: 1em 0;
+    }
 .portlet, .aside {
     clear: both;
-    border-top: 1px solid #d6d6d6;
-    padding: 0.5em 0;
+    border-top: 1px solid #EBEBEB;
+    padding: 1em 0;
     }
 .top-portlet {
     padding: 0 0 0.5em 0;
     margin: 0 0 1em;
     }
-
+.full-page-width {
+    z-index: 10;
+    width: 131%;
+    }
 .warning.message {
     margin-top: 17px;
     }
@@ -271,6 +283,7 @@ Pixels  Percent
 Use the following 'application' colors for table column headings,
 app stats etc.
 
+Launchpad-Gold: #F8C300
 Answers: #3840BE
 Blueprints: #3594BB
 Bugs: #9F2B33
@@ -297,12 +310,14 @@ strong.registry-stat {
 strong.translations-stat {
     color: #BB3A84;
     }
+.launchpad-gold {
+    color: #F8C300;
+    }
 
 
 /* Default text presentation */
 html, body {
-    font-family: bitstream vera sans, arial, helvetica, clean, sans-serif;
-    font-family: sans-serif;
+    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
     font-size: 93%;
     }
 body.private {
@@ -341,7 +356,8 @@ li {
     padding-bottom: .3em;
     }
 dt {
-    margin-bottom: .1em;
+    margin-bottom: .3em;
+    margin-top: 0.5em;
     }
 dd {
     margin-bottom: .8em;
@@ -354,6 +370,9 @@ thead th, tr.thead th {
     vertical-align: bottom;
     }
 
+form {
+    margin-bottom: 1em;
+}
 form h1 {
     margin-bottom: 1em;
     }
@@ -363,6 +382,9 @@ form table th, form table td {
     }
 form table tbody th {
     font-weight: bold;
+    }
+input[type='image'] {
+    vertical-align: middle;
     }
 em {
     font-style: italic;
@@ -430,6 +452,19 @@ li .registered {
     display: inline;
     padding: 0 1.5em 0 0;
     }
+.table-actions:nth-child(2) {
+    /* text-align only works here because the <li> also has the
+       style display:inline.
+    */
+    text-align: right;
+    }
+.table-actions {
+    margin: 1em 0 0 0;
+    }
+.table-actions li {
+    display: inline;
+    padding: 0 1.5em 0 0;
+    }
 .subordinate {
     margin-left: 4em;
     }
@@ -478,7 +513,6 @@ p.search-results {
 /* == Watermark heading styles */
 div.watermark-apps-portlet {
     padding-bottom:1em;
-    border-bottom: 1px solid #d6d6d6;
 }
 div.watermark-apps-portlet img {
     float: left;
@@ -529,11 +563,24 @@ div.watermark-apps-portlet h1 {
     color: #747474;
 }
 
+/* Facet menu, a.k.a. application tabs */
+.facetmenu {
+    width: 100%;
+    white-space: nowrap;
+}
+/* Registering slot */
+.registering {
+    float: right;
+    font-size: 85%;
+    color: #666;
+    position: relative;
+    top: 2em;
+}
+
 /* Side content exceptions */
 .side {
     padding: 0.5em;
     color: #484848;
-    background: #f3f3f3;
     }
 .side .portlet {
     width: 90%;
@@ -669,9 +716,9 @@ ul.super-add-action li a {
     margin-top: -2px;
     }
 
-/* For the Latest updates portlet 
+/* For the Latest updates portlet
  * at https://launchpad.dev/~cprov/+archive/ppa */
-ul.latest-ppa-updates .duration {
+ul.latest-ppa-updates .duration, ul.latest-ppa-updates .build-details {
     font-size: 75%;
 }
 ul.latest-ppa-updates li {
@@ -712,11 +759,22 @@ pre.wrap {
 
 /* ==== Listing tables ==== */
 
-table.listing thead {
-  font-size: 116%;
-}
 table.listing th {
-  font-weight: bold;
+    font-weight: bold;
+}
+table.narrow-listing {
+    width: 45em;
+}
+/* ~person/+karma */
+table.cozy-listing {
+    width: 20em;
+    background-color: #fff;
+    border: 1px solid #d2d2d2;
+    border-bottom: 1px solid #d2d2d2;
+}
+table.cozy-listing td {
+    border: 1px #d2d2d2;
+    border-style: dotted none none none;
 }
 
 ul.language, li.language             {
@@ -728,32 +786,32 @@ ul.language, li.language             {
 /* ==== Translations hand-made forms ==== */
 
 form.translations div.fields {
-  padding: 1em;
+    padding: 1em;
 }
 
 form.translations div.actions {
-  padding: 1em;
-  text-align: right;
-  clear:both;
+    padding: 1em;
+    text-align: left;
+    clear:both;
 }
 
 form.translations input {
-  padding-left: 0.5em;
-  padding-right: 0.5em;
+    padding-left: 0.5em;
+    padding-right: 0.5em;
 }
 
 form.translations select {
-  margin-left: 0.5em;
-  padding-right: 0.5em;
+    margin-left: 0.5em;
+    padding-right: 0.5em;
 }
 
 form.translations label {
-  padding-left: 0.5em;
-  padding-right: 1em;
+    padding-left: 0.5em;
+    padding-right: 1em;
 }
 
 form.translations .listbox label {
-  padding: 2px 1em 2px 2px;
+    padding: 2px 1em 2px 2px;
 }
 
 /* Provide top-alignment for radio boxes and longer explanations
@@ -764,23 +822,180 @@ form.translations .listbox label {
  *   https://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+export
  */
 form.translations div.alignment .content {
-  float:left;
+    float:left;
 }
 form.translations div.alignment .selector {
-  margin-right: 0.5em;
-  float: left;
-  clear: both;
+    margin-right: 0.5em;
+    float: left;
+    clear: both;
 }
 form.translations div.alignment .content label {
-  padding: 0px;
-  margin: 0px;
-  font-weight: bold;
+    padding: 0px;
+    margin: 0px;
+    font-weight: bold;
 }
 form.translations div.alignment .secondary label {
-  font-weight: normal;
-  padding: 2px 1em 2px 2px;
+    font-weight: normal;
+    padding: 2px 1em 2px 2px;
 }
 
-table.narrow-listing {
-  width: 45em;
+/* Translations statistics and legend.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+lang/es
+ *   https://translations.launchpad.dev/evolution/trunk/+lang/es
+ */
+
+div.translations-legend {
+    padding-top: 2em;
+    padding-bottom: 1em;
+}
+table.translation-stats td {
+    text-align:center;
+}
+table.translation-stats td.template-name {
+    text-align:left;
+}
+table.translation-stats tfoot td,
+table.translation-stats tfoot th {
+    background-color: #f7f7f7;
+    border: 0px;
+    border-top: 2px solid #d2d2d2;
+    border-bottom: 2px solid #d2d2d2;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    font-weight: bold;
+}
+table.translation-stats tfoot th {
+    text-align:left;
+}
+table.translation-stats tfoot td {
+    text-align:center;
+}
+
+/* Translations help links.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+translations
+ *   https://translations.launchpad.dev/ubuntu/hoary/
+ *
+ */
+div.translation-help-links a {
+  float: right;
+}
+div.translation-help-links div {
+  clear: both;
+}
+
+
+/* Home page */
+.homepage {
+    margin: auto;
+    width: 90%;
+    max-width: 80em;
+}
+.homepage-portlet {
+    margin-bottom: 3em;
+    line-height: 140%;
+}
+.homepage-portlet h2 {
+    border-bottom: 1px solid;
+    margin-top: 2em;
+    font-size: 167%;
+    }
+.homepage-whatslaunchpad h2 {
+    font-size: 189%;
+    font-weight: bold;
+    line-height: 110%;
+    margin-bottom: 0.5em;
+}
+#homepage-whatslaunchpad ul {
+    margin-left: 1em;
+    margin-bottom: 0.5em;
+}
+#homepage-whatslaunchpad ul,
+#homepage-whatslaunchpad-tour {
+    font-size: 116%;
+    font-weight: bold;
+}
+#homepage-stats {
+    max-width: 50em;
+    margin: auto;
+    padding-top: 0.5em;
+    color: gray;
+    font-size: 83.3%
+}
+#homepage-blogposts {
+    padding-right: 4em;
+}
+#homepage-blogposts .blogdate {
+    font-size: 85%;
+    color: grey;
+}
+.homepage-blogposts-older {
+    font-weight: bold;
+}
+.homepage-getstarted h2 {
+    border-bottom: 1px solid;
+    margin-top: 1em;
+    font-size: 161%;
+    }
+#homepage-featured {
+    width: 100%;
+}
+#homepage-featured ul {
+    width: 48%;
+}
+#homepage-featured-left {
+    float: left;
+}
+#homepage-featured-right {
+    float: right;
+}
+#homepage-featured-top img {
+    float: left;
+}
+#homepage-featured-top-title {
+    height: 64px;
+    display: block;
+    margin-left: 70px;
+}
+#homepage-featured-top-title span{
+    font-size: 131%;
+    font-weight: bold;
+    position: relative;
+    top: 20px;
+}
+#homepage-featured-top-text {
+    margin-top: 0.5em;
+    margin-bottom: 1em;
+    border-bottom: 1px solid #888888;
+}
+.homepage-featured-more {
+    font-weight: bold;
+    margin-top: 2em;
+    clear: both;
+}
+.gridflow {
+    margin: 0.0em;
+    padding: 0.0em;
+}
+.gridflow ul {
+    margin: 0.5em 0.0em 0.5em 0.0em;
+    padding: 0.5em 0.0em 0.0em 0.0em;
+}
+.gridflow li {
+    display: inline;
+    margin: 0.0em;
+    padding: 0.2em;
+}
+.gridflow li span {
+    display: table-cell;
+    display: inline-table;
+    display: inline-block;
+    width: 192px;
+    text-align: center;
+    vertical-align: middle;
+    padding: 1em 1em 1em 0;
 }

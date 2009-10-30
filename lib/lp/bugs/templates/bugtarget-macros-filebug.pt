@@ -20,8 +20,7 @@
   <tr tal:condition="view/widgets/packagename|nothing">
     <td style="padding-bottom: 1.5em" colspan="2"
         tal:attributes="class view/getPackageNameFieldCSSClass">
-      <ul style="list-style: none"
-          tal:define="select_packagename view/shouldSelectPackageName">
+      <ul tal:define="select_packagename view/shouldSelectPackageName">
         <li>
           <input type="radio" name="packagename_option" value="none"
                  id="no-package"
@@ -138,139 +137,130 @@
 
 
 <metal:not_uses_malone define-macro="not_uses_malone">
-
   <tal:not_uses_malone tal:condition="not: view/contextUsesMalone">
-
     <tal:has-context define="product_or_distro view/getProductOrDistroFromContext"
                      condition="product_or_distro">
-
-      <div class="highlight-message"><a tal:replace="structure product_or_distro/fmt:link">Alsa Utils</a>
-      <strong>does not use</strong> Launchpad as its bug tracker.
-      <a tal:attributes="href context/menu:overview/edit/fmt:url"
-         tal:condition="context/required:launchpad.Edit"> Change this&nbsp;
-         <span class="sprite edit"></span></a>
+      <div class="highlight-message">
+        <a tal:replace="structure product_or_distro/fmt:link">Alsa Utils</a>
+        <strong>does not use</strong> Launchpad as its bug tracker.
+        <a tal:attributes="href context/menu:overview/edit/fmt:url"
+           tal:condition="context/required:launchpad.Edit">
+          Change this&nbsp;<span class="sprite edit"></span>
+        </a>
       </div>
       <span tal:condition="view/frontpage_form">
-        You can <a href="+filebug">refine and resubmit</a> your bug report.
+        You can <a href="+filebug">refine and resubmit</a> your bug
+        report.
       </span>
-
       <tal:upstream condition="view/contextIsProduct">
-
         <tal:defines define="bugtracker product_or_distro/getExternalBugTracker">
-
-          <h3>Are you sure this bug is in <acronym class="explain" style="color: inherit"
-                                title="the original developer of the software">upstream</acronym>
-                                <span tal:replace="product_or_distro/displayname" />?</h3>
-
-          <ul>
-            <li tal:condition="product_or_distro/distrosourcepackages">
+          <h3>
+            Are you sure this bug is in <acronym class="explain"
+            style="color: inherit" title="the original developer of
+            the software">upstream</acronym> <span
+            tal:replace="product_or_distro/displayname" />?
+          </h3>
+          <tal:distro-source-pacakges
+              condition="product_or_distro/distrosourcepackages">
+            <p>
               If you are using a package installed by your Linux
               distribution, <b>the bug should be reported in that
               distribution</b>, instead. Launchpad knows that <span
-              tal:replace="product_or_distro/displayname" /> is present in
-              the following distribution packages:
-                  <ul class="source package" tal:repeat="dsp product_or_distro/distrosourcepackages">
-                      <li><a tal:attributes="href dsp/fmt:url"><span tal:replace="dsp/distribution/displayname" /> <span tal:replace="dsp/sourcepackagename" /></a>
-                      </li>
-                  </ul>
+              tal:replace="product_or_distro/displayname" /> is
+              present in the following distribution packages:
+            </p>
+            <ul class="source package" tal:repeat="dsp product_or_distro/distrosourcepackages">
+              <li>
+                <a tal:attributes="href dsp/fmt:url"
+                   tal:content="string:${dsp/distribution/displayname} ${dsp/sourcepackagename}" />
+              </li>
+            </ul>
+            <p>
               You can report bugs by visiting the package's page.
-            </li>
-
-            <br />
-            <li tal:condition="not: product_or_distro/distrosourcepackages">If
-              the bug you are reporting is in a package installed by a <a
-              href="/distros">distribution registered in Launchpad</a>, you should file the bug
-              against that specific distribution.
-
-              <tal:XXX condition="nothing">
-                # XXX: Graham Binns 2007-07-12 bug=125574:
-                # The formatting of this next paragraph seems a little
-                # odd when seen in the context of a product that does not
-                # use Malone and does not specify another bug tracker.
-                # For an example of this, see
-                # http://bugs.launchpad.dev/thunderbird/+filebug.
-              </tal:XXX>
-              <p class="helpwanted message">Launchpad doesn't know of
-              any distribution packages that include upstream <span
+            </p>
+          </tal:distro-source-pacakges>
+          <tal:not-distro-source-packages
+              condition="not: product_or_distro/distrosourcepackages">
+            <p>
+              If the bug you are reporting is in a package installed
+              by a <a href="/distros">distribution registered in
+              Launchpad</a>, you should file the bug against that
+              specific distribution.
+            </p>
+            <p class="warning message">
+              Launchpad doesn't know of any distribution packages that
+              include upstream <span
               tal:replace="product_or_distro/displayname" />. You can
               help by <a tal:attributes="href
-              string:${product_or_distro/development_focus/fmt:url}/+ubuntupkg">linking
-              them for us.</a></p>
-            </li>
-
-            <tal:has-bugtracker condition="bugtracker">
-              <br />
-              <li id="bugtarget-upstream-bugtracker-info">
-                Bugs in
-                <abbr title="the original developer of the software"
-                      class="explain">upstream</abbr>
-                <span tal:replace="product_or_distro/displayname">
-                  Alsa Utils
-                </span>
-                <tal:action
-                    define="via_email
-                            bugtracker/bugtrackertype/enumvalue:EMAILADDRESS">
-                  <tal:via-email condition="via_email">
-                    should be sent to
-                    <a tal:replace="structure bugtracker/fmt:external-link" />
-                  </tal:via-email>
-                  <tal:not-via-email condition="not:via_email">
-                    should be reported in its official bug tracker,
-                    <a tal:replace="structure bugtracker/fmt:external-title-link" />
-                  </tal:not-via-email>
-                </tal:action>
-              </li>
-            </tal:has-bugtracker>
-
-          </ul>
-
+              product_or_distro/development_focus/fmt:url/+ubuntupkg">linking
+              them for us.</a>
+            </p>
+          </tal:not-distro-source-packages>
+          <tal:has-bugtracker condition="bugtracker">
+            <p id="bugtarget-upstream-bugtracker-info">
+              Bugs in <abbr title="the original developer of the
+              software" class="explain">upstream</abbr>
+              <span tal:replace="product_or_distro/displayname">
+                Alsa Utils
+              </span>
+              <tal:action
+                  define="via_email
+                          bugtracker/bugtrackertype/enumvalue:EMAILADDRESS">
+                <tal:via-email condition="via_email">
+                  should be sent to
+                  <a tal:replace="structure bugtracker/fmt:external-link" />
+                </tal:via-email>
+                <tal:not-via-email condition="not:via_email">
+                  should be reported in its official bug tracker,
+                  <a tal:replace="structure bugtracker/fmt:external-title-link" />
+                </tal:not-via-email>
+              </tal:action>
+            </p>
+          </tal:has-bugtracker>
           <tal:XXX condition="nothing">
-            # XXX: kiko 2007-03-14:
-            # We shouldn't be using feedback@launchpad.net, but we have no
-            # way of allowing people to go around changing product bugtracker
-            # details, so for now it will have to do.
+            XXX: Gavin Panella 2009-09-14 bug=429354:
+            Asking people to use feedback@launchpad.net is not
+            ideal. We could instead link project owners to the +edit
+            page and provide the +contactuser form for everyone else
+            to contact the owner.
           </tal:XXX>
-          <p tal:condition="not: bugtracker" class="helpwanted message">
+          <tal:not-has-bugtracker condition="not: bugtracker">
+            <p class="warning message">
               Launchpad doesn't know what bug tracker <span
-              tal:replace="product_or_distro/displayname">Alsa Utils</span>
-              uses. Do you know? <a href="mailto: feedback@launchpad.net">Tell us about it.</a>
-          </p>
+              tal:replace="product_or_distro/displayname">Alsa
+              Utils</span> uses. Do you know? <a href="mailto:
+              feedback@launchpad.net">Tell us about it.</a>
+            </p>
+          </tal:not-has-bugtracker>
         </tal:defines>
-
       </tal:upstream>
-
-
       <tal:distro condition="not: view/contextIsProduct">
-
         To file a bug for this distribution, visit its official bug
         tracker.
-
       </tal:distro>
     </tal:has-context>
-
     <tal:project condition="view/contextIsProject">
-
       <p class="informational message"
-        condition="not: context/required:launchpad.Edit"
-      >
-        There are no projects registered for
-        <span tal:replace="context/displayname">project displayname</span>
+         condition="not: context/required:launchpad.Edit">
+        There are no projects registered for <span
+        tal:replace="context/displayname">project displayname</span>
         that use Launchpad to track bugs.
       </p>
-
-      <tal:admin-warning condition="context/required:launchpad.Edit">
-        <p tal:condition="not: context/products" class="warning message">
-          There are no projects registered for
-          <span tal:replace="context/displayname">project displayname</span>.
-          <br />
-          You need to <a href="+newproduct">register another project that is
-          part of <tal:project replace="context/displayname" /></a> or
-          associate an existing project with it.
-        </p>
-      </tal:admin-warning>
-
+      <tal:not-has-products tal:condition="not: context/products">
+        <tal:admin-warning condition="context/required:launchpad.Edit">
+          <p class="warning message">
+            There are no projects registered for
+            <span tal:replace="context/displayname">project displayname</span>.
+            <br />
+            You need to
+            <a tal:attributes="href context/fmt:url/+newproduct">register
+            another project that is part of
+            <tal:project replace="context/displayname" /></a>
+            or associate an existing project with it.
+          </p>
+        </tal:admin-warning>
+      </tal:not-has-products>
       <tal:has-products condition="context/products">
-
         <tal:plural condition="python:context.products.count() > 1">
           <p id="product-list-summary">
             There are <tal:count replace="context/products/count" /> projects
@@ -285,55 +275,47 @@
           <p>
             The projects that are part of
             <tal:project replace="context/displayname" />
-            are listed below, along with
-            the source packages with which they are registered and their
-            external bug trackers.  If you can't find an appropriate place
-            to file your bug, please try contacting the administrator of
-            <tal:project replace="context/displayname" />.
+            are listed below, along with the source packages with
+            which they are registered and their external bug trackers.
+            If you can't find an appropriate place to file your bug,
+            please try contacting the administrator of <tal:project
+            replace="context/displayname" />.
           </p>
         </tal:plural>
         <tal:singular condition="python:context.products.count() == 1">
           <p id="product-list-summary">
             There is 1 project registered as part of
-            <tal:project replace="context/displayname">Project</tal:project>
-            but it does not use Launchpad as its bug tracker.
+            <tal:project replace="context/displayname" /> but it
+            does not use Launchpad as its bug tracker.
           </p>
           <p>
-            The details of the project are shown below, along with any source
-            packages with which it is registered and its external bug tracker,
-            if it uses one. If you can't find an appropriate place to file
-            your bug, please contact the administrator of
-            <tal:project replace="context/displayname">Project</tal:project>.
+            The details of the project are shown below, along with any
+            source packages with which it is registered and its
+            external bug tracker, if it uses one. If you can't find an
+            appropriate place to file your bug, please contact the
+            administrator of <tal:project
+            replace="context/displayname">Project</tal:project>.
           </p>
         </tal:singular>
-
         <ul class="product-bug-options" tal:repeat="product context/products">
           <li condition="product/official_malone">
             <tal:link replace="structure product/fmt:link" />
-
-            <ul>
+            <ul class="bulleted">
               <tal:external-tracker
                   define="bugtracker product/getExternalBugTracker">
-
                 <li tal:condition="bugtracker">
-                  External bug tracker:
-                  <a tal:attributes="href bugtracker/baseurl"
-                      tal:content="bugtracker/title">
-                    Bug Tracker
-                  </a>.
+                  External bug tracker: <a tal:replace="structure
+                  bugtracker/fmt:external-title-link" />.
                 </li>
-
                 <li tal:condition="not: bugtracker">
-                   <tal:product replace="product/displayname">
-                     Project
-                   </tal:product>
-                   does not use an external bug tracker or has not registered
-                   it with launchpad.
+                  <tal:product replace="product/displayname">
+                    Project
+                  </tal:product>
+                  does not use an external bug tracker or has not registered
+                  it with launchpad.
                 </li>
               </tal:external-tracker>
-
               <tal:packages define="packages product/distrosourcepackages">
-
                 <li tal:condition="packages">
                   <ul tal:repeat="package packages">
                     <li class="source package">
@@ -343,33 +325,28 @@
                             replace="package/distribution/displayname" />
                         <tal:packagename replace="package/sourcepackagename" />
                       </a>
-                      (<a
-                         tal:attributes="href string:${package/fmt:url}/+filebug"
-                       >File a bug here</a>)
+                      (<a tal:attributes="href
+                      package/fmt:url/+filebug">File a bug here</a>)
                     </li>
                   </ul>
                 </li>
-
                 <li tal:condition="not: packages">
                   <tal:product replace="product/displayname">
                     Project
                   </tal:product>
-                  is not registered with any source packages. You can help by
-                  <a tal:attributes="href string:${product/development_focus/fmt:url}/+ubuntupkg">linking them for us.</a>
+                  is not registered with any source packages. You can
+                  help by <a tal:attributes="href
+                  product/development_focus/fmt:url/+ubuntupkg">linking
+                  them for us.</a>
                 </li>
-
               </tal:packages>
             </ul>
           </li>
         </ul>
-
       </tal:has-products>
-
     </tal:project>
   </tal:not_uses_malone>
-
 </metal:not_uses_malone>
-
 
 <metal:bug_reporting_guidelines define-macro="bug_reporting_guidelines">
   <tr tal:define="guidelines view/bug_reporting_guidelines"
@@ -384,7 +361,9 @@
 </metal:bug_reporting_guidelines>
 
 <metal:similar-bugs define-macro="display-similar-bugs">
-  <ul id="similar-bugs" style="list-style: none; margin-left: 0; margin-bottom: 0">
+  <p id="filebug-query-heading">Is "<strong><span tal:replace="view/search_text">my submitted bug
+    summary</span></strong>" one of these bugs?</p>
+  <ul id="similar-bugs">
     <li tal:repeat="bug view/similar_bugs" class="similar-bug">
       <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
         <tbody>
@@ -411,51 +390,42 @@
                      >Bug title here</a>
                 </label>
               </div>
-
               <div class="lesser" style="margin-bottom: 0.2em">
                 <span class="lesser">
                   <tal:bugtask-status tal:condition="bugtask">
                     <span tal:attributes="class string:status${bugtask/status/name}"
                       ><tal:status content="bugtask/status/title" /></span>
                   </tal:bugtask-status>
-
                   <tal:no-bugtask condition="not: bugtask">
                     <tal:closed condition="bug/is_complete">Closed</tal:closed>
                     <tal:open condition="not:bug/is_complete">Open</tal:open>
                   </tal:no-bugtask>
-
                   (<tal:comments replace="bug/comment_count" />
                   <tal:one_comment condition="python: bug.comment_count == 1"
                     replace="string: comment"
                     /><tal:plural_comments
                       condition="python: bug.comment_count != 1"
                       replace="string: comments" />)
-
                   last updated
                   <tal:last-updated
                       content="bug/date_last_updated/fmt:approximatedate">
                     2007-07-03
                   </tal:last-updated>
-
                   <a class="view-bug-link" tal:attributes="href bug/fmt:url"
                   >view this bug</a>
                 </span>
               </div>
-
               <div class="duplicate-details"
                   tal:attributes="id string:details-for-bug-${bug/id}">
-
                 <div class="lesser" style="margin-bottom: 0.5em;"
                     tal:define="description bug/description/fmt:shorten/500/fmt:obfuscate-email/fmt:text-to-html"
                     tal:content="structure description" />
-
                 <div class="lesser">
                   <form action="."
                       tal:attributes="action view/action_url"
                       method="post"
                       accept-charset="UTF-8"
                       class="this-is-my-bug-form">
-
                     <span style="padding-left: 1.5em">
                       <input type="hidden"
                           name="field.bug_already_reported_as"
@@ -470,13 +440,11 @@
                           tal:attributes="
                               id string:bug-already-reported-as-${bug/id};"
                           />
-
                       <input type="submit"
                           name="field.actions.this_is_my_bug"
                           tal:attributes="id string:this-is-my-bug-${bug/id}"
                           value="Yes, this is the bug I'm trying to report"
                           />
-
                       <div tal:attributes="id string:duplicate-overlay-bug-${bug/id}"
                       ></div>
                     </span>
@@ -489,45 +457,26 @@
       </table>
     </li>
   </ul>
-
   <p tal:define="error_message view/widget_errors/bug_already_reported_as|nothing"
      tal:condition="error_message" tal:content="error_message" class="error message" />
-
 </metal:similar-bugs>
 
 <metal:similar-bugs-and-filebug-form
     define-macro="show-similar-bugs-and-filebug-form">
-
   <tal:similar-bugs condition="view/show_duplicate_list">
     <metal:similar-bugs
         use-macro="context/@@+filebug-macros/display-similar-bugs" />
-
-    <ul style="list-style: none; margin-left: 0">
-      <li style="margin-top: 1em">
-        <tal:comment replace="nothing">
-          We hide this next paragraph if the context doesn't use
-          malone because in that situation we're showing the form
-          after an error message and in that context the message
-          makes no sense.
-        </tal:comment>
-        <table tal:condition="view/contextUsesMalone">
-          <tbody>
-            <tr>
-              <td colspan="2">
-                <input
-                    id="bug-not-already-reported"
-                    type="button"
-                    name="field.bug_already_reported_as"
-                    value="No, I need to report a new bug" />
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </li>
-    </ul>
-
+    <tal:comment replace="nothing">
+      We hide this next paragraph if the context doesn't use malone
+      because in that situation we're showing the form after an error
+      message and in that context the message makes no sense.
+    </tal:comment>
+    <p style="margin-top: 1em" tal:condition="view/contextUsesMalone">
+      <input id="bug-not-already-reported" type="button"
+             name="field.bug_already_reported_as"
+             value="No, I need to report a new bug" />
+    </p>
   </tal:similar-bugs>
-
   <tal:submit-new-bug>
     <div id="bug_reporting_form">
       <metal:form use-macro="context/@@launchpad_form/form">
@@ -544,7 +493,6 @@
       </metal:form>
     </div>
   </tal:submit-new-bug>
-
 </metal:similar-bugs-and-filebug-form>
 
 </tal:root>

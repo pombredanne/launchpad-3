@@ -16,7 +16,7 @@ the language pack admin page.
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary')
-    >>> admin_browser.getLink('Language packs').click()
+    >>> admin_browser.getLink('See all language packs').click()
 
 Initially, there is no package selected.
 
@@ -50,10 +50,9 @@ Now the admin page will show us that language pack selected.
 Also, that change is shown in the public language pack listing web page:
 
     >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-    >>> browser.getLink('Language packs').click()
+    >>> browser.getLink('See all language packs').click()
     >>> print extract_text(find_tag_by_id(browser.contents, "language_packs"))
-    Language packs for Ubuntu 5.04
-    ...
+    A language pack...
     Active language packs
     Base pack: 2007-09-10 19:16:01 UTC
     A complete set of translations for the OS.

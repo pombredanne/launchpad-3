@@ -47,7 +47,6 @@ Note how the query parameters are kept.
 
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
-    Authorize application to access Launchpad on your behalf
     The application identified as foobar123451432 wants to access Launchpad on
     your behalf. What level of access do you want to grant?
     ...
@@ -120,7 +119,6 @@ by the user is restricted to things related to that context.
     ...     % urlencode(params_with_context))
     >>> main_content = find_tag_by_id(browser.contents, 'maincontent')
     >>> print extract_text(main_content)
-    Authorize application to access Launchpad on your behalf
     The application...wants to access things related to Mozilla Firefox...
 
 A client other than a web browser may request a JSON representation of

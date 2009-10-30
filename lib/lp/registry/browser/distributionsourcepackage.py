@@ -10,6 +10,8 @@ __all__ = [
     'DistributionSourcePackageNavigation',
     'DistributionSourcePackageOverviewMenu',
     'DistributionSourcePackageView',
+    'DistributionSourcePackageChangelogView',
+    'DistributionSourcePackagePublishingHistoryView',
     ]
 
 from datetime import datetime
@@ -18,19 +20,16 @@ import operator
 import pytz
 
 from zope.component import getUtility
-from zope.formlib import form
 from zope.interface import implements, Interface
-from zope.schema import Choice
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad import _
+from canonical.launchpad.interfaces import IBugSet
 from lp.answers.interfaces.questionenums import QuestionStatus
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.packagediff import IPackageDiffSet
-from canonical.launchpad.interfaces.packaging import IPackagingUtil
+from lp.registry.browser.packaging import PackagingDeleteView
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.product import IDistributionSourcePackage
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
@@ -39,18 +38,22 @@ from lp.answers.browser.questiontarget import (
 from canonical.launchpad.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
-    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, Link,
-    Navigation, StandardLaunchpadFacets, action, canonical_url, redirection)
+    ApplicationMenu, LaunchpadEditFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
+    redirection)
 from canonical.launchpad.webapp.menu import (
     enabled_with_permission, NavigationMenu)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 
 from lazr.delegates import delegates
+from lp.soyuz.browser.sourcepackagerelease import (
+    extract_bug_numbers, extract_email_addresses, linkify_changelog)
 from canonical.lazr.utils import smartquote
 
 
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistributionSourcePackage`."""
+
     @property
     def text(self):
         return smartquote('"%s" package') % (
@@ -65,6 +68,7 @@ class DistributionSourcePackageFacets(QuestionTargetFacetMixin,
 
 
 class DistributionSourcePackageLinksMixin:
+
     def subscribe(self):
         return Link('+subscribe', 'Subscribe to bug mail', icon='edit')
 
@@ -131,11 +135,14 @@ class DecoratedDistributionSourcePackageRelease:
     """
     delegates(IDistributionSourcePackageRelease, 'context')
 
-    def __init__(self, distributionsourcepackagerelease,
-                 publishing_history, package_diffs):
+    def __init__(
+        self, distributionsourcepackagerelease, publishing_history,
+        package_diffs, person_data, user):
         self.context = distributionsourcepackagerelease
         self._publishing_history = publishing_history
         self._package_diffs = package_diffs
+        self._person_data = person_data
+        self._user = user
 
     @property
     def publishing_history(self):
@@ -146,6 +153,12 @@ class DecoratedDistributionSourcePackageRelease:
     def package_diffs(self):
         """ See `ISourcePackageRelease`."""
         return self._package_diffs
+
+    @property
+    def change_summary(self):
+        """ See `ISourcePackageRelease`."""
+        return linkify_changelog(
+            self._user, self.context.change_summary, self._person_data)
 
 
 class IDistributionSourcePackageActionMenu(Interface):
@@ -165,25 +178,82 @@ class DistributionSourcePackageActionMenu(
         return Link('+changelog', text, icon="info")
 
 
-class DistributionSourcePackageView(LaunchpadFormView):
+class DistributionSourcePackageBaseView:
+    """Common features to all `DistributionSourcePackage` views."""
+
+    def releases(self):
+        """All releases for this `IDistributionSourcePackage`."""
+
+        def not_empty(text):
+            return (
+                text is not None and isinstance(text, basestring)
+                and len(text.strip()) > 0)
+
+        dspr_pubs = self.context.getReleasesAndPublishingHistory()
+
+        # Return as early as possible to avoid unnecessary processing.
+        if len(dspr_pubs) == 0:
+            return []
+
+        sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
+        # Pre-load the bugs and persons referenced by the +changelog page from
+        # the database.
+        # This will improve the performance of the ensuing changelog
+        # linkification.
+        the_changelog = '\n'.join(
+            [spr.changelog_entry for spr in sprs
+             if not_empty(spr.changelog_entry)])
+        unique_bugs = extract_bug_numbers(the_changelog)
+        self._bug_data = list(
+            getUtility(IBugSet).getByNumbers(unique_bugs.keys()))
+        # Preload email/person data only if user is logged on. In the opposite
+        # case the emails in the changelog will be obfuscated anyway and thus
+        # cause no database lookups.
+        if self.user:
+            unique_emails = extract_email_addresses(the_changelog)
+            # The method below returns a [(EmailAddress,Person]] result set.
+            result_set = self.context.getPersonsByEmail(unique_emails)
+            # Ignore the persons who want their email addresses hidden.
+            self._person_data = dict(
+                [(email.email, person) for (email, person) in result_set
+                 if not person.hide_email_addresses])
+        else:
+            self._person_data = None
+        # Collate diffs for relevant SourcePackageReleases
+        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
+        spr_diffs = {}
+        for spr, diffs in itertools.groupby(pkg_diffs,
+                                            operator.attrgetter('to_source')):
+            spr_diffs[spr] = list(diffs)
+
+        return [
+            DecoratedDistributionSourcePackageRelease(
+                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []),
+                self._person_data, self.user)
+            for (dspr, spphs) in dspr_pubs]
+
+
+class DistributionSourcePackageView(DistributionSourcePackageBaseView,
+                                    PackagingDeleteView):
     """View class for DistributionSourcePackage."""
     implements(IDistributionSourcePackageActionMenu)
 
     @property
-    def page_title(self):
+    def label(self):
         return self.context.title
 
-    def setUpFields(self):
+    @property
+    def next_url(self):
         """See `LaunchpadFormView`."""
-        # No schema is set in this form, because all fields are created with
-        # custom vocabularies. So we must not call the inherited setUpField
-        # method.
-        self.form_fields = self._createPackagingField()
+        return canonical_url(self.context)
 
     @property
-    def can_delete_packaging(self):
-        """Whether the user can delete existing packaging links."""
-        return self.user is not None
+    def all_packaging(self):
+        """See `PackagingDeleteView`."""
+        for sourcepackage in self.context.get_distroseries_packages():
+            packaging = sourcepackage.direct_packaging
+            if packaging is not None:
+                yield packaging
 
     @property
     def all_published_in_active_distroseries(self):
@@ -197,11 +267,11 @@ class DistributionSourcePackageView(LaunchpadFormView):
         for pub in self.context.current_publishing_records:
             if pub.distroseries.active:
                 entry = {
-                    "suite" : (pub.distroseries.name.capitalize() +
+                    "suite": (pub.distroseries.name.capitalize() +
                                pocketsuffix[pub.pocket]),
-                    "description" : "(%s): %s/%s" % (
+                    "description": "(%s): %s/%s" % (
                         pub.sourcepackagerelease.version,
-                        pub.component.name, pub.section.name)
+                        pub.component.name, pub.section.name),
                     }
                 results.append(entry)
         return results
@@ -261,12 +331,12 @@ class DistributionSourcePackageView(LaunchpadFormView):
                 versions.append(
                     "%s (%s)" % (
                         pub.distroseries.displayname,
-                        pub.source_package_version
+                        pub.source_package_version,
                         )
                     )
             archive_versions.append({
                 'archive': archive,
-                'versions': ", ".join(versions)
+                'versions': ", ".join(versions),
                 })
 
         return archive_versions
@@ -279,68 +349,6 @@ class DistributionSourcePackageView(LaunchpadFormView):
             canonical_url(self.context.distribution),
             self.context.name,
             )
-
-    def _createPackagingField(self):
-        """Create a field to specify a Packaging association.
-
-        Create a contextual vocabulary that can specify one of the Packaging
-        associated to this DistributionSourcePackage.
-        """
-        terms = []
-        for sourcepackage in self.context.get_distroseries_packages():
-            packaging = sourcepackage.direct_packaging
-            if packaging is None:
-                continue
-            terms.append(SimpleTerm(packaging, packaging.id))
-        return form.Fields(
-            Choice(__name__='packaging', vocabulary=SimpleVocabulary(terms),
-                   required=True))
-
-    def _renderHiddenPackagingField(self, packaging):
-        """Render a hidden input that fills in the packaging field."""
-        if not self.can_delete_packaging:
-            return None
-        vocabulary = self.form_fields['packaging'].field.vocabulary
-        return '<input type="hidden" name="field.packaging" value="%s" />' % (
-            vocabulary.getTerm(packaging).token)
-
-    def renderDeletePackagingAction(self):
-        """Render a submit input for the delete_packaging_action."""
-        assert self.can_delete_packaging, 'User cannot delete Packaging.'
-        return ('<input type="submit" class="button" value="Delete Link" '
-                'style="padding: 0pt; font-size: 80%%" '
-                'name="%s"/>' % (self.delete_packaging_action.__name__,))
-
-    def handleDeletePackagingError(self, action, data, errors):
-        """Handle errors on package link deletion.
-
-        If 'packaging' is not set in the form data, we assume that means the
-        provided Packaging id was not found, which should only happen if the
-        same Packaging object was concurrently deleted. In this case, we want
-        to display a more informative error message than the default 'Invalid
-        value'.
-        """
-        if data.get('packaging') is None:
-            self.setFieldError(
-                'packaging',
-                _("This upstream association was deleted already."))
-
-    @action(_("Delete Link"), name='delete_packaging',
-            failure=handleDeletePackagingError)
-    def delete_packaging_action(self, action, data):
-        """Delete a Packaging association."""
-        packaging = data['packaging']
-        productseries = packaging.productseries
-        distroseries = packaging.distroseries
-        getUtility(IPackagingUtil).deletePackaging(
-            productseries, packaging.sourcepackagename, distroseries)
-        self.request.response.addNotification(
-            _("Removed upstream association between ${product} "
-              "${productseries} and ${distroseries}.", mapping=dict(
-              product=productseries.product.displayname,
-              productseries=productseries.displayname,
-              distroseries=distroseries.displayname)))
-        self.next_url = canonical_url(self.context)
 
     @cachedproperty
     def active_distroseries_packages(self):
@@ -448,30 +456,31 @@ class DistributionSourcePackageView(LaunchpadFormView):
 
         return rows
 
-    def releases(self):
-        dspr_pubs = self.context.getReleasesAndPublishingHistory()
-
-        # Return as early as possible to avoid unnecessary processing.
-        if len(dspr_pubs) == 0:
-            return []
-
-        # Collate diffs for relevant SourcePackageReleases
-        sprs = [dspr.sourcepackagerelease for (dspr, spphs) in dspr_pubs]
-        pkg_diffs = getUtility(IPackageDiffSet).getDiffsToReleases(sprs)
-        spr_diffs = {}
-        for spr, diffs in itertools.groupby(pkg_diffs,
-                                            operator.attrgetter('to_source')):
-            spr_diffs[spr] = list(diffs)
-
-        return [
-            DecoratedDistributionSourcePackageRelease(
-                dspr, spphs, spr_diffs.get(dspr.sourcepackagerelease, []))
-            for (dspr, spphs) in dspr_pubs]
-
     @cachedproperty
     def open_questions(self):
         """Return result set containing open questions for this package."""
         return self.context.searchQuestions(status=QuestionStatus.OPEN)
+
+
+class DistributionSourcePackageChangelogView(
+    DistributionSourcePackageBaseView, LaunchpadView):
+    """View for presenting change logs for a `DistributionSourcePackage`."""
+
+    page_title = 'Change log'
+
+    @property
+    def label(self):
+        return 'Change log for %s' % self.context.title
+
+
+class DistributionSourcePackagePublishingHistoryView(LaunchpadView):
+    """View for presenting `DistributionSourcePackage` publishing history."""
+
+    page_title = 'Publishing history'
+
+    @property
+    def label(self):
+        return 'Publishing history of %s' % self.context.title
 
 
 class DistributionSourcePackageEditView(LaunchpadEditFormView):

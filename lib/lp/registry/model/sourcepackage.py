@@ -21,20 +21,22 @@ from storm.locals import And, Desc, In, Select, SQL, Store
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
+from canonical.lazr.utils import smartquote
 from lp.code.model.branch import Branch
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.soyuz.model.build import Build, BuildSet
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from lp.soyuz.model.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
-from canonical.launchpad.database.packaging import Packaging
+from lp.registry.model.packaging import Packaging
 from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate)
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.soyuz.model.publishing import (
     SourcePackagePublishingHistory)
 from lp.answers.model.question import (
@@ -48,10 +50,11 @@ from lp.translations.model.translationimportqueue import (
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
-from canonical.launchpad.interfaces.packaging import PackagingType
+from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
 from lp.answers.interfaces.questioncollection import (
     QUESTION_STATUS_DEFAULT_SEARCH)
 from lp.answers.interfaces.questiontarget import IQuestionTarget
@@ -152,7 +155,8 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
-                    HasTranslationImportsMixin, HasTranslationTemplatesMixin):
+                    HasTranslationImportsMixin, HasTranslationTemplatesMixin,
+                    HasBranchesMixin, HasMergeProposalsMixin):
     """A source package, e.g. apache2, in a distroseries.
 
     This object is not a true database object, but rather attempts to
@@ -285,10 +289,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
     @property
     def title(self):
-        titlestr = self.sourcepackagename.name
-        titlestr += ' in ' + self.distribution.displayname
-        titlestr += ' ' + self.distroseries.displayname
-        return titlestr
+        """See `ISourcePackage`."""
+        return smartquote('"%s" source package in %s') % (
+            self.sourcepackagename.name, self.distroseries.displayname)
 
     @property
     def distribution(self):
@@ -653,3 +656,35 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
             self.distribution.name,
             self.distroseries.getSuite(pocket),
             self.name)
+
+    def getLatestTranslationsUploads(self):
+        """See `ISourcePackage`."""
+        our_format = PackageUploadCustomFormat.ROSETTA_TRANSLATIONS
+
+        packagename = self.sourcepackagename.name
+        displayname = self.displayname
+        distro = self.distroseries.distribution
+
+        histories = distro.main_archive.getPublishedSources(
+            name=packagename, distroseries=self.distroseries,
+            status=PackagePublishingStatus.PUBLISHED, exact_match=True)
+        histories = list(histories)
+
+        builds = []
+        for history in histories:
+            builds += list(history.getBuilds())
+
+        uploads = [
+            build.package_upload
+            for build in builds
+            if build.package_upload
+            ]
+        custom_files = []
+        for upload in uploads:
+            custom_files += [
+                custom for custom in upload.customfiles
+                if custom.customformat == our_format
+                ]
+
+        custom_files.sort(key=attrgetter('id'))
+        return [custom.libraryfilealias for custom in custom_files]

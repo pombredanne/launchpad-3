@@ -88,9 +88,9 @@
     <a
       tal:replace="structure context/menu:overview/link_branch/fmt:icon" />
   </div>
-  <div tal:condition="context/branch/revision_count">
+  <div id="branch-revision-details" tal:condition="context/branch/revision_count">
     <span tal:replace="context/branch/revision_count">35</span> revisions,
-    <span talreplace="context/branch/@@+product-summary-listing/recent_revision_count">31</span> in the past month.
+    <span tal:replace="context/branch/@@+product-summary-listing/recent_revision_count">31</span> in the past month.
   </div>
 </tal:block>
 

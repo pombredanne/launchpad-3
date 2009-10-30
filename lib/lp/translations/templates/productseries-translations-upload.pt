@@ -10,8 +10,6 @@
 
 <div metal:fill-slot="main">
 
-  <h1>Upload translation files</h1>
-
   <p
     class="not-translated-in-launchpad"
     tal:condition="not: context/product/official_rosetta">

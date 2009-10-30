@@ -10,7 +10,7 @@ The PPA packages page is accessible from the PPA page.
     http://launchpad.dev/~cprov/+archive/ppa/+packages
 
     >>> print anon_browser.title
-    Packages in ...PPA for Celso Providelo...
+    Packages in...
 
 
 Page structure
@@ -20,10 +20,10 @@ The PPA packages page uses the 'Overview' application button and displays
 a descriptive main heading.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Celso Providelo > PPA for Celso Providelo > +packages
+    Hierarchy: Celso Providelo > PPA for Celso Providelo > Packages in...
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Code - http://code.launchpad.dev/~cprov
+    * Branches - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov
@@ -35,7 +35,7 @@ the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
     >>> print anon_browser.title
-    Builds for PPA for Celso Providelo
+    Builds for...
 
     >>> print anon_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+builds
@@ -273,7 +273,7 @@ result will only contain packages SUPERSEDED or DELETED.
 The 'Any Status' filter is also available, so the user can search over
 any package ever published in the context PPA.
 
-    >>> anon_browser.getControl(name='field.status_filter').value = ['any']
+    >>> anon_browser.getControl(name='field.status_filter').value = ['']
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Source             Published    Status     Series      Section  Build
@@ -383,7 +383,7 @@ of downloading the buildlog).
     >>> anon_browser.getLink('i386').click()
 
     >>> print anon_browser.title
-    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+    PPA for Celso Providelo : Celso Providelo
 
 This feature is also useful from the PPA owner perspective. When Celso
 sees that there was a failure while building 'cdrkit' on i386 he can
@@ -395,7 +395,7 @@ quickly 'retry' the failure.
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+packages")
 
     >>> cprov_browser.getLink('i386').click()
-    >>> cprov_browser.getLink("Retry build").click()
+    >>> cprov_browser.getLink("Retry this build").click()
     >>> cprov_browser.getControl("Retry Build").click()
 
 At this point anyone can also visualise that 'cdrkit' source is being
@@ -412,5 +412,4 @@ corresponding build page.
 
     >>> anon_browser.getLink('i386').click()
     >>> print anon_browser.title
-    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
-
+    PPA for Celso Providelo : Celso Providelo

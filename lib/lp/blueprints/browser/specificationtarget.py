@@ -6,11 +6,15 @@
 __metaclass__ = type
 
 __all__ = [
+    'HasSpecificationsMenuMixin',
     'HasSpecificationsView',
     'RegisterABlueprintButtonView',
+    'SpecificationAssignmentsView',
+    'SpecificationDocumentationView',
     ]
 
 from operator import itemgetter
+from zope.component import queryMultiAdapter
 
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import IDistroSeries
@@ -27,13 +31,55 @@ from lp.blueprints.interfaces.sprint import ISprint
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp import LaunchpadView, Link
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
-from zope.component import queryMultiAdapter
+from canonical.lazr.utils import smartquote
+
+
+class HasSpecificationsMenuMixin(object):
+
+    def listall(self):
+        """Return a link to show all blueprints."""
+        text = 'List all blueprints'
+        return Link('+specs?show=all', text, icon='blueprint')
+
+    def listaccepted(self):
+        """Return a link to show the approved goals."""
+        text = 'List approved blueprints'
+        return Link('+specs?acceptance=accepted', text, icon='blueprint')
+
+    def listproposed(self):
+        """Return a link to show the proposed goals."""
+        text = 'List proposed blueprints'
+        return Link('+specs?acceptance=proposed', text, icon='blueprint')
+
+    def listdeclined(self):
+        """Return a link to show the declined goals."""
+        text = 'List declined blueprints'
+        return Link('+specs?acceptance=declined', text, icon='blueprint')
+
+    def doc(self):
+        text = 'List documentation'
+        return Link('+documentation', text, icon='info')
+
+    def setgoals(self):
+        """Return a link to set the series goals."""
+        text = 'Set series goals'
+        return Link('+setgoals', text, icon='edit')
+
+    def assignments(self):
+        """Return a link to show the people assigned to the blueprint."""
+        text = 'Assignments'
+        return Link('+assignments', text, icon='person')
+
+    def new(self):
+        """Return a link to register a blueprint."""
+        text = 'Register a blueprint'
+        return Link('+addspec', text, icon='add')
 
 
 class HasSpecificationsView(LaunchpadView):
@@ -75,7 +121,6 @@ class HasSpecificationsView(LaunchpadView):
     # replacing the conditional execution with polymorphism.
     # See https://bugs.launchpad.net/blueprint/+bug/173972.
     def initialize(self):
-        mapping = {'name': self.context.displayname}
         if IPerson.providedBy(self.context):
             self.is_person = True
         elif (IDistribution.providedBy(self.context) or
@@ -102,17 +147,20 @@ class HasSpecificationsView(LaunchpadView):
         else:
             raise AssertionError, 'Unknown blueprint listing site'
 
-        if self.is_person:
-            self.title = _('Specifications involving $name', mapping=mapping)
-        else:
-            self.title = _('Specifications for $name', mapping=mapping)
-
         if IHasDrivers.providedBy(self.context):
             self.has_drivers = True
 
         self.batchnav = BatchNavigator(
             self.specs, self.request,
             size=config.launchpad.default_batch_size)
+
+    @property
+    def label(self):
+        mapping = {'name': self.context.displayname}
+        if self.is_person:
+            return _('Blueprints involving $name', mapping=mapping)
+        else:
+            return _('Blueprints for $name', mapping=mapping)
 
     def mdzCsv(self):
         """Quick hack for mdz, to get csv dump of specs."""
@@ -311,6 +359,26 @@ class HasSpecificationsView(LaunchpadView):
             quantity=quantity, prejoin_people=False)
 
 
+class SpecificationAssignmentsView(HasSpecificationsView):
+    """View for +assignments pages."""
+    page_title = "Assignments"
+
+    @property
+    def label(self):
+        return smartquote(
+            'Blueprint assignments for "%s"' % self.context.displayname)
+
+
+class SpecificationDocumentationView(HasSpecificationsView):
+    """View for blueprints +documentation page."""
+    page_title = "Documentation"
+
+    @property
+    def label(self):
+        return smartquote('Current documentation for "%s"' %
+                          self.context.displayname)
+
+
 class RegisterABlueprintButtonView:
     """View that renders a button to register a blueprint on its context."""
 
@@ -333,17 +401,7 @@ class RegisterABlueprintButtonView:
         """ % canonical_url(target, rootsite='blueprints')
 
 
-class HasSpecificationsOnBlueprintsVHostBreadcrumb(Breadcrumb):
+class BlueprintsVHostBreadcrumb(Breadcrumb):
     rootsite = 'blueprints'
+    text = 'Blueprints'
 
-    @property
-    def text(self):
-        return 'Blueprints for %s' % self.context.title
-
-
-class PersonOnBlueprintsVHostBreadcrumb(Breadcrumb):
-    rootsite = 'blueprints'
-
-    @property
-    def text(self):
-        return 'Blueprints involving %s' % self.context.displayname

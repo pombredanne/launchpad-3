@@ -29,6 +29,7 @@ __all__ = [
     'SpecificationProductSeriesGoalProposeView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
+    'SpecificationSubscriptionView',
     'SpecificationSupersedingView',
     'SpecificationTreePNGView',
     'SpecificationTreeImageTag',
@@ -46,6 +47,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
 from zope.formlib.form import Fields
+from zope.interface import Interface
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -110,6 +112,10 @@ class NewSpecificationView(LaunchpadFormView):
             spec.linkSprint(sprint, self.user)
         # Set the default value for the next URL.
         self._next_url = canonical_url(spec)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
     def transform(self, data):
         """Transforms the given form data.
@@ -281,7 +287,7 @@ class SpecificationContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit title and summary'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     def givefeedback(self):
@@ -459,6 +465,14 @@ class SpecificationView(SpecificationSimpleView):
 
     __used_for__ = ISpecification
 
+    @property
+    def label(self):
+        return self.context.title
+
+    @property
+    def page_title(self):
+        return self.label
+
     def initialize(self):
         # The review that the user requested on this spec, if any.
         self.notices = []
@@ -487,6 +501,15 @@ class SpecificationView(SpecificationSimpleView):
             msg = "You have %d feedback request(s) on this specification."
             msg %= len(self.feedbackrequests)
             self.notices.append(msg)
+
+
+class SpecificationSubscriptionView(SpecificationView):
+
+    @property
+    def label(self):
+        if self.subscription is not None:
+            return "Modify subscription"
+        return "Subscribe to blueprint"
 
 
 class SpecificationEditView(LaunchpadEditFormView):
@@ -568,6 +591,10 @@ class SpecificationGoalProposeView(LaunchpadEditFormView):
             self.context, data['distroseries'], self.user)
         self.next_url = canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SpecificationProductSeriesGoalProposeView(SpecificationGoalProposeView):
     label = 'Target to a product series'
@@ -580,6 +607,10 @@ class SpecificationProductSeriesGoalProposeView(SpecificationGoalProposeView):
             self.context, data['productseries'], self.user)
         self.next_url = canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 def propose_goal_with_automatic_approval(specification, series, user):
     """Proposes the given specification as a goal for the given series. If
@@ -591,27 +622,33 @@ def propose_goal_with_automatic_approval(specification, series, user):
         specification.acceptBy(user)
 
 
-class SpecificationGoalDecideView(LaunchpadView):
+class SpecificationGoalDecideView(LaunchpadFormView):
     """View used to allow the drivers of a series to accept
     or decline the spec as a goal for that series. Typically they would use
     the multi-select goalset view on their series, but it's also
     useful for them to have this one-at-a-time view on the spec itself.
     """
 
-    def initialize(self):
-        accept = self.request.form.get('accept')
-        decline = self.request.form.get('decline')
-        cancel = self.request.form.get('cancel')
-        decided = False
-        if accept is not None:
-            self.context.acceptBy(self.user)
-            decided = True
-        elif decline is not None:
-            self.context.declineBy(self.user)
-            decided = True
-        if decided or cancel is not None:
-            self.request.response.redirect(
-                canonical_url(self.context))
+    schema = Interface
+    field_names = []
+
+    @property
+    def label(self):
+        return _("Accept as %s series goal?") % self.context.goal.name
+
+    @action(_('Accept'), name='accept')
+    def accept_action(self, action, data):
+        self.context.acceptBy(self.user)
+
+    @action(_('Decline'), name='decline')
+    def decline_action(self, action, data):
+        self.context.declineBy(self.user)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class SpecificationRetargetingView(LaunchpadFormView):
@@ -663,6 +700,10 @@ class SpecificationRetargetingView(LaunchpadFormView):
     @property
     def next_url(self):
         return self._nextURL
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class SupersededByWidget(DropdownWidget):
@@ -732,6 +773,10 @@ class SpecificationSupersedingView(LaunchpadFormView):
             self.request.response.addNotification(
                 'Specification is now considered "%s".' % newstate.title)
         self.next_url = canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
 
 class SpecGraph:
@@ -923,6 +968,10 @@ class SpecificationSprintAddView(LaunchpadFormView):
         self.context.linkSprint(data["sprint"], self.user)
         self.next_url = canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
 
 class SpecGraphNode:
     """Node in the spec dependency graph.
@@ -1033,7 +1082,7 @@ class SpecificationTreeGraphView(LaunchpadView):
         """Return a SpecGraph object rooted on the spec that is self.context.
         """
         graph = SpecGraph()
-        root = graph.newNode(self.context, root=True)
+        graph.newNode(self.context, root=True)
         graph.addDependencyNodes(self.context)
         graph.addBlockedNodes(self.context)
         return graph
@@ -1160,17 +1209,19 @@ class SpecificationLinkBranchView(LaunchpadFormView):
         self.context.linkBranch(branch=data['branch'],
                                 registrant=self.user)
 
-    @action(_('Cancel'), name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the blueprint page."""
-
     @property
     def next_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def cancel_url(self):
         return canonical_url(self.context)
 
 
 class SpecificationSetView(AppFrontPageSearchView, HasSpecificationsView):
     """View for the Blueprints index page."""
+
+    label = 'Blueprints'
 
     @safe_action
     @action('Find blueprints', name="search")

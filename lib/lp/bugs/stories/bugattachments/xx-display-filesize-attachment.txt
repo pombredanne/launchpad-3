@@ -20,7 +20,7 @@ File size and mime type are displayed for each attachment
     >>> last_comment = find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]
     >>> fileinfo = '(270 bytes, text/plain)'
-    >>> for attachment in last_comment('li', {'class': 'download'}):
+    >>> for attachment in last_comment('li', 'download-attachment'):
     ...     print extract_text(attachment)
     description text
     (270 bytes, text/plain)
@@ -51,7 +51,7 @@ A filesize of 2700 byte is displayed in 'KiB'
     >>> last_comment = find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]
     >>> fileinfo = '(270 bytes, text/plain)'
-    >>> for attachment in last_comment('li', {'class': 'download'}):
+    >>> for attachment in last_comment('li', 'download-attachment'):
     ...     print extract_text(attachment)
     description text
     (2.6 KiB, text/plain)

@@ -8,12 +8,14 @@
 __metaclass__ = type
 __all__ = [
     'BranchMergeCandidateView',
+    'BranchMergeProposalActionNavigationMenu',
     'BranchMergeProposalAddVoteView',
     'BranchMergeProposalChangeStatusView',
     'BranchMergeProposalCommitMessageEditView',
     'BranchMergeProposalContextMenu',
     'BranchMergeProposalDeleteView',
     'BranchMergeProposalDequeueView',
+    'BranchMergeProposalEditMenu',
     'BranchMergeProposalEditView',
     'BranchMergeProposalEnqueueView',
     'BranchMergeProposalInlineDequeueView',
@@ -31,23 +33,37 @@ __all__ = [
 import operator
 
 from zope.app.form.browser import TextAreaWidget
-from zope.component import getUtility
+from zope.component import adapter, getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
-from zope.interface import Interface, implements
+from zope.interface import Interface, implementer, implements
 from zope.schema import Choice, Int, Text
+from zope.schema.interfaces import IText
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer, IWebServiceClientRequest)
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.launchpad import _
-from lp.code.adapters.branch import BranchMergeProposalDelta
-from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from canonical.launchpad.fields import Summary, Whiteboard
 from canonical.launchpad.interfaces.message import IMessageSet
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
+    stepthrough, stepto, Navigation)
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.widgets.lazrjs import TextAreaEditorWidget
+
+from lp.code.adapters.branch import BranchMergeProposalDelta
+from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
     CodeReviewVote)
@@ -58,12 +74,6 @@ from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.comments.interfaces.conversation import IConversation
-from canonical.launchpad.webapp import (
-    canonical_url, ContextMenu, custom_widget, Link, enabled_with_permission,
-    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
-    stepthrough, stepto, Navigation)
-from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import IPrimaryContext
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
@@ -77,6 +87,14 @@ class BranchMergeProposalPrimaryContext:
     def __init__(self, branch_merge_proposal):
         self.context = IPrimaryContext(
             branch_merge_proposal.source_branch).context
+
+
+class BranchMergeProposalBreadcrumb(Breadcrumb):
+    """An `IBreadcrumb` for a merge proposal."""
+
+    @property
+    def text(self):
+        return 'Merge into %s' % self.context.target_branch.name
 
 
 def notify(func):
@@ -119,30 +137,12 @@ class BranchMergeCandidateView(LaunchpadView):
         return friendly_texts[self.context.queue_status]
 
 
-class BranchMergeProposalContextMenu(ContextMenu):
-    """Context menu for branches."""
-
-    usedfor = IBranchMergeProposal
-    links = [
-        'edit',
-        'edit_commit_message',
-        'delete',
-        'request_review',
-        'add_comment',
-        'merge',
-        'enqueue',
-        'dequeue',
-        'resubmit',
-        'update_merge_revno',
-        'edit_status',
-        ]
+class BranchMergeProposalMenuMixin:
+    """Mixin class for merge proposal menus."""
 
     @enabled_with_permission('launchpad.AnyPerson')
     def add_comment(self):
-        # Can't add a comment to Merged, Superseded or Rejected.
-        enabled = self.context.isMergable()
-        return Link('+comment', 'Add a review or comment', icon='add',
-                    enabled=enabled)
+        return Link('+comment', 'Add a review or comment', icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -166,18 +166,19 @@ class BranchMergeProposalContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def delete(self):
         text = 'Delete proposal to merge'
-        return Link('+delete', text, icon='remove')
+        return Link('+delete', text, icon='trash-icon')
 
     def _enabledForStatus(self, next_state):
         """True if the next_state is a valid transition for the current user.
 
         Return False if the current state is next_state.
         """
-        status = self.context.queue_status
+        bmp = self.branch_merge_proposal
+        status = bmp.queue_status
         if status == next_state:
             return False
         else:
-            return self.context.isValidTransition(next_state, self.user)
+            return bmp.isValidTransition(next_state, self.user)
 
     @enabled_with_permission('launchpad.Edit')
     def request_review(self):
@@ -223,6 +224,60 @@ class BranchMergeProposalContextMenu(ContextMenu):
         enabled = self._enabledForStatus(
             BranchMergeProposalStatus.SUPERSEDED)
         return Link('+resubmit', text, enabled=enabled, icon='edit')
+
+
+class BranchMergeProposalEditMenu(NavigationMenu,
+                                  BranchMergeProposalMenuMixin):
+    """Edit menu for Branch Merge Proposals."""
+
+    usedfor = IBranchMergeProposal
+    title = 'Edit Proposal'
+    facet = 'branches'
+    links = ['resubmit', 'delete']
+
+    @property
+    def branch_merge_proposal(self):
+        return self.context
+
+
+class BranchMergeProposalContextMenu(ContextMenu,
+                                     BranchMergeProposalMenuMixin):
+    """Context menu for merge proposals."""
+
+    usedfor = IBranchMergeProposal
+    links = [
+        'add_comment',
+        'dequeue',
+        'edit_commit_message',
+        'edit_status',
+        'enqueue',
+        'merge',
+        'request_review',
+        'resubmit',
+        'update_merge_revno',
+        ]
+
+    @property
+    def branch_merge_proposal(self):
+        return self.context
+
+
+class IBranchMergeProposalActionMenu(Interface):
+    """A marker interface for the global action navigation menu."""
+
+
+class BranchMergeProposalActionNavigationMenu(NavigationMenu,
+                                              BranchMergeProposalMenuMixin):
+    """A sub-menu for acting upon a Product."""
+
+    usedfor = IBranchMergeProposalActionMenu
+    facet = 'branches'
+    links = ('resubmit', 'delete')
+
+    @property
+    def branch_merge_proposal(self):
+        # This context is the view, the view's context is the bmp.
+        return self.context.context
 
 
 class UnmergedRevisionsMixin:
@@ -339,6 +394,7 @@ class CodeReviewConversation:
     def __init__(self, comments):
         self.comments = comments
 
+
 class ClaimButton(Interface):
     """A simple interface to populate the form to enqueue a proposal."""
 
@@ -349,7 +405,9 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin):
     """A basic view used for the index page."""
 
-    label = "Proposal to merge branches"
+    implements(IBranchMergeProposalActionMenu)
+
+    label = "Proposal to merge branch"
     __used_for__ = IBranchMergeProposal
     schema = ClaimButton
 
@@ -399,15 +457,27 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         return result
 
     @cachedproperty
-    def review_diff(self):
+    def preview_diff(self):
+        """Return a `Diff` of the preview.
+
+        If no preview is available, try using the review diff.
+        """
+        if self.context.preview_diff is not None:
+            return self.context.preview_diff
+        if self.context.review_diff is not None:
+            return self.context.review_diff.diff
+        return None
+
+    @cachedproperty
+    def preview_diff_text(self):
         """Return a (hopefully) intelligently encoded review diff."""
-        if self.context.review_diff is None:
+        preview_diff = self.preview_diff
+        if preview_diff is None:
             return None
         try:
-            diff = self.context.review_diff.diff.text.decode('utf-8')
+            diff = preview_diff.text.decode('utf-8')
         except UnicodeDecodeError:
-            diff = self.context.review_diff.diff.text.decode('windows-1252',
-                                                             'replace')
+            diff = preview_diff.text.decode('windows-1252', 'replace')
         # Strip off the trailing carriage returns.
         return diff.rstrip('\n')
 
@@ -420,12 +490,12 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         lines is over the max_format_lines, then it is cut off at the fmt:diff
         processing.
         """
-        review_diff = self.context.review_diff
+        review_diff = self.preview_diff
         if review_diff is None:
             return False
-        if review_diff.diff.oversized:
+        if review_diff.oversized:
             return True
-        diff_text = self.review_diff
+        diff_text = self.preview_diff_text
         return diff_text.count('\n') >= config.diff.max_format_lines
 
     @property
@@ -442,6 +512,24 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         from lp.code.browser.branch import DecoratedBug
         return [DecoratedBug(bug, self.context.source_branch)
                 for bug in self.context.related_bugs]
+
+    @property
+    def commit_message_html(self):
+        """The commit message as widget HTML."""
+        commit_message = self.context.commit_message
+        if commit_message is None:
+            commit_message = ''
+        formatter = FormattersAPI
+        hide_email = formatter(commit_message).obfuscate_email()
+        commit_message = formatter(hide_email).text_to_html()
+        return TextAreaEditorWidget(
+            self.context,
+            'commit_message',
+            canonical_url(self.context, view_name='+edit-commit-message'),
+            id="edit-description",
+            title="Commit Message",
+            value=commit_message,
+            accept_empty=True)
 
 
 class DecoratedCodeReviewVoteReference:
@@ -461,8 +549,7 @@ class DecoratedCodeReviewVoteReference:
     def __init__(self, context, user, users_vote):
         self.context = context
         proposal = self.context.branch_merge_proposal
-        is_mergable = proposal.isMergable()
-        self.can_change_review = (user == context.reviewer) and is_mergable
+        self.can_change_review = (user == context.reviewer)
         self.trusted = proposal.target_branch.isPersonTrustedReviewer(
             context.reviewer)
         if user is None:
@@ -470,9 +557,8 @@ class DecoratedCodeReviewVoteReference:
         else:
             # The user cannot review for a requested team review if the user
             # has already reviewed this proposal.
-            self.user_can_review = (
-                is_mergable and (self.can_change_review or
-                 (user.inTeam(context.reviewer) and (users_vote is None))))
+            self.user_can_review = (self.can_change_review or
+                 (user.inTeam(context.reviewer) and (users_vote is None)))
         if context.reviewer == user:
             self.user_can_claim = False
         else:
@@ -532,9 +618,7 @@ class BranchMergeProposalVoteView(LaunchpadView):
 
         # Show the table if there are review to show, or the user can review,
         # or if the user can request a review.
-        return (len(self.reviews) > 0 or
-                self.show_user_review_link or
-                can_request_review)
+        return (len(self.reviews) > 0 or can_request_review)
 
     @cachedproperty
     def reviews(self):
@@ -562,22 +646,16 @@ class BranchMergeProposalVoteView(LaunchpadView):
         return sorted(reviews, key=operator.attrgetter('date_created'),
                       reverse=True)
 
-    @cachedproperty
-    def show_user_review_link(self):
-        """Show self in the review table if can review and not asked."""
-        if self.user is None or not self.context.isMergable():
-            return False
-        reviewers = [review.reviewer for review in self.reviews]
-        # The owner of the source branch should not get a review link.
-        return self.user not in reviewers
-
 
 class IReviewRequest(Interface):
     """Schema for requesting a review."""
 
     reviewer = copy_field(ICodeReviewVoteReference['reviewer'])
 
-    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+    review_type = copy_field(
+        ICodeReviewVoteReference['review_type'], 
+        description=u'Lowercase keywords describing the type of review you '
+                     'would like to be performed.')
 
 
 class BranchMergeProposalRequestReviewView(LaunchpadEditFormView):
@@ -1074,7 +1152,10 @@ class IAddVote(Interface):
 
     vote = copy_field(ICodeReviewComment['vote'], required=True)
 
-    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+    review_type = copy_field(
+        ICodeReviewVoteReference['review_type'], 
+        description=u'Lowercase keywords describing the type of review you '
+                     'are performing.')
 
     comment = Text(title=_('Comment'), required=False)
 
@@ -1176,3 +1257,15 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+@adapter(IBranchMergeProposal, IText, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def text_xhtml_representation(context, field, request):
+    """Render an `IText` as XHTML using the webservice."""
+    formatter = FormattersAPI
+    def renderer(value):
+        nomail  = formatter(value).obfuscate_email()
+        html    = formatter(nomail).text_to_html()
+        return html.encode('utf-8')
+    return renderer

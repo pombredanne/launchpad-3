@@ -8,10 +8,11 @@ __metaclass__ = type
 import gc
 import sys
 
-from bzrlib import errors
+from bzrlib import errors, trace
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import format_registry
-from bzrlib import trace
+from bzrlib.remote import RemoteBranch
+from bzrlib.smart import server
 from bzrlib.tests import (
     multiply_tests, TestCase, TestCaseWithTransport, TestLoader,
     TestNotApplicable)
@@ -20,9 +21,11 @@ try:
 except ImportError:
     from bzrlib.tests.branch_implementations import (
         TestCaseWithBzrDir, branch_scenarios)
+
 from lp.codehosting.bzrutils import (
     add_exception_logging_hook, DenyingServer, get_branch_stacked_on_url,
-    is_branch_stackable, remove_exception_logging_hook)
+    get_vfs_format_classes, is_branch_stackable,
+    remove_exception_logging_hook)
 from lp.codehosting.tests.helpers import TestResultWrapper
 
 
@@ -168,6 +171,37 @@ class TestExceptionLoggingHooks(TestCase):
         self.assertEqual([], exceptions)
 
 
+class TestGetVfsFormatClasses(TestCaseWithTransport):
+    """Tests for `lp.codehosting.bzrutils.get_vfs_format_classes`.
+    """
+
+    def tearDown(self):
+        # This makes sure the connections held by the branches opened in the
+        # test are dropped, so the daemon threads serving those branches can
+        # exit.
+        gc.collect()
+        super(TestGetVfsFormatClasses, self).tearDown()
+
+    def test_get_vfs_format_classes(self):
+        # get_vfs_format_classes for a returns the underlying format classes
+        # of the branch, repo and bzrdir, even if the branch is a
+        # RemoteBranch.
+        vfs_branch = self.make_branch('.')
+        smart_server = server.SmartTCPServer_for_testing()
+        smart_server.setUp(self.get_vfs_only_server())
+        self.addCleanup(smart_server.tearDown)
+        remote_branch = Branch.open(smart_server.get_url())
+        # Check that our set up worked: remote_branch is Remote and
+        # source_branch is not.
+        self.assertIsInstance(remote_branch, RemoteBranch)
+        self.failIf(isinstance(vfs_branch, RemoteBranch))
+        # Now, get_vfs_format_classes on both branches returns the same format
+        # information.
+        self.assertEqual(
+            get_vfs_format_classes(vfs_branch),
+            get_vfs_format_classes(remote_branch))
+
+
 def load_tests(basic_tests, module, loader):
     """Parametrize the tests of get_branch_stacked_on_url by branch format."""
     result = loader.suiteClass()
@@ -181,6 +215,7 @@ def load_tests(basic_tests, module, loader):
     result.addTests(loader.loadTestsFromTestCase(TestIsBranchStackable))
     result.addTests(loader.loadTestsFromTestCase(TestDenyingServer))
     result.addTests(loader.loadTestsFromTestCase(TestExceptionLoggingHooks))
+    result.addTests(loader.loadTestsFromTestCase(TestGetVfsFormatClasses))
     return result
 
 

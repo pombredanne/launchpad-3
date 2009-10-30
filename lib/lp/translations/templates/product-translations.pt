@@ -2,64 +2,86 @@
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
-  i18n:domain="launchpad"
+  metal:use-macro="view/macro:page/main_only"
 >
-  <!-- metal:use-macro="context/@@main_template/master" -->
 
   <body>
     <div metal:fill-slot="main"
          tal:define="uses_translations view/uses_translations;
                      admin_user context/required:launchpad.TranslationsAdmin">
-      <tal:uses-translations condition="uses_translations">
-        <h1>Translation overview</h1>
-      </tal:uses-translations>
-      <tal:not-uses-translations condition="not: uses_translations">
-        <h1 tal:condition="admin_user">
-          How to start using Launchpad Translations
-        </h1>
-        <h1 tal:condition="not: admin_user">
-          Translation setup needed
-        </h1>
-      </tal:not-uses-translations>
-      <ul class="helplinks">
-        <li>
-          <a href="https://help.launchpad.net/Translations"
-             id="link-to-translations-help"
-             >Help for translations
-          </a>
-        </li>
-      </ul>
+      <div class="translation-help-links">
+        <a href="https://help.launchpad.net/Translations"
+           id="link-to-translations-help"
+           >Help for translations
+        </a>
+        <div></div><!-- to clear-up all floats -->
+      </div>
       <tal:uses-translations condition="uses_translations">
         <tal:translatable define="target context/primary_translatable">
-          <p id="translation-permissions">
-            <tal:product replace="structure context/fmt:link">This
-            project</tal:product> is translated
-            <tal:hasgroup condition="context/translationgroup">by
-              <a tal:attributes="href context/translationgroup/fmt:url"
-                 tal:content="context/translationgroup/title">translators</a>
-            </tal:hasgroup>
-            with <a target="help" href="/+help/permissions-policies.html"
-              tal:content="context/translationpermission/title">certain</a>
-            permissions.
-            <tal:permissions condition="context/required:launchpad.Edit">
-              You can modify permissions on the
-              <a
-                tal:define="link context/menu:navigation/translators"
-                tal:attributes="href link/url"
-              >Settings</a> page.
-            </tal:permissions>
-          </p>
-          <h2>Translation for
-            <span tal:replace="target/displayname">main</span></h2>
-          <div tal:replace="structure target/@@+languages" />
-          <div style="height:1em;"></div>
-          <div tal:replace="structure context/@@+rosetta-status-legend" />
-          <div tal:replace="structure context/@@+portlet-translatables" />
+
+          <div class="yui-g">
+            <div class="yui-u first">
+              <div class="portlet">
+                <h3>Translation details</h3>
+                <p>
+                  Launchpad currently recommends translating
+                  <tal:target replace="structure target/fmt:link"
+                              >trunk</tal:target>.
+                  <span id="downloadupload"
+                       tal:condition="context/required:launchpad.AnyPerson">
+                    You can also
+                    <a tal:attributes="href target/fmt:url/+export"
+                       >download</a>
+                    <tal:owner-or-admin condition="admin_user">
+                      or
+                      <a tal:attributes="
+                          href target/fmt:url/+translations-upload"
+                       >upload</a>
+                    </tal:owner-or-admin>
+                    translations for
+                    <tal:target replace="structure target/name"
+                                >trunk</tal:target>.
+                  </span>
+                </p>
+                <p>To see all the translation files that are waiting to be
+                  imported, please look at
+                  <a tal:attributes="href context/fmt:url/+imports"
+                     tal:content="string:${context/displayname} import queue">
+                    import queue</a>.
+                </p>
+              </div>
+              <div class="portlet">
+                <h3>Permissions</h3>
+                <p>
+                  <tal:permissions replace="
+                     structure
+                     context/@@+portlet-translation-groups-and-permission"/>
+                </p>
+              </div>
+            </div>
+            <div class="yui-u">
+              <div>
+                <tal:registrant-or-admin
+                   condition="admin_user">
+                  <tal:has-obsolete-entries
+                     condition="context/obsolete_translatable_series">
+                    <div tal:replace="
+                        structure
+                        context/@@+portlet-obsolete-translatables" />
+                  </tal:has-obsolete-entries>
+                </tal:registrant-or-admin>
+              </div>
+              <div tal:replace="structure context/@@+portlet-translatables" />
+            </div>
+          </div>
+
+          <div class="yui-b">
+            <h2>Translation for
+              <span tal:replace="target/displayname">main</span></h2>
+            <div tal:replace="structure target/@@+languages" />
+            <div style="height:1em;"></div>
+            <div tal:replace="structure context/@@+rosetta-status-legend" />
+          </div>
         </tal:translatable>
       </tal:uses-translations>
       <tal:not-uses-translations condition="not: uses_translations">
@@ -123,14 +145,6 @@
           </p>
         </tal:other>
       </tal:not-uses-translations>
-      <tal:registrant-or-admin
-        condition="admin_user">
-        <tal:has-obsolete-entries
-          condition="context/obsolete_translatable_series">
-          <div
-            tal:replace="structure context/@@+portlet-obsolete-translatables" />
-        </tal:has-obsolete-entries>
-      </tal:registrant-or-admin>
     </div>
   </body>
 </html>

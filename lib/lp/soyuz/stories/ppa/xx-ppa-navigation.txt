@@ -2,27 +2,15 @@
 
 If a user has lp.Edit or lp.View on any PPAs, they are accessible from the
 user's page in a section titled "Personal package archives".  If not, then
-that section is not present and there is no link in the navigation menu.
-(See registry/browser/tests/person-views.txt for more detail.)
+that section is not present and there are no links to the ppa pages.
 
     >>> anon_browser.open('http://launchpad.dev/~matsubara')
-    >>> print anon_browser.getLink('Personal Package Archives')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
     >>> print find_tag_by_id(anon_browser.contents, 'ppas')
     None
 
 Navigating to cprov's personal page:
 
     >>> anon_browser.open('http://launchpad.dev/~cprov')
-
-That 'Personal package archives' section in the page body can be
-focused using the link in the navigation menu with the same name.
-
-    >>> print anon_browser.getLink('Personal Package Archives').url
-    http://launchpad.dev/~cprov#ppas
 
 For context where a PPA is already present it is listed.
 
@@ -37,8 +25,8 @@ And the users can click on the item and will be taken to the PPA page.
     >>> anon_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa'
 
-    >>> anon_browser.title
-    'PPA for Celso Providelo'
+    >>> print anon_browser.title
+    PPA for Celso Providelo : Celso Providelo
 
 There is a link that allows users with permission to create a PPA.
 
@@ -63,7 +51,7 @@ While navigating around the PPA the "structural location" includes a PPA:
     Hierarchy: Celso Providelo > PPA for Celso Providelo
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Code - http://code.launchpad.dev/~cprov
+    * Branches - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov
@@ -84,7 +72,7 @@ The PPA breadcrumb follows the PPA displayname.
     Hierarchy: Celso Providelo > Default PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Code - http://code.launchpad.dev/~cprov
+    * Branches - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov
@@ -92,18 +80,22 @@ The PPA breadcrumb follows the PPA displayname.
     Main heading: Default PPA
 
 The user can view all the package details using the 'View package details'
-link.
+link. This link is the first link displayed within
+the packages listing portlet.
 
+    >>> packages_portlet = find_tag_by_id(anon_browser.contents, 'packages')
+    >>> print packages_portlet.find('a').string
+    View package details
     >>> anon_browser.getLink('View package details').click()
     >>> print anon_browser.title
-    Packages in “Default PPA”
+    Packages in...
 
 You can see the build details of the packages in the archive by using
 the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
-    >>> anon_browser.title
-    'Builds for Default PPA'
+    >>> print anon_browser.title
+    Builds for...
 
     >>> anon_browser.url
     'http://launchpad.dev/~cprov/+archive/ppa/+builds'
@@ -118,14 +110,14 @@ The user can navigate to an individual build details:
     >>> anon_browser.getControl('All states').click()
     >>> anon_browser.getControl('Filter').click()
     >>> anon_browser.getLink('i386 build of iceweasel').click()
-    >>> anon_browser.title
-    'i386 build of iceweasel 1.0 in ubuntu warty RELEASE'
+    >>> print anon_browser.title
+    Default PPA : Celso Providelo
 
     >>> print_location(anon_browser.contents)
     Hierarchy: Celso Providelo > Default PPA
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Code - http://code.launchpad.dev/~cprov
+    * Branches - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov

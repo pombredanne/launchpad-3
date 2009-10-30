@@ -101,3 +101,13 @@ an IStructuredString implementation.
     >>> view.error_message = structured('Information overload.')
     >>> view.error_message.escapedtext
     u'Information overload.'
+
+Every Launchpad view also knows whether edge redirection has been inhibited.
+
+    >>> view.isRedirectInhibited()
+    False
+    >>> new_request = TestRequest(HTTP_COOKIE="inhibit_beta_redirect=1")
+    >>> view = MyView(context, new_request)
+    >>> view.isRedirectInhibited()
+    True
+

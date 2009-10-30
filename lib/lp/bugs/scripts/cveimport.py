@@ -7,11 +7,14 @@ CVE's are fully registered in Launchpad."""
 
 __metaclass__ = type
 
-import cElementTree
+try:
+    import xml.etree.cElementTree as cElementTree
+except ImportError:
+    import cElementTree
 import urllib2
 import gzip
 import StringIO
-import timing
+import time
 
 from zope.component import getUtility
 from zope.event import notify
@@ -217,12 +220,13 @@ class CVEUpdater(LaunchpadCronScript):
         else:
             raise LaunchpadScriptFailure('No CVE database file or URL given.')
 
-        # start analysing the data
-        timing.start()
+        # Start analysing the data.
+        start_time = time.time()
         self.logger.info("Processing CVE XML...")
         self.processCVEXML(cve_db)
-        timing.finish()
-        self.logger.info('%d seconds to update database.' % timing.seconds())
+        finish_time = time.time()
+        self.logger.info('%d seconds to update database.'
+                % (finish_time - start_time))
 
     def processCVEXML(self, cve_xml):
         """Process the CVE XML file.

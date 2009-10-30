@@ -48,7 +48,7 @@
     <adapter
         for="canonical.launchpad.layers.WebServiceLayer"
         provides="canonical.launchpad.webapp.interfaces.IDatabasePolicy"
-        factory="canonical.launchpad.webapp.dbpolicy.MasterDatabasePolicy"
+        factory="canonical.launchpad.webapp.dbpolicy.WebServiceDatabasePolicyFactory"
         />
     <adapter
         for="canonical.launchpad.layers.FeedsLayer"
@@ -517,6 +517,18 @@
         for="lp.translations.interfaces.translationgroup.ITranslationGroup"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.TranslationGroupFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.services.worlddata.interfaces.language.ILanguage"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.LanguageFormatterAPI"
+        name="fmt"
+        />
+    <adapter
+        for="lp.translations.interfaces.pofile.IPOFile"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="canonical.launchpad.webapp.tales.POFileFormatterAPI"
         name="fmt"
         />
     <adapter

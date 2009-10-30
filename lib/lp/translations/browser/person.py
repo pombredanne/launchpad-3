@@ -8,13 +8,16 @@ __metaclass__ = type
 __all__ = [
     'PersonTranslationView',
     'PersonTranslationRelicensingView',
+    'TranslationActivityView',
 ]
 
 from datetime import datetime, timedelta
 import pytz
 import urllib
+
 from zope.app.form.browser import TextWidget
 from zope.component import getUtility
+from zope.interface import implements, Interface
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -25,7 +28,6 @@ from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.widgets import LaunchpadRadioWidget
-from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.browser.translationlinksaggregator import (
     TranslationLinksAggregator)
@@ -89,60 +91,109 @@ class TranslateLinksAggregator(WorkListLinksAggregator):
         return pofile.untranslatedCount()
 
 
+def compose_pofile_filter_url(pofile, person):
+    """Compose URL for `Person`'s contributions to `POFile`."""
+    person_name = urllib.urlencode({'person': person.name})
+    return canonical_url(pofile) + "/+filter?%s" % person_name
+
+
+class ActivityDescriptor:
+    """Description of a past translation activity."""
+
+    date = None
+    title = None
+    url = None
+
+    def __init__(self, person, pofiletranslator):
+        """Describe a past translation activity by `person`.
+
+        :param person: The `Person` whose activity is being described.
+        :param pofiletranslator: A `POFileTranslator` record for
+            `person`.
+        """
+        assert person == pofiletranslator.person, (
+            "Got POFileTranslator record for user %s "
+            "while listing activity for %s." % (
+                person.name, pofiletranslator.person.name))
+
+        self.date = pofiletranslator.date_last_touched
+
+        pofile = pofiletranslator.pofile
+
+        self.title = pofile.potemplate.translationtarget.title
+        self.url = compose_pofile_filter_url(pofile, person)
+
+
 def person_is_reviewer(person):
     """Is `person` a translations reviewer?"""
     groups = ITranslationsPerson(person).translation_groups
     return groups.any() is not None
 
 
+class IPersonTranslationsMenu(Interface):
+    """Marker interface for `Person` Translations navigation menu."""
+
+
 class PersonTranslationsMenu(NavigationMenu):
 
-    usedfor = IPerson
+    usedfor = IPersonTranslationsMenu
     facet = 'translations'
     links = ('overview', 'licensing', 'imports', 'translations_to_review')
-    title = "Related pages"
+
+    @property
+    def person(self):
+        return self.context.context
 
     def overview(self):
         text = 'Overview'
-        return Link('', text)
+        return Link('', text, icon='info')
 
     def imports(self):
         text = 'Import queue'
-        return Link('+imports', text)
+        return Link('+imports', text, icon='info')
 
     def licensing(self):
         text = 'Translations licensing'
-        enabled = (self.context == self.user)
-        return Link('+licensing', text, enabled=enabled)
+        enabled = (self.person == self.user)
+        return Link('+licensing', text, enabled=enabled, icon='info')
 
     def translations_to_review(self):
         text = 'Translations to review'
-        enabled = person_is_reviewer(self.context)
-        return Link('+translations-to-review', text, enabled=enabled)
+        enabled = person_is_reviewer(self.person)
+        return Link(
+            '+translations-to-review', text, enabled=enabled, icon='info')
 
 
 class PersonTranslationView(LaunchpadView):
     """View for translation-related Person pages."""
+    implements(IPersonTranslationsMenu)
 
-    _pofiletranslator_cache = None
+    reviews_to_show = 10
 
     def __init__(self, *args, **kwargs):
         super(PersonTranslationView, self).__init__(*args, **kwargs)
         now = datetime.now(pytz.timezone('UTC'))
         self.history_horizon = now - timedelta(90, 0, 0)
 
+    @property
+    def page_title(self):
+        return "Translations related to %s" % self.context.displayname
+
     @cachedproperty
-    def batchnav(self):
+    def recent_activity(self):
+        """Recent translation activity by this person."""
+        entries = ITranslationsPerson(self.context).translation_history[:10]
+        return [ActivityDescriptor(self.context, entry) for entry in entries]
+
+    @cachedproperty
+    def latest_activity(self):
+        """Single latest translation activity by this person."""
         translations_person = ITranslationsPerson(self.context)
-        batchnav = BatchNavigator(
-            translations_person.translation_history, self.request)
-
-        pofiletranslatorset = getUtility(IPOFileTranslatorSet)
-        batch = batchnav.currentBatch()
-        self._pofiletranslator_cache = (
-            pofiletranslatorset.prefetchPOFileTranslatorRelations(batch))
-
-        return batchnav
+        latest = list(translations_person.translation_history[:1])
+        if len(latest) == 0:
+            return None
+        else:
+            return ActivityDescriptor(self.context, latest[0])
 
     @cachedproperty
     def translation_groups(self):
@@ -155,11 +206,6 @@ class PersonTranslationView(LaunchpadView):
         """Return translators a person is a member of."""
         translations_person = ITranslationsPerson(self.context)
         return list(translations_person.translators)
-
-    @cachedproperty
-    def person_filter_querystring(self):
-        """Return person's name appropriate for including in links."""
-        return urllib.urlencode({'person': self.context.name})
 
     @property
     def person_is_reviewer(self):
@@ -360,6 +406,15 @@ class PersonTranslationView(LaunchpadView):
         return overall
 
 
+class PersonTranslationReviewView(PersonTranslationView):
+    """View for translation-related Person pages."""
+
+    page_title = "for review"
+
+    def label(self):
+        return "Translations for review by %s" % self.context.displayname
+
+
 class PersonTranslationRelicensingView(LaunchpadFormView):
     """View for Person's translation relicensing page."""
     schema = ITranslationRelicensingAgreementEdit
@@ -368,8 +423,10 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
         'allow_relicensing', LaunchpadRadioWidget, orientation='vertical')
     custom_widget('back_to', TextWidget, visible=False)
 
+    page_title = "Licensing"
+
     @property
-    def page_title(self):
+    def label(self):
         return "Translations licensing by %s" % self.context.displayname
 
     @property
@@ -429,3 +486,31 @@ class PersonTranslationRelicensingView(LaunchpadFormView):
                 "Unknown allow_relicensing value: %r" % allow_relicensing)
         self.next_url = self.getSafeRedirectURL(data['back_to'])
 
+
+class TranslationActivityView(LaunchpadView):
+    """View for person's activity listing."""
+
+    _pofiletranslator_cache = None
+
+    page_title = "Activity"
+
+    @property
+    def label(self):
+        return "Translation activity by %s" % self.context.displayname
+
+    @cachedproperty
+    def batchnav(self):
+        """Iterate over person's translation_history."""
+        translations_person = ITranslationsPerson(self.context)
+        batchnav = BatchNavigator(
+            translations_person.translation_history, self.request)
+
+        pofiletranslatorset = getUtility(IPOFileTranslatorSet)
+        batch = batchnav.currentBatch()
+        self._pofiletranslator_cache = (
+            pofiletranslatorset.prefetchPOFileTranslatorRelations(batch))
+
+        return batchnav
+
+    def composeURL(self, pofile):
+        return compose_pofile_filter_url(pofile, self.context)

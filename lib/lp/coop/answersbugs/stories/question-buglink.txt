@@ -69,8 +69,8 @@ A notification is also displayed.
 To remove bug links, the user uses the 'Remove Bug Link' action.
 
     >>> user_browser.getLink('Remove bug link').click()
-    >>> user_browser.title
-    'Remove bug links from question #2'
+    >>> print user_browser.title
+    Remove bug links from question #2...
 
 The list of linked bugs is displayed. The user selects the link to
 remove and clicks the 'Remove' button.

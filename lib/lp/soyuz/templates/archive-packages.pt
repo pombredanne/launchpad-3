@@ -102,9 +102,6 @@ tr#package-counters p{
 
         <div class="ppa-packaging-tmp-actions"
              tal:content="structure view/@@+global-actions" />
-        <h1 tal:content="view/page_title">
-          PPA for user
-        </h1>
 
         <p tal:condition="not: context/enabled"
            style="clear: right;" class="warning message">

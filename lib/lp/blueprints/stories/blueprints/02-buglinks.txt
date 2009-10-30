@@ -13,7 +13,7 @@ the 'Related Bugs' section.
     ...     'http://launchpad.dev/firefox/+spec/svg-support')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'bug_links'))
     Related bugs
-    Bug #1: Firefox does not support SVG
+    Bug #1: Firefox does not support SVG ...
 
 
 == Adding Links ==
@@ -54,9 +54,6 @@ done by using the 'Remove bug link' link.
     >>> user_browser.getLink('Unlink a bug').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support/+unlinkbug'
-    >>> back_link = user_browser.getLink('Support Native SVG Objects')
-    >>> back_link.url
-    'http://blueprints.launchpad.dev/firefox/+spec/svg-support'
 
 The list of linked bugs is displayed. The user selects the bug to remove
 and clicks the 'Remove' button.

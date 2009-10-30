@@ -18,12 +18,7 @@
     </style>
   </head>
   <body>
-    <metal:heading fill-slot="heading">
-      <h1 tal:content="context/title">Bar doesn't work</h1>
-      <div id="question-details">
-        <img alt="Open" title="Open" src="/@@/question"
-          tal:attributes="alt context/status/title;
-                          title context/status/title;" />
+    <metal:registering fill-slot="registering">
         <span class="questionstatusOPEN"
           tal:attributes="class string:questionstatus${context/status/name}"
           tal:content="context/status/title">Open</span>
@@ -48,14 +43,8 @@
         <a
           tal:attributes="href context/owner/fmt:url"
           tal:content="context/owner/displayname">Foo Bar</a>
-      </div>
+    </metal:registering>
 
-      <div id="question-lang">
-        <b>Language:</b>
-        <span tal:replace="context/language/englishname">English</span><br />
-      </div>
-
-    </metal:heading>
 
     <metal:portlets fill-slot="side">
       <div tal:replace="structure context/@@+global-actions" />
@@ -66,6 +55,11 @@
     </metal:portlets>
 
     <div metal:fill-slot="main">
+
+      <div id="question-lang" style="margin-bottom: 1em">
+        <b>Language:</b>
+        <span tal:replace="context/language/englishname">English</span><br />
+      </div>
 
       <tal:description
         define="global description context/description/fmt:obfuscate-email/fmt:text-to-html" />
@@ -149,12 +143,12 @@
             </tal:comment>
             <div class="actions" metal:fill-slot="buttons">
               <div>
-                <input tal:replace="structure view/comment_action/render" />
                 <input tal:replace="structure view/answer_action/render" />
                 <input tal:replace="structure view/selfanswer_action/render" />
                 <input tal:replace="structure view/requestinfo_action/render" />
                 <input tal:replace="structure view/giveinfo_action/render" />
                 <input tal:replace="structure view/reopen_action/render" />
+                <input tal:replace="structure view/comment_action/render" />
               </div>
               <p id="answer-button-hint"
                 tal:condition="view/confirm_action/available">

@@ -4,8 +4,16 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Personal Package Archives").click()
-    >>> anon_browser.title
-    'Ubuntu Linux Personal Package Archives'
+    >>> print_location(anon_browser.contents)
+    Hierarchy: Ubuntu > Personal Package Archives
+    Tabs:
+    * Overview (selected) - http://launchpad.dev/ubuntu
+    * Branches - http://code.launchpad.dev/ubuntu
+    * Bugs - http://bugs.launchpad.dev/ubuntu
+    * Blueprints - http://blueprints.launchpad.dev/ubuntu
+    * Translations - http://translations.launchpad.dev/ubuntu
+    * Answers - http://answers.launchpad.dev/ubuntu
+    Main heading: Personal Package Archives for Ubuntu Linux
 
 
 == Distribution PPA main page ==
@@ -77,7 +85,7 @@ is presented for other distribution.
     >>> anon_browser.open("http://launchpad.dev/debian")
     >>> anon_browser.getLink("Personal Package Archives").click()
     >>> print anon_browser.title
-    Debian GNU/Linux Personal Package Archives
+    Personal Package Archives : Debian
 
 Those pages present coherent data for a distribution with no PPAs.
 
@@ -238,6 +246,20 @@ In the three sample data PPAs, only one matches the search string "Celso".
     1
 
 
+=== Hand-hacked search URLs ==
+
+If the search term is specified more than once by someone hand-hacking the
+URL, the page copes gracefully with this by searching for all the terms
+specified.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+ppas"
+    ...     "?name_filter=packages&name_filter=friends")
+    >>> [row] = find_tags_by_class(anon_browser.contents, 'ppa_batch_row')
+    >>> print extract_text(row)
+    PPA for Celso Providelo...
+
+
 == Owner's PPA pages ==
 
 Let's start by adding an extra package to Celso's archive:
@@ -251,31 +273,65 @@ Let's start by adding an extra package to Celso's archive:
     >>> transaction.commit()
     >>> flush_database_updates()
 
-And now on to the page itself. In the table rows, the "Owner" is a
-clickable link to his PPA page:
+And now on to the page itself. In the table rows, the PPA
+'displayname' is a link to its corresponding page:
 
-    >>> anon_browser.getLink("Celso Providelo").click()
-    >>> anon_browser.title
-    'PPA for Celso Providelo'
+    >>> anon_browser.getLink("PPA for Celso Providelo").click()
+    >>> print anon_browser.title
+    PPA for Celso Providelo : Celso Providelo
 
-Let's see his sources.list entries:
+The first portlet in the PPA index page tell users how to install the
+context PPA in their systems.
 
-    >>> results = find_tag_by_id(anon_browser.contents, 'sources-list-entries')
-    >>> text = extract_text(results)
-    >>> print text
-    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu
-        YOUR_UBUNTU_VERSION_HERE main
-    deb-src http://ppa.launchpad.dev/cprov/ppa/ubuntu
-        YOUR_UBUNTU_VERSION_HERE main
+    >>> install_portlet = find_portlet(
+    ...     anon_browser.contents, 'Adding this PPA to your system')
 
-and the select control that lets you update them:
+    >>> print extract_text(install_portlet)
+    Adding this PPA to your system
+    You can update your system with unsupported packages from this
+    untrusted PPA by adding ppa:cprov/ppa to your system's Software Sources.
+    Not using Ubuntu 9.10 (karmic)?
+    Technical details about this PPA
+    ...
+    For questions and bugs with software in this PPA please contact
+    Celso Providelo.
 
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'series-widget-div'))
+The PPA owner reference is a link to its profile page.
+
+    >>> print anon_browser.getLink('Celso Providelo').url
+    http://launchpad.dev/~cprov
+
+The installation details are presented right below the 'Technical
+details about this PPA' (in a javascript-expandable area). It consists
+basically of an interactive 'sources_list' widget which allows users
+to select their Ubuntu series (when it's not detected automatically)
+and copy-and-paste the repository URL to their systems.
+
+    >>> tech_details = first_tag_by_class(
+    ...     str(install_portlet), 'widget-body')
+
+    >>> print extract_text(tech_details)
+    This PPA can be added to your system manually by copying
+    the lines below and adding them to your system's software
+    sources. (Read about installing)
     Display sources.list entries for:
-    Choose your Ubuntu version
-    Breezy Badger Autotest (6.6.6)
-    Warty (4.10)
+      Choose your Ubuntu version
+      Breezy Badger Autotest (6.6.6)
+      Warty (4.10)
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu
+      YOUR_UBUNTU_VERSION_HERE main
+    deb-src http://ppa.launchpad.dev/cprov/ppa/ubuntu
+      YOUR_UBUNTU_VERSION_HERE main
+
+There is a link within this section pointing users to the 'help'
+wiki, which contains more documentation about the PPA installation
+procedure.
+
+    >>> print anon_browser.getLink('Read about installing').url
+    http://launchpad.dev/+help/soyuz/ppa-sources-list.html
+
+When present PPA 'Build dependencies' and 'Signing key' will also be
+presented within this section. See below.
 
 The sample data has two packages belonging to Celso. Two table rows
 will be presented to user containing:
@@ -315,7 +371,7 @@ latest published sources with their states.
     >>> print extract_text(latest_updates)
     Latest updates
     cdrkit ... ago
-    Failed to build
+    Failed to build: i386
     pmount ... ago
     Successfully built
     iceweasel ... ago
@@ -359,12 +415,12 @@ filter.
 
 == Filtering an archive ==
 
-The default series filter is 'any' which means that by default the
+The default series filter is '' which means that by default the
 results will include packages from any distro series. A user can
 explicitly set the 'Any Series' filter and get the same result:
 
     >>> anon_browser.getControl(name='field.series_filter').value = (
-    ...     ['any'])
+    ...     [''])
     >>> anon_browser.getControl('Filter', index=0).click()
     >>> print_archive_package_rows(anon_browser.contents)
     Package             Version         Uploaded by
@@ -397,9 +453,9 @@ link to a repository that doesn't exist yet.
     PPA description
     I am not allowed to say, I have no privs.
     Adding this PPA to your system
-    This PPA does not contain
-    any packages yet. Find more information about how to upload
-    packages in the PPA help page
+    This PPA does not contain any packages yet.
+    Find more information about how to upload packages in the PPA help page.
+    PPA statistics
     ...
 
 It also contains a link to the 'PPA help page'.
@@ -506,6 +562,7 @@ help wiki are presented in the PPA index page.
 
     >>> print extract_text(signing_key_section)
     Signing key: 1024D/12345678 (What is this?)
+    Fingerprint: ABCDEF0123456789ABCDDCBA0000111112345678
 
 The key fingerprint links to the actual key available in the ubuntu
 keyserver.
@@ -533,8 +590,8 @@ Just quickly check if the singular form of this section is handled
 properly.
 
     >>> anon_browser.open("http://launchpad.dev/~mark/+archive/ppa")
-    >>> anon_browser.title
-    'PPA for Mark Shuttleworth'
+    >>> print anon_browser.title
+    PPA for Mark Shuttleworth : Mark Shuttleworth
 
 Mark has sources only published in one archive, so he has no
 series-widget-div control to update them:
@@ -558,8 +615,8 @@ allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntutest")
     >>> anon_browser.getLink("Personal Package Archives").click()
-    >>> anon_browser.title
-    'Ubuntu Test Personal Package Archives'
+    >>> print anon_browser.title
+    Personal Package Archives : ubuntutest
 
     >>> len(find_tags_by_class(anon_browser.contents, 'ppa_batch_row'))
     0
@@ -602,7 +659,7 @@ PPA itself.
 
     >>> anon_browser.getLink('PPA for Celso Providelo').click()
     >>> print anon_browser.title
-    PPA for Celso Providelo
+    PPA for Celso Providelo : Celso Providelo
 
 
 == Compatibility URL Redirection ==

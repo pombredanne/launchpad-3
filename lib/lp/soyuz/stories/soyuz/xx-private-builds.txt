@@ -58,17 +58,15 @@ can use him to see builds from a buildd-admin perspective.
     >>> logout()
 
 So now we can go to frog's builder page and see what the page shows us.
-The status shown to an anonymous user hides the fact that it's building a
-private build:
+The status shown to an anonymous user hides the private source it is
+building.
 
     >>> anon_browser.open("http://launchpad.dev/+builds/frog")
     >>> print extract_text(find_main_content(anon_browser.contents))
     The frog builder...
     Current status
-    The frog builder
-    is deactivated.
+    Building private source
     ...
-
 
 Launchpad Administrators are allowed to see the build:
 
@@ -76,6 +74,7 @@ Launchpad Administrators are allowed to see the build:
     >>> print extract_text(find_main_content(admin_browser.contents))
     The frog builder...
     Current status
+    Building
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
     ...
 
@@ -86,7 +85,7 @@ Buildd Administrators are not allowed to see the build in the portlet:
     >>> print extract_text(find_main_content(name12_browser.contents))
     The frog builder...
     Current status
-    The frog builder is deactivated.
+    Building private source
     ...
 
 cprov is also allowed to see his own build:
@@ -97,6 +96,7 @@ cprov is also allowed to see his own build:
     >>> print extract_text(find_main_content(cprov_browser.contents))
     The frog builder...
     Current status
+    Building
     i386 build of privacy-test 666 in ubuntutest breezy-autotest RELEASE
     ...
 
@@ -244,7 +244,7 @@ Launchpad Buildd admins cannot see private builds.
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
-    frog  386        Building private build
+    frog  386        Building private source
     ...
 
 cprov can see his own private build:
@@ -263,10 +263,11 @@ Anonymous users cannot see the private build:
     >>> anon_browser.open("http://launchpad.dev/+builds")
     >>> print extract_text(find_main_content(anon_browser.contents))
     The Launchpad build farm
+    2 available build machines, ...
     ...
     Name  Processor  Status
     bob   386        Building i386 build of mozilla-firefox ...
-    frog  386        Building private build
+    frog  386        Building private source
     ...
 
 
@@ -350,13 +351,13 @@ Accessing the build page will now also work:
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     private_build.id)
     >>> print anon_browser.title
-    i386 build of privacy-test ...
+    PPA for Celso Providelo : Celso Providelo
 
     >>> browser.open(
     ...     "http://launchpad.dev/~cprov/+archive/ppa/+build/%s" %
     ...     private_build.id)
     >>> print browser.title
-    i386 build of privacy-test ...
+    PPA for Celso Providelo : Celso Providelo
 
 When accessing the distroseries source package release page, the builds
 portlet will display a link to the newly unembargoed build:

@@ -57,6 +57,14 @@ class MultiStepView(LaunchpadView):
         """
         raise NotImplementedError
 
+    # A page title should not be needed here, but our auto generated
+    # breadcrumbs will expect it to exist, so it must be defined in
+    # subclasses.
+    @property
+    def page_title(self):
+        """Must override in subclasses for breadcrumbs to work."""
+        raise NotImplementedError
+
     def initialize(self):
         """Initialize the view and handle stepping through sub-views."""
         view = self.first_step(self.context, self.request)

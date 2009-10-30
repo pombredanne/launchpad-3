@@ -10,12 +10,11 @@ This script is useful to recover from breakages after importing bad
 .po files like the one reported at #32610.
 """
 
+import _pythonpath
 
 import sys
 import logging
 from optparse import OptionParser
-
-import _pythonpath
 
 from zope.component import getUtility
 

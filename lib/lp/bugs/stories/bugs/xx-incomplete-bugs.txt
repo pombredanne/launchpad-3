@@ -144,17 +144,14 @@ bugs that can expire.
     >>> user_browser.title
     'Bugs in Jokosher Audio Editor'
 
-    >>> expirable_bugs_link = user_browser.getLink(
-    ...     'incomplete bugs can expire')
-    >>> expirable_bugs_link.text
-    '2 incomplete bugs can expire'
+    >>> expirable_bugs_link = user_browser.getLink('Incomplete bugs')
 
 The link is to the expirable bugs page. No Privileges Person can see
 the bug he set to Incomplete previously.
 
     >>> expirable_bugs_link.click()
-    >>> user_browser.title
-    'Bugs that can expire in Jokosher Audio Editor'
+    >>> print user_browser.title
+    Bugs that can expire in Jokosher...
 
     >>> contents = find_main_content(user_browser.contents)
     >>> print_batch_header(contents)
@@ -190,7 +187,7 @@ pushed to the bottom of the list.
     >>> user_browser.getControl(name='field.comment').value = "bump"
     >>> user_browser.getControl('Post Comment').click()
     >>> user_browser.getLink('Bugs').click()
-    >>> user_browser.getLink('incomplete bugs can expire').click()
+    >>> user_browser.getLink('Incomplete bugs').click()
     >>> contents = find_main_content(user_browser.contents)
     >>> buglisting = contents.find('table', id='buglisting')
     >>> print extract_text(buglisting.thead)
@@ -212,11 +209,7 @@ Jokosher's bug page.
     None
 
     >>> user_browser.getLink('Bugs').click()
-    >>> expirable_bugs_link = user_browser.getLink(
-    ...     'incomplete bug can expire')
-    >>> expirable_bugs_link.text
-    '1 incomplete bug can expire'
-
+    >>> expirable_bugs_link = user_browser.getLink('Incomplete bugs')
     >>> expirable_bugs_link.click()
     >>> contents = find_main_content(user_browser.contents)
     >>> buglisting = contents.find('table', id='buglisting')

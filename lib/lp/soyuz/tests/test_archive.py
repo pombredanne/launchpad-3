@@ -8,12 +8,15 @@ import pytz
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
+from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -167,6 +170,43 @@ class TestArchiveRepositorySize(TestCaseWithFactory):
             previous_size + 1,
             self.publisher.ubuntutest.main_archive.binaries_size)
 
+    def test_sources_size_on_empty_archive(self):
+        # Zero is returned for an archive without sources.
+        self.assertEquals(
+            0, self.ppa.sources_size,
+            'Zero should be returned for an archive without sources.')
+
+    def test_sources_size_does_not_count_duplicated_files(self):
+        # If there are multiple copies of the same file name/size
+        # only one will be counted.
+        pub_1 = self.publisher.getPubSource(
+            filecontent='22', version='0.5.11~ppa1', archive=self.ppa)
+
+        pub_2 = self.publisher.getPubSource(
+            filecontent='333', version='0.5.11~ppa2', archive=self.ppa)
+
+        self.assertEquals(5, self.ppa.sources_size)
+
+        shared_tarball = self.publisher.addMockFile(
+            filename='foo_0.5.11.tar.gz', filecontent='1')
+
+        # After adding a the shared tarball to the ppa1 version,
+        # the sources_size updates to reflect the change.
+        pub_1.sourcepackagerelease.addFile(shared_tarball)
+        self.assertEquals(
+            6, self.ppa.sources_size,
+            'The sources_size should update after a file is added.')
+
+        # But after adding a copy of the shared tarball to the ppa2 version,
+        # the sources_size is unchanged.
+        shared_tarball_copy = self.publisher.addMockFile(
+            filename='foo_0.5.11.tar.gz', filecontent='1')
+
+        pub_2.sourcepackagerelease.addFile(shared_tarball_copy)
+        self.assertEquals(
+            6, self.ppa.sources_size,
+            'The sources_size should change after adding a duplicate file.')
+
 
 class TestSeriesWithSources(TestCaseWithFactory):
     """Create some sources in different series."""
@@ -242,6 +282,105 @@ class TestSeriesWithSources(TestCaseWithFactory):
         self.assertEqual(
             [u'1.0', u'0.5'], versions,
             "The latest version was not first.")
+
+
+class TestGetSourcePackageReleases(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestGetSourcePackageReleases, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # Create an archive with some published binaries.
+        self.archive = self.factory.makeArchive()
+        binaries_foo = self.publisher.getPubBinaries(
+            archive=self.archive, binaryname="foo-bin")
+        binaries_bar = self.publisher.getPubBinaries(
+            archive=self.archive, binaryname="bar-bin")
+
+        # Collect the builds for reference.
+        self.builds_foo = [
+            binary.binarypackagerelease.build for binary in binaries_foo]
+        self.builds_bar = [
+            binary.binarypackagerelease.build for binary in binaries_bar]
+
+        # Collect the source package releases for reference.
+        self.sourcepackagereleases = [
+            self.builds_foo[0].sourcepackagerelease,
+            self.builds_bar[0].sourcepackagerelease,
+            ]
+
+    def test_getSourcePackageReleases_with_no_params(self):
+        # With no params all source package releases are returned.
+        sprs = self.archive.getSourcePackageReleases()
+
+        self.assertContentEqual(self.sourcepackagereleases, sprs)
+
+    def test_getSourcePackageReleases_with_buildstatus(self):
+        # Results are filtered by the specified buildstatus.
+
+        # Set the builds for one of the sprs to needs build.
+        for build in self.builds_foo:
+            build.buildstate = BuildStatus.NEEDSBUILD
+
+        result = self.archive.getSourcePackageReleases(
+            build_status=BuildStatus.NEEDSBUILD)
+
+        self.failUnlessEqual(1, result.count())
+        self.failUnlessEqual(
+            self.sourcepackagereleases[0], result[0])
+
+class TestCorrespondingDebugArchive(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestCorrespondingDebugArchive, self).setUp()
+
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+
+        # Create a debug archive, as there isn't one in the sample data.
+        self.debug_archive = getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.DEBUG,
+            distribution=self.ubuntutest,
+            owner=self.ubuntutest.owner)
+
+        # Retrieve sample data archives of each type.
+        self.primary_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PRIMARY)
+        self.partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PARTNER)
+        self.copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PARTNER)
+        self.ppa = getUtility(IPersonSet).getByName('cprov').archive
+
+    def testPrimaryDebugArchiveIsDebug(self):
+        self.assertEquals(
+            self.primary_archive.debug_archive, self.debug_archive)
+
+    def testPartnerDebugArchiveIsSelf(self):
+        self.assertEquals(
+            self.partner_archive.debug_archive, self.partner_archive)
+
+    def testCopyDebugArchiveIsSelf(self):
+        self.assertEquals(
+            self.copy_archive.debug_archive, self.copy_archive)
+
+    def testDebugDebugArchiveIsSelf(self):
+        self.assertEquals(
+            self.debug_archive.debug_archive, self.debug_archive)
+
+    def testPPADebugArchiveIsSelf(self):
+        self.assertEquals(self.ppa.debug_archive, self.ppa)
+
+    def testMissingPrimaryDebugArchiveIsNone(self):
+        # Turn the DEBUG archive into a COPY archive to hide it.
+        removeSecurityProxy(self.debug_archive).purpose = ArchivePurpose.COPY
+
+        self.assertIs(
+            self.primary_archive.debug_archive, None)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

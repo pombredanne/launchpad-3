@@ -1,4 +1,6 @@
-== SourcePackagePublishingHistory ==
+==============================
+SourcePackagePublishingHistory
+==============================
 
 This class provides public access to publishing records via a SQL view.
 
@@ -268,7 +270,8 @@ IBinaryPackagePublishingHistory also contains similar API conveniences.
     base
 
 
-== Stanza generation ==
+Stanza generation
+=================
 
     >>> from canonical.launchpad.interfaces import (
     ...     IArchiveSafePublisher,
@@ -328,7 +331,8 @@ Files published are accessible via the files property:
       u'http://ftpmaster.internal/ubuntu/pool/main/a/alsa-utils/alsa-utils_1.0.8-1ubuntu1.dsc')]
 
 
-== Deletion and obsolescence ==
+Deletion and obsolescence
+=========================
 
 ArchivePublisherBase, which is common to SourcePackagePublishingHistory
 and BinaryPackagePublishingHistory, contains the methods requestDeletion
@@ -374,7 +378,8 @@ pockets for stable distroseries):
     True
 
 
-== Copying and published binarypackages lookup ==
+Copying and published binarypackages lookup
+===========================================
 
 ISourcePackagePublishingHistory provides the getPublishedBinaries
 which returns all published binaries build from a source in the pocket
@@ -609,7 +614,8 @@ because it's used below.
     >>> syncUpdate(deleted)
 
 
-== Copying and inspecting architecture independent binaries ==
+Copying and inspecting architecture independent binaries
+========================================================
 
 copyTo() behaves differently for architecture independent and
 architecture specific binaries. We will create a
@@ -690,7 +696,8 @@ distroseries).
     pirulito 666 in breezy-autotest i386
 
 
-== Copying to PPAs ==
+Copying to PPAs
+===============
 
 Another common copy use-case is rebuild the same source in another
 suite. To simulate this we will create a publication in Celso's PPA.
@@ -819,7 +826,8 @@ So, no builds are created.
     []
 
 
-== getSourceAndBinaryLibraryFiles ==
+getSourceAndBinaryLibraryFiles
+==============================
 
 This method retrieves LibraryFileAlias records for all source and binary
 files associated with this publication.
@@ -847,7 +855,8 @@ We can also publish a package in a PPA and query on its files:
     foo_666.dsc
 
 
-== Publishing records age ==
+Publishing records age
+======================
 
 Both ISourcePackagePublishingHistory and IBinaryPackagePublishingHistory
 implement the 'age' property which return a timedelta representing
@@ -860,7 +869,8 @@ implement the 'age' property which return a timedelta representing
     datetime.timedelta(...)
 
 
-== Secure Source Publishing ==
+Secure Source Publishing
+========================
 
 'secure_record' returns a ISecureSourcePackagePublishing instance
 corresponding to this publication. This instance also implements
@@ -875,7 +885,8 @@ IArchiveSafePublisher.
     False
 
 
-== Binary and Binary File Publishing ===
+Binary and Binary File Publishing
+=================================
 
 Symmetric behaviour is offered for BinaryPackagePublishing,
 BinaryPackageFile and ISecureBinaryPackagePublishingHistory
@@ -935,9 +946,15 @@ Generating respective "Packages" stanzas:
     [u'http://ftpmaster.internal/debian/pool/universe/m/mozilla-firefox/mozilla-firefox_0.9_i386.deb']
 
 
-== IPublishingSet ==
+IPublishingSet
+==============
 
 This utility implements the following methods:
+
+ * newBinaryPublication();
+ * newSourcePublication();
+
+which create new publishing records, and:
 
  * getBuildsForSources();
  * getUnpublishedBuildsForSources();
@@ -945,7 +962,7 @@ This utility implements the following methods:
  * getBinaryPublicationsForSources();
  * getPackageDiffsForSources();
 
-They receive a list of `SourcePackagePublishingHistory` objects and
+which receive a list of `SourcePackagePublishingHistory` objects and
 fetch the corresponding information for all of them.
 
 Their returned `ResultSet` (they all use storm natively) follows a
@@ -963,14 +980,10 @@ features in `ISourcePackagePublishingHistory`:
  * getSourceAndBinaryLibraryFiles -> IPublishingSet.getFilesForSources;
  * getPublishedBinaries -> IPublishingSet.getBinaryPublicationsForSources;
 
-So, they were already tested implicitly before in this file, the
+So, they were already tested implicitly before in this file, they
 simply use the IPublishing methods passing only a single source
 publication. Now we will document how they work for multiple source
 publications.
-
-IPublishingSet is an essential component for
-`ArchiveSourcePublications` feature, see more  information below in
-its corresponding test section.
 
     >>> from lp.soyuz.interfaces.publishing import (
     ...     IPublishingSet)
@@ -980,10 +993,54 @@ its corresponding test section.
     >>> verifyObject(IPublishingSet, publishing_set)
     True
 
+
+Creating new publication records
+--------------------------------
+
+newSourcePublication() and newBinaryPublication() will create source and
+binary publication records respectively.  They are already implicitly tested
+above via the copyTo methods which use them to create new records.  However,
+they have one extra feature which is important for PPAs - they will ensure
+that the published component is always 'main'.
+
+When copying publications from non-main components in the primary archive,
+the PPA publication will always be main:
+
+    >>> test_source_pub = test_publisher.getPubSource(
+    ...     sourcename='overrideme', component='universe')
+    >>> ppa_pub = publishing_set.newSourcePublication(
+    ...     archive=mark.archive,
+    ...     sourcepackagerelease=test_source_pub.sourcepackagerelease,
+    ...     distroseries=test_source_pub.distroseries,
+    ...     component=test_source_pub.component,
+    ...     section=test_source_pub.section,
+    ...     pocket=test_source_pub.pocket)
+    >>> print ppa_pub.component.name
+    main
+
+    >>> test_bin_pubs = test_publisher.getPubBinaries(
+    ...     pub_source=test_source_pub)
+    >>> test_bin_pub = test_bin_pubs[0]
+    >>> ppa_pub = publishing_set.newBinaryPublication(
+    ...     archive=mark.archive,
+    ...     binarypackagerelease=test_bin_pub.binarypackagerelease,
+    ...     distroarchseries=test_bin_pub.distroarchseries,
+    ...     component=test_bin_pub.component,
+    ...     section=test_bin_pub.section,
+    ...     priority=test_bin_pub.priority,
+    ...     pocket=test_bin_pub.pocket)
+    >>> print ppa_pub.binarypackagerelease.component.name
+    universe
+    >>> print ppa_pub.component.name
+    main
+
+IPublishingSet is an essential component for
+`ArchiveSourcePublications` feature, see more  information below in
+its corresponding test section.
+
 We will assembly a list of source publications based on what was
 ever published in Celso's PPA.
 
-    >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_sources = list(cprov.archive.getPublishedSources())
     >>> len(cprov_sources)
     8
@@ -1301,7 +1358,8 @@ be passed as a list. Otherwise an exception will be raised.
     AssertionError: The 'sources' parameter must be a list.
 
 
-== ArchiveSourcePublications ==
+ArchiveSourcePublications
+=========================
 
 `ArchiveSourcePublications` wraps `IPublishingSet` methods to build a
 set of objects which decorate `ISourcePackagePublishingHistory` with
@@ -1516,7 +1574,8 @@ modify the cached builds by appending the same build to the cached builds.
     i386 build of foo 999 in ubuntutest breezy-autotest RELEASE
 
 
-== IPublishingSet.getBuildStatusSummariesForSourceIdsAndArchive() ==
+IPublishingSet.getBuildStatusSummariesForSourceIdsAndArchive()
+==============================================================
 
 This extra method on IPublishingSet allows a summary of the build status
 for a set of sources to be presented. The corresponding archive is a
@@ -1586,7 +1645,8 @@ required archive parameter will be ignored:
     >>> print_build_summaries(build_summaries)
 
 
-== IPublishing ancestry lookup and override ==
+IPublishing ancestry lookup and override
+========================================
 
 `IPublishing` is implemented by both kinds of package publications we
 have `SourcePackagePublishingHistory` and
@@ -1671,7 +1731,8 @@ On the lack of ancestry, None is returned.
 
 `overrideFromAncestry` operates directly on top of the default
 behavior of `getAncestry`. It looks up the most recent ancestry for a
-publication and override it in place.
+publication and override it in place.  If there is no previous publication
+then the package's component is used.
 
     >>> print test_source.component.name
     universe
@@ -1680,17 +1741,19 @@ publication and override it in place.
     >>> print test_source.component.name
     multiverse
 
-It works in the same way for binaries and follows the new publishing
-context.
+It works in the same way for binaries.
+
+    >>> multiverse = getUtility(IComponentSet)['multiverse']
+    >>> test_binary.binarypackagerelease.component = multiverse
 
     >>> print test_binary.component.name
     universe
 
     >>> copied_binary = test_binary.copyTo(
-    ...     test_source.distroseries, test_source.pocket, cprov.archive)[0]
+    ...     hoary_test, test_source.pocket, archive=test_binary.archive)[0]
     >>> print copied_binary.component.name
     universe
 
     >>> copied_binary.overrideFromAncestry()
     >>> print copied_binary.component.name
-    main
+    multiverse

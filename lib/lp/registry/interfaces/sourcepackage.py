@@ -22,6 +22,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.soyuz.interfaces.component import IComponent
 from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (
@@ -30,7 +31,7 @@ from lazr.restful.declarations import (
     operation_returns_entry, REQUEST_USER)
 
 
-class ISourcePackage(IBugTarget):
+class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less
@@ -89,14 +90,13 @@ class ISourcePackage(IBugTarget):
     # This is really a reference to an IProductSeries.
     productseries = exported(
         ReferenceChoice(
-            title=_("Product Series"), required=False,
+            title=_("Project series"), required=False,
             vocabulary="ProductSeries",
             schema=Interface,
             description=_(
-                "The best guess we have as to the Launchpad ProductSeries "
-                "for this Source Package. Try find packaging information for "
-                "this specific distroseries then try parent series and "
-                "previous Ubuntu series.")))
+                "The registered project series that this source package."
+                "is based on. This series may be the same as the one that "
+                "earlier versions of this source packages were based on.")))
 
     releases = Attribute("The full set of source package releases that "
         "have been published in this distroseries under this source "
@@ -223,6 +223,13 @@ class ISourcePackage(IBugTarget):
     latest_published_component = Object(
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
+
+    def getLatestTranslationsUploads():
+        """Find latest Translations tarballs as produced by Soyuz.
+
+        :return: A list of `ILibraryFileAlias`es, usually of size zero
+            or one.  If not, they are sorted from oldest to newest.
+        """
 
 
 class ISourcePackageFactory(Interface):

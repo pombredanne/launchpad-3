@@ -1,24 +1,16 @@
-<tal:root
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
-<tal:layout define="columns1 default">
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
-  <body>
-    <h1 metal:fill-slot="heading">Projects in Launchpad</h1>
-    <div metal:fill-slot="main">
-      <h1>All translatable projects</h1>
+<body>
+  <div metal:fill-slot="heading"><h1 tal:content="view/label" /></div>
+  <div metal:fill-slot="main">
+    <div class="top-portlet">
+      <p>These projects are translated in <a href="/">Launchpad</a>:</p>
       <tal:navigation
         replace="structure view/batchnav/@@+navigation-links-upper" />
       <div tal:repeat="product view/batchnav/currentBatch"
@@ -26,7 +18,6 @@
       <tal:navigation
         replace="structure view/batchnav/@@+navigation-links-lower" />
      </div>
-  </body>
+  </div>
+</body>
 </html>
-</tal:layout>
-</tal:root>

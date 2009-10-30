@@ -343,7 +343,7 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
         mainsite = LayerProcessController.appserver_config.vhost.mainsite
         home_page = urlopen(mainsite.rooturl).read()
         self.failUnless(
-            'What is Launchpad?' in home_page,
+            'Is your project registered yet?' in home_page,
             "Home page couldn't be retrieved:\n%s" % home_page)
 
     def testSMTPServerIsAvailable(self):

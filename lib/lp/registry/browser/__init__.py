@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_status_count',
+    'get_status_counts',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',
@@ -39,17 +39,20 @@ class StatusCount:
         self.count = count
 
 
-def get_status_counts(workitems, status_attr):
+def get_status_counts(workitems, status_attr, key='sortkey'):
     """Return a list StatusCounts summarising the workitem."""
     statuses = {}
     for workitem in workitems:
         status = getattr(workitem, status_attr)
+        if status is None:
+            # This is not something we want to count.
+            continue
         if status not in statuses:
             statuses[status] = 0
         statuses[status] += 1
     return [
         StatusCount(status, statuses[status])
-        for status in sorted(statuses, key=attrgetter('sortkey'))]
+        for status in sorted(statuses, key=attrgetter(key))]
 
 
 class MilestoneOverlayMixin:

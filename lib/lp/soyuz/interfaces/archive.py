@@ -9,13 +9,16 @@ __metaclass__ = type
 
 __all__ = [
     'ALLOW_RELEASE_BUILDS',
+    'AlreadySubscribed',
     'ArchiveDependencyError',
+    'ArchiveNotPrivate',
     'ArchivePurpose',
     'CannotCopy',
     'ComponentNotFound',
     'DistroSeriesNotFound',
     'IArchive',
     'IArchiveAppend',
+    'IArchiveEdit',
     'IArchiveView',
     'IArchiveEditDependenciesForm',
     'IArchivePublic',
@@ -27,8 +30,7 @@ __all__ = [
     'MAIN_ARCHIVE_PURPOSES',
     'NoSuchPPA',
     'PocketNotFound',
-    'AlreadySubscribed',
-    'ArchiveNotPrivate',
+    'VersionRequiresName',
     'default_name_by_purpose',
     ]
 
@@ -100,6 +102,7 @@ class ComponentNotFound(Exception):
     """Invalid source name."""
     webservice_error(400) #Bad request.
 
+
 class InvalidComponent(Exception):
     """Invalid component name."""
     webservice_error(400) #Bad request.
@@ -109,6 +112,11 @@ class NoSuchPPA(NameLookupFailed):
     """Raised when we try to look up an PPA that doesn't exist."""
     webservice_error(400) #Bad request.
     _message_prefix = "No such ppa"
+
+
+class VersionRequiresName(Exception):
+    """Raised on some queries when version is specified but name is not."""
+    webservice_error(400) # Bad request.
 
 
 class IArchivePublic(IHasOwner, IPrivacy):
@@ -187,6 +195,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
     expanded_archive_dependencies = Attribute(
         "The expanded list of archive dependencies. It includes the implicit "
         "PRIMARY archive dependency for PPAs.")
+
+    debug_archive = Attribute(
+        "The archive into which debug binaries should be uploaded.")
 
     archive_url = Attribute("External archive URL.")
 
@@ -336,68 +347,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: A list of `IArchivePermission` records.
         """
 
-    @operation_parameters(person=Reference(schema=IPerson))
-    # Really IArchivePermission, set below to avoid circular import.
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getPermissionsForPerson(person):
-        """Return the `IArchivePermission` records applicable to the person.
-
-        :param person: An `IPerson`
-        :return: A list of `IArchivePermission` records.
-        """
-
-    @operation_parameters(
-        source_package_name=TextLine(
-            title=_("Source Package Name"), required=True))
-    # Really IArchivePermission, set below to avoid circular import.
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getUploadersForPackage(source_package_name):
-        """Return `IArchivePermission` records for the package's uploaders.
-
-        :param source_package_name: An `ISourcePackageName` or textual name
-            for the source package.
-        :return: A list of `IArchivePermission` records.
-        """
-
-    @operation_parameters(
-        component_name=TextLine(title=_("Component Name"), required=False))
-    # Really IArchivePermission, set below to avoid circular import.
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getUploadersForComponent(component_name=None):
-        """Return `IArchivePermission` records for the component's uploaders.
-
-        :param component_name: An `IComponent` or textual name for the
-            component.
-        :return: A list of `IArchivePermission` records.
-        """
-
-    @operation_parameters(
-        component_name=TextLine(title=_("Component Name"), required=True))
-    # Really IArchivePermission, set below to avoid circular import.
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getQueueAdminsForComponent(component_name):
-        """Return `IArchivePermission` records for authorised queue admins.
-
-        :param component_name: An `IComponent` or textual name for the
-            component.
-        :return: A list of `IArchivePermission` records.
-        """
-
-    @operation_parameters(person=Reference(schema=IPerson))
-    # Really IArchivePermission, set below to avoid circular import.
-    @operation_returns_collection_of(Interface)
-    @export_read_operation()
-    def getComponentsForQueueAdmin(person):
-        """Return `IArchivePermission` for the person's queue admin components
-
-        :param person: An `IPerson`
-        :return: A list of `IArchivePermission` records.
-        """
-
     def canUpload(person, component_or_package=None):
         """Check to see if person is allowed to upload to component.
 
@@ -421,103 +370,6 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
         :return: True if 'person' is allowed to administer the package upload
         queue for items with 'component'.
-        """
-
-    # The following three factory methods are not in the
-    # IArchiveEditRestricted interface because the rights to use them
-    # does not depend on edit permissions to the archive.  The code they
-    # contain does all the necessary security checking and is well
-    # tested in xx-archive.txt and archivepermissions.txt.
-
-    @operation_parameters(
-        person=Reference(schema=IPerson),
-        source_package_name=TextLine(
-            title=_("Source Package Name"), required=True))
-    # Really IArchivePermission, set below to avoid circular import.
-    @export_factory_operation(Interface, [])
-    def newPackageUploader(person, source_package_name):
-        """Add permisson for a person to upload a package to this archive.
-
-        :param person: An `IPerson` whom should be given permission.
-        :param source_package_name: An `ISourcePackageName` or textual package
-            name.
-        :return: An `IArchivePermission` which is the newly-created
-            permission.
-        """
-
-    @operation_parameters(
-        person=Reference(schema=IPerson),
-        component_name=TextLine(
-            title=_("Component Name"), required=True))
-    # Really IArchivePermission, set below to avoid circular import.
-    @export_factory_operation(Interface, [])
-    def newComponentUploader(person, component_name):
-        """Add permission for a person to upload to a component.
-
-        :param person: An `IPerson` whom should be given permission.
-        :param component: An `IComponent` or textual component name.
-        :return: An `IArchivePermission` which is the newly-created
-            permission.
-        :raises InvalidComponent: if this archive is a PPA and the component
-            is not 'main'.
-        """
-
-    @operation_parameters(
-        person=Reference(schema=IPerson),
-        component_name=TextLine(
-            title=_("Component Name"), required=True))
-    # Really IArchivePermission, set below to avoid circular import.
-    @export_factory_operation(Interface, [])
-    def newQueueAdmin(person, component_name):
-        """Add permission for a person to administer a distroseries queue.
-
-        The supplied person will gain permission to administer the
-        distroseries queue for packages in the supplied component.
-
-        :param person: An `IPerson` whom should be given permission.
-        :param component: An `IComponent` or textual component name.
-        :return: An `IArchivePermission` which is the newly-created
-            permission.
-        """
-
-    @operation_parameters(
-        person=Reference(schema=IPerson),
-        source_package_name=TextLine(
-            title=_("Source Package Name"), required=True))
-    @export_write_operation()
-    def deletePackageUploader(person, source_package_name):
-        """Revoke permission for the person to upload the package.
-
-        :param person: An `IPerson` whose permission should be revoked.
-        :param source_package_name: An `ISourcePackageName` or textual package
-            name.
-        """
-
-    @operation_parameters(
-        person=Reference(schema=IPerson),
-        component_name=TextLine(
-            title=_("Component Name"), required=True))
-    @export_write_operation()
-    def deleteComponentUploader(person, component_name):
-        """Revoke permission for the person to upload to the component.
-
-        :param person: An `IPerson` whose permission should be revoked.
-        :param component: An `IComponent` or textual component name.
-        """
-
-    @operation_parameters(
-        person=Reference(schema=IPerson),
-        component_name=TextLine(
-            title=_("Component Name"), required=True))
-    @export_write_operation()
-    def deleteQueueAdmin(person, component_name):
-        """Revoke permission for the person to administer distroseries queues.
-
-        The supplied person will lose permission to administer the
-        distroseries queue for packages in the supplied component.
-
-        :param person: An `IPerson` whose permission should be revoked.
-        :param component: An `IComponent` or textual component name.
         """
 
     def getFileByName(filename):
@@ -739,6 +591,14 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: True if the person is allowed to upload the source package.
         """
 
+    def getSourcePackageReleases(build_status=None):
+        """Return the releases for this archive.
+
+        :param build_status: If specified, only the distinct releases with
+            builds in the specified build status will be returned.
+        :return: A `ResultSet` of distinct `SourcePackageReleases` for this
+            archive.
+        """
 
 class IArchiveView(IHasBuildRecords):
     """Archive interface for operations restricted by view privilege."""
@@ -926,6 +786,68 @@ class IArchiveView(IHasBuildRecords):
             could not be found.
         """
 
+    @operation_parameters(person=Reference(schema=IPerson))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getPermissionsForPerson(person):
+        """Return the `IArchivePermission` records applicable to the person.
+
+        :param person: An `IPerson`
+        :return: A list of `IArchivePermission` records.
+        """
+
+    @operation_parameters(
+        source_package_name=TextLine(
+            title=_("Source Package Name"), required=True))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getUploadersForPackage(source_package_name):
+        """Return `IArchivePermission` records for the package's uploaders.
+
+        :param source_package_name: An `ISourcePackageName` or textual name
+            for the source package.
+        :return: A list of `IArchivePermission` records.
+        """
+
+    @operation_parameters(
+        component_name=TextLine(title=_("Component Name"), required=False))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getUploadersForComponent(component_name=None):
+        """Return `IArchivePermission` records for the component's uploaders.
+
+        :param component_name: An `IComponent` or textual name for the
+            component.
+        :return: A list of `IArchivePermission` records.
+        """
+
+    @operation_parameters(
+        component_name=TextLine(title=_("Component Name"), required=True))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getQueueAdminsForComponent(component_name):
+        """Return `IArchivePermission` records for authorised queue admins.
+
+        :param component_name: An `IComponent` or textual name for the
+            component.
+        :return: A list of `IArchivePermission` records.
+        """
+
+    @operation_parameters(person=Reference(schema=IPerson))
+    # Really IArchivePermission, set below to avoid circular import.
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def getComponentsForQueueAdmin(person):
+        """Return `IArchivePermission` for the person's queue admin components
+
+        :param person: An `IPerson`
+        :return: A list of `IArchivePermission` records.
+        """
+
 
 class IArchiveAppend(Interface):
     """Archive interface for operations restricted by append privilege."""
@@ -1043,7 +965,102 @@ class IArchiveAppend(Interface):
         """
 
 
-class IArchive(IArchivePublic, IArchiveAppend, IArchiveView):
+class IArchiveEdit(Interface):
+    """Archive interface for operations restricted by edit privilege."""
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        source_package_name=TextLine(
+            title=_("Source Package Name"), required=True))
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
+    def newPackageUploader(person, source_package_name):
+        """Add permisson for a person to upload a package to this archive.
+
+        :param person: An `IPerson` whom should be given permission.
+        :param source_package_name: An `ISourcePackageName` or textual package
+            name.
+        :return: An `IArchivePermission` which is the newly-created
+            permission.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        component_name=TextLine(
+            title=_("Component Name"), required=True))
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
+    def newComponentUploader(person, component_name):
+        """Add permission for a person to upload to a component.
+
+        :param person: An `IPerson` whom should be given permission.
+        :param component: An `IComponent` or textual component name.
+        :return: An `IArchivePermission` which is the newly-created
+            permission.
+        :raises InvalidComponent: if this archive is a PPA and the component
+            is not 'main'.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        component_name=TextLine(
+            title=_("Component Name"), required=True))
+    # Really IArchivePermission, set below to avoid circular import.
+    @export_factory_operation(Interface, [])
+    def newQueueAdmin(person, component_name):
+        """Add permission for a person to administer a distroseries queue.
+
+        The supplied person will gain permission to administer the
+        distroseries queue for packages in the supplied component.
+
+        :param person: An `IPerson` whom should be given permission.
+        :param component: An `IComponent` or textual component name.
+        :return: An `IArchivePermission` which is the newly-created
+            permission.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        source_package_name=TextLine(
+            title=_("Source Package Name"), required=True))
+    @export_write_operation()
+    def deletePackageUploader(person, source_package_name):
+        """Revoke permission for the person to upload the package.
+
+        :param person: An `IPerson` whose permission should be revoked.
+        :param source_package_name: An `ISourcePackageName` or textual package
+            name.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        component_name=TextLine(
+            title=_("Component Name"), required=True))
+    @export_write_operation()
+    def deleteComponentUploader(person, component_name):
+        """Revoke permission for the person to upload to the component.
+
+        :param person: An `IPerson` whose permission should be revoked.
+        :param component: An `IComponent` or textual component name.
+        """
+
+    @operation_parameters(
+        person=Reference(schema=IPerson),
+        component_name=TextLine(
+            title=_("Component Name"), required=True))
+    @export_write_operation()
+    def deleteQueueAdmin(person, component_name):
+        """Revoke permission for the person to administer distroseries queues.
+
+        The supplied person will lose permission to administer the
+        distroseries queue for packages in the supplied component.
+
+        :param person: An `IPerson` whose permission should be revoked.
+        :param component: An `IComponent` or textual component name.
+        """
+
+
+class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
     """Main Archive interface."""
     export_as_webservice_entry()
 
@@ -1061,11 +1078,14 @@ class IPPAActivateForm(Interface):
 
     name = TextLine(
         title=_("PPA name"), required=True, constraint=name_validator,
-        description=_("A unique name used to identify this PPA."))
+        description=_("A unique name used to identify this PPA. It will "
+                      "form part of the URL to the archive repository."))
 
     displayname = StrippedTextLine(
         title=_("Displayname"), required=True,
-        description=_("Displayname for this PPA."))
+        description=_("Displayname for this PPA. It will be used in "
+                      "the signing key's description if this is the "
+                      "first PPA for a person."))
 
     description = Text(
         title=_("PPA contents description"), required=False,
@@ -1155,6 +1175,18 @@ class IArchiveSet(Interface):
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
+
+    def getPPAOwnedByPerson(person, name=None):
+        """Return the named PPA owned by person.
+
+        :param person: An `IPerson`
+        :param name: The PPA name required.
+
+        If the person is not supplied it will default to the
+        first PPA that the person created.
+
+        :raises NoSuchPPA: if the named PPA does not exist.
+        """
 
     def getPPAsForUser(user):
         """Return all PPAs the given user can participate.

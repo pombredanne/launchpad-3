@@ -148,7 +148,7 @@ builds.
     ...     "http://launchpad.dev/~no-priv/+archive/ppa/+packages")
 
     >>> print no_priv_browser.title
-    Packages in “PPA for No Privileges Person”
+    Packages in “PPA for No Privileges Person”...
 
 Source changesfiles are served on the PPA '+files' traversal.
 
@@ -200,7 +200,7 @@ Buildlog, upload_log and binary changesfile are served via the Build
 
     >>> no_priv_browser.getLink('i386').click()
     >>> print no_priv_browser.title
-    i386 build of test-pkg 1.0 in ubuntutest breezy-autotest RELEASE
+    PPA for No Privileges Person : No Privileges Person
 
     >>> check_urls(no_priv_browser, build_links,
     ...            'http://launchpad.dev/~no-priv/+archive/ppa/+build/31')

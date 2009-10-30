@@ -27,7 +27,7 @@ from canonical.launchpad.fields import (
     PublicPersonChoice)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.launchpad import IHasDrivers
-from lp.app.interfaces.rootcontext import IRootContext
+from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.role import IHasOwner
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 

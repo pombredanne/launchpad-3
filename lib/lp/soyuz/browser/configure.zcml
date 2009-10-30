@@ -112,9 +112,6 @@
             name="+files"
             facet="overview"
             template="../templates/sourcepackagerelease-files.pt"/>
-        <browser:page
-            name="+change_summary"
-            template="../templates/sourcepackagerelease-change-summary.pt"/>
     </browser:pages>
     <facet
         facet="overview">
@@ -358,7 +355,7 @@
     </browser:pages>
     <browser:pages
         for="lp.soyuz.interfaces.build.IBuild"
-        class="lp.soyuz.browser.build.BuildView"
+        class="lp.soyuz.browser.build.BuildRetryView"
         permission="launchpad.Edit">
         <browser:page
             name="+retry"
@@ -425,21 +422,23 @@
             facet="overview"
             name="+index"/>
         <browser:page
-            template="../templates/builds-list.pt"
-            name="+builds-list"
-            facet="overview"/>
-        <browser:page
             template="../templates/builder-portlet-details.pt"
             name="+portlet-details"
             facet="overview"/>
     </browser:pages>
-    <browser:page
-        name="+history"
+    <browser:pages
         for="lp.soyuz.interfaces.builder.IBuilder"
         permission="zope.Public"
-        template="../templates/builder-history.pt"
-        facet="overview"
-        class="lp.soyuz.browser.builder.BuilderHistoryView" />
+        class="lp.soyuz.browser.builder.BuilderHistoryView">
+        <browser:page
+            name="+history"
+            template="../templates/builder-history.pt"
+            facet="overview" />
+        <browser:page
+            template="../templates/builds-list.pt"
+            name="+builds-list"
+            facet="overview"/>
+    </browser:pages>
     <browser:page
         name="+edit"
         for="lp.soyuz.interfaces.builder.IBuilder"
@@ -541,11 +540,14 @@
             name="+changes"
             facet="overview"
             template="../templates/distributionsourcepackagerelease-changes.pt"/>
-        <browser:page
-            name="+publishinghistory"
-            facet="overview"
-            template="../templates/distributionsourcepackage-publishinghistory.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
+        class="lp.soyuz.browser.distributionsourcepackagerelease.DistributionSourcePackageReleasePublishingHistoryView"
+        permission="zope.Public"
+        name="+publishinghistory"
+        facet="overview"
+        template="../templates/distributionsourcepackage-publishinghistory.pt" />
     <browser:defaultView
         for="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"
         name="+index"/>
@@ -696,7 +698,7 @@
             template="../templates/distributionsourcepackage-portlet-pub-details.pt"/>
         <browser:page
             for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-            class="canonical.launchpad.webapp.publisher.LaunchpadView"
+            class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackagePublishingHistoryView"
             permission="zope.Public"
             name="+publishinghistory"
             facet="overview"

@@ -260,18 +260,18 @@ the distroseries queue.
 == Amending Permissions ==
 
 There are some methods that will enable the caller to add and delete
-permissions.  They currently require launchpad.Edit permission to
-use, which enforces the user to be an admin or a member of the "techboard"
-(Ubuntu Technical Board) team.
+PackageSet based permissions.  They currently require launchpad.Edit
+permission to use, which enforces the user to be an admin or a member
+of the "techboard" (Ubuntu Technical Board) team.
 
 Set up a helper function to check access:
 
     >>> from zope.security.checker import canAccess
     >>> from zope.security.proxy import removeSecurityProxy
     >>> restricted_methods = (
-    ...     'newPackageUploader', 'newComponentUploader', 'newQueueAdmin',
-    ...     'deletePackageUploader', 'deleteComponentUploader',
-    ...     'deleteQueueAdmin')
+    ...     'newPackagesetUploader',
+    ...     'deletePackagesetUploader',
+    ... )
     >>> def checkAccess(true_or_false):
     ...     for method in restricted_methods:
     ...         assert(canAccess(permission_set, method) == true_or_false)

@@ -32,6 +32,7 @@ Where:
 
 import _pythonpath
 from optparse import OptionParser
+import os
 import resource
 import sys
 
@@ -81,6 +82,8 @@ if __name__ == '__main__':
      branch_type_name, oops_prefix, default_stacked_on_url) = arguments
 
     branch_type = BranchType.items[branch_type_name]
+    if branch_type == BranchType.IMPORTED and 'http_proxy' in os.environ:
+        del os.environ['http_proxy']
     section_name = 'supermirror_%s_puller' % branch_type_map[branch_type]
     globalErrorUtility.configure(section_name)
     shut_up_deprecation_warning()

@@ -68,7 +68,7 @@ provided link.
 
     >>> jblack_browser.getLink('Create a new PPA').click()
     >>> print jblack_browser.title
-    Activate Personal Package Archive
+    Personal Package Archive Activation : James Blackwell
 
     >>> jblack_browser.getControl(
     ...     name="field.displayname").value = 'PPA for James Blackwell'
@@ -78,7 +78,7 @@ provided link.
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
-    PPA for James Blackwell
+    PPA for James Blackwell : James Blackwell
 
 Now, that James has his own PPA, he navigates back to Celso's PPA
 copy package interface can see packages to be copied.
@@ -247,7 +247,7 @@ also marked as pending build for i386.
 
     >>> jblack_browser.getLink('PPA for James Blackwell').click()
     >>> print jblack_browser.title
-    Packages in “PPA for James Blackwell”
+    Packages in “PPA for James Blackwell”...
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -291,13 +291,13 @@ build created during the copy is ready to be dispatched.
 
     >>> jblack_browser.getLink('i386').click()
     >>> print jblack_browser.title
-    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
+    PPA for James Blackwell : James Blackwell
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
     i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
-    Created...
-    Build status
-    Needs building
+    James Blackwell
+    PPA for James Blackwell
+    Build status Needs building
     Start (2505) What's this?
     Build details
     Source: pmount - 0.1-1
@@ -328,11 +328,11 @@ James goes straight to the copy interface of his PPA.
     >>> jblack_browser.getLink('PPA for James Blackwell').click()
     >>> jblack_browser.getLink('View package details').click()
     >>> print jblack_browser.title
-    Packages in “PPA for James Blackwell”
+    Packages in “PPA for James Blackwell”...
 
     >>> jblack_browser.getLink('Copy packages').click()
     >>> print jblack_browser.title
-    Copy packages from PPA for James Blackwell
+    Copy packages from PPA for James Blackwell...
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -559,7 +559,7 @@ James return to his PPA packages page and checks that the package is
 really deleted.
 
     >>> jblack_browser.getLink('Cancel').click()
-    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['']
     >>> jblack_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -587,7 +587,7 @@ By default the copy view presents only PUBLISHED or PENDING packages.
 Packages in other status can be browsed by adjusting the status
 filter dropdown box.
 
-    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['']
     >>> jblack_browser.getControl("Filter").click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -674,7 +674,7 @@ together.
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
-    PPA for James Blackwell Friends
+    PPA for James Blackwell Friends : “James Blackwell Friends” team
 
 PPA created, now James want to populate it with the finest packages he
 have ever seen. He goes to Celso's PPA copy interface.
@@ -738,7 +738,7 @@ sources and binaries are copied to their PPA.
 
     >>> jblack_browser.getLink('PPA for James Blackwell Friends').click()
     >>> print jblack_browser.title
-    Packages in “PPA for James Blackwell Friends”
+    Packages in “PPA for James Blackwell Friends”...
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source            Uploader    Published   Status   Series  Section  Build
@@ -821,7 +821,7 @@ tests.
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
-    PPA for James Blackwell Sandbox
+    PPA for James Blackwell Sandbox : “James Blackwell Sandbox” team
 
 James now goes to his PPA and copy all sources to his Sandbox PPA
 for a mass rebuild, including the deleted source. James is going
@@ -830,7 +830,7 @@ insane because PPA-copy-ui is so cool.
     >>> jblack_browser.open(
     ...     'http://launchpad.dev/~jblack/+archive/ppa/+packages')
     >>> jblack_browser.getLink('Copy packages').click()
-    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['']
     >>> jblack_browser.getControl("Filter").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
@@ -875,7 +875,7 @@ even the 'warty' source, which was not denied.
 
     >>> jblack_browser.open('http://launchpad.dev/~jblack-sandbox/+archive')
     >>> print jblack_browser.title
-    PPA for James Blackwell Sandbox
+    PPA for James Blackwell Sandbox : “James Blackwell Sandbox” team
 
     >>> print_ppa_packages(jblack_browser.contents)
 
@@ -885,7 +885,7 @@ interface can be used to resurrect deleted packages.
     >>> jblack_browser.open(
     ...     'http://launchpad.dev/~jblack/+archive/ppa/+packages')
     >>> jblack_browser.getLink('Copy packages').click()
-    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['']
     >>> jblack_browser.getControl("Filter").click()
 
     >>> deleted_pub_id = getPPAPubIDsFor(

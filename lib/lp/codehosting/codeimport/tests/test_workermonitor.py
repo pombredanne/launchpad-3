@@ -498,9 +498,10 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         source_details = CodeImportSourceDetails.fromCodeImport(code_import)
         clean_up_default_stores_for_import(source_details)
         self.addCleanup(clean_up_default_stores_for_import, source_details)
-        code_import.updateFromData(
-            {'review_status': CodeImportReviewStatus.REVIEWED},
-            self.factory.makePerson())
+        if code_import.review_status != CodeImportReviewStatus.REVIEWED:
+            code_import.updateFromData(
+                {'review_status': CodeImportReviewStatus.REVIEWED},
+                self.factory.makePerson())
         job = getUtility(ICodeImportJobSet).getJobForMachine('machine')
         self.assertEqual(code_import, job.code_import)
         return job

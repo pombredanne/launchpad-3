@@ -93,6 +93,7 @@ span.invisible {left:-9999em;display:block;}
 .external-link {background:url(icon-sprites) 0 -704px no-repeat;}
 .mail {background:url(icon-sprites) 0 -736px no-repeat;}
 .cve {background:url(icon-sprites) 0 -768px no-repeat;}
+.cves {float: right; text-align: right;}
 .bug {background:url(icon-sprites) 0 -800px no-repeat;}
 .bug-critical {background:url(icon-sprites) 0 -832px no-repeat;}
 .bug-high {background:url(icon-sprites) 0 -864px no-repeat;}
@@ -146,7 +147,9 @@ span.invisible {left:-9999em;display:block;}
 .ppa-icon-inactive {background:url(icon-sprites-2) 0 -1171px no-repeat;}
 
 .bug-status-expand {background:url(icon-sprites-3) 0 -10px no-repeat;}
-.merge-proposal {background:url(icon-sprites-3) 0 -46px no-repeat;}
+.merge-proposal {
+  background:url(icon-sprites-3) 0 -46px no-repeat;
+  padding-left: 22px}
 .build-superseded {background:url(icon-sprites-3) 0 -80px no-repeat;}
 .build-sucess {background:url(icon-sprites-3) 0 -112px no-repeat;}
 .build-needed {background:url(icon-sprites-3) 0 -144px no-repeat;}
@@ -267,7 +270,11 @@ label, p {max-width: 60em;}
 /* === Fonts and colors === */
 
 /* Launchpad uses a white background with small, mostly black, text: */
-html {background: #fff; color: #000; font: 83.33% sans-serif;}
+html {
+    background: #fff;
+    color: #000;
+    font-size: 83.33%;
+    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;}
 /* Monospace text uses the reciprocal of this percentage, so that it
 exactly obeys your preferred monospace font size: */
 code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
@@ -308,7 +315,6 @@ h1, h2, h3, h4, h5, h6 {
   margin: 0 0 0.5em;
   /* Content headings are highlighted using a different color (the color is
      overriden per-application in subsequent rules) instead of bold text. */
-  color: #83ad23;
   font-weight: normal;
 }
 h1 {font-size: 2em;}
@@ -409,7 +415,7 @@ form {border: 0; margin: 0; padding: 0;}
 form table label {font-weight: bold;}
 fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
 input[type="text"], input[type="search"], input[type="password"], textarea {
-  font-family: sans-serif;
+  font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
   margin: 0;
 }
 input[type="text"], input[type="search"], input[type="submit"],
@@ -675,30 +681,11 @@ hr {
 
 /* === Universal page layout === */
 
-/* All pages begin with a global header or a topline. */
-#globalheader {
-  clear: both;
-  position: relative;
-  width: 100%;
-  height: 21px;
-  overflow: hidden;
-  margin: 0 0 1em 0;
-  padding: 0;
-  background-color: #EEE;
-  background-image:  url(globalheader_bg.gif);
-  background-repeat: repeat-x;
-  background-position: top center;
-}
-#globalheader .sitemessage a {
-  color: #FFF;
-  text-decoration: underline;
-}
-/* Site-specific message. */
-#globalheader .sitemessage {
-  text-align: center;
-  color: #FFF;
-  font-size: 13px;
-  padding-top: 2px;
+/* All pages include the sitemessage in the footer if one is defined
+   in the config. */
+.sitemessage {
+    font-size: 13px;
+    text-align: right;
 }
 
 /* === Login control === */
@@ -729,7 +716,8 @@ ol.breadcrumbs {
     margin-left: 0;
     list-style-type: none;
     clear: both;
-    margin-bottom: 0.5em;
+    margin-bottom: 2em;
+    font-size: 80%;
 }
 ol.breadcrumbs li {
     display:inline;
@@ -1370,7 +1358,6 @@ highlighting menu items, so padding is handled by the contents instead: */
 
 /* === Public/private status === */
 /* The first portlet on many pages discloses whether the object is private: */
-#privacy {background: #fff;}
 #privacy.private {
   background: url(/@@/private-bg) top left repeat-x; /* 8px high */
   padding-top: 12px; /* = 8px + the usual 4px top padding */
@@ -1587,64 +1574,15 @@ beside the mugshot. */
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
 /* --- Home --- */
-#home-description {
-  font-size: 1.5em;
-  font-family: "URW Gothic L","MgOpen Moderna","Lucida Sans",sans-serif;
-  text-align: center;
-  margin: auto;
-  margin-top: 1em;
-  margin-bottom: 1em;
-  padding: 0.5em;
-  background-color: #ededed;
-  width: 90%;
+
+/* The following style works around the fact that the locationbar, which is
+only used of the Login/Register links in 3.0 UI, is accessible on
+"locationless" pages. It adds extra space at the top of every page in
+Launchpad but that does actually look quite good ... ;-).*/
+#locationbar {
+    height: 1em;
 }
-#home-description .smaller {
-  font-size: 80%;
-}
-#home-stats {
-  margin: auto;
-  text-align: center;
-  color: gray;
-  max-width: 40em;
-}
-#home-page h2 {
-  width: 100%;
-  text-align: center;
-  margin-left: -0.8em;
-}
-#home-page img {
-  vertical-align: middle;
-}
-#featured-projects ul {
-  list-style-type: none;
-  width: 50%;
-  margin: 0;
-  padding: 0 ;
-  float: left;
-}
-#featured-projects li {
-  padding-bottom: 2px;
-}
-.home-banners {
-  background-color: #8890ff;
-  width: 220px;
-  padding: 1em 0 1em 1em;
-  margin-top: 1em;
-  overflow: hidden;
-  -moz-border-radius: 5px;
-  -o-border-radius: 5px;
-  -webkit-border-radius: 5px;
-}
-.home-banners a {
-  font-weight: bold;
-  color: white;
-}
-.home-banner-container {
-  width: 100%;
-  background-color: #ededed;
-  padding: 1em;
-  padding-top: 0;
-}
+/* -- Notices -- */
 
 .important-notice-container {
   text-align: center;
@@ -1756,6 +1694,30 @@ p.update-failure-message {
 
 a.update-retry {
     padding-left: 1em;
+}
+
+/* PPA installation instructions slider.*/
+#pre-karmic-systems-slide-trigger {
+    cursor: pointer;
+    color: #093; /* for the underline on hover */
+}
+#pre-karmic-systems-slide-trigger:hover {
+    text-decoration: underline
+}
+#ppa-install-slide-trigger {
+    cursor: pointer;
+    color: #093; /* for the underline on hover */
+}
+#ppa-install-slide-trigger:hover {
+    text-decoration: underline
+}
+#ppa-install .widget-body {
+    margin: 1em;
+}
+#ppa-install .widget-body.lazr-closed {
+    height: 0px;
+    overflow: hidden;
+    display: block;
 }
 
 /* Brand the related PPA versions with the PPA icon (not currently
@@ -1893,12 +1855,12 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   color: #d18b39;
 }
 
-.branchstatusMATURE       {color: #090;}
-.branchstatusDEVELOPMENT  {color: #900;}
-.branchstatusEXPERIMENTAL {color: #930;}
-.branchstatusMERGED       {color: #666;}
-.branchstatusABANDONED    {color: #666;}
-.branchstatusNEW          {color: black;}
+.branchstatusMATURE, .branchstatusMATURE a  {color: #090;}
+.branchstatusDEVELOPMENT, .branchstatusDEVELOPMENT a  {color: #900;}
+.branchstatusEXPERIMENTAL, .branchstatusEXPERIMENTAL a {color: #930;}
+.branchstatusMERGED, .branchstatusMERGED a       {color: #666;}
+.branchstatusABANDONED, .branchstatusABANDONED a    {color: #666;}
+.branchstatusNEW, .branchstatusNEW a          {color: black;}
 
 .voteAPPROVE       {color: green;}
 .voteNEEDS_FIXING  {color: #930;}
@@ -1935,6 +1897,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 #branch-pending-writes {
   background: #FFF59C;
   width: 40em;
+  margin: 1em auto;
   padding-left: 1em;
   padding-right: 1em;
   padding-top: 0.2em;
@@ -2223,6 +2186,30 @@ body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
 .questionstatusEXPIRED   {color: #666;} /* dark grey */
 .questionstatusINVALID   {color: #c00;} /* red */
 
+.search-box {
+  text-align: left;
+  float: left;
+  border:1px solid #d6d6d6;
+  margin: 0.5em 0 0.5em 0;
+  color: #717171;
+  padding: 8px;
+  -moz-border-radius: 5px;
+  -o-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+
+.search-box form.primary.search {
+  margin: 0.5em;
+}
+
+.bug-links td.bugs-count {
+  text-align: right;
+  padding-right: 0.5em;
+}
+
+.bug-links td.bugs-link {
+  text-align: left;
+}
 
 /* --- Other --- */
 
@@ -2324,12 +2311,6 @@ ul.buttons li {display: inline; margin: 0 0 0 0;}
 body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
 body.applicationhome ul.buttons li {display: block; margin-right: 0;}
 ul.cross-reference {font-size: 1.25em;}
-
-ul.helplinks {float: right; margin: 0.5em;}
-/* We set `display: block` to lose the bullets.  We should use
- * `list-style-type:none` but this is what our existing code does.
- */
-ul.helplinks li {display: block; margin: 0 0 0 0;}
 
 /*
 li {

@@ -38,24 +38,21 @@ class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost(
             self.product_questions_url, [self.root, self.product])
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.product_questions_url)
-        self.assertEquals(
-            last_crumb.text, 'Questions for %s' % self.product.title)
+        self.assertEquals(last_crumb.text, 'Questions')
 
     def test_project(self):
         crumbs = self._getBreadcrumbs(
             self.project_questions_url, [self.root, self.project])
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.project_questions_url)
-        self.assertEquals(
-            last_crumb.text, 'Questions for %s' % self.project.title)
+        self.assertEquals(last_crumb.text, 'Questions')
 
     def test_person(self):
         crumbs = self._getBreadcrumbs(
             self.person_questions_url, [self.root, self.person])
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.person_questions_url)
-        self.assertEquals(last_crumb.text,
-                          'Questions involving %s' % self.person.displayname)
+        self.assertEquals(last_crumb.text, 'Questions')
 
 
 def test_suite():

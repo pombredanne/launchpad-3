@@ -46,6 +46,18 @@ the string 'PPA' or 'Archive' depending on whether the archive is a PPA
     >>> print copy_archive_view.archive_label
     Archive
 
+There is also the 'ppa_reference' property, which mimics the syntax
+supported by `dput` and `software-properties` Ubuntu tools.
+
+    >>> print ppa_archive_view.ppa_reference
+    ppa:cprov/ppa
+
+    >>> print copy_archive_view.ppa_reference
+    Traceback (most recent call last):
+    ...
+    AssertionError: PPA reference should not be used for non-PPA
+    archives.
+
 The ArchiveView is provides the html for the inline description
 editing widget.
 
@@ -61,12 +73,15 @@ that returns a dict of the build count summary for the archive:
 An ArchiveView also includes an easy way to get any
 IPackageCopyRequest's associated with an archive:
 
+    >>> len(ppa_archive_view.package_copy_requests)
+    0
+
+    # Create a copy-request to Celso's PPA.
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     copy_location, copy_archive.owner)
-    >>> copy_archive_view.package_copy_requests.count()
+
+    >>> len(copy_archive_view.package_copy_requests)
     1
-    >>> ppa_archive_view.package_copy_requests.count()
-    0
 
 An ArchiveView inherits the status-filter widget for filtering
 packages by status.
@@ -75,14 +90,12 @@ packages by status.
     ...     print term.title
     Published
     Superseded
-    Any status
 
 An ArchiveView inherits the series-filter widget for filtering packages
 by series.
 
     >>> for term in ppa_archive_view.widgets['series_filter'].vocabulary:
     ...     print term.title
-    Any Series
     Breezy Badger Autotest
     Warty
 
@@ -291,16 +304,18 @@ Remove the testing PPA dependency to not influence subsequent tests.
     >>> login(ANONYMOUS)
 
 The ArchiveView also provides the latest updates ordered by the date
-they were published:
+they were published. We include any relevant builds for failures.
 
     >>> def print_latest_updates(latest_updates):
     ...     for update in latest_updates:
-    ...         print "%s - %s" % (
+    ...         arch_tags = [build.arch_tag for build in update['builds']]
+    ...         print "%s - %s %s" % (
     ...             update['title'],
-    ...             update['status']
+    ...             update['status'],
+    ...             " ".join(arch_tags),
     ...             )
     >>> print_latest_updates(view.latest_updates)
-    cdrkit - Failed to build
+    cdrkit - Failed to build: i386
     pmount - Successfully built
     iceweasel - Successfully built
 
@@ -313,7 +328,7 @@ is from most recent.
     >>> login(ANONYMOUS)
     >>> print_latest_updates(view.latest_updates)
     iceweasel - Successfully built
-    cdrkit - Failed to build
+    cdrkit - Failed to build: i386
     pmount - Successfully built
 
 The ArchiveView also includes a helper method to return the number of
@@ -367,9 +382,11 @@ Let's set some builds appropriately to see the results.
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
+    >>> login('foo.bar@canonical.com')
     >>> builds[0].buildstate = BuildStatus.NEEDSBUILD
     >>> builds[1].buildstate = BuildStatus.BUILDING
     >>> builds[2].buildstate = BuildStatus.BUILDING
+    >>> login(ANONYMOUS)
 
     >>> view.num_pkgs_building
     {'building': 2, 'waiting': 1, 'total': 3}
@@ -377,16 +394,53 @@ Let's set some builds appropriately to see the results.
 Adding a second waiting build for the cdrkit does not add to the number
 of packages that are currently building.
 
+    >>> login('foo.bar@canonical.com')
     >>> builds[4].buildstate = BuildStatus.NEEDSBUILD
+    >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 2, 'waiting': 1, 'total': 3}
 
 But as soon as one of cdrkit's builds start, the package is considered
 to be building:
 
+    >>> login('foo.bar@canonical.com')
     >>> builds[4].buildstate = BuildStatus.BUILDING
+    >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 3, 'waiting': 0, 'total': 3}
+
+The archive index view overrides the default series filter to use the
+distroseries from the browser's user-agent, when applicable.
+
+    >>> print view.default_series_filter
+    None
+
+    >>> view_warty = create_view(
+    ...     cprov.archive, name="+index",
+    ...     HTTP_USER_AGENT='Mozilla/5.0 '
+    ...                     '(X11; U; Linux i686; en-US; rv:1.9.0.10) '
+    ...                     'Gecko/2009042523 Ubuntu/4.10 (whatever) '
+    ...                     'Firefox/3.0.10')
+    >>> view_warty.initialize()
+    >>> print view_warty.default_series_filter.name
+    warty
+
+The archive index view also inherits the getSelectedFilterValue() method
+which can be used to find the currently selected value for both filters.
+
+    >>> print view_warty.getSelectedFilterValue('series_filter').name
+    warty
+
+    >>> for status in view_warty.getSelectedFilterValue('status_filter'):
+    ...     print status.name
+    PENDING
+    PUBLISHED
+
+To enable the inline editing of the archive displayname, ArchiveView
+also provides a custom widget, displayname_edit_widget.
+
+    >>> print view.displayname_edit_widget.title
+    Edit the displayname
 
 
 == ArchivePackageView ==
@@ -430,22 +484,6 @@ is a copy archive.
 
     >>> copy_archive_view.is_copy
     True
-
-The Package view overrides the default series filter to use the distroseries
-from the browser's user-agent, when applicable.
-
-    >>> print ppa_archive_view.default_series_filter.token
-    any
-
-    >>> ppa_archive_view_warty = create_view(
-    ...     cprov.archive, name="+packages",
-    ...     HTTP_USER_AGENT='Mozilla/5.0 '
-    ...                     '(X11; U; Linux i686; en-US; rv:1.9.0.10) '
-    ...                     'Gecko/2009042523 Ubuntu/4.10 (whatever) '
-    ...                     'Firefox/3.0.10')
-    >>> ppa_archive_view_warty.initialize()
-    >>> print ppa_archive_view_warty.default_series_filter.token
-    warty
 
 
 == ArchivePackageDeletionView ==
@@ -543,7 +581,6 @@ which the available options already exclude the deleted items.
     ...     form={
     ...         'field.actions.delete': 'Delete Packages',
     ...         'field.name_filter': '',
-    ...         'field.status_filter': 'any',
     ...         'field.deletion_comment': 'Go away',
     ...         'field.selected_sources': ['27', '28', '29'],
     ...         'field.selected_sources-empty-marker': 1,
@@ -564,7 +601,6 @@ situation and ignore it. See bug #185922 for reference.
     ...     form={
     ...         'field.actions.delete': 'Delete Packages',
     ...         'field.name_filter': '',
-    ...         'field.status_filter': 'any',
     ...         'field.deletion_comment': 'Go away',
     ...         'field.selected_sources': ['27', '28', '29'],
     ...         'field.selected_sources-empty-marker': 1,
@@ -994,7 +1030,7 @@ All sources in Celso's PPA were just-deleted, so we have to tweak the
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages",
-    ...     query_string="field.status_filter=any")
+    ...     query_string="field.status_filter=")
 
     >>> [pub.status.name for pub in view.batched_sources]
     ['DELETED', 'DELETED', 'DELETED']
@@ -1256,16 +1292,15 @@ Then we will create a testing publication, that will be restricted.
     >>> hoary = ubuntu.getSeries('hoary')
     >>> test_publisher.addFakeChroots(hoary)
     >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
-    >>> private_source = test_publisher.getPubSource(
-    ...     sourcename="private", version="1.0", archive=cprov.archive)
-
+    >>> private_source = test_publisher.createSource(
+    ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
     >>> transaction.commit()
 
 Now, as Celso we will try to copy the just created 'private' source to
 the public Ubuntu-team PPA, which is empty.
 
     >>> print private_source.displayname
-    private 1.0 in hoary
+    foocomm 2.0-1 in hoary
 
     >>> ubuntu_team_ppa.getPublishedSources().count()
     0
@@ -1274,7 +1309,6 @@ the public Ubuntu-team PPA, which is empty.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages",
     ...     form={
-    ...         'field.status_filter': 'any',
     ...         'field.selected_sources': [str(private_source.id)],
     ...         'field.destination_archive': 'ubuntu-team/ppa',
     ...         'field.destination_series': '',
@@ -1292,14 +1326,14 @@ it via a page notification.
     >>> for notification in view.request.response.notifications:
     ...     print extract_text(notification.message)
     Packages copied to PPA for Ubuntu Team:
-    Delayed copy of private - 1.0 (source)
+    Delayed copy of foocomm - 2.0-1 (source)
 
 The delayed-copy request is waiting to be processed in the ACCEPTED
 upload queue.
 
     >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
     >>> copy = getUtility(IPackageUploadSet).findSourceUpload(
-    ...     'private', '1.0', ubuntu_team_ppa, ubuntu)
+    ...     'foocomm', '2.0-1', ubuntu_team_ppa, ubuntu)
 
     >>> print copy.status.name
     ACCEPTED
