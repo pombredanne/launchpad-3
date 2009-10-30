@@ -7,7 +7,7 @@ from lazr.restful.fields import Reference
 
 from zope.interface import Attribute, Interface
 from zope.schema import (
-    Choice, TextLine)
+    Choice, Datetime, TextLine)
 
 from canonical.launchpad import _
 from lp.translations.interfaces.pofile import IPOFile
@@ -44,6 +44,11 @@ class IProductSeriesLanguage(IRosettaStats):
     pofiles = Attribute("The set of pofiles in this distroseries for this "
         "language. This includes only the real pofiles where translations "
         "exist.")
+
+
+    last_changed_date = Datetime(
+        title=_('When this file was last changed.'))
+
 
     def getPOFilesFor(potemplates):
         """Return `POFiles` for each of `potemplates`, in the same order.
