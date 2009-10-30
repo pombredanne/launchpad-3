@@ -25,9 +25,9 @@ Branch merge proposals can be created through the API.
     >>> bmp_url = bmp_result.getHeader('Location')
     >>> bmp = registrant_webservice.get(bmp_url).jsonBody()
     >>> pprint_entry(bmp)
-    address: u'mp+1@code.launchpad.dev'
+    address: u'mp+...@code.launchpad.dev'
     all_comments_collection_link:
-        u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/.../all_comments'
+        u'http://api.launchpad.dev/beta/~.../+merge/.../all_comments'
     commit_message: u'It was merged!'
     date_created: u'...'
     date_merged: None
@@ -36,8 +36,7 @@ Branch merge proposals can be created through the API.
     date_reviewed: None
     merge_reporter_link: None
     merged_revno: None
-    prerequisite_branch_link:
-        u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch...'
+    prerequisite_branch_link: u'http://api.launchpad.dev/beta/~...'
     preview_diff_link: None
     private: False
     queue_position: None
@@ -49,16 +48,13 @@ Branch merge proposals can be created through the API.
         u'http://api.launchpad.dev/beta/#branch_merge_proposal'
     reviewed_revno: None
     reviewer_link: None
-    self_link:
-        u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/...'
-    source_branch_link:
-        u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch...'
+    self_link: u'http://api.launchpad.dev/beta/~.../+merge/...'
+    source_branch_link: u'http://api.launchpad.dev/beta/~...'
     superseded_by_link: None
     supersedes_link: None
-    target_branch_link:
-        u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch...'
+    target_branch_link: u'http://api.launchpad.dev/beta/~...'
     votes_collection_link:
-        u'http://api.launchpad.dev/beta/~person-name14/product-name.../branch.../+merge/.../votes'
+        u'http://api.launchpad.dev/beta/~.../+merge/.../votes'
 
     >>> all_comments = webservice.get(
     ...     bmp['all_comments_collection_link']).jsonBody()
@@ -79,14 +75,14 @@ Our review request is listed in the votes collection.
     >>> votes = webservice.get(
     ...     bmp['votes_collection_link']).jsonBody()
     >>> pprint_entry(votes['entries'][0])
-    branch_merge_proposal_link: u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/...'
+    branch_merge_proposal_link: u'http://api.launchpad.dev/beta/~.../+merge/...'
     comment_link: None
     date_created: u'...'
     registrant_link: u'http://api.launchpad.dev/beta/~person-name...'
     resource_type_link: u'http://api.launchpad.dev/beta/#code_review_vote_reference'
     review_type: u'green'
     reviewer_link: u'http://api.launchpad.dev/beta/~person-name...'
-    self_link: u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/.../+review/...'
+    self_link: u'http://api.launchpad.dev/beta/~...'
 
 
 == Get an existing merge proposal ==
