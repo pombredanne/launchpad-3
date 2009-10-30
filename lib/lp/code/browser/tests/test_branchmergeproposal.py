@@ -662,28 +662,34 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
 
     layer = LaunchpadFunctionalLayer
 
-    def setUp(self):
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
-        self.bmp = self.factory.makeBranchMergeProposal()
 
-    def _makeCommentFromEmailWithAttachment(self, filename, content_type,
-                                            email_body, attachment_body):
+    def _makeCommentFromEmailWithAttachment(self, attachment_body):
         # Make an email message with an attachment, and create a code
         # review comment from it.
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.registrant)
         msg = self.factory.makeEmailMessage(
-            body=email_body,
-            attachments=[(filename, content_type, attachment_body)])
+            body='testing',
+            attachments=[('test.diff', 'text/plain', attachment_body)])
         message = MessageSet().fromEmail(msg.as_string())
-        return self.bmp.createCommentFromMessage(message, None, None, msg)
+        return bmp.createCommentFromMessage(message, None, None, msg)
 
     def test_unicode_in_attachment_renders(self):
         # The view should render without errors.
-        comment = self._makeCommentFromEmailWithAttachment(
-            'test.diff', 'text/plain', 'testing', '\xe2\x98\x95')
+        comment = self._makeCommentFromEmailWithAttachment('\xe2\x98\x95')
         # Need to commit in order to read the diff out of the librarian.
         transaction.commit()
         view = create_initialized_view(comment, '+comment-body')
         view()
+
+    def test_unicode_in_attachment_decoded(self):
+        # The view should render without errors.
+        # Need to commit in order to read the diff out of the librarian.
+        comment = self._makeCommentFromEmailWithAttachment('\xe2\x98\x95')
+        transaction.commit()
+        view = create_initialized_view(comment, '+comment-body')
+        [diff_attachment] = view.display_attachments
+        self.assertEqual(u'\u2615', diff_attachment.diff_text)
 
 
 def test_suite():
