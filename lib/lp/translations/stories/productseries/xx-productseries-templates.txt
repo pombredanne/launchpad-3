@@ -4,6 +4,19 @@ The +templates view for ProductSeries gives an overview of the translation
 templates in this series and provides easy access to the various subpages of
 each template.
 
+== Preparation ==
+
+To test the ordering of templates in the listing, we need another template
+that is new but must appear at the top of the list.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> evolution_trunk = evolution.getSeries('trunk')
+    >>> template = factory.makePOTemplate(productseries=evolution_trunk,
+    ...                                   name='at-the-top')
+    >>> logout()
 
 == Getting there ==
 
@@ -24,6 +37,7 @@ The page shows a table of all templates and links to their subpages.
     >>> table = find_tag_by_id(user_browser.contents, 'templates_table')
     >>> print extract_text(table)
     Template name       Actions
+    at-the-top          Download
     evolution-2.2       Download
     evolution-2.2-test  Download
 
@@ -35,6 +49,7 @@ shown, too.
     >>> table = find_tag_by_id(admin_browser.contents, 'templates_table')
     >>> print extract_text(table)
     Template name       Actions
+    at-the-top          Edit Upload Download Administer
     evolution-2.2       Edit Upload Download Administer
     evolution-2.2-test  Edit Upload Download Administer
 

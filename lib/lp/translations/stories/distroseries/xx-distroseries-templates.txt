@@ -29,12 +29,12 @@ The page shows a table of all templates and links to their subpages.
     >>> table = find_tag_by_id(admin_browser.contents, 'templates_table')
     >>> print extract_text(table)
     Source package Template name     Actions
-    pmount         pmount            Edit Upload Download Administer
-    evolution      evolution-2.2     Edit Upload Download Administer
-    mozilla        pkgconf-mozilla   Edit Upload Download Administer
-    evolution      man               Edit Upload Download Administer
-    pmount         man               Edit Upload Download Administer
     evolution      disabled-template Edit Upload Download Administer
+    evolution      evolution-2.2     Edit Upload Download Administer
+    evolution      man               Edit Upload Download Administer
+    mozilla        pkgconf-mozilla   Edit Upload Download Administer
+    pmount         man               Edit Upload Download Administer
+    pmount         pmount            Edit Upload Download Administer
 
 
 == Links to the templates ==
