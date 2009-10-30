@@ -395,6 +395,12 @@ class TestBranch(TestCaseWithFactory):
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         self.assertTrue(branch.needs_upgrading)
 
+    def test_requestUpgrade(self):
+        # A BranchUpgradeJob can be created by calling IBranch.requestUpgrade.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        branch.requestUpgrade()
+
 
 class TestBzrIdentity(TestCaseWithFactory):
     """Test IBranch.bzr_identity."""

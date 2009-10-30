@@ -951,6 +951,9 @@ class Branch(SQLBase):
             return True
         return False
 
+    def requestUpgrade(self):
+        """See `IBranch`."""
+
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.
 

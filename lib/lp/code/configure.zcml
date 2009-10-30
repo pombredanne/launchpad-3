@@ -474,6 +474,7 @@
                     pending_writes
                     commitsForDays
                     needs_upgrading
+                    requestUpgrade
                     getUpgradeFormat
                     isBranchMergeable
                     visibleByUser
