@@ -44,7 +44,7 @@
       icingroot string:${rooturl}+icing/rev${revno};
       devmode modules/canonical.config/config/devmode;
       yui string:${icingroot}/yui/3.0.0/build;
-      lazr_js string:${icingroot}/lazr;
+      lazr_js string:${icingroot}/lazr/build;
       lp_js string:${icingroot}/build"
   >
   <tal:comment replace="nothing">
