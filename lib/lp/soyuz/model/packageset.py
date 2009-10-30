@@ -14,6 +14,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
@@ -350,11 +351,17 @@ class PackagesetSet:
         if not isinstance(name, unicode):
             name = unicode(name, 'utf-8')
 
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         extra_args = []
         if distroseries is not None:
+            # If the user just passed a distro series name, look it up.
+            if isinstance(distroseries, basestring):
+                try:
+                    distroseries = ubuntu[distroseries]
+                except NotFoundError:
+                    raise NoSuchPackageSet(distroseries)
             extra_args.append(Packageset.distroseries == distroseries)
         else:
-            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
             extra_args.append(Packageset.distroseries == ubuntu.currentseries)
 
         package_set = store.find(
@@ -362,6 +369,7 @@ class PackagesetSet:
 
         if package_set is None:
             raise NoSuchPackageSet(name)
+
         return package_set
 
     def getByOwner(self, owner):

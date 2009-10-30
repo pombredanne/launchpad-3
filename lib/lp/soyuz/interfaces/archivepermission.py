@@ -284,6 +284,9 @@ class IArchivePermissionSet(Interface):
     def uploadersForPackageset(archive, packageset, direct_permissions=True):
         """The `ArchivePermission` records for uploaders to the package set.
 
+        Please note: if a package set *name* is passed the respective
+                     package set in the current distro series will be used.
+
         :param archive: The archive the permission applies to.
         :param packageset: An `IPackageset` or a string package set name.
         :param direct_permissions: If True only consider permissions granted
@@ -332,6 +335,9 @@ class IArchivePermissionSet(Interface):
     def newPackagesetUploader(archive, person, packageset, explicit=False):
         """Create and return a new `ArchivePermission` for an uploader.
 
+        Please note: if a package set *name* is passed the respective
+                     package set in the current distro series will be used.
+
         :param archive: The archive the permission applies to.
         :param person: An `IPerson` for whom you want to add permission.
         :param packageset: An `IPackageset` or a string package set name.
@@ -378,6 +384,9 @@ class IArchivePermissionSet(Interface):
 
     def deletePackagesetUploader(archive, person, packageset, explicit=False):
         """Revoke upload permissions for a person.
+
+        Please note: if a package set *name* is passed the respective
+                     package set in the current distro series will be used.
 
         :param archive: The archive the permission applies to.
         :param person: An `IPerson` for whom you want to revoke permission.
