@@ -473,7 +473,7 @@ class MessageSharingMerge(LaunchpadScript):
             for potmsgset_id in potmsgset_ids:
                 potmsgset = POTMsgSet.get(potmsgset_id)
 
-                tm_ids = self._partitionTranslationMessages(potmsgset)
+                tm_ids = self._partitionTranslationMessageIds(potmsgset)
                 before = sum([len(sublist) for sublist in tm_ids], 0)
 
                 for ids in tm_ids:
@@ -508,7 +508,7 @@ class MessageSharingMerge(LaunchpadScript):
             
         return (tm.potemplateID, tm.languageID, tm.variant) + msgstr_ids
 
-    def _partitionTranslationMessages(self, potmsgset):
+    def _partitionTranslationMessageIds(self, potmsgset):
         """Partition `TranslationMessage`s by language.
 
         Only the ids are stored, not the `TranslationMessage` objects
@@ -542,7 +542,7 @@ class MessageSharingMerge(LaunchpadScript):
         # unique index again at some point that will prevent this.  When
         # it becomes impossible to test this function, this whole
         # migration phase can be scrapped.
-        ids_per_language = self._partitionTranslationMessages(potmsgset)
+        ids_per_language = self._partitionTranslationMessageIds(potmsgset)
 
         self._endTransaction(intermediate=True)
 
