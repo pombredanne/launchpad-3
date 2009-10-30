@@ -999,7 +999,8 @@ class POTemplateSubset:
     implements(IPOTemplateSubset)
 
     def __init__(self, sourcepackagename=None, from_sourcepackagename=None,
-                 distroseries=None, productseries=None, iscurrent=None):
+                 distroseries=None, productseries=None, iscurrent=None,
+                 ordered_by_names=False):
         """Create a new `POTemplateSubset` object.
 
         The set of POTemplate depends on the arguments you pass to this
@@ -1024,9 +1025,13 @@ class POTemplateSubset:
         if productseries is not None:
             self.clauses.append(
                 POTemplate.productseriesID == productseries.id)
+            if ordered_by_names:
+                self.orderby = [POTemplate.name]
         else:
             self.clauses.append(
                 POTemplate.distroseriesID == distroseries.id)
+            if ordered_by_names:
+                self.orderby = [SourcePackageName.name, POTemplate.name]
             if from_sourcepackagename is not None:
                 self.clauses.append(
                     POTemplate.from_sourcepackagenameID ==
@@ -1237,13 +1242,15 @@ class POTemplateSet:
         return POTemplate.select(orderBy=['-date_last_updated'])
 
     def getSubset(self, distroseries=None, sourcepackagename=None,
-                  productseries=None, iscurrent=None):
+                  productseries=None, iscurrent=None,
+                  ordered_by_names=False):
         """See `IPOTemplateSet`."""
         return POTemplateSubset(
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             productseries=productseries,
-            iscurrent=iscurrent)
+            iscurrent=iscurrent,
+            ordered_by_names=ordered_by_names)
 
     def getSubsetFromImporterSourcePackageName(self, distroseries,
         sourcepackagename, iscurrent=None):
