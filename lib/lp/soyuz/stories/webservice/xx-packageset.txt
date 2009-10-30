@@ -70,7 +70,8 @@ When a `PackageSet` cannot be found, an error is returned.
     >>> print response
     HTTP/1.1 400 Bad Request
     ...
-    NoSuchPackageSet: No such distro series or package set: 'not-found'.
+    No such package set (in the specified distro series): 'not-found'.
+    ...
     <BLANKLINE>
 
 Here's an example with a funny URL concoted by a "smart" user.
@@ -464,7 +465,7 @@ Every package set is associated with a distro series.
 === Related package sets ===
 
 When adding a package set we can specify that is to be related to another set
-that exists aleady.
+that exists already.
 
     >>> grumpy = webservice.get("/ubuntu/grumpy").jsonBody()
     >>> print grumpy['self_link']
