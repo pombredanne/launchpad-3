@@ -57,7 +57,7 @@ class IProductSeriesLanguage(IRosettaStats):
         required language, a `DummyPOFile` is provided.
         """
 
-    def setCounts(total, imported, changed, new, unreviewed):
+    def setCounts(total, imported, changed, new, unreviewed, last_changed):
         """Set aggregated message counts for ProductSeriesLanguage."""
 
     def recalculateCounts(total, imported, changed, new, unreviewed):
