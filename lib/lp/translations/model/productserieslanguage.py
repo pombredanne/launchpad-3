@@ -112,7 +112,8 @@ class ProductSeriesLanguage(RosettaStats):
         """See `IProductSeriesLanguage`."""
         return self._unreviewed_count
 
-    def lastChangedDate(self):
+    @property
+    def last_changed_date(self):
         return datetime.datetime.now()
 
     @property
