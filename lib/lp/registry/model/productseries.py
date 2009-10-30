@@ -15,7 +15,7 @@ import datetime
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import Sum
+from storm.expr import Sum, Max
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc
@@ -499,7 +499,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                               pofile.currentCount(),
                               pofile.updatesCount(),
                               pofile.rosettaCount(),
-                              pofile.unreviewedCount())
+                              pofile.unreviewedCount(), 
+                              pofile.date_changed)
                 results.append(psl)
         else:
             # If there is more than one template, do a single
@@ -517,7 +518,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                  Sum(POFile.currentcount),
                  Sum(POFile.updatescount),
                  Sum(POFile.rosettacount),
-                 Sum(POFile.unreviewed_count)),
+                 Sum(POFile.unreviewed_count),
+                 Max(POFile.date_changed)),
                 POFile.language==Language.id,
                 POFile.variant==None,
                 Language.visible==True,
@@ -526,10 +528,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True,
                 Language.id!=english.id).group_by(Language)
 
-            for (language, imported, changed, new, unreviewed) in (
-                query.order_by(['Language.englishname'])):
+            for (language, imported, changed, new, unreviewed, 
+                    last_changed) in (
+                    query.order_by(['Language.englishname'])):
                 psl = ProductSeriesLanguage(self, language)
-                psl.setCounts(total, imported, changed, new, unreviewed)
+                psl.setCounts(total, imported, changed, new, unreviewed,
+                        last_changed)
                 results.append(psl)
 
         return results
