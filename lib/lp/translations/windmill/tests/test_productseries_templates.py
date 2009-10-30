@@ -48,9 +48,9 @@ class EnableActionLinksTest(TestCaseWithFactory):
                '+templates')
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to templates page logged in as translations admin.
-        user.ensure_login(client)
         client.open(url=url)
         client.waits.forPageLoad(timeout=u'20000')
+        user.ensure_login(client)
 
         client.waits.forElement(id=u'templates_table', timeout=u'8000')
         # All links are inactive to start with.
