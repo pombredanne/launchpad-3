@@ -11,6 +11,7 @@
             <th>Untranslated</th>
             <th>Needs review</th>
             <th>Changed</th>
+            <th>Last Changed</th>
           </tr>
         </thead>
         <tbody>
@@ -46,6 +47,11 @@
               <span class="sortkey"
                     tal:content="language_stats/updatesCount">0</span>
               <tal:value content="language_stats/updatesCount" />
+            </td>
+            <td>
+              <span class="sortkey"
+                    tal:content="language_stats/lastChangedDate">2009-10-30</span>
+              <tal:value content="language_stats/lastChangedDate" />
             </td>
           </tr>
         </tbody>
