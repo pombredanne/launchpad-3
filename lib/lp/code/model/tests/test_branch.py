@@ -41,6 +41,7 @@ from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from lp.code.model.branchjob import BranchUpgradeJob
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import (
@@ -399,7 +400,12 @@ class TestBranch(TestCaseWithFactory):
         # A BranchUpgradeJob can be created by calling IBranch.requestUpgrade.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_6)
-        branch.requestUpgrade()
+        job = branch.requestUpgrade()
+
+        self.assertIsInstance(job, BranchUpgradeJob)
+
+        jobs = BranchJob.selectBy(branch=branch)
+        self.assertEqual(jobs.count(), 1)
 
 
 class TestBzrIdentity(TestCaseWithFactory):
