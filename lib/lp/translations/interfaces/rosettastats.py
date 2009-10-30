@@ -88,3 +88,8 @@ class IRosettaStats(Interface):
         """Return the percentage of translations for this object that are
         newly translated in Rosetta and not updates of imported.
         """
+
+    def lastChangedDate(language=None):
+        """Return the last date translations for this object were modified."""
+
+
