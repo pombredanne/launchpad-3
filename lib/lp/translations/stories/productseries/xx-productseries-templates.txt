@@ -70,4 +70,4 @@ details. Likewise for the other links for each template.
     ...     'http://translations.launchpad.dev/evolution/trunk/+templates')
     >>> admin_browser.getLink('Edit').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/+edit
+    http://translations.launchpad.dev/evolution/trunk/+pots/at-the-top/+edit

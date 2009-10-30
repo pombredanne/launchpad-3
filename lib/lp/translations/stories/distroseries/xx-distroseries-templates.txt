@@ -53,4 +53,4 @@ details. Likewise for the other links for each template.
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
     >>> admin_browser.getLink('Edit').click()
     >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+source/pmount/+pots/pmount/+edit
+    http://translations.../evolution/+pots/disabled-template/+edit
