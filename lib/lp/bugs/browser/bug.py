@@ -566,7 +566,7 @@ class BugEditView(BugEditViewBase):
     @property
     def label(self):
         """The form label."""
-        return 'Edit details for bug #%d' % self.context.id
+        return 'Edit details for bug #%d' % self.context.bug.id
 
     @property
     def page_title(self):
