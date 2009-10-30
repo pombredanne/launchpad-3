@@ -3001,7 +3001,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         if check_permission('launchpad.Edit', self.context):
             return True
 
-        # If the current user has any public PPA, show the section.
+        # If the current user can view any PPA, show the section.
         for ppa in self.context.ppas:
             if check_permission('launchpad.View', ppa):
                 return True
