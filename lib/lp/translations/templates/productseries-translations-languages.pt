@@ -50,8 +50,8 @@
             </td>
             <td>
               <span class="sortkey"
-                    tal:content="language_stats/lastChangedDate">2009-10-30</span>
-              <tal:value content="language_stats/lastChangedDate" />
+                    tal:content="language_stats/last_changed_date">2009-10-30</span>
+              <tal:value content="language_stats/last_changed_date/fmt:approximatedate" />
             </td>
           </tr>
         </tbody>
