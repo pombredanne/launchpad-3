@@ -161,10 +161,12 @@
               <a tal:replace="structure overview_menu/edit/fmt:icon" />
             </p>
 
-            <ul class="horizontal"
-              tal:condition="overview_menu/series_add/enabled">
-              <li>
+            <ul class="horizontal">
+              <li tal:condition="overview_menu/series_add/enabled">
                 <a tal:replace="structure overview_menu/series_add/fmt:link" />
+              </li>
+              <li>
+                <a tal:replace="structure overview_menu/milestones/fmt:link" />
               </li>
             </ul>
           </div>
