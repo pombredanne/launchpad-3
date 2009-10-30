@@ -26,7 +26,7 @@ from canonical.launchpad.utilities.looptuner import DBLoopTuner
 
 
 class CreditsFixer:
-    """`ITunableLoop` that recomputes & checks all `POFile`s' statistics."""
+    """`ITunableLoop` that translates all `POFile`s' translation credits."""
     implements(ITunableLoop)
 
     def __init__(self, transaction, logger, start_at=0):
