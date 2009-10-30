@@ -147,7 +147,7 @@ The +attend view has a label.
 
 
 The +register views
--------------------------------
+-------------------
 
 The +register view has a label too.
 
@@ -193,7 +193,7 @@ include it.
     >>> view = create_view(ubz, '+attendees-csv')
     >>> lines =  view.render().strip().splitlines()
     >>> print lines[0]
-    Launchpad username,Display name,...Timezone,...Physical present
+    Launchpad username,Display name,...Timezone,...Physically present
     >>> print lines[-1]
     name12,Sample Person,...Australia/Perth,...True
 

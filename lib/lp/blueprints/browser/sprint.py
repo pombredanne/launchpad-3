@@ -519,7 +519,7 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  'Timezone',
                  'Arriving',
                  'Leaving',
-                 'Physical present',
+                 'Physically present',
                  )]
         for attendance in self.context.attendances:
             time_zone = ''
