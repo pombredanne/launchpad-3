@@ -37,12 +37,11 @@ def comments_text_representation(translation_message):
     """
     comment_lines = []
     comment_lines_previous_msgids = []
-    # Comment and source_comment always end in a newline, so
-    # splitting by \n always results in an empty last element.
     # Previous msgsid comments (indicated by a | symbol) have to come
     # after the other comments to preserve the order expected by msgfmt.
     if translation_message.comment:
-        for line in translation_message.comment.split('\n')[:-1]:
+        unparsed_comment = translation_message.comment.strip()
+        for line in unparsed_comment.split('\n'):
             if line.startswith('|'):
                 if translation_message.is_obsolete:
                     comment_prefix = u'#~'
@@ -54,7 +53,8 @@ def comments_text_representation(translation_message):
     if not translation_message.is_obsolete:
         # Source comments are only exported if it's not an obsolete entry.
         if translation_message.source_comment:
-            for line in translation_message.source_comment.split('\n')[:-1]:
+            unparsed_comment = translation_message.source_comment.strip()
+            for line in unparsed_comment.split('\n'):
                 comment_lines.append(u'#. ' + line)
         if translation_message.file_references:
             for line in translation_message.file_references.split('\n'):
