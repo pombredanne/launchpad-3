@@ -219,10 +219,6 @@
        tal:content="string:LP.client.cache['archive_context_url'] = '${archive/fmt:url}';"></script>
     <metal:js use-macro="archive/@@+macros/expandable-table-js"/>
 
-    <p style="float:right; padding-top:1em">
-      <a href="+publishinghistory">See full publishing history</a>
-    </p>
-
   </div>
 
   <div class="yui-u">
