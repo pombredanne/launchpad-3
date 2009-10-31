@@ -40,6 +40,7 @@ from canonical.launchpad.ftests import import_public_test_keys
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -1394,6 +1395,38 @@ class TestUploadProcessor(TestUploadProcessorBase):
             'Daniel Silverstone <daniel.silverstone@canonical.com>',
             ]
         self.assertEmail(contents, recipients=recipients)
+
+    def test30QuiltUpload(self):
+        """Ensure that 3.0 (quilt) uploads work properly. """
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the source.
+        upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it went ok:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "rejected" not in raw_msg,
+            "Failed to upload bar source:\n%s" % raw_msg)
+        spph = self._publishPackage("bar", "1.0-1")
+
+        self.assertEquals(
+            sorted((sprf.libraryfile.filename, sprf.filetype)
+                   for sprf in spph.sourcepackagerelease.files),
+            [('bar_1.0-1.debian.tar.bz2',
+              SourcePackageFileType.DEBIAN_TARBALL),
+             ('bar_1.0-1.dsc',
+              SourcePackageFileType.DSC),
+             ('bar_1.0.orig-comp1.tar.lzma',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig-comp2.tar.bz2',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig.tar.gz',
+              SourcePackageFileType.ORIG_TARBALL)])
 
 
 def test_suite():
