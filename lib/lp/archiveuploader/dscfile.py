@@ -31,9 +31,12 @@ from lp.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
 from lp.archiveuploader.utils import (
     prefix_multi_line_string, safe_fix_maintainer, ParseMaintError,
-    re_valid_pkg_name, re_valid_version, re_issource)
+    re_valid_pkg_name, re_valid_version, re_issource,
+    re_is_component_orig_tar_ext, determine_source_file_type,
+    get_source_file_extension)
 from canonical.encoding import guess as guess_encoding
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces import (
     GPGVerificationError, IGPGHandler, IGPGKeySet,
@@ -265,10 +268,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield UploadError(
                 "%s: invalid version %s" % (self.filename, self.dsc_version))
 
-        if self.format != "1.0":
+        if self.format not in ("1.0", "3.0 (quilt)", "3.0 (native)"):
             yield UploadError(
-                "%s: Format is not 1.0. This is incompatible with "
-                "dpkg-source." % self.filename)
+                "%s: Unsupported format '%s'. Only formats '1.0', "
+                "'3.0 (quilt)' and '3.0 (native)' are supported"
+                % (self.filename, self.format))
 
         # Validate the build dependencies
         for field_name in ['build-depends', 'build-depends-indep']:
@@ -350,19 +354,32 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         """
 
         diff_count = 0
+        debian_tar_count = 0
         orig_tar_count = 0
+        component_orig_tar_counts = {}
         native_tar_count = 0
 
         files_missing = False
         for sub_dsc_file in self.files:
-            if sub_dsc_file.filename.endswith(".diff.gz"):
+            filetype = determine_source_file_type(sub_dsc_file.filename)
+
+            if filetype == SourcePackageFileType.DIFF:
                 diff_count += 1
-            elif sub_dsc_file.filename.endswith(".orig.tar.gz"):
+            elif filetype == SourcePackageFileType.ORIG_TARBALL:
                 orig_tar_count += 1
-            elif sub_dsc_file.filename.endswith(".tar.gz"):
+            elif filetype == SourcePackageFileType.COMPONENT_ORIG_TARBALL:
+                component = re_is_component_orig_tar_ext.match(
+                    get_source_file_extension(sub_dsc_file.filename)).group(1)
+                if component not in component_orig_tar_counts:
+                    component_orig_tar_counts[component] = 0
+                component_orig_tar_counts[component] += 1
+            elif filetype == SourcePackageFileType.DEBIAN_TARBALL:
+                debian_tar_count += 1
+            elif filetype == SourcePackageFileType.NATIVE_TARBALL:
                 native_tar_count += 1
             else:
                 yield UploadError('Unknown file: ' + sub_dsc_file.filename)
+                continue
 
             try:
                 library_file, file_archive = self._getFileByName(
@@ -411,31 +428,92 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # Reject if we have more than one file of any type.
         if orig_tar_count > 1:
             yield UploadError(
-                "%s: has more than one orig.tar.gz."
+                "%s: has more than one orig.tar.*."
+                % self.filename)
+        if debian_tar_count > 1:
+            yield UploadError(
+                "%s: has more than one debian.tar.*."
+                % self.filename)
+        if native_tar_count > 1:
+            yield UploadError(
+                "%s: has more than one tar.*."
                 % self.filename)
         if diff_count > 1:
             yield UploadError(
                 "%s: has more than one diff.gz."
                 % self.filename)
-        if native_tar_count > 1:
+
+        if ((orig_tar_count == 0 and native_tar_count == 0) or
+            (orig_tar_count > 0 and native_tar_count > 0)):
             yield UploadError(
-                "%s: has more than one tar.gz."
+                "%s: must have exactly one tar.* or orig.tar.*."
                 % self.filename)
 
-        if orig_tar_count == 0 and native_tar_count == 0:
+        if native_tar_count > 0 and debian_tar_count > 0:
             yield UploadError(
-                "%s: does not mention any tar.gz or orig.tar.gz."
+                "%s: must have no more than one tar.* or debian.tar.*."
                 % self.filename)
 
-        if orig_tar_count > 0 and native_tar_count > 0:
-            yield UploadError(
-                "%s: has both a tar.gz and orig.tar.gz."
-                % self.filename)
+        # Format 1.0 must be native (exactly one tar.gz), or
+        # have an orig.tar.gz and a diff.gz. It cannot have
+        # compression types other than 'gz'.
+        # XXX: Must verify compression type.
+        if self.format == '1.0':
+            if ((diff_count == 0 and native_tar_count == 0) or
+                (diff_count > 0 and native_tar_count > 0)):
+                yield UploadError(
+                    "%s: must have exactly one diff.gz or tar.gz."
+                    % self.filename)
 
-        if diff_count == 0 and native_tar_count == 0:
-            yield UploadError(
-                "%s: has neither a diff.gz nor a tar.gz."
-                % self.filename)
+            if debian_tar_count > 0:
+                yield UploadError(
+                    "%s: is format 1.0 but has debian.tar.*."
+                    % self.filename)
+
+            if len(component_orig_tar_counts) > 0:
+                yield UploadError(
+                    "%s: is format 1.0 but has orig-COMPONENT.tar.*."
+                    % self.filename)
+        # Format 3.0 (native) must have exactly one tar.*.
+        # gz, bz2 and lzma are all valid compression types.
+        elif self.format == '3.0 (native)':
+            if native_tar_count == 0:
+                yield UploadError(
+                    "%s: must have exactly one tar.*."
+                    % self.filename)
+
+            if diff_count > 0:
+                yield UploadError(
+                    "%s: is format 3.0 but has diff.gz."
+                    % self.filename)
+
+            if len(component_orig_tar_counts) > 0:
+                yield UploadError(
+                    "%s: is native but has orig-COMPONENT.tar.*."
+                    % self.filename)
+        elif self.format == '3.0 (quilt)':
+            if orig_tar_count == 0:
+                yield UploadError(
+                    "%s: must have exactly one orig.tar.*."
+                    % self.filename)
+
+            if debian_tar_count == 0:
+                yield UploadError(
+                    "%s: must have exactly one debian.tar.*."
+                    % self.filename)
+
+            if diff_count > 0:
+                yield UploadError(
+                    "%s: is format 3.0 but has diff.gz."
+                    % self.filename)
+
+            for component in component_orig_tar_counts:
+                if component_orig_tar_counts[component] > 1:
+                    yield UploadError(
+                        "%s: has more than one orig-%s.tar.*."
+                        % (self.filename, component))
+        else:
+            raise AssertionError("Unknown source format.")
 
         if files_missing:
             yield UploadError(
