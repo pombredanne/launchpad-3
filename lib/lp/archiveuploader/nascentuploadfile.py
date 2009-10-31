@@ -33,8 +33,9 @@ from zope.component import getUtility
 from lp.archiveuploader.utils import (
     prefix_multi_line_string, re_taint_free, re_isadeb, re_issource,
     re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
-    re_extract_src_version, re_is_component_orig_tar_ext, re_is_orig_tar_ext)
+    re_extract_src_version, determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
@@ -351,9 +352,9 @@ class SourceUploadFile(PackageUploadFile):
                 "Architecture field." % (self.filename))
 
         version_chopped = re_no_epoch.sub('', self.version)
-        extension = re_issource.match(self.filename).group(3)
-        if (re_is_component_orig_tar_ext.match(extension) or
-            re_is_orig_tar_ext.match(extension)):
+        if determine_source_file_type(self.filename) in (
+            SourcePackageFileType.ORIG_TARBALL,
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL):
             version_chopped = re_no_revision.sub('', version_chopped)
 
         source_match = re_issource.match(self.filename)
