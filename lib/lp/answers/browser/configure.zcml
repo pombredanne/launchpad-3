@@ -343,6 +343,11 @@
     permission="launchpad.Edit"
     template="../../app/templates/generic-edit.pt"
     />
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+    for="lp.answers.interfaces.faq.IFAQ"
+    factory="lp.answers.browser.faq.FAQBreadcrumb"
+    permission="zope.Public"/>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"

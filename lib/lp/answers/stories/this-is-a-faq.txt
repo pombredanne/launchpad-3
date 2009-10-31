@@ -279,7 +279,7 @@ FAQ title to display the FAQ content.
     >>> print owner_browser.url
     http://answers.launchpad.dev/firefox/+faq/...
     >>> print backslashreplace(owner_browser.title)
-    Questions : Mozilla Firefox
+    FAQ #12 : Questions : Mozilla Firefox
 
 The FAQ keywords and content appears just below:
 

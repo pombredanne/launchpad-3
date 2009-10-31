@@ -54,7 +54,7 @@ Related question's portlet.
     >>> user_browser.getControl('Link to FAQ').click()
     >>> user_browser.getLink('How can I make VOIP calls?').click()
     >>> print user_browser.title
-    Questions : Ubuntu
+    FAQ #4 : Questions : Ubuntu
 
     >>> portlet = find_portlet(user_browser.contents, 'Related questions')
     >>> portlet.a['title']
@@ -144,7 +144,7 @@ questions portlet on a FAQ page.
 
     >>> anon_browser.getLink('How can I make VOIP calls?').click()
     >>> print anon_browser.title
-    Questions : Ubuntu
+    FAQ #4 : Questions : Ubuntu
 
     >>> portlet = find_portlet(anon_browser.contents, 'Related questions')
     >>> portlet.a['title']
