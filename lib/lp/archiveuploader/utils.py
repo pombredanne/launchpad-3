@@ -9,12 +9,15 @@ __all__ = [
     're_taint_free',
     're_isadeb',
     're_issource',
+    're_is_component_orig_tar_ext',
     're_no_epoch',
     're_no_revision',
     're_valid_version',
     're_valid_pkg_name',
     're_changes_file_name',
     're_extract_src_version',
+    'get_source_file_extension',
+    'determine_source_file_type',
     'prefix_multi_line_string',
     'safe_fix_maintainer',
     'ParseMaintError',
@@ -25,13 +28,24 @@ import email.Header
 import re
 
 from lp.archiveuploader.tagfiles import TagFileParseError
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.encoding import guess as guess_encoding, ascii_smash
 
 
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
-re_issource = re.compile(r"(.+)_(.+?)\.(orig(?:-.+)?\.tar\.(?:gz|bz2|lzma)|diff\.gz|(?:debian\.)?tar\.(?:gz|bz2|lzma)|dsc)$")
+
+re_issource = re.compile(
+    r"(.+)_(.+?)\."
+     "(orig(?:-.+)?\.tar\.(?:gz|bz2|lzma)"
+     "|diff\.gz"
+     "|(?:debian\.)?tar\.(?:gz|bz2|lzma)"
+     "|dsc)$")
+re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2|lzma)$")
+re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2|lzma)$")
+re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2|lzma)$")
+re_is_native_tar_ext = re.compile(r"^tar.(?:gz|bz2|lzma)$")
 
 re_no_epoch = re.compile(r"^\d+\:")
 re_no_revision = re.compile(r"-[^-]+$")
@@ -42,6 +56,28 @@ re_changes_file_name = re.compile(r"([^_]+)_([^_]+)_([^\.]+).changes")
 re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
 
 re_parse_maintainer = re.compile(r"^\s*(\S.*\S)\s*\<([^\>]+)\>")
+
+
+def get_source_file_extension(filename):
+    """Get the extension part of a source file name."""
+    return re_issource.match(filename).group(3)
+
+
+def determine_source_file_type(filename):
+    """Determine the SourcePackageFileType of the given filename."""
+    extension = get_source_file_extension(filename)
+    if extension == "dsc":
+        return SourcePackageFileType.DSC
+    elif extension == "diff.gz":
+        return SourcePackageFileType.DIFF
+    elif re_is_orig_tar_ext.match(extension):
+        return SourcePackageFileType.ORIG_TARBALL
+    elif re_is_component_orig_tar_ext.match(extension):
+        return SourcePackageFileType.COMPONENT_ORIG_TARBALL
+    elif re_is_debian_tar_ext.match(extension):
+        return SourcePackageFileType.DEBIAN_TARBALL
+    elif re_is_native_tar_ext.match(extension):
+        return SourcePackageFileType.NATIVE_TARBALL
 
 
 def prefix_multi_line_string(str, prefix, include_blank_lines=0):
