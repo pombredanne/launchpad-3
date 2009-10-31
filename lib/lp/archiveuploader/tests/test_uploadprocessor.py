@@ -1428,6 +1428,32 @@ class TestUploadProcessor(TestUploadProcessorBase):
              ('bar_1.0.orig.tar.gz',
               SourcePackageFileType.ORIG_TARBALL)])
 
+    def test30NativeUpload(self):
+        """Ensure that 3.0 (native) uploads work properly. """
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the source.
+        upload_dir = self.queueUpload("bar_1.0_3.0-native")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it went ok:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "rejected" not in raw_msg,
+            "Failed to upload bar source:\n%s" % raw_msg)
+        spph = self._publishPackage("bar", "1.0")
+
+        self.assertEquals(
+            sorted((sprf.libraryfile.filename, sprf.filetype)
+                   for sprf in spph.sourcepackagerelease.files),
+            [('bar_1.0.dsc',
+              SourcePackageFileType.DSC),
+             ('bar_1.0.tar.bz2',
+              SourcePackageFileType.NATIVE_TARBALL)])
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
