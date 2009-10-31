@@ -36,6 +36,7 @@ from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.archiveuploader.utils import determine_source_file_type
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.build import BuildStatus
@@ -271,19 +272,10 @@ class SourcePackageRelease(SQLBase):
 
     def addFile(self, file):
         """See ISourcePackageRelease."""
-        determined_filetype = None
-        if file.filename.endswith(".dsc"):
-            determined_filetype = SourcePackageFileType.DSC
-        elif file.filename.endswith(".orig.tar.gz"):
-            determined_filetype = SourcePackageFileType.ORIG_TARBALL
-        elif file.filename.endswith(".diff.gz"):
-            determined_filetype = SourcePackageFileType.DIFF
-        elif file.filename.endswith(".tar.gz"):
-            determined_filetype = SourcePackageFileType.NATIVE_TARBALL
-
-        return SourcePackageReleaseFile(sourcepackagerelease=self,
-                                        filetype=determined_filetype,
-                                        libraryfile=file)
+        return SourcePackageReleaseFile(
+            sourcepackagerelease=self,
+            filetype=determine_source_file_type(file.filename),
+            libraryfile=file)
 
     def _getPackageSize(self):
         """Get the size total (in KB) of files comprising this package.
