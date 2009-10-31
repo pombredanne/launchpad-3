@@ -154,8 +154,8 @@ redirect the user to the question page.
     >>> user_browser.getControl('Add').click()
     >>> user_browser.url
     '.../ubuntu/+source/mozilla-firefox/+question/...'
-    >>> user_browser.title
-    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    >>> print user_browser.title
+    Question #... : Questions : ...mozilla-firefox... package : Ubuntu
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'registration'))

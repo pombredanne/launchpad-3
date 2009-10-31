@@ -57,15 +57,24 @@ class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost(
         self.assertEquals(last_crumb.text, 'Questions')
 
 
-class TestFAQBreadcrumb(BaseBreadcrumbTestCase):
-    """Test Breadcrumbs for IFAQ."""
+class TestAnswersBreadcrumb(BaseBreadcrumbTestCase):
+    """Test Breadcrumbs for answer module objects."""
 
     def setUp(self):
-        super(TestFAQBreadcrumb, self).setUp()
+        super(TestAnswersBreadcrumb, self).setUp()
         self.product = self.factory.makeProduct(name="mellon")
         login_person(self.product.owner)
+        self.question = self.factory.makeQuestion(
+            target=self.product, title='Seeds are hard to chew')
+        self.question_url = canonical_url(self.question, rootsite='answers')
         self.faq = self.factory.makeFAQ(target=self.product, title='Seedless')
         self.faq_url = canonical_url(self.faq, rootsite='answers')
+
+    def test_question(self):
+        crumbs = self._getBreadcrumbs(
+            self.question_url, [self.root, self.product, self.question])
+        last_crumb = crumbs[-1]
+        self.assertEquals(last_crumb.text, 'Question #%d' % self.question.id)
 
     def test_faq(self):
         crumbs = self._getBreadcrumbs(

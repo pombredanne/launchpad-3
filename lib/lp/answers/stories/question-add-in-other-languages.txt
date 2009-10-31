@@ -78,7 +78,7 @@ from asking a question in the language of his choice.
     >>> browser.url
     '.../ubuntu/+question/...'
     >>> print browser.title
-    Questions : Ubuntu
+    Question #... : Questions : Ubuntu
 
 The page reports the question language both in the content and in the
 markup. Search engine robots and browsers will use the lang and dir
@@ -155,5 +155,5 @@ new question.
     >>> browser.url
     '.../ubuntu/+question/...'
     >>> print browser.title.decode('utf-8')
-    Questions : Ubuntu
+    Question #... : Questions : Ubuntu
     >>> portlet = find_tag_by_id(browser.contents, 'portlet-details')

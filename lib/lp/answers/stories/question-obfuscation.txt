@@ -75,8 +75,8 @@ description. He can then see the email address in the tooltip in the
     >>> user_browser.getControl('Description').value = (
     ...     'The clicking mailto:user@domain.com crashes the browser.')
     >>> user_browser.getControl('Add').click()
-    >>> user_browser.title
-    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    >>> print user_browser.title
+    Question #... : ...
 
     >>> user_browser.open('http://answers.launchpad.dev/')
     >>> question_portlet = find_tag_by_id(

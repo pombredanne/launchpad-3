@@ -129,7 +129,7 @@ regular workflow. (see 30-question-workflow.txt for the details).
     >>> user_browser.url
     '.../thunderbird/+question/...'
     >>> print user_browser.title
-    Questions : Mozilla Thunderbird
+    Question #... : Questions : Mozilla Thunderbird
 
 
 == Supported Language behaviour ==
@@ -329,4 +329,4 @@ again--the question is created.
     >>> user_browser.url
     '.../thunderbird/+question/...'
     >>> print user_browser.title
-    Questions : Mozilla Thunderbird
+    Question #... : Questions : Mozilla Thunderbird
