@@ -60,13 +60,18 @@ re_parse_maintainer = re.compile(r"^\s*(\S.*\S)\s*\<([^\>]+)\>")
 
 def get_source_file_extension(filename):
     """Get the extension part of a source file name."""
-    return re_issource.match(filename).group(3)
+    match = re_issource.match(filename)
+    if match is None:
+        return None
+    return match.group(3)
 
 
 def determine_source_file_type(filename):
     """Determine the SourcePackageFileType of the given filename."""
     extension = get_source_file_extension(filename)
-    if extension == "dsc":
+    if extension is None:
+        return None
+    elif extension == "dsc":
         return SourcePackageFileType.DSC
     elif extension == "diff.gz":
         return SourcePackageFileType.DIFF
