@@ -3,7 +3,7 @@ Private team participation
 
 During the transitional period between having only public and private
 membership team visibility until the end goal of having only public
-and private team visibilty, there will be a time when teams can have a
+and private team visibility, there will be a time when teams can have a
 visibility set to one of the three: public, private membership, and
 private.
 

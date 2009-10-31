@@ -290,7 +290,7 @@ class BugContextMenu(ContextMenu):
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'Activity log'
+        text = 'See full activity log'
         return Link('+activity', text)
 
     def affectsmetoo(self):
@@ -933,5 +933,5 @@ def bug_description_xhtml_representation(context, field, request):
     def renderer(value):
         nomail  = formatter(value).obfuscate_email()
         html    = formatter(nomail).text_to_html()
-        return html
+        return html.encode('utf-8')
     return renderer

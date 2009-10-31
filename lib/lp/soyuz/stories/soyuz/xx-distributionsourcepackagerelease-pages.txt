@@ -270,3 +270,37 @@ package caches (see doc/package-cache.txt).
     Binary packages built by this source
     foo-bin: Foo app is great
     Well ... it does nothing, though
+
+The full change log can be viewed as follows:
+
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/ubuntutest/+source/testing-dspr')
+    >>> user_browser.getLink('View full change log').click()
+    >>> print user_browser.url
+    http://launchpad.dev/ubuntutest/+source/testing-dspr/+changelog
+
+    >>> print_tag_with_id(user_browser.contents, 'body_testing-dspr_1.0')
+    Testing!!!
+    biscuit@canonical.com
+    LP: #1234
+    celso.providelo@canonical.com
+
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Change log for “testing-dspr” package in ubuntutest
+    ubuntutest
+    “testing-dspr” package
+    Change log
+    0.9
+    Pending in breezy-autotest-release
+    ...
+    None
+    1.0
+    Published in breezy-autotest-release
+    ...
+    Testing!!!
+    biscuit@canonical.com
+    LP: #1234
+    celso.providelo@canonical.com
+    Available diffs
+    0.9 to 1.0
+    (7 bytes)
