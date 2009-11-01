@@ -1454,6 +1454,24 @@ class TestUploadProcessor(TestUploadProcessorBase):
              ('bar_1.0.tar.bz2',
               SourcePackageFileType.NATIVE_TARBALL)])
 
+    def test10Bzip2UploadIsRejected(self):
+        """Ensure that 1.0 sources with bzip2 compression are rejected."""
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the source.
+        upload_dir = self.queueUpload("bar_1.0-1_1.0-bzip2")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it was rejected.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "bar_1.0-1.dsc: is format 1.0 but uses bzip2 compression."
+            in raw_msg,
+            "Source was not rejected properly:\n%s" % raw_msg)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

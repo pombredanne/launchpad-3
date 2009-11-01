@@ -361,6 +361,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         component_orig_tar_counts = {}
         native_tar_count = 0
 
+        bzip2_count = 0
+
         files_missing = False
         for sub_dsc_file in self.files:
             filetype = determine_source_file_type(sub_dsc_file.filename)
@@ -382,6 +384,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             else:
                 yield UploadError('Unknown file: ' + sub_dsc_file.filename)
                 continue
+
+            if sub_dsc_file.filename.endswith('.bz2'):
+                bzip2_count += 1
 
             try:
                 library_file, file_archive = self._getFileByName(
@@ -459,8 +464,12 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # Format 1.0 must be native (exactly one tar.gz), or
         # have an orig.tar.gz and a diff.gz. It cannot have
         # compression types other than 'gz'.
-        # XXX: Must verify compression type.
         if self.format == '1.0':
+            if bzip2_count > 0:
+                yield UploadError(
+                    "%s: is format 1.0 but uses bzip2 compression."
+                    % self.filename)
+
             if ((diff_count == 0 and native_tar_count == 0) or
                 (diff_count > 0 and native_tar_count > 0)):
                 yield UploadError(
