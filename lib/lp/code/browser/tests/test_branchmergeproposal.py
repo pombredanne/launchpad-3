@@ -674,7 +674,7 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
         message = MessageSet().fromEmail(msg.as_string())
         return bmp.createCommentFromMessage(message, None, None, msg)
 
-    def test_unicode_in_attachment_renders(self):
+    def test_nonascii_in_attachment_renders(self):
         # The view should render without errors.
         comment = self._makeCommentFromEmailWithAttachment('\xe2\x98\x95')
         # Need to commit in order to read the diff out of the librarian.
@@ -682,10 +682,10 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
         view = create_initialized_view(comment, '+comment-body')
         view()
 
-    def test_unicode_in_attachment_decoded(self):
-        # The view should render without errors.
-        # Need to commit in order to read the diff out of the librarian.
+    def test_nonascii_in_attachment_decoded(self):
+        # The diff_text should be a unicode string.
         comment = self._makeCommentFromEmailWithAttachment('\xe2\x98\x95')
+        # Need to commit in order to read the diff out of the librarian.
         transaction.commit()
         view = create_initialized_view(comment, '+comment-body')
         [diff_attachment] = view.display_attachments
