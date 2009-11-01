@@ -38,9 +38,9 @@ class ImportQueueErrorOutputTest(TestCaseWithFactory):
         start_url = 'http://translations.launchpad.dev:8085/+imports'
         user = lpuser.TRANSLATIONS_ADMIN
 
-        user.ensure_login(client)
         client.open(url=start_url)
         client.waits.forPageLoad(timeout=u'20000')
+        user.ensure_login(client)
 
         placeholder = u"//div[@id='1']//div[@class='original show-output']"
         client.waits.forElement(xpath=placeholder, timeout=u'8000')

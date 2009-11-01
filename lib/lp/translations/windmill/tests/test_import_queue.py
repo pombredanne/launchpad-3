@@ -68,9 +68,9 @@ class ImportQueueEntryTest(TestCaseWithFactory):
         start_url = 'http://translations.launchpad.dev:8085/+imports/1'
         user = lpuser.TRANSLATIONS_ADMIN
         # Go to import queue page logged in as translations admin.
-        user.ensure_login(client)
         client.open(url=start_url)
         client.waits.forPageLoad(timeout=u'20000')
+        user.ensure_login(client)
 
         # When the page is first called the file_type is set to POT and
         # only the relevant form fields are displayed. When the file type
