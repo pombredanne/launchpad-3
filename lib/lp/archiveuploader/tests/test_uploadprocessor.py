@@ -1421,7 +1421,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
               SourcePackageFileType.DEBIAN_TARBALL),
              ('bar_1.0-1.dsc',
               SourcePackageFileType.DSC),
-             ('bar_1.0.orig-comp1.tar.lzma',
+             ('bar_1.0.orig-comp1.tar.gz',
               SourcePackageFileType.COMPONENT_ORIG_TARBALL),
              ('bar_1.0.orig-comp2.tar.bz2',
               SourcePackageFileType.COMPONENT_ORIG_TARBALL),

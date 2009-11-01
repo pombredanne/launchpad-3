@@ -477,7 +477,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     "%s: is format 1.0 but has orig-COMPONENT.tar.*."
                     % self.filename)
         # Format 3.0 (native) must have exactly one tar.*.
-        # gz, bz2 and lzma are all valid compression types.
+        # gz and bz2 are valid compression types.
         elif self.format == '3.0 (native)':
             if native_tar_count == 0:
                 yield UploadError(

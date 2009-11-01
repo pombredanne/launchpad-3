@@ -36,18 +36,13 @@ class TestUtilities(unittest.TestCase):
         # DIFFs can only be gzipped.
         self.assertEquals(
             determine_source_file_type('foo_1.0.diff.bz2'), None)
-        self.assertEquals(
-            determine_source_file_type('foo_1.0.diff.lzma'), None)
 
-        # Plain original tarballs can be gzipped, bzip2ed or lzmaed.
+        # Plain original tarballs can be gzipped or bzip2ed.
         self.assertEquals(
             determine_source_file_type('foo_1.0.orig.tar.gz'),
             SourcePackageFileType.ORIG_TARBALL)
         self.assertEquals(
             determine_source_file_type('foo_1.0.orig.tar.bz2'),
-            SourcePackageFileType.ORIG_TARBALL)
-        self.assertEquals(
-            determine_source_file_type('foo_1.0.orig.tar.lzma'),
             SourcePackageFileType.ORIG_TARBALL)
 
         # Component original tarballs too.
@@ -57,9 +52,6 @@ class TestUtilities(unittest.TestCase):
         self.assertEquals(
             determine_source_file_type('foo_1.0.orig-bar.tar.bz2'),
             SourcePackageFileType.COMPONENT_ORIG_TARBALL)
-        self.assertEquals(
-            determine_source_file_type('foo_1.0.orig-baz.tar.lzma'),
-            SourcePackageFileType.COMPONENT_ORIG_TARBALL)
 
         # And Debian tarballs...
         self.assertEquals(
@@ -68,9 +60,6 @@ class TestUtilities(unittest.TestCase):
         self.assertEquals(
             determine_source_file_type('foo_1.0-2.debian.tar.bz2'),
             SourcePackageFileType.DEBIAN_TARBALL)
-        self.assertEquals(
-            determine_source_file_type('foo_1.0-3.debian.tar.lzma'),
-            SourcePackageFileType.DEBIAN_TARBALL)
 
         # And even native tarballs!
         self.assertEquals(
@@ -78,9 +67,6 @@ class TestUtilities(unittest.TestCase):
             SourcePackageFileType.NATIVE_TARBALL)
         self.assertEquals(
             determine_source_file_type('foo_1.0.tar.bz2'),
-            SourcePackageFileType.NATIVE_TARBALL)
-        self.assertEquals(
-            determine_source_file_type('foo_1.0.tar.lzma'),
             SourcePackageFileType.NATIVE_TARBALL)
 
     def testPrefixMultilineString(self):

@@ -15,11 +15,11 @@ Changes:
  .
    * Another version
 Checksums-Sha1: 
- 0fffa9e6e8eee67df2572e8ea3852b66cc3e33f9 1121 bar_1.0-2.dsc
- 3453916d2a65219ec3ae655b2b0ec2a8bf8c8c1d 802 bar_1.0-2.debian.tar.bz2
+ d9ccd09135965a759bd741fba1f5223a0314aac8 1115 bar_1.0-2.dsc
+ 62776c07df0412798956af8b625a9f1744c8f0fb 807 bar_1.0-2.debian.tar.bz2
 Checksums-Sha256: 
- 7b7bbf1ec2e434c901fe9ab1c98d04f33826e935fc4b9de43442d427370d73b7 1121 bar_1.0-2.dsc
- fe91ccb53b72e790d5d92f6ff8782be8e1657e914489c706b9274372c34610d7 802 bar_1.0-2.debian.tar.bz2
+ 53ec1fb4c1671e203c433db570a667750bf4a503e4556ac2c9600389e119744a 1115 bar_1.0-2.dsc
+ a2a4a82e6f6b212e7de11df327fea18bf2b8e846d221e417b0a479d0f8bf9d79 807 bar_1.0-2.debian.tar.bz2
 Files: 
- c906345f05fb6b3da24d2454d14c91dc 1121 devel optional bar_1.0-2.dsc
- f169fc1a35c4566c5adc69fbc2b141d9 802 devel optional bar_1.0-2.debian.tar.bz2
+ 014288c2cdeca7a9a5e3201aca044c3b 1115 devel optional bar_1.0-2.dsc
+ 8b17b1469943483df4d5093955553992 807 devel optional bar_1.0-2.debian.tar.bz2

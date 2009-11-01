@@ -38,14 +38,14 @@ re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
 
 re_issource = re.compile(
     r"(.+)_(.+?)\."
-     "(orig(?:-.+)?\.tar\.(?:gz|bz2|lzma)"
+     "(orig(?:-.+)?\.tar\.(?:gz|bz2)"
      "|diff\.gz"
-     "|(?:debian\.)?tar\.(?:gz|bz2|lzma)"
+     "|(?:debian\.)?tar\.(?:gz|bz2)"
      "|dsc)$")
-re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2|lzma)$")
-re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2|lzma)$")
-re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2|lzma)$")
-re_is_native_tar_ext = re.compile(r"^tar.(?:gz|bz2|lzma)$")
+re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2)$")
+re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2)$")
+re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2)$")
+re_is_native_tar_ext = re.compile(r"^tar.(?:gz|bz2)$")
 
 re_no_epoch = re.compile(r"^\d+\:")
 re_no_revision = re.compile(r"-[^-]+$")
