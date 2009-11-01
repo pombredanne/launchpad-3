@@ -8,6 +8,8 @@
 import unittest
 import sys
 import shutil
+
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.archiveuploader.tests import datadir
 
 
@@ -16,6 +18,26 @@ class TestUtilities(unittest.TestCase):
     def testImport(self):
         """lp.archiveuploader.utils should be importable"""
         import lp.archiveuploader.utils
+
+    def test_determine_source_file_type(self):
+        """lp.archiveuploader.utils.determine_source_file_type should work."""
+        from lp.archiveuploader.utils import determine_source_file_type
+
+        self.assertEquals(
+            determine_source_file_type('foo_1.0-1.dsc'),
+            SourcePackageFileType.DSC)
+
+        self.assertEquals(
+            determine_source_file_type('foo_1.0-1.diff.gz'),
+            SourcePackageFileType.DIFF)
+
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig.tar.gz'),
+            SourcePackageFileType.ORIG)
+
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.tar.gz'),
+            SourcePackageFileType.TARBALL)
 
     def testPrefixMultilineString(self):
         """lp.archiveuploader.utils.prefix_multi_line_string should work"""

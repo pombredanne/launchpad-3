@@ -31,9 +31,11 @@ from lp.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
 from lp.archiveuploader.utils import (
     prefix_multi_line_string, safe_fix_maintainer, ParseMaintError,
-    re_valid_pkg_name, re_valid_version, re_issource)
+    re_valid_pkg_name, re_valid_version, re_issource,
+    determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from canonical.launchpad.interfaces import (
     GPGVerificationError, IGPGHandler, IGPGKeySet,
@@ -324,7 +326,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         :raise: `NotFoundError` when the wanted file could not be found.
         """
         if (self.policy.archive.purpose == ArchivePurpose.PPA and
-            filename.endswith('.orig.tar.gz')):
+            determine_source_file_type(filename) ==
+                SourcePackageFileType.ORIG):
             archives = [self.policy.archive, self.policy.distro.main_archive]
         else:
             archives = [self.policy.archive]
@@ -348,11 +351,25 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         We don't use the NascentUploadFile.verify here, only verify size
         and checksum.
         """
-        has_tar = False
+
+        diff_count = 0
+        orig_tar_count = 0
+        native_tar_count = 0
+
         files_missing = False
         for sub_dsc_file in self.files:
-            if sub_dsc_file.filename.endswith("tar.gz"):
-                has_tar = True
+            filetype = determine_source_file_type(sub_dsc_file.filename)
+
+            if filetype == SourcePackageFileType.DIFF:
+                diff_count += 1
+            elif filetype == SourcePackageFileType.ORIG:
+                orig_tar_count += 1
+            elif filetype == SourcePackageFileType.TARBALL:
+                native_tar_count += 1
+            else:
+                yield UploadError('Unknown file: ' + sub_dsc_file.filename)
+                continue
+
             try:
                 library_file, file_archive = self._getFileByName(
                     sub_dsc_file.filename)
@@ -397,11 +414,37 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield error
                 files_missing = True
 
-
-        if not has_tar:
+        # Reject if we have more than one file of any type.
+        if orig_tar_count > 1:
             yield UploadError(
-                "%s: does not mention any tar.gz or orig.tar.gz."
+                "%s: has more than one orig.tar.gz."
                 % self.filename)
+        if native_tar_count > 1:
+            yield UploadError(
+                "%s: has more than one tar.gz."
+                % self.filename)
+        if diff_count > 1:
+            yield UploadError(
+                "%s: has more than one diff.gz."
+                % self.filename)
+
+        if ((orig_tar_count == 0 and native_tar_count == 0) or
+            (orig_tar_count > 0 and native_tar_count > 0)):
+            yield UploadError(
+                "%s: must have exactly one tar.gz or orig.tar.gz."
+                % self.filename)
+
+        # Format 1.0 must be native (exactly one tar.gz), or
+        # have an orig.tar.gz and a diff.gz. It cannot have
+        # compression types other than 'gz'.
+        if self.format == '1.0':
+            if ((diff_count == 0 and native_tar_count == 0) or
+                (diff_count > 0 and native_tar_count > 0)):
+                yield UploadError(
+                    "%s: must have exactly one diff.gz or tar.gz."
+                    % self.filename)
+        else:
+            raise AssertionError("Unknown source format.")
 
         if files_missing:
             yield UploadError(
