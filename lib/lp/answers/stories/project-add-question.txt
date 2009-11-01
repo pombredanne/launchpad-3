@@ -85,7 +85,7 @@ redirected to the first page. Let's assume he does this by accident
 as he revises the summary after reading the similar questions.
 
     >>> user_browser.getControl('Summary').value = ''
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
 
 An error message in the page informs the user that the summary is
 missing:
@@ -114,13 +114,13 @@ an appropriate message is displayed to inform him of this:
     entered.
 
 The user then elaborates upon his question by entering a description
-of the problem. He submits the form using the 'Add' button.
+of the problem. He submits the form using the 'Post Question' button.
 
     >>> user_browser.getControl('Description').value = (
     ... "I received an HTML message containing an inlined SVG\n"
     ... "representation of a chessboard. It didn't displayed properly.\n"
     ... "Is there a way to configure Thunderbird to display SVG properly?\n")
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
 
 No Privileged Person is taken to page displaying his question. From
 this point on, the user's interaction with the question follows to
@@ -275,7 +275,7 @@ If No Privileges Person asks a question in Japanese, it will be
 supported by Dafydd, but No Privileges Person will never know that.
 Let's stop here. The rest of this scenario is just adding a question
 as described above--filling in a description and submitting the data
-with the 'Add' button.
+with the 'Post Question' button.
 
 ==== Supported languages are displayed after the submitting a product ====
 
@@ -311,7 +311,7 @@ question summary is submitted for a product.
 
 No Privileges Person sets the language to Japanese, changes his
 question summary, writes a description, and submits the form with the
-'Add' button.
+'Post Question' button.
 
     >>> print user_browser.getControl('Project').displayValue
     ['Mozilla Thunderbird']
@@ -320,7 +320,7 @@ question summary, writes a description, and submits the form with the
     ...     'Pretend this is written in Japanese')
     >>> user_browser.getControl('Description').value = (
     ... "Something in kanji and hiragana.")
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
 
 The user is taken to page displaying his question. Changing the
 language or the summary did not search for similar questions

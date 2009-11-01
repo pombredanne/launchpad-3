@@ -605,7 +605,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # XXX flacoste 2006-07-26: We use the method here instead of
     # using the method name 'handleAddError' because of Zope issue 573
     # which is fixed in 3.3.0b1 and 3.2.1
-    @action(_('Add'), failure=handleAddError)
+    @action(_('Post Question'), name='add', failure=handleAddError)
     def add_action(self, action, data):
         """Add a Question to an `IQuestionTarget`."""
         if self.shouldWarnAboutUnsupportedLanguage():

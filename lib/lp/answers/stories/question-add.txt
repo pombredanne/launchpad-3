@@ -123,7 +123,7 @@ summary he provided.
 
 If the user doesn't provide details, he'll get an error message:
 
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
@@ -133,7 +133,7 @@ And if he decides to remove the title, he'll be brought back to the
 first step:
 
     >>> user_browser.getControl('Summary').value = ''
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There are 2 errors.
@@ -151,7 +151,7 @@ redirect the user to the question page.
     ... "http://java.com/en/download/help/testvm.xml, the page loads ok and\n"
     ... "shows my java version. But if I move the mouse on the page, firefox\n"
     ... "crashes.\n")
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
     >>> user_browser.url
     '.../ubuntu/+source/mozilla-firefox/+question/...'
     >>> print user_browser.title

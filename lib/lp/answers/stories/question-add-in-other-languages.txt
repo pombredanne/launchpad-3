@@ -74,7 +74,7 @@ from asking a question in the language of his choice.
     ...     u'carrega corretamente e mostra a minha versao do java. No '
     ...     u'entanto, mover o mouse na pagina faz com que o firefox quebre.'
     ...     ).encode('utf-8')
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Post Question').click()
     >>> browser.url
     '.../ubuntu/+question/...'
     >>> print browser.title
@@ -117,7 +117,7 @@ Welsh, we'll have to warn him.
     >>> browser.getControl('Summary').value = 'Gofyn cymorth'
     >>> browser.getControl('Description').value = (
     ...     'Ghai damweiniol gair.')
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Post Question').click()
 
     >>> browser.url
     'http://launchpad.dev/ubuntu/+addquestion'
@@ -138,7 +138,7 @@ display the warning again.
     ...     u'\u52a9\u3051\u306e\u8981\u6c42'.encode('utf-8'))
     >>> browser.getControl('Description').value = (
     ...     u'\u3042\u308b\u4efb\u610f\u5358\u8a9e\u3002'.encode('utf-8'))
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Post Question').click()
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
@@ -151,7 +151,7 @@ display the warning again.
 If even after the warning he decides to go ahead, we have to accept the
 new question.
 
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Post Question').click()
     >>> browser.url
     '.../ubuntu/+question/...'
     >>> print browser.title.decode('utf-8')
