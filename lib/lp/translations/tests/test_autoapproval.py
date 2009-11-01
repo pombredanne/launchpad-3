@@ -691,6 +691,26 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory):
         pofile = entry._get_pofile_from_language('nl', 'domain')
         self.assertEqual(None, pofile)
 
+    def test_get_pofile_from_language_works_with_translation_credits(self):
+        # When the template has translation credits, a new dummy translation
+        # is created in the new POFile. Since this is running with gardener
+        # privileges, we need to check that this works, too.
+        product = self.factory.makeProduct()
+        product.official_rosetta = True
+        trunk = product.getSeries('trunk')
+        template = self.factory.makePOTemplate(
+            productseries=trunk, translation_domain='domain')
+        template.iscurrent = True
+        credits = self.factory.makePOTMsgSet(template, "translator-credits",
+                                             sequence=1)
+        
+        entry = self.queue.addOrUpdateEntry(
+            'nl.po', '# ...', False, template.owner, productseries=trunk)
+
+        become_the_gardener(self.layer)
+        pofile = entry._get_pofile_from_language('nl', 'domain')
+        self.assertNotEqual(None, pofile)
+
 
 class TestCleanup(TestCaseWithFactory):
     """Test `TranslationImportQueueEntry` garbage collection."""

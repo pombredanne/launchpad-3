@@ -18,6 +18,7 @@ from lp.translations.interfaces.pofiletranslator import (
     IPOFileTranslatorSet)
 from lp.translations.model.pomsgid import POMsgID
 from lp.translations.model.potemplate import POTemplate
+from lp.translations.model.potranslation import POTranslation
 from lp.translations.scripts.message_sharing_migration import (
     MessageSharingMerge)
 from canonical.testing import LaunchpadZopelessLayer
@@ -361,40 +362,6 @@ class TestPOTMsgSetMergingAndTranslations(TestCaseWithFactory,
         self.assertEqual(tms, expected_tms)
         self.assertEqual(len(tms), 3)
 
-    def test_duplicatesAreCleanedUp(self):
-        # The POTMsgSet merging function cleans up any duplicate
-        # TranslationMessages that might get in the way.
-        trunk_message, stable_message = self._makeTranslationMessages(
-            'snaggle', 'snaggle')
-        trunk_message.is_current = False
-        trunk_message.sync()
-
-        potmsgset = trunk_message.potmsgset
-
-        stable_message.is_imported = True
-        stable_message.potemplate = trunk_message.potemplate
-        stable_message.potmsgset = potmsgset
-        stable_message.sync()
-
-        # We've set up a situation where trunk has two identical
-        # messages (one of which is current, the other imported) and
-        # stable has none.
-        self.assertEqual(self._getTranslations(), ('snaggle', None))
-        tms = set(potmsgset.getAllTranslationMessages())
-        self.assertEqual(tms, set([trunk_message, stable_message]))
-
-        self.script._mergePOTMsgSets(self.templates)
-
-        # The duplicates have been cleaned up.
-        self.assertEqual(potmsgset.getAllTranslationMessages().count(), 1)
-        
-        # The is_current and is_imported flags from the duplicate
-        # messages have been merged into a single, current, imported
-        # message.
-        message = self._getMessage(potmsgset, self.trunk_template)
-        self.assertTrue(message.is_current)
-        self.assertTrue(message.is_imported)
-
 
 class TestTranslationMessageNonMerging(TestCaseWithFactory,
                                        TranslatedProductMixin):
@@ -586,51 +553,61 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         self.assertEqual(poft.latest_message, stable_message)
 
 
-class TestMapMessages(TestCaseWithFactory, TranslatedProductMixin):
-    """Test _mapExistingMessages and friends."""
+class TestRemoveDuplicates(TestCaseWithFactory, TranslatedProductMixin):
+    """Test _scrubPOTMsgSetTranslations and friends."""
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         self.layer.switchDbUser('postgres')
-        super(TestMapMessages, self).setUp(user='mark@example.com')
-        super(TestMapMessages, self).setUpProduct()
+        super(TestRemoveDuplicates, self).setUp(user='mark@example.com')
+        super(TestRemoveDuplicates, self).setUpProduct()
 
-    def test_NoMessagesToMap(self):
-        # Mapping an untranslated POTMsgSet produces an empty dict.
-        empty = self.script._mapExistingMessages(self.trunk_potmsgset)
-        self.assertEqual(empty, {})
+    def test_duplicatesAreCleanedUp(self):
+        # The duplicates removal function cleans up any duplicate
+        # TranslationMessages that might get in the way of merging.
+        trunk_message, stable_message = self._makeTranslationMessages(
+            'snaggle', 'snaggle')
+        trunk_message.is_current = False
+        trunk_message.sync()
 
-    def test_MapSharedMessage(self):
-        # Map existing, shared translation for a POTMsgSet.
-        message = self._makeTranslationMessage(
-            pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
-            text='winslow', diverged=False)
+        potmsgset = trunk_message.potmsgset
 
-        map = self.script._mapExistingMessages(message.potmsgset)
-        key = self.script._getPOTMsgSetTranslationMessageKey(message)
-        expected = {key: { self.trunk_template: [message]}}
+        stable_message.is_imported = True
+        stable_message.potemplate = trunk_message.potemplate
+        stable_message.potmsgset = potmsgset
+        stable_message.sync()
 
-    def test_MapDivergedMessage(self):
-        # Map existing, diverged translation for a POTMsgSet.
-        message = self._makeTranslationMessage(
-            pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
-            text='winslow', diverged=True)
+        # We've set up a situation where trunk has two identical
+        # messages (one of which is current, the other imported) and
+        # stable has none.
+        self.assertEqual(self._getTranslations(), ('snaggle', None))
+        tms = set(potmsgset.getAllTranslationMessages())
+        self.assertEqual(tms, set([trunk_message, stable_message]))
 
-        map = self.script._mapExistingMessages(message.potmsgset)
-        key = self.script._getPOTMsgSetTranslationMessageKey(message)
-        expected = {key: {self.trunk_template: [message]}}
+        self.script._removeDuplicateMessages(self.templates)
 
-        self.assertEqual(map, expected)
+        # The duplicates have been cleaned up.
+        self.assertEqual(potmsgset.getAllTranslationMessages().count(), 1)
+        
+        # The is_current and is_imported flags from the duplicate
+        # messages have been merged into a single, current, imported
+        # message.
+        message = self._getMessage(potmsgset, self.trunk_template)
+        self.assertTrue(message.is_current)
+        self.assertTrue(message.is_imported)
 
     def test_ScrubPOTMsgSetTranslationsWithoutDuplication(self):
         # _scrubPOTMsgSetTranslations eliminates duplicated
         # TranslationMessages.  If it doesn't find any, nothing happens.
-        message = self._makeTranslationMessage(
+        self._makeTranslationMessage(
             pofile=self.trunk_pofile, potmsgset=self.trunk_potmsgset,
             text='gbzidh', diverged=False)
-        map = self.script._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
-        key = self.script._getPOTMsgSetTranslationMessageKey(message)
-        self.assertEqual(map, {key: {None: [message]}})
+
+        self.script._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
+
+        message1, message2 = self._getMessages()
+        self.assertIsNot(None, message1)
+        self.assertIs(None, message2)
 
     def test_ScrubPOTMsgSetTranslationsWithDuplication(self):
         # If there are duplicate TranslationMessages, one inherits all
@@ -646,14 +623,14 @@ class TestMapMessages(TestCaseWithFactory, TranslatedProductMixin):
         message2.is_imported = True
         message2.potmsgset = self.trunk_potmsgset
         message2.potemplate = self.trunk_template
+        ids = (message1.id, message2.id)
 
-        map = self.script._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
+        self.script._scrubPOTMsgSetTranslations(self.trunk_potmsgset)
 
         message, no_message = self._getMessages()
 
-        # The resulting map has only one of the identical messages.
-        key = self.script._getPOTMsgSetTranslationMessageKey(message)
-        self.assertEqual(map, {key: {self.trunk_template: [message]}})
+        # One of the two messages is now gone.
+        self.assertIs(None, no_message)
 
         # The remaining message combines the flags from both its
         # predecessors.
@@ -763,16 +740,17 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
         transaction.commit()
         gc.collect()
 
-    def _listLoadedPOMsgIDs(self, ignore_list=None):
-        """Return the set of all `POMsgID` objects that are in memory.
+    def _listLoadedObjects(self, of_class, ignore_list=None):
+        """Return the set of objects of a given type that are in memory.
 
+        :param of_class: A class to filter for.
         :param ignore_list: A previous return value.  Any POMsgIDs that
             were already in that list are ignored here.
         """
         pomsgids = set([
             whatever
             for whatever in gc.get_objects()
-            if isinstance(whatever, POMsgID)
+            if isinstance(whatever, of_class)
             ])
         if ignore_list is not None:
             pomsgids -= ignore_list
@@ -805,19 +783,47 @@ class TestSharingMigrationPerformance(TestCaseWithFactory,
     def test_merging_loads_no_msgids(self):
         # Migration does not load actual msgids into memory.
         self._flushDbObjects()
-        msgids_before = self._listLoadedPOMsgIDs()
+        msgids_before = self._listLoadedObjects(POMsgID)
 
         self._makeTranslationMessages('x', 'y', trunk_diverged=True)
         self._makeTranslationMessages('1', '2', stable_diverged=True)
 
         self._resetReferences()
         self.assertNotEqual([], self.templates)
-        self.assertEqual(set(), self._listLoadedPOMsgIDs(msgids_before))
+        self.assertEqual(
+            set(), self._listLoadedObjects(POMsgID, msgids_before))
         
         self.script._mergePOTMsgSets(self.templates)
         self.script._mergeTranslationMessages(self.templates)
 
-        self.assertEqual(set(), self._listLoadedPOMsgIDs(msgids_before))
+        self.assertEqual(
+            set(), self._listLoadedObjects(POMsgID, msgids_before))
+
+    def test_merging_loads_no_potranslations(self):
+        # Migration does not load actual POTranslations into memory.
+        self._flushDbObjects()
+        potranslations_before = self._listLoadedObjects(POTranslation)
+
+        self._makeTranslationMessages('x', 'y', trunk_diverged=True)
+        self._makeTranslationMessages('1', '2', stable_diverged=True)
+
+        self._resetReferences()
+        self.assertNotEqual([], self.templates)
+        self.assertEqual(
+            set(),
+            self._listLoadedObjects(POTranslation, potranslations_before))
+        
+        self.script._mergePOTMsgSets(self.templates)
+
+        self.assertEqual(
+            set(),
+            self._listLoadedObjects(POTranslation, potranslations_before))
+        
+        self.script._mergeTranslationMessages(self.templates)
+
+        self.assertEqual(
+            set(),
+            self._listLoadedObjects(POTranslation, potranslations_before))
 
 
 def test_suite():

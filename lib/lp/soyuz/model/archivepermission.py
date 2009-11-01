@@ -22,6 +22,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import sqlvalues, SQLBase
 
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.archive import ComponentNotFound
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermission, IArchivePermissionSet,
@@ -312,9 +313,13 @@ class ArchivePermissionSet:
     def _nameToPackageset(self, packageset):
         """Helper to convert a possible string name to IPackageset."""
         if isinstance(packageset, basestring):
+            # A package set name was passed, assume the current distro series.
+            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
             name = packageset
             store = IStore(Packageset)
-            packageset = store.find(Packageset, name=name).one()
+            packageset = store.find(
+                Packageset, name=name,
+                distroseries=ubuntu.currentseries).one()
             if packageset is not None:
                 return packageset
             else:
