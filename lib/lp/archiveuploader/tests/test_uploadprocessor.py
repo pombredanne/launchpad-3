@@ -1428,6 +1428,44 @@ class TestUploadProcessor(TestUploadProcessorBase):
              ('bar_1.0.orig.tar.gz',
               SourcePackageFileType.ORIG_TARBALL)])
 
+    def test30QuiltUploadWithSameComponentOrig(self):
+        """Ensure that 3.0 (quilt) uploads with shared component origs work."""
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the first source.
+        upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it went ok:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "rejected" not in raw_msg,
+            "Failed to upload bar source:\n%s" % raw_msg)
+        spph = self._publishPackage("bar", "1.0-1")
+
+        # Upload another source sharing the same (component) orig.
+        upload_dir = self.queueUpload("bar_1.0-2_3.0-quilt_without_orig")
+        self.assertEquals(
+            self.processUpload(uploadprocessor, upload_dir), ['accepted'])
+
+        queue_item = uploadprocessor.last_processed_upload.queue_root
+        self.assertEquals(
+            sorted((sprf.libraryfile.filename, sprf.filetype) for sprf
+                   in queue_item.sources[0].sourcepackagerelease.files),
+            [('bar_1.0-2.debian.tar.bz2',
+              SourcePackageFileType.DEBIAN_TARBALL),
+             ('bar_1.0-2.dsc',
+              SourcePackageFileType.DSC),
+             ('bar_1.0.orig-comp1.tar.gz',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig-comp2.tar.bz2',
+              SourcePackageFileType.COMPONENT_ORIG_TARBALL),
+             ('bar_1.0.orig.tar.gz',
+              SourcePackageFileType.ORIG_TARBALL)])
+
     def test30NativeUpload(self):
         """Ensure that 3.0 (native) uploads work properly. """
         self.setupBreezy()
