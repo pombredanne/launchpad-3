@@ -1158,6 +1158,46 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
 
+    def test30QuiltMultipleReusedOrigs(self):
+        """Official orig*.tar.* can be reused for PPA uploads.
+
+        The 3.0 (quilt) format supports multiple original tarballs. In a
+        PPA upload, any number of these can be reused from the primary
+        archive.
+        """
+        # We need to accept unsigned .changes and .dscs.
+        self.options.context = 'absolutely-anything'
+        # First upload a complete 3.0 (quilt) source to the primary
+        # archive.
+        upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.NEW)
+
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name="bar",
+            version="1.0-1", exact_match=True)
+        queue_item.setAccepted()
+        queue_item.realiseUpload()
+        self.layer.commit()
+        unused = stub.test_emails.pop()
+
+        # Now upload a 3.0 (quilt) source with missing orig*.tar.* to a
+        # PPA. All of the missing files will be retrieved from the
+        # primary archive.
+        upload_dir = self.queueUpload(
+            "bar_1.0-2_3.0-quilt_without_orig", "~name16/ubuntu")
+        self.assertEquals(
+            self.processUpload(self.uploadprocessor, upload_dir), ['accepted'])
+
+        queue_item = self.uploadprocessor.last_processed_upload.queue_root
+
+        self.assertEqual(queue_item.status, PackageUploadStatus.DONE)
+        self.assertEqual(
+            queue_item.sources[0].sourcepackagerelease.files.count(), 5)
+
 
 class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):
     """Functional test for uploadprocessor.py quota checks in PPA."""

@@ -328,7 +328,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         :raise: `NotFoundError` when the wanted file could not be found.
         """
         if (self.policy.archive.purpose == ArchivePurpose.PPA and
-            filename.endswith('.orig.tar.gz')):
+            determine_source_file_type(filename) in (
+                SourcePackageFileType.ORIG_TARBALL,
+                SourcePackageFileType.COMPONENT_ORIG_TARBALL)):
             archives = [self.policy.archive, self.policy.distro.main_archive]
         else:
             archives = [self.policy.archive]
