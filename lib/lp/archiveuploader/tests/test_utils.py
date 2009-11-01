@@ -12,6 +12,7 @@ import shutil
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.archiveuploader.tests import datadir
 
+
 class TestUtilities(unittest.TestCase):
 
     def testImport(self):

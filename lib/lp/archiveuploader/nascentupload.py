@@ -28,8 +28,10 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
+from lp.archiveuploader.utils import determine_source_file_type
 from lp.archiveuploader.permission import verify_upload
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
@@ -80,6 +82,10 @@ class NascentUpload:
     binaryful = False
     archindep = False
     archdep = False
+
+    # Defined in check_sourceful_consistency()
+    native = False
+    hasorig = False
 
     # Defined if we successfully do_accept() and storeObjectsInDatabase()
     queue_root = None
@@ -304,15 +310,21 @@ class NascentUpload:
             "Source consistency check called for a non-source upload")
 
         dsc = 0
+        native_tarball = 0
+        orig_tarball = 0
 
         for uploaded_file in self.changes.files:
-            if uploaded_file.filename.endswith(".dsc"):
+            filetype = determine_source_file_type(uploaded_file.filename)
+            if filetype == SourcePackageFileType.DSC:
                 dsc += 1
+            elif (filetype == SourcePackageFileType.NATIVE_TARBALL
+                  and not isinstance(uploaded_file, CustomUploadFile)):
+                native_tarball += 1
+            elif filetype == SourcePackageFileType.ORIG_TARBALL:
+                orig_tarball += 1
 
-        # Okay, let's check the sanity of the upload.
-        # Debian source format 3.0 is rather different, so we can't
-        # sanely perform more complete checks here (we don't know the
-        # format yet).
+
+        # It is never sane to upload more than one source at a time.
         # XXX: What about orphaned files? How will that work?
         #      I think we might need to verify that all source files are
         #      claimed by a dsc.
@@ -321,6 +333,9 @@ class NascentUpload:
 
         if dsc == 0:
             self.reject("Sourceful upload without a .dsc")
+
+        self.native = bool(native_tarball)
+        self.hasorig = bool(orig_tarball)
 
     def _check_binaryful_consistency(self):
         """Heuristic checks on a binaryful upload.

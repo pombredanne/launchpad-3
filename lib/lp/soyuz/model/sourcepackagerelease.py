@@ -53,7 +53,7 @@ from lp.soyuz.model.queue import (
 from lp.soyuz.scripts.queue import QueueActionError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
-    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
+    SourcePackageFormat, SourcePackageUrgency)
 
 
 def _filter_ubuntu_translation_file(filename):
