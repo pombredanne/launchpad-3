@@ -29,6 +29,15 @@ from lp.translations.utilities.translation_export import (
     ExportFileStorage)
 
 
+def strip_last_newline(text):
+    """Return text with the final newline/carriage return stripped."""
+    if text[-2:-1] == '\r\n':
+        return text[:-2]
+    elif text[-1] in '\r\n':
+        return text[:-1]
+    else:
+        return text
+
 def comments_text_representation(translation_message):
     """Return text representation of the comments.
 
@@ -40,7 +49,7 @@ def comments_text_representation(translation_message):
     # Previous msgsid comments (indicated by a | symbol) have to come
     # after the other comments to preserve the order expected by msgfmt.
     if translation_message.comment:
-        unparsed_comment = translation_message.comment.strip()
+        unparsed_comment = strip_last_newline(translation_message.comment)
         for line in unparsed_comment.split('\n'):
             if line.startswith('|'):
                 if translation_message.is_obsolete:
@@ -53,7 +62,8 @@ def comments_text_representation(translation_message):
     if not translation_message.is_obsolete:
         # Source comments are only exported if it's not an obsolete entry.
         if translation_message.source_comment:
-            unparsed_comment = translation_message.source_comment.strip()
+            unparsed_comment = (
+                strip_last_newline(translation_message.source_comment))
             for line in unparsed_comment.split('\n'):
                 comment_lines.append(u'#. ' + line)
         if translation_message.file_references:
