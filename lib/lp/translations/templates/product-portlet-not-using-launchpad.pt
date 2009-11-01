@@ -4,8 +4,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
 
-    <p
-       class="not-translated-in-launchpad"
+    <p id="not-translated-in-launchpad"
        tal:condition="not: context/official_rosetta">
       <strong>
         This project is not using Launchpad for translations.
