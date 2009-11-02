@@ -745,6 +745,12 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'mark_oid', NULL, '123/mark');
@@ -4613,6 +4619,13 @@ ALTER TABLE packageset DISABLE TRIGGER ALL;
 
 
 ALTER TABLE packageset ENABLE TRIGGER ALL;
+
+
+ALTER TABLE packagesetgroup DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE packagesetgroup ENABLE TRIGGER ALL;
 
 
 ALTER TABLE packagesetinclusion DISABLE TRIGGER ALL;
@@ -8567,6 +8580,26 @@ INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode,
 
 
 ALTER TABLE signedcodeofconduct ENABLE TRIGGER ALL;
+
+
+ALTER TABLE sourceformatselection DISABLE TRIGGER ALL;
+
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (1, 1, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (2, 2, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (3, 3, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (4, 4, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (5, 5, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (6, 6, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (7, 7, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (8, 8, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (9, 9, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (10, 10, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (11, 11, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (12, 12, '1.0');
+INSERT INTO sourceformatselection (id, distroseries, format) VALUES (13, 13, '1.0');
+
+
+ALTER TABLE sourceformatselection ENABLE TRIGGER ALL;
 
 
 ALTER TABLE sourcepackagename DISABLE TRIGGER ALL;
