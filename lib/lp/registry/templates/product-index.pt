@@ -100,21 +100,33 @@
                 </tal:no_launchpad>
               </dl>
 
+              <dl id="dev-focus"
+                  tal:define="dev_focus context/development_focus;
+                              trunk dev_focus/branch">
+                <dt>Development focus:</dt>
+                <dd>
+                  <p>
+                  <a tal:attributes="href dev_focus/fmt:url"
+                     tal:content="string:${dev_focus/name} series" />&nbsp;
+                  <a tal:replace="structure overview_menu/edit/fmt:icon" /></p>
+                  <p tal:condition="trunk">
+                    <a tal:replace="structure trunk/fmt:link" />&nbsp;
+                    <a tal:replace="structure dev_focus/menu:overview/link_branch/fmt:icon" />
+                    <br/>
+                    <a class="info"
+                       tal:attributes="href trunk/browse_source_url">View the source</a>
+                  </p>
+                  <p tal:condition="not: trunk">
+                    Development focus branch has not been specified.
+                    <a tal:replace="structure dev_focus/menu:overview/link_branch/fmt:icon" />
+                  </p>
+                </dd>
+              </dl>
+
               <dl id="product-languages"
                 tal:condition="view/show_programming_languages">
                 <dt>Programming Languages:</dt>
                 <dd tal:content="structure view/languages_edit_widget" />
-              </dl>
-
-              <dl id="trunk-branch"
-                  tal:define="trunk context/development_focus/branch"
-                  tal:condition="trunk">
-                <dt>Development focus:</dt>
-                <dd>
-                  <a tal:replace="structure trunk/fmt:link" /><br/>
-                  <a style="padding-left: 18px"
-                     tal:attributes="href trunk/browse_source_url">View the source</a>
-                </dd>
               </dl>
 
               <dl id="licences">
@@ -169,7 +181,6 @@
             <p id="development-focus">
               <a tal:replace="structure context/development_focus/fmt:link" />
               is the current focus of development
-              <a tal:replace="structure overview_menu/edit/fmt:icon" />
             </p>
 
             <ul class="horizontal"
