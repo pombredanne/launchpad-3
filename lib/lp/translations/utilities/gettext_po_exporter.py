@@ -31,7 +31,7 @@ from lp.translations.utilities.translation_export import (
 
 def strip_last_newline(text):
     """Return text with the final newline/carriage return stripped."""
-    if text[-2:-1] == '\r\n':
+    if text.endswith('\r\n'):
         return text[:-2]
     elif text[-1] in '\r\n':
         return text[:-1]
