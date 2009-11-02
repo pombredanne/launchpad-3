@@ -579,9 +579,13 @@ class IArchivePublic(IHasOwner, IPrivacy):
     @operation_parameters(
         sourcepackagename=TextLine(
             title=_("Source package name"), required=True),
-        person=Reference(schema=IPerson))
+        person=Reference(schema=IPerson),
+        distroseries=Reference(
+            # Really IDistroSeries, fixed below to avoid circular import.
+            Interface,
+            title=_("The distro series"), required=False))
     @export_read_operation()
-    def isSourceUploadAllowed(sourcepackagename, person):
+    def isSourceUploadAllowed(sourcepackagename, person, distroseries=None):
         """True if the person is allowed to upload the given source package.
 
         Return True if there exists a permission that combines
@@ -597,6 +601,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             either a string or a `ISourcePackageName`.
         :param person: An `IPerson` for whom you want to find out which
             package sets he has access to.
+        :param distroseries: The `IDistroSeries` for which to check
+            permissions. If none is supplied then `currentseries` in
+            Ubuntu is assumed.
 
         :raises NoSuchSourcePackageName: if a source package with the
             given name could not be found.

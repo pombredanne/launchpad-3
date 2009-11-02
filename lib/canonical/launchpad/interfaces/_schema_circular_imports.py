@@ -228,6 +228,8 @@ patch_choice_parameter_type(
     IArchive, 'getAllPublishedBinaries', 'status', PackagePublishingStatus)
 patch_choice_parameter_type(
     IArchive, 'getAllPublishedBinaries', 'pocket', PackagePublishingPocket)
+patch_plain_parameter_type(
+    IArchive, 'isSourceUploadAllowed', 'distroseries', IDistroSeries)
 
 # IDistribution
 IDistribution['serieses'].value_type.schema = IDistroSeries

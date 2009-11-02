@@ -640,6 +640,39 @@ the question: "is person X allowed to upload package P?".
     ...
     true
 
+Archive permissions have distro series scope. We did not specify a distro
+series in the query above. Hence the `currentseries` in Ubuntu is assumed
+('hoary').
+The following query (note the additional 'distroseries' parameter) is
+thus equivalent:
+
+    >>> print ubuntu['current_series_link']
+    http://api.launchpad.dev/beta/ubuntu/hoary
+    >>> hoary = webservice.get("/ubuntu/hoary").jsonBody()
+    >>> print hoary['self_link']
+    http://api.launchpad.dev/beta/ubuntu/hoary
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'isSourceUploadAllowed',
+    ...     {}, sourcepackagename='mozilla-firefox',
+    ...     person=cprov['self_link'], distroseries=hoary['self_link'])
+    >>> print(response)
+    HTTP/1.1 200 Ok
+    ...
+    true
+
+Since cprov's upload permission is limited to the current distro series
+('hoary') checking the same permission for 'grumpy' will fail.
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'isSourceUploadAllowed',
+    ...     {}, sourcepackagename='mozilla-firefox',
+    ...     person=cprov['self_link'], distroseries=grumpy['self_link'])
+    >>> print(response)
+    HTTP/1.1 200 Ok
+    ...
+    false
+
 'name12' should not be allowed to upload the 'thunderbird' source package.
 
     >>> response = webservice.named_get(
