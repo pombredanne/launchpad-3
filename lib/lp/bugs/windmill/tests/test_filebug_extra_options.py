@@ -5,7 +5,7 @@ import unittest
 
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.windmill.testing import lpuser
+from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import TestCaseWithFactory
 
@@ -25,16 +25,16 @@ class TestFilebugExtras(TestCaseWithFactory):
 
         # Open a +filebug page and wait for it to finish loading.
         client.open(url=u'http://bugs.launchpad.dev:8085/firefox/+filebug')
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Search for a possible duplicate.
         client.type(text=u'Broken', id=u'field.title')
         client.click(id=u'field.actions.search')
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # No duplicates were found.
         client.asserts.assertText(
-            xpath=u"//div[@id='container']//p",
+            xpath=u"//div[@class='top-portlet']//p",
             validator=u'No similar bug reports were found.')
 
         # Check out the expander.
@@ -64,7 +64,8 @@ def _test_expander(client):
     # Click on the legend and it expands.
     client.click(
         xpath=collapsible_area_xpath + u"/legend/a")
-    client.waits.forElement(xpath=opened_area_xpath)
+    client.waits.forElement(
+        xpath=opened_area_xpath, timeout=constants.FOR_ELEMENT)
 
     # The extra options are visible now.
     client.asserts.assertElemJS(
