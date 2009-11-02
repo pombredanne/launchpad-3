@@ -502,7 +502,7 @@ main archive.
     >>> response = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
     ...     person=name12['self_link'],
-    ...     packageset='firefox')
+    ...     packageset=firefox['self_link'])
     >>> print response
     HTTP/1.1 201 Created
     ...
@@ -530,7 +530,7 @@ main archive.
     >>> response = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
     ...     person=name12['self_link'],
-    ...     packageset='mozilla')
+    ...     packageset=mozilla['self_link'])
     >>> print response
     HTTP/1.1 201 Created
     ...
@@ -540,7 +540,7 @@ package set since we're disallowing the use of the package set hierarchy.
 
     >>> response = webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForPackageset', {},
-    ...     packageset='firefox')
+    ...     packageset=firefox['self_link'])
     >>> print_payload(response)
     http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
 
@@ -549,7 +549,7 @@ the permission for the 'mozilla' package set as well.
 
     >>> response = webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForPackageset', {},
-    ...     packageset='firefox', direct_permissions=False)
+    ...     packageset=firefox['self_link'], direct_permissions=False)
     >>> print_payload(response)
     http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
     http://.../+archive/primary/+upload/name12?type=packageset&item=mozilla
@@ -559,7 +559,7 @@ Let's delete the upload privilege for the 'mozilla' package set.
     >>> response = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'deletePackagesetUploader', {},
     ...     person=name12['self_link'],
-    ...     packageset='mozilla')
+    ...     packageset=mozilla['self_link'])
     >>> print response
     HTTP/1.1 200 Ok
     ...
@@ -569,7 +569,7 @@ shows only the remaining permission for the 'firefox' package set.
 
     >>> response = webservice.named_get(
     ...     ubuntu['main_archive_link'], 'getUploadersForPackageset', {},
-    ...     packageset='firefox', direct_permissions=False)
+    ...     packageset=firefox['self_link'], direct_permissions=False)
     >>> print_payload(response)
     http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
 
@@ -579,7 +579,7 @@ Let's grant 'cprov' an upload permission to 'mozilla' and 'thunderbird'.
     >>> response = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
     ...     person=cprov['self_link'],
-    ...     packageset='mozilla')
+    ...     packageset=mozilla['self_link'])
     >>> print response
     HTTP/1.1 201 Created
     ...
@@ -587,7 +587,7 @@ Let's grant 'cprov' an upload permission to 'mozilla' and 'thunderbird'.
     >>> response = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
     ...     person=cprov['self_link'],
-    ...     packageset='thunderbird')
+    ...     packageset=thunderbird['self_link'])
     >>> print response
     HTTP/1.1 201 Created
     ...
@@ -683,6 +683,75 @@ Since cprov's upload permission is limited to the current distro series
     HTTP/1.1 200 Ok
     ...
     false
+
+Let's create a (related) package set in 'grumpy' and authorize 'name12' to
+upload to it.
+
+This will fail since 'name12' has no permissions applying to 'grumpy' yet.
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'isSourceUploadAllowed',
+    ...     {}, sourcepackagename='thunderbird',
+    ...     person=name12['self_link'], distroseries=grumpy['self_link'])
+    >>> print(response)
+    HTTP/1.1 200 Ok
+    ...
+    false
+
+Create a new package set ('grouchy-thunderbird') in 'grumpy'.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'grouchy-thunderbird',
+    ...     description=u'Contains all thunderbird packages in grumpy',
+    ...     owner=name12['self_link'], distroseries=grumpy['self_link'],
+    ...     related_set=thunderbird['self_link'])
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+
+Associate 'grouchy-thunderbird' with the appropriate source packages.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets/grumpy/grouchy-thunderbird', 'addSources', {},
+    ...     names=['thunderbird', 'language-pack-de'])
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+Grant 'name12' upload permissions to 'grouchy-thunderbird' in 'grumpy'.
+
+    >>> grouchy_bird = webservice.get(
+    ...     "/package-sets/grumpy/grouchy-thunderbird").jsonBody()
+
+    >>> response = webservice.named_post(
+    ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
+    ...     person=name12['self_link'],
+    ...     packageset=grouchy_bird['self_link'])
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+
+Does the new archive permission show up?
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'getPackagesetsForUploader', {},
+    ...     person=name12['self_link'])
+    >>> print_payload(response)
+    http://...+archive/primary/+upload/name12?type=packageset&item=firefox
+    http://...+archive/primary/+upload/name12?type=packageset&item=grouchy-thunderbird
+
+And now 'name12' should be authorized to upload source package
+'thunderbird' in 'grumpy'.
+
+    >>> response = webservice.named_get(
+    ...     ubuntu['main_archive_link'], 'isSourceUploadAllowed',
+    ...     {}, sourcepackagename='thunderbird',
+    ...     person=name12['self_link'], distroseries=grumpy['self_link'])
+    >>> print(response)
+    HTTP/1.1 200 Ok
+    ...
+    true
 
 Sometimes it's also interesting to see what package set based upload
 permissions apply to a source package irrespective of the principal.
