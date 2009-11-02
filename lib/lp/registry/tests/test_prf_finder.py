@@ -102,6 +102,7 @@ class HandleProductTestCase(unittest.TestCase):
     def test_handleProduct(self):
         # test that handleProduct() correctly calls handleRelease()
         class DummyProductReleaseFinder(ProductReleaseFinder):
+
             def __init__(self, ztm, log):
                 ProductReleaseFinder.__init__(self, ztm, log)
                 self.seen_releases = []
@@ -173,7 +174,6 @@ class HandleReleaseTestCase(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.release_root, ignore_errors=True)
         reset_logging()
-
 
     def test_handleRelease(self):
         ztm = self.layer.txn
