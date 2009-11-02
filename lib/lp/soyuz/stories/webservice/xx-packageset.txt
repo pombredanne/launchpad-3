@@ -710,6 +710,11 @@ Create a new package set ('grouchy-thunderbird') in 'grumpy'.
     HTTP/1.1 201 Created
     ...
 
+    >>> response = webservice.named_get(
+    ...     thunderbird['self_link'], 'relatedSets', {})
+    >>> print_payload(response)
+    http://api.launchpad.dev/beta/package-sets/grumpy/grouchy-thunderbird
+
 Associate 'grouchy-thunderbird' with the appropriate source packages.
 
     >>> response = webservice.named_post(
