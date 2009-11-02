@@ -117,7 +117,7 @@
                        tal:attributes="href trunk/browse_source_url">View the source</a>
                   </p>
                   <p tal:condition="not: trunk">
-                    Development focus branch has not been specified.
+                    Development focus branch has not been specified
                     <a tal:replace="structure dev_focus/menu:overview/link_branch/fmt:icon" />
                   </p>
                 </dd>
