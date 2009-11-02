@@ -18,7 +18,6 @@ import re
 
 from storm.store import Store
 from storm.expr import Join
-from storm.locals import Int, Reference, Storm, Unicode
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 from zope.interface import implements
 from zope.component import getUtility

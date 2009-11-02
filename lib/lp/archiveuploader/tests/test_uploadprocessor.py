@@ -159,8 +159,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
                 excName = str(excClass)
             raise self.failureException, "%s not raised" % excName
 
-    def setupBreezy(self, name="breezy",
-                    permitted_formats=[SourcePackageFormat.FORMAT_1_0]):
+    def setupBreezy(self, name="breezy", permitted_formats=None):
         """Create a fresh distroseries in ubuntu.
 
         Use *initialiseFromParent* procedure to create 'breezy'
@@ -171,6 +170,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         :param name: supply the name of the distroseries if you don't want
             it to be called "breezy"
+        :param permitted_formats: list of SourcePackageFormats to allow
+            in the new distroseries. Only permits '1.0' by default.
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
@@ -187,6 +188,9 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
         self.breezy.initialiseFromParent()
+
+        if permitted_formats is None:
+            permitted_formats = [SourcePackageFormat.FORMAT_1_0]
 
         for format in permitted_formats:
             self.breezy.permitSourcePackageFormat(format)
@@ -1457,7 +1461,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
               SourcePackageFileType.ORIG_TARBALL)])
 
     def test30QuiltUploadWithSameComponentOrig(self):
-        """Ensure that 3.0 (quilt) uploads with shared component origs work."""
+        """Ensure that 3.0 (quilt) uploads with shared component origs work.
+        """
         self.setupBreezy(
             permitted_formats=[SourcePackageFormat.FORMAT_3_0_QUILT])
         self.layer.txn.commit()

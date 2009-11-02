@@ -10,7 +10,6 @@ import subprocess
 import sys
 import unittest
 
-from storm.store import Store
 import transaction
 from zope.component import getUtility
 

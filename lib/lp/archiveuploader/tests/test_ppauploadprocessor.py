@@ -1195,7 +1195,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         upload_dir = self.queueUpload(
             "bar_1.0-2_3.0-quilt_without_orig", "~name16/ubuntu")
         self.assertEquals(
-            self.processUpload(self.uploadprocessor, upload_dir), ['accepted'])
+            self.processUpload(self.uploadprocessor, upload_dir),
+            ['accepted'])
 
         queue_item = self.uploadprocessor.last_processed_upload.queue_root
 
