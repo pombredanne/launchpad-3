@@ -36,6 +36,7 @@ from lp.soyuz.interfaces.publishing import (
     ISourcePackagePublishingHistory, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadSet)
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 from lp.soyuz.scripts.processaccepted import (
@@ -359,8 +360,7 @@ class CopyChecker:
         format = SourcePackageFormat.getTermByToken(
             source.sourcepackagerelease.dsc_format).value
 
-        if not series.isSourcePackageFormatPermitted(
-            SourcePackageFormat.getTermByToken(source.sourcepackagerelease.dsc_format)):
+        if not series.isSourcePackageFormatPermitted(format):
             raise CannotCopy(
                 "Source format '%s' not supported by target series %s." %
                 (source.sourcepackagerelease.dsc_format, series.name))
