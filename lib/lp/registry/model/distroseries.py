@@ -116,7 +116,7 @@ from lp.blueprints.interfaces.specification import (
 from canonical.launchpad.mail import signed_message_from_string
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
+    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)
 
 
@@ -1736,10 +1736,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return '%s%s' % (self.name, pocketsuffix[pocket])
 
     def isSourceFormatPermitted(self, format):
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(
+        return Store.of(self).find(
             SourceFormatSelection, distroseries=self,
             format=unicode(format)).count() == 1
+
+    def permitSourceFormat(self, format):
+        return Store.of(self).add(SourceFormatSelection(self, unicode(format)))
 
 
 class DistroSeriesSet:
