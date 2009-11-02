@@ -38,11 +38,11 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
     PackageUploadCustomFormat, PackageUploadStatus)
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.soyuz.model.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
 from lp.soyuz.model.processor import ProcessorFamily
-from lp.soyuz.model.sourcepackagerelease import SourceFormatSelection
 from lp.soyuz.scripts.ftpmasterbase import SoyuzScriptError
 from lp.soyuz.scripts.packagecopier import (
     CopyChecker, do_copy, _do_delayed_copy, _do_direct_copy, PackageCopier,
@@ -729,7 +729,7 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # Get hoary, and configure it to accept 3.0 (quilt) uploads.
         ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         hoary = ubuntu.getSeries('hoary')
-        Store.of(hoary).add(SourceFormatSelection(hoary, '3.0 (quilt)'))
+        hoary.permitSourcePackageFormat(SourcePackageFormat.FORMAT_3_0_QUILT)
 
         # Create a 3.0 (quilt) source.
         source = self.test_publisher.getPubSource(

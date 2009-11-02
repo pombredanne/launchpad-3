@@ -80,8 +80,8 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.model.sourcepackagerelease import (
-    SourceFormatSelection, SourcePackageRelease)
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.model.sourcepackageformat import SourcePackageFormatSelection
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.translations.model.translationimportqueue import (
@@ -1571,9 +1571,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             ''' % sqlvalues(self.id, self.parent_series.id))
         # Copy the source format selections
         cur.execute('''
-            INSERT INTO SourceFormatSelection (distroseries, format)
-            SELECT %s as distroseries, sfs.format AS format
-            FROM SourceFormatSelection AS sfs WHERE sfs.distroseries = %s
+            INSERT INTO SourcePackageFormatSelection (distroseries, format)
+            SELECT %s as distroseries, spfs.format AS format
+            FROM SourcePackageFormatSelection AS spfs
+            WHERE spfs.distroseries = %s
             ''' % sqlvalues(self.id, self.parent_series.id))
 
     def copyTranslationsFromParent(self, transaction, logger=None):
@@ -1741,13 +1742,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         else:
             return '%s%s' % (self.name, pocketsuffix[pocket])
 
-    def isSourceFormatPermitted(self, format):
+    def isSourcePackageFormatPermitted(self, format):
         return Store.of(self).find(
-            SourceFormatSelection, distroseries=self,
-            format=unicode(format)).count() == 1
+            SourcePackageFormatSelection, distroseries=self,
+            format=format).count() == 1
 
-    def permitSourceFormat(self, format):
-        return Store.of(self).add(SourceFormatSelection(self, unicode(format)))
+    def permitSourcePackageFormat(self, format):
+        if not self.isSourcePackageFormatPermitted(format):
+            return Store.of(self).add(
+                SourcePackageFormatSelection(self, format))
 
 
 class DistroSeriesSet:

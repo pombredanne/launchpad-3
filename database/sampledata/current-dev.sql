@@ -8582,24 +8582,24 @@ INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode,
 ALTER TABLE signedcodeofconduct ENABLE TRIGGER ALL;
 
 
-ALTER TABLE sourceformatselection DISABLE TRIGGER ALL;
+ALTER TABLE sourcepackageformatselection DISABLE TRIGGER ALL;
 
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (1, 1, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (2, 2, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (3, 3, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (4, 4, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (5, 5, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (6, 6, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (7, 7, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (8, 8, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (9, 9, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (10, 10, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (11, 11, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (12, 12, '1.0');
-INSERT INTO sourceformatselection (id, distroseries, format) VALUES (13, 13, '1.0');
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (1, 1, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (2, 2, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (3, 3, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (4, 4, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (5, 5, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (6, 6, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (7, 7, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (8, 8, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (9, 9, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (10, 10, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (11, 11, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (12, 12, 0);
+INSERT INTO sourcepackageformatselection (id, distroseries, format) VALUES (13, 13, 0);
 
 
-ALTER TABLE sourceformatselection ENABLE TRIGGER ALL;
+ALTER TABLE sourcepackageformatselection ENABLE TRIGGER ALL;
 
 
 ALTER TABLE sourcepackagename DISABLE TRIGGER ALL;

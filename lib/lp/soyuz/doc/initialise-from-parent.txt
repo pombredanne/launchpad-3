@@ -176,5 +176,6 @@ this test, see more details in buildd-queuebuilder)
 initialiseFromParent also copies the permitted source formats from the
 parent series.
 
-  >>> foobuntu.isSourceFormatPermitted('1.0')
+  >>> from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+  >>> foobuntu.isSourcePackageFormatPermitted(SourcePackageFormat.FORMAT_1_0)
   True

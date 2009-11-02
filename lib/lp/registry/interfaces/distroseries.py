@@ -205,10 +205,10 @@ class IDistroSeriesEditRestricted(Interface):
     def newMilestone(name, dateexpected=None, summary=None, code_name=None):
         """Create a new milestone for this DistroSeries."""
 
-    def permitSourceFormat(format):
+    def permitSourcePackageFormat(format):
         """Permit a source format to be uploaded to this series.
 
-        :param format: A string naming the source format.
+        :param format: The SourcePackageFormat to permit.
         """
 
 
@@ -856,10 +856,10 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         :return: A string.
         """
 
-    def isSourceFormatPermitted(format):
+    def isSourcePackageFormatPermitted(format):
         """Check if the specified source format is allowed in this series.
 
-        :param format: A string naming the source format.
+        :param format: The SourcePackageFormat to check.
         """
 
 

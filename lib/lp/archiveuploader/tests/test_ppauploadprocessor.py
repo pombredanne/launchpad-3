@@ -32,6 +32,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet, NotFoundError)
 from canonical.launchpad.testing.fakepackager import FakePackager
@@ -1168,7 +1169,8 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # We need to accept unsigned .changes and .dscs, and 3.0 (quilt)
         # sources.
         self.options.context = 'absolutely-anything'
-        self.breezy.permitSourceFormat('3.0 (quilt)')
+        self.breezy.permitSourcePackageFormat(
+            SourcePackageFormat.FORMAT_3_0_QUILT)
 
         # First upload a complete 3.0 (quilt) source to the primary
         # archive.

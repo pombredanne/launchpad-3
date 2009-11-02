@@ -356,8 +356,11 @@ class CopyChecker:
                 "Cannot copy to an unsupported distribution: %s." %
                 source.distroseries.distribution.name)
 
-        if not series.isSourceFormatPermitted(
-            source.sourcepackagerelease.dsc_format):
+        format = SourcePackageFormat.getTermByToken(
+            source.sourcepackagerelease.dsc_format).value
+
+        if not series.isSourcePackageFormatPermitted(
+            SourcePackageFormat.getTermByToken(source.sourcepackagerelease.dsc_format)):
             raise CannotCopy(
                 "Source format '%s' not supported by target series %s." %
                 (source.sourcepackagerelease.dsc_format, series.name))

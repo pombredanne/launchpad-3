@@ -38,6 +38,7 @@ from canonical.encoding import guess as guess_encoding
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from canonical.launchpad.interfaces import (
     GPGVerificationError, IGPGHandler, IGPGKeySet,
     ISourcePackageNameSet, NotFoundError)
@@ -231,6 +232,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         This method is an error generator, i.e, it returns an iterator over all
         exceptions that are generated while processing DSC file checks.
         """
+        # Avoid circular imports.
+        from lp.archiveuploader.nascentupload import EarlyReturnUploadError
+
         for error in SourceUploadFile.verify(self):
             yield error
 
@@ -268,7 +272,14 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield UploadError(
                 "%s: invalid version %s" % (self.filename, self.dsc_version))
 
-        if not self.policy.distroseries.isSourceFormatPermitted(self.format):
+        try:
+            format_term = SourcePackageFormat.getTermByToken(self.format)
+        except LookupError:
+            raise EarlyReturnUploadError(
+                "Unsupported source format: %s" % self.format)
+
+        if not self.policy.distroseries.isSourcePackageFormatPermitted(
+            format_term.value):
             yield UploadError(
                 "%s: format '%s' is not permitted in %s." %
                 (self.filename, self.format, self.policy.distroseries.name))

@@ -50,6 +50,7 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -158,7 +159,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
                 excName = str(excClass)
             raise self.failureException, "%s not raised" % excName
 
-    def setupBreezy(self, name="breezy", permitted_formats=['1.0']):
+    def setupBreezy(self, name="breezy",
+                    permitted_formats=[SourcePackageFormat.FORMAT_1_0]):
         """Create a fresh distroseries in ubuntu.
 
         Use *initialiseFromParent* procedure to create 'breezy'
@@ -187,7 +189,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
         self.breezy.initialiseFromParent()
 
         for format in permitted_formats:
-            self.breezy.permitSourceFormat(format)
+            self.breezy.permitSourcePackageFormat(format)
 
     def addMockFile(self, filename, content="anything"):
         """Return a librarian file."""
@@ -1423,7 +1425,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def test30QuiltUpload(self):
         """Ensure that 3.0 (quilt) uploads work properly. """
-        self.setupBreezy(permitted_formats=['3.0 (quilt)'])
+        self.setupBreezy(
+            permitted_formats=[SourcePackageFormat.FORMAT_3_0_QUILT])
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
         uploadprocessor = UploadProcessor(
@@ -1455,7 +1458,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def test30QuiltUploadWithSameComponentOrig(self):
         """Ensure that 3.0 (quilt) uploads with shared component origs work."""
-        self.setupBreezy(permitted_formats=['3.0 (quilt)'])
+        self.setupBreezy(
+            permitted_formats=[SourcePackageFormat.FORMAT_3_0_QUILT])
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
         uploadprocessor = UploadProcessor(
@@ -1493,7 +1497,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def test30NativeUpload(self):
         """Ensure that 3.0 (native) uploads work properly. """
-        self.setupBreezy(permitted_formats=['3.0 (native)'])
+        self.setupBreezy(
+            permitted_formats=[SourcePackageFormat.FORMAT_3_0_NATIVE])
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
         uploadprocessor = UploadProcessor(

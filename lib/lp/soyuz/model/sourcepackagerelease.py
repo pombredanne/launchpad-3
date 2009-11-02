@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'SourceFormatSelection',
     'SourcePackageRelease',
     '_filter_ubuntu_translation_file',
     ]
@@ -45,8 +44,7 @@ from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.packagediff import (
     PackageDiffAlreadyRequested, PackageDiffStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.sourcepackagerelease import (ISourcePackageRelease,
-    ISourceFormatSelection)
+from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
@@ -609,21 +607,3 @@ class SourcePackageRelease(SQLBase):
             requester=requester, status=status)
 
 
-class SourceFormatSelection(Storm):
-    """See ISourceFormatSelection."""
-
-    implements(ISourceFormatSelection)
-
-    def __init__(self, distroseries, format):
-        super(SourceFormatSelection, self).__init__()
-        self.distroseries = distroseries
-        self.format = unicode(format)
-
-    __storm_table__ = 'sourceformatselection'
-
-    id = Int(primary=True)
-
-    distroseries_id = Int(name="distroseries")
-    distroseries = Reference(distroseries_id, 'DistroSeries.id')
-
-    format = Unicode()

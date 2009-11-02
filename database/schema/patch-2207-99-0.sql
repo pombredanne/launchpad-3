@@ -3,16 +3,17 @@
 
 SET client_min_messages=ERROR;
 
-CREATE TABLE sourceformatselection (
+CREATE TABLE sourcepackageformatselection (
   id serial PRIMARY KEY,
   distroseries integer NOT NULL
     CONSTRAINT sourceformatselection__distroseries__fk
     REFERENCES distroseries,
-  format text NOT NULL,
+  format integer NOT NULL,
   CONSTRAINT sourceformatselection__distroseries__format__key
     UNIQUE (distroseries, format)
 );
 
-INSERT INTO sourceformatselection (distroseries, format) SELECT id, '1.0' AS format FROM distroseries;
+INSERT INTO sourcepackageformatselection (distroseries, format)
+  SELECT id, 0 AS format FROM distroseries;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
