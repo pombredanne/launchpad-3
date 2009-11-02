@@ -1492,7 +1492,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         cur = cursor()
 
         # Perform the copies
-        self._copy_component_and_section_selections(cur)
+        self._copy_component_section_and_format_selections(cur)
 
         # Prepare the list of distroarchseries for which binary packages
         # shall be copied.
@@ -1553,9 +1553,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 PackagePublishingPocket.RELEASE)
             clone_packages(origin, destination, distroarchseries_list)
 
-    def _copy_component_and_section_selections(self, cur):
-        """Copy the section and component selections from the parent distro
-        series into this one.
+    def _copy_component_section_and_format_selections(self, cur):
+        """Copy the section, component and format selections from the parent
+        distro series into this one.
         """
         # Copy the component selections
         cur.execute('''
@@ -1568,6 +1568,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             INSERT INTO SectionSelection (distroseries, section)
             SELECT %s as distroseries, ss.section AS section
             FROM SectionSelection AS ss WHERE ss.distroseries = %s
+            ''' % sqlvalues(self.id, self.parent_series.id))
+        # Copy the source format selections
+        cur.execute('''
+            INSERT INTO SourceFormatSelection (distroseries, format)
+            SELECT %s as distroseries, sfs.format AS format
+            FROM SourceFormatSelection AS sfs WHERE sfs.distroseries = %s
             ''' % sqlvalues(self.id, self.parent_series.id))
 
     def copyTranslationsFromParent(self, transaction, logger=None):

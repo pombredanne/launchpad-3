@@ -172,3 +172,9 @@ this test, see more details in buildd-queuebuilder)
   >>> pmount_source.sourcepackagerelease.getBuildByArch(
   ...    foobuntu['hppa'], ubuntu.main_archive) is None
   True
+
+initialiseFromParent also copies the permitted source formats from the
+parent series.
+
+  >>> foobuntu.isSourceFormatPermitted('1.0')
+  True
