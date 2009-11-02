@@ -5,13 +5,10 @@ import unittest
 
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.windmill.testing import lpuser
+from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import TestCaseWithFactory
 
-WAIT_PAGELOAD = u'20000'
-WAIT_ELEMENT_COMPLETE = u'20000'
-WAIT_CHECK_CHANGE = u'1000'
 FILEBUG_URL = 'http://bugs.launchpad.dev:8085/firefox/+filebug'
 
 FORM_OVERLAY = u'//div[@id="duplicate-overlay-bug-4"]/table'
@@ -48,15 +45,16 @@ class TestDupeFinder(TestCaseWithFactory):
 
         # Go to the +filebug page for Firefox
         client.open(url=FILEBUG_URL)
-        client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Ensure the "title" field has finished loading, then enter a simple
         # title and hit search.
         client.waits.forElement(
-            xpath=u'//input[@id="field.title"]', timeout=u'8000')
+            xpath=u'//input[@id="field.title"]',
+            timeout=constants.FOR_ELEMENT)
         client.type(text=u'problem', id=u'field.title')
         client.click(xpath=u'//input[@id="field.actions.search"]')
-        client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         # The details div for the duplicate bug should not be shown.
         client.asserts.assertProperty(
             id='details-for-bug-4', validator=BUG_INFO_HIDDEN)
@@ -71,7 +69,7 @@ class TestDupeFinder(TestCaseWithFactory):
 
         # Clicking on the expander will expand it and show the details div.
         client.click(id='bug-details-expander-bug-4')
-        client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertProperty(
             id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
         client.asserts.assertElemJS(
@@ -80,7 +78,7 @@ class TestDupeFinder(TestCaseWithFactory):
         # Clicking the expander again will hide the details div and collapse
         # the expander.
         client.click(id='bug-details-expander-bug-4')
-        client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertProperty(
             id='bug-details-expander-bug-4',
             validator='src|/@@/treeCollapsed')
@@ -89,7 +87,7 @@ class TestDupeFinder(TestCaseWithFactory):
 
         # Clicking it yet again will reopen it.
         client.click(id='bug-details-expander-bug-4')
-        client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertProperty(
             id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
         client.asserts.assertElemJS(
@@ -98,7 +96,7 @@ class TestDupeFinder(TestCaseWithFactory):
         # Clicking "No, I need to file a new bug" will collapse the
         # duplicate details and expander and will show the filebug form.
         client.click(id='bug-not-already-reported')
-        client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertProperty(
             id='bug-details-expander-bug-4',
             validator='src|/@@/treeCollapsed')
@@ -110,7 +108,7 @@ class TestDupeFinder(TestCaseWithFactory):
         # Clicking the duplicate expander again will collapse the filebug
         # form and expand the duplicate.
         client.click(id='bug-details-expander-bug-4')
-        client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertProperty(
             id='bug_reporting_form', validator='style.display|none')
         client.asserts.assertProperty(
@@ -122,12 +120,12 @@ class TestDupeFinder(TestCaseWithFactory):
         # overlay, which will offer the user the option to subscribe to the
         # bug.
         client.click(id="this-is-my-bug-4")
-        client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertElemJS(xpath=FORM_OVERLAY, js=FORM_VISIBLE)
 
         # Clicking the cancel button will make the overlay go away again.
         client.click(xpath=FORM_OVERLAY_CANCEL)
-        client.waits.sleep(milliseconds=WAIT_CHECK_CHANGE)
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertElemJS(xpath=FORM_OVERLAY, js=FORM_NOT_VISIBLE)
 
 def test_suite():
