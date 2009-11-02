@@ -581,7 +581,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
             title=_("Source package name"), required=True),
         person=Reference(schema=IPerson),
         distroseries=Reference(
-            # Really IDistroSeries, fixed below to avoid circular import.
+            # Really IDistroSeries, avoiding a circular import here.
             Interface,
             title=_("The distro series"), required=False))
     @export_read_operation()
