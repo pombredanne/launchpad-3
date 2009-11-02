@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'SourceFormatSelection',
     'SourcePackageRelease',
     '_filter_ubuntu_translation_file',
     ]
@@ -18,6 +19,7 @@ import re
 
 from storm.store import Store
 from storm.expr import Join
+from storm.locals import Int, Reference, Storm, Unicode
 from sqlobject import StringCol, ForeignKey, SQLMultipleJoin
 from zope.interface import implements
 from zope.component import getUtility
@@ -43,7 +45,8 @@ from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.packagediff import (
     PackageDiffAlreadyRequested, PackageDiffStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
+from lp.soyuz.interfaces.sourcepackagerelease import (ISourcePackageRelease,
+    ISourceFormatSelection)
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.files import SourcePackageReleaseFile
 from lp.soyuz.model.packagediff import PackageDiff
@@ -604,3 +607,23 @@ class SourcePackageRelease(SQLBase):
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
+
+
+class SourceFormatSelection(Storm):
+    """See ISourceFormatSelection."""
+
+    implements(ISourceFormatSelection)
+
+    def __init__(self, distroseries, format):
+        super(SourceFormatSelection, self).__init__()
+        self.distroseries = distroseries
+        self.format = unicode(format)
+
+    __storm_table__ = 'sourceformatselection'
+
+    id = Int(primary=True)
+
+    distroseries_id = Int(name="distroseries")
+    distroseries = Reference(distroseries_id, 'DistroSeries.id')
+
+    format = Unicode()

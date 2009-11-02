@@ -81,7 +81,7 @@ from lp.registry.interfaces.pocket import (
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
+    SourceFormatSelection, SourcePackageRelease)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.translations.model.translationimportqueue import (
@@ -116,7 +116,7 @@ from lp.blueprints.interfaces.specification import (
 from canonical.launchpad.mail import signed_message_from_string
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)
 
 
@@ -1734,6 +1734,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return self.name
         else:
             return '%s%s' % (self.name, pocketsuffix[pocket])
+
+    def isSourceFormatPermitted(self, format):
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(
+            SourceFormatSelection, distroseries=self,
+            format=unicode(format)).count() == 1
 
 
 class DistroSeriesSet:

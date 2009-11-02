@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ISourceFormatSelection',
     'ISourcePackageRelease',
     'PackageDiffAlreadyRequestedError',
     ]
@@ -203,3 +204,10 @@ class ISourcePackageRelease(Interface):
 
 class PackageDiffAlreadyRequestedError(Exception):
     """Raised when an `IPackageDiff` request already exists."""
+
+
+class ISourceFormatSelection(Interface):
+    """Represents a source format allowed within a DistroSeries."""
+    id = Attribute("ID")
+    distroseries = Attribute("Target series")
+    format = Attribute("Permitted source package format")
