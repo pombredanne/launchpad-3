@@ -28,7 +28,6 @@ import email.Header
 import re
 
 from lp.archiveuploader.tagfiles import TagFileParseError
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.encoding import guess as guess_encoding, ascii_smash
 
 
@@ -68,6 +67,9 @@ def get_source_file_extension(filename):
 
 def determine_source_file_type(filename):
     """Determine the SourcePackageFileType of the given filename."""
+    # Avoid circular imports.
+    from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+
     extension = get_source_file_extension(filename)
     if extension is None:
         return None
