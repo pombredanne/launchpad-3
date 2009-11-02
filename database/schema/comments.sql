@@ -2269,3 +2269,9 @@ COMMENT ON COLUMN PackagesetInclusion.child IS 'The package set that is being in
 COMMENT ON TABLE FlatPackagesetInclusion IS 'In order to facilitate the querying of set-subset relationships an expanded or flattened representation of the set-subset hierarchy is provided by this table.';
 COMMENT ON COLUMN FlatPackagesetInclusion.parent IS 'The package set that is (directly or indirectly) including a subset.';
 COMMENT ON COLUMN FlatPackagesetInclusion.child IS 'The package set that is being included as a subset.';
+
+-- SourcePackageFormatSelection
+COMMENT ON TABLE SourcePackageFormatSelection IS 'Allowed source package formats for a given distroseries.';
+COMMENT ON COLUMN SourcePackageFormatSelection.distroseries IS 'Refers to the distroseries in question.';
+COMMENT ON COLUMN SourcePackageFormatSelection.format IS 'The SourcePackageFormat to allow.';
+
