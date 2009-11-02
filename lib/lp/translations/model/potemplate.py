@@ -24,7 +24,7 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.expr import Alias, And, Desc, Join, LeftJoin, Or, SQL
+from storm.expr import Alias, And, Desc, In, Join, LeftJoin, Or, SQL
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getAdapter, getUtility
@@ -427,13 +427,13 @@ class POTemplate(SQLBase, RosettaStats):
         """See `IPOTemplate`."""
         # Find potential credits messages by the message ids.
         store = IStore(POTemplate)
-        credits_ids = ",".join(map(quote, POTMsgSet.credits_message_ids))
         origin1 = Join(TranslationTemplateItem,
                        TranslationTemplateItem.potmsgset == POTMsgSet.id)
         origin2 = Join(POMsgID, POTMsgSet.msgid_singular == POMsgID.id)
         result = store.using(POTMsgSet, origin1, origin2).find(
-            POTMsgSet, TranslationTemplateItem.potemplate == self,
-                       "pomsgid.msgid IN (%s)" % credits_ids)
+            POTMsgSet,
+            TranslationTemplateItem.potemplate == self,
+            In(POMsgID.msgid, POTMsgSet.credits_message_ids))
         # Filter these candidates because is_translation_credit checks for
         # more conditions than the special msgids.
         for potmsgset in result:
@@ -999,7 +999,8 @@ class POTemplateSubset:
     implements(IPOTemplateSubset)
 
     def __init__(self, sourcepackagename=None, from_sourcepackagename=None,
-                 distroseries=None, productseries=None, iscurrent=None):
+                 distroseries=None, productseries=None, iscurrent=None,
+                 ordered_by_names=False):
         """Create a new `POTemplateSubset` object.
 
         The set of POTemplate depends on the arguments you pass to this
@@ -1024,9 +1025,13 @@ class POTemplateSubset:
         if productseries is not None:
             self.clauses.append(
                 POTemplate.productseriesID == productseries.id)
+            if ordered_by_names:
+                self.orderby = [POTemplate.name]
         else:
             self.clauses.append(
                 POTemplate.distroseriesID == distroseries.id)
+            if ordered_by_names:
+                self.orderby = [SourcePackageName.name, POTemplate.name]
             if from_sourcepackagename is not None:
                 self.clauses.append(
                     POTemplate.from_sourcepackagenameID ==
@@ -1237,13 +1242,15 @@ class POTemplateSet:
         return POTemplate.select(orderBy=['-date_last_updated'])
 
     def getSubset(self, distroseries=None, sourcepackagename=None,
-                  productseries=None, iscurrent=None):
+                  productseries=None, iscurrent=None,
+                  ordered_by_names=False):
         """See `IPOTemplateSet`."""
         return POTemplateSubset(
             distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             productseries=productseries,
-            iscurrent=iscurrent)
+            iscurrent=iscurrent,
+            ordered_by_names=ordered_by_names)
 
     def getSubsetFromImporterSourcePackageName(self, distroseries,
         sourcepackagename, iscurrent=None):

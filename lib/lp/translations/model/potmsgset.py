@@ -1056,10 +1056,10 @@ class POTMsgSet(SQLBase):
         if self.is_translation_credit:
             translation = self.getSharedTranslationMessage(pofile.language)
             if translation is None:
-                message = self.updateTranslation(pofile, pofile.owner,
-                    [credits_message_str], False,
-                    datetime.datetime.now(pytz.UTC),
-                    allow_credits=True)
+                message = self.updateTranslation(
+                    pofile, pofile.owner, [credits_message_str],
+                    is_imported=False, allow_credits=True, force_shared=True,
+                    lock_timestamp=datetime.datetime.now(pytz.UTC))
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""
