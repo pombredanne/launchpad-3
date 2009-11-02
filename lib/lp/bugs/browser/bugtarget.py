@@ -13,7 +13,6 @@ __all__ = [
     "FileBugAdvancedView",
     "FileBugGuidedView",
     "FileBugViewBase",
-    "FrontPageFileBugGuidedView",
     "OfficialBugTagsManageView",
     "ProjectFileBugGuidedView",
     ]
@@ -60,7 +59,7 @@ from canonical.launchpad.interfaces.temporaryblobstorage import (
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import (
-    CreateBugParams, IBugAddForm, IFrontPageBugAddForm, IProjectBugAddForm)
+    CreateBugParams, IBugAddForm, IProjectBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -78,7 +77,6 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
 from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.bugtask import NewLineToSpacesWidget
-from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
@@ -1006,127 +1004,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     def getSecurityContext(self):
         """See FileBugViewBase."""
         return self._getSelectedProduct()
-
-
-class FrontPageFileBugMixin:
-    """Provides common methods for front-page bug-filing forms."""
-
-    frontpage_form = True
-
-    def contextUsesMalone(self):
-        """Checks whether the current context uses Malone for bug tracking.
-
-        If a bug is being filed against a product or distro then that product
-        or distro's official_malone property is used to determine the return
-        value of contextUsesMalone(). Otherwise, contextUsesMalone() will
-        always return True, since doing otherwise will cause the front page
-        file bug forms to be hidden.
-        """
-        product_or_distro = self.getProductOrDistroFromContext()
-
-        if product_or_distro is None:
-            return True
-        else:
-            return product_or_distro.official_malone
-
-    def contextIsProduct(self):
-        """Is the context a product?"""
-        product_or_distro = self.getProductOrDistroFromContext()
-        return IProduct.providedBy(product_or_distro)
-
-    @property
-    def bugtarget(self):
-        """The bugtarget we're currently assuming.
-
-        This needs to be obtained from form data because we're on the
-        front page, and not already within a product/distro/etc
-        context.
-        """
-        if self.widgets['bugtarget'].hasValidInput():
-            return self.widgets['bugtarget'].getInputValue()
-        else:
-            return None
-
-    def getProductOrDistroFromContext(self):
-        """Return the product or distribution relative to the context.
-
-        For instance, if the context is an IDistroSeries, return the
-        distribution related to it. This method will return None if the
-        context is not related to a product or a distro.
-        """
-        # We need to find a product or distribution from what we've had
-        # submitted to us.
-        context = self.bugtarget
-        if context is None:
-            return None
-
-        if IProduct.providedBy(context) or IDistribution.providedBy(context):
-            return context
-        elif IProductSeries.providedBy(context):
-            return context.product
-        elif (IDistroSeries.providedBy(context) or
-              IDistributionSourcePackage.providedBy(context)):
-            return context.distribution
-        else:
-            return None
-
-
-class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
-    """Browser view class for the top-level +filebug page."""
-    schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', LaunchpadTargetWidget)
-
-    # Make inheriting the base class' actions work.
-    actions = FileBugGuidedView.actions
-
-    @property
-    def initial_values(self):
-        return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
-
-    def validate_search(self, action, data):
-        """Validates the parameters for the similar-bug search."""
-        errors = FileBugGuidedView.validate_search(self, action, data)
-        try:
-            data['bugtarget'] = self.widgets['bugtarget'].getInputValue()
-
-            # Check that Malone is actually used by this bugtarget.
-            if (IProduct.providedBy(data['bugtarget']) or
-                IDistribution.providedBy(data['bugtarget'])):
-                product_or_distro = data['bugtarget']
-            elif IProductSeries.providedBy(data['bugtarget']):
-                product_or_distro = data['bugtarget'].product
-            elif (IDistroSeries.providedBy(data['bugtarget']) or
-                  IDistributionSourcePackage.providedBy(data['bugtarget'])):
-                product_or_distro = data['bugtarget'].distribution
-            else:
-                product_or_distro = None
-
-            if (product_or_distro is not None and
-                not product_or_distro.official_malone):
-                self.setFieldError('bugtarget',
-                                    "%s does not use Launchpad as its bug "
-                                    "tracker" %
-                                    product_or_distro.displayname)
-
-        except InputErrors, error:
-            self.setFieldError("bugtarget", error.doc())
-            errors.append(error)
-        return errors
-
-    def getSecurityContext(self):
-        """See FileBugViewBase."""
-        try:
-            bugtarget = self.widgets['bugtarget'].getInputValue()
-        except InputErrors:
-            return None
-        if IDistributionSourcePackage.providedBy(bugtarget):
-            return bugtarget.distribution
-        else:
-            assert (
-                IProduct.providedBy(bugtarget) or
-                IDistribution.providedBy(bugtarget)), (
-                "Unknown bug target: %r" % bugtarget)
-            return bugtarget
 
 
 class BugTargetBugListingView:

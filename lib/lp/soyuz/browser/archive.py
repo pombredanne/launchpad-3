@@ -392,7 +392,7 @@ class ArchiveMenuMixin:
 
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
-        text = 'Edit dependencies'
+        text = 'Edit PPA dependencies'
         return Link('+edit-dependencies', text, icon='edit')
 
 
@@ -1303,6 +1303,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                   cssClass='highlight-selected')
     custom_widget('primary_components', LaunchpadRadioWidget,
                   cssClass='highlight-selected')
+
+    label = "Edit PPA dependencies"
+    page_title = label
 
     def initialize(self):
         self.cancel_url = canonical_url(self.context)
