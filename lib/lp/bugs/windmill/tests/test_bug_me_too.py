@@ -7,7 +7,7 @@ import unittest
 
 from windmill.authoring import WindmillTestClient, WindmillTestClientException
 
-from canonical.launchpad.windmill.testing import lpuser
+from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import TestCaseWithFactory
 
@@ -52,21 +52,18 @@ class TestMeToo(TestCaseWithFactory):
         """
         client = WindmillTestClient('Bug "me too" test')
         lpuser.SAMPLE_PERSON.ensure_login(client)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Open bug 11 and wait for it to finish loading.
         client.open(
             url=u'http://bugs.launchpad.dev:8085/jokosher/+bug/11/+index')
-        client.waits.forPageLoad(timeout=u'20000')
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
-        # Wait for setup_me_too to sort out the "me too" elements.
-        client.waits.forElement(
-            xpath=(u"//span[@id='affectsmetoo' and "
-                   u"@class='yui-metoocs-content']"))
-
-        # Currently it's unknown if this bug affects the logged-in user.
-        client.asserts.assertText(
-            xpath=VALUE_LOCATION_XPATH,
-            validator=u"Does this bug affect you?")
+        @retry(client)
+        def check_initial_setup(client):
+            client.asserts.assertText(
+                xpath=VALUE_LOCATION_XPATH,
+                validator=u"Does this bug affect you?")
 
         # A flame icon is available in the page, but not visible owing to
         # the unseen class.

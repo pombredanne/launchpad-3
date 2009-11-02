@@ -95,8 +95,9 @@ class TestInlineSubscribing(TestCaseWithFactory):
             u'//table[contains(@class, "yui-picker") '
             'and not(contains(@class, "yui-picker-hidden"))]'
             '//ul[@class="yui-picker-results"]/li[1]/span')
-        client.waits.forElement(
-            xpath=search_result_xpath, timeout=FOR_ELEMENT)
+        # sleep() seems to be the only way to get this section to pass 
+        # when running all of BugsWindmillLayer.
+        client.waits.sleep(milliseconds=SLEEP)
         client.click(xpath=search_result_xpath)
         client.waits.forElement(
             id=u'subscribers-links', timeout=FOR_ELEMENT)
