@@ -1165,8 +1165,11 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         PPA upload, any number of these can be reused from the primary
         archive.
         """
-        # We need to accept unsigned .changes and .dscs.
+        # We need to accept unsigned .changes and .dscs, and 3.0 (quilt)
+        # sources.
         self.options.context = 'absolutely-anything'
+        self.breezy.permitSourceFormat('3.0 (quilt)')
+
         # First upload a complete 3.0 (quilt) source to the primary
         # archive.
         upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")

@@ -268,11 +268,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield UploadError(
                 "%s: invalid version %s" % (self.filename, self.dsc_version))
 
-        if self.format not in ("1.0", "3.0 (quilt)", "3.0 (native)"):
+        if not self.policy.distroseries.isSourceFormatPermitted(self.format):
             yield UploadError(
-                "%s: Unsupported format '%s'. Only formats '1.0', "
-                "'3.0 (quilt)' and '3.0 (native)' are supported"
-                % (self.filename, self.format))
+                "%s: format '%s' is not permitted in %s." %
+                (self.filename, self.format, self.policy.distroseries.name))
 
         # Validate the build dependencies
         for field_name in ['build-depends', 'build-depends-indep']:

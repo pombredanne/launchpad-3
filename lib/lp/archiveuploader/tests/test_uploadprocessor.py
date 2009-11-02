@@ -158,7 +158,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
                 excName = str(excClass)
             raise self.failureException, "%s not raised" % excName
 
-    def setupBreezy(self, name="breezy"):
+    def setupBreezy(self, name="breezy", permitted_formats=['1.0']):
         """Create a fresh distroseries in ubuntu.
 
         Use *initialiseFromParent* procedure to create 'breezy'
@@ -185,6 +185,9 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
         self.breezy.initialiseFromParent()
+
+        for format in permitted_formats:
+            self.breezy.permitSourceFormat(format)
 
     def addMockFile(self, filename, content="anything"):
         """Return a librarian file."""
@@ -1396,9 +1399,31 @@ class TestUploadProcessor(TestUploadProcessorBase):
             ]
         self.assertEmail(contents, recipients=recipients)
 
+    def test30QuiltUploadToUnsupportingSeriesIsRejected(self):
+        """Ensure that uploads to series without format support are rejected.
+
+        Series can restrict the source formats that they accept. Uploads
+        should be rejected if an unsupported format is uploaded.
+        """
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the source.
+        upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it was rejected.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "bar_1.0-1.dsc: format '3.0 (quilt)' is not permitted in "
+            "breezy." in raw_msg,
+            "Source was not rejected properly:\n%s" % raw_msg)
+
     def test30QuiltUpload(self):
         """Ensure that 3.0 (quilt) uploads work properly. """
-        self.setupBreezy()
+        self.setupBreezy(permitted_formats=['3.0 (quilt)'])
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
         uploadprocessor = UploadProcessor(
@@ -1430,7 +1455,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def test30QuiltUploadWithSameComponentOrig(self):
         """Ensure that 3.0 (quilt) uploads with shared component origs work."""
-        self.setupBreezy()
+        self.setupBreezy(permitted_formats=['3.0 (quilt)'])
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
         uploadprocessor = UploadProcessor(
@@ -1468,7 +1493,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     def test30NativeUpload(self):
         """Ensure that 3.0 (native) uploads work properly. """
-        self.setupBreezy()
+        self.setupBreezy(permitted_formats=['3.0 (native)'])
         self.layer.txn.commit()
         self.options.context = 'absolutely-anything'
         uploadprocessor = UploadProcessor(
