@@ -486,7 +486,8 @@ class ProductSeriesTemplatesView(LaunchpadView):
     def iter_templates(self):
         """Return an iterator of all `IPOTemplates` for the series."""
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(productseries=self.context)
+        return potemplateset.getSubset(productseries=self.context,
+                                       ordered_by_names=True)
 
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):

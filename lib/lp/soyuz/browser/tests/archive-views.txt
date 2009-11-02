@@ -382,9 +382,11 @@ Let's set some builds appropriately to see the results.
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
+    >>> login('foo.bar@canonical.com')
     >>> builds[0].buildstate = BuildStatus.NEEDSBUILD
     >>> builds[1].buildstate = BuildStatus.BUILDING
     >>> builds[2].buildstate = BuildStatus.BUILDING
+    >>> login(ANONYMOUS)
 
     >>> view.num_pkgs_building
     {'building': 2, 'waiting': 1, 'total': 3}
@@ -392,14 +394,18 @@ Let's set some builds appropriately to see the results.
 Adding a second waiting build for the cdrkit does not add to the number
 of packages that are currently building.
 
+    >>> login('foo.bar@canonical.com')
     >>> builds[4].buildstate = BuildStatus.NEEDSBUILD
+    >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 2, 'waiting': 1, 'total': 3}
 
 But as soon as one of cdrkit's builds start, the package is considered
 to be building:
 
+    >>> login('foo.bar@canonical.com')
     >>> builds[4].buildstate = BuildStatus.BUILDING
+    >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 3, 'waiting': 0, 'total': 3}
 
@@ -627,6 +633,14 @@ build the page.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies")
+
+The view's h1 heading and leaf breadcrumb are equivalent.
+
+    >>> print view.label
+    Edit PPA dependencies
+
+    >>> print view.page_title
+    Edit PPA dependencies
 
 There is a property indicating whether or not the context PPA has
 recorded dependencies.
