@@ -22,6 +22,7 @@ class TestOfficialBugTags(TestCaseWithFactory):
     def test_official_bug_tags_management(self):
         """Test the official bug tags management interface."""
         client = WindmillTestClient('Official bug tags management test')
+        lpuser.FOO_BAR.ensure_login(client)
 
     # Firefox is a product - an official bug tags target.
 
@@ -30,7 +31,8 @@ class TestOfficialBugTags(TestCaseWithFactory):
 
     # foobar has the permission to edit the official bug tags for firefox.
 
-        lpuser.FOO_BAR.ensure_login(client)
+        client.waits.forElement(
+            link=u'Edit official tags', timeout=constants.FOR_ELEMENT)
         client.click(link=u'Edit official tags')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
