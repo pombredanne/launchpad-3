@@ -56,7 +56,7 @@ from lp.soyuz.model.queue import (
 from lp.soyuz.scripts.queue import QueueActionError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
-    SourcePackageFormat, SourcePackageUrgency)
+    SourcePackageType, SourcePackageUrgency)
 
 
 def _filter_ubuntu_translation_file(filename):
@@ -109,8 +109,8 @@ class SourcePackageRelease(SQLBase):
     build_conflicts = StringCol(dbName='build_conflicts')
     build_conflicts_indep = StringCol(dbName='build_conflicts_indep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
-    format = EnumCol(dbName='format', schema=SourcePackageFormat,
-        default=SourcePackageFormat.DPKG, notNull=True)
+    format = EnumCol(dbName='format', schema=SourcePackageType,
+        default=SourcePackageType.DPKG, notNull=True)
     upload_distroseries = ForeignKey(foreignKey='DistroSeries',
         dbName='upload_distroseries')
     upload_archive = ForeignKey(
