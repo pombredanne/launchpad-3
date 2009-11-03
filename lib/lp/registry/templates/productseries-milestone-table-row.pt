@@ -68,9 +68,9 @@
         </tal:not-yet>
       </tal:no-release>
     </td>
-    <td tal:condition="view/is_distroseries_milestone">
-      <em>Not displayed on distroseries page for performance reasons.</em>
-    </td>
+    <td tal:condition="view/is_distroseries_milestone"
+        tal:content="structure milestone/summary/fmt:shorten/80"
+        />
     <td tal:condition="not: view/is_distroseries_milestone">
       <tal:summary
         content="structure milestone/summary/fmt:shorten/80" />
