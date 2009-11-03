@@ -1071,7 +1071,7 @@ class PersonEditNavigationMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Special')
     def sshkeys(self):
         target = '+editsshkeys'
-        text = 'SSH Keys'
+        text = 'SSH keys'
         return Link(target, text)
 
     def gpgkeys(self):
@@ -1138,7 +1138,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def proposed_members(self):
         target = '+editproposedmembers'
-        text = 'Approve/Decline applicants'
+        text = 'Approve or decline members'
         return Link(target, text, icon='add')
 
     def map(self):
@@ -3236,17 +3236,20 @@ class TeamIndexView(PersonIndexView):
             raise AssertionError(e)
 
     @property
-    def visibility(self):
-        return self.context.visibility.title + ' Team'
-
-    @property
     def visibility_info(self):
         if self.context.visibility == PersonVisibility.PRIVATE:
-            return 'Viewable by team members.'
+            return 'Private team'
         elif self.context.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
-            return 'Team membership is viewable by team members.'
+            return 'Team membership is viewable by team members'
         else:
-            return ''
+            return 'Public team'
+
+    @property
+    def visibility_portlet_class(self):
+        """The portlet class for team visibility."""
+        if self.context.visibility == PersonVisibility.PUBLIC:
+            return 'portlet'
+        return 'portlet private'
 
 
 class PersonCodeOfConductEditView(LaunchpadView):

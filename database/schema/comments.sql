@@ -2239,11 +2239,20 @@ COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';
 
 -- Packageset
 
-COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages for purposes like the control of upload permissions, et.';
+COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages (in a given distro series) for purposes like the control of upload permissions, etc.';
 COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
 COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package set';
 COMMENT ON COLUMN Packageset.name IS 'The name for the package set on hand.';
 COMMENT ON COLUMN Packageset.description IS 'The description for the package set on hand.';
+COMMENT ON COLUMN Packageset.packagesetgroup IS 'The group this package set is affiliated with.';
+COMMENT ON COLUMN Packageset.distroseries IS 'The distro series this package set belongs to.';
+
+-- PackagesetGroup
+
+COMMENT ON TABLE PackagesetGroup IS 'Package set groups keep track of equivalent package sets across distro series boundaries.';
+COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
+COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package
+set group.';
 
 -- PackagesetSources
 
@@ -2260,3 +2269,9 @@ COMMENT ON COLUMN PackagesetInclusion.child IS 'The package set that is being in
 COMMENT ON TABLE FlatPackagesetInclusion IS 'In order to facilitate the querying of set-subset relationships an expanded or flattened representation of the set-subset hierarchy is provided by this table.';
 COMMENT ON COLUMN FlatPackagesetInclusion.parent IS 'The package set that is (directly or indirectly) including a subset.';
 COMMENT ON COLUMN FlatPackagesetInclusion.child IS 'The package set that is being included as a subset.';
+
+-- SourcePackageFormatSelection
+COMMENT ON TABLE SourcePackageFormatSelection IS 'Allowed source package formats for a given distroseries.';
+COMMENT ON COLUMN SourcePackageFormatSelection.distroseries IS 'Refers to the distroseries in question.';
+COMMENT ON COLUMN SourcePackageFormatSelection.format IS 'The SourcePackageFormat to allow.';
+

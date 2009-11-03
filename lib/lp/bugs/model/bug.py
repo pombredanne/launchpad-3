@@ -1634,7 +1634,7 @@ class BugSet:
             return EmptyResultSet()
         store = IStore(Bug)
         result_set = store.find(Bug, In(Bug.id, bug_numbers))
-        return result_set
+        return result_set.order_by('id')
 
 
 class BugAffectsPerson(SQLBase):

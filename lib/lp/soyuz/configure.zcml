@@ -499,7 +499,7 @@
     bug=3580: We need a autobuild celebrity. -->
 
         <require
-            permission="zope.Public"
+            permission="launchpad.Edit"
             set_attributes="buildlog datebuilt buildduration builder                                                                                                                 buildstate dependencies upload_log"/>
     </class>
 
@@ -855,5 +855,13 @@
             attributes="
                 new"/>
     </securedutility>
+
+    <!-- PackagesetGroup -->
+    <class
+        class="lp.soyuz.model.packagesetgroup.PackagesetGroup">
+        <allow
+            interface="lp.soyuz.interfaces.packagesetgroup.IPackagesetGroup"/>
+    </class>
+
 
 </configure>
