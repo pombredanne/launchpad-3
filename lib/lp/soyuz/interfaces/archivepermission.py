@@ -258,7 +258,8 @@ class IArchivePermissionSet(Interface):
             archive in question.
         """
 
-    def isSourceUploadAllowed(archive, sourcepackagename, person):
+    def isSourceUploadAllowed(
+        archive, sourcepackagename, person, distroseries=None):
         """True if the person is allowed to upload the given source package.
 
         Return True if there exists a permission that combines
@@ -275,6 +276,9 @@ class IArchivePermissionSet(Interface):
             either a string or a `ISourcePackageName`.
         :param person: An `IPerson` for whom you want to find out which
             package sets he has access to.
+        :param distroseries: The `IDistroSeries` for which to check
+            permissions. If none is supplied then `currentseries` in
+            Ubuntu is assumed.
 
         :raises SourceNotFound: if a source package with the given
             name could not be found.
