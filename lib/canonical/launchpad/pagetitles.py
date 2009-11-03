@@ -126,8 +126,6 @@ archive_delete_packages = ContextDisplayName('Delete packages from %s')
 
 archive_edit = ContextDisplayName('Edit %s')
 
-archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
-
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Branches'

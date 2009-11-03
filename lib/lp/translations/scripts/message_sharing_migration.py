@@ -13,9 +13,11 @@ import os
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.scripts.logger import log, DEBUG2
 from canonical.launchpad.utilities.orderingcheck import OrderingCheck
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.translations import TranslationConstants
+from lp.translations.model.potmsgset import POTMsgSet
 from lp.translations.model.translationmessage import TranslationMessage
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
@@ -250,33 +252,32 @@ class MessageSharingMerge(LaunchpadScript):
                                                 self.options.template_names)
 
         class_count = len(equivalence_classes)
-        self.logger.info(
-            "Merging %d template equivalence classes." % class_count)
+        log.info("Merging %d template equivalence classes." % class_count)
 
         for number, name in enumerate(sorted(equivalence_classes.iterkeys())):
             templates = equivalence_classes[name]
-            self.logger.info(
+            log.info(
                 "Merging equivalence class '%s': %d template(s) (%d / %d)" % (
                     name, len(templates), number + 1, class_count))
-            self.logger.debug("Templates: %s" % str(templates))
+            log.debug("Templates: %s" % str(templates))
 
             if self.options.remove_duplicates:
-                self.logger.info("Removing duplicate messages.")
+                log.info("Removing duplicate messages.")
                 self._removeDuplicateMessages(templates)
                 self._endTransaction(intermediate=True)
 
             if self.options.merge_potmsgsets:
-                self.logger.info("Merging POTMsgSets.")
+                log.info("Merging POTMsgSets.")
                 self._mergePOTMsgSets(templates)
                 self._endTransaction(intermediate=True)
 
             if self.options.merge_translationmessages:
-                self.logger.info("Merging TranslationMessages.")
+                log.info("Merging TranslationMessages.")
                 self._mergeTranslationMessages(templates)
 
             self._endTransaction()
 
-        self.logger.info("Done.")
+        log.info("Done.")
 
     def _endTransaction(self, intermediate=False):
         """End this transaction and start a new one.
@@ -295,7 +296,7 @@ class MessageSharingMerge(LaunchpadScript):
             objcount = len(gc.get_objects())
             garbage = len(gc.garbage)
             memsize = open("/proc/%s/statm" % os.getpid()).read().split()[5]
-            self.logger.debug(
+            log.debug(
                 "Freed: %d.  Object count: %d.  Garbage: %d.  Memory size: %s"
                 % (freed, objcount, garbage, memsize))
 
@@ -322,9 +323,12 @@ class MessageSharingMerge(LaunchpadScript):
             for potmsgset in template.getPOTMsgSets(False, prefetch=False):
                 key = get_potmsgset_key(potmsgset)
                 if key not in representatives:
-                    representatives[key] = potmsgset
+                    representatives[key] = potmsgset.id
 
-        for representative in representatives.itervalues():
+        self._endTransaction(intermediate=True)
+
+        for representative_id in representatives.itervalues():
+            representative = POTMsgSet.get(representative_id)
             self._scrubPOTMsgSetTranslations(representative)
             self._endTransaction(intermediate=True)
 
@@ -384,7 +388,7 @@ class MessageSharingMerge(LaunchpadScript):
 
         for representative, potmsgsets in subordinates.iteritems():
             representative_num += 1
-            self.logger.info("Message %d/%d: %d subordinate(s)." % (
+            log.debug("Message %d/%d: %d subordinate(s)." % (
                 representative_num, num_representatives, len(potmsgsets)))
 
             seen_potmsgsets = set([representative.id])
@@ -441,29 +445,52 @@ class MessageSharingMerge(LaunchpadScript):
 
                 self._endTransaction(intermediate=True)
 
-            self.logger.info(
-                "Deleted POTMsgSets: %d.  TranslationMessages: %d." % (
-                    potmsgset_deletions, tm_deletions))
+            report = "Deleted POTMsgSets: %d.  TranslationMessages: %d." % (
+                potmsgset_deletions, tm_deletions)
+            if potmsgset_deletions > 0 or tm_deletions > 0:
+                log.info(report)
+            else:
+                log.log(DEBUG2, report)
+
+    def _getPOTMsgSetIds(self, template):
+        """Get list of ids for `template`'s `POTMsgSet`s."""
+        return [
+            potmsgset.id
+            for potmsgset in template.getPOTMsgSets(False, prefetch=False)
+            ]
 
     def _mergeTranslationMessages(self, potemplates):
         """Share `TranslationMessage`s between templates where possible."""
         self._setUpUtilities()
         order_check = OrderingCheck(cmp=self.compare_template_precedence)
-        for template in potemplates:
+        for template_number, template in enumerate(potemplates):
+            log.info("Merging template %d/%d." % (
+                template_number + 1, len(potemplates)))
             deletions = 0
             order_check.check(template)
-            for potmsgset in template.getPOTMsgSets(False, prefetch=False):
-                before = potmsgset.getAllTranslationMessages().count()
+            potmsgset_ids = self._getPOTMsgSetIds(template)
+            total_ids = len(potmsgset_ids)
+            for potmsgset_id in potmsgset_ids:
+                potmsgset = POTMsgSet.get(potmsgset_id)
 
-                for message in potmsgset.getAllTranslationMessages():
-                    removeSecurityProxy(message).shareIfPossible()
+                tm_ids = self._partitionTranslationMessageIds(potmsgset)
+                before = sum([len(sublist) for sublist in tm_ids], 0)
 
-                after = potmsgset.getAllTranslationMessages().count()
+                for ids in tm_ids:
+                    for id in ids:
+                        message = TranslationMessage.get(id)
+                        removeSecurityProxy(message).shareIfPossible()
+
                 self._endTransaction(intermediate=True)
 
+                after = potmsgset.getAllTranslationMessages().count()
                 deletions += max(0, before - after)
 
-            self.logger.info("Removed TranslationMessages: %d" % deletions)
+            report = "Deleted TranslationMessages: %d." % deletions
+            if deletions > 0:
+                log.info(report)
+            else:
+                log.log(DEBUG2, report)
 
     def _getPOTMsgSetTranslationMessageKey(self, tm):
         """Return tuple that identifies a TranslationMessage in a POTMsgSet.
@@ -481,6 +508,28 @@ class MessageSharingMerge(LaunchpadScript):
             
         return (tm.potemplateID, tm.languageID, tm.variant) + msgstr_ids
 
+    def _partitionTranslationMessageIds(self, potmsgset):
+        """Partition `TranslationMessage`s by language.
+
+        Only the ids are stored, not the `TranslationMessage` objects
+        themselves, so as to avoid pinning the objects in memory.
+
+        :param potmsgset: A `POTMsgSet`.  All its `TranslationMessage`s
+            will be read and partitioned.
+        :return: A list of lists of `TranslationMessage` ids.  Each of
+            the inner lists represents one language/variant pair.
+        """
+        ids_per_language = {}
+        tms = potmsgset.getAllTranslationMessages().order_by(
+            TranslationMessage.languageID, TranslationMessage.variant)
+        for tm in tms:
+            language = (removeSecurityProxy(tm).languageID, tm.variant)
+            if language not in ids_per_language:
+                ids_per_language[language] = []
+            ids_per_language[language].append(tm.id)
+
+        return ids_per_language.values()
+
     def _scrubPOTMsgSetTranslations(self, potmsgset):
         """Map out translations for `potmsgset`, and eliminate duplicates.
 
@@ -493,22 +542,13 @@ class MessageSharingMerge(LaunchpadScript):
         # unique index again at some point that will prevent this.  When
         # it becomes impossible to test this function, this whole
         # migration phase can be scrapped.
-        tms = potmsgset.getAllTranslationMessages().order_by(
-            TranslationMessage.languageID, TranslationMessage.variant,
-            TranslationMessage.id)
-
-        ids_per_language = {}
-        for tm in tms:
-            language = (tm.language, tm.variant)
-            if language not in ids_per_language:
-                ids_per_language[language] = []
-            ids_per_language[language].append(tm.id)
+        ids_per_language = self._partitionTranslationMessageIds(potmsgset)
 
         self._endTransaction(intermediate=True)
 
         deletions = 0
 
-        for ids in ids_per_language.itervalues():
+        for ids in ids_per_language:
             translations = {}
 
             for tm_id in ids:
@@ -516,9 +556,10 @@ class MessageSharingMerge(LaunchpadScript):
                 key = self._getPOTMsgSetTranslationMessageKey(tm)
 
                 if key in translations:
-                    self.logger.info(
-                    "Cleaning up identical '%s' message for: \"%s\"" % (
-                        tm.language.getFullCode(), potmsgset.singular_text))
+                    language_code = tm.language.getFullCode()
+                    log.info(
+                        "Cleaning up identical '%s' message for: \"%s\"" % (
+                            language_code, potmsgset.singular_text))
 
                     existing_tm = translations[key]
                     assert tm != existing_tm, (
@@ -537,7 +578,11 @@ class MessageSharingMerge(LaunchpadScript):
 
             self._endTransaction(intermediate=True)
 
-        self.logger.info("Deleted TranslationMessages: %d" % deletions)
+        report = "Deleted TranslationMessages: %d" % deletions
+        if deletions > 0:
+            log.info(report)
+        else:
+            log.log(DEBUG2, report)
 
     def _findClashes(self, message, target_potmsgset, target_potemplate):
         """What would clash if we moved `message` to the target environment?
