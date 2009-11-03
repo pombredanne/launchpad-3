@@ -112,6 +112,14 @@ class ArchivePermission(SQLBase):
         else:
             return None
 
+    @property
+    def distro_series_name(self):
+        """See `IArchivePermission`"""
+        if self.packageset:
+            return self.packageset.distroseries.name
+        else:
+            return None
+
 
 class ArchivePermissionSet:
     """See `IArchivePermissionSet`."""

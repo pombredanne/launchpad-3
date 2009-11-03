@@ -123,6 +123,13 @@ class IArchivePermission(Interface):
             title=_("Package set name"),
             required=True))
 
+    distro_series_name = exported(
+        TextLine(
+            title=_(
+                "The name of the distro series associated with the "
+                "package set."),
+            required=True))
+
 
 class IArchiveUploader(IArchivePermission):
     """Marker interface for URL traversal of uploader permissions."""
