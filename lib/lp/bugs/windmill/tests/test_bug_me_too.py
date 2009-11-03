@@ -52,18 +52,18 @@ class TestMeToo(TestCaseWithFactory):
         """
         client = WindmillTestClient('Bug "me too" test')
         lpuser.SAMPLE_PERSON.ensure_login(client)
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
         # Open bug 11 and wait for it to finish loading.
         client.open(
             url=u'http://bugs.launchpad.dev:8085/jokosher/+bug/11/+index')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
-        @retry(client)
-        def check_initial_setup(client):
-            client.asserts.assertText(
-                xpath=VALUE_LOCATION_XPATH,
-                validator=u"Does this bug affect you?")
+        # Ensure the link for "Does this bug affect you?" is setup.
+        client.waits.forElement(
+            xpath=VALUE_LOCATION_XPATH, timeout=constants.FOR_ELEMENT)
+        client.asserts.assertText(
+            xpath=VALUE_LOCATION_XPATH,
+            validator=u"Does this bug affect you?")
 
         # A flame icon is available in the page, but not visible owing to
         # the unseen class.

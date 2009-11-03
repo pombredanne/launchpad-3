@@ -29,6 +29,8 @@ class TestFilebugExtras(TestCaseWithFactory):
 
         # Search for a possible duplicate.
         client.type(text=u'Broken', id=u'field.title')
+        client.waits.forElement(
+            id=u'field.actions.search', timeout=constants.FOR_ELEMENT)
         client.click(id=u'field.actions.search')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
 
