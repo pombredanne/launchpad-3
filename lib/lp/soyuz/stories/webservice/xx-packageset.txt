@@ -228,6 +228,9 @@ Every package set is associated with a distro series.
     >>> print mozilla['distroseries_link']
     http://api.launchpad.dev/beta/ubuntu/hoary
 
+    >>> print mozilla['self_link']
+    http://api.launchpad.dev/beta/package-sets/hoary/mozilla
+
 
 === Related package sets ===
 
@@ -250,6 +253,15 @@ it is related to 'mozilla' in 'hoary'.
     >>> print response
     HTTP/1.1 201 Created
     ...
+
+    >>> grumpy_mozilla = webservice.named_get(
+    ...     '/package-sets', 'getByName', {}, name=u'mozilla',
+    ...     distroseries=grumpy['self_link']).jsonBody()
+    >>> print grumpy_mozilla['distroseries_link']
+    http://api.launchpad.dev/beta/ubuntu/grumpy
+
+    >>> print grumpy_mozilla['self_link']
+    http://api.launchpad.dev/beta/package-sets/grumpy/mozilla
 
     >>> response = webservice.named_get(
     ...     mozilla['self_link'], 'relatedSets', {})
