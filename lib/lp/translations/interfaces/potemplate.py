@@ -634,7 +634,8 @@ class IPOTemplateSet(Interface):
         """Return an iterator over all POTemplate sorted by modification."""
 
     def getSubset(distroseries=None, sourcepackagename=None,
-                  productseries=None, iscurrent=None):
+                  productseries=None, iscurrent=None,
+                  ordered_by_names=False):
         """Return a POTemplateSubset object depending on the given arguments.
         """
 

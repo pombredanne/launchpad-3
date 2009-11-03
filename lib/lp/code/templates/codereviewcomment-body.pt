@@ -6,9 +6,9 @@
   <tal:message replace="structure view/body_text/fmt:obfuscate-email/fmt:nice_pre" />
 
   <tal:good-attachments repeat="attachment view/display_attachments">
-    <div class="boardComment attachment" tal:define="body_text python:str(attachment.read())">
+    <div class="boardComment attachment">
       <div class="boardCommentDetails filename"><a tal:content="attachment/filename" tal:attributes="href attachment/getURL"/></div>
-      <div class="boardCommentBody attachmentBody" tal:content="structure body_text/fmt:nice_pre"/>
+      <div class="boardCommentBody attachmentBody" tal:content="structure attachment/diff_text/fmt:diff"/>
     </div>
   </tal:good-attachments>
   <tal:other-attachments repeat="attachment view/other_attachments">
