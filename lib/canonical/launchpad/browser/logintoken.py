@@ -112,8 +112,9 @@ class BaseTokenView:
     successfullyProcessed = False
     # The next URL to use when the user clicks on the 'Cancel' button.
     _next_url_for_cancel = None
+    _missing = object()
     # To be overridden in subclasses.
-    default_next_url = None
+    default_next_url = _missing
 
     @property
     def next_url(self):
@@ -124,7 +125,7 @@ class BaseTokenView:
         """
         if self._next_url_for_cancel is not None:
             return self._next_url_for_cancel
-        assert self.default_next_url is not None, (
+        assert self.default_next_url is not self._missing, (
             'The implementation of %s should provide a value for '
             'default_next_url' % self.__class__.__name__)
         return self.default_next_url
