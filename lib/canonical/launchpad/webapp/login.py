@@ -24,7 +24,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import (
@@ -563,22 +564,30 @@ class ForgottenPasswordPage(CaptchaMixin):
             return
 
         email = request.form.get("email").strip()
-        person = getUtility(IPersonSet).getByEmail(email)
-        if person is None:
+        email_address = getUtility(IEmailAddressSet).getByEmail(email)
+        if email_address is None:
             self.errortext = ("Your account details have not been found. "
                               "Please check your subscription email "
                               "address and try again.")
             return
 
-        if person.isTeam():
+        person = email_address.person
+        if person is not None and person.isTeam():
             self.errortext = ("The email address <strong>%s</strong> "
                               "belongs to a team, and teams cannot log in to "
                               "Launchpad." % email)
             return
 
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-            person, email, email, LoginTokenType.PASSWORDRECOVERY)
+        if person is None:
+            account = email_address.account
+            redirection_url = urlappend(
+                self.request.getApplicationURL(), '+login')
+            token = getUtility(IAuthTokenSet).new(
+                account, email, email, LoginTokenType.PASSWORDRECOVERY,
+                redirection_url=redirection_url)
+        else:
+            token = getUtility(ILoginTokenSet).new(
+                person, email, email, LoginTokenType.PASSWORDRECOVERY)
         token.sendPasswordResetEmail()
         self.submitted = True
         return

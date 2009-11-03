@@ -1049,32 +1049,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
-        current = self.secure_record
 
-        if current.binarypackagerelease.architecturespecific:
-            try:
-                target_architecture = distroseries[
-                    current.distroarchseries.architecturetag]
-            except NotFoundError:
-                return []
-            destination_architectures = [target_architecture]
-        else:
-            destination_architectures = distroseries.architectures
-
-        copies = []
-        for architecture in destination_architectures:
-            copy = getUtility(IPublishingSet).newBinaryPublication(
-                archive,
-                self.binarypackagerelease,
-                architecture,
-                current.component,
-                current.section,
-                current.priority,
-                pocket
-                )
-            copies.append(copy)
-
-        return copies
+        return getUtility(IPublishingSet).copyBinariesTo(
+            [self], distroseries, pocket, archive)
 
     def getAncestry(self, archive=None, distroseries=None, pocket=None,
                     status=None):
@@ -1119,6 +1096,72 @@ class PublishingSet:
     """Utilities for manipulating publications in batches."""
 
     implements(IPublishingSet)
+
+    def copyBinariesTo(self, binaries, distroseries, pocket, archive):
+        """See `IPublishingSet`."""
+
+        # If the target archive is a ppa then we will need to override
+        # the component for each copy - so lookup the main component
+        # here once.
+        override_component = None
+        if archive.is_ppa:
+            override_component = getUtility(IComponentSet)['main']
+
+        secure_copies = []
+
+        for binary in binaries:
+            binarypackagerelease = binary.binarypackagerelease
+            target_component = override_component or binary.component
+
+            if binarypackagerelease.architecturespecific:
+                # If the binary is architecture specific and the target
+                # distroseries does not include the architecture then we
+                # skip the binary and continue.
+                try:
+                    # For safety, we use the architecture the binary was
+                    # built, and not the one it is published, coping with
+                    # single arch-indep publications for architectures that
+                    # do not exist in the destination series.
+                    # See #387589 for more information.
+                    target_architecture = distroseries[
+                        binarypackagerelease.build.arch_tag]
+                except NotFoundError:
+                    continue
+                destination_architectures = [target_architecture]
+            else:
+                destination_architectures = distroseries.architectures
+
+            for distroarchseries in destination_architectures:
+
+                # We only copy the binary if it doesn't already exist
+                # in the destination.
+                binary_in_destination = archive.getAllPublishedBinaries(
+                    name=binarypackagerelease.name, exact_match=True,
+                    version=binarypackagerelease.version,
+                    status=active_publishing_status, pocket=pocket,
+                    distroarchseries=distroarchseries)
+
+                if binary_in_destination.count() == 0:
+                    pub = SecureBinaryPackagePublishingHistory(
+                        archive=archive,
+                        binarypackagerelease=binarypackagerelease,
+                        distroarchseries=distroarchseries,
+                        component=target_component,
+                        section=binary.section,
+                        priority=binary.priority,
+                        status=PackagePublishingStatus.PENDING,
+                        datecreated=UTC_NOW,
+                        pocket=pocket,
+                        embargo=False)
+                    secure_copies.append(pub)
+
+        # One day, this will not be necessary when we have time to kill
+        # the Secure* records.
+        copy_ids = [secure_copy.id for secure_copy in secure_copies]
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.id.is_in(copy_ids))
 
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,
