@@ -25,6 +25,10 @@
     #download-url dd span.branch-url, #upload-url dd span.branch-url {
       font-weight: normal;
     }
+    dl.reviews dd {
+      padding-left: 2em;
+      margin-bottom: 0;
+    }
 
   </style>
   <script type="text/javascript"

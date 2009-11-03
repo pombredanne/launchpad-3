@@ -59,7 +59,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.launchpad.webapp.tales import (
+    DateTimeFormatterAPI, FormattersAPI)
 from canonical.widgets.lazrjs import TextAreaEditorWidget
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
@@ -135,6 +136,22 @@ class BranchMergeCandidateView(LaunchpadView):
             BranchMergeProposalStatus.SUPERSEDED : 'Superseded'
             }
         return friendly_texts[self.context.queue_status]
+
+    def status_title(self):
+        """The title for the status text.
+
+        Only set if the status is approved or rejected.
+        """
+        result = ''
+        if self.context.queue_status in (
+            BranchMergeProposalStatus.CODE_APPROVED,
+            BranchMergeProposalStatus.REJECTED
+            ):
+            formatter = DateTimeFormatterAPI(self.context.date_reviewed)
+            result = '%s %s' % (
+                self.context.reviewer.displayname,
+                formatter.displaydate())
+        return result
 
 
 class BranchMergeProposalMenuMixin:
