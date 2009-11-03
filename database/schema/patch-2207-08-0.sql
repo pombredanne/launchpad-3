@@ -17,4 +17,4 @@ CREATE TABLE sourcepackageformatselection (
 INSERT INTO sourcepackageformatselection (distroseries, format)
   SELECT id, 0 AS format FROM distroseries;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 08, 0);
