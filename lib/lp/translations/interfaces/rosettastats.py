@@ -89,7 +89,7 @@ class IRosettaStats(Interface):
         newly translated in Rosetta and not updates of imported.
         """
 
-    def lastChangedDate(language=None):
+    def last_changed_date(language=None):
         """Return the last date translations for this object were modified."""
 
 
