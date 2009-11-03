@@ -182,7 +182,6 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
                                   pofile.date_changed))
 
     def test_TwoTemplates(self):
-
         # With two templates, statistics are added up.
         potemplate1 = self.createPOTemplateWithPOTMsgSets(10)
         pofile1 = self.factory.makePOFile(self.language.code, potemplate1)
