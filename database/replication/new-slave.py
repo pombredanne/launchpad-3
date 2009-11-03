@@ -25,6 +25,7 @@ from canonical.launchpad.scripts import db_options, logger_options, logger
 from canonical.launchpad.webapp.adapter import _auth_store_tables
 
 import replication.helpers
+from replication.helpers import AUTHDB_SET_ID, LPMAIN_SET_ID
 
 def main():
     parser = OptionParser(
@@ -75,9 +76,9 @@ def main():
 
     # Get the connection string for masters.
     lpmain_connection_string = get_master_connection_string(
-        source_connection, parser, 1) or source_connection_string
+        source_connection, parser, AUTHDB_SET_ID) or source_connection_string
     authdb_connection_string = get_master_connection_string(
-        source_connection, parser, 2) or source_connection_string
+        source_connection, parser, LPMAIN_SET_ID) or source_connection_string
 
     # Sanity check the target connection string.
     target_connection_string = ConnectionString(raw_target_connection_string)
