@@ -88,5 +88,3 @@ class IRosettaStats(Interface):
         """Return the percentage of translations for this object that are
         newly translated in Rosetta and not updates of imported.
         """
-
-
