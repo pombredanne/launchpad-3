@@ -528,6 +528,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True,
                 Language.id!=english.id).group_by(Language)
 
+            # XXX: Ursinha 2009-11-02: The Max(POFile.date_changed) result
+            # here is a naive datetime. My guess is that it happens
+            # because UTC awareness is attibuted to the field in the POFile
+            # model class, and in this case the Max function deals directly
+            # with the value returned from the database without
+            # instantiating it.
+            # This seems to be irrelevant to what we're trying to achieve
+            # here, but making a note either way.
+
             for (language, imported, changed, new, unreviewed, 
                     last_changed) in (
                     query.order_by(['Language.englishname'])):
