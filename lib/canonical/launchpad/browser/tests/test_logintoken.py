@@ -62,6 +62,9 @@ class TestCancelActionOnLoginTokenViews(TestCaseWithFactory):
         """
         harness = LaunchpadFormHarness(token, view_class)
         harness.submit('cancel', {})
+        actions = harness.view.actions.byname
+        self.assertIn('field.actions.cancel', actions)
+        self.assertEquals(actions['field.actions.cancel'].submitted(), True)
         self.assertEquals(harness.view.errors, [])
         self.assertEquals(harness.view.next_url, self.expected_next_url)
 
