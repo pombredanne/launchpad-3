@@ -283,7 +283,7 @@ class TestGetByUrl(TestCaseWithFactory):
         """lp: URLs for the configured prefix are supported."""
         branch_set = getUtility(IBranchLookup)
         url = '%s~aa/b/c' % config.codehosting.bzr_lp_prefix
-        self.assertRaises(NoSuchPerson, branch_set.getByUrl, url)
+        self.assertIs(None, branch_set.getByUrl(url))
         owner = self.factory.makePerson(name='aa')
         product = self.factory.makeProduct('b')
         branch2 = branch_set.getByUrl(url)

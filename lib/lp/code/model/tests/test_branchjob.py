@@ -265,8 +265,8 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             branch_format=BranchFormat.BZR_BRANCH_4,
             repository_format=RepositoryFormat.BZR_KNITPACK_6)
         _format = self.make_format(branch_format=BzrBranchFormat5)
-        branch, _unused = self.create_branch_and_tree(db_branch=branch,
-            format=_format)
+        branch, _unused = self.create_branch_and_tree(
+            db_branch=branch, format=_format, hosted=True)
         job = BranchUpgradeJob.create(branch)
 
         format = job.upgrade_format

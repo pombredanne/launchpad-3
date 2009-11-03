@@ -8,6 +8,7 @@ __metaclass__ = type
 from datetime import datetime, timedelta
 from pprint import pformat
 import copy
+from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
 import shutil
 import subprocess
@@ -793,3 +794,69 @@ def map_branch_contents(branch_url):
         tree.unlock()
 
     return contents
+
+def validate_mock_class(mock_class):
+    """Validate method signatures in mock classes derived from real classes.
+
+    We often use mock classes in tests which are derived from real
+    classes.
+
+    This function ensures that methods redefined in the mock
+    class have the same signature as the corresponding methods of
+    the base class.
+
+    >>> class A:
+    ...
+    ...     def method_one(self, a):
+    ...         pass
+
+    >>>
+    >>> class B(A):
+    ...     def method_one(self, a):
+    ...        pass
+    >>> validate_mock_class(B)
+
+    If a class derived from A defines method_one with a different
+    signature, we get an AssertionError.
+
+    >>> class C(A):
+    ...     def method_one(self, a, b):
+    ...        pass
+    >>> validate_mock_class(C)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Different method signature for method_one:...
+
+    Even a parameter name must not be modified.
+
+    >>> class D(A):
+    ...     def method_one(self, b):
+    ...        pass
+    >>> validate_mock_class(D)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Different method signature for method_one:...
+
+    If validate_mock_class() for anything but a class, we get an
+    AssertionError.
+
+    >>> validate_mock_class('a string')
+    Traceback (most recent call last):
+    ...
+    AssertionError: validate_mock_class() must be called for a class
+    """
+    assert isclass(mock_class), (
+        "validate_mock_class() must be called for a class")
+    base_classes = getmro(mock_class)
+    for name, obj in getmembers(mock_class):
+        if ismethod(obj):
+            for base_class in base_classes[1:]:
+                if name in base_class.__dict__:
+                    mock_args = getargspec(obj)
+                    real_args = getargspec(base_class.__dict__[name])
+                    if mock_args != real_args:
+                        raise AssertionError(
+                            'Different method signature for %s: %r %r' % (
+                            name, mock_args, real_args))
+                    else:
+                        break
