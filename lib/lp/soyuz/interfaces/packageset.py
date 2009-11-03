@@ -377,7 +377,12 @@ class IPackagesetSet(Interface):
         """
 
     @operation_parameters(
-        name=TextLine(title=_('Package set name'), required=True))
+        name=TextLine(title=_('Package set name'), required=True),
+        distroseries=Reference(
+            IDistroSeries, title=_("Distroseries"), required=False,
+            readonly=True, description=_(
+                "The distribution series to which the packageset "
+                "is related.")))
     @operation_returns_entry(IPackageset)
     @export_read_operation()
     def getByName(name, distroseries=None):
