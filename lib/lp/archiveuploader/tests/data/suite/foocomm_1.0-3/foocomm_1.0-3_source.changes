@@ -23,5 +23,5 @@ Changes:
  .
    * Version 3 testing, orig.tar.gz reuse from partner archive.
 Files: 
- 54b715681f3d0c83ffd993e28bee6692 229 partner/devel optional foocomm_1.0-3.dsc
+ 5885c292c1f4a3611a6506e4fa4e80a8 291 partner/devel optional foocomm_1.0-3.dsc
  e03c530973064ebbbde9226e03868cb1 595 partner/devel optional foocomm_1.0-3.diff.gz

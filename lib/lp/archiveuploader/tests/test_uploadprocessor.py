@@ -781,11 +781,11 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # This is now a MIMEMultipart message.
         body = msg.get_payload(0)
         body = body.get_payload(decode=True)
-        self.assertFalse(
-            'foocomm_1.0-3.dsc: does not mention any tar.gz or orig.tar.gz.'
-            in body,
-            'foocomm_1.0-3.dsc: does not mention any tar.gz or orig.tar.gz.')
 
+        self.assertFalse(
+            'Unable to find foocomm_1.0.orig.tar.gz in upload or '
+            'distribution.' in body,
+            'Unable to find foocomm_1.0.orig.tar.gz')
 
     def testPartnerUpload(self):
         """Partner packages should be uploaded to the partner archive.
