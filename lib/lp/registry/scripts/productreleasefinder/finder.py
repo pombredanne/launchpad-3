@@ -47,7 +47,8 @@ processors = '|'.join([
     'sparc',
     ])
 flavor_pattern = re.compile(r"""
-    (_[a-z][a-z]_[A-Z][A-Z]       # Language version
+    (~                            # Packaging target
+     |_[a-z][a-z]_[A-Z][A-Z]      # or language version
      |_(%s)                       # or processor version
      |[\.-](win32|OSX)            # or OS version
      |\.(deb|noarch|rpm|dmg|exe)  # or packaging version
@@ -139,9 +140,10 @@ class ProductReleaseFinder:
                 self.log.debug("File in %s found that matched no glob: %s",
                                product_name, url)
 
-    def hasReleaseTarball(self, product_name, series_name, release_name):
+    def hasReleaseFile(self, product_name, series_name,
+                          release_name, filename):
         """Return True if we have a tarball for the given product release."""
-        has_tarball = False
+        has_file = False
         self.ztm.begin()
         try:
             product = getUtility(IProductSet).getByName(product_name)
@@ -151,13 +153,12 @@ class ProductReleaseFinder:
                     release = series.getRelease(release_name)
                     if release is not None:
                         for fileinfo in release.files:
-                            if (fileinfo.filetype
-                                == UpstreamFileType.CODETARBALL):
-                                has_tarball = True
+                            if filename == fileinfo.libraryfile.filename:
+                                has_file = True
                                 break
         finally:
             self.ztm.abort()
-        return has_tarball
+        return has_file
 
     def addReleaseTarball(self, product_name, series_name, release_name,
                           filename, size, file, content_type):
@@ -185,15 +186,6 @@ class ProductReleaseFinder:
                     owner=product.owner, datereleased=datetime.now(pytz.UTC))
                 self.log.info("Created new release %s for %s/%s",
                               release_name, product_name, series_name)
-
-            # If we already have a code tarball, stop here.
-            for fileinfo in release.files:
-                if fileinfo.filetype == UpstreamFileType.CODETARBALL:
-                    self.log.debug("%s/%s/%s already has a code tarball",
-                                   product_name, series_name, release_name)
-                    self.ztm.abort()
-                    return
-
             release.addReleaseFile(
                 filename, file, content_type, uploader=product.owner)
             self.ztm.commit()
@@ -221,7 +213,7 @@ class ProductReleaseFinder:
                            version, url)
             return
 
-        if self.hasReleaseTarball(product_name, series_name, version):
+        if self.hasReleaseFile(product_name, series_name, version, filename):
             self.log.debug("Already have a tarball for release %s", version)
             return
 

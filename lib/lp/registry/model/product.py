@@ -63,7 +63,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
-from lp.services.database.precache import precache
+from lp.services.database.prejoin import prejoin
 from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from lp.blueprints.model.specification import (
@@ -1299,7 +1299,7 @@ class ProductSet:
 
         # We only want Product - the other tables are just to populate
         # the cache.
-        return precache(results)
+        return prejoin(results)
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""

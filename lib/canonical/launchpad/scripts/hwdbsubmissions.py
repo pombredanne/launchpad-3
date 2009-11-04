@@ -33,6 +33,7 @@ from zope.interface import implements
 
 from canonical.lazr.xml import RelaxNGValidator
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.librarian.interfaces import LibrarianServerError
 from canonical.launchpad.interfaces.hwdb import (
@@ -666,6 +667,8 @@ class SubmissionParser(object):
         for node in hardware_node.getchildren():
             parser = self._parse_hardware_section[node.tag]
             result = parser(node)
+            if result is None:
+                return None
             hardware_data[node.tag] = result
         return hardware_data
 
@@ -887,6 +890,7 @@ class SubmissionParser(object):
         to store the data.
         """
         self._logWarning('Submission contains unprocessed <context> data.')
+        return {}
 
     def _setMainSectionParsers(self):
         self._parse_system = {
@@ -905,7 +909,10 @@ class SubmissionParser(object):
         try:
             for node in submission_doc.getchildren():
                 parser = self._parse_system[node.tag]
-                submission_data[node.tag] = parser(node)
+                result = parser(node)
+                if result is None:
+                    return None
+                submission_data[node.tag] = result
         except ValueError, value:
             self._logError(value, self.submission_key)
             return None
@@ -1227,9 +1234,11 @@ class SubmissionParser(object):
     def checkUdevUsbProperties(self, udev_data):
         """Validation of udev USB devices.
 
-        USB devices must have the properties DEVTYPE (value
-        'usb_device' or 'usb_interface'), PRODUCT and TYPE. PRODUCT
-        must be a tuple of three integers in hexadecimal
+        USB devices must either have the three properties DEVTYPE
+        (value 'usb_device' or 'usb_interface'), PRODUCT and TYPE,
+        or they must have none of them.
+
+        PRODUCT must be a tuple of three integers in hexadecimal
         representation, separates by '/'. TYPE must be a a tuple of
         three integers in decimal representation, separated by '/'.
         usb_interface nodes must additionally have a property
@@ -1244,6 +1253,10 @@ class SubmissionParser(object):
             property_names = set(properties)
             existing_usb_properties = property_names.intersection(
                 UDEV_USB_DEVICE_PROPERTIES)
+
+            if len(existing_usb_properties) == 0:
+                continue
+
             if existing_usb_properties != UDEV_USB_DEVICE_PROPERTIES:
                 missing_properties = UDEV_USB_DEVICE_PROPERTIES.difference(
                     existing_usb_properties)
@@ -1364,7 +1377,8 @@ class SubmissionParser(object):
         if ('udev' in parsed_data['hardware']
             and not self.checkConsistentUdevDeviceData(
                 parsed_data['hardware']['udev'],
-                parsed_data['hardware']['sysfs-attributes'])):
+                parsed_data['hardware']['sysfs-attributes'],
+                parsed_data['hardware']['dmi'],)):
             return False
         duplicate_ids = self.findDuplicateIDs(parsed_data)
         if duplicate_ids:
@@ -1470,15 +1484,20 @@ class SubmissionParser(object):
         del self.devices['/devices']
         return True
 
-    def getKernelPackageName(self):
-        """Return the kernel package name of the submission,"""
-        root_hal_device = self.devices[ROOT_UDI]
-        kernel_version = root_hal_device.getProperty('system.kernel.version')
+    @cachedproperty
+    def kernel_package_name(self):
+        """The kernel package name for the submission."""
+        if ROOT_UDI in self.devices:
+            root_hal_device = self.devices[ROOT_UDI]
+            kernel_version = root_hal_device.getProperty(
+                'system.kernel.version')
+        else:
+            kernel_version = self.parsed_data['summary'].get('kernel-release')
         if kernel_version is None:
             self._logWarning(
                 'Submission does not provide property system.kernel.version '
-                'for /org/freedesktop/Hal/devices/computer.',
-                WARNING_NO_HAL_KERNEL_VERSION)
+                'for /org/freedesktop/Hal/devices/computer or a summary '
+                'sub-node <kernel-release>.')
             return None
         kernel_package_name = 'linux-image-' + kernel_version
         packages = self.parsed_data['software']['packages']
@@ -1490,8 +1509,7 @@ class SubmissionParser(object):
                 'Inconsistent kernel version data: According to HAL the '
                 'kernel is %s, but the submission does not know about a '
                 'kernel package %s'
-                % (kernel_version, kernel_package_name),
-                WARNING_NO_HAL_KERNEL_VERSION)
+                % (kernel_version, kernel_package_name))
             return None
         return kernel_package_name
 
@@ -1535,9 +1553,18 @@ class SubmissionParser(object):
             return False
         if not self.buildDeviceList(parsed_data):
             return False
-        root_device = self.devices[ROOT_UDI]
-        root_device.createDBData(submission, None)
+        self.root_device.createDBData(submission, None)
         return True
+
+    @property
+    def root_device(self):
+        """The HALDevice of UdevDevice node of the root device."""
+        # checkConsistency ensures that we have either a device with the
+        # key ROOT_UDI or a device with the key UDEV_ROOT_PATH.
+        if ROOT_UDI in self.devices:
+            return self.devices[ROOT_UDI]
+        else:
+            return self.devices[UDEV_ROOT_PATH]
 
 
 class BaseDevice:
@@ -1957,6 +1984,40 @@ class BaseDevice:
 
             info.bus == 'video4linux' is used for the "input aspect"
             of video devices.
+
+            'ac97' is used in submissions with udev data for a sub-node
+            of sound devices.
+
+            'hid' is used in submissions with udev data for a sub-node
+            of USB input devices.
+
+            'drm_minor', 'pci_express', 'tifm_adapter', 'gameport',
+            'spi_host', 'tifm', 'wlan' are used in submissions with
+            udev data for sub-nodes of PCI devices.
+
+            'pcmcia_socket' is used in submissions with udev data for
+            a sub-node of PC Card and PCMCIA bridges.
+
+            'ieee80211'  is used in submissions with udev data for
+            sub-nodes IEEE 802.11 WLAN devices.
+
+            'host', 'link' are used in submissions with udev data for
+            sub.nodes of bluetooth devices.
+
+            'usb_host' and 'usbmon' are used in submissions with udev
+            data for sub-nodes of USB controllers.
+
+            'usb_endpoint', 'usb-serial', 'lirc' are used in
+            submissions with udev data for sub-nodes of USB devices.
+
+            'enclosure' is used in submissions with udev data for a
+            sub.node of SCSI devices.
+
+            'graphics' is used  in submissions with udev data for a
+            sub-node of graphics cards.
+
+            'hwmon' is is used  in submissions with udev data in
+            many sub-nodes.
         """
         # The root node is always a real device, but its raw_bus
         # property can have different values: None or 'Unknown' in
@@ -1969,13 +2030,15 @@ class BaseDevice:
         # This set of buses is only used once; it's easier to have it
         # here than to put it elsewhere and have to document its
         # location and purpose.
-        if bus in (None, 'disk', 'drm', 'dvb', 'memstick_host', 'net',
-                   'partition', 'scsi_disk', 'scsi_generic', 'scsi_host',
-                   'scsi_target', 'sound', 'spi_transport', 'ssb', 'tty',
-                   'usb', 'usb_interface', 'video4linux', ):
-            #
-            # The computer itself is the only HAL device without the
-            # info.bus property that we treat as a real device.
+        if bus in (None, 'ac97', 'disk', 'drm', 'drm_minor', 'dvb',
+                   'enclosure', 'gameport', 'graphics', 'hid', 'host',
+                   'hwmon', 'ieee80211', 'link', 'lirc', 'memstick_host',
+                   'net', 'partition', 'pci_express', 'pcmcia_socket',
+                   'scsi_disk', 'scsi_generic', 'scsi_host', 'scsi_target',
+                   'sound', 'spi_host', 'spi_transport', 'ssb', 'tifm',
+                   'tifm_adapter', 'tty', 'usb', 'usb-serial', 'usb_endpoint',
+                   'usb_host', 'usb_interface', 'usbmon', 'video4linux',
+                   'wlan'):
             return False
         elif bus == 'usb_device':
             vendor_id = self.usb_vendor_id
@@ -1997,7 +2060,7 @@ class BaseDevice:
                     self.parser._logWarning(
                         'USB device found with vendor ID==0, product ID==0, '
                         'where the parent device does not look like a USB '
-                        'host controller: %s' % self.udi)
+                        'host controller: %s' % self.device_id)
                     return False
             return True
         elif bus in ('scsi', 'scsi_device'):
@@ -2083,6 +2146,16 @@ class BaseDevice:
         for CPUs, power supply etc. Except for the main sytsem, none
         of them provides a vendor or product id, so we ignore them.
 
+        raw_bus == 'video_output', 'thermal', 'vtconsole', 'bdi',
+        'mem', 'ppp', 'vc', 'dmi', 'hidraw', 'hwmon', 'heci', 'rfkill',
+        'i2c-adapter', 'ttm', 'ppdev', 'printer' is used in submissions
+        with udev data for virtual devices.
+
+        'pci_bus' is used in submissions with udev data for a node
+        describing a PCI bus.
+
+        'leds' is used in submissions with udev data to describe LEDs.
+
         XXX Abel Deuring 2008-05-06: IEEE1394 devices are a bit
         nasty: The standard does not define any specification
         for product IDs or product names, hence HAL often uses
@@ -2110,9 +2183,11 @@ class BaseDevice:
             # The root node is course a real device; storing data
             # about other devices with the bus "unkown" is pointless.
             return False
-        if bus in ('backlight', 'bluetooth', 'ieee1394', 'input', 'misc',
-                   'mmc', 'mmc_host', 'pcmcia', 'platform', 'pnp',
-                   'power_supply'):
+        if bus in ('backlight', 'bdi', 'bluetooth', 'dmi', 'heci', 'hidraw',
+                   'hwmon', 'i2c-adapter', 'ieee1394', 'input', 'leds', 'mem',
+                   'misc', 'mmc', 'mmc_host', 'pci_bus', 'pcmcia', 'platform',
+                   'pnp', 'power_supply', 'ppdev', 'ppp', 'printer', 'rfkill',
+                   'thermal', 'ttm', 'vc', 'video_output', 'vtconsole'):
             return False
 
         # We identify devices by bus, vendor ID and product ID;
@@ -2185,10 +2260,9 @@ class BaseDevice:
         # drivers, so there is currently no need to search for
         # for user space printer drivers, for example.
         if self.driver_name is not None:
-            kernel_package_name = self.parser.getKernelPackageName()
             db_driver_set = getUtility(IHWDriverSet)
             return db_driver_set.getOrCreate(
-                kernel_package_name, self.driver_name)
+                self.parser.kernel_package_name, self.driver_name)
         else:
             return None
 

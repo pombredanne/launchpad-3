@@ -34,34 +34,17 @@ differ for historical reason for the same type of credit. The property
 is_translation_credit indicates if the POTMsgSet is translation credits. The
 property translation_credit_type contains the type of translation credits.
 
-    >>> def print_credit(credit):
-    ...     print credit.is_translation_credit
-    ...     print credit.translation_credits_type.title
-
-    >>> print_credit(factory.makePOTMsgSet(potemplate))
+    >>> print potmsgset.is_translation_credit
     False
+    >>> print potmsgset.translation_credits_type.title
     Not a translation credits message
 
-    >>> print_credit(factory.makePOTMsgSet(
-    ...     potemplate, singular=u'translator-credits'))
+    >>> credits = factory.makePOTMsgSet(
+    ...     potemplate, singular=u'translator-credits')
+    >>> print credits.is_translation_credit
     True
+    >>> print credits.translation_credits_type.title
     Gnome credits message
-
-    >>> print_credit(factory.makePOTMsgSet(
-    ...     potemplate, singular=u'translation-credits'))
-    True
-    Gnome credits message
-
-    >>> print_credit(factory.makePOTMsgSet(
-    ...     potemplate,
-    ...     singular=u'Your emails', context=u'EMAIL OF TRANSLATORS'))
-    True
-    KDE emails credits message
-
-    >>> print_credit(factory.makePOTMsgSet(
-    ...     potemplate, singular=u'_: EMAIL OF TRANSLATORS\nYour emails'))
-    True
-    KDE emails credits message
 
 
 == POTMsgSet.normalizeWhitespaces ==

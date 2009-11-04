@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
     IStructuralSubscription, IStructuralSubscriptionTarget,
     UserCannotSubscribePerson)
 from lp.registry.interfaces.person import (
-    validate_public_person, validate_person_not_private_membership)
+    IPerson, validate_public_person, validate_person_not_private_membership)
 
 
 class StructuralSubscription(SQLBase):
@@ -146,7 +146,7 @@ class StructuralSubscriptionTargetMixin:
                 return True
 
         admins = getUtility(ILaunchpadCelebrities).admin
-        return (subscriber is subscribed_by or
+        return (subscriber == subscribed_by or
                 subscriber in subscribed_by.getAdministratedTeams() or
                 subscribed_by.inTeam(admins))
 
@@ -331,9 +331,10 @@ class StructuralSubscriptionTargetMixin:
         """See `IStructuralSubscriptionTarget`."""
         bug_subscriptions = self.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.METADATA)
-        for subscription in bug_subscriptions:
-            if (subscription.subscriber == user or
-                user.inTeam(subscription.subscriber)):
-                # The user has a bug subscription
-                return True
+        if user is not None:
+            for subscription in bug_subscriptions:
+                if (subscription.subscriber == user or
+                    user.inTeam(subscription.subscriber)):
+                    # The user has a bug subscription
+                    return True
         return False

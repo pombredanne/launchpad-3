@@ -119,7 +119,7 @@
         <tal:description
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
-        <div id="edit-description"
+        <div id="edit-description" class="lazr-multiline-edit"
           tal:content="structure view/bug_description_html"
           />
 
@@ -190,30 +190,21 @@
       </div>
 
       <div id="branches-and-cves">
-        <div id="branches"
-            tal:define="linked_branches view/linked_branches"
-            tal:condition="linked_branches"
+        <div id="bug-branches-container"
             style="float: left">
+          <tal:branches
+              define="linked_branches view/linked_branches"
+              condition="linked_branches">
 
-          <h2>Related branches</h2>
+            <div id="bug-branches">
+              <h2>Related branches</h2>
 
-          <tal:bug-branches repeat="linked_branch linked_branches">
-            <div tal:define="show_edit linked_branch/required:launchpad.Edit"
-                 tal:condition="linked_branch/branch/required:launchpad.View">
-              <div class="bug-branch-summary">
-                <tal:branch-ref replace="structure linked_branch/branch/fmt:link"/>
-                (<span tal:content="linked_branch/branch/lifecycle_status/title"
-                tal:attributes="class string:branchstatus${linked_branch/branch/lifecycle_status/name}"
-                >Experimental</span>)
-                <a title="Remove link"
-                   tal:condition="show_edit"
-                   tal:attributes="href string:${linked_branch/branch/fmt:url}/+bug/${linked_branch/bug/id}/+delete;">
-                  <img src="/@@/remove"/>
-                </a>
-              </div>
+              <tal:bug-branches repeat="linked_branch linked_branches">
+                <tal:bug-branch replace="structure linked_branch/@@+bug-branch" />
+              </tal:bug-branches>
             </div>
-          </tal:bug-branches>
-        </div><!-- branches -->
+          </tal:branches>
+        </div><!-- bug-branch-container -->
 
         <div tal:condition="context/bug/cves" class="cves">
           <h2>CVE References</h2>
@@ -251,6 +242,12 @@
                   metal:use-macro="context/@@bugcomment-macros/activity-box" />
           </tal:is-activity>
         </tal:comment>
+        <div style="float: right;">
+          <tal:activity_log
+              define="context_menu context/menu:context"
+              content="structure context_menu/activitylog/render" />
+        </div>
+        <div class="clearfix"></div>
 
         <tal:comment-list-complete
             tal:condition="not:view/visible_comments_truncated_for_display">

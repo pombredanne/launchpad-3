@@ -705,6 +705,16 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual('~merge-submitter/target-product', namespace.name)
         self.assertEqual('bar', base)
 
+    def test_getNewBranchInfoRemoteURLTrailingSlash(self):
+        """Trailing slashes are ignored when determining base."""
+        submitter = self.factory.makePerson(name='merge-submitter')
+        target = self.makeTargetBranch()
+        code_handler = CodeHandler()
+        namespace, base = code_handler._getNewBranchInfo(
+                'http://foo/bar/', target, submitter)
+        self.assertEqual('~merge-submitter/target-product', namespace.name)
+        self.assertEqual('bar', base)
+
     def test_getNewBranchInfoLPURL(self):
         """If an LP URL is provided, we attempt to reproduce it exactly."""
         submitter = self.factory.makePerson(name='merge-submitter')
@@ -714,6 +724,19 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
             config.codehosting.supermirror_root + '~uuser/uproduct/bar',
+            target, submitter)
+        self.assertEqual('~uuser/uproduct', namespace.name)
+        self.assertEqual('bar', base)
+
+    def test_getNewBranchInfoLPURLTrailingSlash(self):
+        """Trailing slashes are permitted in LP URLs."""
+        submitter = self.factory.makePerson(name='merge-submitter')
+        target = self.makeTargetBranch()
+        url_product = self.factory.makeProduct('uproduct')
+        url_person = self.factory.makePerson(name='uuser')
+        code_handler = CodeHandler()
+        namespace, base = code_handler._getNewBranchInfo(
+            config.codehosting.supermirror_root + '~uuser/uproduct/bar/',
             target, submitter)
         self.assertEqual('~uuser/uproduct', namespace.name)
         self.assertEqual('bar', base)
