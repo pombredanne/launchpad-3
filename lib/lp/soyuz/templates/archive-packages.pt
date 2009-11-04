@@ -65,7 +65,7 @@ function dispatchUpdate () {
     in_progress_message = Y.soyuz.makeInProgressNode(
         'Fetching repository size ...')
 
-    var container = Y.get('#package-counters');
+    var container = Y.one('#package-counters');
     container.set('innerHTML', '');
     container.appendChild(in_progress_message);
 

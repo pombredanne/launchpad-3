@@ -75,7 +75,7 @@
        // contained by the label.
        function highlight_checked (nodes) {
            nodes.each(function(input) {
-               var label = Y.get(input.get("parentNode"));
+               var label = Y.one(input.get("parentNode"));
                if (input.get("checked")) {
                    label.setStyle("fontWeight", "bold");
                }
@@ -85,7 +85,7 @@
            });
        };
 
-       var main_area = Y.get("#mainarea");
+       var main_area = Y.one("#mainarea");
 
        // Highlight the selected radio button input on page load.
        var inputs = main_area.queryAll("input.highlight-selected");
@@ -96,7 +96,7 @@
        // them is clicked.
        inputs.each(function(input) {
            input.on("click", function(e) {
-               var main_area = Y.get("#mainarea");
+               var main_area = Y.one("#mainarea");
                var inputs = main_area.queryAll("input.highlight-selected");
                highlight_checked(inputs);
            });
