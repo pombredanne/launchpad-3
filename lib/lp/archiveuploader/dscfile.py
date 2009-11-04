@@ -327,7 +327,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             filename.endswith('.orig.tar.gz')):
             archives = [self.policy.archive, self.policy.distro.main_archive]
         else:
-            archives = [self.policy.archive]
+            archives = self.policy.distro.all_distro_archives
 
         library_file = None
         for archive in archives:
