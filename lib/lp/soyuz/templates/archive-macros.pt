@@ -89,7 +89,7 @@ function startUpdate(container) {
  */
 function toggleExpandableRow(expander) {
     var row = Y.one('#' + expander.get('id').replace('-expander', ''));
-    var icon = expander.query('img');
+    var icon = expander.one('img');
 
     var row_display = row.getStyle('display');
     if (row_display == 'none') {
