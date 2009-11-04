@@ -7,7 +7,6 @@ __all__ = [
     ]
 
 
-import gc
 import os
 
 from zope.component import getUtility
@@ -301,15 +300,6 @@ class MessageSharingMerge(LaunchpadScript):
                 self.txn.abort()
         else:
             self.txn.commit()
-
-        if self.commit_count % 100 == 0 or not intermediate:
-            freed = gc.collect()
-            objcount = len(gc.get_objects())
-            garbage = len(gc.garbage)
-            memsize = open("/proc/%s/statm" % os.getpid()).read().split()[5]
-            log.debug(
-                "Freed: %d.  Object count: %d.  Garbage: %d.  Memory size: %s"
-                % (freed, objcount, garbage, memsize))
 
     def _removeDuplicateMessages(self, potemplates):
         """Get rid of duplicate `TranslationMessages` where needed."""
