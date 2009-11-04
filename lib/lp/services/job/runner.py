@@ -16,6 +16,7 @@ from twisted.internet import reactor, defer
 from zope.component import getUtility
 
 from canonical.config import config
+from canonical.twistedsupport.task import ParallelLimitedTaskConsumer
 from lazr.delegates import delegates
 import transaction
 
@@ -179,23 +180,22 @@ class JobCronScript(LaunchpadCronScript):
 
 class TwistedJobCronScript(JobCronScript):
 
-    def _runAll(self, runner):
-        d = defer.Deferred()
-        d.addCallback(lambda ignored: runner.runAll())
-        d.addBoth(lambda ignored: reactor.stop())
-        d.callback(None)
+    def _runAll(self, consumer):
+        d = defer.maybeDeferred(consumer.consume, getUtility(self.source_interface))
+        d.addCallbacks(lambda ignored: reactor.stop(), self.failed)
+
+    @staticmethod
+    def failed(failure):
+        failure.printTraceback()
+        reactor.stop()
 
     def main(self):
         errorlog.globalErrorUtility.configure(self.config_name)
-        runner = JobRunner.fromReady(
-            getUtility(self.source_interface), self.logger)
+        consumer = ParallelLimitedTaskConsumer(1)
         cleanups = self.setUp()
-        reactor.callWhenRunning(self._runAll, runner)
+        reactor.callWhenRunning(self._runAll, consumer)
         try:
             reactor.run()
         finally:
             for cleanup in reversed(cleanups):
                 cleanup()
-        self.logger.info(
-            'Ran %d %s jobs.',
-            len(runner.completed_jobs), self.source_interface.__name__)
