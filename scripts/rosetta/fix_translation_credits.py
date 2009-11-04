@@ -9,12 +9,12 @@
 
 import _pythonpath
 
-from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadScript
 from lp.translations.scripts.fix_translation_credits import (
     FixTranslationCreditsProcess)
 
 
-class FixTranslationCredits(LaunchpadCronScript):
+class FixTranslationCredits(LaunchpadScript):
     """Go through all POFiles and mark translation credits as translated."""
 
     def main(self):
@@ -24,5 +24,5 @@ class FixTranslationCredits(LaunchpadCronScript):
 
 if __name__ == '__main__':
     script = FixTranslationCredits(name="fix-translation-credits",
-                                   dbuser='rosettaadmin')
+                                   dbuser='rosetta_fix_translation_credits')
     script.lock_and_run()
