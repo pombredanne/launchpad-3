@@ -113,7 +113,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         return potemplate
 
     def setPOFileStatistics(self, pofile, imported, changed, new, unreviewed,
-            date_changed):
+                            date_changed):
         # Instead of creating all relevant translation messages, we
         # just fake cached statistics instead.
         naked_pofile = removeSecurityProxy(pofile)
@@ -141,7 +141,7 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
              psl.updatesCount(),
              psl.unreviewedCount(),
              psl.last_changed_date),
-            stats)
+             stats)
 
     def test_DummyProductSeriesLanguage(self):
         # With no templates all counts are zero.
@@ -153,8 +153,8 @@ class TestProductSeriesLanguageStatsCalculation(TestCaseWithFactory):
         # count of messages go up to 10.
         potemplate = self.createPOTemplateWithPOTMsgSets(10)
         psl = self.psl_set.getDummy(self.productseries, self.language)
-        self.assertPSLStatistics(psl, (10, 0, 0, 0, 0, 0,
-            None))
+        self.assertPSLStatistics(
+            psl, (10, 0, 0, 0, 0, 0, None))
 
     def test_OneTemplate(self):
         # With only one template, statistics match those of the POFile.

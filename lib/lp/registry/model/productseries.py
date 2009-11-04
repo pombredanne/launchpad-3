@@ -493,13 +493,15 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True,
                 Language.id!=english.id)
 
-            for language, pofile in query.order_by(['Language.englishname']):
+            ordered_results = query.order_by(['Language.englishname'])
+
+            for language, pofile in ordered_results:
                 psl = ProductSeriesLanguage(self, language, pofile=pofile)
                 psl.setCounts(pofile.potemplate.messageCount(),
                               pofile.currentCount(),
                               pofile.updatesCount(),
                               pofile.rosettaCount(),
-                              pofile.unreviewedCount(), 
+                              pofile.unreviewedCount(),
                               pofile.date_changed)
                 results.append(psl)
         else:
@@ -537,12 +539,13 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
             # This seems to be irrelevant to what we're trying to achieve
             # here, but making a note either way.
 
-            for (language, imported, changed, new, unreviewed, 
-                    last_changed) in (
-                    query.order_by(['Language.englishname'])):
+            ordered_results = query.order_by(['Language.englishname'])
+
+            for (language, imported, changed, new, unreviewed,
+                last_changed) in ordered_results:
                 psl = ProductSeriesLanguage(self, language)
-                psl.setCounts(total, imported, changed, new, unreviewed,
-                        last_changed)
+                psl.setCounts(
+                    total, imported, changed, new, unreviewed, last_changed)
                 results.append(psl)
 
         return results
