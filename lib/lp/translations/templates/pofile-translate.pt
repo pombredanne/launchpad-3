@@ -38,7 +38,7 @@
           }
 
           var updateNotificationBox = function(e) {
-              var notice = Y.get('.important-notice-container');
+              var notice = Y.one('.important-notice-container');
               var balloon = notice.query('.important-notice-balloon');
               var dismiss_notice_cookie = ('translation-docs-for-' +
                                            documentation_cookie);
