@@ -323,11 +323,18 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         :raise: `NotFoundError` when the wanted file could not be found.
         """
-        if (self.policy.archive.purpose == ArchivePurpose.PPA and
+        # We cannot check the archive purpose for partner archives here,
+        # because the archive override rules have not been applied yet.
+        # Uploads destined for the Ubuntu main archive and the 'partner'
+        # component will eventually end up in the partner archive though.
+        if (self.policy.archive.purpose == ArchivePurpose.PRIMARY and
+            self.component_name == 'partner'):
+            archives = self.policy.distro.all_distro_archives
+        elif (self.policy.archive.purpose == ArchivePurpose.PPA and
             filename.endswith('.orig.tar.gz')):
             archives = [self.policy.archive, self.policy.distro.main_archive]
         else:
-            archives = self.policy.distro.all_distro_archives
+            archives = [self.policy.archive]
 
         library_file = None
         for archive in archives:
