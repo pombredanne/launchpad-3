@@ -782,6 +782,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         body = msg.get_payload(0)
         body = body.get_payload(decode=True)
 
+        self.assertEqual(
+            '[ubuntu/breezy] foocomm 1.0-3 (Accepted)', msg['Subject'])
         self.assertFalse(
             'Unable to find foocomm_1.0.orig.tar.gz in upload or '
             'distribution.' in body,
