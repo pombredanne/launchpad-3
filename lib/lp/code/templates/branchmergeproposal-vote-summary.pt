@@ -41,7 +41,8 @@
     requested
     <tal:date replace="review/date_requested/fmt:approximatedate"/>
   </dd>
-  <dd tal:condition="context/preview_diff">
+  <dd tal:condition="context/preview_diff"
+      tal:attributes="class string:popup-diff mp-${context/id}">
     Diff: <tal:diff replace="structure context/preview_diff/fmt:link"/>
   </dd>
 

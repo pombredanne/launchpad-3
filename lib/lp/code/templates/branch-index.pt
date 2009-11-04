@@ -29,6 +29,19 @@
       padding-left: 2em;
       margin-bottom: 0;
     }
+    .yui-diff-overlay-hidden {
+      visibility: hidden;
+    }
+    .yui-diff-overlay {
+      width: 80%;
+      max-height: 80%;
+    }
+    .yui-diff-overlay #yui-pretty-overlay-modal {
+      width: auto;
+    }
+    .diff {
+      max-height: 80%;
+    }
 
   </style>
   <script type="text/javascript"
@@ -47,12 +60,19 @@
       tal:attributes="src string:${lp_js}/code/branchstatus.js">
   </script>
   <script type="text/javascript"
+      tal:condition="devmode"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/popupdiff.js">
+  </script>
+  <script type="text/javascript"
           tal:content="string:
     YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit', 'code.branchstatus', function(Y) {
+              'lazr.choiceedit', 'code.branchstatus', 'code.popupdiff',
+              function(Y) {
         Y.on('load',
              function(e) {
                  Y.branchstatus.connect_status(${view/status_config});
+                 Y.popupdiff.connect_diff_links();
              },
              window);
     });

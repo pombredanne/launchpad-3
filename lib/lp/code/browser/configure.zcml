@@ -181,6 +181,9 @@
             name="+index"
             template="../templates/branchmergeproposal-index.pt"/>
         <browser:page
+            name="+diff"
+            template="../templates/branchmergeproposal-diff.pt"/>
+        <browser:page
             name="+pagelet-summary"
             template="../templates/branchmergeproposal-pagelet-summary.pt"/>
     </browser:pages>
