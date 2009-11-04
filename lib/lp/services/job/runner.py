@@ -12,6 +12,7 @@ __all__ = ['JobRunner']
 
 import sys
 
+from twisted.internet import reactor, defer
 from zope.component import getUtility
 
 from canonical.config import config
@@ -168,6 +169,30 @@ class JobCronScript(LaunchpadCronScript):
         cleanups = self.setUp()
         try:
             runner.runAll()
+        finally:
+            for cleanup in reversed(cleanups):
+                cleanup()
+        self.logger.info(
+            'Ran %d %s jobs.',
+            len(runner.completed_jobs), self.source_interface.__name__)
+
+
+class TwistedJobCronScript(JobCronScript):
+
+    def _runAll(self, runner):
+        d = defer.Deferred()
+        d.addCallback(lambda ignored: runner.runAll())
+        d.addBoth(lambda ignored: reactor.stop())
+        d.callback(None)
+
+    def main(self):
+        errorlog.globalErrorUtility.configure(self.config_name)
+        runner = JobRunner.fromReady(
+            getUtility(self.source_interface), self.logger)
+        cleanups = self.setUp()
+        reactor.callWhenRunning(self._runAll, runner)
+        try:
+            reactor.run()
         finally:
             for cleanup in reversed(cleanups):
                 cleanup()
