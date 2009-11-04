@@ -581,6 +581,7 @@ COMMENT ON COLUMN Product.official_codehosting IS 'Whether or not this product u
 COMMENT ON COLUMN Product.bug_supervisor IS 'Person who is responsible for managing bugs on this product.';
 COMMENT ON COLUMN Product.security_contact IS 'The person or team who handles security-related issues in the product.';
 COMMENT ON COLUMN Product.driver IS 'This is a driver for the overall product. This driver will be able to approve nominations of bugs and specs to any series in the product, including backporting to old stable series. You want the smallest group of "overall drivers" here, because you can add specific drivers to each series individually.';
+COMMENT ON COLUMN Product.translation_focus IS 'The ProductSeries that should get the translation effort focus.';
 --COMMENT ON COLUMN Product.bugtracker IS 'The external bug tracker that is used to track bugs primarily for this product, if it''s different from the project bug tracker.';
 COMMENT ON COLUMN Product.development_focus IS 'The product series that is the current focus of development.';
 COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in the Launchpad.';
