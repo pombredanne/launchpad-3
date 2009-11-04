@@ -51,12 +51,12 @@ class TestMeToo(TestCaseWithFactory):
         status can be edited in-page.
         """
         client = WindmillTestClient('Bug "me too" test')
-        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Open bug 11 and wait for it to finish loading.
         client.open(
             url=u'http://bugs.launchpad.dev:8085/jokosher/+bug/11/+index')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Ensure the link for "Does this bug affect you?" is setup.
         client.waits.forElement(
