@@ -5,13 +5,10 @@ import unittest
 
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.windmill.testing import lpuser
+from canonical.launchpad.windmill.testing import lpuser, constants
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import TestCaseWithFactory
 
-WAIT_PAGELOAD = u'20000'
-WAIT_FORM_COMPLETE = u'10000'
-WAIT_SUBMIT_CHANGE = u'2000'
 BUG_URL = u'http://bugs.launchpad.dev:8085/bugs/15'
 MAIN_FORM_ELEMENT = u'//div[@id="privacy-form-container"]/table'
 FORM_NOT_VISIBLE = (
@@ -45,13 +42,13 @@ class TestSecurityOverlay(TestCaseWithFactory):
          """
         client = WindmillTestClient("Bug privacy settings test")
 
-        lpuser.SAMPLE_PERSON.ensure_login(client)
-
         # Open a bug page and wait for it to finish loading.
         client.open(url=BUG_URL)
-        client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        lpuser.SAMPLE_PERSON.ensure_login(client)
+
         client.waits.forElement(
-            xpath=MAIN_FORM_ELEMENT, timeout=WAIT_FORM_COMPLETE)
+            xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
 
         # Initially the form overlay is hidden.
         client.asserts.assertElemJS(
@@ -71,7 +68,7 @@ class TestSecurityOverlay(TestCaseWithFactory):
         # the "OK" button changes the link text to "This bug is private".
         client.click(name=FIELD_PRIVATE)
         client.click(xpath=CHANGE_BUTTON)
-        client.waits.sleep(milliseconds=WAIT_SUBMIT_CHANGE)
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertTextIn(
             id=PRIVACY_TEXT, validator=u'This report is')
         client.asserts.assertText(
@@ -88,9 +85,9 @@ class TestSecurityOverlay(TestCaseWithFactory):
         # so that we can be sure that the security settings are correctly
         # updated.
         client.open(url=BUG_URL)
-        client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(
-            xpath=MAIN_FORM_ELEMENT, timeout=WAIT_FORM_COMPLETE)
+            xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
         client.asserts.assertTextIn(
             id=PRIVACY_TEXT, validator=u'This report is')
         client.asserts.assertText(
@@ -113,7 +110,7 @@ class TestSecurityOverlay(TestCaseWithFactory):
         # The link text indicatess now again a public bug report, and
         # we have an additional text below the link indicating that
         # this bug is a security vulnerability.
-        client.waits.sleep(milliseconds=WAIT_SUBMIT_CHANGE)
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertTextIn(
             id=PRIVACY_TEXT, validator=u'This report is public')
         client.asserts.assertText(
@@ -126,9 +123,9 @@ class TestSecurityOverlay(TestCaseWithFactory):
 
         # When we reload the page, we get the same texts.
         client.open(url=BUG_URL)
-        client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(
-            xpath=MAIN_FORM_ELEMENT, timeout=WAIT_FORM_COMPLETE)
+            xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
         client.asserts.assertTextIn(
             id=PRIVACY_TEXT, validator=u'This report is public')
         client.asserts.assertText(
@@ -140,15 +137,15 @@ class TestSecurityOverlay(TestCaseWithFactory):
         client.click(id=PRIVACY_LINK)
         client.click(name=FIELD_SECURITY_RELATED)
         client.click(xpath=CHANGE_BUTTON)
-        client.waits.sleep(milliseconds=WAIT_SUBMIT_CHANGE)
+        client.waits.sleep(milliseconds=constants.SLEEP)
         client.asserts.assertNotNode(id=SECURITY_MESSAGE)
 
         # When we reload the page, the <div> for the security message
         # does not exist either.
         client.open(url=BUG_URL)
-        client.waits.forPageLoad(timeout=WAIT_PAGELOAD)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.forElement(
-            xpath=MAIN_FORM_ELEMENT, timeout=WAIT_FORM_COMPLETE)
+            xpath=MAIN_FORM_ELEMENT, timeout=constants.FOR_ELEMENT)
         client.asserts.assertNotNode(id=SECURITY_MESSAGE)
 
         # The checkboxes for "privacy" and "security" reflect these

@@ -22,12 +22,12 @@ class TestOfficialBugTags(TestCaseWithFactory):
     def test_official_bug_tags_management(self):
         """Test the official bug tags management interface."""
         client = WindmillTestClient('Official bug tags management test')
-        lpuser.FOO_BAR.ensure_login(client)
 
     # Firefox is a product - an official bug tags target.
 
         client.open(url='http://bugs.launchpad.dev:8085/firefox')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        lpuser.FOO_BAR.ensure_login(client)
 
     # foobar has the permission to edit the official bug tags for firefox.
 

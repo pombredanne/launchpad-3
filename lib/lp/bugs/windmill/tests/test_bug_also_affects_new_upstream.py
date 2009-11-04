@@ -7,9 +7,8 @@ from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing.widgets import (
     FormPickerWidgetTest)
-from canonical.launchpad.windmill.testing import lpuser
+from canonical.launchpad.windmill.testing import lpuser, constants
 from canonical.launchpad.windmill.testing.widgets import search_picker_widget
-from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.testing import TestCaseWithFactory
 
@@ -40,11 +39,13 @@ class TestBugAlsoAffects(TestCaseWithFactory):
         choose_link_id = 'show-widget-field-product'
         client = WindmillTestClient('test_bug_also_affects_register_link')
 
-        lpuser.SAMPLE_PERSON.ensure_login(client)
-
         # Open a bug page and wait for it to finish loading.
         client.open(url=CHOOSE_AFFECTED_URL)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        lpuser.SAMPLE_PERSON.ensure_login(client)
+
+        client.waits.forElement(
+            id=choose_link_id, timeout=constants.FOR_ELEMENT)
         client.click(id=choose_link_id)
         search_picker_widget(client, 'nonexistant')
         client.asserts.assertProperty(

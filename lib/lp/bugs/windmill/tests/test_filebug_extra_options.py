@@ -21,13 +21,15 @@ class TestFilebugExtras(TestCaseWithFactory):
         expander starts closed, and contains several fields when opened.
         """
         client = WindmillTestClient("File bug extra options test")
-        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Open a +filebug page and wait for it to finish loading.
         client.open(url=u'http://bugs.launchpad.dev:8085/firefox/+filebug')
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        lpuser.SAMPLE_PERSON.ensure_login(client)
 
         # Search for a possible duplicate.
+        client.waits.forElement(
+            id=u'field.title', timeout=constants.FOR_ELEMENT)
         client.type(text=u'Broken', id=u'field.title')
         client.waits.forElement(
             id=u'field.actions.search', timeout=constants.FOR_ELEMENT)

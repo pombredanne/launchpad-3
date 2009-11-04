@@ -38,19 +38,21 @@ class TestBugTagsEntry(TestCaseWithFactory):
             'https', 'http').replace('.dev/', '.dev:8085/')
         transaction.commit()
 
-        lpuser.FOO_BAR.ensure_login(client)
 
         # Now let's tag a bug using the auto-complete widget
 
         client.open(url=bug_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         client.waits.sleep(milliseconds=constants.SLEEP)
+        lpuser.FOO_BAR.ensure_login(client)
 
         # XXX intellectronica 2009-05-26:
         # We (almost) consistently get an error on the following line
         # where instead of trigerring the onclick event handler we navigate
         # to the link's URL.
 
+        client.waits.forElement(
+            id=u'edit-tags-trigger', timeout=constants.FOR_ELEMENT)
         client.click(id=u'edit-tags-trigger')
         client.waits.forElement(
             id=u'tag-input', timeout=constants.FOR_ELEMENT)
