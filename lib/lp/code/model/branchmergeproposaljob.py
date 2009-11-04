@@ -173,6 +173,8 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
             And(BranchMergeProposalJob.job_type == klass.class_job_type,
                 BranchMergeProposalJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs),
+                BranchMergeProposalJob.branch_merge_proposal
+                    == BranchMergeProposal.id,
                 BranchMergeProposal.source_branch == Branch.id,
                 # A proposal isn't considered ready if it has no revisions,
                 # or if it is hosted but pending a mirror.
@@ -180,7 +182,6 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
                 Or(Branch.next_mirror_time == None,
                    Branch.branch_type != BranchType.HOSTED)
                 ))
-        jobs.config(distinct=True)
         return (klass(job) for job in jobs)
 
     def getOopsVars(self):
