@@ -23,7 +23,7 @@ can see a link to edit the details.
     >>> logout()
 
     >>> import_browser = setupBrowser(
-    ...     auth='Basic %s:test' % registrant.preferredemail.email)
+    ...     auth='Basic %s:test' % str(registrant.preferredemail.email))
 
 
 == Import details on the branch page ==
@@ -147,3 +147,13 @@ displayed.
     by Sample Person).
     Last successful import was on 2007-09-10.
     ...
+
+
+== Deleting an import ==
+
+If you own the branch that has the code import, you can delete the branch.
+
+    >>> import_browser.getLink('Delete branch').click()
+    >>> import_browser.getControl('Delete').click()
+    >>> print_feedback_messages(import_browser.contents)
+    Branch ... deleted.
