@@ -15,7 +15,7 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.archiveuploader.permission import verify_upload
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchType, CodeReviewNotificationLevel)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -229,6 +229,16 @@ class TestWriteToBranch(PermissionTest):
         person = self.factory.makePerson()
         removeSecurityProxy(team).addMember(person, team.teamowner)
         branch = self.factory.makeAnyBranch(owner=team)
+        self.assertCanEdit(person, branch)
+
+    def test_vcs_imports_members_can_edit_import_branch(self):
+        # Even if a branch isn't owned by vcs-imports, vcs-imports members can
+        # edit it if it has a code import associated with it.
+        person = self.factory.makePerson()
+        branch = self.factory.makeCodeImport().branch
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        removeSecurityProxy(vcs_imports).addMember(
+            person, vcs_imports.teamowner)
         self.assertCanEdit(person, branch)
 
     def makeOfficialPackageBranch(self):

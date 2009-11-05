@@ -1600,13 +1600,16 @@ class EditBranch(AuthorizationBase):
         # It used to be the case that all import branches were owned by the
         # special, restricted team ~vcs-imports. For these legacy code import
         # branches, we still want the code import registrant to be able to
-        # edit them.
+        # edit them. Similarly, we still want vcs-imports members to be able
+        # to edit those branches.
         code_import = self.obj.code_import
         if code_import is None:
             return False
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         return (
-            self.obj.owner == getUtility(ILaunchpadCelebrities).vcs_imports
-            and user.inTeam(code_import.registrant))
+            user.inTeam(vcs_imports)
+            or (self.obj.owner == vcs_imports
+                and user.inTeam(code_import.registrant)))
 
 
 def can_upload_linked_package(person, branch):
