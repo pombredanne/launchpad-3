@@ -29,6 +29,14 @@ class CannotUploadToArchive:
         return self._message
 
 
+class CannotUploadToPocket:
+    """Raised when a pocket is closed for uploads."""
+
+    def __init__(self, distroseries, pocket):
+        super(CannotUploadToPocket, self).__init__(
+            "Cannot upload to %s pocket of %s" % (pocket, distroseries))
+
+
 class CannotUploadToPPA(CannotUploadToArchive):
     """Raised when a person cannot upload to a PPA."""
 
@@ -75,31 +83,31 @@ def components_valid_for(archive, person):
 
 
 def can_upload(person, suitesourcepackage, archive=None):
-    # XXX: Docstring
+    """Can 'person' upload 'suitesourcepackage' to 'archive'?
 
+    :param person: An `IPerson` who might be uploading.
+    :param suitesourcepackage: An `ISuiteSourcePackage` to be uploaded.
+    :param archive: The `IArchive` to upload to. If not provided, defaults
+        to the default archive for the source package. (See
+        `ISourcePackage.get_default_archive`).
+    """
     # XXX: Tests
-
-    # XXX: Should we have a lower-level function that takes the components of
-    # suitesourcepackage?
     sourcepackage = suitesourcepackage
     if archive is None:
         archive = sourcepackage.get_default_archive()
     pocket = suitesourcepackage.pocket
     distroseries = sourcepackage.distroseries
     if not distroseries.canUploadToPocket(pocket):
-        # XXX: Better exception.
+        return CannotUploadToPocket(distroseries, pocket)
 
-        # XXX: Should we also do the PPA & Partner testing that uploadpolicy's
-        # checkUpload does? -- probably, yes
-        raise ValueError("Cannot upload to pocket.")
+    # XXX: Should we also do the PPA & Partner testing that uploadpolicy's
+    # checkUpload does? -- probably, yes
 
     sourcepackagename = sourcepackage.sourcepackagename
     component = sourcepackage.latest_published_component
-    # strict_component is True because the source package already exists,
-    # because otherwise we couldn't have a suitesourcepackage object.
-
-    # XXX: If we have a lower-level function, it should take strict_component
-    # as a parameter.
+    # strict_component is True because the source package already exists
+    # (otherwise we couldn't have a suitesourcepackage object) and
+    # nascentupload passes True as a matter of policy when the package exists.
     return verify_upload(
         person, sourcepackagename, archive, component, strict_component=True)
 
