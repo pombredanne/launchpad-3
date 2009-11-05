@@ -18,6 +18,9 @@ here:
 Please refer to the tests contained in the file above if you are really
 interested in package sets and the complete functionality they offer.
 
+
+== General package set properties ==
+
 We start off by creating an 'umbrella' package set that will include all
 source packages.
 
@@ -214,6 +217,62 @@ Let's create a few more package sets and set up a package set hierarchy.
     HTTP/1.1 201 Created
     ...
 
+
+=== Package sets and distro series ===
+
+Every package set is associated with a distro series.
+
+    >>> from lazr.restful.testing.webservice import pprint_entry
+    >>> mozilla = webservice.named_get(
+    ...     '/package-sets', 'getByName', {}, name=u'mozilla').jsonBody()
+    >>> print mozilla['distroseries_link']
+    http://api.launchpad.dev/beta/ubuntu/hoary
+
+    >>> print mozilla['self_link']
+    http://api.launchpad.dev/beta/package-sets/hoary/mozilla
+
+
+=== Related package sets ===
+
+When adding a package set we can specify that is to be related to another set
+that exists already.
+
+    >>> grumpy = webservice.get("/ubuntu/grumpy").jsonBody()
+    >>> print grumpy['self_link']
+    http://api.launchpad.dev/beta/ubuntu/grumpy
+
+We are adding a new 'mozilla' package set to the 'grumpy' distro series and
+it is related to 'mozilla' in 'hoary'.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'mozilla',
+    ...     description=u'Contains all mozilla packages in grumpy',
+    ...     owner=name12['self_link'], distroseries=grumpy['self_link'],
+    ...     related_set=mozilla['self_link'])
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+
+    >>> grumpy_mozilla = webservice.named_get(
+    ...     '/package-sets', 'getByName', {}, name=u'mozilla',
+    ...     distroseries=grumpy['self_link']).jsonBody()
+    >>> print grumpy_mozilla['distroseries_link']
+    http://api.launchpad.dev/beta/ubuntu/grumpy
+
+    >>> print grumpy_mozilla['self_link']
+    http://api.launchpad.dev/beta/package-sets/grumpy/mozilla
+
+    >>> response = webservice.named_get(
+    ...     mozilla['self_link'], 'relatedSets', {})
+    >>> print_payload(response)
+    http://api.launchpad.dev/beta/package-sets/grumpy/mozilla
+
+
+== Package set hierarchy ==
+
+More package sets are needed to set up the hierarchy described below.
+
     >>> response = webservice.named_post(
     ...     '/package-sets', 'new', {},
     ...     name=u'firefox', description=u'Contains all firefox packages',
@@ -236,6 +295,18 @@ Let's create a few more package sets and set up a package set hierarchy.
     ...     name=u'languagepack',
     ...     description=u'Contains all languagepack packages',
     ...     owner=name12['self_link'])
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+
+The 'languagepack' package set will be removed later (in hoary). Let's add a
+set with the same name in 'grumpy' to make sure that the right one is found.
+
+    >>> response = webservice.named_post(
+    ...     '/package-sets', 'new', {},
+    ...     name=u'languagepack',
+    ...     description=u'Contains all languagepack packages',
+    ...     owner=name12['self_link'], distroseries=grumpy['self_link'])
     >>> print response
     HTTP/1.1 201 Created
     ...
@@ -451,39 +522,6 @@ How about the complement set i.e. the packages not shared?
     ["cnews", "thunderbird"]
 
 
-=== Package sets and distro series ===
-
-Every package set is associated with a distro series.
-
-    >>> from lazr.restful.testing.webservice import pprint_entry
-    >>> mozilla = webservice.named_get(
-    ...     '/package-sets', 'getByName', {}, name=u'mozilla').jsonBody()
-    >>> print mozilla['distroseries_link']
-    http://api.launchpad.dev/beta/ubuntu/hoary
-
-
-=== Related package sets ===
-
-When adding a package set we can specify that is to be related to another set
-that exists already.
-
-    >>> grumpy = webservice.get("/ubuntu/grumpy").jsonBody()
-    >>> print grumpy['self_link']
-    http://api.launchpad.dev/beta/ubuntu/grumpy
-
-We are adding a new 'mozilla' package set to the 'grumpy' distro series and
-it is related to 'mozilla' in 'hoary'.
-
-    >>> response = webservice.named_post(
-    ...     '/package-sets', 'new', {},
-    ...     name=u'mozilla',
-    ...     description=u'Contains all mozilla packages',
-    ...     owner=name12['self_link'], distroseries=grumpy['self_link'],
-    ...     related_set=mozilla['self_link'])
-    >>> print response
-    HTTP/1.1 201 Created
-    ...
-
 == Archive permissions and package sets ==
 
 Operating on package set based archive permissions is possible via
@@ -521,7 +559,7 @@ Let's see what we've got:
     permission: u'Archive Upload Rights'
     person_link: u'http://.../~name12'
     resource_type_link: ...
-    self_link: u'http://.../+archive/primary/+upload/name12?type=packageset&item=firefox'
+    self_link: u'http://.../+archive/primary/+upload/name12?type=packageset&item=firefox&series=hoary'
     source_package_name: None
 
 Grant upload privileges to 'name12' for package set 'mozilla' in the Ubuntu
@@ -542,7 +580,7 @@ package set since we're disallowing the use of the package set hierarchy.
     ...     ubuntu['main_archive_link'], 'getUploadersForPackageset', {},
     ...     packageset=firefox['self_link'])
     >>> print_payload(response)
-    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
+    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox&series=hoary
 
 Same query, this time allowing the use of the package set hierarchy, finds
 the permission for the 'mozilla' package set as well.
@@ -551,8 +589,8 @@ the permission for the 'mozilla' package set as well.
     ...     ubuntu['main_archive_link'], 'getUploadersForPackageset', {},
     ...     packageset=firefox['self_link'], direct_permissions=False)
     >>> print_payload(response)
-    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
-    http://.../+archive/primary/+upload/name12?type=packageset&item=mozilla
+    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox&series=hoary
+    http://.../+archive/primary/+upload/name12?type=packageset&item=mozilla&series=hoary
 
 Let's delete the upload privilege for the 'mozilla' package set.
 
@@ -571,7 +609,7 @@ shows only the remaining permission for the 'firefox' package set.
     ...     ubuntu['main_archive_link'], 'getUploadersForPackageset', {},
     ...     packageset=firefox['self_link'], direct_permissions=False)
     >>> print_payload(response)
-    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
+    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox&series=hoary
 
 Let's grant 'cprov' an upload permission to 'mozilla' and 'thunderbird'.
 
@@ -598,8 +636,8 @@ We can view the package set based permissions granted to 'cprov' as follows:
     ...     ubuntu['main_archive_link'], 'getPackagesetsForUploader', {},
     ...     person=cprov['self_link'])
     >>> print_payload(response)
-    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla
-    http://.../+archive/primary/+upload/cprov?type=packageset&item=thunderbird
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla&series=hoary
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=thunderbird&series=hoary
 
 Let's check what package set based upload permissions 'cprov' has for the
 'mozilla-firefox' package.
@@ -609,8 +647,8 @@ Let's check what package set based upload permissions 'cprov' has for the
     ...     {}, sourcepackagename='thunderbird',
     ...     person=cprov['self_link'])
     >>> print_payload(response)
-    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla
-    http://.../+archive/primary/+upload/cprov?type=packageset&item=thunderbird
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla&series=hoary
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=thunderbird&series=hoary
 
 As we expected 'cprov' may upload either via the 'thunderbird' package set
 that directly contains the source package in question or via the 'mozilla'
@@ -624,7 +662,7 @@ to it?
     ...     {}, sourcepackagename='mozilla-firefox',
     ...     person=cprov['self_link'])
     >>> print_payload(response)
-    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla&series=hoary
 
 Yes, and, again via the 'mozilla' package set.
 
@@ -698,11 +736,11 @@ This will fail since 'name12' has no permissions applying to 'grumpy' yet.
     ...
     false
 
-Create a new package set ('grouchy-thunderbird') in 'grumpy'.
+Create a new package set ('thunderbird') in 'grumpy'.
 
     >>> response = webservice.named_post(
     ...     '/package-sets', 'new', {},
-    ...     name=u'grouchy-thunderbird',
+    ...     name=u'thunderbird',
     ...     description=u'Contains all thunderbird packages in grumpy',
     ...     owner=name12['self_link'], distroseries=grumpy['self_link'],
     ...     related_set=thunderbird['self_link'])
@@ -713,21 +751,21 @@ Create a new package set ('grouchy-thunderbird') in 'grumpy'.
     >>> response = webservice.named_get(
     ...     thunderbird['self_link'], 'relatedSets', {})
     >>> print_payload(response)
-    http://api.launchpad.dev/beta/package-sets/grumpy/grouchy-thunderbird
+    http://api.launchpad.dev/beta/package-sets/grumpy/thunderbird
 
-Associate 'grouchy-thunderbird' with the appropriate source packages.
+Associate 'thunderbird' with the appropriate source packages.
 
     >>> response = webservice.named_post(
-    ...     '/package-sets/grumpy/grouchy-thunderbird', 'addSources', {},
+    ...     '/package-sets/grumpy/thunderbird', 'addSources', {},
     ...     names=['thunderbird', 'language-pack-de'])
     >>> print response
     HTTP/1.1 200 Ok
     ...
 
-Grant 'name12' upload permissions to 'grouchy-thunderbird' in 'grumpy'.
+Grant 'name12' upload permissions to 'thunderbird' in 'grumpy'.
 
     >>> grouchy_bird = webservice.get(
-    ...     "/package-sets/grumpy/grouchy-thunderbird").jsonBody()
+    ...     "/package-sets/grumpy/thunderbird").jsonBody()
 
     >>> response = webservice.named_post(
     ...     ubuntu['main_archive_link'], 'newPackagesetUploader', {},
@@ -743,8 +781,8 @@ Does the new archive permission show up?
     ...     ubuntu['main_archive_link'], 'getPackagesetsForUploader', {},
     ...     person=name12['self_link'])
     >>> print_payload(response)
-    http://...+archive/primary/+upload/name12?type=packageset&item=firefox
-    http://...+archive/primary/+upload/name12?type=packageset&item=grouchy-thunderbird
+    http://...+archive/primary/+upload/name12?type=packageset&item=firefox&series=hoary
+    http://...+archive/primary/+upload/name12?type=packageset&item=thunderbird&series=grumpy
 
 And now 'name12' should be authorized to upload source package
 'thunderbird' in 'grumpy'.
@@ -765,7 +803,7 @@ permissions apply to a source package irrespective of the principal.
     ...     ubuntu['main_archive_link'], 'getPackagesetsForSource',
     ...     {}, sourcepackagename='mozilla-firefox')
     >>> print_payload(response)
-    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
+    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox&series=hoary
 
 The listing above only shows the *direct* upload permission granted to
 'name12' via the 'firefox' package set.
@@ -777,8 +815,62 @@ permissions arising from the package set hierarchy as well.
     ...     ubuntu['main_archive_link'], 'getPackagesetsForSource',
     ...     {}, sourcepackagename='mozilla-firefox', direct_permissions=False)
     >>> print_payload(response)
-    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox
-    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla
+    http://.../+archive/primary/+upload/name12?type=packageset&item=firefox&series=hoary
+    http://.../+archive/primary/+upload/cprov?type=packageset&item=mozilla&series=hoary
 
 Now we see the upload permission granted to 'cprov' via the 'mozilla' package
 set listed as well.
+
+
+== Archive permission URLs ==
+
+Archive permissions can be accessed via their URLs in direct fashion.
+
+If we do *not* specify the distro series for package set based archive
+permission URLs a 404 will result.
+
+    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird'
+    >>> response = webservice.get(url)
+    >>> print response
+    HTTP/1.1 404 Not Found
+    ...
+
+The same happens if a user tries to doctor an URL with an invalid distro
+series.
+
+    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird&series=foobar'
+    >>> response = webservice.get(url)
+    >>> print response
+    HTTP/1.1 404 Not Found
+    ...
+
+The user 'name12' has no upload permission for 'thunderbird' in 'hoary'..
+
+    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird&series=hoary'
+    >>> response = webservice.get(url)
+    >>> print response
+    HTTP/1.1 404 Not Found
+    ...
+
+.. but is allowed to upload to 'thunderbird' in 'grumpy'.
+
+    >>> url = '/ubuntu/+archive/primary/+upload/name12?type=packageset&item=thunderbird&series=grumpy'
+    >>> permission = webservice.get(url).jsonBody()
+    >>> print permission['package_set_name']
+    thunderbird
+    >>> print permission['distro_series_name']
+    grumpy
+
+The user 'cprov' has no upload permission for 'thunderbird' in 'hoary'.
+
+    >>> url = '/ubuntu/+archive/primary/+upload/cprov?type=packageset&item=thunderbird&series=hoary'
+    >>> permission = webservice.get(url).jsonBody()
+    >>> pprint_entry(permission)
+    archive_link: u'http://api.launchpad.dev/beta/ubuntu/+archive/primary'
+    ...
+    distro_series_name: u'hoary'
+    ...
+    package_set_name: u'thunderbird'
+    permission: u'Archive Upload Rights'
+    person_link: u'http://api.launchpad.dev/beta/~cprov'
+    ...
