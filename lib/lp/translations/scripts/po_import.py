@@ -65,32 +65,33 @@ class TranslationsImport(LaunchpadCronScript):
             exc_info = sys.exc_info()
         description = [
             ('Reason', reason),
-            ('Queue entries', entries),
+            ('Entries', str(entries)),
             ]
         errorlog.globalErrorUtility.raising(
             exc_info, errorlog.ScriptRequest(description))
 
     def _registerFailure(self, entry, reason, traceback=False, abort=False):
         """Note that a queue entry is unusable in some way."""
+        reason_text = unicode(reason)
         entry.setStatus(RosettaImportStatus.FAILED)
-        entry.setErrorOutput(reason)
+        entry.setErrorOutput(reason_text)
 
         if abort:
             traceback = True
 
         description = self._describeEntry(entry)
-        message = "%s -- %s" % (reason, description)
+        message = "%s -- %s" % (reason_text, description)
         self.logger.error(message, exc_info=traceback)
 
         if abort:
             # Serious enough to stop the script.  Register as an
             # individual oops.
-            self._reportOops(self, reason, [description])
+            self._reportOops(reason, [description])
         else:
             # Register problem for bulk reporting later.
-            if not self.failures.get(reason):
-                self.failures[reason] = []
-            self.failures[reason].append(description)
+            if not self.failures.get(reason_text):
+                self.failures[reason_text] = []
+            self.failures[reason_text].append(description)
 
     def _checkEntry(self, entry):
         """Sanity-check `entry` before importing."""

@@ -208,18 +208,6 @@
         classes="MaloneRelatedPages"
         module="lp.bugs.browser.malone"/>
     <browser:page
-        name="+filebug"
-        for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FrontPageFileBugGuidedView"
-        facet="bugs"
-        permission="launchpad.AnyPerson"/>
-    <browser:page
-        name="+filebug-advanced"
-        for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
-        facet="bugs"
-        permission="launchpad.AnyPerson"/>
-    <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         class="lp.bugs.browser.bugtask.BugsBugTaskSearchListingView"
         permission="zope.Public"
@@ -829,6 +817,15 @@
         facet="branches"
         permission="launchpad.Edit"
         template="../templates/bugbranch-delete.pt"/>
+    <browser:page
+        name="+bug-branch"
+        for="lp.bugs.interfaces.bugbranch.IBugBranch"
+        permission="launchpad.View"
+        template="../templates/bug-branch.pt"/>
+    <adapter
+         factory="lp.bugs.browser.bugbranch.BugBranchXHTMLRepresentation"
+         name="lazr.restful.EntryResource"
+        />
     <facet
         facet="bugs">
         <browser:menus

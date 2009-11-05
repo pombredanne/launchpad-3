@@ -167,12 +167,28 @@ class TranslationImportQueueEntry(SQLBase):
         assert importer.isTemplateName(self.path), (
             "We cannot handle file %s here: not a template." % self.path)
 
-        # It's an IPOTemplate
         potemplate_set = getUtility(IPOTemplateSet)
-        return potemplate_set.getPOTemplateByPathAndOrigin(
+        candidate = potemplate_set.getPOTemplateByPathAndOrigin(
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
+        if candidate is not None:
+            # This takes care of most of the auto-approvable cases.
+            return candidate
+
+        directory, filename = os.path.split(self.path)
+        if not directory:
+            # Uploads don't always have paths associated with them, but
+            # there may still be a unique single active template with
+            # the right filename.
+            subset = potemplate_set.getSubset(
+                distroseries=self.distroseries,
+                sourcepackagename=self.sourcepackagename,
+                productseries=self.productseries, iscurrent=True)
+            return subset.findUniquePathlessMatch(filename)
+
+        # I give up.
+        return None
 
     @property
     def _guessed_potemplate_for_pofile_from_path(self):

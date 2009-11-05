@@ -508,7 +508,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
     meta_sourcepackagerelease = Attribute(
-        "Return an IDistribuitionSourcePackageRelease meta object "
+        "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute")
     meta_supersededby = Attribute(
         "Return an IDistribuitionSourcePackageRelease meta object "
@@ -855,6 +855,23 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
+
+    def copyBinariesTo(binaries, distroseries, pocket, archive):
+        """Copy multiple binaries to a given destination.
+
+        Processing multiple binaries in a batch allows certain
+        performance optimisations such as looking up the main
+        component once only, and getting all the BPPH records
+        with one query.
+
+        :param binaries: A list of binaries to copy.
+        :param distroseries: The target distroseries.
+        :param pocket: The target pocket.
+        :param archive: The target archive.
+
+        :return: A result set of the created binary package
+            publishing histories.
+        """
 
     def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
                              component, section, priority, pocket):

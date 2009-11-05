@@ -83,7 +83,7 @@ sudo tee -a /etc/postgresql/$pgversion/main/postgresql.conf <<'EOF'
 search_path='$user,public,ts2'
 add_missing_from=false
 #enable_seqscan=false
-log_statement='all'
+log_statement='none'
 log_line_prefix='[%t] %q%u@%d '
 fsync = off
 

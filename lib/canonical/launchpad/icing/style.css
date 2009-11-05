@@ -34,9 +34,6 @@
 
 /* == Sprites == */
 
-#subscribers-direct a, #portlet-subscribers a, #subscribers-indirect a, .bug-branch-summary {
-   line-height: 1.4em;
-}
 ul.breadcrumbs a.bzr-favicon, ul.breadcrumbs a.person-tabs {
     padding: 8px 18px 0 23px;
 }
@@ -52,150 +49,6 @@ h1 .edit {
 }
 span.invisible-link {display:none;}
 span.invisible {left:-9999em;display:block;}
-.sprite {padding:2px 0 0 18px;}
-.sprite-after {padding: 2px 18px 0 0;}
-
-/* XXX: EdwinGrubbs 2009-07-27 bug=405476
- * Override the .yui-picker-results style, so that the next icon
- * in the sprite file won't appear for tall list items.
- */
-.yui-picker-results li.sprite {
-    padding:2px 0 0 18px;
-    white-space: nowrap;
-    overflow: hidden;
-}
-
-.add {background:url(icon-sprites) 0 0 no-repeat;}
-.edit {background:url(icon-sprites) 0 -32px no-repeat;}
-.remove {background:url(icon-sprites) 0 -64px no-repeat;}
-.info {background:url(icon-sprites) 0 -96px no-repeat;}
-.question {background:url(icon-sprites) 0 -128px no-repeat;}
-.download-icon {background:url(icon-sprites) 0 -160px no-repeat;}
-.download {background:url(icon-sprites) 0 -160px no-repeat;}
-.search-icon {background:url(icon-sprites) 0 -187px no-repeat;}
-.no {background:url(icon-sprites) 0 -224px no-repeat;}
-.yes {background:url(icon-sprites) 0 -256px no-repeat;}
-.crowd {background:url(icon-sprites) 0 -288px no-repeat;}
-.person {background:url(icon-sprites) 0 -320px no-repeat;}
-.person-tabs {background:url(icon-sprites) 5px -314px no-repeat;}
-.person-badge {background:url(icon-sprites) 0 -352px no-repeat;}
-.team {background:url(icon-sprites) 0 -384px no-repeat;}
-.team-badge {background:url(icon-sprites) 0 -416px no-repeat;}
-.arrowRight {background:url(icon-sprites) 0 -448px no-repeat;}
-.treeCollapsed {background:url(icon-sprites) 0 -480px no-repeat;}
-.treeExpanded {background:url(icon-sprites) 0 -512px no-repeat;}
-.branch, .bzr-favicon {background:url(icon-sprites) 0 -544px no-repeat;}
-.bzr-favicon {background:url(icon-sprites) 5px -538px no-repeat;}
-.distribution {background:url(icon-sprites) 0 -576px no-repeat;}
-.package-source {background:url(icon-sprites) 0 -608px no-repeat;}
-.milestone {background:url(icon-sprites) 0 -640px no-repeat;}
-.language {background:url(icon-sprites) 0 -672px no-repeat;}
-.external-link {background:url(icon-sprites) 0 -704px no-repeat;}
-.mail {background:url(icon-sprites) 0 -736px no-repeat;}
-.cve {background:url(icon-sprites) 0 -768px no-repeat;}
-.cves {float: right; text-align: right;}
-.bug {background:url(icon-sprites) 0 -800px no-repeat;}
-.bug-critical {background:url(icon-sprites) 0 -832px no-repeat;}
-.bug-high {background:url(icon-sprites) 0 -864px no-repeat;}
-.bug-medium {background:url(icon-sprites) 0 -896px no-repeat;}
-.bug-low {background:url(icon-sprites) 0 -928px no-repeat;}
-.bug-wishlist {background:url(icon-sprites) 0 -960px no-repeat;}
-.blueprint {background:url(icon-sprites) 0 -992px no-repeat;}
-.blueprint-essential {background:url(icon-sprites) 0 -1024px no-repeat;}
-.blueprint-high {background:url(icon-sprites) 0 -1056px no-repeat;}
-.blueprint-medium {background:url(icon-sprites) 0 -1088px no-repeat;}
-.blueprint-low {background:url(icon-sprites) 0 -1120px no-repeat;}
-.blueprint-undefined {background:url(icon-sprites) 0 -1152px no-repeat;}
-.blueprint-not {background:url(icon-sprites) 0 -1184px no-repeat;}
-.rss {background:url(icon-sprites) 0 -1216px no-repeat;}
-.ubuntu-logo {background:url(icon-sprites-2) 0 0px no-repeat;}
-.person-inactive {background:url(icon-sprites-2) 0 -32px no-repeat;}
-.person-inactive-badge {background:url(icon-sprites-2) 0 -64px no-repeat;}
-.mentoring {background:url(icon-sprites-2) 0 -96px no-repeat;}
-.undecided {background:url(icon-sprites-2) 0 -128px no-repeat;}
-.error {background:url(icon-sprites-2) 0 -160px no-repeat;}
-.cancel {background:url(icon-sprites-2) 0 -192px no-repeat;}
-.confirm {background:url(icon-sprites-2) 0 -224px no-repeat;}
-.flame {background:url(icon-sprites-2) 0 -256px no-repeat;}
-.bug-undecided {background:url(icon-sprites-2) 0 -288px no-repeat;}
-.bug-remote {background:url(icon-sprites-2) 0 -320px no-repeat;}
-.bug-unknown {background:url(icon-sprites-2) 0 -352px no-repeat;}
-.bug-dupe {background:url(icon-sprites-2) 0 -384px no-repeat;}
-.bug-tracker {background:url(icon-sprites-2) 0 -416px no-repeat;}
-.package-binary {background:url(icon-sprites-2) 0 -448px no-repeat;}
-.retry {background:url(icon-sprites-2) 0 -480px no-repeat;}
-.distribution-badge {background:url(icon-sprites-2) 0 -512px no-repeat;}
-.project-badge {background:url(icon-sprites-2) 0 -544px no-repeat;}
-.project {background:url(icon-sprites-2) 0 -576px no-repeat;}
-.product-badge {background:url(icon-sprites-2) 0 -608px no-repeat;}
-.product {background:url(icon-sprites-2) 0 -640px no-repeat;}
-.read-only {background:url(icon-sprites-2) 0 -672px no-repeat;}
-.warning-icon, .security {background:url(icon-sprites-2) 0 -704px no-repeat;}
-.private {background:url(icon-sprites-2) 0 -736px no-repeat;}
-.meeting {background:url(icon-sprites-2) 0 -768px no-repeat;}
-.translate-icon {background:url(icon-sprites-2) 0 -800px no-repeat;}
-.translation-file {background:url(icon-sprites-2) 0 -832px no-repeat;}
-.translation-template {background:url(icon-sprites-2) 0 -864px no-repeat;}
-.trash-icon {background:url(icon-sprites-2) 0 -896px no-repeat;}
-.stop {background:url(icon-sprites-2) 0 -928px no-repeat;}
-.list {background:url(icon-sprites-2) 0 -992px no-repeat;}
-.bullet {background:url(icon-sprites-2) 0 -1024px no-repeat;}
-.zoom-in {background:url(icon-sprites-2) 0 -1056px no-repeat;}
-.zoom-out {background:url(icon-sprites-2) 0 -1088px no-repeat;}
-.architecture {background:url(icon-sprites-2) 0 -1120px no-repeat;}
-.ppa-icon {background:url(icon-sprites-2) 0 -1147px no-repeat;}
-.ppa-icon-inactive {background:url(icon-sprites-2) 0 -1171px no-repeat;}
-
-.bug-status-expand {background:url(icon-sprites-3) 0 -10px no-repeat;}
-.merge-proposal {
-  background:url(icon-sprites-3) 0 -46px no-repeat;
-  padding-left: 22px}
-.build-superseded {background:url(icon-sprites-3) 0 -80px no-repeat;}
-.build-sucess {background:url(icon-sprites-3) 0 -112px no-repeat;}
-.build-needed {background:url(icon-sprites-3) 0 -144px no-repeat;}
-.build-failure {background:url(icon-sprites-3) 0 -176px no-repeat;}
-.build-depwait {background:url(icon-sprites-3) 0 -208px no-repeat;}
-.arrowUp {background:url(icon-sprites-3) 0 -240px no-repeat;}
-.arrowDown {background:url(icon-sprites-3) 0 -256px no-repeat;}
-.arrowStart {background:url(icon-sprites-3) 0 -288px no-repeat;}
-.arrowEnd {background:url(icon-sprites-3) 0 -304px no-repeat;}
-.arrowTop {background:url(icon-sprites-3) 0 -328px no-repeat;}
-.arrowBottom {background:url(icon-sprites-3) 0 -356px no-repeat;}
-.arrowLeft {background:url(icon-sprites-3) 0 -384px no-repeat;}
-.bluebar {background:url(icon-sprites-3) 0 -416px repeat-x;}
-.redbar {background:url(icon-sprites-3) 0 -505px repeat-x;}
-.greenbar {background:url(icon-sprites-3) 0 -446px repeat-x;}
-.purplebar {background:url(icon-sprites-3) 0 -476px repeat-x;}
-.favorite-yes {background:url(icon-sprites-3) 0 -530px no-repeat;}
-
-/*large*/
-.large-branch {background:url(icon-sprites-large) 0 0 no-repeat;}
-.large-warning {background:url(icon-sprites-large) 0 -48px no-repeat;}
-.large-crowd {background:url(icon-sprites-large) 0 -96px no-repeat;}
-.large-download {background:url(icon-sprites-large) 0 -144px no-repeat;}
-.large-error {background:url(icon-sprites-large) 0 -144px no-repeat;}
-.large-flame {background:url(icon-sprites-large) 0 -192px no-repeat;}
-.large-download {background:url(icon-sprites-large) 0 -240px no-repeat;}
-.large-info {background:url(icon-sprites-large) 0 -288px no-repeat;}
-.large-launchpad {background:url(icon-sprites-large) 0 -336px no-repeat;}
-.large-mentoring {background:url(icon-sprites-large) 0 -384px no-repeat;}
-.large-proposal {background:url(icon-sprites-large) 0 -432px no-repeat;}
-.large-trash {background:url(icon-sprites-large) 0 -480px no-repeat;}
-.large-private {background:url(icon-sprites-large) 0 -528px no-repeat;}
-
-/*logo*/
-.logo-launchpad {background:url(icon-sprites-logo) 0 0 no-repeat;}
-.logo-distribution {background:url(icon-sprites-logo) 0 -80px no-repeat;}
-.logo-project {background:url(icon-sprites-logo) 0 -160px no-repeat;}
-.logo-product {background:url(icon-sprites-logo) 0 -240 no-repeat;}
-.logo-person {background:url(icon-sprites-logo) 0 -320 no-repeat;}
-.logo-inactive {background:url(icon-sprites-logo-2) 0 0 no-repeat;}
-.logo-team {background:url(icon-sprites-logo-2) 0 -80px no-repeat;}
-.logo-meeting {background:url(icon-sprites-logo-2) 0 -160px no-repeat;}
-.logo-flame {background:url(icon-sprites-logo-2) 0 -240 no-repeat;}
-.logo-trash {background:url(icon-sprites-logo-2) 0 -320 no-repeat;}
-
-
 
 /* == Things browsers should do but don't == */
 
@@ -270,7 +123,11 @@ label, p {max-width: 60em;}
 /* === Fonts and colors === */
 
 /* Launchpad uses a white background with small, mostly black, text: */
-html {background: #fff; color: #000; font: 83.33% sans-serif;}
+html {
+    background: #fff;
+    color: #000;
+    font-size: 83.33%;
+    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;}
 /* Monospace text uses the reciprocal of this percentage, so that it
 exactly obeys your preferred monospace font size: */
 code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
@@ -411,7 +268,7 @@ form {border: 0; margin: 0; padding: 0;}
 form table label {font-weight: bold;}
 fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
 input[type="text"], input[type="search"], input[type="password"], textarea {
-  font-family: sans-serif;
+  font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
   margin: 0;
 }
 input[type="text"], input[type="search"], input[type="submit"],
@@ -1449,11 +1306,6 @@ a.bg-image {
     padding-left: 18px;
 }
 
-a.info {
-    background: url('/@@/info') no-repeat scroll left center;
-    padding-left: 18px;
-}
-
 /* == Application-specific styles == */
 
 #application-footer strong {font-weight: normal;}
@@ -2307,12 +2159,6 @@ ul.buttons li {display: inline; margin: 0 0 0 0;}
 body.applicationhome ul.buttons {float: right; margin: 0 0 0 1em !important;}
 body.applicationhome ul.buttons li {display: block; margin-right: 0;}
 ul.cross-reference {font-size: 1.25em;}
-
-ul.helplinks {float: right; margin: 0.5em;}
-/* We set `display: block` to lose the bullets.  We should use
- * `list-style-type:none` but this is what our existing code does.
- */
-ul.helplinks li {display: block; margin: 0 0 0 0;}
 
 /*
 li {

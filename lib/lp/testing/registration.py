@@ -24,9 +24,9 @@ def get_captcha_answer(contents):
     return ''
 
 
-def set_captcha_answer(browser, answer=None):
+def set_captcha_answer(browser, answer=None, prefix=''):
     """Given a browser, set the login captcha with the correct answer."""
     if answer is None:
         answer = get_captcha_answer(browser.contents)
-    browser.getControl(name='loginpage_captcha_submission').value = (
+    browser.getControl(name=prefix + 'captcha_submission').value = (
         answer)

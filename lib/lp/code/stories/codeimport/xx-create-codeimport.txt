@@ -1,4 +1,5 @@
-= Creating a code import =
+Creating a code import
+======================
 
 Users are able to specifically request a code import of their
 project's code.  The main link to this is a large button on
@@ -24,7 +25,8 @@ user back to the main code page.
     >>> browser.getLink(id="new-code-import").click()
 
 
-== Requesting a Subversion import ==
+Requesting a Subversion import
+==============================
 
 The default foreign VCS type is Subversion.
 
@@ -53,7 +55,8 @@ When the user clicks continue, the import branch is created
            url='http://svn.example.com/firefox/trunk'>
 
 
-== Requesting a Git import ==
+Requesting a Git import
+=======================
 
 The default foreign VCS type is Subversion.
 
@@ -82,7 +85,8 @@ When the user clicks continue, the approved import branch is created
     The next import is scheduled to run as soon as possible.
 
 
-== Requesting a CVS import ==
+Requesting a CVS import
+=======================
 
 The user is required to enter both the CVS root and module in order
 to identify the CVS branch.  A project and branch name are also required.
@@ -102,7 +106,29 @@ to identify the CVS branch.  A project and branch name are also required.
     :pserver:anonymous@cvs.example.com:/mozilla/cvs.
 
 
-== Requesting an import that is already being imported ==
+Requesting a CVS import with invalid information
+================================================
+
+If the :pserver is left off the beginning, the CVSROOT is invalid for our
+purposes.
+
+    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
+    >>> browser.getControl('Project').value = "firefox"
+    >>> browser.getControl('Branch Name').value = "import2"
+    >>> browser.getControl('CVS').click()
+    >>> browser.getControl('Repository').value = (
+    ...     ":anonymous@cvs.example.com:/mozilla/cvs")
+    >>> browser.getControl('Module').value = "firefox"
+    >>> browser.getControl('Request Import').click()
+
+    >>> for message in get_feedback_messages(browser.contents):
+    ...     print extract_text(message)
+    There is 1 error.
+    CVS root is invalid.
+
+
+Requesting an import that is already being imported
+===================================================
 
 If a user requests an import that is already being imported, then
 the validation message points the user to the existing branch.
@@ -137,7 +163,8 @@ The error is shown even if the project is different.
     the imported branch ~no-priv/firefox/imported.
 
 
-== Reqeusting an import whose name would clash ==
+Requesting an import whose name would clash
+===========================================
 
 Instead of Launchpad trying to come up with names for the imported
 branches, the user is asked to enter one when requesting the import.
@@ -156,7 +183,8 @@ one.
     There is already an existing import for firefox with the name of imported.
 
 
-== Requesting an import on a project where the user doesn't have permission ==
+Requesting an import on a project where the user doesn't have permission
+========================================================================
 
 If there are privacy policies that disallow the user from creating branches
 then an error is shown to the user.
@@ -173,7 +201,8 @@ then an error is shown to the user.
     You are not allowed to register imports for Launchpad.
 
 
-== Requesting an import for a product that does not exist ==
+Requesting an import for a product that does not exist
+======================================================
 
 If there are privacy policies that disallow the user from creating branches
 then an error is shown to the user.

@@ -62,7 +62,7 @@ from lp.soyuz.interfaces.archivepermission import (
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+    BuildStatus, BuildSetStatus, IBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
@@ -391,7 +391,7 @@ class ArchiveMenuMixin:
 
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
-        text = 'Edit dependencies'
+        text = 'Edit PPA dependencies'
         return Link('+edit-dependencies', text, icon='edit')
 
 
@@ -817,21 +817,29 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             'FULLYBUILT': 'Successfully built',
             'FULLYBUILT_PENDING': 'Successfully built',
             'NEEDSBUILD': 'Waiting to build',
-            'FAILEDTOBUILD': 'Failed to build',
+            'FAILEDTOBUILD': 'Failed to build:',
             'BUILDING': 'Currently building',
             }
 
         now = datetime.now(tz=pytz.UTC)
         for result_tuple in result_tuples:
             source_pub = result_tuple[0]
-            current_status = source_pub.getStatusSummaryForBuilds()['status']
+            status_summary = source_pub.getStatusSummaryForBuilds()
+            current_status = status_summary['status']
             duration = now - source_pub.datepublished
+
+            # We'd like to include the builds in the latest updates
+            # iff the build failed.
+            builds = []
+            if current_status == BuildSetStatus.FAILEDTOBUILD:
+                builds = status_summary['builds']
 
             latest_updates_list.append({
                 'title': source_pub.source_package_name,
                 'status': status_names[current_status.title],
                 'status_class': current_status.title,
                 'duration': duration,
+                'builds': builds
                 })
 
         return latest_updates_list
@@ -1295,6 +1303,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
     custom_widget('primary_components', LaunchpadRadioWidget,
                   cssClass='highlight-selected')
 
+    label = "Edit PPA dependencies"
+    page_title = label
+
     def initialize(self):
         self.cancel_url = canonical_url(self.context)
         self._messages = []
@@ -1624,17 +1635,27 @@ class ArchiveActivateView(LaunchpadFormView):
 
     schema = IPPAActivateForm
     custom_widget('description', TextAreaWidget, height=3)
+    label = "Personal Package Archive Activation"
 
     @property
     def ubuntu(self):
         return getUtility(ILaunchpadCelebrities).ubuntu
 
+    @property
+    def initial_values(self):
+        """Set up default values for form fields."""
+        # Suggest a default value of "ppa" for the name for the
+        # first PPA activation.
+        if self.context.archive is None:
+            return {'name': 'ppa'}
+        return {}
+
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 
         Reorder the fields in a way the make more sense to users and also
-        omit 'name' and present a checkbox for acknowledging the PPA-ToS
-        if the user is creating his first PPA.
+        present a checkbox for acknowledging the PPA-ToS if the user is
+        creating his first PPA.
         """
         LaunchpadFormView.setUpFields(self)
 
@@ -1643,7 +1664,7 @@ class ArchiveActivateView(LaunchpadFormView):
                 'name', 'displayname', 'description')
         else:
             self.form_fields = self.form_fields.select(
-                'displayname', 'accepted', 'description')
+                'name', 'displayname', 'accepted', 'description')
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""

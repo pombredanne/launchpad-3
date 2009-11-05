@@ -7,9 +7,10 @@ __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
 from zope.interface import implements, Interface
-from zope.component import getAdapter, getUtility
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
+from lp.archiveuploader.permission import verify_upload
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
@@ -71,7 +72,7 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
-from canonical.launchpad.interfaces.packaging import IPackaging
+from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
     IPerson, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillar
@@ -83,7 +84,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject, IProjectSet
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranch, IMakeOfficialBranchLinks)
+    IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
@@ -1592,13 +1593,65 @@ class EditBranch(AuthorizationBase):
     def checkAuthenticated(self, user):
         can_edit = (
             user.inTeam(self.obj.owner) or
-            user_has_special_branch_access(user))
+            user_has_special_branch_access(user) or
+            can_upload_linked_package(user, self.obj))
         if can_edit:
             return True
         code_import = self.obj.code_import
         if code_import is None:
             return False
         return user.inTeam(code_import.registrant)
+
+
+def can_upload_linked_package(person, branch):
+    """True if person may upload the package linked to `branch`."""
+
+    def get_current_release(ssp):
+        """Get current release for the source package linked to branch.
+
+        This function uses the `ISuiteSourcePackage` instance supplied.
+        """
+        package = ssp.sourcepackage
+        releases = ssp.distroseries.getCurrentSourceReleases(
+            [package.sourcepackagename])
+        return releases.get(package, None)
+
+    # No associated `ISuiteSourcePackage` data -> not an official branch.
+    # Abort.
+    ssp_list = branch.associatedSuiteSourcePackages()
+    if len(ssp_list) < 1:
+        return False
+
+    # XXX al-maisan, 2009-10-20: a branch may currently be associated with a
+    # number of (distroseries, sourcepackagename, pocket) combinations.
+    # This does not seem right. But until the database model is fixed we work
+    # around this by assuming that things are fine as long as we find at least
+    # one combination that allows us to upload the corresponding source
+    # package.
+
+    # Go through the associated `ISuiteSourcePackage` instances and see
+    # whether we can upload to any of the distro series/pocket combinations.
+    ssp = None
+    for ssp in ssp_list:
+        # Can we upload to the respective pocket?
+        if ssp.distroseries.canUploadToPocket(ssp.pocket):
+            break
+    else:
+        # Loop terminated normally i.e. we could not upload to any of the
+        # (distroseries, pocket) combinations found.
+        return False
+
+    archive = ssp.distroseries.distribution.main_archive
+    # Find the component the linked source package was published in.
+    current_release = get_current_release(ssp)
+    component = getattr(current_release, 'component', None)
+
+    # Is person authorised to upload the source package this branch
+    # is targeting?
+    result = verify_upload(person, ssp.sourcepackagename, archive, component)
+    # verify_upload() indicates that person *is* allowed to upload by
+    # returning None.
+    return result is None
 
 
 class AdminBranch(AuthorizationBase):

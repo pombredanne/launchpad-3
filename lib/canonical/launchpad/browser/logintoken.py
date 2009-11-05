@@ -221,7 +221,8 @@ class ResetPasswordView(BaseTokenView, LaunchpadFormView):
 
         naked_account = removeSecurityProxy(account)
         # Reset password can be used to reactivate a deactivated account.
-        if account.status == AccountStatus.DEACTIVATED:
+        inactive_states = [AccountStatus.DEACTIVATED, AccountStatus.NOACCOUNT]
+        if account.status in inactive_states:
             self.reactivate(data)
             self.request.response.addInfoNotification(
                 _('Welcome back to Launchpad.'))
