@@ -69,21 +69,6 @@ import, though:
     from svn://svn.example.com/fooix/trunk.
 
 
-== Not authorized versus 404 ==
-
-If the user attempts to hack the URL to edit the import details,
-they will get a not authorised page if the branch has a code import,
-and a 404 if the branch doesn't have an import.
-
-    >>> anon_browser.open(svn_import_location + '/+edit-import')
-    Traceback (most recent call last):
-    Unauthorized: (... 'launchpad.Edit')
-
-    >>> import_browser.open(hosted_branch_location + '/+edit-import')
-    Traceback (most recent call last):
-    NotFoundError
-
-
 == Editing details ==
 
 There are a number of buttons shown on the editing page for
