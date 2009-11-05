@@ -28,7 +28,7 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
-from lp.archiveuploader.permission import verify_upload
+from lp.archiveuploader.permission import check_upload_to_archive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
 from canonical.launchpad.interfaces import (
@@ -504,9 +504,9 @@ class NascentUpload:
         source_name = getUtility(
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
 
-        rejection_reason = verify_upload(
-            signer, source_name, archive, self.changes.dsc.component,
-            not self.is_new)
+        rejection_reason = check_upload_to_archive(
+            signer, self.policy.distroseries, source_name, archive,
+            self.changes.dsc.component, self.policy.pocket, not self.is_new)
         if rejection_reason is not None:
             self.reject(str(rejection_reason))
 
@@ -1032,4 +1032,3 @@ class NascentUpload:
             else:
                 # Reset the archive in the policy to the partner archive.
                 self.policy.archive = archive
-

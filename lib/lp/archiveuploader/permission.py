@@ -38,7 +38,8 @@ class CannotUploadToPocket:
 
     def __init__(self, distroseries, pocket):
         super(CannotUploadToPocket, self).__init__(
-            "Cannot upload to %s pocket of %s" % (pocket, distroseries))
+            "Not permitted to upload to the %s pocket in a series in the "
+            "'%s' state." % (pocket.name, distroseries.status.name))
 
 
 class CannotUploadToPPA(CannotUploadToArchive):
@@ -108,44 +109,55 @@ def can_upload_to_archive(person, suitesourcepackage, archive=None):
         `ISourcePackage.get_default_archive`).
     :return: True if they can, False if they cannot.
     """
-    reason = check_upload_to_archive(person, suitesourcepackage, archive)
-    return reason is None
-
-
-def check_upload_to_archive(person, suitesourcepackage, archive=None):
-    """Check if 'person' upload 'suitesourcepackage' to 'archive'.
-
-    :param person: An `IPerson` who might be uploading.
-    :param suitesourcepackage: An `ISuiteSourcePackage` to be uploaded.
-    :param archive: The `IArchive` to upload to. If not provided, defaults
-        to the default archive for the source package. (See
-        `ISourcePackage.get_default_archive`).
-    :return: The reason for not being able to upload, None otherwise.
-    """
-    # XXX: Tests
     sourcepackage = suitesourcepackage.sourcepackage
     if archive is None:
         archive = sourcepackage.get_default_archive()
     pocket = suitesourcepackage.pocket
     distroseries = sourcepackage.distroseries
-    if not distroseries.canUploadToPocket(pocket):
-        return CannotUploadToPocket(distroseries, pocket)
-
-    if archive.is_ppa and pocket != PackagePublishingPocket.RELEASE:
-        return InvalidPocketForPPA()
-    if (archive.purpose == ArchivePurpose.PARTNER and
-        pocket not in (
-            PackagePublishingPocket.RELEASE,
-            PackagePublishingPocket.PROPOSED)):
-        return InvalidPocketForPartnerArchive()
-
     sourcepackagename = sourcepackage.sourcepackagename
     component = sourcepackage.latest_published_component
     # strict_component is True because the source package already exists
     # (otherwise we couldn't have a suitesourcepackage object) and
     # nascentupload passes True as a matter of policy when the package exists.
+    reason = check_upload_to_archive(
+        person, distroseries, sourcepackagename, archive, component, pocket,
+        strict_component=True)
+    return reason is None
+
+
+def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
+                            component, pocket, strict_component=True):
+    """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+
+    :param person: An `IPerson` who might be uploading.
+    :param distroseries: The `IDistroSeries` being uploaded to.
+    :param sourcepackagename: The `ISourcePackageName` being uploaded.
+    :param archive: The `IArchive` to upload to. If not provided, defaults
+        to the default archive for the source package. (See
+        `ISourcePackage.get_default_archive`).
+    :param component: The `Component` being uploaded to.
+    :param pocket: The `PackagePublishingPocket` of 'distroseries' being
+        uploaded to.
+    :return: The reason for not being able to upload, None otherwise.
+    """
+    # XXX: Tests
+    if archive.purpose == ArchivePurpose.PARTNER:
+        if pocket not in (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED):
+            return InvalidPocketForPartnerArchive()
+    else:
+        # Uploads to the partner archive are allowed in any distroseries
+        # state.
+        # XXX julian 2005-05-29 bug=117557:
+        # This is a greasy hack until bug #117557 is fixed.
+        if not distroseries.canUploadToPocket(pocket):
+            return CannotUploadToPocket(distroseries, pocket)
+
+    if archive.is_ppa and pocket != PackagePublishingPocket.RELEASE:
+        return InvalidPocketForPPA()
     return verify_upload(
-        person, sourcepackagename, archive, component, strict_component=True)
+        person, sourcepackagename, archive, component, strict_component)
 
 
 def packagesets_valid_for(archive, person):
