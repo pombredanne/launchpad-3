@@ -71,7 +71,7 @@
               </label>
             </div>
           </div>
-          <p>
+          <p tal:condition="view/user/preferredemail">
             Once the file is ready for download, Launchpad will e-mail
             <code tal:content="view/user/preferredemail/email">user@domain</code>
             with a link to the file.
