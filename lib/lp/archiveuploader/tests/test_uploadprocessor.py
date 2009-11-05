@@ -742,8 +742,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected email containing 'Cannot mix partner files with "
             "non-partner.', got:\n%s" % raw_msg)
 
-    def testPartnerReusingOrigFromUbuntu(self):
-        """Official 'orig.tar.gz' can be reused for PPA uploads."""
+    def testPartnerReusingOrigFromPartner(self):
+        """Partner uploads reuse 'orig.tar.gz' from the partner archive."""
         # Make the official bar orig.tar.gz available in the system.
         uploadprocessor = self.setupBreezyAndGetUploadProcessor(
             policy='absolutely-anything')
