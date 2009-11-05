@@ -992,4 +992,11 @@
         factory="lp.code.browser.branchmergeproposal.BranchMergeProposalBreadcrumb"
         permission="zope.Public"/>
 
+    <adapter
+        for="lp.code.interfaces.diff.IPreviewDiff"
+        provides="zope.traversing.interfaces.IPathAdapter"
+        factory="lp.code.browser.diff.PreviewDiffFormatterAPI"
+        name="fmt"
+        />
+
 </configure>
