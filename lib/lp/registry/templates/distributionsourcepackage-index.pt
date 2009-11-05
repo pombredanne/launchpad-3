@@ -149,10 +149,6 @@
             <tal:has_packaging condition="row/packaging">
               <img tal:replace="structure row/packaging/productseries/image:icon"/>
               <a tal:replace="structure row/packaging/productseries/fmt:link"/>
-              <a tal:attributes="
-                href row/series_package/menu:overview/edit_packaging/url">
-                <img src="/@@/edit"/>
-              </a>
               <form style="display: inline"
                     method="POST"
                     tal:condition="row/hidden_packaging_field"
@@ -161,6 +157,11 @@
                 <tal:hidden replace="structure row/hidden_packaging_field" />
                 <tal:action replace="structure view/renderDeletePackagingAction" />
               </form>
+              <a tal:attributes="
+                href row/series_package/menu:overview/edit_packaging/url;
+                title string:Edit upsteam link">
+                <img src="/@@/edit"/>
+              </a>
             </tal:has_packaging>
           </div><!--float right-->
         </td>
@@ -215,12 +216,8 @@
       </tal:rows>
     </table>
     <script
-       tal:content="string:LP.client.cache['archive_context_url'] = '${archive/fmt:url}';"/>
+       tal:content="string:LP.client.cache['archive_context_url'] = '${archive/fmt:url}';"></script>
     <metal:js use-macro="archive/@@+macros/expandable-table-js"/>
-
-    <p style="float:right; padding-top:1em">
-      <a href="+publishinghistory">See full publishing history</a>
-    </p>
 
   </div>
 

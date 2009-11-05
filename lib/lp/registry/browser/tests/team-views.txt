@@ -256,3 +256,41 @@ page.  The display of mugshots is batched.
     <Person at ... name16 (Foo Bar)>
     <Person at ... jdub (Jeff Waugh)>
     <Person at ... mark (Mark Shuttleworth)>
+
+
+== Privacy and visibility ==
+
+Team visibility is used on the page to indicate privacy.  GuadaMen is a public
+team.
+
+    >>> view = create_initialized_view(guadamen, '+index')
+    >>> print view.visibility_info
+    Public team
+    >>> print view.visibility_portlet_class
+    portlet
+
+Private teams are indicated as private.
+
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> login('admin@canonical.com')
+    >>> private_team = factory.makeTeam(
+    ...     name='private-team', displayname='Private Team',
+    ...     visibility=PersonVisibility.PRIVATE)
+
+    >>> view = create_initialized_view(private_team, '+index')
+    >>> print view.visibility_info
+    Private team
+    >>> print view.visibility_portlet_class
+    portlet private
+
+Private membership teams are also indicated as private.
+
+    >>> private_membership_team = factory.makeTeam(
+    ...     name='private-membership-team',
+    ...     displayname='Private Membership Team',
+    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+    >>> view = create_initialized_view(private_membership_team, '+index')
+    >>> print view.visibility_info
+    Team membership is viewable by team members
+    >>> print view.visibility_portlet_class
+    portlet private

@@ -43,12 +43,13 @@ import re
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Int, Choice, Text, TextLine, Datetime)
+    Bool, Int, Choice, List, Text, TextLine, Datetime)
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
     call_with, collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, export_write_operation,
+    export_as_webservice_entry, export_factory_operation,
+    export_operation_as, export_read_operation, export_write_operation,
     exported, operation_parameters, operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
@@ -722,10 +723,43 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     def isBranchMergeable(other_branch):
         """Is the other branch mergeable into this branch (or vice versa)."""
 
+    @export_operation_as('createMergeProposal')
+    @operation_parameters(
+        target_branch=Reference(schema=Interface),
+        prerequisite_branch=Reference(schema=Interface),
+        needs_review=Bool(title=_('Needs review'),
+            description=_('If True, set queue_status to NEEDS_REVIEW.'
+            'Otherwise, it will be WORK_IN_PROGRESS.')),
+        initial_comment=TextLine(
+            title=_('Initial comment'),
+            description=_("Registrant's initial description of proposal.")),
+        commit_message=TextLine(
+            title=_('Commit message'),
+            description=_('Message to use when committing this merge.')),
+        reviewers=List(value_type=Reference(schema=IPerson)),
+        review_types=List(value_type=TextLine())
+        )
+    # target_branch and prerequisite_branch are actually IBranch, patched in
+    # _schema_circular_imports.
+    @call_with(registrant=REQUEST_USER)
+    # IBranchMergeProposal supplied as Interface to avoid circular imports.
+    @export_factory_operation(Interface, [])
+    def _createMergeProposal(
+        registrant, target_branch, prerequisite_branch=None,
+        needs_review=True, initial_comment=None, commit_message=None,
+        reviewers=None, review_types=None):
+        """API-oriented version of addLandingTarget.
+
+        The parameters are the same as addLandingTarget, except that
+        review_requests is split into a list of reviewers and a list of
+        review types.
+        """
+
     def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
                          whiteboard=None, date_created=None,
                          needs_review=False, initial_comment=None,
-                         review_requests=None):
+                         review_requests=None, review_diff=None,
+                         commit_message=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         Both the target_branch and the prerequisite_branch, if it is there,
@@ -1009,6 +1043,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         """
 
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
+
+    def requestUpgrade():
+        """Create an IBranchUpgradeJob to upgrade this branch."""
 
     def visibleByUser(user):
         """Can the specified user see this branch?"""
