@@ -31,16 +31,15 @@
     }
     .yui-diff-overlay-hidden {
       visibility: hidden;
+      display: none;
     }
     .yui-diff-overlay {
       width: 80%;
-      max-height: 80%;
     }
     .yui-diff-overlay #yui-pretty-overlay-modal {
       width: auto;
-    }
-    .diff {
-      max-height: 80%;
+      font: inherit;
+      color: black;
     }
 
   </style>
