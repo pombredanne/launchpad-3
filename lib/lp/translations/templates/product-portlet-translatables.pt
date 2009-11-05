@@ -64,7 +64,9 @@
 
 </div>
 
-<div class="portlet" tal:condition="context/required:launchpad.Admin">
+<div class="portlet"
+     tal:condition="context/required:launchpad.Admin"
+     id="custom-language-codes">
   If necessary, you may
   <a tal:attributes="href context/fmt:url/+custom-language-codes">
     define custom language codes

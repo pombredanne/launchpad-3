@@ -21,7 +21,9 @@
         of what goes where during translations import, and why.
       </p>
     </div>
-    <div tal:condition="context/has_custom_language_codes" class="portlet">
+    <div tal:condition="context/has_custom_language_codes"
+         class="portlet"
+         id="nonempty">
       <p>
         <tal:block replace="context/displayname">Evolution</tal:block>
         uses the following custom language codes:
@@ -60,15 +62,15 @@
       </table>
     </div>
 
-    <div tal:condition="not: context/has_custom_language_codes"
-         class="portlet">
-      <p>
-        No custom language codes have been defined.
-      </p>
-    </div>
+    <p tal:condition="not: context/has_custom_language_codes"
+         class="portlet"
+         id="empty">
+      No custom language codes have been defined.
+    </p>
 
     <div>
       <a tal:attributes="href context/fmt:url/+add-custom-language-code"
+         tal:condition="context/required:launchpad.Admin"
          class="add sprite">
         Add a custom language code
       </a>

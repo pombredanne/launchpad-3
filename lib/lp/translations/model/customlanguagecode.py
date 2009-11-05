@@ -84,7 +84,7 @@ class HasCustomLanguageCodesMixin:
                 match, CustomLanguageCode.language_code == language_code)
         return store.find(CustomLanguageCode, match)
 
-    @cachedproperty
+    @property
     def has_custom_language_codes(self):
         """See `IHasCustomLanguageCodes`."""
         return self._queryCustomLanguageCodes().any() is not None
