@@ -24,5 +24,5 @@ class FixTranslationCredits(LaunchpadScript):
 
 if __name__ == '__main__':
     script = FixTranslationCredits(name="fix-translation-credits",
-                                   dbuser='rosetta_fix_translation_credits')
+                                   dbuser='rosettaadmin')
     script.lock_and_run()
