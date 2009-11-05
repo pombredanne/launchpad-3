@@ -39,7 +39,7 @@
 
           var updateNotificationBox = function(e) {
               var notice = Y.one('.important-notice-container');
-              var balloon = notice.query('.important-notice-balloon');
+              var balloon = notice.one('.important-notice-balloon');
               var dismiss_notice_cookie = ('translation-docs-for-' +
                                            documentation_cookie);
 
@@ -50,7 +50,7 @@
                  notice.setStyle('display', 'none');
               }
 
-              var cancel_button = notice.query(
+              var cancel_button = notice.one(
                   '.important-notice-cancel-button');
               // Cancel button starts out hidden.  If user has JavaScript,
               // then we want to show it.

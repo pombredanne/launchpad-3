@@ -88,7 +88,7 @@
        var main_area = Y.one("#mainarea");
 
        // Highlight the selected radio button input on page load.
-       var inputs = main_area.queryAll("input.highlight-selected");
+       var inputs = main_area.all("input.highlight-selected");
        highlight_checked(inputs);
 
        // Install signal handlers for all radio-button inputs to
@@ -97,7 +97,7 @@
        inputs.each(function(input) {
            input.on("click", function(e) {
                var main_area = Y.one("#mainarea");
-               var inputs = main_area.queryAll("input.highlight-selected");
+               var inputs = main_area.all("input.highlight-selected");
                highlight_checked(inputs);
            });
        });
@@ -107,7 +107,7 @@
        // be decorated with 'line-through' style and rendered in
        // 'red'. Options not selected (or unselected) text will be
        // rendered in 'blue' and without any decoration.
-       var inputs = main_area.queryAll("input.line-through-when-checked");
+       var inputs = main_area.all("input.line-through-when-checked");
        if (inputs) {
            inputs.each(function(input) {
                input.on("click", function(e) {

@@ -17,6 +17,10 @@ HERE:=$(shell pwd)
 
 LPCONFIG=development
 
+JSFLAGS=
+LP_BUILT_JS_ROOT=lib/canonical/launchpad/icing/build
+LAZR_BUILT_JS_ROOT=lazr-js/build
+
 MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
@@ -121,12 +125,13 @@ inplace: build
 build: $(BZR_VERSION_INFO) compile apidoc jsbuild
 
 jsbuild_lazr:
-	${SHHH} bin/jsbuild -b lazr-js/build
+	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT)
 
 jsbuild: jsbuild_lazr
 	${SHHH} bin/jsbuild \
+		$(JSFLAGS) \
 		-n launchpad -s lib/canonical/launchpad/javascript \
-		-b lib/canonical/launchpad/icing/build \
+		-b $(LP_BUILT_JS_ROOT) \
 		lib/canonical/launchpad/icing/MochiKit.js \
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
@@ -259,7 +264,11 @@ rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
-clean:
+clean_js:
+	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
+	$(RM) -r $(LAZR_BUILT_JS_ROOT)
+
+clean: clean_js
 	$(MAKE) -C sourcecode/pygettextpo clean
 	if test -f sourcecode/mailman/Makefile; then \
 		$(MAKE) -C sourcecode/mailman clean; \
@@ -357,4 +366,4 @@ ID: compile
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild
+	jsbuild clean_js
