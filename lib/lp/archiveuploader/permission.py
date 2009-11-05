@@ -7,6 +7,8 @@ __metaclass__ = type
 __all__ = [
     'CannotUploadToArchive',
     'CannotUploadToPPA',
+    'can_upload_to_archive',
+    'check_upload_to_archive',
     'components_valid_for',
     'verify_upload',
     ]
@@ -96,8 +98,22 @@ def components_valid_for(archive, person):
     return set(permission.component for permission in permissions)
 
 
-def can_upload(person, suitesourcepackage, archive=None):
-    """Can 'person' upload 'suitesourcepackage' to 'archive'?
+def can_upload_to_archive(person, suitesourcepackage, archive=None):
+    """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+
+    :param person: An `IPerson` who might be uploading.
+    :param suitesourcepackage: An `ISuiteSourcePackage` to be uploaded.
+    :param archive: The `IArchive` to upload to. If not provided, defaults
+        to the default archive for the source package. (See
+        `ISourcePackage.get_default_archive`).
+    :return: True if they can, False if they cannot.
+    """
+    reason = check_upload_to_archive(person, suitesourcepackage, archive)
+    return reason is None
+
+
+def check_upload_to_archive(person, suitesourcepackage, archive=None):
+    """Check if 'person' upload 'suitesourcepackage' to 'archive'.
 
     :param person: An `IPerson` who might be uploading.
     :param suitesourcepackage: An `ISuiteSourcePackage` to be uploaded.
@@ -107,7 +123,7 @@ def can_upload(person, suitesourcepackage, archive=None):
     :return: The reason for not being able to upload, None otherwise.
     """
     # XXX: Tests
-    sourcepackage = suitesourcepackage
+    sourcepackage = suitesourcepackage.sourcepackage
     if archive is None:
         archive = sourcepackage.get_default_archive()
     pocket = suitesourcepackage.pocket

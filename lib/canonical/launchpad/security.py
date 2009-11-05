@@ -10,7 +10,7 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
-from lp.archiveuploader.permission import verify_upload
+from lp.archiveuploader.permission import can_upload_to_archive
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
@@ -1598,17 +1598,6 @@ class EditBranch(AuthorizationBase):
 
 def can_upload_linked_package(person, branch):
     """True if person may upload the package linked to `branch`."""
-
-    def get_current_release(ssp):
-        """Get current release for the source package linked to branch.
-
-        This function uses the `ISuiteSourcePackage` instance supplied.
-        """
-        package = ssp.sourcepackage
-        releases = ssp.distroseries.getCurrentSourceReleases(
-            [package.sourcepackagename])
-        return releases.get(package, None)
-
     # No associated `ISuiteSourcePackage` data -> not an official branch.
     # Abort.
     ssp_list = branch.associatedSuiteSourcePackages()
@@ -1621,30 +1610,10 @@ def can_upload_linked_package(person, branch):
     # around this by assuming that things are fine as long as we find at least
     # one combination that allows us to upload the corresponding source
     # package.
-
-    # Go through the associated `ISuiteSourcePackage` instances and see
-    # whether we can upload to any of the distro series/pocket combinations.
-    ssp = None
     for ssp in ssp_list:
-        # Can we upload to the respective pocket?
-        if ssp.distroseries.canUploadToPocket(ssp.pocket):
-            break
-    else:
-        # Loop terminated normally i.e. we could not upload to any of the
-        # (distroseries, pocket) combinations found.
-        return False
-
-    archive = ssp.distroseries.distribution.main_archive
-    # Find the component the linked source package was published in.
-    current_release = get_current_release(ssp)
-    component = getattr(current_release, 'component', None)
-
-    # Is person authorised to upload the source package this branch
-    # is targeting?
-    result = verify_upload(person, ssp.sourcepackagename, archive, component)
-    # verify_upload() indicates that person *is* allowed to upload by
-    # returning None.
-    return result is None
+        if can_upload_to_archive(person, ssp):
+            return True
+    return False
 
 
 class AdminBranch(AuthorizationBase):
