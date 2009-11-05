@@ -329,7 +329,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # component will eventually end up in the partner archive though.
         if (self.policy.archive.purpose == ArchivePurpose.PRIMARY and
             self.component_name == 'partner'):
-            archives = [getUtility(IArchiveSet).getByDistroPurpose(
+            archives = [
+                getUtility(IArchiveSet).getByDistroPurpose(
                 distribution=self.policy.distro,
                 purpose=ArchivePurpose.PARTNER)]
         elif (self.policy.archive.purpose == ArchivePurpose.PPA and
