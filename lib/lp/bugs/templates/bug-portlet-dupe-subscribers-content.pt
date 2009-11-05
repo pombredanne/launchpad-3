@@ -5,7 +5,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="
     bug context/bug|context;
-    from_dupes_subscriptions view/getSortedSubscriptionsFromDuplicates;
+    from_dupes_subscriptions view/sorted_subscriptions_from_dupes;
   ">
   <div
     tal:condition="from_dupes_subscriptions"

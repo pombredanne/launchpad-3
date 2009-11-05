@@ -1001,7 +1001,7 @@
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
             name="+bug-portlet-dupe-subscribers-content"
-            class="lp.bugs.browser.bugsubscription.BugPortletSubcribersContents"
+            class="lp.bugs.browser.bugsubscription.BugPortletDuplicateSubcribersContents"
             template="../templates/bug-portlet-dupe-subscribers-content.pt"
             permission="zope.Public"/>
         <browser:navigation

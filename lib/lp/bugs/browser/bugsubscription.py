@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BugPortletDuplicateSubcribersContents',
     'BugPortletSubcribersContents',
     'BugSubscriptionAddView',
     ]
@@ -61,7 +62,8 @@ class BugSubscriptionAddView(LaunchpadFormView):
 class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
     """View for the contents for the subscribers portlet."""
 
-    def getSortedDirectSubscriptions(self):
+    @property
+    def sorted_direct_subscriptions(self):
         """Get the list of direct subscriptions to the bug.
 
         The list is sorted such that subscriptions you can unsubscribe appear
@@ -83,7 +85,12 @@ class BugPortletSubcribersContents(LaunchpadView, BugViewMixin):
                 cannot_unsubscribe.append(subscription)
         return can_unsubscribe + cannot_unsubscribe
 
-    def getSortedSubscriptionsFromDuplicates(self):
+
+class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
+    """View for the contents for the subscribers-from-dupes portlet block."""
+
+    @property
+    def sorted_subscriptions_from_dupes(self):
         """Get the list of subscriptions to duplicates of this bug."""
         return [
             SubscriptionAttrDecorator(subscription)

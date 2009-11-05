@@ -5,7 +5,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="
     bug context/bug|context;
-    direct_subscriptions view/getSortedDirectSubscriptions;
+    direct_subscriptions view/sorted_direct_subscriptions;
     also_notified_subscribers bug/getAlsoNotifiedSubscribers
   ">
   <div class="section" id="subscribers-direct">
