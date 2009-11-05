@@ -851,6 +851,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             SourcePackagePublishingHistory.dateremoved is NULL
             """ % sqlvalues(self, archive),
             distinct=True,
+            orderBy="name",
             clauseTables=['SourcePackagePublishingHistory', 'DistroSeries',
                 'SourcePackageRelease']))
 
