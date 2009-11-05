@@ -13,7 +13,9 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archive import ArchivePurpose
 
 
 class CannotUploadToArchive:
@@ -70,6 +72,18 @@ class NoRightsForComponent(CannotUploadToArchive):
         super(NoRightsForComponent, self).__init__(component=component.name)
 
 
+class InvalidPocketForPPA(CannotUploadToArchive):
+    """PPAs only support some pockets."""
+
+    _fmt = "PPA uploads must be for the RELEASE pocket."
+
+
+class InvalidPocketForPartnerArchive(CannotUploadToArchive):
+    """PPAs only support some pockets."""
+
+    _fmt = "Partner uploads must be for the RELEASE or PROPOSED pocket."
+
+
 def components_valid_for(archive, person):
     """Return the components that 'person' can upload to 'archive'.
 
@@ -90,6 +104,7 @@ def can_upload(person, suitesourcepackage, archive=None):
     :param archive: The `IArchive` to upload to. If not provided, defaults
         to the default archive for the source package. (See
         `ISourcePackage.get_default_archive`).
+    :return: The reason for not being able to upload, None otherwise.
     """
     # XXX: Tests
     sourcepackage = suitesourcepackage
@@ -100,8 +115,13 @@ def can_upload(person, suitesourcepackage, archive=None):
     if not distroseries.canUploadToPocket(pocket):
         return CannotUploadToPocket(distroseries, pocket)
 
-    # XXX: Should we also do the PPA & Partner testing that uploadpolicy's
-    # checkUpload does? -- probably, yes
+    if archive.is_ppa and pocket != PackagePublishingPocket.RELEASE:
+        return InvalidPocketForPPA()
+    if (archive.purpose == ArchivePurpose.PARTNER and
+        pocket not in (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED)):
+        return InvalidPocketForPartnerArchive()
 
     sourcepackagename = sourcepackage.sourcepackagename
     component = sourcepackage.latest_published_component
