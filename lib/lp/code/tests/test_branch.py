@@ -9,7 +9,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.security import EditBranch
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.testing import DatabaseFunctionalLayer
 
@@ -308,22 +307,12 @@ class TestWriteToBranch(PermissionTest):
         # permissions granted above.
         self.assertCanEdit(person, branch)
 
-
-class TestEditBranch(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def assertCanEdit(self, branch, person, can_edit):
-        branch = removeSecurityProxy(branch)
-        self.assertEqual(
-            can_edit, EditBranch(branch).checkAuthenticated(person))
-
     def test_arbitrary_person_cannot_edit(self):
         # Arbitrary people cannot edit branches, you have to be someone
         # special.
         branch = self.factory.makeAnyBranch()
         person = self.factory.makePerson()
-        self.assertCanEdit(branch, person, False)
+        self.assertCannotEdit(person, branch)
 
     def test_code_import_registrant_can_edit(self):
         # It used to be the case that all import branches were owned by the
@@ -338,7 +327,7 @@ class TestEditBranch(TestCaseWithFactory):
         removeSecurityProxy(branch).setOwner(
             getUtility(ILaunchpadCelebrities).vcs_imports,
             getUtility(ILaunchpadCelebrities).vcs_imports)
-        self.assertCanEdit(branch, registrant, True)
+        self.assertCanEdit(registrant, branch)
 
 
 def test_suite():
