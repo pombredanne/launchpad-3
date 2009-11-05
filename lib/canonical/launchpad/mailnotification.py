@@ -1180,13 +1180,18 @@ def notify_message_held(message_approval, event):
         'team': team.displayname,
         }
 
+    # Don't wrap the paragraph with the url.
+    def wrap_function(paragraph):
+        return (paragraph.startswith('http:') or
+                paragraph.startswith('https:'))
+
     # Send one message to every team administrator.
     person_set = getUtility(IPersonSet)
     for address in team.getTeamAdminsEmailAddresses():
         user = person_set.getByEmail(address)
         replacements['user'] = user.displayname
         body = MailWrapper(72).format(
-            template % replacements, force_wrap=True)
+            template % replacements, force_wrap=True, wrap_func=wrap_function)
         simple_sendmail(from_address, address, subject, body)
 
 
