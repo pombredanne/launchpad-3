@@ -20,8 +20,8 @@
 
         <table>
           <tr tal:repeat="bugtask bugtasks">
-            <tal:define-vars define="hide_extra_details string:true">
-              <tal:task tal:replace="structure bugtask/@@+listing-detailed" />
+            <tal:define-vars define="show_extra_details python:True">
+              <metal:task use-macro="bugtask/@@+bugtask-macros-listing/detailed" />
             </tal:define-vars>
           </tr>
         </table>

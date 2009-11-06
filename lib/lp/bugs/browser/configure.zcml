@@ -487,8 +487,8 @@
             template="../templates/bugtask-tasks-and-nominations-table-row.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            name="+listing-detailed"
-            template="../templates/bugtask-listing-detailed.pt"
+            name="+bugtask-macros-listing"
+            template="../templates/bugtask-macros-listing.pt"
             permission="zope.Public"/>
         <browser:page
             name="+edit"
