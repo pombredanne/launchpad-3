@@ -34,6 +34,8 @@ class ISprintAttendance(Interface):
         "when you will no longer be available for sessions at this event, to "
         "assist those planning the schedule."))
     is_physical = Bool(
-        title=_("Will you be physically present?"),
-        description=_("'No' implies your attendance is virtual."),
+        title=_("How will you be attending?"),
+        description=_(
+            "Yes, you will be physically present, "
+            "or no, you will be remotely present."),
         required=False, readonly=False, default=True)

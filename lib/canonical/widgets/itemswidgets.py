@@ -25,8 +25,6 @@ from zope.app.form.browser.widget import renderElement
 
 from lazr.enum import IEnumeratedType
 
-from canonical.launchpad import _
-
 
 class LaunchpadDropdownWidget(DropdownWidget):
     """A Choice widget that doesn't encloses itself in <div> tags."""
@@ -187,18 +185,40 @@ class LaunchpadRadioWidgetWithDescription(LaunchpadRadioWidget):
             % ''.join(rendered_items))
 
 
-def LaunchpadBooleanRadioWidget(field, request, true=_('yes'), false=_('no')):
+class LaunchpadBooleanRadioWidget(LaunchpadRadioWidget):
     """Render a Bool field as radio widget.
 
     The `LaunchpadRadioWidget` does the rendering. Only the True-False values
-    are rendered; a missing value item is not rendered. The default values
-    are rendered as 'yes' and 'no'.
+    are rendered; a missing value item is not rendered. The default labels
+    are rendered as 'yes' and 'no', but can be changed by setting the widget's 
+    true_label and false_label attributes.
     """
-    vocabulary = SimpleVocabulary.fromItems( ((true, True), (false, False)) ) 
-    widget = LaunchpadRadioWidget(field, vocabulary, request)
-    widget.required = True
-    widget._displayItemForMissingValue = False
-    return widget
+
+    TRUE = 'yes'
+    FALSE = 'no'
+
+    def __init__(self, field, request):
+        """Initialize the widget."""
+        vocabulary = SimpleVocabulary.fromItems(
+            ((self.TRUE, True), (self.FALSE, False)))
+        super(LaunchpadBooleanRadioWidget, self).__init__(
+            field, vocabulary, request)
+        # Suppress the missing value behaviour; this is a boolean field.
+        self.required = True
+        self._displayItemForMissingValue = False
+        # Set the default labels for true and false values.
+        self.true_label = 'yes'
+        self.false_label = 'no'
+
+    def _renderItem(self, index, text, value, name, cssClass, checked=False):
+        """Render the item with the preferred true and false labels."""
+        if value == self.TRUE:
+            text = self.true_label
+        else:
+            # value == self.FALSE.
+            text = self.false_label
+        return super(LaunchpadBooleanRadioWidget, self)._renderItem(
+            index, text, value, name, cssClass, checked=checked)
 
 
 class CheckBoxMatrixWidget(LabeledMultiCheckBoxWidget):

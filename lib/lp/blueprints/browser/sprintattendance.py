@@ -27,7 +27,8 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
     custom_widget('time_starts', DateTimeWidget)
     custom_widget('time_ends', DateTimeWidget)
     custom_widget(
-        'is_physical', LaunchpadBooleanRadioWidget, orientation='vertical')
+        'is_physical', LaunchpadBooleanRadioWidget, orientation='vertical',
+        true_label="Physically", false_label="Remotely")
 
     def setUpWidgets(self):
         LaunchpadFormView.setUpWidgets(self)
@@ -137,7 +138,8 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
         for attendance in self.context.attendances:
             if attendance.attendee == self.user:
                 return dict(time_starts=attendance.time_starts,
-                            time_ends=attendance.time_ends)
+                            time_ends=attendance.time_ends,
+                            is_physical=attendance.is_physical)
         # If this person is not yet registered, then default to showing the
         # full sprint dates.
         return {'time_starts': self.context.time_starts,
