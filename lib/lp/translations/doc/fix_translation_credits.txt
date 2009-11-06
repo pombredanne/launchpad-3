@@ -15,3 +15,5 @@ Marks all existing translation credits as translated.
     INFO    Processed ...
     INFO    Done.
 
+    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
+    >>> LaunchpadTestSetup().force_dirty_database()
