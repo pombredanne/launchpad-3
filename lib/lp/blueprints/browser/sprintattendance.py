@@ -28,7 +28,7 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
     custom_widget('time_ends', DateTimeWidget)
     custom_widget(
         'is_physical', LaunchpadBooleanRadioWidget, orientation='vertical',
-        true_label="Physically", false_label="Remotely")
+        true_label="Physically", false_label="Remotely", hint=None)
 
     def setUpWidgets(self):
         LaunchpadFormView.setUpWidgets(self)
