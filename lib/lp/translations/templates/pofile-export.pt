@@ -71,6 +71,12 @@
               </label>
             </div>
           </div>
+          <tal:comment condition="nothing">
+            `user/preferredemail` can be None if someone is coming
+            directly from their email confirmation page, and that data
+            has not yet propagated from the auth store to the main LP
+            store.  See bug #462891 for details.
+          </tal:comment>
           <p tal:condition="view/user/preferredemail">
             Once the file is ready for download, Launchpad will e-mail
             <code tal:content="view/user/preferredemail/email">user@domain</code>
