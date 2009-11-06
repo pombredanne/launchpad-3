@@ -16,7 +16,6 @@ from zope.interface import implements
 from sqlobject import ForeignKey, StringCol
 from storm.expr import And
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces.lpstorm import IStore
 
