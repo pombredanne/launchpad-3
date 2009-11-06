@@ -125,12 +125,15 @@ inplace: build
 build: $(BZR_VERSION_INFO) compile apidoc jsbuild
 
 jsbuild_lazr:
-	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT)
+	# We absolutely do not want to include the testing module and its
+	# jsTestDriver test harness hacks.  They fiddle with built-in functions!
+	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/
 
 jsbuild: jsbuild_lazr
 	${SHHH} bin/jsbuild \
 		$(JSFLAGS) \
-		-n launchpad -s lib/canonical/launchpad/javascript \
+		-n launchpad \
+		-s lib/canonical/launchpad/javascript \
 		-b $(LP_BUILT_JS_ROOT) \
 		lib/canonical/launchpad/icing/MochiKit.js \
 		$(shell $(HERE)/utilities/yui-deps.py) \
