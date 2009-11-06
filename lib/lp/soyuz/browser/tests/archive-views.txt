@@ -1345,3 +1345,50 @@ upload queue.
 
     >>> print copy.status.name
     ACCEPTED
+
+
+== External dependencies validation ==
+
+The ArchiveAdminView checks the external_dependencies form data to see if
+it's a valid sources.list entry.
+
+    >>> ppa_archive_view = create_initialized_view(
+    ...     cprov.archive, name="+admin")
+
+The validate_external_dependencies() method is called when validating and will
+return a list of errors if the data dis not validate.  A valid entry is of the
+form:
+    deb scheme://domain/ suite component[s]
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic main")
+    []
+
+Multiple entries are valid, separated by newlines:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic main\n"
+    ...     "deb http://example.com/ karmic restricted")
+    []
+
+If the line does not start with the word "deb" it fails:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic universe\n"
+    ...     "dab http://example.com/ karmic main")
+    ["dab http://example.com/ karmic main: Must start with 'deb'"]
+
+If the line has too few parts it fails.  Here we're missing a suite:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic universe\n"
+    ...     "deb http://example.com/ main")
+    ["'deb http://example.com/ main'
+        is not a complete and valid sources.list entry"]
+
+If the URL looks invalid, it fails:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic universe\n"
+    ...     "deb example.com/ karmic main")
+    ['deb example.com/ karmic main: Invalid URL']

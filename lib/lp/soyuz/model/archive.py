@@ -174,6 +174,12 @@ class Archive(SQLBase):
     relative_build_score = IntCol(
         dbName='relative_build_score', notNull=True, default=0)
 
+    # This field is specifically and only intended for OEM migration to
+    # Launchpad and should be re-examined in October 2010 to see if it
+    # is still relevant.
+    external_dependencies = StringCol(
+        dbName='external_dependencies', notNull=False, default=None)
+
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -998,11 +1004,12 @@ class Archive(SQLBase):
         return permission_set.packagesetsForSource(
             self, sourcepackagename, direct_permissions)
 
-    def isSourceUploadAllowed(self, sourcepackagename, person):
+    def isSourceUploadAllowed(
+        self, sourcepackagename, person, distroseries=None):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.isSourceUploadAllowed(
-            self, sourcepackagename, person)
+            self, sourcepackagename, person, distroseries)
 
     def getFileByName(self, filename):
         """See `IArchive`."""
