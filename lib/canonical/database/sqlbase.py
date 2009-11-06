@@ -167,7 +167,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
 
     def __init__(self, *args, **kwargs):
         """Extended version of the SQLObjectBase constructor.
-        
+
         We we force use of the the master Store.
 
         We refetch any parameters from different stores from the
@@ -196,7 +196,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
                 assert new_argument is not None, (
                     '%s not yet synced to this store' % repr(argument))
                 kwargs[key] = new_argument
-                
+
         store.add(self)
         try:
             self._create(None, **kwargs)
@@ -266,10 +266,8 @@ class ZopelessTransactionManager(object):
                              "directly instantiated.")
 
     @classmethod
-    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
-                     isolation=ISOLATION_LEVEL_DEFAULT):
-        # Connect to the auth master store as well, as some scripts might need
-        # to create EmailAddresses and Accounts.
+    def _get_zopeless_connection_config(self, dbname, dbhost):
+        # This method exists for testability.
         main_connection_string = config.database.main_master
         auth_connection_string = config.database.auth_master
 
@@ -290,6 +288,16 @@ class ZopelessTransactionManager(object):
             match = re.search(r'host=(\S*)', main_connection_string)
             if match is not None:
                 dbhost = match.group(1)
+        return main_connection_string, auth_connection_string, dbname, dbhost
+
+    @classmethod
+    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
+                     isolation=ISOLATION_LEVEL_DEFAULT):
+        # Connect to the auth master store as well, as some scripts might need
+        # to create EmailAddresses and Accounts.
+
+        main_connection_string, auth_connection_string, dbname, dbhost = (
+            cls._get_zopeless_connection_config(dbname, dbhost))
 
         assert dbuser is not None, '''
             dbuser is now required. All scripts must connect as unique
