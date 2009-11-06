@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'DerivativeDistributionOverviewMenu',
     'DistributionAddView',
-    'DistributionAllPackagesView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
