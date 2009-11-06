@@ -325,7 +325,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return (2, self.name)
         return (3, self.name)
 
-    @cachedproperty('_cached_serieses')
+    @cachedproperty('_cached_series')
     def series(self):
         """See `IDistribution`."""
         ret = DistroSeries.selectBy(distribution=self)
@@ -1495,8 +1495,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             # This driver is a release manager.
             series.driver = owner
 
-        if safe_hasattr(self, '_cached_serieses'):
-            del self._cached_serieses
+        if safe_hasattr(self, '_cached_series'):
+            del self._cached_series
         return series
 
     @property

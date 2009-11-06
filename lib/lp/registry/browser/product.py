@@ -928,7 +928,7 @@ class ProductPackagesView(PackagingDeleteView):
     @property
     def all_packaging(self):
         """See `PackagingDeleteView`."""
-        for series in self.context.serieses:
+        for series in self.context.series:
             for packaging in series.packagings:
                 yield packaging
 
@@ -948,7 +948,7 @@ class ProductPackagesView(PackagingDeleteView):
         # be called several times as data is mutated, series_packages should
         # only be called during render().
         packaged_series = []
-        for series in self.context.serieses:
+        for series in self.context.series:
             packagings = []
             for packaging in series.packagings:
                 form_id = 'delete-%s-%s-%s' % (
