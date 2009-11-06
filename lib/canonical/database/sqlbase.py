@@ -268,26 +268,26 @@ class ZopelessTransactionManager(object):
     @classmethod
     def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
                      isolation=ISOLATION_LEVEL_DEFAULT):
-        # Get the existing connection info. We use the MAIN MASTER
-        # Store, as this is the only Store code still using this
-        # deprecated code interacts with.
-        connection_string = config.database.main_master
+        # Connect to the auth master store as well, as some scripts might need
+        # to create EmailAddresses and Accounts.
+        main_connection_string = config.database.main_master
+        auth_connection_string = config.database.auth_master
 
         # Override dbname and dbhost in the connection string if they
         # have been passed in.
         if dbname is not None:
-            connection_string = re.sub(
-                    r'dbname=\S*', r'dbname=%s' % dbname, connection_string)
+            main_connection_string = re.sub(
+                r'dbname=\S*', r'dbname=%s' % dbname, main_connection_string)
         else:
-            match = re.search(r'dbname=(\S*)', connection_string)
+            match = re.search(r'dbname=(\S*)', main_connection_string)
             if match is not None:
                 dbname = match.group(1)
 
         if dbhost is not None:
-            connection_string = re.sub(
-                    r'host=\S*', r'host=%s' % dbhost, connection_string)
+            main_connection_string = re.sub(
+                    r'host=\S*', r'host=%s' % dbhost, main_connection_string)
         else:
-            match = re.search(r'host=(\S*)', connection_string)
+            match = re.search(r'host=(\S*)', main_connection_string)
             if match is not None:
                 dbhost = match.group(1)
 
@@ -304,8 +304,8 @@ class ZopelessTransactionManager(object):
         # Construct a config fragment:
         overlay = dedent("""\
             [database]
-            main_master: %(connection_string)s
-            auth_master: %(connection_string)s
+            main_master: %(main_connection_string)s
+            auth_master: %(auth_connection_string)s
             isolation_level: %(isolation_level)s
             """ % vars())
 
@@ -346,26 +346,33 @@ class ZopelessTransactionManager(object):
         Other stores do not need to be reset, as code using other stores
         or explicit flavors isn't using this compatibility layer.
         """
-        store = _get_sqlobject_store()
-        connection = store._connection
-        if connection._state == storm.database.STATE_CONNECTED:
-            if connection._raw_connection is not None:
-                connection._raw_connection.close()
+        main_store = _get_sqlobject_store()
+        # XXX: salgado, 2009-11-06, bug=253542: The import is here to work
+        # around a particularly convoluted circular import.
+        from canonical.launchpad.webapp.interfaces import (
+            IStoreSelector, AUTH_STORE, DEFAULT_FLAVOR)
+        auth_store = getUtility(IStoreSelector).get(
+            AUTH_STORE, DEFAULT_FLAVOR)
+        for store in [main_store, auth_store]:
+            connection = store._connection
+            if connection._state == storm.database.STATE_CONNECTED:
+                if connection._raw_connection is not None:
+                    connection._raw_connection.close()
 
-            # This method assumes that calling transaction.abort() will
-            # call rollback() on the store, but this is no longer the
-            # case as of jamesh's fix for bug 230977; Stores are not
-            # registered with the transaction manager until they are
-            # used. While storm doesn't provide an API which does what
-            # we want, we'll go under the covers and emit the
-            # register-transaction event ourselves. This method is
-            # only called by the test suite to kill the existing
-            # connections so the Store's reconnect with updated
-            # connection settings.
-            store._event.emit('register-transaction')
+                # This method assumes that calling transaction.abort() will
+                # call rollback() on the store, but this is no longer the
+                # case as of jamesh's fix for bug 230977; Stores are not
+                # registered with the transaction manager until they are
+                # used. While storm doesn't provide an API which does what
+                # we want, we'll go under the covers and emit the
+                # register-transaction event ourselves. This method is
+                # only called by the test suite to kill the existing
+                # connections so the Store's reconnect with updated
+                # connection settings.
+                store._event.emit('register-transaction')
 
-            connection._raw_connection = None
-            connection._state = storm.database.STATE_DISCONNECTED
+                connection._raw_connection = None
+                connection._state = storm.database.STATE_DISCONNECTED
         transaction.abort()
 
     @classmethod
