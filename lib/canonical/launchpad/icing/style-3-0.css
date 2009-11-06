@@ -466,6 +466,9 @@ li .registered {
     padding: 0 1.5em 0 0;
     }
 .subordinate {
+    margin-left: 2em;
+    }
+ol.subordinate {
     margin-left: 4em;
     }
 .two-column-list li,
