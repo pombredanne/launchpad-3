@@ -22,8 +22,10 @@ from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import (
     connect_string, ISOLATION_LEVEL_AUTOCOMMIT)
 from canonical.launchpad.scripts import db_options, logger_options, logger
+from canonical.launchpad.webapp.adapter import _auth_store_tables
 
 import replication.helpers
+from replication.helpers import AUTHDB_SET_ID, LPMAIN_SET_ID
 
 def main():
     parser = OptionParser(
@@ -72,6 +74,12 @@ def main():
     if node_id in [node.node_id for node in existing_nodes]:
         parser.error("Node %d already exists in the cluster." % node_id)
 
+    # Get the connection string for masters.
+    lpmain_connection_string = get_master_connection_string(
+        source_connection, parser, AUTHDB_SET_ID) or source_connection_string
+    authdb_connection_string = get_master_connection_string(
+        source_connection, parser, LPMAIN_SET_ID) or source_connection_string
+
     # Sanity check the target connection string.
     target_connection_string = ConnectionString(raw_target_connection_string)
     if target_connection_string.user is None:
@@ -110,11 +118,11 @@ def main():
             "Database at %s is not empty." % target_connection_string)
     target_con.rollback()
 
-    # Duplicate the schema. We restore with no-privileges as required
+    # Duplicate the full schema. We restore with no-privileges as required
     # roles may not yet exist, so we have to run security.py on the
     # new slave once it is built.
-    log.info("Duplicating db schema from '%s' to '%s'" % (
-        source_connection_string, target_connection_string))
+    log.info("Duplicating full db schema from '%s' to '%s'" % (
+        lpmain_connection_string, target_connection_string))
     cmd = "pg_dump --schema-only --no-privileges %s | psql -1 -q %s" % (
         source_connection_string.asPGCommandLineArgs(),
         target_connection_string.asPGCommandLineArgs())
@@ -122,7 +130,33 @@ def main():
         log.error("Failed to duplicate database schema.")
         return 1
 
+    # Drop the authdb replication set tables we just restored, as they
+    # will be broken if the authdb master is a seperate database to the
+    # lpmain master.
+    log.debug("Dropping (possibly corrupt) authdb tables.")
+    cur = target_con.cursor()
+    for table_name in _auth_store_tables:
+        cur.execute("DROP TABLE IF EXISTS %s CASCADE" % table_name)
+    target_con.commit()
+
+    # Duplicate the authdb schema.
+    log.info("Duplicating authdb schema from '%s' to '%s'" % (
+        authdb_connection_string, target_connection_string))
+    table_args = ["--table=%s" % table for table in _auth_store_tables]
+    # We need to restore the two cross-replication-set views that where
+    # dropped as a side effect of dropping the auth store tables.
+    table_args.append("--table=ValidPersonCache")
+    table_args.append("--table=ValidPersonOrTeamCache")
+    cmd = "pg_dump --schema-only --no-privileges %s %s | psql -1 -q %s" % (
+        ' '.join(table_args),
+        source_connection_string.asPGCommandLineArgs(),
+        target_connection_string.asPGCommandLineArgs())
+    if subprocess.call(cmd, shell=True) != 0:
+        log.error("Failed to duplicate database schema.")
+        return 1
+
     # Trash the broken Slony tables we just duplicated.
+    log.debug("Removing slony cruft.")
     cur = target_con.cursor()
     cur.execute("DROP SCHEMA _sl CASCADE")
     target_con.commit()
@@ -136,6 +170,7 @@ def main():
         "SELECT set_id FROM _sl.sl_set WHERE set_origin=%d"
         % master_node.node_id)
     set_ids = [set_id for set_id, in cur.fetchall()]
+    log.debug("Discovered set ids %s" % repr(list(set_ids)))
 
     # Generate and run a slonik(1) script to initialize the new node
     # and subscribe it to our replication sets.
@@ -184,6 +219,34 @@ def main():
     replication.helpers.validate_replication(source_connection.cursor())
 
     return 0
+
+
+def get_master_connection_string(con, parser, set_id):
+    """Return the connection string to the origin for the replication set.
+    """
+    cur = con.cursor()
+    cur.execute("""
+        SELECT pa_conninfo FROM _sl.sl_set, _sl.sl_path
+        WHERE set_origin = pa_server AND set_id = %d
+        LIMIT 1
+        """ % set_id)
+    row = cur.fetchone()
+    if row is None:
+        # If we have no paths stored, there is only a single node in the
+        # cluster.
+        return None
+    else:
+        connection_string = ConnectionString(row[0])
+
+    # Confirm we can connect from here.
+    try:
+        test_con = psycopg2.connect(str(connection_string))
+    except psycopg2.Error, exception:
+        parser.error("Failed to connect to using '%s' (%s)" % (
+            connection_string, str(exception).strip()))
+
+    return connection_string
+
 
 if __name__ == '__main__':
     sys.exit(main())

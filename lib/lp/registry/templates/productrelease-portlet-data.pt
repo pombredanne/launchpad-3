@@ -69,7 +69,7 @@
   <div class="top-portlet">
     <h2 style="float:left">Release notes &nbsp;</h2>
     <a tal:replace="structure view/release/menu:context/edit/fmt:icon" />
-    <div style="clear:both" />
+    <div style="clear:both"></div>
 
     <div id="release-notes"
       tal:content="structure view/release/release_notes/fmt:text-to-html"
@@ -83,7 +83,7 @@
 
     <h2 style="float:left">Changelog &nbsp;</h2>
     <a tal:replace="structure view/release/menu:context/edit/fmt:icon" />
-    <div style="clear:both" />
+    <div style="clear:both"></div>
 
     <fieldset class="collapsible collapsed" style="padding: 0px;"
       tal:condition="view/release/changelog">
