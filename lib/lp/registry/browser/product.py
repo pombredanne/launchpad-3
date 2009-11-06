@@ -500,7 +500,7 @@ class SortSeriesMixin:
         The development focus is always first in the list.
         """
         series_list = []
-        for series in self.product.serieses:
+        for series in self.product.series:
             if filter is None or filter(series):
                 series_list.append(series)
         # In production data, there exist development focus series that are
@@ -543,26 +543,26 @@ class ProductWithSeries:
     cached locally and simply returned.
     """
 
-    # `serieses` and `development_focus` need to be declared as class
+    # `series` and `development_focus` need to be declared as class
     # attributes so that this class will not delegate the actual instance
     # variables to self.product, which would bypass the caching.
-    serieses = None
+    series = None
     development_focus = None
     delegates(IProduct, 'product')
 
     def __init__(self, product):
         self.product = product
-        self.serieses = []
-        for series in self.product.serieses:
+        self.series = []
+        for series in self.product.series:
             series_with_releases = SeriesWithReleases(series, parent=self)
-            self.serieses.append(series_with_releases)
+            self.series.append(series_with_releases)
             if self.product.development_focus == series:
                 self.development_focus = series_with_releases
 
-        # Get all of the releases for all of the serieses in a single
+        # Get all of the releases for all of the series in a single
         # query.  The query sorts the releases properly so we know the
         # resulting list is sorted correctly.
-        series_by_id = dict((series.id, series) for series in self.serieses)
+        series_by_id = dict((series.id, series) for series in self.series)
         self.release_by_id = {}
         milestones_and_releases = list(
             self.product.getMilestonesAndReleases())
@@ -846,7 +846,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         distros = {}
         # first get a list of all relevant packagings
         all_packagings = []
-        for series in self.context.serieses:
+        for series in self.context.series:
             for packaging in series.packagings:
                 all_packagings.append(packaging)
         # we sort it so that the packagings will always be displayed in the
@@ -991,14 +991,14 @@ class ProductDownloadFilesView(LaunchpadView,
     def getReleases(self):
         """See `ProductDownloadFileMixin`."""
         releases = set()
-        for series in self.product.serieses:
+        for series in self.product.series:
             releases.update(series.releases)
         return releases
 
     @cachedproperty
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
-        for series in self.product.serieses:
+        for series in self.product.series:
             if series.has_release_files:
                 return True
         return False
@@ -1006,7 +1006,7 @@ class ProductDownloadFilesView(LaunchpadView,
     @cachedproperty
     def any_download_files_with_signatures(self):
         """Do any series or release download files have signatures?"""
-        for series in self.product.serieses:
+        for series in self.product.series:
             for release in series.releases:
                 for file in release.files:
                     if file.signature:
@@ -1017,7 +1017,7 @@ class ProductDownloadFilesView(LaunchpadView,
     def milestones(self):
         """A mapping between series and releases that are milestones."""
         result = dict()
-        for series in self.product.serieses:
+        for series in self.product.series:
             result[series.name] = set()
             milestone_list = [m.name for m in series.milestones]
             for release in series.releases:

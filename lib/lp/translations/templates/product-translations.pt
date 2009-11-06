@@ -102,7 +102,7 @@
             template for one of its release series.
           </p>
           <ul>
-            <li tal:repeat="series context/serieses">
+            <li tal:repeat="series context/series">
               <a tal:attributes="
                    href string:${series/fmt:url}/+translations-upload"
                  tal:content="series/title">main</a>

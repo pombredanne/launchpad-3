@@ -136,7 +136,7 @@ def make_mint_distro_with_branches(factory):
             distribution=mint, version=version, status=status, name=name)
 
     for pkg_index, name in enumerate(['twisted', 'zope', 'bzr', 'python']):
-        for series_index, series in enumerate(mint.serieses):
+        for series_index, series in enumerate(mint.series):
             # Over the series and source packages, we want to have different
             # combinations of official and branch counts.
             # Make the more recent series have most official branches.
