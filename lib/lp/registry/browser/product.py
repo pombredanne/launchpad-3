@@ -371,6 +371,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'packages',
         'series',
         'series_add',
+        'milestones',
         'downloads',
         'announce',
         'announcements',
@@ -401,6 +402,10 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
+
+    def milestones(self):
+        text = 'View milestones'
+        return Link('+milestones', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def announce(self):

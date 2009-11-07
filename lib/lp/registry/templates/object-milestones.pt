@@ -14,6 +14,15 @@
       Milestones belong to a series and can be created from the series page
       by a project owner or series release manager.
     </p>
+    
+    <ul class="horizontal"
+      tal:condition="context/project|nothing">
+      <li>
+        <a class="sprite info"
+          tal:attributes="href context/project/menu:overview/milestones/fmt:url">View milestones for
+          <tal:project replace="context/project/displayname" /></a>
+      </li>
+    </ul>
   </div>
 
   <tal:milestones define="milestones context/all_milestones">
