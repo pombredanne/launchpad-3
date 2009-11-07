@@ -244,13 +244,13 @@ patch_plain_parameter_type(
     IArchive, 'deletePackagesetUploader', 'packageset', IPackageset)
 
 # IDistribution
-IDistribution['serieses'].value_type.schema = IDistroSeries
+IDistribution['series'].value_type.schema = IDistroSeries
 patch_reference_property(
     IDistribution, 'currentseries', IDistroSeries)
 patch_entry_return_type(
     IDistribution, 'getSeries', IDistroSeries)
 patch_collection_return_type(
-    IDistribution, 'getDevelopmentSerieses', IDistroSeries)
+    IDistribution, 'getDevelopmentSeries', IDistroSeries)
 patch_entry_return_type(
     IDistribution, 'getSourcePackage', IDistributionSourcePackage)
 patch_collection_return_type(

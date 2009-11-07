@@ -265,11 +265,11 @@ The project group can be accessed through the project_group_link.
 A list of series can be accessed through the series_collection_link.
 
     >>> response = webservice.get(firefox['series_collection_link'])
-    >>> serieses = response.jsonBody()
-    >>> print serieses['total_size']
+    >>> series = response.jsonBody()
+    >>> print series['total_size']
     2
 
-    >>> print_self_link_of_entries(serieses)
+    >>> print_self_link_of_entries(series)
     http://.../firefox/1.0
     http://.../firefox/trunk
 

@@ -190,7 +190,7 @@ Sometimes, the vocabulary search doesn't return any active lists.
 
 === DistroSeriesVocabulary ===
 
-Reflects the available distribution serieses.  Results are ordered by
+Reflects the available distribution series.  Results are ordered by
 `name`
 
     >>> distroseries_vocabulary = vocabulary_registry.get(
@@ -445,7 +445,7 @@ it'll still show up on the vocabulary so that users can change it.
     2
 
 This is true for inactive milestones used in bugtasks for products and
-product serieses as well.
+product series as well.
 
     >>> product_bugtask = factory.makeBugTask(target=firefox)
     >>> product_bugtask.milestone = firefox_milestone

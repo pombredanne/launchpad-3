@@ -1189,7 +1189,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         # a problem when we support PPAs for other distribution. If we do
         # it will be probably simpler to use the DistroSeries vocabulary
         # and validate the selected value before copying.
-        for series in self.context.distribution.serieses:
+        for series in self.context.distribution.series:
             if series.status == DistroSeriesStatus.OBSOLETE:
                 continue
             terms.append(

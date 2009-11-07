@@ -508,7 +508,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEmail(ppa_header="cprov", recipients=expected_recipients)
 
     def testPPADistroSeriesOverrides(self):
-        """It's possible to override target distroserieses of PPA uploads.
+        """It's possible to override target distroseries of PPA uploads.
 
         Similar to usual PPA uploads:
 
