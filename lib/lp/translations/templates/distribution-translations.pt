@@ -65,13 +65,13 @@
       </div>
     </tal:translation_focus>
 
-  <tal:secondary condition="view/secondary_translatable_serieses">
+  <tal:secondary condition="view/secondary_translatable_series">
     <h2 tal:condition="view/translation_focus">
       Other versions of <span tal:replace="context/displayname">Ubuntu</span>
     </h2>
 
     <ul id="distroseries-list">
-      <li tal:repeat="distroseries view/secondary_translatable_serieses">
+      <li tal:repeat="distroseries view/secondary_translatable_series">
         <a tal:attributes="href distroseries/fmt:url"
           tal:content="distroseries/named_version">Hoary (5.04)</a>
       </li>

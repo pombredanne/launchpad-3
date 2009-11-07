@@ -27,7 +27,7 @@
 
   <tal:milestones define="milestones context/all_milestones">
     <table id="milestones" class="listing"
-      tal:define="has_series context/serieses|nothing"
+      tal:define="has_series context/series|nothing"
       tal:condition="milestones">
       <thead>
         <tr>

@@ -113,7 +113,7 @@ class DistributionMirrorView(LaunchpadView):
     # Cached because it is used to construct the entries in initialize()
     @cachedproperty
     def summarized_arch_series(self):
-        mirrors = self.context.getSummarizedMirroredArchSerieses()
+        mirrors = self.context.getSummarizedMirroredArchSeries()
         return sorted(
             mirrors, reverse=True,
             key=lambda mirror: Version(
@@ -121,7 +121,7 @@ class DistributionMirrorView(LaunchpadView):
 
     @property
     def summarized_source_series(self):
-        mirrors = self.context.getSummarizedMirroredSourceSerieses()
+        mirrors = self.context.getSummarizedMirroredSourceSeries()
         return sorted(mirrors, reverse=True,
                       key=lambda mirror: Version(mirror.distroseries.version))
 
@@ -129,16 +129,16 @@ class DistributionMirrorView(LaunchpadView):
         """Return a list of _FlavoursByDistroSeries objects ordered
         descending by version.
         """
-        serieses = {}
-        for cdimage in self.context.cdimage_serieses:
+        all_series = {}
+        for cdimage in self.context.cdimage_series:
             series, flavour = cdimage.distroseries, cdimage.flavour
-            flavours_by_series = serieses.get(series)
+            flavours_by_series = all_series.get(series)
             if flavours_by_series is None:
                 flavours_by_series = _FlavoursByDistroSeries(series, [])
-                serieses[series] = flavours_by_series
+                all_series[series] = flavours_by_series
             flavours_by_series.flavours.append(flavour)
-        flavours_by_serieses = serieses.values()
-        return sorted(flavours_by_serieses, reverse=True,
+        flavours_by_series = all_series.values()
+        return sorted(flavours_by_series, reverse=True,
                       key=lambda item: Version(item.distroseries.version))
 
 

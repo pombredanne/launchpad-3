@@ -50,11 +50,11 @@
         </div>
       </div>
 
-      <tal:no-serieses condition="not: context/serieses">
+      <tal:no-series condition="not: context/series">
         <p><tal:name replace="context/displayname" /> has no versions registered
           yet.
         </p>
-      </tal:no-serieses>
+      </tal:no-series>
     </div>
   </body>
 </html>

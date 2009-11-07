@@ -326,7 +326,7 @@ class PackagesetSet:
         else:
             # We create the related internal PackagesetGroup for this
             # packageset so that we can later see related package sets across
-            # distroserieses.
+            # distroseries.
             packagesetgroup = PackagesetGroup()
             packagesetgroup.owner = owner
             store.add(packagesetgroup)

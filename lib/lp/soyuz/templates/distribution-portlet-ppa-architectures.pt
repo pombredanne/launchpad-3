@@ -3,13 +3,13 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet"
-  tal:define="serieses context/serieses"
-  tal:condition="serieses">
+  tal:define="series context/series"
+  tal:condition="series">
 
   <h2>PPA supported series</h2>
   <div>
     <ul>
-      <tal:per_series repeat="series serieses">
+      <tal:per_series repeat="series series">
         <li tal:condition="series/active">
           <a class="sprite distribution"
              tal:attributes="href series/fmt:url"
