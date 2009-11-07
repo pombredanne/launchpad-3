@@ -294,7 +294,7 @@ class SpecificationEditLinksMixin:
 class SpecificationActionMenu(NavigationMenu, SpecificationEditLinksMixin):
 
     usedfor = ISpecification
-    facet = 'overview'
+    facet = 'specifications'
     links = ('edit', 'supersede', 'retarget')
 
 
