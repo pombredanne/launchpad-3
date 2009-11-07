@@ -30,19 +30,17 @@ from canonical.widgets import LabeledMultiCheckBoxWidget
 class BugLinkView(LaunchpadFormView):
     """This view is used to link bugs to any IBugLinkTarget."""
 
-    label = _('Link to bug report')
-
+    label = _('Link a bug report')
     schema = IBugLinkForm
 
     focused_element_id = 'bug'
 
     @property
-    def page_title(self):
-        return 'Link question #%s to a bug report' % self.context.id
+    def next_url(self):
+        """See `LaunchpadFormview`."""
+        return canonical_url(self.context)
 
-    @property
-    def label(self):
-        return 'Link question to a bug report'
+    cancel_url = next_url
 
     @action(_('Link'))
     def linkBug(self, action, data):
@@ -68,7 +66,6 @@ class BugLinkView(LaunchpadFormView):
               u'\N{right double quotation mark}.', mapping=bug_props))
         notify(ObjectModifiedEvent(
             self.context, target_unmodified, ['bugs']))
-        self.next_url = canonical_url(self.context)
 
 
 class BugLinksListingView:
@@ -98,17 +95,15 @@ class BugsUnlinkView(LaunchpadFormView):
     """This view is used to remove bug links from any IBugLinkTarget."""
 
     label = _('Remove links to bug reports')
-
     schema = IUnlinkBugsForm
     custom_widget('bugs', LabeledMultiCheckBoxWidget)
 
     @property
-    def page_title(self):
-        return 'Remove bug links from question #%s' % self.context.id
+    def next_url(self):
+        """See `LaunchpadFormview`."""
+        return canonical_url(self.context)
 
-    @property
-    def label(self):
-        return 'Remove links to bug reports'
+    cancel_url = next_url
 
     @action(_('Remove'))
     def unlinkBugs(self, action, data):
@@ -126,7 +121,6 @@ class BugsUnlinkView(LaunchpadFormView):
                     _('Cannot remove link to private bug #$bugid.',
                       mapping=replacements))
         notify(ObjectModifiedEvent(self.context, target_unmodified, ['bugs']))
-        self.next_url = canonical_url(self.context)
 
     def bugsWithPermission(self):
         """Return the bugs that the user has permission to remove. This
@@ -134,4 +128,3 @@ class BugsUnlinkView(LaunchpadFormView):
         """
         return [bug for bug in self.context.bugs
                 if check_permission('launchpad.View', bug)]
-

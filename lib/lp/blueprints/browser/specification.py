@@ -379,6 +379,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         text = 'Link a bug report'
         return Link('+linkbug', text, icon='add')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def unlinkbug(self):
         text = 'Unlink a bug'
         enabled = bool(self.context.bugs)
