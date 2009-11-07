@@ -39,9 +39,8 @@
       <tbody>
         <tr tal:repeat="pkging distro/packagings">
           <td>
-            <a tal:attributes="href pkging/distroseries/fmt:url"><tal:version
-              replace="pkging/distroseries/version" />
-              (<tal:name replace="pkging/distroseries/displayname" />)</a>
+            <a tal:attributes="href pkging/distroseries/fmt:url"
+                tal:replace="pkging/distroseries/named_version" />
           </td>
             
           <td>
