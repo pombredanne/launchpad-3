@@ -13,6 +13,7 @@ __all__ = [
     'NewSpecificationFromProjectView',
     'NewSpecificationFromRootView',
     'NewSpecificationFromSprintView',
+    'SpecificationActionMenu',
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
@@ -71,11 +72,12 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
 
 from canonical.launchpad.webapp import (
-    ContextMenu, LaunchpadView, LaunchpadEditFormView, LaunchpadFormView,
-    Link, Navigation, action, canonical_url, enabled_with_permission,
+    LaunchpadView, LaunchpadEditFormView, LaunchpadFormView,
+    Navigation, action, canonical_url,
     safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from lp.registry.browser.mentoringoffer import CanBeMentoredView
+from canonical.launchpad.webapp.menu import (
+    ContextMenu, enabled_with_permission, Link, NavigationMenu)
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 
 
@@ -271,7 +273,32 @@ class SpecificationNavigation(Navigation):
         return self.context.getSprintSpecification(name)
 
 
-class SpecificationContextMenu(ContextMenu):
+class SpecificationEditLinksMixin:
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def supersede(self):
+        text = 'Mark superseded'
+        return Link('+supersede', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def retarget(self):
+        text = 'Re-target blueprint'
+        return Link('+retarget', text, icon='edit')
+
+
+class SpecificationActionMenu(NavigationMenu, SpecificationEditLinksMixin):
+
+    usedfor = ISpecification
+    facet = 'overview'
+    links = ('edit', 'supersede', 'retarget')
+
+
+class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     usedfor = ISpecification
     links = ['edit', 'people', 'status', 'priority',
@@ -282,11 +309,6 @@ class SpecificationContextMenu(ContextMenu):
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
              'retarget']
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change details'
-        return Link('+edit', text, icon='edit')
 
     def givefeedback(self):
         text = 'Give feedback'
@@ -352,11 +374,6 @@ class SpecificationContextMenu(ContextMenu):
             icon = 'add'
         return Link('+subscribe', text, icon=icon)
 
-    @enabled_with_permission('launchpad.Edit')
-    def supersede(self):
-        text = 'Mark superseded'
-        return Link('+supersede', text, icon='edit')
-
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbug(self):
         text = 'Link a bug report'
@@ -389,11 +406,6 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Propose for sprint'
         return Link('+linksprint', text, icon='add')
 
-    @enabled_with_permission('launchpad.Edit')
-    def retarget(self):
-        text = 'Re-target blueprint'
-        return Link('+retarget', text, icon='edit')
-
     @enabled_with_permission('launchpad.AnyPerson')
     def whiteboard(self):
         text = 'Edit whiteboard'
@@ -407,7 +419,8 @@ class SpecificationContextMenu(ContextMenu):
             text = 'Link a related branch'
         return Link('+linkbranch', text, icon='add')
 
-class SpecificationSimpleView(LaunchpadView, CanBeMentoredView):
+
+class SpecificationSimpleView(LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
     __used_for__ = ISpecification
@@ -673,7 +686,7 @@ class SpecificationRetargetingView(LaunchpadFormView):
         elif IDistribution.providedBy(target):
             distribution = target
         else:
-            raise AssertionError, 'Unknown target'
+            raise AssertionError('Unknown target.')
         self.context.retarget(product=product, distribution=distribution)
         self._nextURL = canonical_url(self.context)
 

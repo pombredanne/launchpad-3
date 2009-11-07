@@ -8,7 +8,7 @@ import unittest
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.blueprints.browser.specification import (
-    SpecificationContextMenu)
+    SpecificationActionMenu, SpecificationContextMenu)
 from lp.testing import TestCaseWithFactory
 from lp.testing.menu import check_menu_links
 
@@ -23,6 +23,10 @@ class TestSpecificationMenus(TestCaseWithFactory):
 
     def test_SpecificationContextMenu(self):
         menu = SpecificationContextMenu(self.specification)
+        self.assertTrue(check_menu_links(menu))
+
+    def test_SpecificationActionMenu(self):
+        menu = SpecificationActionMenu(self.specification)
         self.assertTrue(check_menu_links(menu))
 
 

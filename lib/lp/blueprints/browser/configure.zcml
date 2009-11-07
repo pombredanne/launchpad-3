@@ -235,6 +235,7 @@
         <browser:menus
             module="lp.blueprints.browser.specification"
             classes="
+                SpecificationActionMenu
                 SpecificationContextMenu"/>
         <browser:navigation
             module="lp.blueprints.browser.specification"
