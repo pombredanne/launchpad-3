@@ -113,7 +113,7 @@ create:
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\"."
-	@ ${CREATEDB} template1 ${EMPTY_DBNAME}
+	@ ${CREATEDB} template0 ${EMPTY_DBNAME}
 	@ if ! `createlang -l ${EMPTY_DBNAME} | grep -qs plpythonu`; then \
 		echo "* Installing PL/PythonU"; \
 		createlang -d ${EMPTY_DBNAME} plpythonu; \
@@ -142,12 +142,12 @@ create:
 
 	@ echo "* Creating session databases '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
-	    then ${CREATEDB} template1 ${SESSION_DBNAME} ; \
+	    then ${CREATEDB} template0 ${SESSION_DBNAME} ; \
 	    createlang plpgsql ${SESSION_DBNAME}; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
 	@ echo "* Creating session database '${TEST_SESSION_DBNAME}'"
-	@ ${CREATEDB} template1 ${TEST_SESSION_DBNAME}
+	@ ${CREATEDB} template0 ${TEST_SESSION_DBNAME}
 	@ createlang plpgsql ${TEST_SESSION_DBNAME}
 	@ psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql
 

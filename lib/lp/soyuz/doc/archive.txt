@@ -58,11 +58,11 @@ records to disk, including configuration and indexes.
     >>> cprov_archive.failed_count
     1
 
-relative_build_score is a property that can be set only by LP admins and read
-by anyone.  It is a signed integer that represents a delta to all the build
-scores for builds done in the archive.
+relative_build_score and external_dependencies are properties that can be set
+only by LP admins and read by anyone.
 
-The default value is zero:
+relative_build_score is a signed integer that represents a delta to all the
+build scores for builds done in the archive.  The default value is zero:
 
     >>> cprov_archive.relative_build_score
     0
@@ -74,10 +74,28 @@ Amending it as an unprivileged user results in failure:
     ...
     Unauthorized: (..., 'relative_build_score', 'launchpad.Commercial')
 
-As a Launchpad admin, it will work.
+external_dependencies is a text field that should contain a comma-separated
+list of sources.list entries in the format:
+deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]
+where the series variable is replaced with the series name of the context
+build.  This allows an admin to set external repositories as a source for
+build dependencies on the context PPA.  Its default value is None:
+
+    >>> print cprov_archive.external_dependencies
+    None
+
+Amending it as an unprivileged user results in failure:
+
+    >>> cprov_archive.external_dependencies = "test"
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'external_dependencies', 'launchpad.Commercial')
+
+As a Launchpad admin, setting these properties will work.
 
     >>> login("admin@canonical.com")
     >>> cprov_archive.relative_build_score = 100
+    >>> cprov_archive.external_dependencies = "test"
 
 The buildd_secret is used by the slave scanner when generating a
 sources.list entry for the builder to access a private archive.  It is
