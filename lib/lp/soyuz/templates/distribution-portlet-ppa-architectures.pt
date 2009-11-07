@@ -12,12 +12,9 @@
       <tal:per_series repeat="series serieses">
         <li tal:condition="series/active">
           <a class="sprite distribution"
-             tal:attributes="href series/fmt:url">
-             <tal:version replace="series/version" />
-             "<tal:codename replace="series/displayname" />"
-          </a>
+             tal:attributes="href series/fmt:url"
+             tal:content="series/named_version" />
           - <tal:status replace="series/status/name/fmt:lower" />
-
           <ul tal:define="archs series/virtualized_architectures"
               tal:condition="archs">
             <li class="sprite" tal:repeat="arch archs">

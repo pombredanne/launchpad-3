@@ -25,16 +25,15 @@
           tal:define="series a_styled_series/series"
           tal:attributes="class string:${a_styled_series/css_class} series;
                           id series/name/fmt:css-id/series-;">
-            <strong><a tal:attributes="href series/fmt:url">
-              <tal:version replace="series/version" />
-              "<tal:codename replace="series/displayname" />"</a></strong>
+            <strong><a tal:attributes="href series/fmt:url"
+             tal:content="series/named_version" /></strong>
             <em><span tal:replace="series/status/title" /></em>
             <tal:derives condition="series/parent_series">
               <br />Derives from
               <a tal:attributes="href series/parent_series/fmt:url">
                 <tal:distro
                   replace="series/parent_series/distribution/displayname" />
-                <tal:distroseries replace="series/parent_series/version" /></a>
+                <tal:distroseries replace="series/parent_series/named_version" /></a>
             </tal:derives>
             <tal:milestones
               define="milestones series/all_milestones"
