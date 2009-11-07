@@ -100,8 +100,16 @@
         <tal:project define="project context/upstream_product">
           <div tal:condition="project">
             <h2>Upstream</h2>
-            <div style="float:left; padding:0 1em 1em 0;"
-                 tal:content="structure project/image:logo"/>
+            <div style="float:left; padding:0 1em 1em 0;">
+              <a
+                tal:attributes="href project/fmt:url"
+                tal:content="structure project/image:logo" />
+            </div>
+            <div> 
+              <a 
+                tal:attributes="href project/fmt:url"
+                tal:content="project/displayname" />
+            </div>
             <div tal:content="structure project/summary" />
           </div>
           <tal:noproject condition="not: project">
