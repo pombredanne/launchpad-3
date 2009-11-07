@@ -41,7 +41,7 @@ Let's have a look at the firefox DistributionSourcePackage.
 Click the "See full publishing history" link to see specific information
 about Firefox's publishing history.
 
-  >>> browser.getLink("See full publishing history").click()
+  >>> browser.getLink("View full publishing history").click()
   >>> print extract_text(find_tag_by_id(browser.contents, 'publishing-summary'))
   Date                                              Status     Target   Pocket   Component   Section   Version
   2006-02-13 12:19:00 UTC                           Published  Warty    release  main        web       0.9

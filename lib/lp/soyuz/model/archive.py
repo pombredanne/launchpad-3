@@ -1004,11 +1004,12 @@ class Archive(SQLBase):
         return permission_set.packagesetsForSource(
             self, sourcepackagename, direct_permissions)
 
-    def isSourceUploadAllowed(self, sourcepackagename, person):
+    def isSourceUploadAllowed(
+        self, sourcepackagename, person, distroseries=None):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.isSourceUploadAllowed(
-            self, sourcepackagename, person)
+            self, sourcepackagename, person, distroseries)
 
     def getFileByName(self, filename):
         """See `IArchive`."""

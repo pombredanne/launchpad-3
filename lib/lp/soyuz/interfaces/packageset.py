@@ -353,7 +353,12 @@ class IPackagesetSet(Interface):
             IDistroSeries, title=_("Distroseries"), required=False,
             readonly=True, description=_(
                 "The distribution series to which the packageset "
-                "is related.")))
+                "is related.")),
+        related_set=Reference(
+            IPackageset, title=_("Related package set"), required=False,
+            readonly=True, description=_(
+                "The new package set will share the package set group "
+                "with this one.")))
     @export_factory_operation(IPackageset, [])
     def new(name, description, owner, distroseries=None, related_set=None):
         """Create a new package set.
@@ -372,7 +377,12 @@ class IPackagesetSet(Interface):
         """
 
     @operation_parameters(
-        name=TextLine(title=_('Package set name'), required=True))
+        name=TextLine(title=_('Package set name'), required=True),
+        distroseries=Reference(
+            IDistroSeries, title=_("Distroseries"), required=False,
+            readonly=True, description=_(
+                "The distribution series to which the packageset "
+                "is related.")))
     @operation_returns_entry(IPackageset)
     @export_read_operation()
     def getByName(name, distroseries=None):

@@ -219,7 +219,7 @@
         </tal:release>
 
         <p class="alternate">
-          <a class="sprint info"
+          <a class="sprite info"
             tal:define="link overview_menu/downloads"
             tal:condition="release"
             tal:attributes="href link/fmt:url;

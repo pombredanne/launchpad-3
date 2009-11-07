@@ -434,6 +434,7 @@
                     landing_targets
                     landing_candidates
                     dependent_branches
+                    _createMergeProposal
                     addLandingTarget
                     scheduleDiffUpdates
                     getMergeQueue
@@ -483,6 +484,7 @@
                     pending_writes
                     commitsForDays
                     needs_upgrading
+                    requestUpgrade
                     getUpgradeFormat
                     isBranchMergeable
                     visibleByUser

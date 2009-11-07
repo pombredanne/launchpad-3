@@ -288,12 +288,16 @@ class Packageset(Storm):
 
     def addSubsets(self, names):
         """See `IPackageset`."""
-        clauses = (Packageset, In(Packageset.name, names))
+        clauses = (
+            Packageset, In(Packageset.name, names),
+            Packageset.distroseries == self.distroseries)
         self._api_add_or_remove(clauses, self._addDirectSuccessors)
 
     def removeSubsets(self, names):
         """See `IPackageset`."""
-        clauses = (Packageset, In(Packageset.name, names))
+        clauses = (
+            Packageset, In(Packageset.name, names),
+            Packageset.distroseries == self.distroseries)
         self._api_add_or_remove(clauses, self._removeDirectSuccessors)
 
     def relatedSets(self):

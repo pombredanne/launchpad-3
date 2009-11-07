@@ -303,6 +303,7 @@ menu, a "Latest release" portlet and a "Bug subscriptions" portlet.
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'global-actions'))
+    View full publishing history
     View full change log
     Subscribe to bug mail
 
@@ -558,11 +559,10 @@ Returning to the distribution source package index page using the
 Publishing History
 ------------------
 
-Users can inspect the full publishing history by clicking on a link at
-the bottom of the 'packages_list' section in the distribution source
-package index page.
+Users can inspect the full publishing history by clicking on a link in
+the action menu on the the distribution source package index page.
 
-    >>> anon_browser.getLink('See full publishing history').click()
+    >>> anon_browser.getLink('View full publishing history').click()
 
 The full publishing history is presented in a new page, with the
 appropriate title and main heading, but preserving the distribution

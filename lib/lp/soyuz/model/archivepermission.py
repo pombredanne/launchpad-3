@@ -112,6 +112,14 @@ class ArchivePermission(SQLBase):
         else:
             return None
 
+    @property
+    def distro_series_name(self):
+        """See `IArchivePermission`"""
+        if self.packageset:
+            return self.packageset.distroseries.name
+        else:
+            return None
+
 
 class ArchivePermissionSet:
     """See `IArchivePermissionSet`."""
@@ -480,48 +488,56 @@ class ArchivePermissionSet:
                 ''', (sourcepackagename.id, archive.id)))
         return rset
 
-    def isSourceUploadAllowed(self, archive, sourcepackagename, person):
+    def isSourceUploadAllowed(
+        self, archive, sourcepackagename, person, distroseries=None):
         """See `IArchivePermissionSet`."""
         sourcepackagename = self._nameToSourcePackageName(sourcepackagename)
         store = IStore(ArchivePermission)
+        if distroseries is None:
+            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+            distroseries = ubuntu.currentseries
 
         # Put together the parameters for the query that follows.
         archive_params = (ArchivePermissionType.UPLOAD, archive.id)
+        permission_params = (sourcepackagename.id, person.id, distroseries.id)
         query_params = (
             # Query parameters for the first WHERE clause.
-            (archive.id, sourcepackagename.id) +
+            (archive.id, distroseries.id, sourcepackagename.id) +
             # Query parameters for the second WHERE clause.
-            (sourcepackagename.id,) + (person.id,) + archive_params + 
+            permission_params + archive_params + 
             # Query parameters for the third WHERE clause.
-            (sourcepackagename.id,) + (person.id,) + archive_params)
+            permission_params + archive_params)
 
         query = '''
         SELECT CASE
           WHEN (
             SELECT COUNT(ap.id)
-            FROM packagesetsources pss, archivepermission ap
+            FROM packagesetsources pss, archivepermission ap, packageset ps
             WHERE
               ap.archive = %s AND ap.explicit = TRUE
+              AND ap.packageset = ps.id AND ps.distroseries = %s
               AND pss.sourcepackagename = %s
               AND pss.packageset = ap.packageset) > 0
           THEN (
             SELECT COUNT(ap.id)
             FROM
-              packagesetsources pss, archivepermission ap,
+              packagesetsources pss, archivepermission ap, packageset ps, 
               teamparticipation tp
             WHERE
               pss.sourcepackagename = %s
               AND ap.person = tp.team AND tp.person = %s
+              AND ap.packageset = ps.id AND ps.distroseries = %s
               AND pss.packageset = ap.packageset AND ap.explicit = TRUE
               AND ap.permission = %s AND ap.archive = %s)
           ELSE (
             SELECT COUNT(ap.id)
             FROM
-              packagesetsources pss, archivepermission ap,
+              packagesetsources pss, archivepermission ap, packageset ps,
               teamparticipation tp, flatpackagesetinclusion fpsi
             WHERE
               pss.sourcepackagename = %s
               AND ap.person = tp.team AND tp.person = %s
+              AND ap.packageset = ps.id AND ps.distroseries = %s
               AND pss.packageset = fpsi.child AND fpsi.parent = ap.packageset
               AND ap.permission = %s AND ap.archive = %s)
         END AS number_of_permitted_package_sets;
