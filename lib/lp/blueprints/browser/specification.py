@@ -75,7 +75,6 @@ from canonical.launchpad.webapp import (
     Link, Navigation, action, canonical_url, enabled_with_permission,
     safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.registry.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 
@@ -280,7 +279,6 @@ class SpecificationContextMenu(ContextMenu):
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'linkbranch',
-             'offermentoring', 'retractmentoring',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
              'retarget']
@@ -334,24 +332,6 @@ class SpecificationContextMenu(ContextMenu):
     def status(self):
         text = 'Change status'
         return Link('+status', text, icon='edit')
-
-    @enabled_with_permission('launchpad.AnyPerson')
-    def offermentoring(self):
-        text = 'Offer mentorship'
-        user = getUtility(ILaunchBag).user
-        enabled = self.context.canMentor(user)
-        return Link('+mentor', text, icon='add', enabled=enabled)
-
-    def retractmentoring(self):
-        text = 'Retract mentorship'
-        user = getUtility(ILaunchBag).user
-        # We should really only allow people to retract mentoring if the
-        # spec's open and the user's already a mentor.
-        if user and not self.context.is_complete:
-            enabled = self.context.isMentor(user)
-        else:
-            enabled = False
-        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def subscribeanother(self):
         """Return the 'Subscribe someone else' Link."""
