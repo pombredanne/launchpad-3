@@ -28,7 +28,7 @@ class StatUpdater(LaunchpadCronScript):
         # objects are responsible for committing.
         distroset = getUtility(IDistributionSet)
         for distro in distroset:
-            for distroseries in distro.serieses:
+            for distroseries in distro.series:
                 distroseries.updateStatistics(self.txn)
 
         launchpad_stats = getUtility(ILaunchpadStatisticSet)

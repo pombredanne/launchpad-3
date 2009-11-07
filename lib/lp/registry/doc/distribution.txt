@@ -101,14 +101,14 @@ Or by version:
 
 You can list development distroseriess:
 
-    >>> devdists = ubuntu.getDevelopmentSerieses()
+    >>> devdists = ubuntu.getDevelopmentSeries()
     >>> for devdist in devdists:
     ...     print devdist.name
     hoary
 
-You can list the serieses for a distribution,
+You can list the series for a distribution,
 
-    >>> for series in ubuntu.serieses:
+    >>> for series in ubuntu.series:
     ...     print series.name
     breezy-autotest
     grumpy
