@@ -616,12 +616,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=description,
             owner=owner)
 
-    def makeSprint(self, title=None):
+    def makeSprint(self, title=None, name=None):
         """Make a sprint."""
         if title is None:
             title = self.getUniqueString('title')
         owner = self.makePerson()
-        name = self.getUniqueString('name')
+        if name is None:
+            name = self.getUniqueString('name')
         time_starts = datetime(2009, 1, 1, tzinfo=pytz.UTC)
         time_ends = datetime(2009, 1, 2, tzinfo=pytz.UTC)
         time_zone = 'UTC'
