@@ -10,6 +10,8 @@
 <body>
 
 <tal:side metal:fill-slot="side">
+  <tal:register-blueprint
+    content="structure context/@@+register-a-blueprint-button|nothing" />
   <tal:menu replace="structure context/@@+global-actions" />
   <div tal:replace="structure context/@@+portlet-latestspecs" />
 </tal:side>
@@ -30,9 +32,6 @@
       </p>
     </tal:block>
   </tal:block>
-
-  <div style="float: right;"
-       tal:content="structure context/@@+register-a-blueprint-button|nothing" />
 
   <tal:no_specs condition="not: has_any_specs">
     <p>
