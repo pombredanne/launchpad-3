@@ -2418,9 +2418,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         for different series.
         """
         return (
-            IDistribution.providedBy(self.context) and self.context.serieses
+            IDistribution.providedBy(self.context) and self.context.series
             or IDistroSeries.providedBy(self.context)
-            or IProduct.providedBy(self.context) and self.context.serieses
+            or IProduct.providedBy(self.context) and self.context.series
             or IProductSeries.providedBy(self.context))
 
     def shouldShowSubscriberWidget(self):

@@ -287,12 +287,17 @@ As can be seen, the packaging is not linked yet.  We can do that now using the
     ...     name='field.productseries').value = "firefox/trunk"
     >>> user_browser.getControl('Change').click()
 
-Go back to the source page, and now the upstream's description is shown.
+Go back to the source page, and now the upstream's description is shown and
+linked.
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/iceweasel/")
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'upstream'))
     Upstream
+    Mozilla Firefox
     The Mozilla Firefox web browser
+
+    >>> user_browser.getLink('Mozilla Firefox')
+    <Link text='Mozilla Firefox' url='http://launchpad.dev/firefox'>
 
 
 Distribution source packages side-bar

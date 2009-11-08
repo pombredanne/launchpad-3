@@ -818,7 +818,7 @@ class DistributionSeriesView(LaunchpadView):
     def styled_series(self):
         """A list of dicts; keys: series, css_class, is_development_focus"""
         all_series = []
-        for series in self.context.serieses:
+        for series in self.context.series:
             all_series.append({
                 'series': series,
                 'css_class': self.getCssClass(series),
