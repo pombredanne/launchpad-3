@@ -61,6 +61,8 @@ class TestSecurityOverlay(TestCaseWithFactory):
 
         # The checkboxes for "privacy" and "security" are currently not
         # checked.
+        client.waits.forElement(
+            id=FIELD_PRIVATE, timeout=constants.FOR_ELEMENT)
         client.asserts.assertNotChecked(id=FIELD_PRIVATE)
         client.asserts.assertNotChecked(id=FIELD_SECURITY_RELATED)
 

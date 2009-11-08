@@ -43,8 +43,8 @@ class TestBugTagsEntry(TestCaseWithFactory):
 
         client.open(url=bug_url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.waits.sleep(milliseconds=constants.SLEEP)
         lpuser.FOO_BAR.ensure_login(client)
+        client.waits.sleep(milliseconds=constants.SLEEP)
 
         # XXX intellectronica 2009-05-26:
         # We (almost) consistently get an error on the following line
