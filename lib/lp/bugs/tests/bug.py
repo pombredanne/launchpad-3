@@ -33,12 +33,16 @@ def print_direct_subscribers(bug_page):
     print_subscribers(bug_page, 'subscribers-direct')
 
 
-def print_indirect_subscribers(bug_page):
-    """Print the indirect subscribers listed in a portlet."""
-    print 'From duplicates:'
-    print_subscribers(bug_page, 'subscribers-from-duplicates')
+def print_also_notified(bug_page):
+    """Print the structural subscribers listed in a portlet."""
     print 'Also notified:'
     print_subscribers(bug_page, 'subscribers-indirect')
+
+
+def print_subscribers_from_duplicates(bug_page):
+    """Print the subscribers from duplicates listed in a portlet."""
+    print 'From duplicates:'
+    print_subscribers(bug_page, 'subscribers-from-duplicates')
 
 
 def print_subscribers(bug_page, subscriber_list_id):
