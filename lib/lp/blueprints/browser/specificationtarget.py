@@ -162,6 +162,8 @@ class HasSpecificationsView(LaunchpadView):
         else:
             return _('Blueprints for $name', mapping=mapping)
 
+    page_title = 'Blueprints'
+
     def mdzCsv(self):
         """Quick hack for mdz, to get csv dump of specs."""
         import csv

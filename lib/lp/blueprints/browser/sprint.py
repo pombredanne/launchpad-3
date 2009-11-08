@@ -340,6 +340,8 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
         return smartquote(
             'Review discussion topics for "%s" sprint' % self.context.title)
 
+    page_title = label
+
     def initialize(self):
         self.status_message = None
         self.process_form()
