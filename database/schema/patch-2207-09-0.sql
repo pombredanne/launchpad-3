@@ -17,8 +17,7 @@ CREATE TABLE buildpackagejob (
   -- have a FK referencing the same `Job` row.
   job integer NOT NULL CONSTRAINT buildpackagejob__job__fk REFERENCES job,
   -- FK to the associated `Build` record.
-  build integer NOT NULL CONSTRAINT buildpackagebuild__build__fk
-  REFERENCES build
+  build integer NOT NULL CONSTRAINT buildpackagejob__build__fk REFERENCES build
 );
 
 -- Step 2
