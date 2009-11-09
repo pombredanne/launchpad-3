@@ -37,7 +37,7 @@ class NoSuchPackageSet(NameLookupFailed):
     """Raised when we try to look up an PackageSet that doesn't exist."""
     # Bad request.
     webservice_error(400)
-    _message_prefix = "No such packageset"
+    _message_prefix = "No such package set (in the specified distro series)"
 
 
 class DuplicatePackagesetName(Exception):
@@ -68,17 +68,17 @@ class IPackagesetViewOnly(IHasOwner):
         title=_("Description"), required=True, readonly=True,
         description=_("The description for the package set at hand.")))
 
-    distroseries = Reference(
+    distroseries = exported(Reference(
         IDistroSeries, title=_("Distribution series"), required=True,
         readonly=True,
         description=_(
-            "The distroseries to which this package set is related."))
+            "The distroseries to which this package set is related.")))
 
     packagesetgroup = Reference(
-        IPackagesetGroup, title=_('Packageset group'), required=True,
+        IPackagesetGroup, title=_('Package set group'), required=True,
         readonly=True,
         description=_(
-            'Used internally to link packagesets across distroseries'))
+            'Used internally to link package sets across distro series.'))
 
     def sourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
@@ -217,6 +217,16 @@ class IPackagesetViewOnly(IHasOwner):
             names.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def relatedSets():
+        """Get all package sets related to this one.
+
+        Return all package sets that are related to this one.
+
+        :return: A (potentially empty) sequence of `IPackageset` instances.
+        """
+
 
 class IPackagesetEdit(Interface):
     """A writeable interface for package sets."""
@@ -343,7 +353,12 @@ class IPackagesetSet(Interface):
             IDistroSeries, title=_("Distroseries"), required=False,
             readonly=True, description=_(
                 "The distribution series to which the packageset "
-                "is related.")))
+                "is related.")),
+        related_set=Reference(
+            IPackageset, title=_("Related package set"), required=False,
+            readonly=True, description=_(
+                "The new package set will share the package set group "
+                "with this one.")))
     @export_factory_operation(IPackageset, [])
     def new(name, description, owner, distroseries=None, related_set=None):
         """Create a new package set.
@@ -362,7 +377,12 @@ class IPackagesetSet(Interface):
         """
 
     @operation_parameters(
-        name=TextLine(title=_('Package set name'), required=True))
+        name=TextLine(title=_('Package set name'), required=True),
+        distroseries=Reference(
+            IDistroSeries, title=_("Distroseries"), required=False,
+            readonly=True, description=_(
+                "The distribution series to which the packageset "
+                "is related.")))
     @operation_returns_entry(IPackageset)
     @export_read_operation()
     def getByName(name, distroseries=None):

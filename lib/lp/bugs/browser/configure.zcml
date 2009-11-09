@@ -208,18 +208,6 @@
         classes="MaloneRelatedPages"
         module="lp.bugs.browser.malone"/>
     <browser:page
-        name="+filebug"
-        for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FrontPageFileBugGuidedView"
-        facet="bugs"
-        permission="launchpad.AnyPerson"/>
-    <browser:page
-        name="+filebug-advanced"
-        for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
-        facet="bugs"
-        permission="launchpad.AnyPerson"/>
-    <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         class="lp.bugs.browser.bugtask.BugsBugTaskSearchListingView"
         permission="zope.Public"
@@ -1009,6 +997,12 @@
             name="+bug-portlet-subscribers-content"
             class="lp.bugs.browser.bugsubscription.BugPortletSubcribersContents"
             template="../templates/bug-portlet-subscribers-content.pt"
+            permission="zope.Public"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            name="+bug-portlet-dupe-subscribers-content"
+            class="lp.bugs.browser.bugsubscription.BugPortletDuplicateSubcribersContents"
+            template="../templates/bug-portlet-dupe-subscribers-content.pt"
             permission="zope.Public"/>
         <browser:navigation
             module="lp.bugs.browser.bug"

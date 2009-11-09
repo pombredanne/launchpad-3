@@ -53,7 +53,7 @@ question page.
 
     >>> browser.getLink('Problem showing the SVG demo on W3C site').click()
     >>> print browser.title
-    Questions : Mozilla Firefox
+    Question #2 : ...
     >>> print find_main_content(browser.contents).first('h1').renderContents()
     Problem showing the SVG demo on W3C site
 

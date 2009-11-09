@@ -1044,6 +1044,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
 
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
 
+    def requestUpgrade():
+        """Create an IBranchUpgradeJob to upgrade this branch."""
+
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 

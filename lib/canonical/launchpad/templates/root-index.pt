@@ -74,21 +74,19 @@
               <h2>Recent Launchpad blog posts</h2>
               <ul>
                 <li class="news">
-                  <a href="http://blog.launchpad.net/releases/launchpad-3-0-is-here-new-ui-and-more">
-                    Welcome to Launchpad 3.0</a><span class="blogdate"> &ndash; 23 Sep 2009</span><br />
-                  Find out what's new in the latest version of Launchpad.
+                  <a href="http://blog.launchpad.net/bazaar/accessing-git-subversion-and-mercurial-from-bazaar">
+                  Git and Subversion from Bazaar</a><span class="blogdate"> &ndash; 29 Oct 2009</span><br />
+                  Read how Bazaar and Launchpad work with Git branches and Subversion repositories.
                 </li>
                 <li class="news">
-                  <a href="http://blog.launchpad.net/general/talking-about-launchpads-new-interface">
-                    Talking about Launchpad's new UI</a><span class="blogdate"> &ndash; 23 Sep 2009</span><br />
-                  Martin Albisetti &mdash; Launchpad's design guy &mdash; on the new
-                  web interface.
+                  <a href="http://blog.launchpad.net/api/new-lpx-project-group-for-launchpad-extensions">
+                  lpx project group for Launchpad extensions</a><span class="blogdate"> &ndash; 16 Oct 2009</span><br />
+                  If you've used the Launchpad API to create a script that interacts with or extends Launchpad, add it to our new lpx project group.
                 </li>
                 <li class="news">
-                  <a href="http://blog.launchpad.net/general/under-the-hood">
-                    Under the hood</a><span class="blogdate"> &ndash; 23 Sep 2009</span><br />
-                  Bj&ouml;rn Tillenius &mdash; Launchpad technical architect &mdash; talks
-                  about the inner workings of Launchpad.
+                  <a href="http://blog.launchpad.net/notifications/launchpads-status-page">
+                  New Launchpad status page</a><span class="blogdate"> &ndash; 13 Oct 2009</span><br />
+                  Our new identi.ca-hosted status page is the canonical source of service information about Launchpad.
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">
