@@ -17,6 +17,7 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -259,14 +260,20 @@ class TestWriteToBranch(PermissionTest):
         self.assertCanEdit(branch.owner, branch)
 
     def assertCanUpload(self, person, spn, archive, component,
-                        strict_component=True):
+                        strict_component=True, distroseries=None):
         """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
+        if distroseries is None:
+            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+            distroseries = ubuntu.currentseries
         self.assertIs(
             None,
-            verify_upload(person, spn, archive, component, strict_component))
+            verify_upload(
+                person, spn, archive, component, distroseries,
+                strict_component))
 
-    def assertCannotUpload(self, reason, person, spn, archive, component):
+    def assertCannotUpload(
+        self, reason, person, spn, archive, component, distroseries=None):
         """Assert that 'person' cannot upload to the archive.
 
         :param reason: The expected reason for not being able to upload. A
@@ -277,7 +284,11 @@ class TestWriteToBranch(PermissionTest):
         :param archive: The `IArchive` being uploaded to.
         :param component: The IComponent to which the package belongs.
         """
-        exception = verify_upload(person, spn, archive, component)
+        if distroseries is None:
+            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+            distroseries = ubuntu.currentseries
+        exception = verify_upload(
+            person, spn, archive, component, distroseries)
         self.assertEqual(reason, str(exception))
 
     def test_package_upload_permissions_grant_branch_edit(self):

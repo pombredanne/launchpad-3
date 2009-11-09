@@ -14,6 +14,7 @@ from canonical.testing import DatabaseFunctionalLayer
 
 from lp.archiveuploader.permission import (
     components_valid_for, verify_upload)
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import TestCaseWithFactory
@@ -59,11 +60,14 @@ class TestPermission(TestCaseWithFactory):
                         strict_component=True, distroseries=None):
         """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
+        if distroseries is None:
+            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+            distroseries = ubuntu.currentseries
         self.assertIs(
             None,
             verify_upload(
-                person, spn, archive, component, strict_component,
-                distroseries))
+                person, spn, archive, component, distroseries,
+                strict_component))
 
     def assertCannotUpload(self, reason, person, spn, archive, component,
                            distroseries=None):
@@ -78,8 +82,11 @@ class TestPermission(TestCaseWithFactory):
         :param component: The IComponent to which the package belongs.
         :param distroseries: The upload's target distro series.
         """
+        if distroseries is None:
+            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+            distroseries = ubuntu.currentseries
         exception = verify_upload(
-            person, spn, archive, component, distroseries=distroseries)
+            person, spn, archive, component, distroseries)
         self.assertEqual(reason, str(exception))
 
     def test_random_person_cannot_upload_to_ppa(self):

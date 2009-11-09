@@ -88,7 +88,7 @@ def packagesets_valid_for(archive, person):
 
 
 def verify_upload(person, sourcepackagename, archive, component,
-                  strict_component=True, distroseries=None):
+                  distroseries, strict_component=True):
     """Can 'person' upload 'sourcepackagename' to 'archive'?
 
     :param person: The `IPerson` trying to upload to the package. Referred to
@@ -97,11 +97,10 @@ def verify_upload(person, sourcepackagename, archive, component,
         package is new.
     :param archive: The `IArchive` being uploaded to.
     :param component: The `IComponent` that the source package belongs to.
+    :param distroseries: The upload's target distro series.
     :param strict_component: True if access to the specific component for the
         package is needed to upload to it. If False, then access to any
         package will do.
-    :param distroseries: The upload's target distro series
-        (Ubuntu.currentseries if None)
     :return: CannotUploadToArchive if 'person' cannot upload to the archive,
         None otherwise.
     """
@@ -113,13 +112,6 @@ def verify_upload(person, sourcepackagename, archive, component,
             return None
 
     # For any other archive...
-
-    # If the user did not specify the distro series, assume it is the current
-    # one.
-    if distroseries is None:
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        distroseries = ubuntu.currentseries
-
     ap_set = getUtility(IArchivePermissionSet)
 
     if sourcepackagename is not None:
