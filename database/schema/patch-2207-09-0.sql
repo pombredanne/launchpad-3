@@ -5,6 +5,7 @@ SET client_min_messages=ERROR;
 
 -- The schema patch required for the Soyuz buildd generalisation, see
 -- https://dev.launchpad.net/Soyuz/Specs/BuilddGeneralisation for details.
+-- Bug #478919.
 
 -- Step 1
 -- The `BuildPackageJob` table captures whatever data is required for
@@ -31,9 +32,9 @@ DROP INDEX buildqueue__build__idx;
 ALTER TABLE ONLY buildqueue DROP CONSTRAINT "$1";
 ALTER TABLE ONLY buildqueue DROP COLUMN build;
 
--- The 'job' and the 'job_type' columns added to the `BuildQueue` table
--- will enable us to find the correct database rows that hold the generic
--- and the specific data pertaining to the job respectively.
+-- The 'job' and the 'job_type' columns will enable us to find the correct
+-- database rows that hold the generic and the specific data pertaining to
+-- the job respectively.
 ALTER TABLE ONLY buildqueue ADD COLUMN 
   job integer NOT NULL CONSTRAINT buildqueue__job__fk REFERENCES job;
 CREATE INDEX buildqueue__job__idx ON buildqueue(job);
