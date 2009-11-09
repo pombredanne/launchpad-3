@@ -102,7 +102,7 @@ from zope.formlib.form import FormFields
 from zope.interface import classImplements, implements, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import getUtility
+from zope.component import adapts, getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
@@ -117,6 +117,7 @@ from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
 from lazr.restful.interface import copy_field, use_template
+from lazr.restful.interfaces import IWebServiceClientRequest
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
 
@@ -226,7 +227,8 @@ from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from canonical.launchpad.webapp.tales import (
+    DateTimeFormatterAPI, PersonFormatterAPI)
 from lazr.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
@@ -5811,8 +5813,7 @@ class TeamIndexMenu(TeamNavigationMenuBase):
     usedfor = ITeamIndexMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('edit', 'join', 'add_member', 'add_my_teams',
-             'leave')
+    links = ('edit', 'join', 'add_my_teams', 'leave')
 
 
 class TeamEditMenu(TeamNavigationMenuBase):
@@ -5828,3 +5829,16 @@ class TeamEditMenu(TeamNavigationMenuBase):
 classImplements(TeamIndexView, ITeamIndexMenu)
 classImplements(TeamEditView, ITeamEditMenu)
 classImplements(PersonIndexView, IPersonIndexMenu)
+
+
+class PersonXHTMLRepresentation:
+    adapts(IPerson, IWebServiceClientRequest)
+    implements(Interface)
+
+    def __init__(self, person, request):
+        self.person = person
+        self.request = request
+
+    def __call__(self):
+        """Render `Person` as XHTML using the webservice."""
+        return PersonFormatterAPI(self.person).link(None)

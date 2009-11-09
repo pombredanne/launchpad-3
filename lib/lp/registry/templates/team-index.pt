@@ -17,6 +17,20 @@
         rel="meta" type="application/rdf+xml"
         title="FOAF" href="+rdf"
         />
+  <script type="text/javascript"
+      tal:condition="devmode"
+      tal:attributes="src string:${icingroot}/build/registry/team.js">
+  </script>
+  <script type="text/javascript"
+          tal:content="string:
+    YUI().use('node', 'event', 'lp.picker', 'lp.team', function(Y) {
+        Y.on('load',
+             function(e) {
+                 Y.lp.setup_add_member_handler();
+             },
+             window);
+    });
+  "/>
   </tal:block>
 </head>
 
