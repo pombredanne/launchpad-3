@@ -125,9 +125,10 @@ def verify_upload(person, sourcepackagename, archive, component,
         #   - the given source package directly
         #   - a package set in the correct distro series that includes the
         #     given source package
-        if (archive.canUpload(person, sourcepackagename) or
-            ap_set.isSourceUploadAllowed(
-                archive, sourcepackagename, person, distroseries)):
+        source_allowed = archive.canUpload(person, sourcepackagename)
+        set_allowed = ap_set.isSourceUploadAllowed(
+            archive, sourcepackagename, person, distroseries)
+        if source_allowed or set_allowed:
             return None
 
     if not components_valid_for(archive, person):
