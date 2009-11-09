@@ -185,7 +185,7 @@ Let's add some release files to the releases for firefox.
     name2
     name1
     name0
-    firefox-0.9.2.orig.tar.gz
+    firefox_0.9.2.orig.tar.gz
 
 Only the product owner can create a new release.
 
