@@ -1508,7 +1508,7 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
         series_branches = {}
         all_branches = self._getBranchDict()
         official_branches = self._getOfficialBranches()
-        for series in self.context.distribution.serieses:
+        for series in self.context.distribution.series:
             if series in all_branches:
                 branches, more_count = self._getSeriesBranches(
                     official_branches.get(series, []),
@@ -1559,7 +1559,7 @@ class GroupedDistributionSourcePackageBranchesView(LaunchpadView,
         result = []
         series_branches_map = self.series_branches_map
         sp_factory = getUtility(ISourcePackageFactory)
-        for series in self.context.distribution.serieses:
+        for series in self.context.distribution.series:
             if series in series_branches_map:
                 branches, more_count = series_branches_map[series]
                 sourcepackage = sp_factory.new(
@@ -1604,7 +1604,7 @@ class SourcePackageBranchesView(BranchListingView):
         our_series = self.context.distroseries
         our_sourcepackagename = self.context.sourcepackagename
         distribution = self.context.distribution
-        for series in distribution.serieses:
+        for series in distribution.series:
             if not series.active:
                 continue
             if distribution.currentseries == series:
