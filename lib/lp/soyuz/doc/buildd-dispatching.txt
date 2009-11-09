@@ -202,7 +202,7 @@ buildqueue record, so the build was eliminated:
 
 == PPA build dispatching ==
 
-Create new Build record of the same source targeted for a PPA archive:
+Create a new Build record of the same source targeted for a PPA archive:
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -260,6 +260,9 @@ do this by copying the existing publication in Ubuntu.
     >>> job = bob_builder.findBuildCandidate()
     >>> ppa_job.id == job.id
     True
+
+For further details regarding IBuilder.findBuildCandidate() please see
+lib/lp/soyuz/tests/test_builder.py.
 
 Start buildd-slave to be able to dispatch jobs.
 

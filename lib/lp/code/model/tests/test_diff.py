@@ -62,6 +62,30 @@ class DiffTestCase(TestCaseWithFactory):
             '+<<<''<<<< TREE\n c\n+=======\n+d\n+>>>>>''>> MERGE-SOURCE\n',
             diff_text)
 
+    def preparePrerequisiteMerge(self, bmp=None):
+        """Prepare a merge scenario with a prerequisite branch."""
+        self.useBzrBranches()
+        if bmp is None:
+            target = self.factory.makeBranch()
+            prerequisite = self.factory.makeBranch()
+            source = self.factory.makeBranch()
+        else:
+            target = bmp.target_branch
+            source = bmp.source_branch
+            prerequisite = bmp.prerequisite_branch
+        target_bzr = self.createBzrBranch(target)
+        self.commitFile(target, 'file', 'target text\n')
+        prerequisite_bzr = self.createBzrBranch(prerequisite, target_bzr)
+        self.commitFile(
+            prerequisite, 'file', 'target text\nprerequisite text\n')
+        source_bzr = self.createBzrBranch(source, prerequisite_bzr)
+        source_rev_id = self.commitFile(
+            source, 'file',
+            'target text\nprerequisite text\nsource text\n')
+        return (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
+                prerequisite)
+
+
 
 class TestDiff(DiffTestCase):
 
@@ -108,6 +132,11 @@ class TestDiff(DiffTestCase):
         content = ''.join(unified_diff('', "1234567890" * 10))
         diff = self._create_diff(content)
         self.assertTrue(diff.oversized)
+
+
+class TestDiffInScripts(DiffTestCase):
+
+    layer = LaunchpadZopelessLayer
 
     def test_mergePreviewFromBranches(self):
         # mergePreviewFromBranches generates the correct diff.
@@ -162,6 +191,30 @@ class TestDiff(DiffTestCase):
         "+e\n"
         "+f\n")
 
+    def test_mergePreviewWithPrerequisite(self):
+        # Changes introduced in the prerequisite branch are ignored.
+        (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
+         prerequisite) = self.preparePrerequisiteMerge()
+        diff = Diff.mergePreviewFromBranches(
+            source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
+        transaction.commit()
+        self.assertIn('+source text\n', diff.text)
+        self.assertNotIn('+prerequisite text\n', diff.text)
+
+    def test_mergePreviewWithNewerPrerequisite(self):
+        # If the prerequisite branch has unmerged revisions, they do not
+        # affect the diff.
+        (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
+         prerequisite) = self.preparePrerequisiteMerge()
+        self.commitFile(
+            prerequisite, 'file', 'prerequisite text2\n')
+        diff = Diff.mergePreviewFromBranches(
+            source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
+        transaction.commit()
+        self.assertNotIn('-prerequisite text2\n', diff.text)
+        self.assertIn('+source text\n', diff.text)
+        self.assertNotIn('+prerequisite text\n', diff.text)
+
     def test_generateDiffstat(self):
         self.assertEqual(
             {'foo': (2, 1), 'bar': (0, 3), 'baz': (2, 0)},
@@ -171,6 +224,11 @@ class TestDiff(DiffTestCase):
         diff = Diff.fromFile(StringIO(self.diff_bytes), len(self.diff_bytes))
         self.assertEqual({'bar': (0, 3), 'baz': (2, 0), 'foo': (2, 1)},
                          diff.diffstat)
+
+    def test_fromFileAcceptsBinary(self):
+        diff_bytes = "Binary files a\t and b\t differ\n"
+        diff = Diff.fromFile(StringIO(diff_bytes), len(diff_bytes))
+        self.assertEqual({}, diff.diffstat)
 
     def test_fromFileSets_added_removed(self):
         """fromFile sets added_lines_count, removed_lines_count."""
@@ -358,6 +416,17 @@ class TestPreviewDiff(DiffTestCase):
         transaction.commit()
         self.checkExampleMerge(preview.text)
         self.assertEqual({'foo': (5, 0)}, preview.diffstat)
+
+    def test_fromBranchMergeProposal_with_prerequisite(self):
+        # Correctly generates a PreviewDiff from a BranchMergeProposal.
+        prerequisite_branch = self.factory.makeProductBranch()
+        bmp = self.factory.makeBranchMergeProposal(
+            prerequisite_branch=prerequisite_branch)
+        self.preparePrerequisiteMerge(bmp)
+        preview = PreviewDiff.fromBranchMergeProposal(bmp)
+        transaction.commit()
+        self.assertIn('+source text\n', preview.text)
+        self.assertNotIn('+prerequisite text\n', preview.text)
 
 
 def test_suite():

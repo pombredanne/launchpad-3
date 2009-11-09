@@ -34,7 +34,7 @@ from lp.archiveuploader.utils import (
     re_valid_pkg_name, re_valid_version, re_issource)
 from canonical.encoding import guess as guess_encoding
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from canonical.launchpad.interfaces import (
     GPGVerificationError, IGPGHandler, IGPGKeySet,
     ISourcePackageNameSet, NotFoundError)
@@ -323,7 +323,17 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         :raise: `NotFoundError` when the wanted file could not be found.
         """
-        if (self.policy.archive.purpose == ArchivePurpose.PPA and
+        # We cannot check the archive purpose for partner archives here,
+        # because the archive override rules have not been applied yet.
+        # Uploads destined for the Ubuntu main archive and the 'partner'
+        # component will eventually end up in the partner archive though.
+        if (self.policy.archive.purpose == ArchivePurpose.PRIMARY and
+            self.component_name == 'partner'):
+            archives = [
+                getUtility(IArchiveSet).getByDistroPurpose(
+                distribution=self.policy.distro,
+                purpose=ArchivePurpose.PARTNER)]
+        elif (self.policy.archive.purpose == ArchivePurpose.PPA and
             filename.endswith('.orig.tar.gz')):
             archives = [self.policy.archive, self.policy.distro.main_archive]
         else:

@@ -76,6 +76,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
@@ -421,7 +422,7 @@ class DerivativeDistributionOverviewMenu(DistributionOverviewMenu):
         return Link('+addseries', text, icon='add')
 
 
-class DistributionBugsMenu(ApplicationMenu):
+class DistributionBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistribution
     facet = 'bugs'
@@ -450,10 +451,6 @@ class DistributionBugsMenu(ApplicationMenu):
     def filebug(self):
         text = 'Report a bug'
         return Link('+filebug', text, icon='bug')
-
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
 
 class DistributionSpecificationsMenu(NavigationMenu,
@@ -646,6 +643,13 @@ class DistributionPPASearchView(LaunchpadView):
 
     def initialize(self):
         self.name_filter = self.request.get('name_filter')
+        if isinstance(self.name_filter, list):
+            # This happens if someone hand-hacks the URL so that it has
+            # more than one name_filter field.  We could do something
+            # like form.getOne() so that the request would be rejected,
+            # but we can acutally do better and join the terms supplied
+            # instead.
+            self.name_filter = " ".join(self.name_filter)
         self.show_inactive = self.request.get('show_inactive')
 
     @property
@@ -814,7 +818,7 @@ class DistributionSeriesView(LaunchpadView):
     def styled_series(self):
         """A list of dicts; keys: series, css_class, is_development_focus"""
         all_series = []
-        for series in self.context.serieses:
+        for series in self.context.series:
             all_series.append({
                 'series': series,
                 'css_class': self.getCssClass(series),

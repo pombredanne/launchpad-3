@@ -660,7 +660,7 @@ def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger):
     # don't want to keep records for files a mirror doesn't need to have
     # anymore, so we delete all records before start probing. This also fixes
     # https://launchpad.net/bugs/46662
-    mirror.deleteAllMirrorCDImageSerieses()
+    mirror.deleteAllMirrorCDImageSeries()
     try:
         cdimage_paths = get_expected_cdimage_paths()
     except UnableToFetchCDImageFileList, e:

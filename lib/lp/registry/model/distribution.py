@@ -10,8 +10,7 @@ __all__ = ['Distribution', 'DistributionSet']
 from zope.interface import alsoProvides, implements
 from zope.component import getUtility
 
-from sqlobject import (
-    BoolCol, ForeignKey, SQLRelatedJoin, StringCol, SQLObjectNotFound)
+from sqlobject import BoolCol, ForeignKey, SQLObjectNotFound, StringCol
 from sqlobject.sqlbuilder import SQLConstant
 from storm.locals import Desc, In, Join, SQL
 from storm.store import Store
@@ -26,6 +25,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.components.storm_operators import FTQ, Match, RANK
+from canonical.lazr.utils import safe_hasattr
 from lp.registry.model.announcement import MakesAnnouncements
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.binarypackagename import BinaryPackageName
@@ -90,7 +90,7 @@ from lp.registry.interfaces.distroseries import (
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage)
 from lp.soyuz.interfaces.queue import PackageUploadStatus
-from canonical.launchpad.interfaces.packaging import PackagingType
+from lp.registry.interfaces.packaging import PackagingType
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
@@ -325,11 +325,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             return (2, self.name)
         return (3, self.name)
 
-    # XXX: 2008-01-29 kiko: This is used in a number of places and given it's
-    # already listified, why not spare the trouble of regenerating this as a
-    # cachedproperty? Answer: because it breaks tests.
-    @property
-    def serieses(self):
+    @cachedproperty('_cached_series')
+    def series(self):
         """See `IDistribution`."""
         ret = DistroSeries.selectBy(distribution=self)
         return sorted(ret, key=lambda a: Version(a.version), reverse=True)
@@ -340,7 +337,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         architectures = []
 
         # Concatenate architectures list since they are distinct.
-        for series in self.serieses:
+        for series in self.series:
             architectures += series.architectures
 
         return architectures
@@ -451,32 +448,31 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         # This should be just a selectFirst with a case in its
         # order by clause.
 
-        serieses = self.serieses
         # If we have a frozen one, return that.
-        for series in serieses:
+        for series in self.series:
             if series.status == DistroSeriesStatus.FROZEN:
                 return series
         # If we have one in development, return that.
-        for series in serieses:
+        for series in self.series:
             if series.status == DistroSeriesStatus.DEVELOPMENT:
                 return series
         # If we have a stable one, return that.
-        for series in serieses:
+        for series in self.series:
             if series.status == DistroSeriesStatus.CURRENT:
                 return series
         # If we have ANY, return the first one.
-        if len(serieses) > 0:
-            return serieses[0]
+        if len(self.series) > 0:
+            return self.series[0]
         return None
 
     def __getitem__(self, name):
-        for series in self.serieses:
+        for series in self.series:
             if series.name == name:
                 return series
         raise NotFoundError(name)
 
     def __iter__(self):
-        return iter(self.serieses)
+        return iter(self.series)
 
     @property
     def bugCounter(self):
@@ -509,7 +505,7 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 raise NoSuchDistroSeries(name_or_version)
         return distroseries
 
-    def getDevelopmentSerieses(self):
+    def getDevelopmentSeries(self):
         """See `IDistribution`."""
         return DistroSeries.selectBy(
             distribution=self,
@@ -1498,6 +1494,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
             # This driver is a release manager.
             series.driver = owner
+
+        if safe_hasattr(self, '_cached_series'):
+            del self._cached_series
         return series
 
     @property

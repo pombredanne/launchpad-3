@@ -5,17 +5,26 @@
   omit-tag="">
 
     <ul id="navlinks" class="horizontal">
-      <li>
-        <a tal:replace="structure
-          view/menu:navigation/related_software_summary/render"/></li>
-      <li>
-        <a tal:replace="structure view/menu:navigation/maintained/render"/></li>
-      <li>
-        <a tal:replace="structure view/menu:navigation/uploaded/render"/></li>
-      <li>
-        <a tal:replace="structure view/menu:navigation/ppa/render"/></li>
-      <li>
-        <a tal:replace="structure view/menu:navigation/projects/render"/></li>
+      <li
+        tal:define="link view/menu:navigation/related_software_summary"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+      <li
+        tal:define="link view/menu:navigation/maintained"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+      <li
+        tal:define="link view/menu:navigation/uploaded"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+      <li
+        tal:define="link view/menu:navigation/ppa"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+      <li
+        tal:define="link view/menu:navigation/projects"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
     </ul>
 
 </tal:root>

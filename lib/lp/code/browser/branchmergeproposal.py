@@ -33,14 +33,17 @@ __all__ = [
 import operator
 
 from zope.app.form.browser import TextAreaWidget
-from zope.component import getUtility
+from zope.component import adapter, getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
-from zope.interface import Interface, implements
+from zope.interface import Interface, implementer, implements
 from zope.schema import Choice, Int, Text
+from zope.schema.interfaces import IText
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from lazr.lifecycle.event import ObjectModifiedEvent
+from lazr.restful.interfaces import (
+    IFieldHTMLRenderer, IWebServiceClientRequest)
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -56,6 +59,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
+from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.widgets.lazrjs import TextAreaEditorWidget
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
@@ -228,8 +233,7 @@ class BranchMergeProposalEditMenu(NavigationMenu,
     usedfor = IBranchMergeProposal
     title = 'Edit Proposal'
     facet = 'branches'
-    links = [
-        'edit_status', 'edit_commit_message', 'delete', 'resubmit']
+    links = ['resubmit', 'delete']
 
     @property
     def branch_merge_proposal(self):
@@ -242,11 +246,13 @@ class BranchMergeProposalContextMenu(ContextMenu,
 
     usedfor = IBranchMergeProposal
     links = [
-        'request_review',
         'add_comment',
-        'merge',
-        'enqueue',
         'dequeue',
+        'edit_commit_message',
+        'edit_status',
+        'enqueue',
+        'merge',
+        'request_review',
         'resubmit',
         'update_merge_revno',
         ]
@@ -506,6 +512,24 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         from lp.code.browser.branch import DecoratedBug
         return [DecoratedBug(bug, self.context.source_branch)
                 for bug in self.context.related_bugs]
+
+    @property
+    def commit_message_html(self):
+        """The commit message as widget HTML."""
+        commit_message = self.context.commit_message
+        if commit_message is None:
+            commit_message = ''
+        formatter = FormattersAPI
+        hide_email = formatter(commit_message).obfuscate_email()
+        commit_message = formatter(hide_email).text_to_html()
+        return TextAreaEditorWidget(
+            self.context,
+            'commit_message',
+            canonical_url(self.context, view_name='+edit-commit-message'),
+            id="edit-description",
+            title="Commit Message",
+            value=commit_message,
+            accept_empty=True)
 
 
 class DecoratedCodeReviewVoteReference:
@@ -1233,3 +1257,15 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
         return canonical_url(self.context)
 
     cancel_url = next_url
+
+
+@adapter(IBranchMergeProposal, IText, IWebServiceClientRequest)
+@implementer(IFieldHTMLRenderer)
+def text_xhtml_representation(context, field, request):
+    """Render an `IText` as XHTML using the webservice."""
+    formatter = FormattersAPI
+    def renderer(value):
+        nomail  = formatter(value).obfuscate_email()
+        html    = formatter(nomail).text_to_html()
+        return html.encode('utf-8')
+    return renderer

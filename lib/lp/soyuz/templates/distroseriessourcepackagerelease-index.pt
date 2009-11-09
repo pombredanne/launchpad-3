@@ -10,14 +10,20 @@
 
 <div metal:fill-slot="main">
 
-  <div class="top-portlet">
-  <h2>Publishing history</h2>
+  <ul class="horizontal">
+    <li>
+      <a tal:replace="structure context/sourcepackage/menu:overview/distribution_source_package/fmt:link" />
+    </li>
+  </ul>
 
-  <div id="publishing_history">
-    <tal:block repeat="publishing context/publishing_history"
-               replace="structure publishing/@@+listing-detailed">
-    </tal:block>
-  </div>
+  <div class="portlet">
+    <h2>Publishing history</h2>
+
+    <div id="publishing_history">
+      <tal:block repeat="publishing context/publishing_history"
+                replace="structure publishing/@@+listing-detailed">
+      </tal:block>
+    </div>
   </div>
 
   <div class="yui-g">

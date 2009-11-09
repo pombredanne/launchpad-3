@@ -36,7 +36,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     Link,
     NavigationMenu)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription)
@@ -487,11 +486,8 @@ class ProductSeriesTemplatesView(LaunchpadView):
     def iter_templates(self):
         """Return an iterator of all `IPOTemplates` for the series."""
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(productseries=self.context)
-
-    def can_administer(self, template):
-        """Can the user administer the template?"""
-        return check_permission('launchpad.Admin', template)
+        return potemplateset.getSubset(productseries=self.context,
+                                       ordered_by_names=True)
 
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):

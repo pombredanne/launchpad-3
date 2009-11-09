@@ -6,10 +6,11 @@
 # pylint: disable-msg=W0403
 """Simple tool to upload arbitrary files into Librarian."""
 
+import _pythonpath
+
 import logging
 import os
 
-import _pythonpath
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet

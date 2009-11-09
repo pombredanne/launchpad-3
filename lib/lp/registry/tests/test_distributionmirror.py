@@ -70,20 +70,20 @@ class TestDistributionMirror(unittest.TestCase):
         self.failUnless(
             self.cdimage_mirror.shouldDisable(expected_file_count))
 
-    def test_delete_all_mirror_cdimage_serieses(self):
+    def test_delete_all_mirror_cdimage_series(self):
         mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='ubuntu')
         mirror = self.cdimage_mirror.ensureMirrorCDImageSeries(
             self.hoary, flavour='edubuntu')
         self.failUnlessEqual(
-            self.cdimage_mirror.cdimage_serieses.count(), 2)
-        self.cdimage_mirror.deleteAllMirrorCDImageSerieses()
+            self.cdimage_mirror.cdimage_series.count(), 2)
+        self.cdimage_mirror.deleteAllMirrorCDImageSeries()
         self.failUnlessEqual(
-            self.cdimage_mirror.cdimage_serieses.count(), 0)
+            self.cdimage_mirror.cdimage_series.count(), 0)
 
     def test_archive_mirror_without_content_freshness(self):
-        self.failIf(self.archive_mirror.source_serieses or
-                    self.archive_mirror.arch_serieses)
+        self.failIf(self.archive_mirror.source_series or
+                    self.archive_mirror.arch_series)
         self.failUnlessEqual(
             self.archive_mirror.getOverallFreshness(),
             MirrorFreshness.UNKNOWN)
