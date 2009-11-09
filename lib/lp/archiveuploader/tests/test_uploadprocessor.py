@@ -1376,7 +1376,6 @@ class TestUploadProcessor(TestUploadProcessorBase):
             status, PackageUploadStatus.DONE,
             "Expected DONE status, got %s" % status.value)
 
-
     def testUploadPathErrorIntendedForHumans(self):
         # Distribution upload path errors are augmented with a hint
         # to fix the current dput/dupload configuration.
