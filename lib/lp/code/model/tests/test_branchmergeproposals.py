@@ -1331,8 +1331,24 @@ class TestMergeProposalCreatedJob(TestCaseWithFactory):
         """Skip Jobs with a hosted source branch that needs mirroring."""
         # Suppress events to avoid creating a MergeProposalCreatedJob early.
         bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
         bmp.source_branch.requestMirror()
         job = MergeProposalCreatedJob.create(bmp)
+        self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
+
+    def test_iterReady_joins_properly(self):
+        """An up-to-date branch does not cause a job for a needs-mirroring
+        branch to be returned."""
+        # Suppress events to avoid creating MergeProposalCreatedJobs early.
+        bmp = capture_events(self.factory.makeBranchMergeProposal)[0]
+        bmp2 = capture_events(self.factory.makeBranchMergeProposal)[0]
+        # Give both branches some revisions.
+        self.factory.makeRevisionsForBranch(bmp.source_branch, count=1)
+        self.factory.makeRevisionsForBranch(bmp2.source_branch, count=1)
+        # Request a mirror and create a job for one of them.
+        bmp.source_branch.requestMirror()
+        MergeProposalCreatedJob.create(bmp)
+        # No jobs are ready.
         self.assertEqual([], list(MergeProposalCreatedJob.iterReady()))
 
     def test_iterReady_includes_mirrored_needing_mirror(self):
