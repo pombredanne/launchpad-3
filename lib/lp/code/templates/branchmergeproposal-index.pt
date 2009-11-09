@@ -23,6 +23,10 @@
   </style>
   <script type="text/javascript"
       tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/branchmergeproposal.js">
+  </script>
+  <script type="text/javascript"
+      tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/code/codereview.js">
   </script>
   <script type="text/javascript"
