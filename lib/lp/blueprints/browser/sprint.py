@@ -149,6 +149,10 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     # a second h1 to display. But as this view implements IMajorHeadingView
     # it should not include an h1 below the app buttons.
     label = None
+    
+    @property
+    def page_title(self):
+        return '%s (sprint or meeting)' % self.context.title
 
     def initialize(self):
         self.notices = []
