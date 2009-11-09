@@ -13,6 +13,7 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 
 
@@ -87,7 +88,7 @@ def packagesets_valid_for(archive, person):
 
 
 def verify_upload(person, sourcepackagename, archive, component,
-                  strict_component=True):
+                  strict_component=True, distroseries=None):
     """Can 'person' upload 'sourcepackagename' to 'archive'?
 
     :param person: The `IPerson` trying to upload to the package. Referred to
@@ -110,11 +111,24 @@ def verify_upload(person, sourcepackagename, archive, component,
             return None
 
     # For any other archive...
+
+    # If the user did not specify the distro series, assume it is the current
+    # one.
+    if distroseries is None:
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        distroseries = ubuntu.currentseries
+
     ap_set = getUtility(IArchivePermissionSet)
-    if sourcepackagename is not None and (
-        archive.canUpload(person, sourcepackagename)
-        or ap_set.isSourceUploadAllowed(archive, sourcepackagename, person)):
-        return None
+
+    if sourcepackagename is not None:
+        # Check whether user may upload because he holds a permission for
+        #   - the given source package directly
+        #   - a package set in the correct distro series that includes the
+        #     given source package
+        if (archive.canUpload(person, sourcepackagename) or
+            ap_set.isSourceUploadAllowed(
+                archive, sourcepackagename, person, distroseries)):
+            return None
 
     if not components_valid_for(archive, person):
         if not packagesets_valid_for(archive, person):

@@ -56,14 +56,17 @@ class TestPermission(TestCaseWithFactory):
         self.permission_set = removeSecurityProxy(permission_set)
 
     def assertCanUpload(self, person, spn, archive, component,
-                        strict_component=True):
+                        strict_component=True, distroseries=None):
         """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
         self.assertIs(
             None,
-            verify_upload(person, spn, archive, component, strict_component))
+            verify_upload(
+                person, spn, archive, component, strict_component,
+                distroseries))
 
-    def assertCannotUpload(self, reason, person, spn, archive, component):
+    def assertCannotUpload(self, reason, person, spn, archive, component,
+                           distroseries=None):
         """Assert that 'person' cannot upload to the archive.
 
         :param reason: The expected reason for not being able to upload. A
@@ -73,8 +76,10 @@ class TestPermission(TestCaseWithFactory):
             package does not yet exist.
         :param archive: The `IArchive` being uploaded to.
         :param component: The IComponent to which the package belongs.
+        :param distroseries: The upload's target distro series.
         """
-        exception = verify_upload(person, spn, archive, component)
+        exception = verify_upload(
+            person, spn, archive, component, distroseries=distroseries)
         self.assertEqual(reason, str(exception))
 
     def test_random_person_cannot_upload_to_ppa(self):
@@ -139,6 +144,26 @@ class TestPermission(TestCaseWithFactory):
         self.permission_set.newPackagesetUploader(
             archive, person, package_set)
         self.assertCanUpload(person, spn, archive, None)
+
+    def test_packageset_wrong_distroseries(self):
+        # A person with rights to upload to the package set in distro
+        # series K may not upload with these same rights to a different
+        # distro series L.
+        distroseries_K = self.factory.makeDistroRelease()
+        distroseries_L = self.factory.makeDistroRelease()
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        spn = self.factory.makeSourcePackageName()
+        package_set = self.factory.makePackageset(
+            packages=[spn], distroseries=distroseries_K)
+        self.permission_set.newPackagesetUploader(
+            archive, person, package_set)
+        self.assertCanUpload(
+            person, spn, archive, None, distroseries=distroseries_K)
+        self.assertCannotUpload(
+            ("The signer of this package is lacking the upload rights for "
+             "the source package, component or package set in question."),
+            person, spn, archive, None, distroseries=distroseries_L)
 
     def test_component_rights(self):
         # A person allowed to upload to a particular component of an archive
