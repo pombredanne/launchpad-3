@@ -178,7 +178,8 @@
   replace="structure
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
   <!--
-  YUI().use('io-base', 'code.codereview', function(Y) {
+  YUI().use('io-base', 'code.codereview', 'code.branchmergeproposal',
+            function(Y) {
 
 
   if(Y.UA.ie) {
@@ -187,6 +188,7 @@
 
   Y.on('domready', function() {
       Y.code.codereview.connect_links();
+      Y.code.branchmergeproposal.connect_status();
   });
 
   (new Y.codereview.NumberToggle()).render();

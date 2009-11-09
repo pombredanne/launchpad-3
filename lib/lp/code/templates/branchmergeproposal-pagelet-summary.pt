@@ -8,15 +8,15 @@
   <tbody>
     <tr>
       <th>Status:</th>
-      <td id="branchmergeproposal-status">
-        <span tal:attributes="class string:mergestatus${context/queue_status/name}"
+      <td id="branchmergeproposal-status-value">
+        <span tal:attributes="class string:value mergestatus${context/queue_status/name}"
               tal:content="context/queue_status/title">
           Work in progress
         </span>
         <a tal:define="link context/menu:context/edit_status"
            tal:condition="link/enabled"
            tal:attributes="href link/url">
-           <img src="/@@/edit" alt="Edit status" />
+           <img class="editicon" src="/@@/edit" alt="Edit status" />
         </a>
       </td>
     </tr>
