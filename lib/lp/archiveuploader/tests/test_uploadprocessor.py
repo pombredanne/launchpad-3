@@ -1363,7 +1363,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         breezy_ps.add((bar_package,))
         ap_set.newPackagesetUploader(
             self.ubuntu.main_archive, uploader, breezy_ps)
-        # The uploader now does have a package set based upload permissions
+        # The uploader now does have a package set based upload permission
         # to 'bar' in 'breezy'.
         self.assertTrue(
             ap_set.isSourceUploadAllowed(

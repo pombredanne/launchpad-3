@@ -100,6 +100,8 @@ def verify_upload(person, sourcepackagename, archive, component,
     :param strict_component: True if access to the specific component for the
         package is needed to upload to it. If False, then access to any
         package will do.
+    :param distroseries: The upload's target distro series
+        (Ubuntu.currentseries if None)
     :return: CannotUploadToArchive if 'person' cannot upload to the archive,
         None otherwise.
     """
