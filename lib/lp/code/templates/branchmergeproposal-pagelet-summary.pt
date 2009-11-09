@@ -8,11 +8,11 @@
   <tbody>
     <tr>
       <th>Status:</th>
-      <td>
+      <td id="branchmergeproposal-status">
         <span tal:attributes="class string:mergestatus${context/queue_status/name}"
               tal:content="context/queue_status/title">
-                    >
-        Work in progress</span>
+          Work in progress
+        </span>
         <a tal:define="link context/menu:context/edit_status"
            tal:condition="link/enabled"
            tal:attributes="href link/url">
