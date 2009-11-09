@@ -24,7 +24,7 @@ from psycopg2.extensions import TransactionRollbackError
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from storm.expr import Alias, And, Desc, Join, LeftJoin, Or, SQL
+from storm.expr import Alias, And, Desc, In, Join, LeftJoin, Or, SQL
 from storm.info import ClassAlias
 from storm.store import Store
 from zope.component import getAdapter, getUtility
@@ -427,13 +427,13 @@ class POTemplate(SQLBase, RosettaStats):
         """See `IPOTemplate`."""
         # Find potential credits messages by the message ids.
         store = IStore(POTemplate)
-        credits_ids = ",".join(map(quote, POTMsgSet.credits_message_ids))
         origin1 = Join(TranslationTemplateItem,
                        TranslationTemplateItem.potmsgset == POTMsgSet.id)
         origin2 = Join(POMsgID, POTMsgSet.msgid_singular == POMsgID.id)
         result = store.using(POTMsgSet, origin1, origin2).find(
-            POTMsgSet, TranslationTemplateItem.potemplate == self,
-                       "pomsgid.msgid IN (%s)" % credits_ids)
+            POTMsgSet,
+            TranslationTemplateItem.potemplate == self,
+            In(POMsgID.msgid, POTMsgSet.credits_message_ids))
         # Filter these candidates because is_translation_credit checks for
         # more conditions than the special msgids.
         for potmsgset in result:
@@ -1401,14 +1401,14 @@ class POTemplateSharingSubset(object):
         if self.product:
             subsets = [
                 self.potemplateset.getSubset(productseries=series)
-                for series in self.product.serieses
+                for series in self.product.series
                 ]
         else:
             subsets = [
                 self.potemplateset.getSubset(
                     distroseries=series,
                     sourcepackagename=self.sourcepackagename)
-                for series in self.distribution.serieses
+                for series in self.distribution.series
                 ]
         for subset in subsets:
             for template in subset:

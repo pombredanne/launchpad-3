@@ -763,8 +763,11 @@ COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of
 
 -- SprintAttendance
 COMMENT ON TABLE SprintAttendance IS 'The record that someone will be attending a particular sprint or meeting.';
+COMMENT ON COLUMN SprintAttendance.attendee IS 'The person attending the sprint.';
+COMMENT ON COLUMN SprintAttendance.sprint IS 'The sprint the person is attending.';
 COMMENT ON COLUMN SprintAttendance.time_starts IS 'The time from which the person will be available to participate in meetings at the sprint.';
 COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the sprint or conference - this is the last time at which the person is available for meetings during the sprint.';
+COMMENT ON COLUMN SprintAttendance.is_physical IS 'Is the person physically attending the sprint';
 
 
 -- SprintSpecification
@@ -1862,6 +1865,7 @@ COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archi
 COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days before superseded or deleted binary files are expired in the librarian, or zero for never.';
 COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
 COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
+COMMENT ON COLUMN Archive.external_dependencies IS 'Newline-separated list of repositories to be used to retrieve any external build dependencies when building packages in this archive, in the format: deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]  The series variable is replaced with the series name of the context build.  This column is specifically and only intended for OEM migration to Launchpad and should be re-examined in October 2010 to see if it is still relevant.';
 
 -- ArchiveAuthToken
 
@@ -2235,11 +2239,20 @@ COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';
 
 -- Packageset
 
-COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages for purposes like the control of upload permissions, et.';
+COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages (in a given distro series) for purposes like the control of upload permissions, etc.';
 COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
 COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package set';
 COMMENT ON COLUMN Packageset.name IS 'The name for the package set on hand.';
 COMMENT ON COLUMN Packageset.description IS 'The description for the package set on hand.';
+COMMENT ON COLUMN Packageset.packagesetgroup IS 'The group this package set is affiliated with.';
+COMMENT ON COLUMN Packageset.distroseries IS 'The distro series this package set belongs to.';
+
+-- PackagesetGroup
+
+COMMENT ON TABLE PackagesetGroup IS 'Package set groups keep track of equivalent package sets across distro series boundaries.';
+COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
+COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package
+set group.';
 
 -- PackagesetSources
 
@@ -2256,3 +2269,9 @@ COMMENT ON COLUMN PackagesetInclusion.child IS 'The package set that is being in
 COMMENT ON TABLE FlatPackagesetInclusion IS 'In order to facilitate the querying of set-subset relationships an expanded or flattened representation of the set-subset hierarchy is provided by this table.';
 COMMENT ON COLUMN FlatPackagesetInclusion.parent IS 'The package set that is (directly or indirectly) including a subset.';
 COMMENT ON COLUMN FlatPackagesetInclusion.child IS 'The package set that is being included as a subset.';
+
+-- SourcePackageFormatSelection
+COMMENT ON TABLE SourcePackageFormatSelection IS 'Allowed source package formats for a given distroseries.';
+COMMENT ON COLUMN SourcePackageFormatSelection.distroseries IS 'Refers to the distroseries in question.';
+COMMENT ON COLUMN SourcePackageFormatSelection.format IS 'The SourcePackageFormat to allow.';
+
