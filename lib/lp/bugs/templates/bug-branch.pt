@@ -11,9 +11,11 @@
     tal:attributes="id string:bug-branch-${bug_branch/id}"
     class="bug-branch-summary">
   <tal:branch-ref replace="structure branch/fmt:link"/>
-  (<span tal:content="branch/lifecycle_status/title"
-  tal:attributes="class string:branchstatus${branch/lifecycle_status/name}"
-  >Experimental</span>)
+  <tal:branch-status condition="view/show_branch_status">
+    (<span tal:content="branch/lifecycle_status/title"
+    tal:attributes="class string:branchstatus${branch/lifecycle_status/name}"
+    >Experimental</span>)
+  </tal:branch-status>
   <a title="Remove link"
      class="bugbranch-delete"
      tal:condition="show_edit"
@@ -22,4 +24,7 @@
        id string:bugbranch-${bug_branch/id}-delete;">
     <img src="/@@/remove"/>
   </a>
+  <div tal:repeat="proposal view/active_merge_proposals">
+    
+  </div>
 </div>

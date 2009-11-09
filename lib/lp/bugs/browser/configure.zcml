@@ -820,6 +820,7 @@
     <browser:page
         name="+bug-branch"
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
+        class="lp.bugs.browser.bugbranch.BugBranchView"
         permission="launchpad.View"
         template="../templates/bug-branch.pt"/>
     <adapter
