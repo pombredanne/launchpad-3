@@ -1672,14 +1672,16 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
         parser = SubmissionParser(self.log)
 
         ignored_buses = (
-            'ac97', 'disk', 'drm', 'drm_minor', 'dvb', 'enclosure',
-            'gameport', 'hid', 'host', 'ieee80211', 'link', 'lirc',
-            'memstick_host', 'net', 'partition', 'pci_express',
-            'pcmcia_socket', 'scsi_disk', 'scsi_generic', 'scsi_host',
+             'ac97', 'bttv-sub', 'disk', 'drm', 'drm_minor', 'dvb',
+            'enclosure', 'gameport', 'graphics', 'hid', 'host', 'hwmon',
+            'ieee80211', 'link', 'lirc', 'mISDN', 'memstick', 'memstick_host',
+            'net', 'partition', 'pci_express', 'pcmcia_socket', 'pvrusb2',
+            'sas_device', 'sas_end_device', 'sas_host', 'sas_phy', 'sas_port',
+            'scsi_disk', 'scsi_generic', 'scsi_host', 'scsi_tape',
             'scsi_target', 'sound', 'spi_host', 'spi_transport', 'ssb',
             'tifm', 'tifm_adapter', 'tty', 'usb', 'usb-serial',
-            'usb_endpoint', 'usb_host', 'usb_interface', 'video4linux',
-            'wlan')
+            'usb_endpoint', 'usb_host', 'usb_interface', 'usbmon',
+            'video4linux', 'wlan')
         for tested_bus in ignored_buses:
             properties['info.bus'] = (tested_bus, 'str')
             parser.buildHalDeviceList(parsed_data)
@@ -2010,12 +2012,13 @@ class TestHWDBSubmissionProcessing(TestCaseHWDB):
             }
         parser = SubmissionParser(self.log)
         properties = devices[0]['properties']
-        for bus in ('backlight', 'bdi', 'bluetooth', 'dmi', 'heci', 'hidraw',
-                   'hwmon', 'i2c-adapter', 'ieee1394', 'input', 'leds', 'mem',
-                   'misc', 'mmc', 'mmc_host', 'pci_bus', 'pcmcia', 'platform',
-                   'pnp', 'power_supply', 'ppdev', 'ppp', 'printer', 'rfkill',
-                   'thermal', 'ttm', 'unknown', 'vc', 'video_output',
-                    'vtconsole'):
+        for bus in ('asus_oled', 'atm', 'backlight', 'bdi', 'bluetooth',
+                    'cardman_4040', 'dahdi', 'dmi', 'heci', 'hidraw',
+                    'hwmon', 'i2c-adapter', 'ieee1394', 'ieee1394_protocol',
+                    'input', 'leds', 'mem', 'misc', 'mmc', 'mmc_host', 'msr',
+                    'pci_bus', 'pcmcia', 'pktcdvd', 'platform', 'pnp',
+                    'power_supply', 'ppdev', 'ppp', 'printer', 'rfkill',
+                    'thermal', 'ttm', 'vc', 'video_output', 'vtconsole'):
             properties['info.bus'] = (bus, 'str')
             parser.buildHalDeviceList(parsed_data)
             device = parser.devices[self.UDI_SATA_CONTROLLER]
