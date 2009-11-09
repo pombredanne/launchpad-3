@@ -268,6 +268,7 @@ There's also a section on the page that gives some package information:
     Urgency:* Low Urgency
     Component:* main
     Architectures:* any
+    Latest upload: 1.0
     *actual publishing details may vary in this distribution, these are just the package defaults.
 
 And if the source has direct packaging linkage, the upstream's description
@@ -304,7 +305,7 @@ Distribution source packages side-bar
 -------------------------------------
 
 The page has a side-bar with a global actions menu, a "Get Involved"
-menu, a "Latest release" portlet and a "Bug subscriptions" portlet.
+menu, and a "Bug subscriptions" portlet.
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'global-actions'))
@@ -317,13 +318,6 @@ menu, a "Latest release" portlet and a "Bug subscriptions" portlet.
     Get Involved
     Report a bug
     Ask a question
-
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'latest-release'))
-    Latest release
-    Version: 1.0
-    Uploaded by: Mark Shuttleworth
-    On date: ...
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents,

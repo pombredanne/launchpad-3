@@ -9,6 +9,8 @@ from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tests.breadcrumbs import (
     BaseBreadcrumbTestCase)
 
+from lp.testing import login_person
+
 
 class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost(
         BaseBreadcrumbTestCase):
@@ -53,6 +55,32 @@ class TestQuestionTargetProjectAndPersonBreadcrumbOnAnswersVHost(
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.person_questions_url)
         self.assertEquals(last_crumb.text, 'Questions')
+
+
+class TestAnswersBreadcrumb(BaseBreadcrumbTestCase):
+    """Test Breadcrumbs for answer module objects."""
+
+    def setUp(self):
+        super(TestAnswersBreadcrumb, self).setUp()
+        self.product = self.factory.makeProduct(name="mellon")
+        login_person(self.product.owner)
+
+    def test_question(self):
+        self.question = self.factory.makeQuestion(
+            target=self.product, title='Seeds are hard to chew')
+        self.question_url = canonical_url(self.question, rootsite='answers')
+        crumbs = self._getBreadcrumbs(
+            self.question_url, [self.root, self.product, self.question])
+        last_crumb = crumbs[-1]
+        self.assertEquals(last_crumb.text, 'Question #%d' % self.question.id)
+
+    def test_faq(self):
+        self.faq = self.factory.makeFAQ(target=self.product, title='Seedless')
+        self.faq_url = canonical_url(self.faq, rootsite='answers')
+        crumbs = self._getBreadcrumbs(
+            self.faq_url, [self.root, self.product, self.faq])
+        last_crumb = crumbs[-1]
+        self.assertEquals(last_crumb.text, 'FAQ #%d' % self.faq.id)
 
 
 def test_suite():
