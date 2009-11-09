@@ -54,9 +54,9 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         return preview
 
     def _createStalePreviewDiff(self, line_count=0, added=None, removed=None,
-                                conflicts=None):
+                                conflicts=None, diffstat=None):
         preview = self._createPreviewDiff(
-            line_count, added, removed, conflicts)
+            line_count, added, removed, conflicts, diffstat)
         preview.branch_merge_proposal.source_branch.last_scanned_id = 'other'
         return preview
 

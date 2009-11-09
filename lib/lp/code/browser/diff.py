@@ -11,6 +11,7 @@ __all__ = [
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.tales import ObjectFormatterAPI
+from lp.services.browser_helpers import get_plural_text
 
 
 class PreviewDiffFormatterAPI(ObjectFormatterAPI):
@@ -38,38 +39,46 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         :param view_name: If not None, the link will point to the page with
             that name on this object.
         """
-        title_words = []
-        if self._context.conflicts is not None:
+        diff = self._context
+        conflict_text = ''
+        if diff.conflicts is not None:
             style = 'conflicts-diff'
-            title_words.append(_('CONFLICTS'))
+            conflict_text = _(' (has conflicts)')
         else:
             style = 'clean-diff'
         # Stale style overrides conflicts or clean.
         if self._context.stale:
             style = 'stale-diff'
-            title_words.append(_('Stale'))
 
-        if self._context.added_lines_count:
-            title_words.append(
-                _("%s added") % self._context.added_lines_count)
+        count_text = ''
+        added = diff.added_lines_count
+        removed = diff.removed_lines_count
+        if (added is not None and removed is not None):
+            count_text = ' (+%d/-%d)' % (added, removed)
 
-        if self._context.removed_lines_count:
-            title_words.append(
-                _("%s removed") % self._context.removed_lines_count)
+        file_text = ''
+        diffstat = diff.diffstat
+        if diffstat is not None:
+            file_count = len(diffstat)
+            file_text = get_plural_text(
+                file_count, _(' %d file modified'), _(' %d files modified'))
+            file_text = file_text % file_count
 
         args = {
-            'line_count': _('%s lines') % self._context.diff_lines_count,
+            'line_count': _('%s lines') % diff.diff_lines_count,
+            'file_text': file_text,
+            'conflict_text': conflict_text,
+            'count_text': count_text,
             'style': style,
-            'title': ', '.join(title_words),
             'url': self.url(view_name),
             }
         # Under normal circumstances, there will be an associated file,
         # however if the diff is empty, then there is no alias to link to.
         if args['url'] is None:
             return (
-                '<span title="%(title)s" class="%(style)s">'
+                '<span class="%(style)s">'
                 '%(line_count)s</span>' % args)
         else:
             return (
-                '<a href="%(url)s" title="%(title)s" class="%(style)s">'
-                '<img src="/@@/download"/>&nbsp;%(line_count)s</a>' % args)
+                '<a href="%(url)s" class="%(style)s diff-link">'
+                '%(line_count)s%(count_text)s%(file_text)s%(conflict_text)s</a>' % args)
