@@ -1697,14 +1697,12 @@ ALTER TABLE builder ENABLE TRIGGER ALL;
 
 ALTER TABLE buildqueue DISABLE TRIGGER ALL;
 
-INSERT INTO job(status) VALUES(0);
+INSERT INTO job(status, date_created, scheduled_start) VALUES(0, '2005-06-15 09:14:12.820778', '2005-06-15 09:20:12.820778');
 INSERT INTO buildpackagejob(job, build) SELECT currval('job_id_seq') AS job, 8 AS build;
-INSERT INTO buildqueue (id, job, builder, logtail, created, buildstart, lastscore, manual) SELECT 1, currval('job_id_seq') AS job, 1, 'Dummy sampledata entry, not processing', '2005-06-15 09:14:12.820778', '2005-06-15 09:20:12.820778', 1, false;
-INSERT INTO job(status) VALUES(0);
+INSERT INTO buildqueue (id, job, builder, logtail, lastscore, manual) SELECT 1, currval('job_id_seq') AS job, 1, 'Dummy sampledata entry, not processing', 1, false;
+INSERT INTO job(status, date_created, scheduled_start) VALUES(0, '2005-06-15 10:14:12.820778', NULL);
 INSERT INTO buildpackagejob(job, build) SELECT currval('job_id_seq') AS job, 11 AS build;
-INSERT INTO buildqueue (id, job, builder, logtail, created, buildstart, lastscore, manual) SELECT 2, currval('job_id_seq') AS job, NULL, NULL, '2005-06-15 10:14:12.820778', NULL, 10, false;
-
-
+INSERT INTO buildqueue (id, job, builder, logtail, lastscore, manual) SELECT 2, currval('job_id_seq') AS job, NULL, NULL, 10, false;
 
 ALTER TABLE buildqueue ENABLE TRIGGER ALL;
 

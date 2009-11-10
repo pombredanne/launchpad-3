@@ -43,7 +43,7 @@ DECLARE
 BEGIN
     rows_migrated := 0;
     FOR queue_row IN SELECT * FROM buildqueue LOOP
-        INSERT INTO job(status) VALUES(0);
+        INSERT INTO job(status, date_created, scheduled_start) VALUES(0, queue_row.created, queue_row.buildstart);
         -- Get the key of the `Job` row just inserted.
         SELECT currval('job_id_seq') INTO job_id;
         INSERT INTO buildpackagejob(job, build) VALUES(job_id, queue_row.build);
@@ -57,6 +57,7 @@ END;
 $$;
 
 SELECT * FROM migrate_buildqueue_rows();
+DROP FUNCTION migrate_buildqueue_rows();
 
 -- Step 4
 -- Now remove the 'build' column and the associated index and constraint
@@ -66,6 +67,8 @@ SELECT * FROM migrate_buildqueue_rows();
 DROP INDEX buildqueue__build__idx;
 ALTER TABLE ONLY buildqueue DROP CONSTRAINT "$1";
 ALTER TABLE ONLY buildqueue DROP COLUMN build;
+ALTER TABLE ONLY buildqueue DROP COLUMN created;
+ALTER TABLE ONLY buildqueue DROP COLUMN buildstart;
 
 -- Step 4
 -- Add indexes for the new `BuildQueue` columns.
