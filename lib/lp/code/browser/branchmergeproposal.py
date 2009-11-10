@@ -63,7 +63,6 @@ from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.widgets.lazrjs import (
     TextAreaEditorWidget, vocabulary_to_choice_edit_items)
-from canonical.widgets.lazrjs import TextAreaEditorWidget
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment

@@ -9,7 +9,6 @@ __all__ = []
 import transaction
 import unittest
 
-import windmill
 from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing.constants import (
