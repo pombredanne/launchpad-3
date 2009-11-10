@@ -1166,3 +1166,33 @@ div.translation-help-links div {
 .logo-meeting {background:url(icon-sprites-logo-2) 0 -160px no-repeat;}
 .logo-flame {background:url(icon-sprites-logo-2) 0 -240 no-repeat;}
 .logo-trash {background:url(icon-sprites-logo-2) 0 -320 no-repeat;}
+
+/* Code styles */
+.branchstatusMATURE, .branchstatusMATURE a  {color: #090;}
+.branchstatusDEVELOPMENT, .branchstatusDEVELOPMENT a  {color: #900;}
+.branchstatusEXPERIMENTAL, .branchstatusEXPERIMENTAL a {color: #930;}
+.branchstatusMERGED, .branchstatusMERGED a       {color: #666;}
+.branchstatusABANDONED, .branchstatusABANDONED a    {color: #666;}
+.branchstatusNEW, .branchstatusNEW a          {color: black;}
+
+.voteAPPROVE       {color: green;}
+.voteNEEDS_FIXING  {color: #930;}
+.voteDISAPPROVE    {color: red;}
+.voteRESUBMIT      {color: red;}
+.voteABSTAIN       {color: grey;}
+.votePENDING       {color: #f60;}
+
+.mergestatusWORK_IN_PROGRESS, .mergestatusWORK_IN_PROGRESS a  {color: black;}
+.mergestatusNEEDS_REVIEW, .mergestatusNEEDS_REVIEW a          {color: #f60;}
+.mergestatusCODE_APPROVED, .mergestatusCODE_APPROVED a        {color: green;}
+.mergestatusREJECTED, .mergestatusREJECTED a                  {color: red;}
+.mergestatusMERGED, .mergestatusMERGED a                      {color: green;}
+.mergestatusMERGE_FAILED, .mergestatusMERGE_FAILED a          {color: red;}
+.mergestatusQUEUED, .mergestatusQUEUED a                      {color: black;}
+.mergestatusSUPERSEDED, .mergestatusSUPERSEDED a              {color: grey;}
+
+.codeimportNEW       {color: #930;}
+.codeimportINVALID   {color: red;}
+.codeimportREVIEWED  {color: green;}
+.codeimportSUSPENDED {color: red;}
+.codeimportFAILING   {color: red;}
