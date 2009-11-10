@@ -117,9 +117,8 @@ class HasSpecificationsView(LaunchpadView):
     is_sprint = False
     has_drivers = False
 
-    # XXX: jsk: 2007-07-12: This method might be improved by
+    # XXX: jsk: 2007-07-12 bug=173972: This method might be improved by
     # replacing the conditional execution with polymorphism.
-    # See https://bugs.launchpad.net/blueprint/+bug/173972.
     def initialize(self):
         if IPerson.providedBy(self.context):
             self.is_person = True

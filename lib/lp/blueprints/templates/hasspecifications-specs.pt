@@ -109,8 +109,7 @@
         <blockquote>
           <ul>
             <li tal:repeat="driver context/drivers" class="person">
-              <a tal:attributes="href driver/fmt:url"
-                 tal:content="driver/displayname">Foo Bar</a>
+              <a tal:replace="structure driver/fmt:link">Foo Bar</a>
             </li>
           </ul>
         </blockquote>
@@ -131,9 +130,10 @@
 
     <blockquote>
       <ul class="menu">
-        <li class="info">
-          <a href="https://help.launchpad.net/BlueprintDocumentation"
-          >Read more about tracking blueprints</a>
+        <li>
+          <a class="info sprite"
+            href="https://help.launchpad.net/BlueprintDocumentation">Read
+            more about tracking blueprints</a>
         </li>
       </ul>
     </blockquote>
