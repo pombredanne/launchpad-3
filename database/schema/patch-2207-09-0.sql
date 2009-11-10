@@ -62,6 +62,13 @@ SELECT * FROM migrate_buildqueue_rows();
 -- data migration function.
 DROP FUNCTION migrate_buildqueue_rows();
 
+-- Now that the data was migrated we can make the 'job' column mandatory
+-- and define the foreign key constraint for it.
+ALTER TABLE ONLY buildqueue ALTER COLUMN job SET NOT NULL;
+ALTER TABLE ONLY buildqueue
+    ADD CONSTRAINT buildqueue__job__fk
+    FOREIGN KEY (job) REFERENCES job(id);
+
 -- Step 4
 -- Now remove the obsolete columns, constraints and indexes from `BuildQueue`.
 -- The latter will from now on refer to the `Build` record via the
