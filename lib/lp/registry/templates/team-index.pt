@@ -23,7 +23,8 @@
   </script>
   <script type="text/javascript"
           tal:content="string:
-    YUI().use('node', 'event', 'lp.picker', 'lp.team', function(Y) {
+    YUI().use('node', 'event', 'lp.picker', 'lp.team', 'lazr.anim',
+              function(Y) {
         Y.on('load',
              function(e) {
                  Y.lp.setup_add_member_handler();
