@@ -14,9 +14,11 @@ import sys
 
 from twisted.internet import reactor, defer
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.config import config
-from canonical.twistedsupport.task import ParallelLimitedTaskConsumer
+from canonical.twistedsupport.task import (
+    ParallelLimitedTaskConsumer, ITaskSource)
 from lazr.delegates import delegates
 import transaction
 
@@ -178,10 +180,38 @@ class JobCronScript(LaunchpadCronScript):
             len(runner.completed_jobs), self.source_interface.__name__)
 
 
+class IterTaskSource:
+    implements(ITaskSource)
+
+    def __init__(self, iterator):
+        self.iterator = iterator
+        self.stopped = False
+
+    def start(self, task_consumer):
+        task = None
+        for task in self.iterator:
+            task_consumer.taskStarted(task)
+            if self.stopped:
+                return
+        if task is None:
+            task_consumer.noTasksFound()
+
+    def stop(self):
+        self.stopped = True
+        return self.stopped
+
+
 class TwistedJobCronScript(JobCronScript):
 
+    def _do_consumer(self, consumer):
+        ready_items = list(getUtility(self.source_interface).iterReady())
+        runner = JobRunner(ready_items)
+        task_source = IterTaskSource(lambda: runner.runJob(job) for job in
+                                     ready_items)
+        return consumer.consume(task_source)
+
     def _runAll(self, consumer):
-        d = defer.maybeDeferred(consumer.consume, getUtility(self.source_interface))
+        d = defer.maybeDeferred(self._do_consumer, consumer)
         d.addCallbacks(lambda ignored: reactor.stop(), self.failed)
 
     @staticmethod
