@@ -22,7 +22,15 @@ from zope.interface import implements, Interface
 
 
 class ITaskSource(Interface):
-    """A source of tasks to do."""
+    """A source of tasks to do.
+
+    This is passed to `ITaskConsumer.consume` as a source of tasks to do.
+    Tasks are nullary callables that might return Deferreds.
+
+    Objects that provide this interface must call `ITaskConsumer.noTasksFound`
+    if there are no tasks to generate, and call `ITaskConsumer.taskStarted`
+    with the nullary callable whenever it generates a task.
+    """
 
     def start(task_consumer):
         """Start generating tasks.
@@ -35,6 +43,10 @@ class ITaskSource(Interface):
 
     def stop():
         """Stop generating tasks.
+
+        It might not be possible to return instantly, so this method should
+        return a Deferred with a boolean that indicates whether
+        `ITaskSource.start` was called in the meantime.
 
         Any subsequent calls to `stop` are silently ignored.
 
