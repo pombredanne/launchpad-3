@@ -38,6 +38,7 @@ setup(
         'lazr.restful',
         'lazr.smtptest',
         'lazr.uri',
+        'lazr-js',
         'mechanize',
         'mocker',
         'oauth',

@@ -160,19 +160,19 @@ twice, for obvious reasons.
     >>> len(view.times)
     2
 
-The number of persons returned my mapped_participants is governed by the
-view's limit attribute. the default value is None, meaning there is no
-limit.
+The number of persons returned by mapped_participants is governed by the
+view's limit attribute. The default value is None, meaning there is no
+limit.  This view is used for displaying the full map.
 
     >>> print view.limit
     None
     >>> len(view.mapped_participants)
     3
 
-When the preview parameter is sent to the view, the number of
-mapped_participants is limited to 24.
+A portlet for the map also exists which is used for displaying the map
+inside the person or team page.  It has the number of participants limited.
 
-    >>> view = create_initialized_view(context, '+map', form={'preview': 'anything'})
+    >>> view = create_initialized_view(context, '+portlet-map')
     >>> view.limit
     24
 
@@ -256,3 +256,41 @@ page.  The display of mugshots is batched.
     <Person at ... name16 (Foo Bar)>
     <Person at ... jdub (Jeff Waugh)>
     <Person at ... mark (Mark Shuttleworth)>
+
+
+== Privacy and visibility ==
+
+Team visibility is used on the page to indicate privacy.  GuadaMen is a public
+team.
+
+    >>> view = create_initialized_view(guadamen, '+index')
+    >>> print view.visibility_info
+    Public team
+    >>> print view.visibility_portlet_class
+    portlet
+
+Private teams are indicated as private.
+
+    >>> from lp.registry.interfaces.person import PersonVisibility
+    >>> login('admin@canonical.com')
+    >>> private_team = factory.makeTeam(
+    ...     name='private-team', displayname='Private Team',
+    ...     visibility=PersonVisibility.PRIVATE)
+
+    >>> view = create_initialized_view(private_team, '+index')
+    >>> print view.visibility_info
+    Private team
+    >>> print view.visibility_portlet_class
+    portlet private
+
+Private membership teams are also indicated as private.
+
+    >>> private_membership_team = factory.makeTeam(
+    ...     name='private-membership-team',
+    ...     displayname='Private Membership Team',
+    ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
+    >>> view = create_initialized_view(private_membership_team, '+index')
+    >>> print view.visibility_info
+    Team membership is viewable by team members
+    >>> print view.visibility_portlet_class
+    portlet private

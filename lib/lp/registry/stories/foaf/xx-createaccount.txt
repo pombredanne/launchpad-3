@@ -36,7 +36,7 @@ Jane tries again, providing a the correct captcha answer.  Her valid
 email address from before has been retained in the form.
 
     >>> from lp.testing.registration import set_captcha_answer
-    >>> set_captcha_answer(browser)
+    >>> set_captcha_answer(browser, prefix='loginpage_')
     >>> browser.getControl('Register').click()
     >>> print_feedback_messages(browser.contents)
     >>> print extract_text(find_main_content(browser.contents))
@@ -103,7 +103,7 @@ Jane tries again with a different email address.
     >>> browser.open('http://launchpad.dev/+login')
     >>> browser.getControl(name='loginpage_email', index=1).value = (
     ...     'jperson@example.com')
-    >>> set_captcha_answer(browser)
+    >>> set_captcha_answer(browser, prefix='loginpage_')
     >>> browser.getControl('Register').click()
 
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()

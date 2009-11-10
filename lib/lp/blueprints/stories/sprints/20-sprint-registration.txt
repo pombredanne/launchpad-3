@@ -165,12 +165,6 @@ First, we add a couple of IRC nicknames for Carlos.
     >>> browser.getLink('Export attendees to CSV').click()
     >>> print browser.headers['content-type']
     text/csv
-    >>> print browser.contents
-    Launchpad username,Display name,Email,IRC nickname,Phone,Organization,City,Country,Timezone,Arriving,Leaving
-    carlos,Carlos Perelló Marín,carlos@canonical.com,"carlos, qarlos",,,,,,2006-01-10T09:00:00Z,2006-02-12T05:41:00Z
-    name12,Sample Person,,,,,,,Australia/Perth,2006-01-10T01:00:00Z,2006-02-12T07:30:00Z
-    salgado,Guilherme Salgado,guilherme.salgado@canonical.com,,+55 16 3374-2027,Something,whatever,France,,2006-01-09T23:00:00Z,2006-02-12T07:30:00Z
-    <BLANKLINE>
 
     >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> carlos_browser.open('http://launchpad.dev/sprints/ubz')

@@ -144,6 +144,13 @@ class PgTestSetup:
     host = None
     port = None
 
+    # Class attributes. With PostgreSQL 8.4, pg_shdepend bloats
+    # hugely when we drop and create databases, because this
+    # operation cancels any autovacuum process maintaining it.
+    # To cope, we need to manually vacuum it ourselves occasionally.
+    vacuum_shdepend_every = 10
+    _vacuum_shdepend_counter = 0
+
     # (template, name) of last test. Class attribute.
     _last_db = (None, None)
     # Class attribute. True if we should destroy the DB because changes made.
@@ -308,6 +315,10 @@ class PgTestSetup:
                     if 'does not exist' in str(x):
                         break
                     raise
+                PgTestSetup._vacuum_shdepend_counter += 1
+                if (PgTestSetup._vacuum_shdepend_counter
+                    % PgTestSetup.vacuum_shdepend_every) == 0:
+                    cur.execute('VACUUM pg_catalog.pg_shdepend')
             finally:
                 con.close()
 

@@ -20,13 +20,6 @@
         </a>
       </td>
     </tr>
-    <tr>
-      <th>Proposed by:</th>
-      <td>
-        <tal:registrant replace="structure context/registrant/fmt:link"/>
-        <tal:modified replace="context/date_created/fmt:displaydate" />
-      </td>
-    </tr>
     <tal:comment condition="nothing">
       Only show the reviewed section if the state is not superseded.
       Only show the reviewed revision if not rejected.
@@ -112,20 +105,9 @@
       <th>Merge into:</th>
       <td tal:content="structure context/target_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
     </tr>
-    <tr>
-      <th>Commit message:</th>
-      <td>
-        <tal:commit-message
-          condition="context/commit_message"
-          replace="structure context/commit_message" />
-        <tal:no-commit-message
-          condition="not: context/commit_message">None</tal:no-commit-message>
-        <a tal:define="link context/menu:context/edit_commit_message"
-           tal:condition="link/enabled"
-           tal:attributes="href link/url">
-           <img src="/@@/edit" alt="Edit commit message" />
-        </a>
-      </td>
+    <tr tal:condition="context/prerequisite_branch">
+      <th>Prerequisite:</th>
+      <td tal:content="structure context/prerequisite_branch/fmt:bzr-link">lp:~foo/bar/baz</td>
     </tr>
     <tr tal:condition="context/preview_diff">
       <th>Diff against target:</th>

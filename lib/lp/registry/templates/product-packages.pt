@@ -10,60 +10,96 @@
 <body>
 
 <div metal:fill-slot="main">
+  <div class="top-portlet">
+  <ul class="horizontal">
+    <li>
+      <a tal:replace="structure context/menu:overview/distributions/fmt:link" />
+    </li>
+  </ul>
+  </div>
 
-  <tal:series repeat="series context/serieses">
-    <h2>Series &#8220;<span tal:replace="series/name">main</span>&#8221;</h2>
+  <tal:series_dict repeat="series_dict view/series_packages">
+  <tal:series_packagings
+    define="series series_dict/series;
+            packagings series_dict/packagings">
+    <h2>
+      <a tal:attributes="href series/name">
+        <span tal:replace="series/name">main</span> series
+      </a>
+    </h2>
 
-    <table id="packages" class="listing" tal:condition="series/packagings">
-      <thead>
-        <tr>
-          <th>Distribution</th>
-          <th>Series</th>
-          <th>Source Package</th>
-          <th>Version</th>
-        </tr>
-      </thead>
-      <tbody>
-        <tr tal:repeat="pkging series/packagings">
-          <td>
-            <a tal:replace="structure pkging/distroseries/distribution/fmt:link" />
-          </td>
-
-          <td>
-            <a tal:attributes="href pkging/distroseries/fmt:url"><tal:version
-              replace="pkging/distroseries/version" />
-              (<tal:name replace="pkging/distroseries/displayname" />)</a>
-          </td>
-              
-            <td>
-              <a
-                tal:attributes="href string:${pkging/distroseries/fmt:url}/+source/${pkging/sourcepackagename/name}"
-                tal:content="pkging/sourcepackagename/name"
-              >Apache</a>
-            </td>
-
-          <td><span tal:condition="pkging/sourcepackage/currentrelease"
-                    tal:replace="pkging/sourcepackage/currentrelease/version"
-                    >2.3.4-1</span></td>
-        </tr>
-      </tbody>
-    </table>
-
-    <p tal:condition="not: series/packagings">
+    <p tal:condition="not: packagings">
       No packages linked to this series.
     </p>
 
-    <ul class="horizontal">
-      <li tal:condition="context/required:launchpad.Edit" >
-        <a tal:replace="structure series/menu:overview/add_package/fmt:link" />
-      </li>
-      <li>
-        <a tal:replace="structure context/menu:overview/distributions/fmt:link" />
-      </li>
-    </ul>
+    <tal:comment condition="nothing">
+      This DIV is necessary for the table-actions:nth-child stylesheet.
+    </tal:comment>
+    <div>
+      <table class="listing"
+        tal:condition="packagings"
+        tal:attributes="id series/name/fmt:css-id/packages-">
+        <thead>
+          <tr>
+            <th>Distribution</th>
+            <th>Series</th>
+            <th>Source Package</th>
+            <th>Version</th>
+            <th style="width: 1em;"
+              tal:condition="view/can_delete_packaging">&nbsp;</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr tal:repeat="packaging_dict packagings">
+          <tal:packaging_field
+            define="packaging packaging_dict/packaging;
+                    form_id packaging_dict/form_id;
+                    field packaging_dict/field">
+            <td>
+              <a tal:replace="structure packaging/distroseries/distribution/fmt:link" />
+            </td>
 
-  </tal:series>
+            <td>
+              <a tal:attributes="href packaging/distroseries/fmt:url"><tal:version
+                replace="packaging/distroseries/version" />
+                (<tal:name replace="packaging/distroseries/displayname" />)</a>
+            </td>
 
-</div> 
+            <td>
+              <a
+                tal:attributes="href string:${packaging/distroseries/fmt:url}/+source/${packaging/sourcepackagename/name}"
+                tal:content="packaging/sourcepackagename/name">Apache</a>
+            </td>
+
+            <td>
+              <tal:currentrelease
+                replace="packaging/sourcepackage/currentrelease/version|nothing">
+                  2.3.4-1
+              </tal:currentrelease>       
+            </td>
+            <td tal:condition="view/can_delete_packaging">
+              <form style="display: inline" method="post"
+                tal:attributes="action request/URL;
+                                id form_id">
+                <tal:hidden replace="structure field" />
+                <tal:action replace="structure view/renderDeletePackagingAction" />
+              </form>
+            </td>
+          </tal:packaging_field>
+          </tr>
+        </tbody>
+      </table>
+
+      <ul class="table-actions"
+        tal:condition="series/menu:overview/add_package/linked">
+        <li>
+          <a tal:replace="structure series/menu:overview/add_package/fmt:link" />
+        </li>
+      </ul>
+    </div>
+  </tal:series_packagings>
+  </tal:series_dict>
+
+</div>
 </body>
 </html>

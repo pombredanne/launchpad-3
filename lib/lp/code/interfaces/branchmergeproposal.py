@@ -41,9 +41,10 @@ from lp.services.job.interfaces.job import IJob, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, operation_parameters,
-    operation_returns_entry, rename_parameters_as, REQUEST_USER)
+    call_with, export_as_webservice_entry, export_factory_operation,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_entry, rename_parameters_as,
+    REQUEST_USER)
 
 
 class InvalidBranchMergeProposal(Exception):
@@ -170,7 +171,8 @@ class IBranchMergeProposal(IPrivacy):
         Summary(
             title=_("Commit Message"), required=False,
             description=_("The commit message that should be used when "
-                          "merging the source branch.")))
+                          "merging the source branch."),
+            strip_text=True))
 
     queue_position = exported(
         Int(
@@ -454,7 +456,8 @@ class IBranchMergeProposal(IPrivacy):
         vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface))
     @call_with(owner=REQUEST_USER)
-    @export_write_operation()
+    # ICodeReviewComment supplied as Interface to avoid circular imports.
+    @export_factory_operation(Interface, [])
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None):
         """Create an ICodeReviewComment associated with this merge proposal.

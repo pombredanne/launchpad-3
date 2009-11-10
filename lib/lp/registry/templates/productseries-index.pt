@@ -24,8 +24,7 @@
     </tal:heading>
 
     <div metal:fill-slot="main"
-      tal:define="overview_menu context/menu:overview;
-                  sourcepackages context/sourcepackages">
+      tal:define="overview_menu context/menu:overview">
 
       <div class="top-portlet">
         <div id="description"
@@ -120,16 +119,22 @@
       <div class="portlet">
         <h2>Milestones and releases</h2>
 
-        <table tal:replace="structure context/@@+table-releases" />
+        <tal:comment condition="nothing">
+          This DIV is necessary for the table-actions:nth-child stylesheet.
+        </tal:comment>
+        <div>
+          <table tal:condition="context/all_milestones"
+                tal:replace="structure context/@@+table-releases" />
 
-        <ul class="horizontal" style="margin-bottom: 1em;">
-          <li>
-            <a tal:replace="structure overview_menu/create_milestone/fmt:icon-link" />
-          </li>
-          <li>
-            <a tal:replace="structure overview_menu/create_release/fmt:icon-link" />
-          </li>
-        </ul>
+          <ul class="table-actions" style="margin-bottom: 1em;">
+            <li>
+              <a tal:replace="structure overview_menu/create_milestone/fmt:icon-link" />
+            </li>
+            <li>
+              <a tal:replace="structure overview_menu/create_release/fmt:icon-link" />
+            </li>
+          </ul>
+        </div>
       </div>
 
       <div class="yui-g">
@@ -138,41 +143,7 @@
             tal:content="structure context/@@+portlet-latestbugs"
             tal:condition="context/@@+get-involved/official_malone" />
 
-          <div class="portlet">
-            <h2>Distribution packaging</h2>
-
-            <p id="distribution-packaging-explanation">
-              <tal:distro condition="sourcepackages">
-                This series is packaged in the following distribution series:
-              </tal:distro>
-              <tal:no-distro condition="not: sourcepackages">
-                This series is not packaged in any distribution series.
-              </tal:no-distro>
-            </p>
-
-            <ul id="distribution-packaging"
-              tal:condition="sourcepackages">
-              <li
-                tal:repeat="package sourcepackages">
-                <a class="sprite package-source"
-                  tal:attributes="href package/fmt:url"><tal:distro
-                  tal:content="package/distroseries/distribution/displayname">
-                  Ubuntu</tal:distro>
-                  <tal:series tal:replace="package/distroseries/displayname">
-                  Warty</tal:series>
-                  <tal:package tal:content="package/name">firefox</tal:package></a>
-              </li>
-            </ul>
-
-            <ul class="horizontal">
-              <li>
-                <a tal:replace="structure overview_menu/ubuntupkg/fmt:icon-link" />
-              </li>
-              <li>
-                <a tal:replace="structure overview_menu/add_package/fmt:icon-link" />
-              </li>
-            </ul>
-          </div>
+          <div tal:content="structure context/@@+portlet-packages" />
         </div>
 
         <div class="yui-u">
@@ -188,19 +159,19 @@
             <ul id="related-series">
               <li>
                 <a class="sprite info"
-                  tal:attributes="href context/product/fmt:url/+series">All
+                  tal:attributes="href context/product/menu:overview/series/fmt:url">View
                   series for the
                   <tal:project replace="context/product/displayname" /> project</a>
               </li>
               <li>
                 <a class="sprite info"
-                  tal:attributes="href context/product/fmt:url/+milestones">All
+                  tal:attributes="href context/product/menu:overview/milestones/fmt:url">View
                   milestones for the
                   <tal:project replace="context/product/displayname" /> project</a>
               </li>
               <li>
                 <a class="sprite info"
-                  tal:attributes="href context/product/fmt:url/+download">All
+                  tal:attributes="href context/product/menu:overview/downloads/fmt:url">View
                   downloads for the
                   <tal:project replace="context/product/displayname" /> project</a>
               </li>

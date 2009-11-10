@@ -169,7 +169,7 @@ Tab-completion is enabled.
 EC2Instance is available as `instance`.
 Also try these:
   http://%(dns)s/current_test.log
-  ssh -A %(dns)s
+  ssh -A ec2test@%(dns)s
 """
 
 

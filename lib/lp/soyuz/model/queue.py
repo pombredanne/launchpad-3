@@ -33,6 +33,7 @@ from zope.interface import implements
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archivepublisher.utils import get_ppa_reference
+from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.archiveuploader.utils import safe_fix_maintainer
 from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
@@ -44,8 +45,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
 from canonical.launchpad.helpers import get_email_template
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -55,7 +54,7 @@ from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.publishing import (
-    IPublishingSet, ISourcePackagePublishingHistory, PackagePublishingStatus)
+    IPublishingSet, ISourcePackagePublishingHistory)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
@@ -747,14 +746,16 @@ class PackageUpload(SQLBase):
             """PPA rejected message."""
             template = get_email_template('ppa-upload-rejection.txt')
             SUMMARY = sanitize_string(summary_text)
-            CHANGESFILE = sanitize_string("".join(changes_lines))
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment("".join(changes_lines)))
             USERS_ADDRESS = config.launchpad.users_address
 
         class RejectedMessage:
             """Rejected message."""
             template = get_email_template('upload-rejection.txt')
             SUMMARY = sanitize_string(summary_text)
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -831,7 +832,8 @@ class PackageUpload(SQLBase):
 
             STATUS = "New"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -845,7 +847,8 @@ class PackageUpload(SQLBase):
             STATUS = "Waiting for approval"
             SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -863,7 +866,8 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -881,14 +885,16 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = guess_encoding(
+                ChangesFile.formatChangesComment("".join(changes_lines)))
 
         class AnnouncementMessage:
             template = get_email_template('upload-announcement.txt')
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -1363,15 +1369,13 @@ class PackageUploadBuild(SQLBase):
             archive = self.packageupload.archive
             # DDEBs targeted to the PRIMARY archive are published in the
             # corresponding DEBUG archive.
-            if (archive.purpose == ArchivePurpose.PRIMARY and
-                binary.binpackageformat == BinaryPackageFormat.DDEB):
-                distribution = self.packageupload.distroseries.distribution
-                archive = getUtility(IArchiveSet).getByDistroPurpose(
-                    distribution, ArchivePurpose.DEBUG)
-                if archive is None:
+            if binary.binpackageformat == BinaryPackageFormat.DDEB:
+                debug_archive = archive.debug_archive
+                if debug_archive is None:
                     raise QueueInconsistentStateError(
                         "Could not find the corresponding DEBUG archive "
-                        "for %s" % (distribution.title))
+                        "for %s" % (archive.displayname))
+                archive = debug_archive
 
             for each_target_dar in target_dars:
                 bpph = getUtility(IPublishingSet).newBinaryPublication(

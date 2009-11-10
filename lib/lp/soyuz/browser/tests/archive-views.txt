@@ -304,16 +304,18 @@ Remove the testing PPA dependency to not influence subsequent tests.
     >>> login(ANONYMOUS)
 
 The ArchiveView also provides the latest updates ordered by the date
-they were published:
+they were published. We include any relevant builds for failures.
 
     >>> def print_latest_updates(latest_updates):
     ...     for update in latest_updates:
-    ...         print "%s - %s" % (
+    ...         arch_tags = [build.arch_tag for build in update['builds']]
+    ...         print "%s - %s %s" % (
     ...             update['title'],
-    ...             update['status']
+    ...             update['status'],
+    ...             " ".join(arch_tags),
     ...             )
     >>> print_latest_updates(view.latest_updates)
-    cdrkit - Failed to build
+    cdrkit - Failed to build: i386
     pmount - Successfully built
     iceweasel - Successfully built
 
@@ -326,7 +328,7 @@ is from most recent.
     >>> login(ANONYMOUS)
     >>> print_latest_updates(view.latest_updates)
     iceweasel - Successfully built
-    cdrkit - Failed to build
+    cdrkit - Failed to build: i386
     pmount - Successfully built
 
 The ArchiveView also includes a helper method to return the number of
@@ -380,9 +382,11 @@ Let's set some builds appropriately to see the results.
     i386 build of iceweasel 1.0 in ubuntu warty RELEASE
     i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
 
+    >>> login('foo.bar@canonical.com')
     >>> builds[0].buildstate = BuildStatus.NEEDSBUILD
     >>> builds[1].buildstate = BuildStatus.BUILDING
     >>> builds[2].buildstate = BuildStatus.BUILDING
+    >>> login(ANONYMOUS)
 
     >>> view.num_pkgs_building
     {'building': 2, 'waiting': 1, 'total': 3}
@@ -390,14 +394,18 @@ Let's set some builds appropriately to see the results.
 Adding a second waiting build for the cdrkit does not add to the number
 of packages that are currently building.
 
+    >>> login('foo.bar@canonical.com')
     >>> builds[4].buildstate = BuildStatus.NEEDSBUILD
+    >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 2, 'waiting': 1, 'total': 3}
 
 But as soon as one of cdrkit's builds start, the package is considered
 to be building:
 
+    >>> login('foo.bar@canonical.com')
     >>> builds[4].buildstate = BuildStatus.BUILDING
+    >>> login(ANONYMOUS)
     >>> view.num_pkgs_building
     {'building': 3, 'waiting': 0, 'total': 3}
 
@@ -625,6 +633,14 @@ build the page.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies")
+
+The view's h1 heading and leaf breadcrumb are equivalent.
+
+    >>> print view.label
+    Edit PPA dependencies
+
+    >>> print view.page_title
+    Edit PPA dependencies
 
 There is a property indicating whether or not the context PPA has
 recorded dependencies.
@@ -1329,3 +1345,50 @@ upload queue.
 
     >>> print copy.status.name
     ACCEPTED
+
+
+== External dependencies validation ==
+
+The ArchiveAdminView checks the external_dependencies form data to see if
+it's a valid sources.list entry.
+
+    >>> ppa_archive_view = create_initialized_view(
+    ...     cprov.archive, name="+admin")
+
+The validate_external_dependencies() method is called when validating and will
+return a list of errors if the data dis not validate.  A valid entry is of the
+form:
+    deb scheme://domain/ suite component[s]
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic main")
+    []
+
+Multiple entries are valid, separated by newlines:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic main\n"
+    ...     "deb http://example.com/ karmic restricted")
+    []
+
+If the line does not start with the word "deb" it fails:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic universe\n"
+    ...     "dab http://example.com/ karmic main")
+    ["dab http://example.com/ karmic main: Must start with 'deb'"]
+
+If the line has too few parts it fails.  Here we're missing a suite:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic universe\n"
+    ...     "deb http://example.com/ main")
+    ["'deb http://example.com/ main'
+        is not a complete and valid sources.list entry"]
+
+If the URL looks invalid, it fails:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic universe\n"
+    ...     "deb example.com/ karmic main")
+    ['deb example.com/ karmic main: Invalid URL']

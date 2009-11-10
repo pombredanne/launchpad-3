@@ -612,6 +612,9 @@
         <browser:page
             name="+comment-footer"
             template="../templates/codereviewcomment-footer.pt"/>
+        <browser:page
+            name="+fragment"
+            template="../templates/codereviewcomment-fragment.pt"/>
     </browser:pages>
     <browser:page
         name="+reply"

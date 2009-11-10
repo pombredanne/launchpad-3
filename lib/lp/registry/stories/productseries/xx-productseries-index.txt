@@ -135,14 +135,14 @@ The driver sees two packaging links near the distribution packaging.
     >>> driver_browser.getLink('Link to Ubuntu package')
     <Link ... url='http://launchpad.dev/firefox/trunk/+ubuntupkg'>
 
-    >>> driver_browser.getLink('Link to other package')
+    >>> driver_browser.getLink('Link package')
     <Link ... url='http://launchpad.dev/firefox/trunk/+addpackage'>
 
 There is a section that lists related links to this series
 
-    >>> anon_browser.getLink('All series for the Mozilla Firefox project')
+    >>> anon_browser.getLink('View series for the Mozilla Firefox project')
     <Link ... url='http://launchpad.dev/firefox/+series'>
-    >>> anon_browser.getLink('All milestones for the Mozilla Firefox project')
+    >>> anon_browser.getLink('View milestones for the Mozilla Firefox project')
     <Link ... url='http://launchpad.dev/firefox/+milestones'>
-    >>> anon_browser.getLink('All downloads for the Mozilla Firefox project')
+    >>> anon_browser.getLink('View downloads for the Mozilla Firefox project')
     <Link ... url='http://launchpad.dev/firefox/+download'>

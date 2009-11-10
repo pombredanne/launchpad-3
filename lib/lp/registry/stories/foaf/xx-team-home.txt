@@ -7,7 +7,7 @@ The home page of a public team is visible to everyone.
     Ubuntu Team in Launchpad
     >>> privacy_info = find_tag_by_id(browser.contents, 'privacy')
     >>> print extract_text(privacy_info)
-    Public Team
+    Public team
 
 The page contains a few interesting details about team membership.
 
@@ -191,10 +191,10 @@ Team owners and admins can see a link to approve and decline applicants.
     Pending approval
     Sample Person
     Andrew Bennetts
-    Approve/Decline applicants
+    Approve or decline members
 
-    >>> owner_browser.getLink('Approve/Decline applicants')
-    <Link text='Approve/Decline applicants' url='.../+editproposedmembers'>
+    >>> owner_browser.getLink('Approve or decline members')
+    <Link text='Approve or decline members' url='.../+editproposedmembers'>
 
 
 == Non members ==

@@ -245,7 +245,7 @@ fi
 
 jsfiles=`echo "$files" | grep -E 'js$'`
 if [ ! -z "$jsfiles" ]; then
-    jslint_notices=`$utilitiesdir/../sourcecode/lazr-js/tools/jslint.py 2>&1`
+    jslint_notices=`$utilitiesdir/../bin/jslint 2>&1`
     if [ ! -z "$jslint_notices" ]; then
         echo ""
         echo ""

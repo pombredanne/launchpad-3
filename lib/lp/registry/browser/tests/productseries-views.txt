@@ -229,6 +229,8 @@ deleted are available.
     []
     >>> view.product_release_files
     []
+    >>> view.has_linked_branch
+    False
 
 Most series that are deleted do not have any related objects, but a small
 portion do.
@@ -244,18 +246,38 @@ portion do.
     >>> bugtask = bug.bugtasks[0]
     >>> bugtask.milestone = milestone_two
 
+    >>> owner = product.owner
+    >>> series_specification = factory.makeSpecification(product=product)
+    >>> series_specification.proposeGoal(productseries, owner)
+    >>> series_bugtask = factory.makeBugTask(bug=bug, target=productseries)
+    >>> subscription = productseries.addSubscription(owner, owner)
+    >>> productseries.branch = factory.makeBranch()
+
     >>> view = create_view(productseries, name='+delete')
     >>> [milestone.name for milestone in view.milestones]
     [u'0.2', u'0.1']
     >>> view.has_bugtasks_and_specifications
     True
-    >>> [bugtask.milestone.name for bugtask in view.bugtasks]
-    [u'0.2']
-    >>> [spec.milestone.name for spec in view.specifications]
-    [u'0.1']
+    >>> for bugtask in view.bugtasks:
+    ...     if bugtask.milestone is not None:
+    ...         print bugtask.milestone.name
+    ...     else:
+    ...         print bugtask.target.name
+    rabbit
+    0.2
+    >>> for spec in view.specifications:
+    ...     if spec.milestone is not None:
+    ...         print spec.milestone.name
+    ...     else:
+    ...         print spec.goal.name
+    rabbit
+    0.1
 
-    # Listing and deleting product release files is done in the story
-    # because they require the Librarian to be running.
+    >>> view.has_linked_branch
+    True
+
+    # Listing and deleting product release files is done in
+    # product-release-views because they require the Librarian to be running.
 
 Series that are the active focus of development cannot be deleted. The
 view's can_delete property checks this rule.
@@ -291,7 +313,8 @@ development.
 Calling the view's delete action on a series that can be deleted will
 untarget the bugtasks and specifications that are targeted to the
 series' milestones. The milestones, releases, and release files are
-deleted.
+deleted. Bugs and blueprints targeted to the series are unassigned.
+Series structural subscriptions are removed. Branch links are removed.
 
     >>> view = create_initialized_view(productseries, '+delete', form=form)
     >>> for notification in view.request.response.notifications:
@@ -308,11 +331,17 @@ deleted.
     None
     >>> print bugtask.milestone
     None
+    >>> bugtask.related_tasks
+    []
+    >>> print series_specification.milestone
+    None
+    >>> [subscription for subscription in owner.structural_subscriptions]
+    []
 
 The series was not actually deleted because there are problematic objects
 like translations. The series are assigned to the Obsolete Junk project.
 The series name is changed to 'product_name-series_name-date_created' to
-avoid conflicts.
+avoid conflicts. The linked branch is removed.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
@@ -323,63 +352,3 @@ avoid conflicts.
     True
     >>> print productseries.name
     field-rabbit-20090501-193424
-
-
-Linking packages
-----------------
-
-Distrobution sourcepackages can be linked to product series using the
-+addpackage named view.
-
-    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> hoary = ubuntu.getSeries('hoary')
-    >>> sourcepackagename = factory.makeSourcePackageName('hot')
-    >>> sourcepackage = factory.makeSourcePackage(
-    ...     sourcepackagename=sourcepackagename, distroseries=hoary)
-    >>> product = factory.makeProduct(name="hot", displayname='Hot')
-    >>> productseries = factory.makeProductSeries(
-    ...     product=product, name='hotter')
-    >>> productseries.sourcepackages
-    []
-
-The view has a label and requires a distro series, source package name,
-and a packaging contents.
-
-    >>> view = create_view(productseries, '+addpackage')
-    >>> print view.label
-    Packaging of hotter in distributions
-
-    >>> print view.page_title
-    Packaging of hotter in distributions
-
-    >>> print view.field_names
-    ['distroseries', 'sourcepackagename', 'packaging']
-
-    >>> form = {
-    ...     'field.distroseries': 'ubuntu/hoary',
-    ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Product',
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     productseries, '+addpackage', form=form)
-    >>> view.errors
-    []
-    >>> for package in productseries.sourcepackages:
-    ...     print package.name
-    hot
-
-It is an error to link a series to the same package twice.
-
-    >>> form = {
-    ...     'field.distroseries': 'ubuntu/hoary',
-    ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Product',
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     productseries, '+addpackage', form=form)
-    >>> for error in view.errors:
-    ...     print error
-    This series is already packaged in Hoary
-
