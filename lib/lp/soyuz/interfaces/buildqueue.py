@@ -50,9 +50,6 @@ class IBuildQueue(Interface):
         "releated to this job.")
     urgency = Attribute(
         "Urgency of the ISourcePackageRelease releated to this job.")
-    archhintlist = Attribute(
-        "architecturehintlist of the ISourcePackageRelease releated "
-        "to this job.")
     builddependsindep = Attribute(
         "builddependsindep of the ISourcePackageRelease releated to "
         "this job.")
