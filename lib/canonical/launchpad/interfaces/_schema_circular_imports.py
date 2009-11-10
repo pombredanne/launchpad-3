@@ -95,6 +95,12 @@ IBranch['unlinkBug'].queryTaggedValue(
 IBranch['unlinkSpecification'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['params']['spec'].schema= ISpecification
 
+patch_entry_return_type(IBranch, '_createMergeProposal', IBranchMergeProposal)
+patch_plain_parameter_type(
+    IBranch, '_createMergeProposal', 'target_branch', IBranch)
+patch_plain_parameter_type(
+    IBranch, '_createMergeProposal', 'prerequisite_branch', IBranch)
+
 IBranchMergeProposal['getComment'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)['return_type'].schema = ICodeReviewComment
 IBranchMergeProposal['createComment'].queryTaggedValue(
@@ -228,15 +234,23 @@ patch_choice_parameter_type(
     IArchive, 'getAllPublishedBinaries', 'status', PackagePublishingStatus)
 patch_choice_parameter_type(
     IArchive, 'getAllPublishedBinaries', 'pocket', PackagePublishingPocket)
+patch_plain_parameter_type(
+    IArchive, 'isSourceUploadAllowed', 'distroseries', IDistroSeries)
+patch_plain_parameter_type(
+    IArchive, 'newPackagesetUploader', 'packageset', IPackageset)
+patch_plain_parameter_type(
+    IArchive, 'getUploadersForPackageset', 'packageset', IPackageset)
+patch_plain_parameter_type(
+    IArchive, 'deletePackagesetUploader', 'packageset', IPackageset)
 
 # IDistribution
-IDistribution['serieses'].value_type.schema = IDistroSeries
+IDistribution['series'].value_type.schema = IDistroSeries
 patch_reference_property(
     IDistribution, 'currentseries', IDistroSeries)
 patch_entry_return_type(
     IDistribution, 'getSeries', IDistroSeries)
 patch_collection_return_type(
-    IDistribution, 'getDevelopmentSerieses', IDistroSeries)
+    IDistribution, 'getDevelopmentSeries', IDistroSeries)
 patch_entry_return_type(
     IDistribution, 'getSourcePackage', IDistributionSourcePackage)
 patch_collection_return_type(
@@ -277,6 +291,8 @@ patch_plain_parameter_type(
     IPackageset, 'getSourcesSharedBy', 'other_package_set', IPackageset)
 patch_plain_parameter_type(
     IPackageset, 'getSourcesNotSharedBy', 'other_package_set', IPackageset)
+patch_collection_return_type(
+    IPackageset, 'relatedSets', IPackageset)
 
 # IPackageUpload
 IPackageUpload['pocket'].vocabulary = PackagePublishingPocket

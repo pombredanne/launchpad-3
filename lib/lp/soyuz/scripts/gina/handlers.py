@@ -45,7 +45,7 @@ from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.registry.interfaces.sourcepackage import SourcePackageFormat
+from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -599,7 +599,7 @@ class SourcePackageHandler:
             build_conflicts=src.build_conflicts,
             build_conflicts_indep=src.build_conflicts_indep,
             architecturehintlist=src.architecture,
-            format=SourcePackageFormat.DPKG,
+            format=SourcePackageType.DPKG,
             upload_distroseries=distroseries.id,
             dsc_format=src.format,
             dsc_maintainer_rfc822=maintainer_line,

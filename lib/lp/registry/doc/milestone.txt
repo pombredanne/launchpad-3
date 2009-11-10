@@ -118,7 +118,7 @@ zope.exceptions.NotFoundError:
 
 == Project Milestones ==
 
-The database associates milestones only with products and distroserieses.
+The database associates milestones only with products and distroseries.
 The interface IProjectMilestone provides a virtual view of milestones
 that are related to a project by collecting all milestones that are
 associated with products that belong to a project.
@@ -496,3 +496,13 @@ If specifications are targeted to the milestone, it cannot be deleted.
     ...
     AssertionError: You cannot delete a milestone which has specifications
                     targeted to it.
+
+If a milestone has a structural subscription, it cannot be deleted.
+
+    >>> milestone = ff_onedotzero.newMilestone('1.0.14')
+    >>> subscription = milestone.addSubscription(owner, owner)
+    >>> milestone.destroySelf()
+    Traceback (most recent call last):
+    ...
+    AssertionError: You cannot delete a milestone which has structural
+                    subscriptions.

@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'SearchAllQuestionsView',
     'QuestionAddView',
+    'QuestionBreadcrumb',
     'QuestionChangeStatusView',
     'QuestionConfirmAnswerView',
     'QuestionCreateFAQView',
@@ -65,6 +66,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView, custom_widget, redirection,
     safe_action, NavigationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LaunchpadRadioWidget, TokensTextWidget
@@ -189,6 +191,14 @@ class QuestionSetNavigation(Navigation):
         if question is None:
             raise NotFoundError(name)
         return redirection(canonical_url(question), status=301)
+
+
+class QuestionBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IQuestion`."""
+
+    @property
+    def text(self):
+        return 'Question #%d' % self.context.id
 
 
 class QuestionSetView(LaunchpadFormView):
@@ -592,10 +602,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             return self.search_template()
         return self.continue_action.success(data)
 
-    # XXX flacoste 2006-07-26: We use the method here instead of
-    # using the method name 'handleAddError' because of Zope issue 573
-    # which is fixed in 3.3.0b1 and 3.2.1
-    @action(_('Add'), failure=handleAddError)
+    @action(_('Post Question'), name='add', failure='handleAddError')
     def add_action(self, action, data):
         """Add a Question to an `IQuestionTarget`."""
         if self.shouldWarnAboutUnsupportedLanguage():

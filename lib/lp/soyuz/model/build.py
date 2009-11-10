@@ -809,12 +809,12 @@ class BuildSet:
         except SQLObjectNotFound, e:
             raise NotFoundError(str(e))
 
-    def getPendingBuildsForArchSet(self, archserieses):
+    def getPendingBuildsForArchSet(self, archseries):
         """See `IBuildSet`."""
-        if not archserieses:
+        if not archseries:
             return None
 
-        archseries_ids = [d.id for d in archserieses]
+        archseries_ids = [d.id for d in archseries]
 
         return Build.select(
             AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
