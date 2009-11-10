@@ -569,12 +569,19 @@ class Builder(SQLBase):
             archive.require_virtualized = %s
         """ % sqlvalues(self.virtualized))
 
-        # Ensure that if a currently-building build exists for the same
-        # public ppa archive and architecture currently building then
-        # we don't consider another as a candidate.
+        # Ensure that if BUILDING builds exist for the same
+        # public ppa archive and architecture and another would not
+        # leave at least 20% of them free, then we don't consider
+        # another as a candidate.
+        #
+        # This clause selects the count of currently building builds on
+        # the arch in question, then adds one to that total before
+        # deriving a percentage of the total available builders on that
+        # arch.  It then makes sure that percentage is under 80.
         clauses.append("""
-            NOT EXISTS (
-                SELECT Build.id
+            EXISTS (SELECT true
+            WHERE ((
+                SELECT COUNT(build2.id)
                 FROM Build build2, DistroArchSeries distroarchseries2
                 WHERE
                     build2.archive = build.archive AND
@@ -582,9 +589,15 @@ class Builder(SQLBase):
                     archive.private IS FALSE AND
                     build2.distroarchseries = distroarchseries2.id AND
                     distroarchseries2.processorfamily = %s AND
-                    build2.buildstate = %s)
+                    build2.buildstate = %s) + 1::numeric)
+                *100 / (SELECT COUNT(builder.id)
+                        FROM builder
+                        WHERE
+                            builder.processor = %s)
+                < 80)
         """ % sqlvalues(
-            ArchivePurpose.PPA, self.processor.family, BuildStatus.BUILDING))
+            ArchivePurpose.PPA, self.processor.family, BuildStatus.BUILDING,
+            self.processor))
 
         query = " AND ".join(clauses)
         candidate = BuildQueue.selectFirst(

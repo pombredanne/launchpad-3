@@ -26,9 +26,10 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
 
-        # Create some i386 builders ready to build PPA builds.
-        self.builder1 = self.factory.makeBuilder(name='builder1')
-        self.builder2 = self.factory.makeBuilder(name='builder2')
+        # Create some i386 builders ready to build PPA builds.  Two
+        # already exist in sampledata so we'll use those first.
+        self.builder1 = getUtility(IBuilderSet)['bob']
+        self.builder2 = getUtility(IBuilderSet)['frog']
         self.builder3 = self.factory.makeBuilder(name='builder3')
         self.builder4 = self.factory.makeBuilder(name='builder4')
         self.builder5 = self.factory.makeBuilder(name='builder5')
@@ -122,8 +123,8 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         # Once a build for an ppa+arch has started, a second one for the
         # same ppa+arch will not be a candidate.
 
-        # A single PPA cannot start a build if it would leave less than
-        # 20% of the builders free.
+        # A PPA cannot start a build if it would use 80% or more of the
+        # builders.
         next_job = self.builder4.findBuildCandidate()
         self.failIfEqual('joesppa', next_job.build.archive.name)
 
