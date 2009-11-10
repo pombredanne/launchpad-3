@@ -326,7 +326,7 @@ class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
         text = 'Change people'
         return Link('+people', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def priority(self):
         text = 'Change priority'
         return Link('+priority', text, icon='edit')
