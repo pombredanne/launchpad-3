@@ -224,6 +224,8 @@ class ITeamMembership(Interface):
         transition.
 
         The given status must be different than the current status.
+
+        Return True if the status got changed, otherwise False.
         """
 
 
