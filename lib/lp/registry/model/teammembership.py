@@ -272,7 +272,7 @@ class TeamMembership(SQLBase):
     def setStatus(self, status, user, comment=None):
         """See `ITeamMembership`."""
         if status == self.status:
-            return
+            return False
 
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
@@ -359,7 +359,7 @@ class TeamMembership(SQLBase):
         # why we don't send anything here.
         if self.person != self.last_changed_by or self.status != proposed:
             self._sendStatusChangeNotification(old_status)
-
+        return True
 
     def _sendStatusChangeNotification(self, old_status):
         """Send a status change notification to all team admins and the

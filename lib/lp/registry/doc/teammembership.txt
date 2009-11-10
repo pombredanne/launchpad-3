@@ -395,14 +395,21 @@ good work, so we'll approve his membership.
     None
 
 When we approve his membership, the datejoined will contain the date that it
-was approved.
+was approved. It returns True to indicate that the status was changed.
 
     >>> membership.setStatus(TeamMembershipStatus.APPROVED, foobar)
+    True
     >>> print membership.status.title
     Approved
     >>> utc_now = datetime.now(pytz.timezone('UTC'))
     >>> membership.datejoined.date() == utc_now.date()
     True
+
+If setStatus is called again with the same status, it returns False,
+to indicate that the status didn't change.
+
+    >>> membership.setStatus(TeamMembershipStatus.APPROVED, foobar)
+    False
 
 Other status updates won't change datejoined, regardless of the status.
 That's because datejoined stores the date in which the membership was first
@@ -419,6 +426,7 @@ made active.
 
     >>> foobar_on_buildd.setStatus(
     ...     TeamMembershipStatus.DEACTIVATED, foobar)
+    True
     >>> print foobar_on_buildd.status.title
     Deactivated
     >>> foobar_on_buildd.datejoined <= utc_now
@@ -426,6 +434,7 @@ made active.
 
     >>> foobar_on_buildd.setStatus(
     ...     TeamMembershipStatus.APPROVED, foobar)
+    True
     >>> print foobar_on_buildd.status.title
     Approved
     >>> foobar_on_buildd.datejoined <= utc_now
@@ -839,6 +848,7 @@ This cache is cleared when memberships are created:
 Or changed:
 
     >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, mark)
+    True
     >>> no_priv._inTeam_cache
     {}
     >>> no_priv.inTeam(admins)
@@ -896,4 +906,5 @@ The teams's notifications do not fail when they process bad user.
     >>> bad_membership.sendAutoRenewalNotification()
 
     >>> bad_membership.setStatus(TeamMembershipStatus.EXPIRED, bad_user)
+    True
 
