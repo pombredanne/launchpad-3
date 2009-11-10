@@ -84,4 +84,4 @@ ALTER TABLE ONLY buildqueue DROP COLUMN buildstart;
 CREATE INDEX buildqueue__job__idx ON buildqueue(job);
 CREATE INDEX buildqueue__job_type__idx ON buildqueue(job_type);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 09, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 11, 0);
