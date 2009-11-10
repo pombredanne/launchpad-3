@@ -424,10 +424,6 @@ span.see-all {
 .registered {
     font-size: 85%;
     color: #666;
-    font-style: italic;
-    }
-li .registered {
-    font-style: normal;
     }
 .description {
     clear: both;
