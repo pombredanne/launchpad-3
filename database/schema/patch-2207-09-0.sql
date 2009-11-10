@@ -79,7 +79,7 @@ ALTER TABLE ONLY buildqueue DROP COLUMN build;
 ALTER TABLE ONLY buildqueue DROP COLUMN created;
 ALTER TABLE ONLY buildqueue DROP COLUMN buildstart;
 
--- Step 4
+-- Step 5
 -- Add indexes for the new `BuildQueue` columns.
 CREATE INDEX buildqueue__job__idx ON buildqueue(job);
 CREATE INDEX buildqueue__job_type__idx ON buildqueue(job_type);
