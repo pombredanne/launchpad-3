@@ -75,11 +75,13 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
                 archive=self.ppa_joe).createMissingBuilds())
         self.joe_builds.extend(
             self.publisher.getPubSource(
-                sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
+                sourcename="firefox",
+                status=PackagePublishingStatus.PUBLISHED,
                 archive=self.ppa_joe).createMissingBuilds())
         self.joe_builds.extend(
             self.publisher.getPubSource(
-                sourcename="cobblers", status=PackagePublishingStatus.PUBLISHED,
+                sourcename="cobblers",
+                status=PackagePublishingStatus.PUBLISHED,
                 archive=self.ppa_joe).createMissingBuilds())
         self.joe_builds.extend(
             self.publisher.getPubSource(
@@ -90,15 +92,13 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         self.jim_builds = []
         self.jim_builds.extend(
             self.publisher.getPubSource(
-                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                sourcename="gedit",
+                status=PackagePublishingStatus.PUBLISHED,
                 archive=self.ppa_jim).createMissingBuilds())
         self.jim_builds.extend(
             self.publisher.getPubSource(
-                sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
-                archive=self.ppa_jim).createMissingBuilds())
-        self.jim_builds.extend(
-            self.publisher.getPubSource(
-                sourcename="cobblers", status=PackagePublishingStatus.PUBLISHED,
+                sourcename="firefox",
+                status=PackagePublishingStatus.PUBLISHED,
                 archive=self.ppa_jim).createMissingBuilds())
 
         # Set the first three builds in joe's PPA as building, which
