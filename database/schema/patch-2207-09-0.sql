@@ -56,12 +56,14 @@ BEGIN
 END;
 $$;
 
+-- Run the data migration function.
 SELECT * FROM migrate_buildqueue_rows();
+-- The `BuildQueue` data is migrated at this point, we can get rid of the
+-- data migration function.
 DROP FUNCTION migrate_buildqueue_rows();
 
 -- Step 4
--- Now remove the 'build' column and the associated index and constraint
--- from `BuildQueue`.
+-- Now remove the obsolete columns, constraints and indexes from `BuildQueue`.
 -- The latter will from now on refer to the `Build` record via the
 -- `Job`/`BuildPackageJob` tables (and not directly any more).
 DROP INDEX buildqueue__build__idx;
