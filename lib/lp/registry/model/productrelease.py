@@ -228,14 +228,14 @@ class ProductReleaseSet(object):
             return default
         return productrelease
 
-    def getReleasesForSerieses(self, serieses):
+    def getReleasesForSeries(self, series):
         """See `IProductReleaseSet`."""
         # Local import of Milestone to avoid import loop.
         from lp.registry.model.milestone import Milestone
-        if len(list(serieses)) == 0:
+        if len(list(series)) == 0:
             return EmptyResultSet()
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        series_ids = [series.id for series in serieses]
+        series_ids = [s.id for s in series]
         result = store.find(
             ProductRelease,
             And(ProductRelease.milestone == Milestone.id),

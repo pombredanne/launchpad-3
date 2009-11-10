@@ -13,6 +13,17 @@ Sample person tries to change the bug's nickname to a existing one and gets a ni
   ...
   ...blackhole is already in use by another bug...
 
+The user should be able to look at the page title or heading and
+see the bug number being edited.
+
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/jokosher/+bug/11/+edit')
+  >>> print user_browser.title
+  Edit details for bug #11 ...
+  >>> main = find_main_content(user_browser.contents)
+  >>> print extract_text(main.h1)
+  Edit details for bug #11
+
 And now we show that any logged-in user can edit public bugs. 
 
   >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')

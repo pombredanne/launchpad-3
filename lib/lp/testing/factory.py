@@ -176,9 +176,10 @@ class ObjectFactory:
         :return: A hexadecimal string, with 'a'-'f' in lower case.
         """
         hex_number = '%x' % self.getUniqueInteger()
-        if digits is not None:
-            hex_number.zfill(digits)
-        return hex_number
+        if digits is None:
+            return hex_number
+        else:
+            return hex_number.zfill(digits)
 
     def getUniqueString(self, prefix=None):
         """Return a string unique to this factory instance.
@@ -266,7 +267,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner.id,
             keyid=self.getUniqueHexString(digits=8).upper(),
             fingerprint='A' * 40,
-            keysize=self.factory.getUniqueInteger(),
+            keysize=self.getUniqueInteger(),
             algorithm=GPGKeyAlgorithm.R,
             active=True,
             can_encrypt=False)

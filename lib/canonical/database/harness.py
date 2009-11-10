@@ -69,8 +69,6 @@ def _get_locals():
         dbuser = None
     print 'execute_zcml_for_scripts()...'
     execute_zcml_for_scripts()
-    print 'xmlconfig.file()...'
-    xmlconfig.file('script.zcml', execute=True)
     readline.parse_and_bind('tab: complete')
     # Mimic the real interactive interpreter's loading of any $PYTHONSTARTUP file.
     print 'Reading $PYTHONSTARTUP...'

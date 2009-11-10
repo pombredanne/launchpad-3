@@ -36,7 +36,6 @@ __all__ = [
     'pocket_dependencies',
     ]
 
-from canonical.config import config
 from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.archive import ArchivePurpose, ALLOW_RELEASE_BUILDS
@@ -161,11 +160,9 @@ def get_sources_list_for_building(build):
 
     # Append external sources_list lines for this archive if it's
     # specified in the configuration.
-    archive_config_key = 'ppa.%s_%s' % (
-        build.archive.owner.name, build.archive.name)
-    if archive_config_key in config:
-        archive_config = config[archive_config_key]
-        for archive_dep in archive_config.dependencies.splitlines():
+    dependencies = build.archive.external_dependencies
+    if dependencies is not None:
+        for archive_dep in dependencies.splitlines():
             line = archive_dep % (
                 {'series': build.distroarchseries.distroseries.name})
             sources_list_lines.append(line)
