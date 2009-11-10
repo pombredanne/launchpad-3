@@ -745,6 +745,15 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
 ALTER TABLE account DISABLE TRIGGER ALL;
 
 INSERT INTO account (id, date_created, creation_rationale, status, date_status_set, displayname, openid_identifier, status_comment, old_openid_identifier) VALUES (1, '2005-06-06 08:59:51.591618', 8, 20, '2005-06-06 08:59:51.591618', 'Mark Shuttleworth', 'mark_oid', NULL, '123/mark');
@@ -1695,14 +1704,20 @@ INSERT INTO builder (id, processor, name, title, description, owner, speedindex,
 ALTER TABLE builder ENABLE TRIGGER ALL;
 
 
+ALTER TABLE buildpackagejob DISABLE TRIGGER ALL;
+
+INSERT INTO buildpackagejob (id, job, build) VALUES (1, 1, 8);
+INSERT INTO buildpackagejob (id, job, build) VALUES (2, 2, 11);
+
+
+ALTER TABLE buildpackagejob ENABLE TRIGGER ALL;
+
+
 ALTER TABLE buildqueue DISABLE TRIGGER ALL;
 
-INSERT INTO job(status, date_created, date_started) VALUES(0, '2005-06-15 09:14:12.820778', '2005-06-15 09:20:12.820778');
-INSERT INTO buildpackagejob(job, build) SELECT currval('job_id_seq') AS job, 8 AS build;
-INSERT INTO buildqueue (id, job, builder, logtail, lastscore, manual) SELECT 1, currval('job_id_seq') AS job, 1, 'Dummy sampledata entry, not processing', 1, false;
-INSERT INTO job(status, date_created, date_started) VALUES(0, '2005-06-15 10:14:12.820778', NULL);
-INSERT INTO buildpackagejob(job, build) SELECT currval('job_id_seq') AS job, 11 AS build;
-INSERT INTO buildqueue (id, job, builder, logtail, lastscore, manual) SELECT 2, currval('job_id_seq') AS job, NULL, NULL, 10, false;
+INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type) VALUES (1, 1, 'Dummy sampledata entry, not processing', 1, false, 1, 1);
+INSERT INTO buildqueue (id, builder, logtail, lastscore, manual, job, job_type) VALUES (2, NULL, NULL, 10, false, 2, 1);
+
 
 ALTER TABLE buildqueue ENABLE TRIGGER ALL;
 
@@ -2784,6 +2799,8 @@ ALTER TABLE jabberid ENABLE TRIGGER ALL;
 
 ALTER TABLE job DISABLE TRIGGER ALL;
 
+INSERT INTO job (id, requester, reason, status, progress, last_report_seen, next_report_due, attempt_count, max_retries, log, scheduled_start, lease_expires, date_created, date_started, date_finished) VALUES (1, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, '2005-06-15 09:14:12.820778', '2005-06-15 09:20:12.820778', NULL);
+INSERT INTO job (id, requester, reason, status, progress, last_report_seen, next_report_due, attempt_count, max_retries, log, scheduled_start, lease_expires, date_created, date_started, date_finished) VALUES (2, NULL, NULL, 0, NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, '2005-06-15 10:14:12.820778', NULL, NULL);
 
 
 ALTER TABLE job ENABLE TRIGGER ALL;
@@ -4616,6 +4633,13 @@ ALTER TABLE packageset DISABLE TRIGGER ALL;
 
 
 ALTER TABLE packageset ENABLE TRIGGER ALL;
+
+
+ALTER TABLE packagesetgroup DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE packagesetgroup ENABLE TRIGGER ALL;
 
 
 ALTER TABLE packagesetinclusion DISABLE TRIGGER ALL;
@@ -8570,6 +8594,13 @@ INSERT INTO signedcodeofconduct (id, owner, signingkey, datecreated, signedcode,
 
 
 ALTER TABLE signedcodeofconduct ENABLE TRIGGER ALL;
+
+
+ALTER TABLE sourcepackageformatselection DISABLE TRIGGER ALL;
+
+
+
+ALTER TABLE sourcepackageformatselection ENABLE TRIGGER ALL;
 
 
 ALTER TABLE sourcepackagename DISABLE TRIGGER ALL;
