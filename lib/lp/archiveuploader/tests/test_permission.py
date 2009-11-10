@@ -14,7 +14,6 @@ from canonical.testing import DatabaseFunctionalLayer
 
 from lp.archiveuploader.permission import (
     components_valid_for, verify_upload)
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import TestCaseWithFactory
@@ -61,8 +60,7 @@ class TestPermission(TestCaseWithFactory):
         """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
         if distroseries is None:
-            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-            distroseries = ubuntu.currentseries
+            distroseries = archive.distribution.currentseries
         self.assertIs(
             None,
             verify_upload(
@@ -83,8 +81,7 @@ class TestPermission(TestCaseWithFactory):
         :param distroseries: The upload's target distro series.
         """
         if distroseries is None:
-            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-            distroseries = ubuntu.currentseries
+            distroseries = archive.distribution.currentseries
         exception = verify_upload(
             person, spn, archive, component, distroseries)
         self.assertEqual(reason, str(exception))

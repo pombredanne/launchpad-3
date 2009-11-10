@@ -17,7 +17,6 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -264,8 +263,7 @@ class TestWriteToBranch(PermissionTest):
         """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
         if distroseries is None:
-            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-            distroseries = ubuntu.currentseries
+            distroseries = archive.distribution.currentseries
         self.assertIs(
             None,
             verify_upload(
@@ -285,8 +283,7 @@ class TestWriteToBranch(PermissionTest):
         :param component: The IComponent to which the package belongs.
         """
         if distroseries is None:
-            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-            distroseries = ubuntu.currentseries
+            distroseries = archive.distribution.currentseries
         exception = verify_upload(
             person, spn, archive, component, distroseries)
         self.assertEqual(reason, str(exception))
