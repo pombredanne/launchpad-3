@@ -177,6 +177,7 @@
 <tal:script
   replace="structure
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
+  conf = <tal:status-config replace="view/status_config" />
   <!--
   YUI().use('io-base', 'code.codereview', 'code.branchmergeproposal',
             function(Y) {
@@ -188,7 +189,7 @@
 
   Y.on('domready', function() {
       Y.code.codereview.connect_links();
-      Y.code.branchmergeproposal.connect_status();
+      Y.code.branchmergeproposal.connect_status(conf);
   });
 
   (new Y.codereview.NumberToggle()).render();

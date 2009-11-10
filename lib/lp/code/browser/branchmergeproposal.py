@@ -32,6 +32,7 @@ __all__ = [
 
 import operator
 
+import simplejson
 from zope.app.form.browser import TextAreaWidget
 from zope.component import adapter, getUtility
 from zope.event import notify as zope_notify
@@ -60,6 +61,8 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.widgets.lazrjs import (
+    TextAreaEditorWidget, vocabulary_to_choice_edit_items)
 from canonical.widgets.lazrjs import TextAreaEditorWidget
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
@@ -530,6 +533,20 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             title="Commit Message",
             value=commit_message,
             accept_empty=True)
+
+    @property
+    def status_config(self):
+        """The config to configure the ChoiceSource JS widget."""
+        return simplejson.dumps({
+            'status_widget_items': vocabulary_to_choice_edit_items(
+                BranchMergeProposalStatus,
+                css_class_prefix='mergestatus'),
+            'status_value': self.context.queue_status.title,
+            'user_can_edit_status': check_permission(
+                'launchpad.Edit', self.context),
+            'branch_merge_path': canonical_url(self.context).replace(
+                'https://code.launchpad.dev', ''),
+            })
 
 
 class DecoratedCodeReviewVoteReference:
