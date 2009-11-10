@@ -109,16 +109,6 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         num_free_builders = len(self.builders) - num_active_builders
         self.assertEqual(num_free_builders, 2)
 
-        # Grab the first build, ensure that it is what we expect
-        # (ie. the first build from joesppa) and set it building.
-        #self.first_job = self.builder1.findBuildCandidate()
-        #self.failUnlessEqual('joesppa', self.first_job.build.archive.name)
-        #self.failUnlessEqual(
-        #    u'i386 build of gedit 666 in ubuntutest breezy-autotest RELEASE',
-        #    self.first_job.build.title)
-        #self.first_job.build.buildstate = BuildStatus.BUILDING
-        #self.first_job.build.builder = self.builder1
-
     def test_findBuildCandidate_first_build_started(self):
         # Once a build for an ppa+arch has started, a second one for the
         # same ppa+arch will not be a candidate.
