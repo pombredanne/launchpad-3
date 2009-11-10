@@ -357,10 +357,9 @@ class TeamMembership(SQLBase):
         # When a member proposes himself, a more detailed notification is
         # sent to the team admins by a subscriber of JoinTeamEvent; that's
         # why we don't send anything here.
-        if self.person == self.last_changed_by and self.status == proposed:
-            return
+        if self.person != self.last_changed_by or self.status != proposed:
+            self._sendStatusChangeNotification(old_status)
 
-        self._sendStatusChangeNotification(old_status)
 
     def _sendStatusChangeNotification(self, old_status):
         """Send a status change notification to all team admins and the
