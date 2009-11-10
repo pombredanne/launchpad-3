@@ -106,13 +106,11 @@
           In this case, the drivers are:
         </p>
 
-        <blockquote>
-          <ul>
-            <li tal:repeat="driver context/drivers" class="person">
-              <a tal:replace="structure driver/fmt:link">Foo Bar</a>
-            </li>
-          </ul>
-        </blockquote>
+        <ul class="subordinate">
+          <li tal:repeat="driver context/drivers">
+            <a tal:replace="structure driver/fmt:link">Foo Bar</a>
+          </li>
+        </ul>
       </tal:not_driver>
       <tal:is_driver condition="context/required:launchpad.Driver">
         Since you are a driver of
@@ -128,15 +126,13 @@
       release management with Launchpad.
     </p>
 
-    <blockquote>
-      <ul class="menu">
-        <li>
-          <a class="info sprite"
-            href="https://help.launchpad.net/BlueprintDocumentation">Read
-            more about tracking blueprints</a>
-        </li>
-      </ul>
-    </blockquote>
+    <ul class="horizontal">
+      <li>
+        <a class="info sprite"
+          href="https://help.launchpad.net/BlueprintDocumentation">Read
+          more about tracking blueprints</a>
+      </li>
+    </ul>
 
   </tal:no_specs>
   <tal:has_specs condition="has_any_specs">
