@@ -53,25 +53,25 @@ class TestDistributionCurrentSourceReleases(
 
         # Not yet cached.
         missing = object()
-        cached_series = getattr(distribution, '_cached_serieses', missing)
+        cached_series = getattr(distribution, '_cached_series', missing)
         self.assertEqual(missing, cached_series)
 
         # Now cached.
-        series = distribution.serieses
-        self.assertTrue(series is distribution._cached_serieses)
+        series = distribution.series
+        self.assertTrue(series is distribution._cached_series)
 
         # Cache cleared.
         distribution.newSeries(
             name='bar', displayname='Bar', title='Bar', summary='',
             description='', version='1', parent_series=None,
             owner=self.factory.makePerson())
-        cached_series = getattr(distribution, '_cached_serieses', missing)
+        cached_series = getattr(distribution, '_cached_series', missing)
         self.assertEqual(missing, cached_series)
 
         # New cached value.
-        series = distribution.serieses
+        series = distribution.series
         self.assertEqual(1, len(series))
-        self.assertTrue(series is distribution._cached_serieses)
+        self.assertTrue(series is distribution._cached_series)
 
 
 def test_suite():

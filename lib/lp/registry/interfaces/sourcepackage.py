@@ -314,7 +314,6 @@ class SourcePackageFileType(DBEnumeratedType):
         This is only part of the 3.0 (quilt) source package format.""")
 
 
-
 class SourcePackageType(DBEnumeratedType):
     """Source Package Format
 
