@@ -146,8 +146,12 @@ to a team.
     # Log in as the team owner.
     >>> login_person(t3.teamowner)
 
+addMember returns True if the member got added (i.e. he wasn't already a
+member of the team).
+
     >>> t3.addMember(
     ...     salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
+    True
     >>> from canonical.launchpad.interfaces import ITeamMembershipSet
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> flush_database_updates()
@@ -159,11 +163,25 @@ to a team.
     >>> salgado in t3.activemembers
     True
 
+addMember returns True also when the member is added as a proposed
+member.
+
     >>> marilize = personset.getByName('marilize')
     >>> t3.addMember(
     ...     marilize, reviewer=mark, status=TeamMembershipStatus.PROPOSED)
+    True
     >>> flush_database_updates()
     >>> marilize in t3.activemembers
+    False
+
+If addMember is called with a person that is already a member, it
+returns False.
+
+    >>> t3.addMember(
+    ...     salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
+    False
+    >>> t3.addMember(
+    ...     marilize, reviewer=mark, status=TeamMembershipStatus.PROPOSED)
     False
 
 As expected, the membership object implements ITeamMembership.
@@ -179,6 +197,7 @@ invited to be a member and one of the team's admins will have to accpet the
 invitation before the team is made a member.
 
     >>> t1.addMember(t2, reviewer)
+    True
     >>> membership = membershipset.getByPersonAndTeam(t2, t1)
     >>> membership.status == TeamMembershipStatus.INVITED
     True
@@ -196,6 +215,7 @@ of t1.
 A team admin can also decline an invitation made to his team.
 
     >>> t2.addMember(t3, reviewer=mark)
+    True
     >>> login_person(t3.teamowner)
     >>> t3.declineInvitationToBeMemberOf(t2, comment='something')
     >>> membership = membershipset.getByPersonAndTeam(t3, t2)
@@ -209,6 +229,7 @@ t2, thus making all t3 members be considered members of t2 as well.
 
     >>> login_person(t3.teamowner)
     >>> t2.addMember(t3, reviewer=mark, force_team_add=True)
+    True
     >>> [m.displayname for m in t2.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't3']
 
@@ -230,6 +251,7 @@ loops.
 Adding t2 as a member of t5 will add all t2 members as t5 members too.
 
     >>> t5.addMember(t2, reviewer, force_team_add=True)
+    True
     >>> [m.displayname for m in t5.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't2', u't3']
 
@@ -237,7 +259,9 @@ Adding t5 and t1 as members of t4 will add all t5 and t1 members as t4
 members too.
 
     >>> t4.addMember(t5, reviewer, force_team_add=True)
+    True
     >>> t4.addMember(t1, reviewer, force_team_add=True)
+    True
     >>> [m.displayname for m in t4.allmembers]
     [u'Foo Bar', u'Guilherme Salgado', u't1', u't2', u't3', u't5']
 
@@ -331,6 +355,7 @@ Let's see...
 
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> t3.addMember(cprov, reviewer)
+    True
     >>> [m.displayname for m in t3.allmembers]
     [u'Celso Providelo', u'Foo Bar']
 
@@ -793,6 +818,7 @@ Adding admins as a member of t1 will make Salgado a member of t1 as well.
     >>> admins = getUtility(IPersonSet).getByName('admins')
     >>> login_person(t1.teamowner)
     >>> t1.addMember(admins, reviewer=t1.teamowner, force_team_add=True)
+    True
     >>> flush_database_updates()
     >>> print '\n'.join(sorted(
     ...     team.name for team in salgado.teams_participated_in))
@@ -807,6 +833,7 @@ On the other hand, making t2 a member of admins won't change anything
 for Salgado.
 
     >>> admins.addMember(t2, reviewer=admins.teamowner, force_team_add=True)
+    True
     >>> flush_database_updates()
     >>> print '\n'.join(sorted(
     ...     team.name for team in salgado.teams_participated_in))

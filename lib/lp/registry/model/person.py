@@ -1250,6 +1250,7 @@ class Person(
                 status = TeamMembershipStatus.INVITED
                 event = TeamInvitationEvent
 
+        member_added = True
         expires = self.defaultexpirationdate
         tm = TeamMembership.selectOneBy(person=person, team=self)
         if tm is None:
@@ -1264,11 +1265,12 @@ class Person(
             # We can't use tm.setExpirationDate() here because the reviewer
             # here will be the member themselves when they join an OPEN team.
             tm.dateexpires = expires
-            tm.setStatus(status, reviewer, comment)
+            member_added = tm.setStatus(status, reviewer, comment)
 
         if not person.is_team and may_subscribe_to_list:
             person.autoSubscribeToMailingList(self.mailing_list,
                                               requester=reviewer)
+        return member_added
 
     # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
