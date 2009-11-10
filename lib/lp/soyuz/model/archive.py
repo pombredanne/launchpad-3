@@ -220,7 +220,7 @@ class Archive(SQLBase):
         # Import DistroSeries here to avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
 
-        distro_serieses = store.find(
+        distro_series = store.find(
             DistroSeries,
             DistroSeries.distribution == self.distribution,
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
@@ -228,12 +228,12 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory.status.is_in(
                 active_publishing_status))
 
-        distro_serieses.config(distinct=True)
+        distro_series.config(distinct=True)
 
         # Ensure the ordering is the same as presented by
-        # Distribution.serieses
+        # Distribution.series
         return sorted(
-            distro_serieses, key=lambda a: Version(a.version), reverse=True)
+            distro_series, key=lambda a: Version(a.version), reverse=True)
 
     @property
     def dependencies(self):
@@ -1004,11 +1004,12 @@ class Archive(SQLBase):
         return permission_set.packagesetsForSource(
             self, sourcepackagename, direct_permissions)
 
-    def isSourceUploadAllowed(self, sourcepackagename, person):
+    def isSourceUploadAllowed(
+        self, sourcepackagename, person, distroseries=None):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.isSourceUploadAllowed(
-            self, sourcepackagename, person)
+            self, sourcepackagename, person, distroseries)
 
     def getFileByName(self, filename):
         """See `IArchive`."""

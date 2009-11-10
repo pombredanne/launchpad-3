@@ -14,6 +14,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.lpstorm import IMasterStore, IStore
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageName, ISourcePackageNameSet)
@@ -287,13 +288,26 @@ class Packageset(Storm):
 
     def addSubsets(self, names):
         """See `IPackageset`."""
-        clauses = (Packageset, In(Packageset.name, names))
+        clauses = (
+            Packageset, In(Packageset.name, names),
+            Packageset.distroseries == self.distroseries)
         self._api_add_or_remove(clauses, self._addDirectSuccessors)
 
     def removeSubsets(self, names):
         """See `IPackageset`."""
-        clauses = (Packageset, In(Packageset.name, names))
+        clauses = (
+            Packageset, In(Packageset.name, names),
+            Packageset.distroseries == self.distroseries)
         self._api_add_or_remove(clauses, self._removeDirectSuccessors)
+
+    def relatedSets(self):
+        """See `IPackageset`."""
+        store = IStore(Packageset)
+        result_set = store.find(
+            Packageset,
+            Packageset.packagesetgroup == self.packagesetgroup,
+            Packageset.id != self.id)
+        return _order_result_set(result_set)
 
 
 class PackagesetSet:
@@ -312,7 +326,7 @@ class PackagesetSet:
         else:
             # We create the related internal PackagesetGroup for this
             # packageset so that we can later see related package sets across
-            # distroserieses.
+            # distroseries.
             packagesetgroup = PackagesetGroup()
             packagesetgroup.owner = owner
             store.add(packagesetgroup)
@@ -350,11 +364,17 @@ class PackagesetSet:
         if not isinstance(name, unicode):
             name = unicode(name, 'utf-8')
 
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         extra_args = []
         if distroseries is not None:
+            # If the user just passed a distro series name, look it up.
+            if isinstance(distroseries, basestring):
+                try:
+                    distroseries = ubuntu[distroseries]
+                except NotFoundError:
+                    raise NoSuchPackageSet(distroseries)
             extra_args.append(Packageset.distroseries == distroseries)
         else:
-            ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
             extra_args.append(Packageset.distroseries == ubuntu.currentseries)
 
         package_set = store.find(
@@ -362,6 +382,7 @@ class PackagesetSet:
 
         if package_set is None:
             raise NoSuchPackageSet(name)
+
         return package_set
 
     def getByOwner(self, owner):
