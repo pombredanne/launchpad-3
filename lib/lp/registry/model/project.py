@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
-    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
+    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound)
 from storm.expr import And, In, SQL
 from storm.store import Store
 
