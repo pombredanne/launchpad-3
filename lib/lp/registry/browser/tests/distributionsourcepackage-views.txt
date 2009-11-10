@@ -25,7 +25,7 @@ package within a distribution.
 The DistributionSourcePackageView includes a helper property
 'all_published_in_active_distroseries' that returns a list of
 all the published versions of the source package within the distribution's
-serieses.
+series.
 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from zope.component import getMultiAdapter
@@ -64,7 +64,7 @@ package.
     ...     sourcename="gedit", archive=ppa_beta,
     ...     creator=ppa_nightly.owner,
     ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.0',
-    ...     distroseries=ubuntutest.serieses[0])
+    ...     distroseries=ubuntutest.series[0])
 
     # Give the creators of the above source packages some soyuz
     # karma for their efforts.

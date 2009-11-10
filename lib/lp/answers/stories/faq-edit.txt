@@ -11,7 +11,7 @@ No Privileges Person:
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> anon_browser.open('http://answers.launchpad.dev/firefox/+faq/7')
     >>> print backslashreplace(anon_browser.title)
-    Questions : Mozilla Firefox
+    FAQ #7 : Questions : Mozilla Firefox
 
     >>> anon_browser.getLink('Edit FAQ')
     Traceback (most recent call last):

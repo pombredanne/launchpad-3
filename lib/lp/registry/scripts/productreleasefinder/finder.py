@@ -104,7 +104,7 @@ class ProductReleaseFinder:
         for product in products:
             filters = []
 
-            for series in product.serieses:
+            for series in product.series:
                 if not series.releasefileglob:
                     continue
 
@@ -186,15 +186,6 @@ class ProductReleaseFinder:
                     owner=product.owner, datereleased=datetime.now(pytz.UTC))
                 self.log.info("Created new release %s for %s/%s",
                               release_name, product_name, series_name)
-
-            # If we already have a code tarball, stop here.
-            for fileinfo in release.files:
-                if fileinfo.filetype == UpstreamFileType.CODETARBALL:
-                    self.log.debug("%s/%s/%s already has a code tarball",
-                                   product_name, series_name, release_name)
-                    self.ztm.abort()
-                    return
-
             release.addReleaseFile(
                 filename, file, content_type, uploader=product.owner)
             self.ztm.commit()

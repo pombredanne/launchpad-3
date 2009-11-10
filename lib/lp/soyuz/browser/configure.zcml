@@ -783,7 +783,7 @@
         />
     <browser:url
         for="lp.soyuz.interfaces.packageset.IPackageset"
-        path_expression="name"
+        path_expression="string:${distroseries/name}/${name}"
         parent_utility="lp.soyuz.interfaces.packageset.IPackagesetSet"
         />
     <browser:url
