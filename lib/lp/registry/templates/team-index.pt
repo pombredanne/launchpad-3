@@ -22,9 +22,13 @@
       tal:attributes="src string:${icingroot}/build/registry/team.js">
   </script>
   <script type="text/javascript"
+      tal:condition="devmode"
+      tal:attributes="src string:${icingroot}/build/lp/errors.js">
+  </script>
+  <script type="text/javascript"
           tal:content="string:
     YUI().use('node', 'event', 'lp.picker', 'lp.team', 'lazr.anim',
-              function(Y) {
+              'lp.client.plugins', 'lp.errors', function(Y) {
         Y.on('load',
              function(e) {
                  Y.lp.setup_add_member_handler();
