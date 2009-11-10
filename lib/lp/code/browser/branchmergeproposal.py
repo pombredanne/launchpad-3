@@ -544,8 +544,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             'status_value': self.context.queue_status.title,
             'user_can_edit_status': check_permission(
                 'launchpad.Edit', self.context),
-            'branch_merge_path': canonical_url(self.context).replace(
-                'https://code.launchpad.dev', ''),
             })
 
 
