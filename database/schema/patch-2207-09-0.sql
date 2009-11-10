@@ -24,7 +24,42 @@ CREATE TABLE buildpackagejob (
 -- Step 2
 -- Changes needed to the `BuildQueue` table.
 
--- First remove the 'build' column and the associated index and constraint
+-- The 'job' and the 'job_type' columns will enable us to find the correct
+-- database rows that hold the generic and the specific data pertaining to
+-- the job respectively.
+ALTER TABLE ONLY buildqueue ADD COLUMN job integer;
+ALTER TABLE ONLY buildqueue ADD COLUMN job_type integer NOT NULL DEFAULT 1;
+
+-- Step 3
+-- Data migration for the existing `BuildQueue` records.
+CREATE OR REPLACE FUNCTION migrate_buildqueue_rows() RETURNS integer
+LANGUAGE plpgsql AS
+$$
+DECLARE
+    queue_row RECORD;
+    job_id integer;
+    buildpackagejob_id integer;
+    rows_migrated integer;
+BEGIN
+    rows_migrated := 0;
+    FOR queue_row IN SELECT * FROM buildqueue LOOP
+        INSERT INTO job(status) VALUES(0);
+        -- Get the key of the `Job` row just inserted.
+        SELECT currval('job_id_seq') INTO job_id;
+        INSERT INTO buildpackagejob(job, build) VALUES(job_id, queue_row.build);
+        -- Get the key of the `BuildPackageJob` row just inserted.
+        SELECT currval('buildpackagejob_id_seq') INTO buildpackagejob_id;
+        UPDATE buildqueue SET job=job_id WHERE id=queue_row.id;
+        rows_migrated := rows_migrated + 1;
+    END LOOP;
+    RETURN rows_migrated;
+END;
+$$;
+
+SELECT * FROM migrate_buildqueue_rows();
+
+-- Step 4
+-- Now remove the 'build' column and the associated index and constraint
 -- from `BuildQueue`.
 -- The latter will from now on refer to the `Build` record via the
 -- `Job`/`BuildPackageJob` tables (and not directly any more).
@@ -32,14 +67,9 @@ DROP INDEX buildqueue__build__idx;
 ALTER TABLE ONLY buildqueue DROP CONSTRAINT "$1";
 ALTER TABLE ONLY buildqueue DROP COLUMN build;
 
--- The 'job' and the 'job_type' columns will enable us to find the correct
--- database rows that hold the generic and the specific data pertaining to
--- the job respectively.
-ALTER TABLE ONLY buildqueue ADD COLUMN 
-  job integer NOT NULL CONSTRAINT buildqueue__job__fk REFERENCES job;
+-- Step 4
+-- Add indexes for the new `BuildQueue` columns.
 CREATE INDEX buildqueue__job__idx ON buildqueue(job);
-
-ALTER TABLE ONLY buildqueue ADD COLUMN job_type integer NOT NULL DEFAULT 1;
 CREATE INDEX buildqueue__job_type__idx ON buildqueue(job_type);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 09, 0);
