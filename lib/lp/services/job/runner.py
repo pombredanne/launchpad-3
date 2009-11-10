@@ -203,15 +203,14 @@ class IterTaskSource:
 
 class TwistedJobCronScript(JobCronScript):
 
-    def _do_consumer(self, consumer):
-        ready_items = list(getUtility(self.source_interface).iterReady())
-        runner = JobRunner(ready_items)
+    def _do_consumer(self, consumer, runner):
+        ready_items = getUtility(self.source_interface).iterReady()
         task_source = IterTaskSource(lambda: runner.runJob(job) for job in
                                      ready_items)
         return consumer.consume(task_source)
 
-    def _runAll(self, consumer):
-        d = defer.maybeDeferred(self._do_consumer, consumer)
+    def _runAll(self, consumer, runner):
+        d = defer.maybeDeferred(self._do_consumer, consumer, runner)
         d.addCallbacks(lambda ignored: reactor.stop(), self.failed)
 
     @staticmethod
@@ -223,9 +222,13 @@ class TwistedJobCronScript(JobCronScript):
         errorlog.globalErrorUtility.configure(self.config_name)
         consumer = ParallelLimitedTaskConsumer(1)
         cleanups = self.setUp()
-        reactor.callWhenRunning(self._runAll, consumer)
+        runner = JobRunner([])
+        reactor.callWhenRunning(self._runAll, consumer, runner)
         try:
             reactor.run()
         finally:
             for cleanup in reversed(cleanups):
                 cleanup()
+        self.logger.info(
+            'Ran %d %s jobs.',
+            len(runner.completed_jobs), self.source_interface.__name__)
