@@ -43,7 +43,7 @@ DECLARE
 BEGIN
     rows_migrated := 0;
     FOR queue_row IN SELECT * FROM buildqueue LOOP
-        INSERT INTO job(status, date_created, scheduled_start) VALUES(0, queue_row.created, queue_row.buildstart);
+        INSERT INTO job(status, date_created, date_started) VALUES(0, queue_row.created, queue_row.buildstart);
         -- Get the key of the `Job` row just inserted.
         SELECT currval('job_id_seq') INTO job_id;
         INSERT INTO buildpackagejob(job, build) VALUES(job_id, queue_row.build);
