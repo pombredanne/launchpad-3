@@ -95,6 +95,11 @@
     <tr>
       <td style="padding: 0px 1em 1em 0px;"
           tal:define="link context/menu:overview/add_member">
+        <span id="add-member-spinner" class="update-in-progress-message"
+              style="display: none">
+          <img src="/@@/spinner" />
+          Saving...
+        </span>
         <tal:add-member replace="structure link/fmt:link-icon" />
       </td>
       <td style="padding: 0px 0px 1em 0px;"
