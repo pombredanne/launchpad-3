@@ -1717,14 +1717,14 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 .voteABSTAIN       {color: grey;}
 .votePENDING       {color: #f60;}
 
-.mergestatusWORK_IN_PROGRESS  {color: black;}
-.mergestatusNEEDS_REVIEW      {color: #f60;}
-.mergestatusCODE_APPROVED     {color: green;}
-.mergestatusREJECTED          {color: red;}
-.mergestatusMERGED            {color: green;}
-.mergestatusMERGE_FAILED      {color: red;}
-.mergestatusQUEUED            {color: black;}
-.mergestatusSUPERSEDED        {color: grey;}
+.mergestatusWORK_IN_PROGRESS, .mergestatusWORK_IN_PROGRESS a  {color: black;}
+.mergestatusNEEDS_REVIEW, .mergestatusNEEDS_REVIEW a          {color: #f60;}
+.mergestatusCODE_APPROVED, .mergestatusCODE_APPROVED a        {color: green;}
+.mergestatusREJECTED, .mergestatusREJECTED a                  {color: red;}
+.mergestatusMERGED, .mergestatusMERGED a                      {color: green;}
+.mergestatusMERGE_FAILED, .mergestatusMERGE_FAILED a          {color: red;}
+.mergestatusQUEUED, .mergestatusQUEUED a                      {color: black;}
+.mergestatusSUPERSEDED, .mergestatusSUPERSEDED a              {color: grey;}
 
 .codeimportNEW       {color: #930;}
 .codeimportINVALID   {color: red;}
