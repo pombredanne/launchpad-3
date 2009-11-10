@@ -26,13 +26,38 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
 
-        # Create two i386 builders ready to build PPA builds.
-        builder_set = getUtility(IBuilderSet)
-        self.builder1 = self.factory.makeBuilder(name='bob2')
-        self.builder2 = self.factory.makeBuilder(name='frog2')
+        # Create some i386 builders ready to build PPA builds.
+        self.builder1 = self.factory.makeBuilder(name='builder1')
+        self.builder2 = self.factory.makeBuilder(name='builder2')
+        self.builder3 = self.factory.makeBuilder(name='builder3')
+        self.builder4 = self.factory.makeBuilder(name='builder4')
+        self.builder5 = self.factory.makeBuilder(name='builder5')
+        self.builders = [
+            self.builder1,
+            self.builder2,
+            self.builder3,
+            self.builder4,
+            self.builder5,
+            ]
 
 
 class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
+
+    def _setBuildsBuildingForArch(self, builds_list, num_builds,
+                                  archtag="i386"):
+        """Helper function.
+
+        Set the first `num_builds` in `builds_list` with `archtag` as
+        BUILDING.
+        """
+        count = 0
+        for build in builds_list:
+            if build.distroarchseries.architecturetag == archtag:
+                build.buildstate = BuildStatus.BUILDING
+                build.builder = self.builders[count]
+            count += 1
+            if count == num_builds:
+                break
 
     def setUp(self):
         """Publish some builds for the test archive."""
@@ -42,41 +67,71 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         self.ppa_joe = self.factory.makeArchive(name="joesppa")
         self.ppa_jim = self.factory.makeArchive(name="jimsppa")
 
-        self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-            archive=self.ppa_joe).createMissingBuilds()
-        self.publisher.getPubSource(
-            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
-            archive=self.ppa_joe).createMissingBuilds()
+        self.joe_builds = []
+        self.joe_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_joe).createMissingBuilds())
+        self.joe_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_joe).createMissingBuilds())
+        self.joe_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="cobblers", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_joe).createMissingBuilds())
+        self.joe_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="thunderpants",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_joe).createMissingBuilds())
 
-        self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-            archive=self.ppa_jim).createMissingBuilds()
-        self.publisher.getPubSource(
-            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
-            archive=self.ppa_jim).createMissingBuilds()
+        self.jim_builds = []
+        self.jim_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_jim).createMissingBuilds())
+        self.jim_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_jim).createMissingBuilds())
+        self.jim_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="cobblers", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_jim).createMissingBuilds())
+
+        # Set the first three builds in joe's PPA as building, which
+        # leaves two builders free.
+        self._setBuildsBuildingForArch(self.joe_builds, 3)
+        num_active_builders = len(
+            [build for build in self.joe_builds if build.builder is not None])
+        num_free_builders = len(self.builders) - num_active_builders
+        self.assertEqual(num_free_builders, 2)
 
         # Grab the first build, ensure that it is what we expect
         # (ie. the first build from joesppa) and set it building.
-        self.first_job = self.builder1.findBuildCandidate()
-        self.failUnlessEqual('joesppa', self.first_job.build.archive.name)
-        self.failUnlessEqual(
-            u'i386 build of gedit 666 in ubuntutest breezy-autotest RELEASE',
-            self.first_job.build.title)
-        self.first_job.build.buildstate = BuildStatus.BUILDING
-        self.first_job.build.builder = self.builder1
+        #self.first_job = self.builder1.findBuildCandidate()
+        #self.failUnlessEqual('joesppa', self.first_job.build.archive.name)
+        #self.failUnlessEqual(
+        #    u'i386 build of gedit 666 in ubuntutest breezy-autotest RELEASE',
+        #    self.first_job.build.title)
+        #self.first_job.build.buildstate = BuildStatus.BUILDING
+        #self.first_job.build.builder = self.builder1
 
     def test_findBuildCandidate_first_build_started(self):
         # Once a build for an ppa+arch has started, a second one for the
         # same ppa+arch will not be a candidate.
-        next_job = self.builder2.findBuildCandidate()
+
+        # A single PPA cannot start a build if it would leave less than
+        # 20% of the builders free.
+        next_job = self.builder4.findBuildCandidate()
         self.failIfEqual('joesppa', next_job.build.archive.name)
 
     def test_findBuildCandidate_first_build_finished(self):
-        # When joe's first ppa build finishes, his second i386 build
+        # When joe's first ppa build finishes, his fourth i386 build
         # will be the next build candidate.
-        self.first_job.build.buildstate = BuildStatus.FAILEDTOBUILD
-        next_job = self.builder2.findBuildCandidate()
+        self.joe_builds[0].buildstate = BuildStatus.FAILEDTOBUILD
+        next_job = self.builder4.findBuildCandidate()
         self.failUnlessEqual('joesppa', next_job.build.archive.name)
 
     def test_findBuildCandidate_for_private_ppa(self):
@@ -84,7 +139,7 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         # for the one architecture.
         self.ppa_joe.private = True
         self.ppa_joe.buildd_secret = 'sekrit'
-        next_job = self.builder2.findBuildCandidate()
+        next_job = self.builder4.findBuildCandidate()
         self.failUnlessEqual('joesppa', next_job.build.archive.name)
 
 
