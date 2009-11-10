@@ -488,7 +488,8 @@ class ProjectSet:
         should be limited to projects that are active in those Launchpad
         applications.
         """
-        text = text.replace("%", "%%")
+        if text:
+            text = text.replace("%", "%%")
         clauseTables = set()
         clauseTables.add('Project')
         queries = []
