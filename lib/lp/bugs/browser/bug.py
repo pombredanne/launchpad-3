@@ -560,13 +560,14 @@ class BugEditView(BugEditViewBase):
     _confirm_new_tags = False
 
     def __init__(self, context, request):
+        """context is always an IBugTask."""
         BugEditViewBase.__init__(self, context, request)
         self.notifications = []
 
     @property
     def label(self):
         """The form label."""
-        return 'Edit details for bug #%d' % self.context.id
+        return 'Edit details for bug #%d' % self.context.bug.id
 
     @property
     def page_title(self):
