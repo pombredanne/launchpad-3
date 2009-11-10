@@ -25,7 +25,9 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
+from lp.testing.views import create_initialized_view
 from lp.code.model.diff import PreviewDiff, StaticDiff
+from canonical.launchpad.database.message import MessageSet
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import (
@@ -653,6 +655,41 @@ class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
                                         except_for=['REJECTED'])
         self.assertAllStatusesAvailable(
             user=self.proposal.target_branch.owner)
+
+
+class TestCommentAttachmentRendering(TestCaseWithFactory):
+    """Test diff attachments are rendered correctly."""
+
+    layer = LaunchpadFunctionalLayer
+
+
+    def _makeCommentFromEmailWithAttachment(self, attachment_body):
+        # Make an email message with an attachment, and create a code
+        # review comment from it.
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.registrant)
+        msg = self.factory.makeEmailMessage(
+            body='testing',
+            attachments=[('test.diff', 'text/plain', attachment_body)])
+        message = MessageSet().fromEmail(msg.as_string())
+        return bmp.createCommentFromMessage(message, None, None, msg)
+
+    def test_nonascii_in_attachment_renders(self):
+        # The view should render without errors.
+        comment = self._makeCommentFromEmailWithAttachment('\xe2\x98\x95')
+        # Need to commit in order to read the diff out of the librarian.
+        transaction.commit()
+        view = create_initialized_view(comment, '+comment-body')
+        view()
+
+    def test_nonascii_in_attachment_decoded(self):
+        # The diff_text should be a unicode string.
+        comment = self._makeCommentFromEmailWithAttachment('\xe2\x98\x95')
+        # Need to commit in order to read the diff out of the librarian.
+        transaction.commit()
+        view = create_initialized_view(comment, '+comment-body')
+        [diff_attachment] = view.display_attachments
+        self.assertEqual(u'\u2615', diff_attachment.diff_text)
 
 
 def test_suite():

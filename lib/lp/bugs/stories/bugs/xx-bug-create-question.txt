@@ -102,8 +102,8 @@ questions' portlet, and uses it to go to the question page.
 No Privileges Person case see that the question was created from a
 bug. He uses the link to Related bug to return to the bug.
 
-    >>> user_browser.title
-    'Questions : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
+    >>> print user_browser.title
+    Question #... : Questions : ...linux-source-2.6.15... package : Ubuntu
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'original-bug'))
@@ -239,7 +239,7 @@ it is still in the Open status.
     ...     'Copy, Cut and Delete operations should work on '
     ...     'selections').click()
     >>> print user_browser.title
-    Questions : Jokosher
+    Question #... : Questions : Jokosher
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'registration'))

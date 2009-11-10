@@ -19,18 +19,9 @@
 <div metal:fill-slot="main">
 
   <div class="top-portlet">
-    <p
-       class="not-translated-in-launchpad"
-       tal:condition="not: context/product/official_rosetta">
-      <strong>
-        This project is not configured to use Launchpad for translations.
-      </strong>
-      <tal:admin_or_owner condition="context/product/required:launchpad.Edit">
-        You can change this in the
-        <a tal:attributes="href view/product_edit_url">
-          project settings</a>.
-      </tal:admin_or_owner>
-    </p>
+    <tal:official_use replace="
+        structure
+        context/product/@@+portlet-not-using-launchpad"/>
   </div>
 
   <div class="yui-g">
@@ -38,7 +29,7 @@
       <div metal:use-macro="context/@@launchpad_form/form" class="portlet">
         <div metal:fill-slot="extra_info">
 
-          <tal:rosetta condition="context/product/official_rosetta">
+          <tal:rosetta>
             <h2>Import translations from branch</h2>
             <p>
               You can ask Launchpad to continuously import any translation
@@ -63,7 +54,7 @@
             </p>
             <p tal:condition="not:view/context/branch"
                id="no-branch-display">
-              This series does not have an official Bazaar branch. 
+              This series does not have an official Bazaar branch.
               <a tal:attributes="href view/link_branch_url">Set it now!</a>
             </p>
           </tal:rosetta>
