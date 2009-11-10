@@ -49,6 +49,7 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -157,7 +158,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
                 excName = str(excClass)
             raise self.failureException, "%s not raised" % excName
 
-    def setupBreezy(self, name="breezy"):
+    def setupBreezy(self, name="breezy", permitted_formats=None):
         """Create a fresh distroseries in ubuntu.
 
         Use *initialiseFromParent* procedure to create 'breezy'
@@ -168,6 +169,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         :param name: supply the name of the distroseries if you don't want
             it to be called "breezy"
+        :param permitted_formats: list of SourcePackageFormats to allow
+            in the new distroseries. Only permits '1.0' by default.
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
@@ -184,6 +187,12 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
         self.breezy.initialiseFromParent()
+
+        if permitted_formats is None:
+            permitted_formats = [SourcePackageFormat.FORMAT_1_0]
+
+        for format in permitted_formats:
+            self.breezy.permitSourcePackageFormat(format)
 
     def addMockFile(self, filename, content="anything"):
         """Return a librarian file."""

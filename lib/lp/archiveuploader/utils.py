@@ -15,6 +15,8 @@ __all__ = [
     're_valid_pkg_name',
     're_changes_file_name',
     're_extract_src_version',
+    'get_source_file_extension',
+    'determine_source_file_type',
     'prefix_multi_line_string',
     'safe_fix_maintainer',
     'ParseMaintError',
@@ -31,7 +33,15 @@ from canonical.encoding import guess as guess_encoding, ascii_smash
 re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
-re_issource = re.compile(r"(.+)_(.+?)\.(orig\.tar\.gz|diff\.gz|tar\.gz|dsc)$")
+
+re_issource = re.compile(
+    r"(.+)_(.+?)\."
+     "(orig\.tar\.gz"
+     "|diff\.gz"
+     "|tar\.gz"
+     "|dsc)$")
+re_is_orig_tar_ext = re.compile(r"^orig.tar.gz$")
+re_is_native_tar_ext = re.compile(r"^tar.gz$")
 
 re_no_epoch = re.compile(r"^\d+\:")
 re_no_revision = re.compile(r"-[^-]+$")
@@ -42,6 +52,32 @@ re_changes_file_name = re.compile(r"([^_]+)_([^_]+)_([^\.]+).changes")
 re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
 
 re_parse_maintainer = re.compile(r"^\s*(\S.*\S)\s*\<([^\>]+)\>")
+
+
+def get_source_file_extension(filename):
+    """Get the extension part of a source file name."""
+    match = re_issource.match(filename)
+    if match is None:
+        return None
+    return match.group(3)
+
+
+def determine_source_file_type(filename):
+    """Determine the SourcePackageFileType of the given filename."""
+    # Avoid circular imports.
+    from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+
+    extension = get_source_file_extension(filename)
+    if extension is None:
+        return None
+    elif extension == "dsc":
+        return SourcePackageFileType.DSC
+    elif extension == "diff.gz":
+        return SourcePackageFileType.DIFF
+    elif re_is_orig_tar_ext.match(extension):
+        return SourcePackageFileType.ORIG_TARBALL
+    elif re_is_native_tar_ext.match(extension):
+        return SourcePackageFileType.NATIVE_TARBALL
 
 
 def prefix_multi_line_string(str, prefix, include_blank_lines=0):

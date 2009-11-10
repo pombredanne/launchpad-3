@@ -37,6 +37,7 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
     PackageUploadCustomFormat, PackageUploadStatus)
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.soyuz.model.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
@@ -719,6 +720,31 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             CannotCopy,
             'Cannot copy to an unsupported distribution: ubuntu.',
             copy_checker.checkCopy, source, series, pocket)
+
+    def test_checkCopy_respects_sourceformatselection(self):
+        # A source copy should be denied if the source's dsc_format is
+        # not permitted in the target series.
+
+        # Get hoary, and configure it to accept 3.0 (quilt) uploads.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        hoary.permitSourcePackageFormat(SourcePackageFormat.FORMAT_3_0_QUILT)
+
+        # Create a 3.0 (quilt) source.
+        source = self.test_publisher.getPubSource(
+            distroseries=hoary, dsc_format='3.0 (quilt)')
+
+        archive = source.archive
+        series = ubuntu.getSeries('warty')
+        pocket = source.pocket
+
+        # An attempt to copy the source to warty, which only supports
+        # 1.0 sources, is rejected.
+        copy_checker = CopyChecker(archive, include_binaries=True)
+        self.assertRaisesWithContent(
+            CannotCopy,
+            "Source format '3.0 (quilt)' not supported by target series "
+            "warty.", copy_checker.checkCopy, source, series, pocket)
 
     def test_checkCopy_identifies_conflicting_copy_candidates(self):
         # checkCopy() is able to identify conflicting candidates within
