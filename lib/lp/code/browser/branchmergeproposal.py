@@ -403,8 +403,34 @@ class ClaimButton(Interface):
     review_id = Int(required=True)
 
 
+class BranchMergeProposalStatusMixin:
+    '''A mixin for generating status vocabularies.'''
+
+    def _createStatusVocabulary(self):
+        # Create the vocabulary that is used for the status widget.
+        curr_status = self.context.queue_status
+        possible_next_states = (
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            BranchMergeProposalStatus.NEEDS_REVIEW,
+            BranchMergeProposalStatus.CODE_APPROVED,
+            BranchMergeProposalStatus.REJECTED,
+            # BranchMergeProposalStatus.QUEUED,
+            BranchMergeProposalStatus.MERGED,
+            )
+        terms = []
+        for status in possible_next_states:
+            if not self.context.isValidTransition(status, self.user):
+                continue
+            else:
+                title = status.title
+            terms.append(SimpleTerm(status, status.name, title))
+        return SimpleVocabulary(terms)
+
+
+
 class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
-                              BranchMergeProposalRevisionIdMixin):
+                              BranchMergeProposalRevisionIdMixin,
+                              BranchMergeProposalStatusMixin):
     """A basic view used for the index page."""
 
     implements(IBranchMergeProposalActionMenu)
@@ -538,7 +564,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """The config to configure the ChoiceSource JS widget."""
         return simplejson.dumps({
             'status_widget_items': vocabulary_to_choice_edit_items(
-                BranchMergeProposalStatus,
+                self._createStatusVocabulary(),
                 css_class_prefix='mergestatus'),
             'status_value': self.context.queue_status.title,
             'user_can_edit_status': check_permission(
@@ -1104,31 +1130,12 @@ class BranchMergeProposalSubscribersView(LaunchpadView):
         return len(self.full_subscribers) + len(self.status_subscribers)
 
 
-class BranchMergeProposalChangeStatusView(MergeProposalEditView):
+class BranchMergeProposalChangeStatusView(MergeProposalEditView,
+                                          BranchMergeProposalStatusMixin):
 
     page_title = label = "Change merge proposal status"
     schema = IBranchMergeProposal
     field_names = []
-
-    def _createStatusVocabulary(self):
-        # Create the vocabulary that is used for the status widget.
-        curr_status = self.context.queue_status
-        possible_next_states = (
-            BranchMergeProposalStatus.WORK_IN_PROGRESS,
-            BranchMergeProposalStatus.NEEDS_REVIEW,
-            BranchMergeProposalStatus.CODE_APPROVED,
-            BranchMergeProposalStatus.REJECTED,
-            # BranchMergeProposalStatus.QUEUED,
-            BranchMergeProposalStatus.MERGED,
-            )
-        terms = []
-        for status in possible_next_states:
-            if not self.context.isValidTransition(status, self.user):
-                continue
-            else:
-                title = status.title
-            terms.append(SimpleTerm(status, status.name, title))
-        return SimpleVocabulary(terms)
 
     def setUpFields(self):
         MergeProposalEditView.setUpFields(self)
