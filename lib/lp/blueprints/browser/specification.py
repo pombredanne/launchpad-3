@@ -483,16 +483,18 @@ class SpecificationView(SpecificationSimpleView):
             essential = request.form.get('essential') == 'yes'
             if sub is not None:
                 self.context.subscribe(self.user, self.user, essential)
-                self.notices.append("You have subscribed to this spec.")
+                self.notices.append(
+                    "You have subscribed to this blueprint.")
             elif upd is not None:
                 self.context.subscribe(self.user, self.user, essential)
                 self.notices.append('Your subscription has been updated.')
             elif unsub is not None:
                 self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this spec.")
+                self.notices.append(
+                    "You have unsubscribed from this blueprint.")
 
         if self.feedbackrequests:
-            msg = "You have %d feedback request(s) on this specification."
+            msg = "You have %d feedback request(s) on this blueprint."
             msg %= len(self.feedbackrequests)
             self.notices.append(msg)
 
@@ -523,7 +525,7 @@ class SpecificationEditView(LaunchpadEditFormView):
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
-                'Specification is now considered "%s".' % newstate.title)
+                'blueprint is now considered "%s".' % newstate.title)
         self.next_url = canonical_url(self.context)
 
 
@@ -741,8 +743,8 @@ class SpecificationSupersedingView(LaunchpadFormView):
                 vocabulary=SimpleVocabulary(terms),
                 required=False,
                 description=_(
-                    "The specification which supersedes this one. Note "
-                    "that selecting a specification here and pressing "
+                    "The blueprint which supersedes this one. Note "
+                    "that selecting a blueprint here and pressing "
                     "Continue will change the specification status "
                     "to Superseded.")),
             render_context=self.render_context)
