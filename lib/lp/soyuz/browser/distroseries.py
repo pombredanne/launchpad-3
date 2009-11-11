@@ -14,10 +14,9 @@ from lp.registry.browser.distroseries import DistroSeriesView
 class DistroSeriesBuildsView(DistroSeriesView):
     """A View to show an `IDistroSeries` object's builds."""
 
-    @property
-    def page_title(self):
-        """Return the HTML page title."""
-        return '%s builds' % self.context.title
+    label = 'Builds'
+    page_title = label
+
 
 class DistroSeriesQueueView(DistroSeriesView):
     """A View to show an `IDistroSeries` object's uploads."""

@@ -742,7 +742,7 @@
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distribution.IDistribution"
-            class="lp.registry.browser.distribution.DistributionView"
+            class="lp.soyuz.browser.distribution.DistributionBuildsView"
             permission="zope.Public">
             <browser:page
                 name="+builds"

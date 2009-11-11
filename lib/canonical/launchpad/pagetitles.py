@@ -330,8 +330,6 @@ distribution_search = ContextDisplayName(smartquote("Search %s's packages"))
 
 distribution_index = ContextTitle('%s in Launchpad')
 
-distribution_builds = ContextTitle('%s builds')
-
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
