@@ -13,9 +13,6 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Int
-
-from canonical.launchpad import _
 
 
 class SoyuzJobType(DBEnumeratedType):

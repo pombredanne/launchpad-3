@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = [
     'IBuildQueue',
     'IBuildQueueSet',
-    'JobType',
     ]
 
 from zope.interface import Interface, Attribute
@@ -41,6 +40,9 @@ class IBuildQueue(Interface):
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
+
+    def score():
+        """The job score calculated for the job type in question."""
 
     def destroySelf():
         """Delete this entry from the database."""
