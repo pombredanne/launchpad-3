@@ -336,15 +336,24 @@
 
         <ul>
           <li>
-            <a tal:attributes="
-              href view/milestone/target/fmt:url/+milestones">All milestones for
+            <a class="sprite info"
+              tal:attributes="href view/milestone/target/menu:overview/milestones/fmt:url">View
+              milestones for
               <tal:project replace="view/milestone/target/displayname" /></a>
           </li>
+          <li tal:condition="view/milestone/target/project|nothing">
+            <a class="sprite info"
+              tal:attributes="href view/milestone/target/project/menu:overview/milestones/fmt:url">View
+              milestones for
+              <tal:project replace="view/milestone/target/project/displayname" /></a>
+          </li>
           <li tal:condition="view/milestone/series_target">
-            <a tal:attributes="
-              href view/milestone/series_target/fmt:url">All releases for the
+            <a class="sprite info"
+              tal:attributes="href view/milestone/series_target/fmt:url">View
+              releases for the
               <tal:project replace="view/milestone/target/displayname" />
-              <tal:project replace="view/milestone/series_target/displayname" /> series</a>
+              <tal:project replace="view/milestone/series_target/displayname" />
+              series</a>
           </li>
         </ul>
       </div>
