@@ -240,7 +240,7 @@ class BugWatchUpdater(object):
                 if bug_tracker.active:
                     updateBugTracker = (
                         self._interactionDecorator(self.updateBugTracker))
-                    updateBugTracker(bug_tracker, batch_size)
+                    updateBugTracker(bug_tracker_name, batch_size)
                 else:
                     self.log.debug(
                         "Updates are disabled for bug tracker at %s" %
@@ -254,8 +254,14 @@ class BugWatchUpdater(object):
         If there is an error, logs are updated, and the transaction is
         aborted.
 
+        :param bug_tracker: An IBugTracker or the name of one.
+
         :return: A boolean indicating if the operation was successful.
         """
+        # Get the bug tracker.
+        if isinstance(bug_tracker, basestring):
+            bug_tracker = getUtility(IBugTrackerSet).getByName(bug_tracker)
+
         # Save the name and url for later, since we might need it to report an
         # error after a transaction has been aborted.
         bug_tracker_name = bug_tracker.name
