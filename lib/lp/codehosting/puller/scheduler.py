@@ -12,6 +12,7 @@ __all__ = [
     'PullerMonitorProtocol',
     ]
 
+# XXX: Add logging for when the process exits.
 
 import os
 from StringIO import StringIO

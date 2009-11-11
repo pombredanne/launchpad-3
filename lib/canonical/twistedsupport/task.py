@@ -189,6 +189,8 @@ class ParallelLimitedTaskConsumer:
     that might return `Deferred`s.
     """
 
+    # XXX: Add logging information for state changes.
+
     implements(ITaskConsumer)
 
     def __init__(self, worker_limit):
