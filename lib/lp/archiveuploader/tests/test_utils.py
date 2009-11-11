@@ -35,6 +35,8 @@ class TestUtilities(unittest.TestCase):
         self.assertEquals(
             SourcePackageFileType.NATIVE_TARBALL,
             determine_source_file_type('foo_1.0.tar.gz'))
+        self.assertEquals(None, determine_source_file_type('foo_1.0'))
+        self.assertEquals(None, determine_source_file_type('foo_1.0.blah.gz'))
 
     def testPrefixMultilineString(self):
         """lp.archiveuploader.utils.prefix_multi_line_string should work"""

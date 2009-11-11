@@ -77,6 +77,8 @@ def determine_source_file_type(filename):
         return SourcePackageFileType.ORIG_TARBALL
     elif re_is_native_tar_ext.match(extension):
         return SourcePackageFileType.NATIVE_TARBALL
+    else:
+        return None
 
 
 def prefix_multi_line_string(str, prefix, include_blank_lines=0):
