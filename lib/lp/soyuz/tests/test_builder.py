@@ -52,13 +52,11 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         BUILDING.
         """
         count = 0
-        for build in builds_list:
+        for build in builds_list[:num_builds]:
             if build.distroarchseries.architecturetag == archtag:
                 build.buildstate = BuildStatus.BUILDING
                 build.builder = self.builders[count]
             count += 1
-            if count == num_builds:
-                break
 
     def setUp(self):
         """Publish some builds for the test archive."""
@@ -110,9 +108,6 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         self.assertEqual(num_free_builders, 2)
 
     def test_findBuildCandidate_first_build_started(self):
-        # Once a build for an ppa+arch has started, a second one for the
-        # same ppa+arch will not be a candidate.
-
         # A PPA cannot start a build if it would use 80% or more of the
         # builders.
         next_job = self.builder4.findBuildCandidate()
