@@ -159,7 +159,7 @@ And we need a way to process the accepted queue
 
   >>> def process_accepted(distro):
   ...     distribution = getUtility(IDistributionSet)[distro]
-  ...     for series in distribution.serieses:
+  ...     for series in distribution.series:
   ...         items = series.getQueueItems(
   ...            status=PackageUploadStatus.ACCEPTED)
   ...         for item in items:

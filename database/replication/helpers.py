@@ -26,6 +26,11 @@ CLUSTERNAME = 'sl'
 # The namespace in the database used to contain all the Slony-I tables.
 CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 
+# Replication set id constants. Don't change these without DBA help.
+LPMAIN_SET_ID = 1
+AUTHDB_SET_ID = 2
+HOLDING_SET_ID = 666
+
 # Seed tables for the authdb replication set to be passed to
 # calculate_replication_set().
 AUTHDB_SEED = frozenset([
@@ -282,10 +287,10 @@ def preamble(con=None):
         cluster name = sl;
 
         # Symbolic ids for replication sets.
-        define lpmain_set  1;
-        define authdb_set  2;
-        define holding_set 666;
-        """)]
+        define lpmain_set  %d;
+        define authdb_set  %d;
+        define holding_set %d;
+        """ % (LPMAIN_SET_ID, AUTHDB_SET_ID, HOLDING_SET_ID))]
 
     if master_node is not None:
         preamble.append(dedent("""\
@@ -303,9 +308,9 @@ def preamble(con=None):
                 node.nickname, node.node_id,
                 node.nickname, node.connection_string,
                 node.nickname, node.nickname)))
-    
+
     return '\n\n'.join(preamble)
-        
+
 
 def calculate_replication_set(cur, seeds):
     """Return the minimal set of tables and sequences needed in a

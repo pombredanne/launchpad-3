@@ -8,7 +8,6 @@ __metaclass__ = type
 __all__ = [
     'DerivativeDistributionOverviewMenu',
     'DistributionAddView',
-    'DistributionAllPackagesView',
     'DistributionArchiveMirrorsRSSView',
     'DistributionArchiveMirrorsView',
     'DistributionArchivesView',
@@ -296,7 +295,7 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
 
     usedfor = IDistribution
     facet = 'overview'
-    links = ['edit', 'branding', 'driver', 'search', 'allpkgs', 'members',
+    links = ['edit', 'branding', 'driver', 'search', 'members',
              'mirror_admin', 'reassign', 'addseries', 'series', 'milestones',
              'top_contributors',
              'builds', 'cdimage_mirrors', 'archive_mirrors',
@@ -359,10 +358,6 @@ class DistributionOverviewMenu(ApplicationMenu, DistributionLinksMixin):
         text = 'Unofficial mirrors'
         enabled = self._userCanSeeNonPublicMirrorListings()
         return Link('+unofficialmirrors', text, enabled=enabled, icon='info')
-
-    def allpkgs(self):
-        text = 'List all packages'
-        return Link('+allpackages', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def members(self):
@@ -717,16 +712,6 @@ class DistributionPPASearchView(LaunchpadView):
             distribution=self.context)
 
 
-class DistributionAllPackagesView(LaunchpadView):
-    """A view to show all the packages in a distribution."""
-
-    def initialize(self):
-        results = self.context.getSourcePackageCaches()
-        self.batchnav = BatchNavigator(results, self.request)
-
-    label = 'All packages'
-
-
 class DistributionSetActionNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for `DistributionSetView`."""
 
@@ -818,7 +803,7 @@ class DistributionSeriesView(LaunchpadView):
     def styled_series(self):
         """A list of dicts; keys: series, css_class, is_development_focus"""
         all_series = []
-        for series in self.context.serieses:
+        for series in self.context.series:
             all_series.append({
                 'series': series,
                 'css_class': self.getCssClass(series),

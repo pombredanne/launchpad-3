@@ -49,7 +49,7 @@ And verify that it looks like the series we think it should be.
 It's also possible to ask a product for all its associated series.
 
     >>> onedotzero = firefox.getSeries('1.0')
-    >>> list(firefox.serieses) == [onedotzero, trunk]
+    >>> list(firefox.series) == [onedotzero, trunk]
     True
 
 A ProductSeries can also be fetched with the IProductSeriesSet utility.

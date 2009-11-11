@@ -153,12 +153,6 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
         return canonical_url(self.context,
                              view_name="+translations-settings")
 
-    @property
-    def product_edit_url(self):
-        """URL to edit the `IProduct`."""
-        return canonical_url(self.context.product, rootsite="mainsite",
-                             view_name="+edit")
-
 
 class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
     """A view for uploading translations into productseries."""

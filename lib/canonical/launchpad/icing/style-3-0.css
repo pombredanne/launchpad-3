@@ -250,6 +250,10 @@ span.nolink {
     z-index: 10;
     width: 131%;
     }
+/* The content is already full width; the content should remain full width. */
+.full-page-width .full-page-width {
+    width: 100%;
+    }
 .warning.message {
     margin-top: 17px;
     }
@@ -420,10 +424,6 @@ span.see-all {
 .registered {
     font-size: 85%;
     color: #666;
-    font-style: italic;
-    }
-li .registered {
-    font-style: normal;
     }
 .description {
     clear: both;
@@ -466,6 +466,9 @@ li .registered {
     padding: 0 1.5em 0 0;
     }
 .subordinate {
+    margin-left: 2em;
+    }
+ol.subordinate {
     margin-left: 4em;
     }
 .two-column-list li,
