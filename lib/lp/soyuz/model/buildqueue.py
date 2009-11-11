@@ -20,6 +20,7 @@ from zope.interface import implements
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 from storm.expr import In, LeftJoin
+from storm.store import Store
 
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
@@ -27,9 +28,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
+from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
+from lp.soyuz.interfaces.buildqueue import (
+    IBuildQueue, IBuildQueueSet, SoyuzJobType)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -43,11 +46,29 @@ class BuildQueue(SQLBase):
     job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
     job_type = IntCol(dbName='job_type', default=1)
     builder = ForeignKey(dbName='builder', foreignKey='Builder', default=None)
-    created = UtcDateTimeCol(dbName='created', default=UTC_NOW)
-    buildstart = UtcDateTimeCol(dbName='buildstart', default= None)
     logtail = StringCol(dbName='logtail', default=None)
     lastscore = IntCol(dbName='lastscore', default=0)
     manual = BoolCol(dbName='manual', default=False)
+
+    def _get_build(self):
+        """Get the associated `IBuild` instance if this is `PackageBuildJob`.
+
+        :raises AssertionError: if this is not a `PackageBuildJob` or if we
+            do not find *exactly* one `IBuild` instance.
+        """
+        assert self.job_id == SoyuzJobType.PACKAGEBUILDJOB (
+            "This job does not build source packages, no build record "
+            "available.")
+        store = Store.of(self)
+        origin = [
+            BuildQueue,
+            Join(PackageBuildJob, PackageBuildJob.job = BuildQueue.job)]
+        result_set = store.using(*origin).find(
+            Build, Build.id == PackageBuildJob.build)
+        assert result_set.count() == 1, (
+            "Wrong number of `IBuild` instances (%s) associated with this job"
+            % result_set.count())
+        return result_set[0];
 
     def manualScore(self, value):
         """See `IBuildQueue`."""
@@ -112,15 +133,16 @@ class BuildQueue(SQLBase):
         # nothing else to build.
         rebuild_archive_score = -10
 
+        build = self._get_build()
         score = 0
-        msg = "%s (%d) -> " % (self.build.title, self.lastscore)
+        msg = "%s (%d) -> " % (build.title, self.lastscore)
 
         # Please note: the score for language packs is to be zero because
         # they unduly delay the building of packages in the main component
         # otherwise.
-        if self.build.sourcepackagerelease.section.name == 'translations':
+        if build.sourcepackagerelease.section.name == 'translations':
             msg += "LPack => score zero"
-        elif self.build.archive.purpose == ArchivePurpose.COPY:
+        elif build.archive.purpose == ArchivePurpose.COPY:
             score = rebuild_archive_score
             msg += "Rebuild archive => -10"
         else:
@@ -130,19 +152,19 @@ class BuildQueue(SQLBase):
             msg += "U+%d " % urgency
 
             # Calculates the pocket-related part of the score.
-            score_pocket = score_pocketname[self.build.pocket]
+            score_pocket = score_pocketname[build.pocket]
             score += score_pocket
             msg += "P+%d " % score_pocket
 
             # Calculates the component-related part of the score.
             score_component = score_componentname[
-                self.build.current_component.name]
+                build.current_component.name]
             score += score_component
             msg += "C+%d " % score_component
 
             # Calculates the build queue time component of the score.
             right_now = datetime.now(pytz.timezone('UTC'))
-            eta = right_now - self.created
+            eta = right_now - self.job.date_created
             for limit, dep_score in queue_time_scores:
                 if eta.seconds > limit:
                     score += dep_score
@@ -152,13 +174,13 @@ class BuildQueue(SQLBase):
                 msg += "T+0 "
 
             # Private builds get uber score.
-            if self.build.archive.private:
+            if build.archive.private:
                 score += private_archive_increment
 
             # Lastly, apply the archive score delta.  This is to boost
             # or retard build scores for any build in a particular
             # archive.
-            score += self.build.archive.relative_build_score
+            score += build.archive.relative_build_score
 
         # Store current score value.
         self.lastscore = score
@@ -167,13 +189,14 @@ class BuildQueue(SQLBase):
 
     def getLogFileName(self):
         """See `IBuildQueue`."""
-        sourcename = self.build.sourcepackagerelease.name
-        version = self.build.sourcepackagerelease.version
+        build = self._get_build()
+        sourcename = build.sourcepackagerelease.name
+        version = build.sourcepackagerelease.version
         # we rely on previous storage of current buildstate
         # in the state handling methods.
-        state = self.build.buildstate.name
+        state = build.buildstate.name
 
-        dar = self.build.distroarchseries
+        dar = build.distroarchseries
         distroname = dar.distroseries.distribution.name
         distroseriesname = dar.distroseries.name
         archname = dar.architecturetag
@@ -191,25 +214,30 @@ class BuildQueue(SQLBase):
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
         self.builder = builder
-        self.buildstart = UTC_NOW
-        self.build.buildstate = BuildStatus.BUILDING
+        self.job.date_started = UTC_NOW
+        self.job.status = JobStatus.RUNNING
+        build = self._get_build()
+        build.buildstate = BuildStatus.BUILDING
         # The build started, set the start time if not set already.
-        if self.build.date_first_dispatched is None:
-            self.build.date_first_dispatched = UTC_NOW
+        if build.date_first_dispatched is None:
+            build.date_first_dispatched = UTC_NOW
 
     def reset(self):
         """See `IBuildQueue`."""
         self.builder = None
-        self.buildstart = None
+        self.job.date_started = None
+        self.job.status = JobStatus.WAITING
         self.logtail = None
-        self.build.buildstate = BuildStatus.NEEDSBUILD
+        build = self._get_build()
+        build.buildstate = BuildStatus.NEEDSBUILD
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
         """See `IBuildQueue`."""
+        build = self._get_build()
         logger.warn(
             "Builder %s forgot about build %s -- resetting buildqueue record"
-            % (self.builder.url, self.build.title))
+            % (self.builder.url, build.title))
         self.reset()
 
     def updateBuild_BUILDING(self, build_id, build_status,
@@ -227,8 +255,10 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.builder.cleanSlave()
         self.builder = None
-        self.buildstart = None
-        self.build.buildstate = BuildStatus.BUILDING
+        self.job.date_started = None
+        self.job.status = JobStatus.FAILED
+        build = self._get_build()
+        build.buildstate = BuildStatus.BUILDING
 
 
 class BuildQueueSet(object):
@@ -275,9 +305,12 @@ class BuildQueueSet(object):
         query = """
            Build.distroarchseries IN %s AND
            Build.buildstate = %s AND
-           BuildQueue.build = build.id AND
+           BuildQueue.job_type = %s AND
+           BuildQueue.job = PackageBuildJob.job AND
+           PackageBuildJob.build = build.id AND
            BuildQueue.builder IS NULL
-        """ % sqlvalues(arch_ids, BuildStatus.NEEDSBUILD)
+        """ % sqlvalues(
+            arch_ids, BuildStatus.NEEDSBUILD, SoyuzJobType.PACKAGEBUILDJOB)
 
         candidates = BuildQueue.select(
             query, clauseTables=['Build'], orderBy=['-BuildQueue.lastscore'])
@@ -292,13 +325,14 @@ class BuildQueueSet(object):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         origin = (
-            BuildQueue,
+            PackageBuildJob,
+            Join(BuildQueue, BuildQueue.job == PackageBuildJob.job),
             LeftJoin(
                 Builder,
                 BuildQueue.builderID == Builder.id),
             )
         result_set = store.using(*origin).find(
             (BuildQueue, Builder),
-            In(BuildQueue.buildID, build_ids))
+            In(PackageBuildJob.buildID, build_ids))
 
         return result_set

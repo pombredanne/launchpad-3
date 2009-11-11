@@ -16,7 +16,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 
 
-class JobType(DBEnumeratedType):
+class SoyuzJobType(DBEnumeratedType):
     """Soyuz build farm job type.
 
     An enumeration with the types of jobs that may be run on the Soyuz build
