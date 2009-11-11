@@ -61,6 +61,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
         """Return a PPABinaryExpirer instance."""
         if test_args is None:
             test_args = []
+        test_args.append("30")
         script = PPABinaryExpirer("test expirer", test_args=test_args)
         script.logger = QuietFakeLogger()
         script.txn = self.layer.txn

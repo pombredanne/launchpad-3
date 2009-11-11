@@ -49,12 +49,12 @@ class PPABinaryExpirer(LaunchpadCronScript):
             dest="dryrun", metavar="DRY_RUN", default=False,
             help="If set, no transactions are committed")
 
-    def determineExpirables(self):
+    def determineExpirables(self, num_days):
         """Return expirable libraryfilealias IDs."""
         # Avoid circular imports.
         from lp.soyuz.interfaces.archive import ArchivePurpose
 
-        stay_of_execution = '30 days'
+        stay_of_execution = '%d days' % num_days
 
         # The subquery here has to repeat the checks for privacy and
         # blacklisting on *other* publications that are also done in
@@ -105,10 +105,27 @@ class PPABinaryExpirer(LaunchpadCronScript):
 
     def main(self):
         self.logger.info('Starting the PPA binary expiration')
+
+        # Check to see if we got passed a 'days' argument.
+        if not self.args:
+            self.logger.info(
+                "Require one program argument; the number of days before "
+                "today to keep librarian files for.")
+            self.txn.abort()
+            return
+
+        # Make sure it looks like an integer.
+        try:
+            num_days = int(self.args[0])
+        except ValueError:
+            self.logger.info("'%s' needs to be an integer" % self.args[0])
+            return
+        self.logger.info("Expiring files up to %d days ago" % num_days)
+
         self.store = getUtility(IStoreSelector).get(
             MAIN_STORE, DEFAULT_FLAVOR)
 
-        lfa_ids = self.determineExpirables()
+        lfa_ids = self.determineExpirables(num_days)
         batch_count = 0
         batch_limit = 500
         for id in lfa_ids:
