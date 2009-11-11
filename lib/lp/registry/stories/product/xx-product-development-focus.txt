@@ -68,6 +68,13 @@ The owner can specify the development focus branch from the overview page.
     >>> owner_browser.getLink(url='+linkbranch').click()
     >>> owner_browser.getControl('Branch').value = '~eric/fooix/trunk'
     >>> owner_browser.getControl('Update').click()
+    >>> print_feedback_messages(owner_browser.contents)
+    Series code location updated.
+
+The owner is taken back to the trunk series page.
+
+    >>> print_tag_with_id(owner_browser.contents, 'branch-details')
+    lp://dev/fooix - Eric  Change branch
 
 
 Projects with development focus branches
