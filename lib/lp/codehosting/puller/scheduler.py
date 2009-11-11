@@ -459,10 +459,11 @@ class JobScheduler:
 
     def run(self):
         consumer = ParallelLimitedTaskConsumer(
-            config.supermirror.maximum_workers)
+            config.supermirror.maximum_workers, logger=self.logger)
         self.consumer = consumer
         source = PollingTaskSource(
-            config.supermirror.polling_interval, self._poll)
+            config.supermirror.polling_interval, self._poll,
+            logger=self.logger)
         deferred = consumer.consume(source)
         deferred.addCallback(self._finishedRunning)
         return deferred
