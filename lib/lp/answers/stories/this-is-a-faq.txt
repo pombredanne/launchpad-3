@@ -104,16 +104,16 @@ He sees that the question's status was changed to 'Answered':
 
     >>> def print_question_status(browser):
     ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'registration'))
+    ...         find_tag_by_id(browser.contents, 'question-status'))
 
     >>> print_question_status(user_browser)
-    Answered ...
+    Status: Answered
 
 A link to the FAQ appears under the question's description:
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'related-faq'))
-    Related FAQ: How do I install plugins (Shockwave, QuickTime, etc.)?
+    Related FAQ: How do I install plugins (Shockwave, QuickTime, etc.)? ...
     >>> print user_browser.getLink('How do I install plugins').url
     http://answers.launchpad.dev/firefox/+faq/10
 
@@ -176,8 +176,9 @@ The new message was added to the question:
 
 The link was also removed from the details portlet:
 
-    >>> print find_tag_by_id(user_browser.contents, 'related-faq')
-    None
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'related-faq'))
+    Related FAQ: None ...
 
 
 == Creating a new FAQ ==
@@ -267,7 +268,7 @@ description:
 
     >>> print extract_text(
     ...     find_tag_by_id(owner_browser.contents, 'related-faq'))
-    Related FAQ: Displaying SVG in Firefox
+    Related FAQ: Displaying SVG in Firefox ...
 
 
 == Viewing a FAQ ==
@@ -350,7 +351,7 @@ information.
     >>> details_portlet = find_portlet(
     ...     user_browser.contents, 'mozilla-firefox in ubuntu question #9')
     >>> print_question_status(user_browser)
-    Solved...
+    Status: Solved
     >>> user_browser.getLink('Link to a FAQ').click()
 
     >>> print user_browser.title
@@ -368,7 +369,7 @@ discussion.
     >>> print user_browser.title
     Question #9 : ...
     >>> print_question_status(user_browser)
-    Solved...
+    Status: Solved
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'related-faq'))

@@ -26,4 +26,4 @@ def check_menu_links(menu):
         except:
             is_sane_menu = False
             print 'Bad link %s: %s' % (link.name, url)
-    print is_sane_menu
+    return is_sane_menu
