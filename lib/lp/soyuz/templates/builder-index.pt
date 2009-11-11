@@ -153,7 +153,7 @@
 
       <tal:job condition="job">
         <p class="sprite">Started
-          <span tal:attributes="title job/job/date_created/fmt:datetime"
+          <span tal:attributes="title job/job/date_started/fmt:datetime"
                 tal:content="view/current_build_duration/fmt:exactduration"
             /> ago.</p>
         <tal:visible condition="job/build/required:launchpad.View">
