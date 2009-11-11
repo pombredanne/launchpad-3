@@ -34,12 +34,11 @@ re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
 
+source_file_exts = ['orig.tar.gz', 'diff.gz', 'tar.gz', 'dsc']
 re_issource = re.compile(
-    r"(.+)_(.+?)\."
-     "(orig\.tar\.gz"
-     "|diff\.gz"
-     "|tar\.gz"
-     "|dsc)$")
+    r"(.+)_(.+?)\.(%s)" % "|".join(
+        re.escape(ext) for ext in source_file_exts))
+
 re_is_orig_tar_ext = re.compile(r"^orig.tar.gz$")
 re_is_native_tar_ext = re.compile(r"^tar.gz$")
 
