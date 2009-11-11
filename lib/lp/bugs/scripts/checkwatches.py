@@ -162,6 +162,8 @@ class BugWatchUpdater(object):
 
     ACCEPTABLE_TIME_SKEW = timedelta(minutes=10)
 
+    LOGIN = 'bugwatch@bugs.launchpad.net'
+
     def __init__(self, txn, log=default_log, syncable_gnome_products=None):
         self.txn = txn
         self.log = log
@@ -174,11 +176,11 @@ class BugWatchUpdater(object):
 
         self._principal = (
             getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
-                'bugwatch@bugs.launchpad.net', want_password=False))
+                self.LOGIN, want_password=False))
 
     def _login(self):
         """Set up an interaction as the Bug Watch Updater"""
-        setupInteraction(self._principal, login='bugwatch@bugs.launchpad.net')
+        setupInteraction(self._principal, login=self.LOGIN)
 
     def _logout(self):
         """Tear down the Bug Watch Updater Interaction."""
