@@ -18,7 +18,9 @@
     <div id="membership-summary">
       <div>
         <img src="/@@/team" alt="team" />
-        <strong><tal:active content="context/all_member_count" /></strong>
+        <strong id="member-count">
+          <tal:active content="context/all_member_count" />
+        </strong>
         <a tal:attributes="href string:${context/fmt:url/+members}#active"
           >active members</a><tal:invited
             define="invited_member_count context/invited_member_count"
