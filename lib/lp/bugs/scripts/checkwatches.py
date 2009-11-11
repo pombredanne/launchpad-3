@@ -31,7 +31,7 @@ from canonical.launchpad.webapp.errorlog import (
     ErrorReportingUtility, ScriptRequest)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
-    setupInteraction, endInteraction)
+    setupInteraction, endInteraction, queryInteraction)
 from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.bugs import externalbugtracker
@@ -183,13 +183,33 @@ class BugWatchUpdater(object):
         """Tear down the Bug Watch Updater Interaction."""
         endInteraction()
 
+    def _interactionDecorator(self, func):
+        """Wrap a function to ensure that it runs within an interaction.
+
+        If an interaction is already set up, this simply calls the
+        function. If no interaction exists, it will set one up, call the
+        function, then end the interaction.
+
+        This is intended to make sure the right thing happens whether or not
+        the function is run in a different thread.
+        """
+        def wrapper(*args, **kwargs):
+            if queryInteraction() is None:
+                self._login()
+                try:
+                    return func(*args, **kwargs)
+                finally:
+                    self._logout()
+            else:
+                return func(*args, **kwargs)
+        return wrapper
+
     def updateBugTrackers(self, bug_tracker_names=None, batch_size=None):
         """Update all the bug trackers that have watches pending.
 
         If bug tracker names are specified in bug_tracker_names only
         those bug trackers will be checked.
         """
-        self.txn.begin()
         ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
         # Save the name, so we can use it in other transactions.
         ubuntu_bugzilla_name = ubuntu_bugzilla.name
@@ -203,7 +223,6 @@ class BugWatchUpdater(object):
         if bug_tracker_names is None:
             bug_tracker_names = [
                 bugtracker.name for bugtracker in getUtility(IBugTrackerSet)]
-        self.txn.commit()
         for bug_tracker_name in bug_tracker_names:
             if bug_tracker_name == ubuntu_bugzilla_name:
                 # XXX: 2007-09-11 Graham Binns
@@ -216,16 +235,16 @@ class BugWatchUpdater(object):
                 self.log.debug(
                     "Skipping updating Ubuntu Bugzilla watches.")
             else:
-                self.txn.begin()
                 bug_tracker = getUtility(IBugTrackerSet).getByName(
                     bug_tracker_name)
-                if not bug_tracker.active:
+                if bug_tracker.active:
+                    updateBugTracker = (
+                        self._interactionDecorator(self.updateBugTracker))
+                    updateBugTracker(bug_tracker, batch_size)
+                else:
                     self.log.debug(
                         "Updates are disabled for bug tracker at %s" %
                         bug_tracker.baseurl)
-                    self.txn.abort()
-                    continue
-                self.updateBugTracker(bug_tracker, batch_size)
 
         self._logout()
 
@@ -243,6 +262,7 @@ class BugWatchUpdater(object):
         bug_tracker_url = bug_tracker.baseurl
 
         try:
+            self.txn.begin()
             self._updateBugTracker(bug_tracker, batch_size)
             self.txn.commit()
         except (KeyboardInterrupt, SystemExit):
