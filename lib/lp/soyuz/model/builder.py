@@ -578,26 +578,30 @@ class Builder(SQLBase):
         # the arch in question, then adds one to that total before
         # deriving a percentage of the total available builders on that
         # arch.  It then makes sure that percentage is under 80.
-        clauses.append("""
-            EXISTS (SELECT true
-            WHERE ((
-                SELECT COUNT(build2.id)
-                FROM Build build2, DistroArchSeries distroarchseries2
-                WHERE
-                    build2.archive = build.archive AND
-                    archive.purpose = %s AND
-                    archive.private IS FALSE AND
-                    build2.distroarchseries = distroarchseries2.id AND
-                    distroarchseries2.processorfamily = %s AND
-                    build2.buildstate = %s) + 1::numeric)
-                *100 / (SELECT COUNT(builder.id)
-                        FROM builder
-                        WHERE
-                            builder.processor = %s)
-                < 80)
-        """ % sqlvalues(
-            ArchivePurpose.PPA, self.processor.family, BuildStatus.BUILDING,
-            self.processor))
+        #
+        # The extra clause is only used if the number of available
+        # builders is greater than one, or nothing would get dispatched
+        # at all.
+        num_arch_builders = Builder.selectBy(
+            processor=self.processor, manual=False, builderok=True).count()
+        if num_arch_builders > 1:
+            clauses.append("""
+                EXISTS (SELECT true
+                WHERE ((
+                    SELECT COUNT(build2.id)
+                    FROM Build build2, DistroArchSeries distroarchseries2
+                    WHERE
+                        build2.archive = build.archive AND
+                        archive.purpose = %s AND
+                        archive.private IS FALSE AND
+                        build2.distroarchseries = distroarchseries2.id AND
+                        distroarchseries2.processorfamily = %s AND
+                        build2.buildstate = %s) + 1::numeric)
+                    *100 / %s
+                    < 80)
+            """ % sqlvalues(
+                ArchivePurpose.PPA, self.processor.family,
+                BuildStatus.BUILDING, num_arch_builders))
 
         query = " AND ".join(clauses)
         candidate = BuildQueue.selectFirst(
