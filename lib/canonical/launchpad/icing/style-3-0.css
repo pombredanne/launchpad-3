@@ -1017,6 +1017,7 @@ div.translation-help-links div {
     padding-bottom: 0px;
     display: inline-block;
     min-height: 16px;
+    width: 95%;
 }
 .vertical .sprite:first-line {
     line-height: 12px;
