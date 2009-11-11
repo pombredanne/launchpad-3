@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'make_linked_package_branch',
+    'make_erics_fooix_project',
     ]
 
 
@@ -20,7 +21,28 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.testing import time_counter
+from lp.testing import ANONYMOUS, login, logout, time_counter
+
+
+def make_erics_fooix_project(factory):
+    """Make Eric, the Fooix project, and some branches.
+
+    :return: a dict of objects to put into local scope.
+    """
+    login(ANONYMOUS)
+    result = {}
+    eric = factory.makePerson(
+        name='eric', displayname='Eric the Viking',
+        email='eric@example.com', password='test')
+    fooix = factory.makeProduct(
+        name='fooix', displayname='Fooix', owner=eric)
+    trunk = factory.makeProductBranch(
+        owner=eric, product=fooix, name='trunk')
+    feature = factory.makeProductBranch(
+        owner=eric, product=fooix, name='feature')
+    logout()
+    return {
+        'eric': eric, 'fooix': fooix, 'trunk':trunk, 'feature': feature}
 
 
 def make_linked_package_branch(factory, distribution=None,

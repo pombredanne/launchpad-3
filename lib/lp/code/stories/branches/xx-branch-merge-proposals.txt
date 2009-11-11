@@ -30,6 +30,8 @@ Gnome Terminal tests.
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
     ...     CodeReviewNotificationLevel.FULL)
     >>> logout()
+    >>> from lp.code.tests.helpers import make_erics_fooix_project
+    >>> locals().update(make_erics_fooix_project(factory))
 
 Any logged in user can register a merge proposal.  Registering
 a merge proposal is done from the source branch, and the link
@@ -113,7 +115,6 @@ When a merge proposal is deleted, the user is taken back to the main page
 for the source_branch.
 
     >>> login('foo.bar@canonical.com')
-    >>> eric = factory.makePerson(email="eric@example.com", password="test")
     >>> bmp = factory.makeBranchMergeProposal(registrant=eric)
     >>> bmp_url = canonical_url(bmp)
     >>> branch_url = canonical_url(bmp.source_branch)
@@ -127,6 +128,7 @@ for the source_branch.
     True
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
+
 
 Requesting reviews
 ------------------
@@ -317,9 +319,7 @@ resubmitted, a new proposal is registered with the same source and target
 branches but with the state set to work-in-progress.
 
     >>> login('foo.bar@canonical.com')
-    >>> fooix = factory.makeProduct(name='fooix')
-    >>> target = factory.makeProductBranch(product=fooix, owner=eric)
-    >>> bmp = factory.makeBranchMergeProposal(target_branch=target)
+    >>> bmp = factory.makeBranchMergeProposal(target_branch=trunk)
     >>> bmp_url = canonical_url(bmp)
     >>> logout()
     >>> eric_browser.open(bmp_url)
@@ -540,7 +540,6 @@ The section is shown if there are links.
     Bug #...: Bug for linking (Undecided &ndash; New)
 
 
-
 Target branch edge cases
 ------------------------
 
@@ -628,3 +627,8 @@ If the review diff is empty, then we say it is empty.
     >>> print extract_text(get_review_diff())
     Preview Diff
     Empty
+
+
+Merge proposal details shown on the branch page
+-----------------------------------------------
+
