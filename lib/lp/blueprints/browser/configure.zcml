@@ -110,6 +110,7 @@
     <browser:page
         name="+addspec"
         for="lp.blueprints.interfaces.sprint.ISprint"
+        facet="specifications"
         class="lp.blueprints.browser.specification.NewSpecificationFromSprintView"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
