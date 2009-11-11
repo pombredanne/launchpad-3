@@ -66,6 +66,7 @@ class TestBranchMergeProposalContextMenu(TestCaseWithFactory):
         link = menu.add_comment()
         self.assertTrue(menu.add_comment().enabled)
 
+
 class TestDecoratedCodeReviewVoteReference(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -459,13 +460,6 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
         login_person(self.user)
 
-    def _createView(self):
-        # Construct the view and initialize it.
-        view = BranchMergeProposalView(
-            self.bmp, LaunchpadTestRequest())
-        view.initialize()
-        return view
-
     def makeTeamReview(self):
         owner = self.bmp.source_branch.owner
         review_team = self.factory.makeTeam()
@@ -477,7 +471,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         albert = self.factory.makePerson()
         albert.join(review.reviewer)
         login_person(albert)
-        view = self._createView()
+        view = create_initialized_view(self.bmp, '+index')
         view.claim_action.success({'review_id': review.id})
         self.assertEqual(albert, review.reviewer)
 
@@ -486,13 +480,13 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         review = self.makeTeamReview()
         albert = self.factory.makePerson()
         login_person(albert)
-        view = self._createView()
+        view = create_initialized_view(self.bmp, '+index')
         self.assertRaises(Unauthorized, view.claim_action.success,
                           {'review_id': review.id})
 
     def test_preview_diff_text_with_no_diff(self):
         """review_diff should be None when there is no context.review_diff."""
-        view = self._createView()
+        view = create_initialized_view(self.bmp, '+index')
         self.assertIs(None, view.preview_diff_text)
 
     def test_review_diff_utf8(self):
@@ -502,8 +496,9 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
         transaction.commit()
         self.bmp.review_diff = diff
+        view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(diff_bytes.decode('utf-8'),
-                         self._createView().preview_diff_text)
+                         view.preview_diff_text)
 
     def test_review_diff_all_chars(self):
         """review_diff should work on diffs containing all possible bytes."""
@@ -512,8 +507,9 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
         transaction.commit()
         self.bmp.review_diff = diff
+        view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
-                         self._createView().preview_diff_text)
+                         view.preview_diff_text)
 
     def addReviewDiff(self):
         review_diff_bytes = ''.join(unified_diff('', 'review'))
@@ -532,27 +528,31 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def test_preview_diff_prefers_preview_diff(self):
         """The preview will be used for BMP with both a review and preview."""
         preview_diff = self.addBothDiffs()
-        self.assertEqual(preview_diff, self._createView().preview_diff)
+        view = create_initialized_view(self.bmp, '+index')
+        self.assertEqual(preview_diff, view.preview_diff)
 
     def test_preview_diff_uses_review_diff(self):
         """The review diff will be used if there is no preview."""
         review_diff = self.addReviewDiff()
+        view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(review_diff.diff,
-                         self._createView().preview_diff)
+                         view.preview_diff)
 
     def test_review_diff_text_prefers_preview_diff(self):
         """The preview will be used for BMP with both a review and preview."""
         preview_diff = self.addBothDiffs()
         transaction.commit()
+        view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(
-            preview_diff.text, self._createView().preview_diff_text)
+            preview_diff.text, view.preview_diff_text)
 
     def test_linked_bugs_excludes_mutual_bugs(self):
         """List bugs that are linked to the source only."""
         bug = self.factory.makeBug()
         self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
         self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
-        self.assertEqual([], self._createView().linked_bugs)
+        view = create_initialized_view(self.bmp, '+index')
+        self.assertEqual([], view.linked_bugs)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
