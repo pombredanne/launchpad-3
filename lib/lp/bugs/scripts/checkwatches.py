@@ -207,7 +207,8 @@ class BugWatchUpdater(object):
                 return func(*args, **kwargs)
         return wrapper
 
-    def _bugTrackerUpdaters(self, bug_tracker_names=None, batch_size=None):
+    def _bugTrackerUpdaters(self, bug_tracker_names=None):
+        """Yields functions that can be used to update each bug tracker."""
         ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
         # Save the name, so we can use it in other transactions.
         ubuntu_bugzilla_name = ubuntu_bugzilla.name
@@ -234,7 +235,7 @@ class BugWatchUpdater(object):
                 bug_tracker = getUtility(IBugTrackerSet).getByName(
                     bug_tracker_name)
                 if bug_tracker.active:
-                    def updater():
+                    def updater(batch_size=None):
                         run = self._interactionDecorator(self.updateBugTracker)
                         return run(bug_tracker.id, batch_size)
                     yield updater
@@ -253,9 +254,10 @@ class BugWatchUpdater(object):
         """
         self.log.debug("Using a global batch size of %s" % batch_size)
 
-        for updater in self._bugTrackerUpdaters(bug_tracker_names, batch_size):
+        for updater in self._bugTrackerUpdaters(bug_tracker_names):
             # Run in another thread just to show that it can be done.
-            update_thread = threading.Thread(target=updater)
+            update_thread = threading.Thread(
+                target=updater, args=(batch_size,))
             update_thread.start()
             update_thread.join()
 
