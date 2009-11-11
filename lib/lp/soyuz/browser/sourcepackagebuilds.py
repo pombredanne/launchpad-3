@@ -16,9 +16,8 @@ from canonical.lazr.utils import smartquote
 class SourcePackageBuildsView(BuildRecordsView):
     """A view for (distro series) source package builds."""
 
-    @property
-    def page_title(self):
-        return smartquote("Builds for " + self.context.title)
+    label = 'Builds'
+    page_title = label
 
     @property
     def search_name(self):

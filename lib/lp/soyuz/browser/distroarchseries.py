@@ -83,6 +83,9 @@ class DistroArchSeriesView(BuildRecordsView,
 class DistroArchSeriesBuildsView(BuildRecordsView):
     """View for +builds on a distro arch series."""
 
+    label = 'Builds'
+    page_title = label
+
 
 class DistroArchSeriesAddView(LaunchpadFormView):
 

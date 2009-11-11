@@ -263,7 +263,7 @@
         <browser:page
             name="+builds"
             facet="overview"
-            template="../templates/archive-builds.pt"/>
+            template="../templates/builds.pt"/>
         <browser:page
             name="+builds-list"
             template="../templates/builds-list.pt"/>
@@ -609,17 +609,19 @@
             <browser:page
                 name="+portlet-details"
                 template="../templates/distroarchseries-portlet-details.pt"/>
+        </browser:pages>
+        <browser:pages
+            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
+            permission="zope.Public"
+            class="lp.soyuz.browser.distroarchseries.DistroArchSeriesBuildsView">
             <browser:page
                 name="+builds"
                 facet="overview"
-                template="../templates/distroarchseries-builds.pt"/>
+                template="../templates/builds.pt"/>
+            <browser:page
+                name="+builds-list"
+                template="../templates/builds-list.pt"/>
         </browser:pages>
-        <browser:page
-            permission="zope.Public"
-            for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
-            class="lp.soyuz.browser.distroarchseries.DistroArchSeriesBuildsView"
-            name="+builds-list"
-            template="../templates/builds-list.pt"/>
         <browser:page
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
             name="+macros"
@@ -727,7 +729,7 @@
             <browser:page
                 name="+builds"
                 facet="overview"
-                template="../templates/sourcepackage-builds.pt"/>
+                template="../templates/builds.pt"/>
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.person.IPerson"
@@ -747,7 +749,7 @@
             <browser:page
                 name="+builds"
                 facet="overview"
-                template="../templates/distribution-builds.pt"/>
+                template="../templates/builds.pt"/>
             <browser:page
                 name="+builds-list"
                 template="../templates/builds-list.pt"/>
@@ -759,7 +761,7 @@
             <browser:page
                 name="+builds"
                 facet="overview"
-                template="../templates/distroseries-builds.pt"/>
+                template="../templates/builds.pt"/>
             <browser:page
                 name="+builds-list"
                 template="../templates/builds-list.pt"/>

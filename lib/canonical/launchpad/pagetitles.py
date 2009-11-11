@@ -118,8 +118,6 @@ archive_admin = ContextDisplayName('Administer %s')
 
 archive_activate = 'Activate Personal Package Archive'
 
-archive_builds = ContextDisplayName('Builds for %s')
-
 archive_copy_packages = ContextDisplayName('Copy packages from %s')
 
 archive_delete_packages = ContextDisplayName('Delete packages from %s')
@@ -338,8 +336,6 @@ distributionsourcepackage_publishinghistory = ContextTitle(
     'Publishing history of %s')
 
 distroarchseries_index = ContextTitle('%s in Launchpad')
-
-distroarchseries_builds = ContextTitle('%s builds')
 
 distroarchseries_search = ContextTitle(
     smartquote("Search %s's binary packages"))
@@ -719,8 +715,6 @@ signedcodeofconduct_activate = ContextDisplayName('Activating %s')
 signedcodeofconduct_deactivate = ContextDisplayName('Deactivating %s')
 
 sourcepackage_bugs = ContextDisplayName('Bugs in %s')
-
-sourcepackage_builds = ContextTitle('Builds for %s')
 
 sourcepackage_changelog = 'Source package changelog'
 
