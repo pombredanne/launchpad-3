@@ -140,7 +140,7 @@ class PollingTaskSource:
     def start(self, task_consumer):
         """See `ITaskSource`."""
         self._log_state('start')
-        self._clear_looping_call()
+        self._clear_looping_call('called from start()')
         assert self._looping_call is None, (
             "Looping call must be None before we create a new one: %r"
             % (self._looping_call,))
@@ -149,8 +149,10 @@ class PollingTaskSource:
         self._looping_call.start(self._interval)
         self._log_state('start', 'completed')
 
-    def _clear_looping_call(self):
+    def _clear_looping_call(self, reason):
+        """Stop the looping call, and log about it."""
         if self._looping_call is not None:
+            self._log_state('_clear_looping_call', reason)
             self._looping_call.stop()
             self._looping_call = None
 
@@ -185,7 +187,7 @@ class PollingTaskSource:
     def stop(self):
         """See `ITaskSource`."""
         self._log_state('stop')
-        self._clear_looping_call()
+        self._clear_looping_call('called from stop()')
         def _return_still_stopped():
             self._log_state('_return_still_stopped')
             return self._looping_call is None
