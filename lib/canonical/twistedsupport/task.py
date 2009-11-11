@@ -126,6 +126,9 @@ class PollingTaskSource:
     def start(self, task_consumer):
         """See `ITaskSource`."""
         self.stop()
+        assert self._looping_call is None, (
+            "Looping call must be None before we create a new one: %r"
+            % (self._looping_call,))
         self._looping_call = LoopingCall(self._poll, task_consumer)
         self._looping_call.clock = self._clock
         self._looping_call.start(self._interval)
