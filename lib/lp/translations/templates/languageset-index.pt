@@ -27,13 +27,13 @@
 
         <div class="portlet">
           <h2>Find a language in Launchpad</h2>
-          <form method="post">
+          <form method="get">
             <p>
-              <label for="language_search">
+              <label for="find">
                 Language name/code contains:
               </label>
               <input
-                 name="language_search" size="30"
+                 name="find" size="30"
                  tal:attributes="value view/language_search" />
               <input
                  type="submit"

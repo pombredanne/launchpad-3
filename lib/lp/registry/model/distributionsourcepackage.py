@@ -218,7 +218,7 @@ class DistributionSourcePackage(BugTargetBase,
     def get_distroseries_packages(self, active_only=True):
         """See `IDistributionSourcePackage`."""
         result = []
-        for series in self.distribution.serieses:
+        for series in self.distribution.series:
             if active_only:
                 if not series.active:
                     continue
@@ -284,7 +284,7 @@ class DistributionSourcePackage(BugTargetBase,
 
     @property
     def upstream_product(self):
-        for distroseries in self.distribution.serieses:
+        for distroseries in self.distribution.series:
             source_package = distroseries.getSourcePackage(
                 self.sourcepackagename)
             if source_package.direct_packaging is not None:

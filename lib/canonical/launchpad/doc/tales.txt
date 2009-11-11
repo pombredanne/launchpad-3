@@ -224,8 +224,8 @@ length.
 The string is not ellipsized if it is less than the max length.
 
     >>> print test_tales('foo/fmt:ellipsize/25',
-    ...     foo='firefox-0.9.2.orig.tar.gz')
-    firefox-0.9.2.orig.tar.gz
+    ...     foo='firefox_0.9.2.orig.tar.gz')
+    firefox_0.9.2.orig.tar.gz
 
 To preserve newlines in text when displaying as HTML, use fmt:nl_to_br:
 

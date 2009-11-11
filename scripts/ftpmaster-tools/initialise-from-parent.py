@@ -81,7 +81,7 @@ def main():
     log.debug('Check for no pending builds in parentseries')
     check_builds(distroseries)
 
-    log.debug('Copying distroarchserieses from parent '
+    log.debug('Copying distroarchseries from parent '
               'and setting nominatedarchindep.')
     copy_architectures(distroseries)
 

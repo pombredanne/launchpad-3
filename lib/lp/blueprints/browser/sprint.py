@@ -518,7 +518,9 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  'Country',
                  'Timezone',
                  'Arriving',
-                 'Leaving')]
+                 'Leaving',
+                 'Physically present',
+                 )]
         for attendance in self.context.attendances:
             time_zone = ''
             location = attendance.attendee.location
@@ -542,7 +544,8 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  country,
                  time_zone,
                  attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                 attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
+                 attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                 attendance.is_physical))
         # CSV can't handle unicode, so we force encoding
         # everything as UTF-8
         rows = [[self.encode_value(column)
