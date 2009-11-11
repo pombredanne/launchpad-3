@@ -114,6 +114,7 @@ class PollingTaskSource:
             the interval-based polling. Defaults to using the reactor (i.e.
             actual time).
         """
+        self._logger = logging.getLogger(__name__)
         self._interval = interval
         self._task_producer = task_producer
         if clock is None:
@@ -127,6 +128,9 @@ class PollingTaskSource:
 
     def start(self, task_consumer):
         """See `ITaskSource`."""
+        self._logger.debug(
+            'start(%r); looping_call=%s; polling_lock.locked=%s'
+            % (task_consumer, self._looping_call, self._polling_lock.locked))
         self.stop()
         assert self._looping_call is None, (
             "Looping call must be None before we create a new one: %r"
@@ -134,10 +138,16 @@ class PollingTaskSource:
         self._looping_call = LoopingCall(self._poll, task_consumer)
         self._looping_call.clock = self._clock
         self._looping_call.start(self._interval)
+        self._logger.debug(
+            'start(%r) completed; looping_call=%s; polling_lock.locked=%s'
+            % (task_consumer, self._looping_call, self._polling_lock.locked))
 
     def _poll(self, task_consumer):
         """Poll for tasks, passing them to 'task_consumer'."""
         def got_task(task):
+            self._logger.debug(
+                'got_task(%r); looping_call=%s; polling_lock.locked=%s'
+                % (task, self._looping_call, self._polling_lock.locked))
             if task is not None:
                 # Note that we deliberately throw away the return value. The
                 # task and the consumer need to figure out how to get output
@@ -148,21 +158,39 @@ class PollingTaskSource:
         def task_failed(reason):
             # If task production fails, we inform the consumer of this, but we
             # don't let any deferred it returns delay subsequent polls.
+            self._logger.debug(
+                'task_failed(%r); looping_call=%s; polling_lock.locked=%s'
+                % (reason, self._looping_call, self._polling_lock.locked))
             task_consumer.taskProductionFailed(reason)
         def poll():
             # If stop() has been called before the lock was acquired, don't
             # actually poll for more work.
+            self._logger.debug(
+                '_poll(%r) has acquired lock; looping_call=%s; '
+                'polling_lock.locked=%s'
+                % (task_consumer, self._looping_call,
+                   self._polling_lock.locked))
             if self._looping_call:
                 d = defer.maybeDeferred(self._task_producer)
                 return d.addCallbacks(got_task, task_failed)
+        self._logger.debug(
+            '_poll(%r); looping_call=%s; polling_lock.locked=%s'
+            % (task_consumer, self._looping_call, self._polling_lock.locked))
         return self._polling_lock.run(poll)
 
     def stop(self):
         """See `ITaskSource`."""
+        self._logger.debug(
+            'stop(); looping_call=%s; polling_lock.locked=%s'
+            % (self._looping_call, self._polling_lock.locked))
         if self._looping_call is not None:
             self._looping_call.stop()
             self._looping_call = None
         def _return_still_stopped():
+            self._logger.debug(
+                '_return_still_stopped; looping_call=%s; '
+                'polling_lock.locked=%s'
+                % (self._looping_call, self._polling_lock.locked))
             return self._looping_call is None
         return self._polling_lock.run(_return_still_stopped)
 
