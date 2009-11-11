@@ -40,7 +40,8 @@ class BuildQueue(SQLBase):
     _table = "BuildQueue"
     _defaultOrder = "id"
 
-    build = ForeignKey(dbName='build', foreignKey='Build', notNull=True)
+    job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
+    job_type = IntCol(dbName='job_type', default=1)
     builder = ForeignKey(dbName='builder', foreignKey='Builder', default=None)
     created = UtcDateTimeCol(dbName='created', default=UTC_NOW)
     buildstart = UtcDateTimeCol(dbName='buildstart', default= None)
@@ -52,15 +53,6 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.lastscore = value
         self.manual = True
-
-    @property
-    def buildduration(self):
-        """See `IBuildQueue`."""
-        if self.buildstart:
-            UTC = pytz.timezone('UTC')
-            now = datetime.now(UTC)
-            return now - self.buildstart
-        return None
 
     def score(self):
         """See `IBuildQueue`."""

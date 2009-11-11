@@ -10,9 +10,25 @@ __metaclass__ = type
 __all__ = [
     'IBuildQueue',
     'IBuildQueueSet',
+    'JobType',
     ]
 
 from zope.interface import Interface, Attribute
+
+
+class JobType(DBEnumeratedType):
+    """Soyuz build farm job type.
+
+    An enumeration with the types of jobs that may be run on the Soyuz build
+    farm.
+    """
+
+    PACKAGEBUILDJOB = DBItem(1, """
+        PackageBuildJob
+
+        Build a source package. If all goes well the outcome will be a .deb
+        file.
+        """)
 
 
 class IBuildQueue(Interface):
@@ -37,10 +53,6 @@ class IBuildQueue(Interface):
     logtail = Attribute("The current tail of the log of the build")
     lastscore = Attribute("Last score to be computed for this job")
     manual = Attribute("Whether or not the job was manually scored")
-
-    # properties inherited from related Content classes.
-    buildduration = Attribute(
-        "Duration of the job, calculated on-the-fly based on buildstart.")
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
