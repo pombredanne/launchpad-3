@@ -282,6 +282,7 @@ next to the heading "Merged at revision".
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'landing-targets'))
     Merged into lp://dev/~name12/gnome-terminal/main
+    ...
     >>> sample_browser.getLink('Merged').click()
     >>> print_summary(sample_browser)
     Status: Merged
@@ -303,6 +304,7 @@ next to the heading "Merged at revision".
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'landing-targets'))
     Merged into lp://dev/~name12/gnome-terminal/main at revision 42
+    ...
 
 
 Resubmitting proposals
