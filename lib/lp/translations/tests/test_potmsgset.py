@@ -679,17 +679,37 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
         # Even if POFile.owner has not agreed to the Launchpad
         # translations licensing policy, automated credit
         # messages are still created.
-
         sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
         owner = sr_pofile.owner
         ITranslationsPerson(owner).translations_relicensing_agreement = False
-
         credits_potmsgset = self.factory.makePOTMsgSet(
             self.devel_potemplate, singular=u'translator-credits')
         current = credits_potmsgset.getCurrentTranslationMessage(
             self.devel_potemplate, sr_pofile.language)
-        self.assertNotEqual(None, current)
         self.assertEqual(owner, current.submitter)
+
+    def test_setTranslationCreditsToTranslated_submitter_lasttranslator(self):
+        # Submitter on the automated translation message is set to
+        # POFile.lasttranslator if it's defined.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        last_translator = self.factory.makePerson()
+        sr_pofile.lasttranslator = last_translator
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        current = credits_potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, sr_pofile.language)
+        self.assertEqual(last_translator, current.submitter)
+
+    def test_setTranslationCreditsToTranslated_submitter_owner(self):
+        # Submitter on the automated translation message is set to
+        # POFile.owner if POFile.lasttranslator is not defined.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        self.assertEqual(None, sr_pofile.lasttranslator)
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        current = credits_potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, sr_pofile.language)
+        self.assertEqual(sr_pofile.owner, current.submitter)
 
 
 class TestPOTMsgSetSuggestions(TestCaseWithFactory):
