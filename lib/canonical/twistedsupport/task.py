@@ -13,6 +13,8 @@ __all__ = [
     'PollingTaskSource',
     ]
 
+import logging
+
 from twisted.internet import defer
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
@@ -194,6 +196,7 @@ class ParallelLimitedTaskConsumer:
     implements(ITaskConsumer)
 
     def __init__(self, worker_limit):
+        self._logger = logging.getLogger(__name__)
         self._task_source = None
         self._worker_limit = worker_limit
         self._worker_count = 0
@@ -201,15 +204,26 @@ class ParallelLimitedTaskConsumer:
         self._stopping_lock = None
 
     def _stop(self):
+        def _call_stop(ignored):
+            self._logger.debug(
+                'Got lock, stopping the source; worker_count=%s; '
+                'worker_limit=%s' % (self._worker_count, self._worker_limit))
+            return self._task_source.stop()
         def _release_or_stop(still_stopped):
+            self._logger.debug(
+                'stop() returned %s; worker_count=%s; worker_limit=%s'
+                % (still_stopped, self._worker_count, self._worker_limit))
             if still_stopped and self._worker_count == 0:
+                self._logger.debug('Firing termination deferred')
                 self._terminationDeferred.callback(None)
                 # Note that in this case we don't release the lock: we don't
                 # want to try to fire the _terminationDeferred twice!
             else:
+                self._logger.debug('Releasing lock')
                 self._stopping_lock.release()
-        def _call_stop(ignored):
-            return self._task_source.stop()
+        self._logger.debug(
+            'Stopping, acquiring lock. worker_count=%s; worker_limit=%s'
+            % (self._worker_count, self._worker_limit))
         d = self._stopping_lock.acquire()
         d.addCallback(_call_stop)
         d.addCallback(_release_or_stop)
@@ -224,7 +238,13 @@ class ParallelLimitedTaskConsumer:
         :return: A `Deferred` that fires when the task source is exhausted
             and we are not running any tasks.
         """
+        self._logger.debug(
+            'consume(%r); worker_count=%s; worker_limit=%s' % (
+                task_source, self._worker_count, self._worker_limit))
         if self._task_source is not None:
+            self._logger.debug(
+                'consume(): Already running %r, cannot run %r' % (
+                    self._task_source, task_source))
             raise AlreadyRunningError(self, self._task_source)
         self._task_source = task_source
         self._terminationDeferred = defer.Deferred()
@@ -240,18 +260,25 @@ class ParallelLimitedTaskConsumer:
 
         :raise NotRunningError: if 'consume' has not yet been called.
         """
+        self._logger.debug(
+            'taskStarted(%r); worker_count=%s' % (task, self._worker_count))
         if self._task_source is None:
             raise NotRunningError(self)
         self._worker_count += 1
+        self._logger.debug(
+            'Incremented worker_count=%s; worker_limit=%s'
+            % (self._worker_count, self._worker_limit))
         if self._worker_count >= self._worker_limit:
+            self._logger.debug('Hit worker limit, stopping')
             self._stop()
         else:
+            self._logger.debug('Below worker limit, starting again')
             self._task_source.start(self)
         d = defer.maybeDeferred(task)
         # We don't expect these tasks to have interesting return values or
         # failure modes.
         d.addErrback(log.err)
-        d.addCallback(self._taskEnded)
+        d.addBoth(self._taskEnded)
 
     def noTasksFound(self):
         """See `ITaskConsumer`.
@@ -263,6 +290,9 @@ class ParallelLimitedTaskConsumer:
         find any jobs, if we actually start any jobs then the exit condition
         in _taskEnded will always be reached before this one.
         """
+        self._logger.debug(
+            'No tasks found; worker_count=%s; worker_limit=%s'
+            % (self._worker_count, self._worker_limit))
         if self._worker_count == 0:
             self._stop()
 
@@ -284,6 +314,9 @@ class ParallelLimitedTaskConsumer:
 
         :raise NotRunningError: if 'consume' has not yet been called.
         """
+        self._logger.debug(
+            'taskProductionFailed: %s; worker_count=%s; worker_limit=%s'
+            % (reason, self._worker_count, self._worker_limit))
         if self._task_source is None:
             raise NotRunningError(self)
         self._stop()
@@ -298,11 +331,20 @@ class ParallelLimitedTaskConsumer:
         If there are available workers, we ask the task source to start
         producing jobs.
         """
+        self._logger.debug(
+            '_taskEnded; worker_count=%s; worker_limit=%s'
+            % (self._worker_count, self._worker_limit))
         self._worker_count -= 1
+        self._logger.debug(
+            'Decremented worker_count=%s; worker_limit=%s'
+            % (self._worker_count, self._worker_limit))
         if self._worker_count == 0:
+            self._logger.debug('No workers, stopping.')
             self._stop()
         elif self._worker_count < self._worker_limit:
+            self._logger.debug('Too few workers, asking for more.')
             self._task_source.start(self)
         else:
             # We're over the worker limit, nothing we can do.
+            self._logger.debug('At or over worker_limit. Doing nothing.')
             pass
