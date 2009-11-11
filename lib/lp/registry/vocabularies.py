@@ -1059,9 +1059,9 @@ class FilteredDistroSeriesVocabulary(SQLObjectVocabularyBase):
         launchbag = getUtility(ILaunchBag)
         if launchbag.distribution:
             distribution = launchbag.distribution
-            serieses = self._table.selectBy(
+            series = self._table.selectBy(
                 distributionID=distribution.id, **kw)
-            for series in sorted(serieses, key=attrgetter('sortkey')):
+            for series in sorted(series, key=attrgetter('sortkey')):
                 yield self.toTerm(series)
 
 
@@ -1078,7 +1078,7 @@ class FilteredProductSeriesVocabulary(SQLObjectVocabularyBase):
     def __iter__(self):
         launchbag = getUtility(ILaunchBag)
         if launchbag.product is not None:
-            for series in launchbag.product.serieses:
+            for series in launchbag.product.series:
                 yield self.toTerm(series)
 
 
@@ -1336,10 +1336,10 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
     _clauseTables = ['Distribution']
 
     def __iter__(self):
-        serieses = self._table.select(
+        series = self._table.select(
             DistroSeries.q.distributionID==Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
-        for series in sorted(serieses, key=attrgetter('sortkey')):
+        for series in sorted(series, key=attrgetter('sortkey')):
             yield self.toTerm(series)
 
     def toTerm(self, obj):

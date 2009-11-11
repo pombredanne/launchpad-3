@@ -3,11 +3,11 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="portlet-series"
-  tal:condition="context/serieses">
+  tal:condition="context/series">
   <h2>Major current versions</h2>
   <div class="portletBody portletContent">
     <ul class="distroseries">
-      <tal:per_series repeat="series context/serieses">
+      <tal:per_series repeat="series context/series">
         <li tal:condition="series/active">
           <a tal:attributes="href series/fmt:url">
             <tal:version replace="series/version" />
