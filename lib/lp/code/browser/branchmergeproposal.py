@@ -137,6 +137,7 @@ class BranchMergeCandidateView(LaunchpadView):
             }
         return friendly_texts[self.context.queue_status]
 
+    @property
     def status_title(self):
         """The title for the status text.
 

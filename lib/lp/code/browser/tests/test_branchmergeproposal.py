@@ -7,10 +7,11 @@
 
 __metaclass__ = type
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from difflib import unified_diff
 import unittest
 
+import pytz
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
@@ -690,6 +691,43 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
         view = create_initialized_view(comment, '+comment-body')
         [diff_attachment] = view.display_attachments
         self.assertEqual(u'\u2615', diff_attachment.diff_text)
+
+
+class TestBranchMergeCandidateView(TestCaseWithFactory):
+    """Test the status title for the view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_needs_review_title(self):
+        # No title is set for a proposal needing review.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        view = create_initialized_view(bmp, '+link-summary')
+        self.assertEqual('', view.status_title)
+
+    def test_approved_shows_reviewer(self):
+        # If the proposal is approved, the approver is shown in the title
+        # along with when they approved it.
+        bmp = self.factory.makeBranchMergeProposal()
+        owner = bmp.target_branch.owner
+        login_person(bmp.target_branch.owner)
+        owner.displayname = 'Eric'
+        bmp.approveBranch(owner, 'some-rev', datetime(
+                year=2008, month=9, day=10, tzinfo=pytz.UTC))
+        view = create_initialized_view(bmp, '+link-summary')
+        self.assertEqual('Eric on 2008-09-10', view.status_title)
+
+    def test_rejected_shows_reviewer(self):
+        # If the proposal is rejected, the approver is shown in the title
+        # along with when they approved it.
+        bmp = self.factory.makeBranchMergeProposal()
+        owner = bmp.target_branch.owner
+        login_person(bmp.target_branch.owner)
+        owner.displayname = 'Eric'
+        bmp.rejectBranch(owner, 'some-rev', datetime(
+                year=2008, month=9, day=10, tzinfo=pytz.UTC))
+        view = create_initialized_view(bmp, '+link-summary')
+        self.assertEqual('Eric on 2008-09-10', view.status_title)
 
 
 def test_suite():
