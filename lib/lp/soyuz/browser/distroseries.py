@@ -15,9 +15,6 @@ from lp.soyuz.browser.queue import QueueItemsView
 class DistroSeriesBuildsView(BuildRecordsView):
     """A View to show an `IDistroSeries` object's builds."""
 
-    label = 'Builds'
-    page_title = label
-
     @property
     def show_arch_selector(self):
         """Display the architecture selector.

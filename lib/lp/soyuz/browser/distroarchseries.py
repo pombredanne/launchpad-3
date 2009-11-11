@@ -16,7 +16,6 @@ __all__ = [
 from zope.interface import implements, Interface
 
 from canonical.launchpad import _
-from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from canonical.launchpad.webapp import (
@@ -77,13 +76,6 @@ class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
 class DistroArchSeriesView(DistroArchSeriesPackageSearchView):
     """Default DistroArchSeries view class."""
     implements(IDistroArchSeriesActionMenu)
-
-
-class DistroArchSeriesBuildsView(BuildRecordsView):
-    """View for +builds on a distro arch series."""
-
-    label = 'Builds'
-    page_title = label
 
 
 class DistroArchSeriesAddView(LaunchpadFormView):

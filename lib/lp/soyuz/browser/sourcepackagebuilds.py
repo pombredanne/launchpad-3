@@ -16,9 +16,6 @@ from canonical.lazr.utils import smartquote
 class SourcePackageBuildsView(BuildRecordsView):
     """A view for (distro series) source package builds."""
 
-    label = 'Builds'
-    page_title = label
-
     @property
     def search_name(self):
         """Direct the builds-list template to omit the name search field."""

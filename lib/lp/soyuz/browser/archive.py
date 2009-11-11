@@ -1753,9 +1753,6 @@ class ArchiveBuildsView(ArchiveViewBase, BuildRecordsView):
 
     __used_for__ = IHasBuildRecords
 
-    label = 'Builds'
-    page_title = label
-
     @property
     def default_build_state(self):
         """See `IBuildRecordsView`.

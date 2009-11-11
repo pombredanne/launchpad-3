@@ -613,7 +613,7 @@
         <browser:pages
             for="lp.soyuz.interfaces.distroarchseries.IDistroArchSeries"
             permission="zope.Public"
-            class="lp.soyuz.browser.distroarchseries.DistroArchSeriesBuildsView">
+            class="lp.soyuz.browser.build.BuildRecordsView">
             <browser:page
                 name="+builds"
                 facet="overview"
@@ -744,7 +744,7 @@
         </browser:pages>
         <browser:pages
             for="lp.registry.interfaces.distribution.IDistribution"
-            class="lp.soyuz.browser.distribution.DistributionBuildsView"
+            class="lp.soyuz.browser.build.BuildRecordsView"
             permission="zope.Public">
             <browser:page
                 name="+builds"

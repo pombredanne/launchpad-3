@@ -311,6 +311,9 @@ class BuildRecordsView(LaunchpadView):
     """
     __used_for__ = IHasBuildRecords
 
+    label = 'Builds'
+    page_title = label
+
     def setupBuildList(self):
         """Setup a batched build records list.
 
