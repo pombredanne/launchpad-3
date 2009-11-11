@@ -205,61 +205,64 @@ class BugWatchUpdater(object):
                 bugtracker.name for bugtracker in getUtility(IBugTrackerSet)]
         self.txn.commit()
         for bug_tracker_name in bug_tracker_names:
-            self.txn.begin()
-            bug_tracker = getUtility(IBugTrackerSet).getByName(
-                bug_tracker_name)
-
-            if not bug_tracker.active:
+            if bug_tracker_name == ubuntu_bugzilla_name:
+                # XXX: 2007-09-11 Graham Binns
+                #      We automatically ignore the Ubuntu Bugzilla
+                #      here as all its bugs have been imported into
+                #      Launchpad. Ideally we would have some means
+                #      to identify all bug trackers like this so
+                #      that hard-coding like this can be genericised
+                #      (Bug 138949).
                 self.log.debug(
-                    "Updates are disabled for bug tracker at %s" %
-                    bug_tracker.baseurl)
-                self.txn.abort()
-                continue
-
-            # Save the url for later, since we might need it to report an
-            # error after a transaction has been aborted.
-            bug_tracker_url = bug_tracker.baseurl
-            try:
-                if bug_tracker_name == ubuntu_bugzilla_name:
-                    # XXX: 2007-09-11 Graham Binns
-                    #      We automatically ignore the Ubuntu Bugzilla
-                    #      here as all its bugs have been imported into
-                    #      Launchpad. Ideally we would have some means
-                    #      to identify all bug trackers like this so
-                    #      that hard-coding like this can be genericised
-                    #      (Bug 138949).
+                    "Skipping updating Ubuntu Bugzilla watches.")
+            else:
+                self.txn.begin()
+                bug_tracker = getUtility(IBugTrackerSet).getByName(
+                    bug_tracker_name)
+                if not bug_tracker.active:
                     self.log.debug(
-                        "Skipping updating Ubuntu Bugzilla watches.")
-                else:
-                    self.updateBugTracker(bug_tracker, batch_size)
+                        "Updates are disabled for bug tracker at %s" %
+                        bug_tracker.baseurl)
+                    self.txn.abort()
+                    continue
+                self.updateBugTracker(bug_tracker, batch_size)
 
-                self.txn.commit()
-            except (KeyboardInterrupt, SystemExit):
-                # We should never catch KeyboardInterrupt or SystemExit.
-                raise
-            except Exception, error:
-                # If something unexpected goes wrong, we log it and
-                # continue: a failure shouldn't break the updating of
-                # the other bug trackers.
-                info = sys.exc_info()
-                properties = [
-                    ('bugtracker', bug_tracker_name),
-                    ('baseurl', bug_tracker_url)]
-                if isinstance(error, BugWatchUpdateError):
-                    self.error(
-                        str(error), properties=properties, info=info)
-                elif isinstance(error, socket.timeout):
-                    self.error(
-                        "Connection timed out when updating %s" %
-                        bug_tracker_url,
-                        properties=properties, info=info)
-                else:
-                    self.error(
-                        "An exception was raised when updating %s" %
-                        bug_tracker_url,
-                        properties=properties, info=info)
-                self.txn.abort()
         self._logout()
+
+    def updateBugTracker(self, bug_tracker, batch_size):
+        # Save the name and url for later, since we might need it to report an
+        # error after a transaction has been aborted.
+        bug_tracker_name = bug_tracker.name
+        bug_tracker_url = bug_tracker.baseurl
+
+        try:
+            self._updateBugTracker(bug_tracker, batch_size)
+            self.txn.commit()
+        except (KeyboardInterrupt, SystemExit):
+            # We should never catch KeyboardInterrupt or SystemExit.
+            raise
+        except Exception, error:
+            # If something unexpected goes wrong, we log it and
+            # continue: a failure shouldn't break the updating of
+            # the other bug trackers.
+            info = sys.exc_info()
+            properties = [
+                ('bugtracker', bug_tracker_name),
+                ('baseurl', bug_tracker_url)]
+            if isinstance(error, BugWatchUpdateError):
+                self.error(
+                    str(error), properties=properties, info=info)
+            elif isinstance(error, socket.timeout):
+                self.error(
+                    "Connection timed out when updating %s" %
+                    bug_tracker_url,
+                    properties=properties, info=info)
+            else:
+                self.error(
+                    "An exception was raised when updating %s" %
+                    bug_tracker_url,
+                    properties=properties, info=info)
+            self.txn.abort()
 
     def forceUpdateAll(self, bug_tracker_name, batch_size):
         """Update all the watches for `bug_tracker_name`.
@@ -305,7 +308,7 @@ class BugWatchUpdater(object):
         while has_watches_to_update:
             self.txn.begin()
             try:
-                self.updateBugTracker(bug_tracker, batch_size)
+                self._updateBugTracker(bug_tracker, batch_size)
                 self.txn.commit()
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
@@ -409,7 +412,7 @@ class BugWatchUpdater(object):
 
         return trackers_and_watches
 
-    def updateBugTracker(self, bug_tracker, batch_size=None):
+    def _updateBugTracker(self, bug_tracker, batch_size=None):
         """Updates the given bug trackers's bug watches."""
         # XXX 2007-01-18 gmb:
         #     Once we start running checkwatches more frequently we need

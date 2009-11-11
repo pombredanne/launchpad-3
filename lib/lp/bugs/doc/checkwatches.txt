@@ -201,7 +201,7 @@ of the externalbugtracker module to ensure that it raises this error.
     ...         broken_get_external_bugtracker)
     ...     updater = BugWatchUpdater(transaction)
     ...     updater._login()
-    ...     updater.updateBugTracker(example_bug_tracker)
+    ...     updater._updateBugTracker(example_bug_tracker)
     ... finally:
     ...     externalbugtracker.get_external_bugtracker = (
     ...         real_get_external_bugtracker)
@@ -223,7 +223,7 @@ there is a further limit on the amount of bugs which will be updated for
 a given ExternalBugTracker in each checkwatches run: the batch size.
 
 We need to add some bug watches again since
-BugWatchUpdate.updateBugTracker() automatically rolls back the
+BugWatchUpdate._updateBugTracker() automatically rolls back the
 transaction if something goes wrong.
 
     >>> login('test@canonical.com')
@@ -353,7 +353,7 @@ made.
 
     >>> class NonConnectingUpdater(BugWatchUpdater):
     ...
-    ...     def updateBugTracker(self, bug_tracker, batch_size):
+    ...     def _updateBugTracker(self, bug_tracker, batch_size):
     ...         # Update as many watches as the batch size says.
     ...         watches_to_update = (
     ...             bug_tracker.getBugWatchesNeedingUpdate(23)[:batch_size])
