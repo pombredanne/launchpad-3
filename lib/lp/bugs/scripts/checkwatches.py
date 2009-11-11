@@ -8,6 +8,7 @@ from copy import copy
 from datetime import datetime, timedelta
 import socket
 import sys
+import threading
 import time
 
 import pytz
@@ -171,13 +172,13 @@ class BugWatchUpdater(object):
         else:
             self._syncable_gnome_products = list(SYNCABLE_GNOME_PRODUCTS)
 
+        self._principal = (
+            getUtility(IPlacelessAuthUtility).getPrincipalByLogin(
+                'bugwatch@bugs.launchpad.net', want_password=False))
+
     def _login(self):
         """Set up an interaction as the Bug Watch Updater"""
-        auth_utility = getUtility(IPlacelessAuthUtility)
-        setupInteraction(
-            auth_utility.getPrincipalByLogin(
-                'bugwatch@bugs.launchpad.net', want_password=False),
-            login='bugwatch@bugs.launchpad.net')
+        setupInteraction(self._principal, login='bugwatch@bugs.launchpad.net')
 
     def _logout(self):
         """Tear down the Bug Watch Updater Interaction."""
@@ -240,7 +241,11 @@ class BugWatchUpdater(object):
                 if bug_tracker.active:
                     updateBugTracker = (
                         self._interactionDecorator(self.updateBugTracker))
-                    updateBugTracker(bug_tracker.id, batch_size)
+                    # Run in another thread just to show that it can be done.
+                    update_thread = threading.Thread(
+                        target=updateBugTracker, args=(bug_tracker.id, batch_size))
+                    update_thread.start()
+                    update_thread.join()
                 else:
                     self.log.debug(
                         "Updates are disabled for bug tracker at %s" %
