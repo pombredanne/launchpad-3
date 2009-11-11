@@ -31,9 +31,7 @@ from canonical.launchpad import helpers
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
-from lp.soyuz.browser.queue import QueueItemsView
 from lp.services.worlddata.interfaces.country import ICountry
 from lp.registry.interfaces.distroseries import (
     DistroSeriesStatus, IDistroSeries)
@@ -281,8 +279,7 @@ class DistroSeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView,
-                       MilestoneOverlayMixin):
+class DistroSeriesView(MilestoneOverlayMixin):
 
     def initialize(self):
         self.displayname = '%s %s' % (
@@ -323,13 +320,6 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
         if self.request.form.get('no-redirect') is not None:
             distro_url += '?no-redirect'
         return self.request.response.redirect(distro_url)
-
-    @property
-    def show_arch_selector(self):
-        """Display the architecture selector.
-
-        See `BuildRecordsView` for further details."""
-        return True
 
     milestone_can_release = False
 

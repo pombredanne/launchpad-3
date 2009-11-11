@@ -53,7 +53,6 @@ from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
 from lp.soyuz.browser.archive import traverse_distro_archive
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
@@ -593,8 +592,7 @@ class DistributionPackageSearchView(PackageSearchViewBase):
 
         return self.has_exact_matches
 
-class DistributionView(HasAnnouncementsView, BuildRecordsView, FeedsMixin,
-                       UsesLaunchpadMixin):
+class DistributionView(HasAnnouncementsView, FeedsMixin, UsesLaunchpadMixin):
     """Default Distribution view class."""
 
     def linkedMilestonesForSeries(self, series):

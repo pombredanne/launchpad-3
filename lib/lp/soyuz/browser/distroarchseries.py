@@ -74,8 +74,7 @@ class DistroArchSeriesPackageSearchView(PackageSearchViewBase):
         return self.context.searchBinaryPackages(self.text)
 
 
-class DistroArchSeriesView(BuildRecordsView,
-                           DistroArchSeriesPackageSearchView):
+class DistroArchSeriesView(DistroArchSeriesPackageSearchView):
     """Default DistroArchSeries view class."""
     implements(IDistroArchSeriesActionMenu)
 

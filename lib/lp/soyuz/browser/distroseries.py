@@ -8,17 +8,25 @@ __all__ = [
     'DistroSeriesQueueView',
     ]
 
-from lp.registry.browser.distroseries import DistroSeriesView
+from lp.soyuz.browser.build import BuildRecordsView
+from lp.soyuz.browser.queue import QueueItemsView
 
 
-class DistroSeriesBuildsView(DistroSeriesView):
+class DistroSeriesBuildsView(BuildRecordsView):
     """A View to show an `IDistroSeries` object's builds."""
 
     label = 'Builds'
     page_title = label
 
+    @property
+    def show_arch_selector(self):
+        """Display the architecture selector.
 
-class DistroSeriesQueueView(DistroSeriesView):
+        See `BuildRecordsView` for further details."""
+        return True
+
+
+class DistroSeriesQueueView(QueueItemsView):
     """A View to show an `IDistroSeries` object's uploads."""
 
     label = 'Upload queue'

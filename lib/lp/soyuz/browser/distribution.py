@@ -7,10 +7,10 @@ __all__ = [
     'DistributionBuildsView',
     ]
 
-from lp.registry.browser.distribution import DistributionView
+from lp.soyuz.browser.build import BuildRecordsView
 
 
-class DistributionBuildsView(DistributionView):
+class DistributionBuildsView(BuildRecordsView):
     """A View to show an `IDistribution` object's builds."""
 
     label = 'Builds'
