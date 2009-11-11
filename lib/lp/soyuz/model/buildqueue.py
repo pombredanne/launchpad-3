@@ -54,36 +54,6 @@ class BuildQueue(SQLBase):
         self.manual = True
 
     @property
-    def archseries(self):
-        """See `IBuildQueue`."""
-        return self.build.distroarchseries
-
-    @property
-    def urgency(self):
-        """See `IBuildQueue`."""
-        return self.build.sourcepackagerelease.urgency
-
-    @property
-    def name(self):
-        """See `IBuildQueue`."""
-        return self.build.sourcepackagerelease.name
-
-    @property
-    def version(self):
-        """See `IBuildQueue`."""
-        return self.build.sourcepackagerelease.version
-
-    @property
-    def files(self):
-        """See `IBuildQueue`."""
-        return self.build.sourcepackagerelease.files
-
-    @property
-    def builddependsindep(self):
-        """See `IBuildQueue`."""
-        return self.build.sourcepackagerelease.builddependsindep
-
-    @property
     def buildduration(self):
         """See `IBuildQueue`."""
         if self.buildstart:
@@ -91,11 +61,6 @@ class BuildQueue(SQLBase):
             now = datetime.now(UTC)
             return now - self.buildstart
         return None
-
-    @property
-    def is_virtualized(self):
-        """See `IBuildQueue`."""
-        return self.build.is_virtualized
 
     def score(self):
         """See `IBuildQueue`."""

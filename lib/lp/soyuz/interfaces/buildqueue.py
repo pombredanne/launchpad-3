@@ -39,23 +39,8 @@ class IBuildQueue(Interface):
     manual = Attribute("Whether or not the job was manually scored")
 
     # properties inherited from related Content classes.
-    archseries = Attribute(
-        "DistroArchSeries target of the IBuild releated to this job.")
-    name = Attribute(
-        "Name of the ISourcePackageRelease releated to this job.")
-    version = Attribute(
-        "Version of the ISourcePackageRelease releated to this job.")
-    files = Attribute(
-        "Collection of files related to the ISourcePackageRelease "
-        "releated to this job.")
-    urgency = Attribute(
-        "Urgency of the ISourcePackageRelease releated to this job.")
-    builddependsindep = Attribute(
-        "builddependsindep of the ISourcePackageRelease releated to "
-        "this job.")
     buildduration = Attribute(
         "Duration of the job, calculated on-the-fly based on buildstart.")
-    is_virtualized = Attribute("See IBuild.is_virtualized.")
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
