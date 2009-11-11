@@ -237,12 +237,12 @@ class BuilderView(LaunchpadView):
     def current_build_duration(self):
         """Return the delta representing the duration of the current job."""
         if (self.context.currentjob is None or
-            self.context.currentjob.buildstart is None):
+            self.context.currentjob.job.date_started is None):
             return None
         else:
             UTC = pytz.timezone('UTC')
-            buildstart = self.context.currentjob.buildstart
-            return datetime.datetime.now(UTC) - buildstart
+            job.date_started = self.context.currentjob.job.date_started
+            return datetime.datetime.now(UTC) - job.date_started
 
     @property
     def page_title(self):

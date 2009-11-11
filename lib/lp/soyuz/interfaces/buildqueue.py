@@ -30,10 +30,7 @@ class IBuildQueue(Interface):
     """
 
     id = Attribute("Job identifier")
-    build = Attribute("The IBuild record that originated this job")
     builder = Attribute("The IBuilder instance processing this job")
-    created = Attribute("The datetime that the queue entry was created")
-    buildstart = Attribute("The datetime of the last build attempt")
     logtail = Attribute("The current tail of the log of the build")
     lastscore = Attribute("Last score to be computed for this job")
     manual = Attribute("Whether or not the job was manually scored")

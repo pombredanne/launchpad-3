@@ -18,13 +18,12 @@ from zope.interface import implements
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 from storm.expr import In, Join, LeftJoin
-from storm.store import Store
 
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.interfaces.job import Job, JobStatus
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.soyuz.interfaces.soyuzjob import SoyuzJobType
@@ -48,7 +47,7 @@ class BuildQueue(SQLBase):
     def _get_build(self):
         """Object with data and behaviour specific to the job type at hand."""
         from lp.soyuz.model.build import Build
-        store = Store.of(self)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             Build,
             BuildPackageJob.build == Build.id,
@@ -57,7 +56,7 @@ class BuildQueue(SQLBase):
 
     def _get_specific_job(self):
         """Object with data and behaviour specific to the job type at hand."""
-        store = Store.of(self)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             BuildPackageJob, BuildPackageJob.job == self.job)
         return result_set[0]
@@ -171,7 +170,12 @@ class BuildQueueSet(object):
 
     def getActiveBuildJobs(self):
         """See `IBuildQueueSet`."""
-        return BuildQueue.select('buildstart is not null')
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            BuildQueue,
+            BuildQueue.job == Job.id,
+            Job.date_started is not None)
+        return result_set
 
     def calculateCandidates(self, archseries):
         """See `IBuildQueueSet`."""

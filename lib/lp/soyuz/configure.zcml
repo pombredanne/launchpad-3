@@ -560,7 +560,7 @@
 
         <require
             permission="zope.Public"
-            set_attributes="lastscore builder buildstart logtail"/>
+            set_attributes="lastscore builder logtail"/>
     </class>
 
     <!-- BuildQueueSet -->

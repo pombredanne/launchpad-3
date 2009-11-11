@@ -199,7 +199,7 @@ class BuilderGroup:
                 "Unknown status code (%s) returned from status() probe."
                 % builder_status)
             queueItem.builder = None
-            queueItem.buildstart = None
+            queueItem.job.date_started = None
             self.commit()
             return
 
@@ -510,7 +510,7 @@ class BuilderGroup:
         queueItem.build.buildstate = BuildStatus.NEEDSBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder = None
-        queueItem.buildstart = None
+        queueItem.job.date_started = None
 
     def buildStatus_GIVENBACK(self, queueItem, librarian, buildid,
                               filemap=None, dependencies=None):
@@ -530,7 +530,7 @@ class BuilderGroup:
         # to use this content. For now we just ensure it's stored.
         queueItem.builder.cleanSlave()
         queueItem.builder = None
-        queueItem.buildstart = None
+        queueItem.job.date_started = None
         queueItem.logtail = None
         queueItem.lastscore = 0
 
