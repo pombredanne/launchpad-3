@@ -230,6 +230,13 @@ class BugWatchUpdater(object):
         self._logout()
 
     def updateBugTracker(self, bug_tracker, batch_size):
+        """Updates the given bug trackers's bug watches.
+
+        If there is an error, logs are updated, and the transaction is
+        aborted.
+
+        :return: A boolean indicating if the operation was successful.
+        """
         # Save the name and url for later, since we might need it to report an
         # error after a transaction has been aborted.
         bug_tracker_name = bug_tracker.name
@@ -263,6 +270,9 @@ class BugWatchUpdater(object):
                     bug_tracker_url,
                     properties=properties, info=info)
             self.txn.abort()
+            return False
+        else:
+            return True
 
     def forceUpdateAll(self, bug_tracker_name, batch_size):
         """Update all the watches for `bug_tracker_name`.
@@ -293,50 +303,16 @@ class BugWatchUpdater(object):
         bug_tracker.resetWatches()
         self.txn.commit()
 
-        # Take a copy of the bug tracker URL. If the transaction fails
-        # later we can't refer to the baseurl attribute of the bug
-        # tracker.
-        bug_tracker_url = bug_tracker.baseurl
-
         # Loop over the bug watches in batches as specificed by
         # batch_size until there are none left to update.
         self.log.info(
             "Updating %s watches on bug tracker '%s'" %
             (bug_tracker.watches.count(), bug_tracker_name))
-        iteration = 0
         has_watches_to_update = True
         while has_watches_to_update:
             self.txn.begin()
-            try:
-                self._updateBugTracker(bug_tracker, batch_size)
-                self.txn.commit()
-            except (KeyboardInterrupt, SystemExit):
-                # We should never catch KeyboardInterrupt or SystemExit.
-                raise
-            except Exception, error:
-                # If something unexpected goes wrong, we log it and
-                # continue: a failure shouldn't break the updating of
-                # the other bug trackers.
-                info = sys.exc_info()
-                properties = [
-                    ('bugtracker', bug_tracker_name),
-                    ('baseurl', bug_tracker_url)]
-                if isinstance(error, BugWatchUpdateError):
-                    self.error(
-                        str(error), properties=properties, info=info)
-                elif isinstance(error, socket.timeout):
-                    self.error(
-                        "Connection timed out when updating %s" %
-                        bug_tracker_url,
-                        properties=properties, info=info)
-                else:
-                    self.error(
-                        "An exception was raised when updating %s" %
-                        bug_tracker_url,
-                        properties=properties, info=info)
-                self.txn.abort()
+            if not self.updateBugTracker(bug_tracker, batch_size):
                 break
-
             watches_left = bug_tracker.getBugWatchesNeedingUpdate(23).count()
             self.log.info(
                 "%s watches left to check on bug tracker '%s'" %
