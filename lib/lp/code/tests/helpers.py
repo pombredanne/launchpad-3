@@ -6,10 +6,12 @@
 __metaclass__ = type
 __all__ = [
     'make_linked_package_branch',
+    'make_erics_fooix_project',
     ]
 
 
 from datetime import timedelta
+from difflib import unified_diff
 from itertools import count
 
 from zope.component import getUtility
@@ -21,6 +23,46 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import time_counter
+
+
+def make_erics_fooix_project(factory):
+    """Make Eric, the Fooix project, and some branches.
+
+    :return: a dict of objects to put into local scope.
+    """
+    result = {}
+    eric = factory.makePerson(
+        name='eric', displayname='Eric the Viking',
+        email='eric@example.com', password='test')
+    fooix = factory.makeProduct(
+        name='fooix', displayname='Fooix', owner=eric)
+    trunk = factory.makeProductBranch(
+        owner=eric, product=fooix, name='trunk')
+    removeSecurityProxy(fooix.development_focus).branch = trunk
+    # Development is done by Fred.
+    fred = factory.makePerson(
+        name='fred', displayname='Fred Flintstone',
+        email='fred@example.com', password='test')
+    feature = factory.makeProductBranch(
+        owner=fred, product=fooix, name='feature')
+    proposed = factory.makeProductBranch(
+        owner=fred, product=fooix, name='proposed')
+    bmp = proposed.addLandingTarget(
+        registrant=fred, target_branch=trunk, needs_review=True,
+        review_requests=[(eric, 'code')])
+    # And fake a diff.
+    naked_bmp = removeSecurityProxy(bmp)
+    preview = removeSecurityProxy(bmp.updatePreviewDiff(
+        ''.join(unified_diff('', 'random content')), u'rev-a', u'rev-b'))
+    naked_bmp.source_branch.last_scanned_id = preview.source_revision_id
+    naked_bmp.target_branch.last_scanned_id = preview.target_revision_id
+    preview.diff_lines_count = 47
+    preview.added_lines_count = 7
+    preview.remvoed_lines_count = 13
+    preview.diffstat = {'file1': (3, 8), 'file2': (4, 5)}
+    return {
+        'eric': eric, 'fooix': fooix, 'trunk':trunk, 'feature': feature,
+        'proposed': proposed, 'fred': fred}
 
 
 def make_linked_package_branch(factory, distribution=None,

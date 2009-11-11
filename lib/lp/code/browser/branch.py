@@ -177,6 +177,7 @@ class BranchNavigation(Navigation):
             if proposal.id == id:
                 return proposal
 
+
 class BranchEditMenu(NavigationMenu):
     """Edit menu for IBranch."""
 
