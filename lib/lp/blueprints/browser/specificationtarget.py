@@ -31,9 +31,10 @@ from lp.blueprints.interfaces.sprint import ISprint
 
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.webapp import LaunchpadView, Link
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.menu import enabled_with_permission, Link
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import canonical_url
@@ -80,6 +81,12 @@ class HasSpecificationsMenuMixin(object):
         """Return a link to register a blueprint."""
         text = 'Register a blueprint'
         return Link('+addspec', text, icon='add')
+
+    @enabled_with_permission('launchpad.View')
+    def register_sprint(self):
+        text = 'Register a meeting'
+        summary = 'Register a developer sprint, summit, or gathering'
+        return Link('/sprints/+new', text, summary=summary, icon='add')
 
 
 class HasSpecificationsView(LaunchpadView):
