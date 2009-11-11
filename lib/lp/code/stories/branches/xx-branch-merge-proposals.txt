@@ -620,4 +620,22 @@ If the review diff is empty, then we say it is empty.
 Merge proposal details shown on the branch page
 -----------------------------------------------
 
-A branch that has a merge proposal, but no 
+A branch that has a merge proposal, but no requested reviews shows this on the
+branch page.
+
+    >>> nopriv_browser.open('http://code.launchpad.dev/~fred/fooix/feature')
+    >>> nopriv_browser.getLink('Propose for merging').click()
+    >>> nopriv_browser.getControl('Reviewer').value = ''
+    >>> nopriv_browser.getControl('Propose Merge').click()
+    >>> nopriv_browser.getLink('lp://dev/~fred/fooix/feature').click()
+    >>> print_tag_with_id(nopriv_browser.contents, 'landing-targets')
+    Ready for review for merging into lp://dev/fooix
+      No reviews requested
+
+If there are reviews either pending or completed these are also shown.
+
+    >>> nopriv_browser.open('http://code.launchpad.dev/~fred/fooix/proposed')
+    >>> print_tag_with_id(nopriv_browser.contents, 'landing-targets')
+    Ready for review for merging into lp://dev/fooix
+      Eric the Viking: Pending (code) requested ... ago
+      Diff: 47 lines
