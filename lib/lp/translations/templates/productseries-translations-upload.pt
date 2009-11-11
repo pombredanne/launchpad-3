@@ -10,18 +10,15 @@
 
 <div metal:fill-slot="main">
 
-  <p
-    class="not-translated-in-launchpad"
-    tal:condition="not: context/product/official_rosetta">
+  <div class="top-portlet">
+    <tal:permissions replace="
+        structure
+        context/product/@@+portlet-not-using-launchpad"/>
+  </div>
 
-    <strong>
-      This project is not configured to use Launchpad for translations.
-    </strong>
-    <tal:admin_or_owner condition="context/product/required:launchpad.Edit">
-      You can change this in the
-      <a tal:attributes="href string:${context/product/fmt:url}/+edit">
-        project settings</a>. (<a href="/+help/getting-started-for-your-project.html" target="help">Getting started with translating your project in Launchpad</a>)
-    </tal:admin_or_owner>
+  <p>Before uploading any translations, please read the
+    <a href="https://help.launchpad.net/Translations/ImportPolicy"
+       >translations import policy</a>.
   </p>
   <p>
     Upload either a single file (<code>.pot</code> /
@@ -29,8 +26,17 @@
     files (<code>.tar</code>, <code>.tar.gz</code>, <code>.tgz</code> or
     <code>.tar.bz2</code>).
     The files you upload will be reviewed by an admin before they appear in
-    Launchpad. (<a href="https://help.launchpad.net/Translations/ImportPolicy"
-    >Read the translations import policy</a>)
+    Launchpad.
+  </p>
+  <p>
+    If you want to avoid manual review of your templates and translations,
+    we suggest you set up an
+    <a tal:attributes="
+        href string:${context/fmt:url}/+translations-settings"
+       >automatic</a> import from a bazaar branch instead
+    (<a href="
+       https://help.launchpad.net/Translations/ImportingFromBazaarBranches"
+        >read more</a>).
   </p>
 
   <form action="+translations-upload" method="post"

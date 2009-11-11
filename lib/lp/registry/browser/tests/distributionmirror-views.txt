@@ -389,7 +389,7 @@ The last probed information is present.
 
 The information found is also shown.
 
-    >>> print extract_text(find_tag_by_id(content, 'serieses'))
+    >>> print extract_text(find_tag_by_id(content, 'series'))
     Version                     Flavours
     The Hoary Hedgehog Release  Ubuntu, Edubuntu
     The Warty Warthog Release   Ubuntu, Kubuntu

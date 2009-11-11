@@ -13,7 +13,7 @@ __all__ = [
     'HostedBranchRestrictedOnOwnerVocabulary',
     'BranchRestrictedOnProductVocabulary',
     'BranchVocabulary',
-    'BugNominatableSeriesesVocabulary',
+    'BugNominatableSeriesVocabulary',
     'BugTrackerVocabulary',
     'BugVocabulary',
     'BugWatchVocabulary',
@@ -705,9 +705,8 @@ class ProcessorFamilyVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'name'
 
 
-def BugNominatableSeriesesVocabulary(context=None):
-    """Return a nominatable serieses vocabulary."""
-
+def BugNominatableSeriesVocabulary(context=None):
+    """Return a nominatable series vocabulary."""
     if getUtility(ILaunchBag).distribution:
         return BugNominatableDistroSeriesVocabulary(
             context, getUtility(ILaunchBag).distribution)
@@ -723,9 +722,9 @@ class BugNominatableSeriesVocabularyBase(NamedSQLObjectVocabulary):
     def __iter__(self):
         bug = self.context.bug
 
-        serieses = self._getNominatableObjects()
+        all_series = self._getNominatableObjects()
 
-        for series in sorted(serieses, key=attrgetter("displayname")):
+        for series in sorted(all_series, key=attrgetter("displayname")):
             if bug.canBeNominatedFor(series):
                 yield self.toTerm(series)
 
@@ -760,7 +759,7 @@ class BugNominatableProductSeriesVocabulary(
 
     def _getNominatableObjects(self):
         """See BugNominatableSeriesVocabularyBase."""
-        return shortlist(self.product.serieses)
+        return shortlist(self.product.series)
 
     def _queryNominatableObjectByName(self, name):
         """See BugNominatableSeriesVocabularyBase."""
@@ -778,9 +777,9 @@ class BugNominatableDistroSeriesVocabulary(
         self.distribution = distribution
 
     def _getNominatableObjects(self):
-        """Return all non-obsolete distribution serieses"""
+        """Return all non-obsolete distribution series"""
         return [
-            series for series in shortlist(self.distribution.serieses)
+            series for series in shortlist(self.distribution.series)
             if series.status != DistroSeriesStatus.OBSOLETE]
 
     def _queryNominatableObjectByName(self, name):

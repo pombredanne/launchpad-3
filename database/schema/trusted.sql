@@ -1029,7 +1029,22 @@ BEGIN
     DECLARE
         parent_name text;
         child_name text;
+        parent_distroseries text;
+        child_distroseries text;
     BEGIN
+        -- Make sure that the package sets being associated here belong
+        -- to the same distro series.
+        IF (SELECT parent.distroseries != child.distroseries
+            FROM packageset parent, packageset child
+            WHERE parent.id = NEW.parent AND child.id = NEW.child)
+        THEN
+            SELECT name INTO parent_name FROM packageset WHERE id = NEW.parent;
+            SELECT name INTO child_name FROM packageset WHERE id = NEW.child;
+            SELECT ds.name INTO parent_distroseries FROM packageset ps, distroseries ds WHERE ps.id = NEW.parent AND ps.distroseries = ds.id;
+            SELECT ds.name INTO child_distroseries FROM packageset ps, distroseries ds WHERE ps.id = NEW.child AND ps.distroseries = ds.id;
+            RAISE EXCEPTION 'Package sets % and % belong to different distro series (to % and % respectively) and thus cannot be associated.', child_name, parent_name, child_distroseries, parent_distroseries;
+        END IF;
+
         IF EXISTS(
             SELECT * FROM flatpackagesetinclusion
             WHERE parent = NEW.child AND child = NEW.parent LIMIT 1)
