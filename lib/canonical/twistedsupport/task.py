@@ -216,8 +216,6 @@ class ParallelLimitedTaskConsumer:
     that might return `Deferred`s.
     """
 
-    # XXX: Add logging information for state changes.
-
     implements(ITaskConsumer)
 
     def __init__(self, worker_limit, logger=None):
@@ -309,10 +307,6 @@ class ParallelLimitedTaskConsumer:
 
         Called when the producer found no tasks.  If we are not currently
         running any workers, exit.
-
-        This will only actually happen if the very first production doesn't
-        find any jobs, if we actually start any jobs then the exit condition
-        in _taskEnded will always be reached before this one.
         """
         self._log_state('noTasksFound')
         if self._worker_count == 0:
