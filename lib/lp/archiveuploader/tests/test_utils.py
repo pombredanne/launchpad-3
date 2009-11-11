@@ -24,17 +24,17 @@ class TestUtilities(unittest.TestCase):
         from lp.archiveuploader.utils import determine_source_file_type
 
         self.assertEquals(
-            determine_source_file_type('foo_1.0-1.dsc'),
-            SourcePackageFileType.DSC)
+            SourcePackageFileType.DSC,
+            determine_source_file_type('foo_1.0-1.dsc'))
         self.assertEquals(
-            determine_source_file_type('foo_1.0-1.diff.gz'),
-            SourcePackageFileType.DIFF)
+            SourcePackageFileType.DIFF,
+            determine_source_file_type('foo_1.0-1.diff.gz'))
         self.assertEquals(
-            determine_source_file_type('foo_1.0.orig.tar.gz'),
-            SourcePackageFileType.ORIG_TARBALL)
+            SourcePackageFileType.ORIG_TARBALL,
+            determine_source_file_type('foo_1.0.orig.tar.gz'))
         self.assertEquals(
-            determine_source_file_type('foo_1.0.tar.gz'),
-            SourcePackageFileType.NATIVE_TARBALL)
+            SourcePackageFileType.NATIVE_TARBALL,
+            determine_source_file_type('foo_1.0.tar.gz'))
 
     def testPrefixMultilineString(self):
         """lp.archiveuploader.utils.prefix_multi_line_string should work"""
