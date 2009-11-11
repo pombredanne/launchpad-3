@@ -159,19 +159,19 @@
             <ul id="related-series">
               <li>
                 <a class="sprite info"
-                  tal:attributes="href context/product/fmt:url/+series">All
+                  tal:attributes="href context/product/menu:overview/series/fmt:url">View
                   series for the
                   <tal:project replace="context/product/displayname" /> project</a>
               </li>
               <li>
                 <a class="sprite info"
-                  tal:attributes="href context/product/fmt:url/+milestones">All
+                  tal:attributes="href context/product/menu:overview/milestones/fmt:url">View
                   milestones for the
                   <tal:project replace="context/product/displayname" /> project</a>
               </li>
               <li>
                 <a class="sprite info"
-                  tal:attributes="href context/product/fmt:url/+download">All
+                  tal:attributes="href context/product/menu:overview/downloads/fmt:url">View
                   downloads for the
                   <tal:project replace="context/product/displayname" /> project</a>
               </li>

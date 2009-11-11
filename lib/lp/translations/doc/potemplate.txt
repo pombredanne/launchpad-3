@@ -380,20 +380,24 @@ Templates can be exported to its native format.
     msgid "evolution minicard"
     msgstr ""
     <BLANKLINE>
+    #. addressbook:ldap-init primary
     #: addressbook/addressbook-errors.xml.h:2
     msgid "This addressbook could not be opened."
     msgstr ""
     <BLANKLINE>
+    #. addressbook:ldap-init secondary
     #: addressbook/addressbook-errors.xml.h:4
     msgid ""
     "This addressbook server might unreachable or the server name may be "
     "misspelled or your network connection could be down."
     msgstr ""
     <BLANKLINE>
+    #. addressbook:ldap-auth primary
     #: addressbook/addressbook-errors.xml.h:6
     msgid "Failed to authenticate with LDAP server."
     msgstr ""
     <BLANKLINE>
+    #. addressbook:ldap-auth secondary
     #: addressbook/addressbook-errors.xml.h:8
     msgid ""
     "Check to make sure your password is spelled correctly and that you are using "
@@ -440,15 +444,19 @@ Templates can be exported to its native format.
     msgstr[0] ""
     msgstr[1] ""
     <BLANKLINE>
+    # start po-group: common
+    #. xgroup(common)
     #: encfs/FileUtils.cpp:1044
     msgid "EncFS Password: "
     msgstr ""
     <BLANKLINE>
+    #. xgroup(usage)
     #: encfs/main.cpp:340
     msgid ""
     "When specifying daemon mode, you must use absolute paths (beginning with '/')"
     msgstr ""
     <BLANKLINE>
+    #. xgroup(setup)
     #: encfs/FileUtils.cpp:535
     #, c-format
     msgid ""

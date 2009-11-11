@@ -421,7 +421,7 @@ class Bugzilla:
         srcpkgname, binpkgname = self._getPackageNames(bug)
         # find a product series
         series = None
-        for series in self.ubuntu.serieses:
+        for series in self.ubuntu.series:
             srcpkg = series.getSourcePackage(srcpkgname)
             if srcpkg:
                 series = srcpkg.productseries
