@@ -22,9 +22,27 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements, Interface
 
+from lazr.delegates import delegates
+
 from canonical.cachedproperty import cachedproperty
+from canonical.lazr.utils import smartquote
 from canonical.launchpad.interfaces import IBugSet
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionTargetTraversalMixin)
+from canonical.launchpad.webapp import (
+    LaunchpadEditFormView, LaunchpadView, Navigation, StandardLaunchpadFacets,
+    action, canonical_url, redirection)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.menu import (
+    ApplicationMenu, enabled_with_permission, Link, NavigationMenu)
+from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+
+from lp.answers.browser.questiontarget import (
+        QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from lp.answers.interfaces.questionenums import QuestionStatus
+from lp.bugs.browser.bugtask import BugTargetTraversalMixin
+from lp.soyuz.browser.sourcepackagerelease import (
+    extract_bug_numbers, extract_email_addresses, linkify_changelog)
 from lp.soyuz.interfaces.archive import IArchiveSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
@@ -32,23 +50,6 @@ from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.registry.browser.packaging import PackagingDeleteView
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.product import IDistributionSourcePackage
-from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.answers.browser.questiontarget import (
-        QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.browser.structuralsubscription import (
-    StructuralSubscriptionTargetTraversalMixin)
-from canonical.launchpad.webapp import (
-    ApplicationMenu, LaunchpadEditFormView, LaunchpadView,
-    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
-    redirection)
-from canonical.launchpad.webapp.menu import (
-    enabled_with_permission, NavigationMenu)
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-
-from lazr.delegates import delegates
-from lp.soyuz.browser.sourcepackagerelease import (
-    extract_bug_numbers, extract_email_addresses, linkify_changelog)
-from canonical.lazr.utils import smartquote
 
 
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
@@ -377,8 +378,9 @@ class DistributionSourcePackageView(DistributionSourcePackageBaseView,
         series = set()
         for package in self.active_distroseries_packages:
             series.add(package.distroseries)
-        result = sorted(
-            series, key=operator.attrgetter('version'), reverse=True)
+        result = sorted_dotted_numbers(
+            series, key=operator.attrgetter('version'))
+        result.reverse()
         return result
 
     def published_by_version(self, sourcepackage):
