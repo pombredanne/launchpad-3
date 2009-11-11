@@ -55,6 +55,7 @@ from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.builder import Builder
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.files import BinaryPackageFile
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
@@ -88,8 +89,6 @@ class Build(SQLBase):
     archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
     estimated_build_duration = IntervalCol(default=None)
 
-    buildqueue_record = Reference("<primary key>", BuildQueue.buildID,
-                                  on_remote=True)
     date_first_dispatched = UtcDateTimeCol(dbName='date_first_dispatched')
 
     upload_log = ForeignKey(
@@ -103,6 +102,19 @@ class Build(SQLBase):
 
         proxied_file = ProxiedLibraryFileAlias(library_file, self)
         return proxied_file.http_url
+
+    @property
+    def buildqueue_record(self):
+        """See `IBuild`."""
+        store = Store.of(self)
+        results = store.find(
+            BuildQueue,
+            BuildPackageJob.job == BuildQueue.job,
+            BuildPackageJob.build == self.id)
+        if results.count() == 1:
+            return results[0]
+        else:
+            return None
 
     @property
     def upload_log_url(self):
@@ -351,8 +363,10 @@ class Build(SQLBase):
                 Archive
                 JOIN Build ON
                     Build.archive = Archive.id
+                JOIN BuildPackageJob ON
+                    Build.id = BuildPackageJob.build
                 JOIN BuildQueue ON
-                    Build.id = BuildQueue.build
+                    BuildPackageJob.job = BuildQueue.job
             WHERE
                 Build.buildstate = 0 AND
                 Build.processor = %s AND
@@ -412,16 +426,20 @@ class Build(SQLBase):
             SELECT
                 CAST (EXTRACT(EPOCH FROM
                         (Build.estimated_build_duration -
-                        (NOW() - BuildQueue.buildstart))) AS INTEGER)
+                        (NOW() - Job.date_started))) AS INTEGER)
                     AS remainder
             FROM
                 Archive
                 JOIN Build ON
                     Build.archive = Archive.id
+                JOIN BuildPackageJob ON
+                    Build.id = BuildPackageJob.build
                 JOIN BuildQueue ON
-                    Build.id = BuildQueue.build
+                    BuildQueue.job = BuildPackageJob.job
                 JOIN Builder ON
                     Builder.id = BuildQueue.builder
+                JOIN Job ON
+                    Job.id = BuildPackageJob.job
             WHERE
                 Archive.require_virtualized = %s AND
                 Archive.enabled = TRUE AND
@@ -966,7 +984,8 @@ class BuildSet:
         if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore", "Build.id"]
             clauseTables.append('BuildQueue')
-            condition_clauses.append('BuildQueue.build = Build.id')
+            condition_clauses.append('BuildPackageJob.build = Build.id')
+            condition_clauses.append('BuildPackageJob.job = BuildQueue.job')
         elif status == BuildStatus.SUPERSEDED or status is None:
             orderBy = ["-Build.datecreated"]
         else:

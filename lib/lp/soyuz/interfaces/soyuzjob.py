@@ -13,6 +13,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
+from lazr.enum import DBEnumeratedType, DBItem
 
 
 class SoyuzJobType(DBEnumeratedType):
@@ -29,14 +30,20 @@ class SoyuzJobType(DBEnumeratedType):
         """)
 
     BRANCHBUILD = DBItem(2, """
+        BranchBuildJob
+
         Build a package from a bazaar branch.
         """)
 
     RECIPEBRANCHBUILD = DBItem(3, """
+        RecipeBranchBuildJob
+
         Build a package from a bazaar branch and a recipe.
         """)
 
     TRANSLATION = DBItem(4, """
+        TranslationJob
+
         Perform a translation job.
         """)
 

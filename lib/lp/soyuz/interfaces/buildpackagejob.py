@@ -25,11 +25,11 @@ class IBuildPackageJob(ISoyuzJob):
     """A read-only interface for build package jobs."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
-    job = exported(Reference(
+    job = Reference(
         IJob, title=_("General build job data"), required=True, readonly=True,
-        description=_("General data about this build job.")))
+        description=_("General data about this build job."))
 
-    build = exported(Reference(
+    build = Reference(
         IBuild, title=_("Associated build record"),
         required=True,readonly=True,
-        description=_("The build record associated with this job.")))
+        description=_("The build record associated with this job."))
