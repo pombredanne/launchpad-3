@@ -12,7 +12,6 @@ __all__ = [
 
 from datetime import datetime
 import logging
-import pytz
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -51,23 +50,20 @@ class BuildQueue(SQLBase):
     manual = BoolCol(dbName='manual', default=False)
 
     def _get_build(self):
-        """Get the associated `IBuild` instance if this is `PackageBuildJob`.
-
-        :raises AssertionError: if this is not a `PackageBuildJob` or if we
-            do not find *exactly* one `IBuild` instance.
-        """
-        assert self.job_id == SoyuzJobType.PACKAGEBUILDJOB (
-            "This job does not build source packages, no build record "
-            "available.")
+        """Get associated `IBuild` instance if this is `PackageBuildJob`."""
         store = Store.of(self)
         origin = [
             BuildQueue,
             Join(PackageBuildJob, PackageBuildJob.job = BuildQueue.job)]
         result_set = store.using(*origin).find(
             Build, Build.id == PackageBuildJob.build)
-        assert result_set.count() == 1, (
-            "Wrong number of `IBuild` instances (%s) associated with this job"
-            % result_set.count())
+        return result_set[0];
+
+    def _get_specif_job(self):
+        """Object with data and behaviour specific to the job type at hand."""
+        store = Store.of(self)
+        result_set = store.find(
+            BuildPackageJob, BuildPackageJob.job == self.job)
         return result_set[0];
 
     def manualScore(self, value):
@@ -85,131 +81,17 @@ class BuildQueue(SQLBase):
                 "%s (%d) MANUALLY RESCORED" % (self.name, self.lastscore))
             return
 
-        # XXX Al-maisan, 2008-05-14 (bug #230330):
-        # We keep touching the code here whenever a modification to the
-        # scoring parameters/weights is needed. Maybe the latter can be
-        # externalized?
-
-        score_pocketname = {
-            PackagePublishingPocket.BACKPORTS: 0,
-            PackagePublishingPocket.RELEASE: 1500,
-            PackagePublishingPocket.PROPOSED: 3000,
-            PackagePublishingPocket.UPDATES: 3000,
-            PackagePublishingPocket.SECURITY: 4500,
-            }
-
-        score_componentname = {
-            'multiverse': 0,
-            'universe': 250,
-            'restricted': 750,
-            'main': 1000,
-            'partner' : 1250,
-            }
-
-        score_urgency = {
-            SourcePackageUrgency.LOW: 5,
-            SourcePackageUrgency.MEDIUM: 10,
-            SourcePackageUrgency.HIGH: 15,
-            SourcePackageUrgency.EMERGENCY: 20,
-            }
-
-        # Define a table we'll use to calculate the score based on the time
-        # in the build queue.  The table is a sorted list of (upper time
-        # limit in seconds, score) tuples.
-        queue_time_scores = [
-            (14400, 100),
-            (7200, 50),
-            (3600, 20),
-            (1800, 15),
-            (900, 10),
-            (300, 5),
-        ]
-
-        private_archive_increment = 10000
-
-        # For build jobs in rebuild archives a score value of -1
-        # was chosen because their priority is lower than build retries
-        # or language-packs. They should be built only when there is
-        # nothing else to build.
-        rebuild_archive_score = -10
-
-        build = self._get_build()
-        score = 0
-        msg = "%s (%d) -> " % (build.title, self.lastscore)
-
-        # Please note: the score for language packs is to be zero because
-        # they unduly delay the building of packages in the main component
-        # otherwise.
-        if build.sourcepackagerelease.section.name == 'translations':
-            msg += "LPack => score zero"
-        elif build.archive.purpose == ArchivePurpose.COPY:
-            score = rebuild_archive_score
-            msg += "Rebuild archive => -10"
-        else:
-            # Calculates the urgency-related part of the score.
-            urgency = score_urgency[self.urgency]
-            score += urgency
-            msg += "U+%d " % urgency
-
-            # Calculates the pocket-related part of the score.
-            score_pocket = score_pocketname[build.pocket]
-            score += score_pocket
-            msg += "P+%d " % score_pocket
-
-            # Calculates the component-related part of the score.
-            score_component = score_componentname[
-                build.current_component.name]
-            score += score_component
-            msg += "C+%d " % score_component
-
-            # Calculates the build queue time component of the score.
-            right_now = datetime.now(pytz.timezone('UTC'))
-            eta = right_now - self.job.date_created
-            for limit, dep_score in queue_time_scores:
-                if eta.seconds > limit:
-                    score += dep_score
-                    msg += "T+%d " % dep_score
-                    break
-            else:
-                msg += "T+0 "
-
-            # Private builds get uber score.
-            if build.archive.private:
-                score += private_archive_increment
-
-            # Lastly, apply the archive score delta.  This is to boost
-            # or retard build scores for any build in a particular
-            # archive.
-            score += build.archive.relative_build_score
-
-        # Store current score value.
-        self.lastscore = score
-
-        logger.debug("%s= %d" % (msg, self.lastscore))
+        # Allow the `ISoyuzJob` instance with the data/logic specific to the
+        # job at hand to calculate the score as appropriate.
+        the_job = self._get_specif_job()
+        self.lastscore = the_job.score()
 
     def getLogFileName(self):
         """See `IBuildQueue`."""
-        build = self._get_build()
-        sourcename = build.sourcepackagerelease.name
-        version = build.sourcepackagerelease.version
-        # we rely on previous storage of current buildstate
-        # in the state handling methods.
-        state = build.buildstate.name
-
-        dar = build.distroarchseries
-        distroname = dar.distroseries.distribution.name
-        distroseriesname = dar.distroseries.name
-        archname = dar.architecturetag
-
-        # logfilename format:
-        # buildlog_<DISTRIBUTION>_<DISTROSeries>_<ARCHITECTURE>_\
-        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
-        # as:
-        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
-        # it fix request from bug # 30617
-        return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
-            distroname, distroseriesname, archname, sourcename, version, state
-            ))
+        # Allow the `ISoyuzJob` instance with the data/logic specific to the
+        # job at hand to calculate the log file name as appropriate.
+        the_job = self._get_specif_job()
+        the_job.getLogFileName()
 
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
