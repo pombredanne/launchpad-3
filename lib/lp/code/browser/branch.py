@@ -207,9 +207,6 @@ class BranchEditMenu(NavigationMenu):
         return Link(
             '+whiteboard', text, icon='edit', enabled=enabled)
 
-    # XXX: Rewrite the page test to be smarter about who is actually logged
-    # in, handling cases of branch owner and vcs-imports member separately.
-
     def edit_import(self):
         text = 'Edit import source or review import'
         enabled = (

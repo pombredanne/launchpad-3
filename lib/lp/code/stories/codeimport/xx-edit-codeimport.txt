@@ -70,9 +70,6 @@ and a 404 if the branch doesn't have an import.
 
 == Editing details ==
 
-There are a number of buttons shown on the editing page for
-import operators.
-
     >>> import_browser.open(svn_import_location)
     >>> import_browser.getLink('Edit import source or review import')
     Traceback (most recent call last):
