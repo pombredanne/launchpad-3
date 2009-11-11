@@ -10,7 +10,6 @@ __all__ = [
     'BuildQueueSet'
     ]
 
-from datetime import datetime
 import logging
 
 from zope.component import getUtility
@@ -18,21 +17,18 @@ from zope.interface import implements
 
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
-from storm.expr import In, LeftJoin
+from storm.expr import In, Join, LeftJoin
 from storm.store import Store
 
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.services.job.interfaces.job import JobStatus
-from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.soyuz.interfaces.soyuzjob import SoyuzJobType
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
@@ -50,21 +46,21 @@ class BuildQueue(SQLBase):
     manual = BoolCol(dbName='manual', default=False)
 
     def _get_build(self):
-        """Get associated `IBuild` instance if this is `PackageBuildJob`."""
+        """Object with data and behaviour specific to the job type at hand."""
+        from lp.soyuz.model.build import Build
         store = Store.of(self)
-        origin = [
-            BuildQueue,
-            Join(PackageBuildJob, PackageBuildJob.job = BuildQueue.job)]
-        result_set = store.using(*origin).find(
-            Build, Build.id == PackageBuildJob.build)
-        return result_set[0];
+        result_set = store.find(
+            Build,
+            BuildPackageJob.build == Build.id,
+            BuildPackageJob.job == self.job)
+        return result_set[0]
 
-    def _get_specif_job(self):
+    def _get_specific_job(self):
         """Object with data and behaviour specific to the job type at hand."""
         store = Store.of(self)
         result_set = store.find(
             BuildPackageJob, BuildPackageJob.job == self.job)
-        return result_set[0];
+        return result_set[0]
 
     def manualScore(self, value):
         """See `IBuildQueue`."""
@@ -83,15 +79,15 @@ class BuildQueue(SQLBase):
 
         # Allow the `ISoyuzJob` instance with the data/logic specific to the
         # job at hand to calculate the score as appropriate.
-        the_job = self._get_specif_job()
+        the_job = self._get_specific_job()
         self.lastscore = the_job.score()
 
     def getLogFileName(self):
         """See `IBuildQueue`."""
         # Allow the `ISoyuzJob` instance with the data/logic specific to the
         # job at hand to calculate the log file name as appropriate.
-        the_job = self._get_specif_job()
-        the_job.getLogFileName()
+        the_job = self._get_specific_job()
+        return the_job.getLogFileName()
 
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
@@ -188,8 +184,8 @@ class BuildQueueSet(object):
            Build.distroarchseries IN %s AND
            Build.buildstate = %s AND
            BuildQueue.job_type = %s AND
-           BuildQueue.job = PackageBuildJob.job AND
-           PackageBuildJob.build = build.id AND
+           BuildQueue.job = BuildPackageJob.job AND
+           BuildPackageJob.build = build.id AND
            BuildQueue.builder IS NULL
         """ % sqlvalues(
             arch_ids, BuildStatus.NEEDSBUILD, SoyuzJobType.PACKAGEBUILDJOB)
@@ -207,14 +203,14 @@ class BuildQueueSet(object):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
         origin = (
-            PackageBuildJob,
-            Join(BuildQueue, BuildQueue.job == PackageBuildJob.job),
+            BuildPackageJob,
+            Join(BuildQueue, BuildQueue.job == BuildPackageJob.job),
             LeftJoin(
                 Builder,
                 BuildQueue.builderID == Builder.id),
             )
         result_set = store.using(*origin).find(
             (BuildQueue, Builder),
-            In(PackageBuildJob.buildID, build_ids))
+            In(BuildPackageJob.buildID, build_ids))
 
         return result_set

@@ -5,12 +5,16 @@ __metaclass__ = type
 __all__ = ['BuildPackageJob']
 
 
+from datetime import datetime
 import pytz
 
 from storm.locals import Int, Reference, Storm
 
 from zope.interface import implements
 
+from canonical.launchpad.interfaces import SourcePackageUrgency
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 
 
@@ -111,7 +115,7 @@ class BuildPackageJob(Storm):
             # archive.
             score += self.build.archive.relative_build_score
 
-       return score
+        return score
 
     def getLogFileName(self):
         """See `ISoyuzJob`."""
