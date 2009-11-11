@@ -29,9 +29,9 @@ Gnome Terminal tests.
     >>> _unused = branch.subscribe(subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
     ...     CodeReviewNotificationLevel.FULL)
-    >>> logout()
     >>> from lp.code.tests.helpers import make_erics_fooix_project
     >>> locals().update(make_erics_fooix_project(factory))
+    >>> logout()
 
 Any logged in user can register a merge proposal.  Registering
 a merge proposal is done from the source branch, and the link
@@ -70,7 +70,8 @@ There is a cancel link shown with the buttons.
 
 Registering the merge proposal takes the user to the new merge proposal.
 
-    >>> print nopriv_browser.url
+    >>> klingon_proposal = nopriv_browser.url
+    >>> print klingon_proposal
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/...
 
 The summary reflects the selected target and prerequisite.
@@ -98,9 +99,6 @@ commit message can be set.
     >>> nopriv_browser.getControl(name='field.commit_message').value = (
     ...     'Add more <b>mojo</b>')
     >>> nopriv_browser.getControl('Update').click()
-
-    >>> print nopriv_browser.url
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
 
     >>> print_tag_with_id(nopriv_browser.contents, 'edit-description')
     Commit Message
@@ -135,9 +133,7 @@ Requesting reviews
 
 You can request a review of a merge proposal.
 
-    >>> sample_browser.open(
-    ...    'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1'
-    ...    )
+    >>> sample_browser.open(klingon_proposal)
     >>> sample_browser.getLink('Request a review').click()
     >>> sample_browser.getControl('Reviewer').value = 'mark'
     >>> sample_browser.getControl('Review type').value = 'first'
@@ -171,7 +167,7 @@ Only the last request is listed, showing the last review type.
     Reviewer          Review Type    Date Requested    Status
     Sample Person                                      Pending [Review]
     Mark Shuttleworth second         ... ago           Pending
-    Review via email: mp+1@code.launchpad.dev
+    Review via email: mp+...@code.launchpad.dev
                                                  Request another review
 
 
@@ -180,16 +176,14 @@ Reviewing
 
 People not logged in cannot perform reviews.
 
-    >>> anon_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> anon_browser.open(klingon_proposal)
     >>> link = anon_browser.getLink('[Review]')
     Traceback (most recent call last):
     LinkNotFoundError
 
 People who are logged in can perform reviews.
 
-    >>> nopriv_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> nopriv_browser.open(klingon_proposal)
     >>> nopriv_browser.getLink('Add a review or comment').click()
     >>> nopriv_browser.getControl(name='field.comment').value = "Don't like it"
     >>> nopriv_browser.getControl(name='field.vote').getControl(
@@ -203,8 +197,7 @@ People who are logged in can perform reviews.
 
 People can claim reviews for teams of which they are a member.
 
-    >>> sample_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> sample_browser.open(klingon_proposal)
     >>> sample_browser.getLink('Request another review').click()
     >>> sample_browser.getControl('Reviewer').value = 'hwdb-team'
     >>> sample_browser.getControl('Review type').value = 'claimable'
@@ -215,8 +208,7 @@ People can claim reviews for teams of which they are a member.
     Reviewer                         Review Type  Date Requested Status...
     HWDB Team                        claimable    ... ago        Pending ...
     >>> foobar_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
-    >>> foobar_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> foobar_browser.open(klingon_proposal)
     >>> foobar_browser.getControl('Claim review').click()
     >>> pending = find_tag_by_id(
     ...     foobar_browser.contents, 'code-review-votes')
@@ -232,8 +224,7 @@ The claimant can reassign the review to someone else.
     >>> foobar_browser.getLink('Reassign').click()
     >>> foobar_browser.getControl('Reviewer').value = 'hwdb-team'
     >>> foobar_browser.getControl('Reassign').click()
-    >>> foobar_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> foobar_browser.open(klingon_proposal)
     >>> pending = find_tag_by_id(
     ...     foobar_browser.contents, 'code-review-votes')
 
@@ -250,8 +241,7 @@ Marking as merged
 When a branch has been merged into the target branch, the proposal should
 be marked as merged.
 
-    >>> nopriv_browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1')
+    >>> nopriv_browser.open(klingon_proposal)
 
 The edit icon at the end of the status allows the user to edit the status.
 
@@ -266,8 +256,6 @@ find one, then the current time is used as the date merged.
     >>> nopriv_browser.getControl(name='field.queue_status').displayValue = (
     ...     ['Merged'])
     >>> nopriv_browser.getControl('Change Status').click()
-    >>> print nopriv_browser.url
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
 
 The proposal is now shown as have being merged.
 
@@ -632,3 +620,4 @@ If the review diff is empty, then we say it is empty.
 Merge proposal details shown on the branch page
 -----------------------------------------------
 
+A branch that has a merge proposal, but no 
