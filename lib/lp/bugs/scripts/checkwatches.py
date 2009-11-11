@@ -207,12 +207,7 @@ class BugWatchUpdater(object):
                 return func(*args, **kwargs)
         return wrapper
 
-    def updateBugTrackers(self, bug_tracker_names=None, batch_size=None):
-        """Update all the bug trackers that have watches pending.
-
-        If bug tracker names are specified in bug_tracker_names only
-        those bug trackers will be checked.
-        """
+    def _bugTrackerUpdaters(self, bug_tracker_names=None, batch_size=None):
         ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
         # Save the name, so we can use it in other transactions.
         ubuntu_bugzilla_name = ubuntu_bugzilla.name
@@ -220,8 +215,6 @@ class BugWatchUpdater(object):
         # Set up an interaction as the Bug Watch Updater since the
         # notification code expects a logged in user.
         self._login()
-
-        self.log.debug("Using a global batch size of %s" % batch_size)
 
         if bug_tracker_names is None:
             bug_tracker_names = [
@@ -241,19 +234,30 @@ class BugWatchUpdater(object):
                 bug_tracker = getUtility(IBugTrackerSet).getByName(
                     bug_tracker_name)
                 if bug_tracker.active:
-                    updateBugTracker = (
-                        self._interactionDecorator(self.updateBugTracker))
-                    # Run in another thread just to show that it can be done.
-                    update_thread = threading.Thread(
-                        target=updateBugTracker, args=(bug_tracker.id, batch_size))
-                    update_thread.start()
-                    update_thread.join()
+                    def updater():
+                        run = self._interactionDecorator(self.updateBugTracker)
+                        return run(bug_tracker.id, batch_size)
+                    yield updater
                 else:
                     self.log.debug(
                         "Updates are disabled for bug tracker at %s" %
                         bug_tracker.baseurl)
 
         self._logout()
+
+    def updateBugTrackers(self, bug_tracker_names=None, batch_size=None):
+        """Update all the bug trackers that have watches pending.
+
+        If bug tracker names are specified in bug_tracker_names only
+        those bug trackers will be checked.
+        """
+        self.log.debug("Using a global batch size of %s" % batch_size)
+
+        for updater in self._bugTrackerUpdaters(bug_tracker_names, batch_size):
+            # Run in another thread just to show that it can be done.
+            update_thread = threading.Thread(target=updater)
+            update_thread.start()
+            update_thread.join()
 
     def updateBugTracker(self, bug_tracker, batch_size):
         """Updates the given bug trackers's bug watches.
