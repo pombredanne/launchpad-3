@@ -13,6 +13,8 @@ __all__ = [
     'PollingTaskSource',
     ]
 
+import logging
+
 from twisted.internet import defer
 from twisted.internet.task import LoopingCall
 from twisted.internet import reactor
@@ -22,7 +24,15 @@ from zope.interface import implements, Interface
 
 
 class ITaskSource(Interface):
-    """A source of tasks to do."""
+    """A source of tasks to do.
+
+    This is passed to `ITaskConsumer.consume` as a source of tasks to do.
+    Tasks are nullary callables that might return Deferreds.
+
+    Objects that provide this interface must call `ITaskConsumer.noTasksFound`
+    if there are no tasks to generate, and call `ITaskConsumer.taskStarted`
+    with the nullary callable whenever it generates a task.
+    """
 
     def start(task_consumer):
         """Start generating tasks.
@@ -35,6 +45,10 @@ class ITaskSource(Interface):
 
     def stop():
         """Stop generating tasks.
+
+        It might not be possible to return instantly, so this method should
+        return a Deferred with a boolean that indicates whether
+        `ITaskSource.start` was called in the meantime.
 
         Any subsequent calls to `stop` are silently ignored.
 
@@ -84,7 +98,7 @@ class PollingTaskSource:
 
     implements(ITaskSource)
 
-    def __init__(self, interval, task_producer, clock=None):
+    def __init__(self, interval, task_producer, clock=None, logger=None):
         """Construct a `PollingTaskSource`.
 
         Polls 'task_producer' every 'interval' seconds. 'task_producer'
@@ -100,6 +114,9 @@ class PollingTaskSource:
             the interval-based polling. Defaults to using the reactor (i.e.
             actual time).
         """
+        if logger is None:
+            logger = logging.getLogger(__name__)
+        self._logger = logger
         self._interval = interval
         self._task_producer = task_producer
         if clock is None:
@@ -111,16 +128,38 @@ class PollingTaskSource:
         # until any poll in progress at the moment of the call is complete.
         self._polling_lock = defer.DeferredLock()
 
+    def _log_state(self, method_name, extra=''):
+        self._logger.debug(
+            '%s.%s() %s; looping=%s; polling_lock.locked=%s'
+            % (self.__class__.__name__,
+               method_name,
+               extra,
+               self._looping_call is not None,
+               bool(self._polling_lock.locked)))
+
     def start(self, task_consumer):
         """See `ITaskSource`."""
-        self.stop()
+        self._log_state('start')
+        self._clear_looping_call('called from start()')
+        assert self._looping_call is None, (
+            "Looping call must be None before we create a new one: %r"
+            % (self._looping_call,))
         self._looping_call = LoopingCall(self._poll, task_consumer)
         self._looping_call.clock = self._clock
         self._looping_call.start(self._interval)
+        self._log_state('start', 'completed')
+
+    def _clear_looping_call(self, reason):
+        """Stop the looping call, and log about it."""
+        if self._looping_call is not None:
+            self._log_state('_clear_looping_call', reason)
+            self._looping_call.stop()
+            self._looping_call = None
 
     def _poll(self, task_consumer):
         """Poll for tasks, passing them to 'task_consumer'."""
         def got_task(task):
+            self._log_state('got_task', task)
             if task is not None:
                 # Note that we deliberately throw away the return value. The
                 # task and the consumer need to figure out how to get output
@@ -131,21 +170,26 @@ class PollingTaskSource:
         def task_failed(reason):
             # If task production fails, we inform the consumer of this, but we
             # don't let any deferred it returns delay subsequent polls.
+            self._log_state('task_failed', reason)
             task_consumer.taskProductionFailed(reason)
         def poll():
             # If stop() has been called before the lock was acquired, don't
             # actually poll for more work.
+            self._log_state('acquired_poll')
             if self._looping_call:
                 d = defer.maybeDeferred(self._task_producer)
-                return d.addCallbacks(got_task, task_failed)
-        return self._polling_lock.run(poll)
+                return d.addCallbacks(got_task, task_failed).addBoth(
+                    lambda ignored: self._log_state('releasing_poll'))
+        self._log_state('_poll')
+        return self._polling_lock.run(poll).addBoth(
+            lambda ignored: self._log_state('released_poll'))
 
     def stop(self):
         """See `ITaskSource`."""
-        if self._looping_call is not None:
-            self._looping_call.stop()
-            self._looping_call = None
+        self._log_state('stop')
+        self._clear_looping_call('called from stop()')
         def _return_still_stopped():
+            self._log_state('_return_still_stopped')
             return self._looping_call is None
         return self._polling_lock.run(_return_still_stopped)
 
@@ -176,23 +220,40 @@ class ParallelLimitedTaskConsumer:
 
     implements(ITaskConsumer)
 
-    def __init__(self, worker_limit):
+    def __init__(self, worker_limit, logger=None):
+        if logger is None:
+            logger = logging.getLogger(__name__)
+        self._logger = logger
         self._task_source = None
         self._worker_limit = worker_limit
         self._worker_count = 0
         self._terminationDeferred = None
         self._stopping_lock = None
 
+    def _log_state(self, method, action=''):
+        self._logger.debug(
+            '%s.%s() %s: worker_count=%s; worker_limit=%s'
+            % (self.__class__.__name__,
+               method,
+               action,
+               self._worker_count,
+               self._worker_limit))
+
     def _stop(self):
+        def _call_stop(ignored):
+            self._log_state('_stop', 'Got lock, stopping source')
+            return self._task_source.stop()
         def _release_or_stop(still_stopped):
+            self._log_state('_stop', 'stop() returned %s' % (still_stopped,))
             if still_stopped and self._worker_count == 0:
+                self._logger.debug('Firing termination deferred')
                 self._terminationDeferred.callback(None)
                 # Note that in this case we don't release the lock: we don't
                 # want to try to fire the _terminationDeferred twice!
             else:
+                self._logger.debug('Releasing lock')
                 self._stopping_lock.release()
-        def _call_stop(ignored):
-            return self._task_source.stop()
+        self._log_state('_stop', 'Acquiring lock')
         d = self._stopping_lock.acquire()
         d.addCallback(_call_stop)
         d.addCallback(_release_or_stop)
@@ -207,7 +268,9 @@ class ParallelLimitedTaskConsumer:
         :return: A `Deferred` that fires when the task source is exhausted
             and we are not running any tasks.
         """
+        self._log_state('consume')
         if self._task_source is not None:
+            self._log_state('consume', 'Already running')
             raise AlreadyRunningError(self, self._task_source)
         self._task_source = task_source
         self._terminationDeferred = defer.Deferred()
@@ -223,29 +286,31 @@ class ParallelLimitedTaskConsumer:
 
         :raise NotRunningError: if 'consume' has not yet been called.
         """
+        self._log_state('taskStarted', task)
         if self._task_source is None:
             raise NotRunningError(self)
         self._worker_count += 1
+        self._log_state('taskStarted', 'Incremented')
         if self._worker_count >= self._worker_limit:
+            self._log_state('taskStarted', 'Hit worker limit')
             self._stop()
         else:
+            self._log_state(
+                'taskStarted', 'Below worker limit, starting again')
             self._task_source.start(self)
         d = defer.maybeDeferred(task)
         # We don't expect these tasks to have interesting return values or
         # failure modes.
         d.addErrback(log.err)
-        d.addCallback(self._taskEnded)
+        d.addBoth(self._taskEnded)
 
     def noTasksFound(self):
         """See `ITaskConsumer`.
 
         Called when the producer found no tasks.  If we are not currently
         running any workers, exit.
-
-        This will only actually happen if the very first production doesn't
-        find any jobs, if we actually start any jobs then the exit condition
-        in _taskEnded will always be reached before this one.
         """
+        self._log_state('noTasksFound')
         if self._worker_count == 0:
             self._stop()
 
@@ -267,6 +332,7 @@ class ParallelLimitedTaskConsumer:
 
         :raise NotRunningError: if 'consume' has not yet been called.
         """
+        self._log_state('taskProductionFailed', reason)
         if self._task_source is None:
             raise NotRunningError(self)
         self._stop()
@@ -281,11 +347,16 @@ class ParallelLimitedTaskConsumer:
         If there are available workers, we ask the task source to start
         producing jobs.
         """
+        self._log_state('_taskEnded')
         self._worker_count -= 1
+        self._log_state('_taskEnded', 'Decremented')
         if self._worker_count == 0:
+            self._log_state('_taskEnded', 'No workers, stopping.')
             self._stop()
         elif self._worker_count < self._worker_limit:
+            self._log_state('_taskEnded', 'Too few workers, asking for more.')
             self._task_source.start(self)
         else:
             # We're over the worker limit, nothing we can do.
+            self._log_state('_taskEnded', 'Hit limit, doing nothing.')
             pass

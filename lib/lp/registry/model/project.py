@@ -15,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
-    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
+    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound)
 from storm.expr import And, In, SQL
 from storm.store import Store
 
@@ -477,10 +477,10 @@ class ProjectSet:
         return Project.select("reviewed IS FALSE")
 
     def search(self, text=None, soyuz=None,
-                     rosetta=None, malone=None,
-                     bazaar=None,
-                     search_products=True,
-                     show_inactive=False):
+               rosetta=None, malone=None,
+               bazaar=None,
+               search_products=False,
+               show_inactive=False):
         """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,
@@ -488,6 +488,8 @@ class ProjectSet:
         should be limited to projects that are active in those Launchpad
         applications.
         """
+        if text:
+            text = text.replace("%", "%%")
         clauseTables = set()
         clauseTables.add('Project')
         queries = []
@@ -508,9 +510,11 @@ class ProjectSet:
         if text:
             if search_products:
                 clauseTables.add('Product')
-                queries.append("Product.fti @@ ftq(%s)" % sqlvalues(text))
+                product_query = "Product.fti @@ ftq(%s)" % sqlvalues(text)
+                queries.append(product_query)
             else:
-                queries.append("Project.fti @@ ftq(%s)" % sqlvalues(text))
+                project_query = "Project.fti @@ ftq(%s)" % sqlvalues(text)
+                queries.append(project_query)
 
         if 'Product' in clauseTables:
             queries.append('Product.project=Project.id')

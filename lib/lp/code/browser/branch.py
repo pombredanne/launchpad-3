@@ -225,7 +225,7 @@ class BranchContextMenu(ContextMenu):
     usedfor = IBranch
     facet = 'branches'
     links = [
-        'associations', 'add_subscriber', 'browse_revisions', 'link_bug',
+        'add_subscriber', 'browse_revisions', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status']
 
@@ -257,10 +257,6 @@ class BranchContextMenu(ContextMenu):
     def add_subscriber(self):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
-
-    def associations(self):
-        text = 'View branch associations'
-        return Link('+associations', text)
 
     @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
@@ -575,7 +571,8 @@ class BranchView(LaunchpadView, FeedsMixin):
                 BranchLifecycleStatus,
                 css_class_prefix='branchstatus'),
             'status_value': self.context.lifecycle_status.title,
-            'user_can_edit_status': check_permission('launchpad.Edit', self.context),
+            'user_can_edit_status': check_permission(
+                'launchpad.Edit', self.context),
             'branch_path': '/' + self.context.unique_name,
             })
 
@@ -1153,6 +1150,13 @@ class RegisterProposalSchema(Interface):
         description=_(
             "The branch that the source branch will be merged into."))
 
+    prerequisite_branch = Choice(
+        title=_('Prerequisite Branch'),
+        vocabulary='Branch', required=False, readonly=False,
+        description=_(
+            'A branch that should be merged before this one.  (Its changes'
+            ' will not be shown in the diff.)'))
+
     comment = Text(
         title=_('Initial Comment'), required=False,
         description=_('Describe your change.'))
@@ -1206,6 +1210,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         registrant = self.user
         source_branch = self.context
         target_branch = data['target_branch']
+        prerequisite_branch = data.get('prerequisite_branch')
 
         review_requests = []
         reviewer = data.get('reviewer')
@@ -1217,7 +1222,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             # and an advanced expandable section.
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                needs_review=True, initial_comment=data.get('comment'),
+                prerequisite_branch=prerequisite_branch, needs_review=True,
+                initial_comment=data.get('comment'),
                 review_requests=review_requests)
 
             self.next_url = canonical_url(proposal)

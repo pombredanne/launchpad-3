@@ -130,14 +130,14 @@
 
     <tal:has-last-probe condition="context/last_probe_record">
       <tal:archive-mirror condition="context/content/enumvalue:ARCHIVE"
-        define="arch_serieses view/summarized_arch_series;
-                source_serieses view/summarized_source_series">
+        define="arch_series view/summarized_arch_series;
+                source_series view/summarized_source_series">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/archive-mirror-content" />
       </tal:archive-mirror>
 
       <tal:cdimage-mirror condition="context/content/enumvalue:RELEASE"
-        define="flavours_by_serieses view/getCDImageMirroredFlavoursBySeries">
+        define="flavours_by_series view/getCDImageMirroredFlavoursBySeries">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/cdimage-mirror-content" />
       </tal:cdimage-mirror>

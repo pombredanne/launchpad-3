@@ -28,7 +28,7 @@ release to add download files.
     >>> print extract_text(content)
     Downloads
     Latest version is 0.9.2
-    firefox-0.9.2.orig.tar.gz...
+    firefox_0.9.2.orig.tar.gz...
 
     >>> anon_browser.getLink('All downloads').click()
     >>> print extract_text(
@@ -39,7 +39,7 @@ release to add download files.
     Security fixes
      * 250180 - [Windows] Disallow access to insecure shell: protocol.
     File                            Description   Downloads
-    firefox-0.9.2.orig.tar.gz (md5)               -
+    firefox_0.9.2.orig.tar.gz (md5)               -
 
 
 == Deletion is only for the privileged ==
@@ -370,7 +370,7 @@ are listed within series in reverse chronological order, except
     ...     a_list = row.findAll('a')
     ...     if len(a_list) > 0:
     ...        print a_list[0].string
-    firefox-0.9.2.orig.tar.gz
+    firefox_0.9.2.orig.tar.gz
     foo09.txt
     foo3.txt
     foo2.txt
@@ -425,7 +425,7 @@ Ensure the file is no longer listed.
     ...     a_list = row.findAll('a')
     ...     if len(a_list) > 0:
     ...        print a_list[0].string
-    firefox-0.9.2.orig.tar.gz
+    firefox_0.9.2.orig.tar.gz
     foo09.txt
     foo3.txt
     foo.txt

@@ -6,8 +6,9 @@ evolution-2.2 POTemplate page.
 
     >>> anon_browser.open("http://translations.launchpad.dev/"
     ...     "ubuntu/hoary/+source/evolution/+pots/evolution-2.2/")
-    >>> anon_browser.title
-    'Template ...evolution-2.2... : ...evolution... package : Translations : 5.04 : Ubuntu'
+    >>> print anon_browser.title
+    Template ...evolution-2.2... :
+    ...evolution... package : Translations : Hoary (5.04) : Ubuntu
 
 The owner of the template is diplayed.
 

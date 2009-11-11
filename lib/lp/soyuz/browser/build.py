@@ -353,7 +353,7 @@ class BuildRecordsView(LaunchpadView):
     def architecture_options(self):
         """Return the architecture options for the context."""
         # Guard against contexts that cannot tell us the available
-        # distroarchserieses.
+        # distroarchseries.
         if safe_hasattr(self.context, 'architectures') is False:
             return []
 

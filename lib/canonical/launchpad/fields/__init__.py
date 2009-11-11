@@ -203,12 +203,13 @@ class StrippedTextLine(TextLine):
 
     def set(self, object, value):
         """Strip the value and pass up."""
-        super(StrippedTextLine, self).set(object, value.strip())
+        if value is not None:
+            value = value.strip()
+        super(StrippedTextLine, self).set(object, value)
 
 
 class NoneableTextLine(StrippedTextLine):
     implements(INoneableTextLine)
-
 
 # Title
 # A field to capture a launchpad object title

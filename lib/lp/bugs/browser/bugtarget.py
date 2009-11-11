@@ -407,11 +407,11 @@ class FileBugViewBase(LaunchpadFormView):
                 try:
                     distribution.guessPackageNames(packagename)
                 except NotFoundError:
-                    if distribution.serieses:
-                        # If a distribution doesn't have any serieses,
+                    if distribution.series:
+                        # If a distribution doesn't have any series,
                         # it won't have any source packages published at
                         # all, so we set the error only if there are
-                        # serieses.
+                        # series.
                         packagename_error = (
                             '"%s" does not exist in %s. Please choose a '
                             "different package. If you're unsure, please "
@@ -1012,16 +1012,16 @@ class BugTargetBugListingView:
     @property
     def series_list(self):
         if IDistribution(self.context, None):
-            serieses = self.context.serieses
+            series = self.context.series
         elif IProduct(self.context, None):
-            serieses = self.context.serieses
+            series = self.context.series
         elif IDistroSeries(self.context, None):
-            serieses = self.context.distribution.serieses
+            series = self.context.distribution.series
         elif IProductSeries(self.context, None):
-            serieses = self.context.product.serieses
+            series = self.context.product.series
         else:
             raise AssertionError("series_list called with illegal context")
-        return serieses
+        return series
 
     @property
     def series_buglistings(self):

@@ -93,7 +93,7 @@
       </table>
 
       <div id="application-summary">
-        <p class="error"
+        <p class="sprite error"
            tal:condition="not: view/search_results">
           No projects matching
           &#8220;<span tal:replace="view/search_string">moz</span>&#8221;

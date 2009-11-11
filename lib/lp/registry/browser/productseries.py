@@ -187,10 +187,11 @@ class ProductSeriesOverviewMenu(
         if self.context.branch is None:
             text = 'Link to branch'
             icon = 'add'
+            summary = 'Set the branch for this series'
         else:
             text = "Change branch"
             icon = 'edit'
-        summary = 'The code branch that for this series.'
+            summary = 'Change the branch for this series'
         return Link('+linkbranch', text, summary, icon=icon)
 
     @enabled_with_permission('launchpad.View')
@@ -479,7 +480,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def bugtasks(self):
         """A list of all `IBugTask`s targeted to this series."""
-        all_bugtasks = []
+        all_bugtasks = self._getBugtasks(self.context)
         for milestone in self.milestones:
             all_bugtasks.extend(self._getBugtasks(milestone))
         return all_bugtasks
@@ -487,7 +488,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def specifications(self):
         """A list of all `ISpecification`s targeted to this series."""
-        all_specifications = []
+        all_specifications = self._getSpecifications(self.context)
         for milestone in self.milestones:
             all_specifications.extend(self._getSpecifications(milestone))
         return all_specifications
@@ -496,6 +497,11 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     def has_bugtasks_and_specifications(self):
         """Does the series have any targeted bugtasks or specifications."""
         return len(self.bugtasks) > 0 or len(self.specifications) > 0
+
+    @property
+    def has_linked_branch(self):
+        """Is the series linked to a branch."""
+        return self.context.branch is not None
 
     @cachedproperty
     def product_release_files(self):
