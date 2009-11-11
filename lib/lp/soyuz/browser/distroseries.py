@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'DistroSeriesBuildsView',
+    'DistroSeriesQueueView',
     ]
 
 from lp.registry.browser.distroseries import DistroSeriesView
@@ -17,3 +18,9 @@ class DistroSeriesBuildsView(DistroSeriesView):
     def page_title(self):
         """Return the HTML page title."""
         return '%s builds' % self.context.title
+
+class DistroSeriesQueueView(DistroSeriesView):
+    """A View to show an `IDistroSeries` object's uploads."""
+
+    label = 'Upload queue'
+    page_title = label
