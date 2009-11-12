@@ -316,6 +316,7 @@ class SanitizeDb(LaunchpadScript):
     def removeTableRows(self, table):
         """Remove all data from a table."""
         count = self.store.execute("DELETE FROM %s" % table).rowcount
+        self.store.execute("ANALYZE %s" % table)
         self.logger.info("Removed %d %s rows (all).", count, table)
 
     def removeUnlinked(self, table, ignores=()):
