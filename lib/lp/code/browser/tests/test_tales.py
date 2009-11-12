@@ -14,10 +14,6 @@ from zope.security.proxy import removeSecurityProxy
 from lp.testing import login, TestCaseWithFactory, test_tales
 from canonical.testing import LaunchpadFunctionalLayer
 
-#  Want to:
-#   - remove the download icon
-#   - 45 lines (+16/-4) 6 files changed
-#
 
 class TestPreviewDiffFormatter(TestCaseWithFactory):
     """Test the PreviewDiffFormatterAPI class."""
