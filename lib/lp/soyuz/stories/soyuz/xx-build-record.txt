@@ -23,8 +23,9 @@ sampledata builder.
     >>> bob_builder.builderok = True
 
     # Set a known duration for the current job.
-    >>> in_progress_build = removeSecurityProxy(
-    ...     bob_builder.currentjob.build)
+    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> build2 = getUtility(IBuildSet).getByQueueEntry(bob_builder.currentjob)
+    >>> in_progress_build = removeSecurityProxy(build2)
     >>> one_minute = datetime.timedelta(seconds=60)
     >>> in_progress_build.estimated_build_duration = one_minute
 
