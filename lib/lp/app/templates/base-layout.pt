@@ -24,7 +24,7 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   xml:lang="en" lang="en" dir="ltr">
   <head tal:define="
-    yui string:${icingroot}/yui/3.0.0/build;
+    yui string:${icingroot}/yui/current/build;
     lazr_js string:${icingroot}/lazr/build;
     lp_js string:${icingroot}/build">
     <title tal:content="view/fmt:pagetitle">Page Title</title>

@@ -43,7 +43,7 @@
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
       icingroot string:${rooturl}+icing/rev${revno};
       devmode modules/canonical.config/config/devmode;
-      yui string:${icingroot}/yui/3.0.0/build;
+      yui string:${icingroot}/yui/current/build;
       lazr_js string:${icingroot}/lazr/build;
       lp_js string:${icingroot}/build"
   >
@@ -286,7 +286,7 @@
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     icingroot string:${rooturl}+icing/rev${revno};
-    yui string:${icingroot}/yui/3.0.0/build;
+    yui string:${icingroot}/yui/current/build;
     devmode modules/canonical.config/config/devmode">
   <tal:comment replace="nothing">
     This macro loads the old stylesheet, then the YUI CSS, and finally
