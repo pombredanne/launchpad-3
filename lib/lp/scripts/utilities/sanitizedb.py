@@ -64,6 +64,11 @@ class SanitizeDb(LaunchpadScript):
 
     def main(self):
         self.allForeignKeysCascade()
+        triggers_to_disable = [
+            ('bugmessage', 'set_bug_message_count_t'),
+            ('bugmessage', 'set_date_last_message_t'),
+            ]
+        self.disableTriggers(triggers_to_disable)
 
         tables_to_empty = [
             'accountpassword',
@@ -168,6 +173,9 @@ class SanitizeDb(LaunchpadScript):
             ]
         for table, column in columns_to_scrub:
             self.scrubColumn(table, column)
+
+        self.enableTriggers(triggers_to_disable)
+        self.repairData()
 
         self.resetForeignKeysCascade()
         if self.options.dry_run:
@@ -469,7 +477,8 @@ class SanitizeDb(LaunchpadScript):
         self.logger.info(
             "Setting %d constraints to ON DELETE CASCADE",
             len(cascade_sql) / 2)
-        self.store.execute('\n'.join(cascade_sql))
+        for statement in cascade_sql:
+            self.store.execute(statement)
 
         # Store the recovery SQL.
         self._reset_foreign_key_sql = restore_sql
@@ -479,7 +488,38 @@ class SanitizeDb(LaunchpadScript):
         self.logger.info(
             "Resetting %d foreign key constraints to initial state.",
             len(self._reset_foreign_key_sql)/2)
-        self.store.execute('\n'.join(self._reset_foreign_key_sql))
+        for statement in self._reset_foreign_key_sql:
+            self.store.execute(statement)
+
+    def disableTriggers(self, triggers_to_disable):
+        """Disable a set of triggers.
+
+        :param triggers_to_disable: List of (table_name, trigger_name).
+        """
+        for table_name, trigger_name in triggers_to_disable:
+            self.store.execute(
+                "ALTER TABLE %s DISABLE TRIGGER %s"
+                % (table_name, trigger_name))
+
+    def enableTriggers(self, triggers_to_disable):
+        """Renable a set of triggers.
+
+        :param triggers_to_disable: List of (table_name, trigger_name).
+        """
+        for table_name, trigger_name in triggers_to_disable:
+            self.store.execute(
+                "ALTER TABLE %s ENABLE TRIGGER %s"
+                % (table_name, trigger_name))
+
+    def repairData(self):
+        """After scrubbing, repair any data possibly damaged in the process.
+        """
+        # Repair Bug.message_count and Bug.date_last_message.
+        # The triggers where disabled while we where doing the cascading
+        # deletes because they fail (attempting to change a mutating table).
+        # We can repair these caches by forcing the triggers to run for
+        # every row.
+        self.store.execute("UPDATE BugMessage SET visible=visible")
 
     def _fail(self, error_message):
         self.logger.fatal(error_message)
