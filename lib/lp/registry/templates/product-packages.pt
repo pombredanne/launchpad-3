@@ -61,7 +61,7 @@
 
             <td>
               <a tal:attributes="href packaging/distroseries/fmt:url"
-                tal:replace="packaging/distroseries/named_version" />
+                tal:content="packaging/distroseries/named_version" />
             </td>
 
             <td>
