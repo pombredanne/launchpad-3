@@ -73,6 +73,7 @@ class SanitizeDb(LaunchpadScript):
         tables_to_empty = [
             'accountpassword',
             'archiveauthtoken',
+            'archivesubscriber',
             'authtoken',
             'buildqueue',
             'commercialsubscription',
@@ -129,6 +130,7 @@ class SanitizeDb(LaunchpadScript):
         self.removeInactiveProjects()
         self.removeInactiveProducts()
         self.removeInvalidEmailAddresses()
+        self.removePPAArchivePermissions()
         self.scrambleHiddenEmailAddresses()
         self.scrambleOpenIDIdentifiers()
 
@@ -352,6 +354,18 @@ class SanitizeDb(LaunchpadScript):
                     '%@example.com', case_sensitive=True))).remove()
         self.logger.info(
             "Removed %d invalid, unvalidated and old email addresses.", count)
+
+    def removePPAArchivePermissions(self):
+        """Remove ArchivePermission records for PPAs."""
+        from lp.soyuz.interfaces.archive import ArchivePurpose
+        count = self.store.execute("""
+            DELETE FROM ArchivePermission
+            USING Archive
+            WHERE ArchivePermission.archive = Archive.id
+                AND Archive.purpose = %s
+            """ % sqlvalues(ArchivePurpose.PPA)).rowcount
+        self.logger.info(
+            "Removed %d ArchivePermission records linked to PPAs.", count)
 
     def scrambleHiddenEmailAddresses(self):
         """Hide email addresses users have requested to not be public.
