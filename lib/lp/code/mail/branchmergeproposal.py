@@ -153,7 +153,7 @@ class BMPMailer(BranchMailer):
             direct_email=True)
 
     def _getSubject(self, email):
-        """The subject template expanded with the template params.
+        """See `BaseMailer`.
 
         Unlike the BranchMailer base class, the BMP mailer does use the
         template params in the subject headings.

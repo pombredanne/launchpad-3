@@ -259,7 +259,10 @@ class BranchMailer(BaseMailer):
         return '[Branch %s]' % (db_branch.unique_name)
 
     def _getSubject(self, email):
-        """The subject is already fully defined, just return it."""
+        """See `BaseMailer`.
+
+        The subject is already fully defined, just return it.
+        """
         return self._subject_template
 
     def _getHeaders(self, email):
