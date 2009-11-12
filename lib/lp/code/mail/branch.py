@@ -168,7 +168,7 @@ class BranchMailer(BaseMailer):
 
     def __init__(self, subject, template_name, recipients, from_address,
                  delta=None, contents=None, diff=None, message_id=None,
-                 revno=None, notification_type=None):
+                 revno=None, notification_type=None, **kwargs):
         BaseMailer.__init__(self, subject, template_name, recipients,
                             from_address, delta, message_id,
                             notification_type)
@@ -179,6 +179,7 @@ class BranchMailer(BaseMailer):
         else:
             self.diff_size = self.diff.count('\n') + 1
         self.revno = revno
+        self.extra_template_params = kwargs
 
     @classmethod
     def forBranchModified(cls, branch, user, delta):
@@ -213,10 +214,10 @@ class BranchMailer(BaseMailer):
                     subscription, recipient, rationale)
         from_address = format_address(
             user.displayname, user.preferredemail.email)
-        subject = cls._branchSubject(branch)
         return cls(
-            subject, 'branch-modified.txt', actual_recipients, from_address,
-            delta=delta, notification_type='branch-updated')
+            '[Branch %(unique_name)s]', 'branch-modified.txt',
+            actual_recipients, from_address, delta=delta,
+            notification_type='branch-updated')
 
     @classmethod
     def forRevision(cls, db_branch, revno, from_address, contents, diff,
@@ -243,9 +244,9 @@ class BranchMailer(BaseMailer):
                     subscription, recipient, rationale)
                 recipient_dict[recipient] = subscriber_reason
         subject = cls._branchSubject(db_branch, subject)
-        return cls(subject, 'branch-modified.txt', recipient_dict,
+        return cls('%(full_subject)s', 'branch-modified.txt', recipient_dict,
             from_address, contents=contents, diff=diff, revno=revno,
-            notification_type='branch-revision')
+            notification_type='branch-revision', full_subject=subject)
 
     @staticmethod
     def _branchSubject(db_branch, subject=None):
@@ -257,13 +258,6 @@ class BranchMailer(BaseMailer):
         if subject is not None:
             return subject
         return '[Branch %s]' % (db_branch.unique_name)
-
-    def _getSubject(self, email):
-        """See `BaseMailer`.
-
-        The subject is already fully defined, just return it.
-        """
-        return self._subject_template
 
     def _getHeaders(self, email):
         headers = BaseMailer._getHeaders(self, email)
@@ -278,19 +272,22 @@ class BranchMailer(BaseMailer):
     def _getTemplateParams(self, email):
         params = BaseMailer._getTemplateParams(self, email)
         reason, rationale = self._recipients.getReason(email)
-        params['branch_identity'] = reason.branch.bzr_identity
-        params['branch_url'] = canonical_url(reason.branch)
-        if reason.recipient in reason.branch.subscribers:
+        branch = reason.branch
+        params['unique_name'] = branch.unique_name
+        params['branch_identity'] = branch.bzr_identity
+        params['branch_url'] = canonical_url(branch)
+        if reason.recipient in branch.subscribers:
             # Give subscribers a link to unsubscribe.
             params['unsubscribe'] = (
                 "\nTo unsubscribe from this branch go to "
-                "%s/+edit-subscription." % canonical_url(reason.branch))
+                "%s/+edit-subscription." % canonical_url(branch))
         else:
             params['unsubscribe'] = ''
         params['diff'] = self.contents or ''
         if not self._includeDiff(email):
             params['diff'] += self._explainNotPresentDiff(email)
         params.setdefault('delta', '')
+        params.update(self.extra_template_params)
         return params
 
     def _includeDiff(self, email):
