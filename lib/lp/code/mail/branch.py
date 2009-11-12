@@ -243,21 +243,9 @@ class BranchMailer(BaseMailer):
                 subscriber_reason = RecipientReason.forBranchSubscriber(
                     subscription, recipient, rationale)
                 recipient_dict[recipient] = subscriber_reason
-        subject = cls._branchSubject(db_branch, subject)
         return cls('%(full_subject)s', 'branch-modified.txt', recipient_dict,
             from_address, contents=contents, diff=diff, revno=revno,
             notification_type='branch-revision', full_subject=subject)
-
-    @staticmethod
-    def _branchSubject(db_branch, subject=None):
-        """Determine a subject to use for this email.
-
-        :param db_branch: The db branch to use.
-        :param subject: Any subject supplied as a parameter.
-        """
-        if subject is not None:
-            return subject
-        return '[Branch %s]' % (db_branch.unique_name)
 
     def _getHeaders(self, email):
         headers = BaseMailer._getHeaders(self, email)
