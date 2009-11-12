@@ -190,7 +190,8 @@ class BuildQueueSet(object):
             arch_ids, BuildStatus.NEEDSBUILD, SoyuzJobType.PACKAGEBUILD)
 
         candidates = BuildQueue.select(
-            query, clauseTables=['Build'], orderBy=['-BuildQueue.lastscore'])
+            query, clauseTables=['Build', 'BuildPackageJob'],
+            orderBy=['-BuildQueue.lastscore'])
 
         return candidates
 
