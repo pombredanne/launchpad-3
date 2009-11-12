@@ -95,7 +95,8 @@ class BuildQueue(SQLBase):
     def reset(self):
         """See `IBuildQueue`."""
         self.builder = None
-        self.job.queue()
+        if self.job.status != JobStatus.WAITING:
+            self.job.queue()
         self.job.date_started = None
         self.job.date_finished = None
         self.logtail = None
