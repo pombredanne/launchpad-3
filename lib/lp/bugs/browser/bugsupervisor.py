@@ -11,7 +11,6 @@ __all__ = ['BugSupervisorEditView']
 from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -91,19 +90,31 @@ class BugSupervisorEditView(LaunchpadEditFormView):
 
         supervisor = data['bug_supervisor']
 
-        if (supervisor is not None and supervisor.isTeam() and
-            supervisor not in self.user.getAdministratedTeams() and not
-            check_permission('launchpad.Admin', self.user)):
-            error = structured(
-                "You cannot set %(team)s as the bug supervisor for "
-                "%(target)s because you are not an administrator of that "
-                "team.<br />If you believe that %(team)s should be the bug"
-                " supervisor for %(target)s, please notify one of the "
-                "<a href=\"%(url)s\">%(team)s administrators</a>.",
-                team=supervisor.displayname,
-                target=self.context.displayname,
-                url=(canonical_url(supervisor, rootsite='mainsite') +
-                     '/+members'))
+        # Making a person the bug supervisor implies subscribing him
+        # to all bug mail. Ensure that the current user can indeed
+        # do this.
+        if (supervisor is not None and
+            not self.context.userCanAlterSubscription(supervisor, self.user)):
+            if supervisor.isTeam():
+                error = structured(
+                    "You cannot set %(team)s as the bug supervisor for "
+                    "%(target)s because you are not an administrator of that "
+                    "team.<br />If you believe that %(team)s should be the "
+                    "bug supervisor for %(target)s, please notify one of the "
+                    "<a href=\"%(url)s\">%(team)s administrators</a>.",
+                    team=supervisor.displayname,
+                    target=self.context.displayname,
+                    url=(canonical_url(supervisor, rootsite='mainsite') +
+                         '/+members'))
+                self.setFieldError('bug_supervisor', error)
+            else:
+                error = structured(
+                    "You cannot set another person as the bug supervisor for "
+                    "%(target)s.<br/> If you believe that %(person)s should "
+                    "be the bug supervisor for %(target)s, please ask this "
+                    "person to make itself the bug supervisor.",
+                    person=supervisor.displayname,
+                    target=self.context.displayname)
             self.setFieldError('bug_supervisor', error)
 
     def cancel_url(self):
