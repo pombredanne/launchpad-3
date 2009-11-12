@@ -265,8 +265,8 @@ class Builder(SQLBase):
          * Ensure that the build pocket allows builds for the current
            distroseries state.
         """
-        assert not (not self.virtualized and
-                    build_queue_item.is_virtualized), (
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        assert not (not self.virtualized and build.is_virtualized), (
             "Attempt to build non-virtual item on a virtual builder.")
 
         # Assert that we are not silently building SECURITY jobs.
@@ -275,7 +275,7 @@ class Builder(SQLBase):
         # XXX Julian 2007-12-18 spec=security-in-soyuz: This is being
         # addressed in the work on the blueprint:
         # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
-        target_pocket = build_queue_item.build.pocket
+        target_pocket = build.pocket
         assert target_pocket != PackagePublishingPocket.SECURITY, (
             "Soyuz is not yet capable of building SECURITY uploads.")
 
@@ -285,18 +285,17 @@ class Builder(SQLBase):
         if chroot is None:
             raise CannotBuild(
                 "Missing CHROOT for %s/%s/%s" % (
-                    build_queue_item.build.distroseries.distribution.name,
-                    build_queue_item.build.distroseries.name,
-                    build_queue_item.build.distroarchseries.architecturetag)
+                    build.distroseries.distribution.name,
+                    build.distroseries.name,
+                    build.distroarchseries.architecturetag)
                 )
 
         # The main distribution has policies to prevent uploads to some
         # pockets (e.g. security) during different parts of the distribution
         # series lifecycle. These do not apply to PPA builds nor any archive
         # that allows release pocket updates.
-        if (build_queue_item.build.archive.purpose != ArchivePurpose.PPA and
-            not build_queue_item.build.archive.allowUpdatesToReleasePocket()):
-            build = build_queue_item.build
+        if (build.archive.purpose != ArchivePurpose.PPA and
+            not build.archive.allowUpdatesToReleasePocket()):
             # XXX Robert Collins 2007-05-26: not an explicit CannotBuild
             # exception yet because the callers have not been audited
             assert build.distroseries.canUploadToPocket(build.pocket), (
@@ -317,7 +316,7 @@ class Builder(SQLBase):
         # If the build is private we tell the slave to get the files from the
         # archive instead of the librarian because the slaves cannot
         # access the restricted librarian.
-        private = build_queue_item.build.archive.private
+        private = build.archive.private
         if private:
             self.cachePrivateSourceOnSlave(logger, build_queue_item)
         filemap = {}
@@ -352,9 +351,10 @@ class Builder(SQLBase):
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        spr = build.sourcepackagerelease
         logger.info("startBuild(%s, %s, %s, %s)", self.url,
-                    build_queue_item.name, build_queue_item.version,
-                    build_queue_item.build.pocket.title)
+                    spr.name, spr.version, build.pocket.title)
 
         # Make sure the request is valid; an exception is raised if it's not.
         self._verifyBuildRequest(build_queue_item, logger)
@@ -371,37 +371,36 @@ class Builder(SQLBase):
         build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
         args['arch_indep'] = build.distroarchseries.isNominatedArchIndep
 
-        suite = build_queue_item.build.distroarchseries.distroseries.name
-        if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
-            suite += "-%s" % (build_queue_item.build.pocket.name.lower())
+        suite = build.distroarchseries.distroseries.name
+        if build.pocket != PackagePublishingPocket.RELEASE:
+            suite += "-%s" % (build.pocket.name.lower())
         args['suite'] = suite
 
-        archive_purpose = build_queue_item.build.archive.purpose
+        archive_purpose = build.archive.purpose
         if (archive_purpose == ArchivePurpose.PPA and
-            not build_queue_item.build.archive.require_virtualized):
+            not build.archive.require_virtualized):
             # If we're building a non-virtual PPA, override the purpose
             # to PRIMARY and use the primary component override.
             # This ensures that the package mangling tools will run over
             # the built packages.
             args['archive_purpose'] = ArchivePurpose.PRIMARY.name
             args["ogrecomponent"] = (
-                get_primary_current_component(build_queue_item.build))
+                get_primary_current_component(build))
         else:
             args['archive_purpose'] = archive_purpose.name
             args["ogrecomponent"] = (
-                build_queue_item.build.current_component.name)
+                build.current_component.name)
 
-        args['archives'] = get_sources_list_for_building(
-            build_queue_item.build)
+        args['archives'] = get_sources_list_for_building(build)
 
         # Let the build slave know whether this is a build in a private
         # archive.
-        args['archive_private'] = build_queue_item.build.archive.private
+        args['archive_private'] = build.archive.private
 
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in
         # subsequent runs.
-        buildid = "%s-%s" % (build_queue_item.build.id, build_queue_item.id)
+        buildid = "%s-%s" % (build.id, build_queue_item.id)
         logger.debug("Initiating build %s on %s" % (buildid, self.url))
 
         # Do it.
@@ -595,7 +594,7 @@ class Builder(SQLBase):
 
         query = " AND ".join(clauses)
         candidate = BuildQueue.selectFirst(
-            query, clauseTables=clauseTables, prejoins=['build'],
+            query, clauseTables=clauseTables,
             orderBy=['-buildqueue.lastscore', 'build.id'])
 
         return candidate

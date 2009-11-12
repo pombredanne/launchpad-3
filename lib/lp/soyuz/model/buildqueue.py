@@ -85,8 +85,7 @@ class BuildQueue(SQLBase):
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
         self.builder = builder
-        self.job.date_started = UTC_NOW
-        self.job.status = JobStatus.RUNNING
+        self.job.start()
         build = getUtility(IBuildSet).getByQueueEntry(self)
         build.buildstate = BuildStatus.BUILDING
         # The build started, set the start time if not set already.
@@ -96,8 +95,9 @@ class BuildQueue(SQLBase):
     def reset(self):
         """See `IBuildQueue`."""
         self.builder = None
+        self.job.queue()
         self.job.date_started = None
-        self.job.status = JobStatus.WAITING
+        self.job.date_finished = None
         self.logtail = None
         build = getUtility(IBuildSet).getByQueueEntry(self)
         build.buildstate = BuildStatus.NEEDSBUILD
@@ -126,8 +126,9 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.builder.cleanSlave()
         self.builder = None
+        self.job.fail()
         self.job.date_started = None
-        self.job.status = JobStatus.FAILED
+        self.job.date_finished = None
         build = getUtility(IBuildSet).getByQueueEntry(self)
         build.buildstate = BuildStatus.BUILDING
 
