@@ -32,7 +32,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
@@ -57,13 +57,13 @@ from lp.registry.model.milestone import (
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
 from lp.registry.model.announcement import MakesAnnouncements
-from canonical.launchpad.database.packaging import Packaging
+from lp.registry.model.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.person import Person
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
-from lp.services.database.precache import precache
+from lp.services.database.prejoin import prejoin
 from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from lp.blueprints.model.specification import (
@@ -507,7 +507,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             for entry in import_queue.getAllEntries(target=self):
                 if entry.importer == old_owner:
                     removeSecurityProxy(entry).importer = new_owner
-            for series in self.serieses:
+            for series in self.series:
                 if series.owner == old_owner:
                     series.owner = new_owner
             for release in self.releases:
@@ -546,7 +546,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
-    serieses = SQLMultipleJoin('ProductSeries', joinColumn='product',
+    series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
     @property
@@ -722,7 +722,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         translatable_product_series = set(
             product_series
-            for product_series in self.serieses
+            for product_series in self.series
             if product_series.has_current_translation_templates)
         return sorted(
             translatable_product_series,
@@ -732,7 +732,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def obsolete_translatable_series(self):
         """See `IProduct`."""
         obsolete_product_series = set(
-            product_series for product_series in self.serieses
+            product_series for product_series in self.series
             if len(product_series.getObsoleteTranslationTemplates()) > 0)
         return sorted(obsolete_product_series, key=lambda s: s.datecreated)
 
@@ -990,15 +990,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getTimeline(self, include_inactive=False):
         """See `IProduct`."""
-        series_list = sorted_version_numbers(self.serieses,
+        series_list = sorted_version_numbers(self.series,
                                              key=operator.attrgetter('name'))
         if self.development_focus in series_list:
             series_list.remove(self.development_focus)
         series_list.insert(0, self.development_focus)
         series_list.reverse()
-        return [series.getTimeline(include_inactive=include_inactive)
-                for series in series_list
-                if include_inactive or series.active]
+        return [
+            series.getTimeline(include_inactive=include_inactive)
+            for series in series_list
+            if include_inactive or series.active or
+               series == self.development_focus
+            ]
 
 
 class ProductSet:
@@ -1290,7 +1293,7 @@ class ProductSet:
 
         # We only want Product - the other tables are just to populate
         # the cache.
-        return precache(results)
+        return prejoin(results)
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""

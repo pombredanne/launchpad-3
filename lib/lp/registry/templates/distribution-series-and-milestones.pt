@@ -3,10 +3,10 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet" id="sandm"
-  tal:condition="context/serieses">
+  tal:condition="context/series">
     <h2>Series and milestones</h2>
-    <ul tal:condition="context/serieses">
-      <tal:per_series repeat="series context/serieses">
+    <ul tal:condition="context/series">
+      <tal:per_series repeat="series context/series">
         <li tal:condition="series/active">
           <strong>
           <a tal:attributes="href series/fmt:url" class="sprite distribution">

@@ -14,7 +14,7 @@
 
     <dl id="series-name">
       <dt>Series:</dt>
-      <dd><tal:name replace="context/displayname" /></dd>
+      <dd><tal:name replace="context/named_version" /></dd>
     </dl>
 
     <dl id="series-drivers">
@@ -52,9 +52,9 @@
         <a
           tal:condition="context/parent_series"
           tal:attributes="href context/parent_series/fmt:url"
-          tal:content="context/parent_series/displayname" />
+          tal:content="context/parent_series/named_version" />
         <tal:none condition="not: context/parent_series">
-          <tal:name replace="context/displayname"/> is not derived from
+          <tal:name replace="context/named_version"/> is not derived from
           another series.
         </tal:none>
       </dd>

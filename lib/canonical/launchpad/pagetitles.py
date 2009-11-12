@@ -126,8 +126,6 @@ archive_delete_packages = ContextDisplayName('Delete packages from %s')
 
 archive_edit = ContextDisplayName('Edit %s')
 
-archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
-
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Branches'
@@ -486,23 +484,6 @@ milestone_add = ContextTitle('Add new milestone for %s')
 milestone_edit = ContextTitle('Edit %s')
 
 milestone_delete = ContextTitle('Delete %s')
-
-announcement_add = 'Make an announcement'
-
-announcement_delete = 'Permanently delete this announcement'
-
-announcement_edit = 'Modify this announcement'
-
-def announcement_index(context, view):
-    return '%s announcement' % context.target.displayname
-
-announcement_publish = 'Publish this announcement'
-
-announcement_retarget = 'Move this announcement to a different project'
-
-announcement_retract = 'Retract this announcement'
-
-announcements_all = 'Announcements from all projects hosted in Launchpad'
 
 oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 

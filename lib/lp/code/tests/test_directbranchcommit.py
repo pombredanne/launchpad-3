@@ -23,8 +23,7 @@ class DirectBranchCommitTestCase(TestCaseWithFactory):
         self.useBzrBranches()
 
         self.series = self.factory.makeProductSeries()
-        self.db_branch, self.tree = self.create_branch_and_tree(
-            db_branch=self.db_branch, hosted=True)
+        self.db_branch, self.tree = self.create_branch_and_tree(hosted=True)
 
         self.series.translations_branch = self.db_branch
 

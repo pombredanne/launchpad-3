@@ -26,6 +26,7 @@ class LaunchpadWebServiceConfiguration:
     path_override = "api"
     service_version_uri_prefix = "beta"
     view_permission = "launchpad.View"
+    set_hop_by_hop_headers = True
 
     @property
     def use_https(self):

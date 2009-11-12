@@ -202,5 +202,22 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         approver.approve(entry2)
         self.assertEqual(RosettaImportStatus.NEEDS_REVIEW, entry2.status)
 
+    def test_approve_only_if_needs_review(self):
+        # If an entry is not in NEEDS_REVIEW state, it must not be approved.
+        pot_path = self.factory.getUniqueString()+".pot"
+        entry = self._upload_file(pot_path)
+        not_approve_status = (
+            RosettaImportStatus.IMPORTED,
+            RosettaImportStatus.DELETED,
+            RosettaImportStatus.FAILED,
+            RosettaImportStatus.BLOCKED,
+            )
+        for status in not_approve_status:
+            entry.setStatus(status)
+            approver = self._create_approver(pot_path)
+            approver.approve(entry)
+            self.assertEqual(status, entry.status)
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
+
