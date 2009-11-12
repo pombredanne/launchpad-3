@@ -202,7 +202,7 @@ class IDistributionPublic(
         "All unofficial mirrors of this Distribution.")
     pending_review_mirrors = Attribute(
         "All mirrors of this Distribution that haven't been reviewed yet.")
-    serieses = exported(
+    series = exported(
         CollectionField(
             title=_("DistroSeries inside this Distribution"),
             # Really IDistroSeries, see below.
@@ -290,8 +290,8 @@ class IDistributionPublic(
     @operation_returns_collection_of(Interface)
     @export_operation_as(name="getDevelopmentSeries")
     @export_read_operation()
-    def getDevelopmentSerieses():
-        """Return the DistroSerieses which are marked as in development."""
+    def getDevelopmentSeries():
+        """Return the DistroSeries which are marked as in development."""
 
     @operation_parameters(
         name_or_version=TextLine(title=_("Name or version"), required=True))

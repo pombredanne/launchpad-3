@@ -382,7 +382,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         """See `ISourcePackage`"""
         # First we look to see if there is packaging data for this
         # distroseries and sourcepackagename. If not, we look up through
-        # parent distroserieses, and when we hit Ubuntu, we look backwards in
+        # parent distroseries, and when we hit Ubuntu, we look backwards in
         # time through Ubuntu series till we find packaging information or
         # blow past the Warty Warthog.
 
@@ -395,9 +395,9 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # if we are an ubuntu sourcepackage, try the previous series of
         # ubuntu
         if self.distribution == ubuntu:
-            ubuntuserieses = self.distroseries.previous_serieses
-            if ubuntuserieses:
-                previous_ubuntu_series = ubuntuserieses[0]
+            ubuntuseries = self.distroseries.previous_series
+            if ubuntuseries:
+                previous_ubuntu_series = ubuntuseries[0]
                 sp = SourcePackage(sourcepackagename=self.sourcepackagename,
                                    distroseries=previous_ubuntu_series)
                 return sp.packaging

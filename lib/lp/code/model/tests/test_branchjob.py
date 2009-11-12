@@ -197,7 +197,9 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
 
     def test_providesInterface(self):
         """Ensure that BranchUpgradeJob implements IBranchUpgradeJob."""
-        branch = self.factory.makeAnyBranch()
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_5,
+            repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         job = BranchUpgradeJob.create(branch)
         verifyObject(IBranchUpgradeJob, job)
 
@@ -218,6 +220,12 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
         self.assertEqual(
             new_branch.repository._format.get_format_string(),
             'Bazaar RepositoryFormatKnitPack6 (bzr 1.9)\n')
+
+    def test_needs_no_upgrading(self):
+        # Branch upgrade job creation should raise an AssertionError if the
+        # branch does not need to be upgraded.
+        branch = self.factory.makeAnyBranch()
+        self.assertRaises(AssertionError, BranchUpgradeJob.create, branch)
 
     def test_upgrade_format_all_formats(self):
         # getUpgradeFormat should return a BzrDirMetaFormat1 object with the
@@ -265,8 +273,8 @@ class TestBranchUpgradeJob(TestCaseWithFactory):
             branch_format=BranchFormat.BZR_BRANCH_4,
             repository_format=RepositoryFormat.BZR_KNITPACK_6)
         _format = self.make_format(branch_format=BzrBranchFormat5)
-        branch, _unused = self.create_branch_and_tree(db_branch=branch,
-            format=_format)
+        branch, _unused = self.create_branch_and_tree(
+            db_branch=branch, format=_format, hosted=True)
         job = BranchUpgradeJob.create(branch)
 
         format = job.upgrade_format

@@ -404,6 +404,7 @@ class CodeHandler:
         :param submitter: The person submitting the merge proposal.
         """
         if url is not None:
+            url = url.rstrip('/')
             branches = getUtility(IBranchLookup)
             unique_name = branches.uriToUniqueName(URI(url))
             if unique_name is not None:

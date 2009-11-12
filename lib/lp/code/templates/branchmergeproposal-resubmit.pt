@@ -14,8 +14,9 @@
     <div metal:fill-slot="extra_info">
       <p>
         Resubmitting this proposal to merge will cause this proposal to be
-        marked as <strong>superseded</strong>.  Another proposal to merge with
-        the same source and target branches will be created.
+        marked as <strong>superseded</strong>.  Another merge proposal will
+        be created, with the same source, target and prerequisite branch
+        (if any).
       </p>
       <p>
         Everyone who has reviewed the previous proposal or was requested to
