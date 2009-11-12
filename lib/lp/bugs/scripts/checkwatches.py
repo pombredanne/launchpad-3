@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from copy import copy
 from datetime import datetime, timedelta
+import Queue as queue
 import socket
 import sys
 import threading
@@ -209,17 +210,25 @@ class BugWatchUpdater(object):
 
     def _bugTrackerUpdaters(self, bug_tracker_names=None):
         """Yields functions that can be used to update each bug tracker."""
-        ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
-        # Save the name, so we can use it in other transactions.
-        ubuntu_bugzilla_name = ubuntu_bugzilla.name
-
         # Set up an interaction as the Bug Watch Updater since the
         # notification code expects a logged in user.
         self._login()
 
+        ubuntu_bugzilla = getUtility(ILaunchpadCelebrities).ubuntu_bugzilla
+        # Save the name, so we can use it in other transactions.
+        ubuntu_bugzilla_name = ubuntu_bugzilla.name
+
         if bug_tracker_names is None:
             bug_tracker_names = [
                 bugtracker.name for bugtracker in getUtility(IBugTrackerSet)]
+
+        def make_updater(bug_tracker_id):
+            """Returns a function that can update the given bug tracker."""
+            def updater(batch_size=None):
+                run = self._interactionDecorator(self.updateBugTracker)
+                return run(bug_tracker_id, batch_size)
+            return updater
+
         for bug_tracker_name in bug_tracker_names:
             if bug_tracker_name == ubuntu_bugzilla_name:
                 # XXX: 2007-09-11 Graham Binns
@@ -235,10 +244,7 @@ class BugWatchUpdater(object):
                 bug_tracker = getUtility(IBugTrackerSet).getByName(
                     bug_tracker_name)
                 if bug_tracker.active:
-                    def updater(batch_size=None):
-                        run = self._interactionDecorator(self.updateBugTracker)
-                        return run(bug_tracker.id, batch_size)
-                    yield updater
+                    yield make_updater(bug_tracker.id)
                 else:
                     self.log.debug(
                         "Updates are disabled for bug tracker at %s" %
@@ -246,20 +252,45 @@ class BugWatchUpdater(object):
 
         self._logout()
 
-    def updateBugTrackers(self, bug_tracker_names=None, batch_size=None):
+    def updateBugTrackers(
+        self, bug_tracker_names=None, batch_size=None, num_threads=1):
         """Update all the bug trackers that have watches pending.
 
         If bug tracker names are specified in bug_tracker_names only
         those bug trackers will be checked.
+
+        The updates are run in threads, so that long running updates
+        don't block progress. However, by default the number of
+        threads is 1, to help with testing.
         """
         self.log.debug("Using a global batch size of %s" % batch_size)
 
+        # Put all the work on the queue. This is simpler than drip-feeding the
+        # queue, and avoids a situation where a worker thread exits because
+        # there's no work left and the feeding thread hasn't been scheduled to
+        # add work to the queue.
+        work = queue.Queue()
         for updater in self._bugTrackerUpdaters(bug_tracker_names):
-            # Run in another thread just to show that it can be done.
-            update_thread = threading.Thread(
-                target=updater, args=(batch_size,))
-            update_thread.start()
-            update_thread.join()
+            work.put(updater)
+
+        # This will be run once in each worker thread.
+        def do_work():
+            while True:
+                try:
+                    job = work.get(block=False)
+                except queue.Empty:
+                    break
+                else:
+                    job(batch_size)
+
+        # Start and join the worker threads.
+        threads = []
+        for run in xrange(num_threads):
+            thread = threading.Thread(target=do_work)
+            thread.start()
+            threads.append(thread)
+        for thread in threads:
+            thread.join()
 
     def updateBugTracker(self, bug_tracker, batch_size):
         """Updates the given bug trackers's bug watches.
