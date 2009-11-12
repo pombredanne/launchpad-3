@@ -205,12 +205,6 @@ class IDistroSeriesEditRestricted(Interface):
     def newMilestone(name, dateexpected=None, summary=None, code_name=None):
         """Create a new milestone for this DistroSeries."""
 
-    def permitSourcePackageFormat(format):
-        """Permit a source format to be uploaded to this series.
-
-        :param format: The SourcePackageFormat to permit.
-        """
-
 
 class ISeriesMixin(Interface):
     """Methods & properties shared between distro & product series."""

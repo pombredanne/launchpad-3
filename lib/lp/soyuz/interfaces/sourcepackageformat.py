@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'SourcePackageFormat',
     'ISourcePackageFormatSelection',
+    'ISourcePackageFormatSelectionSet',
     ]
 
 from zope.interface import Attribute, Interface
@@ -50,3 +51,14 @@ class ISourcePackageFormatSelection(Interface):
     id = Attribute("ID")
     distroseries = Attribute("Target series")
     format = Attribute("Permitted source package format")
+
+
+class ISourcePackageFormatSelectionSet(Interface):
+    """Set manipulation tools for the SourcePackageFormatSelection table."""
+
+    def getBySeriesAndFormat(distroseries, format):
+        """Return the ISourcePackageFormatSelection for the given series and
+        format."""
+
+    def add(distroseries, format):
+        """Allow the given source package format in the given series."""

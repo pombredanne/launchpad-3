@@ -5,24 +5,25 @@ __metaclass__ = type
 
 __all__ = [
     'SourcePackageFormatSelection',
+    'SourcePackageFormatSelectionSet',
     ]
 
 from storm.locals import Storm, Int, Reference
+from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
 from canonical.database.enumcol import DBEnum
 from lp.soyuz.interfaces.sourcepackageformat import (
-    ISourcePackageFormatSelection, SourcePackageFormat)
+    ISourcePackageFormatSelection, ISourcePackageFormatSelectionSet,
+    SourcePackageFormat)
+
 
 class SourcePackageFormatSelection(Storm):
     """See ISourcePackageFormatSelection."""
 
     implements(ISourcePackageFormatSelection)
-
-    def __init__(self, distroseries, format):
-        super(SourcePackageFormatSelection, self).__init__()
-        self.distroseries = distroseries
-        self.format = format
 
     __storm_table__ = 'sourcepackageformatselection'
 
@@ -33,3 +34,23 @@ class SourcePackageFormatSelection(Storm):
 
     format = DBEnum(enum=SourcePackageFormat)
 
+
+class SourcePackageFormatSelectionSet:
+    """See ISourcePackageFormatSelectionSet."""
+
+    implements(ISourcePackageFormatSelectionSet)
+
+    def getBySeriesAndFormat(self, distroseries, format):
+        """See `ISourcePackageFormatSelection`."""
+        return getUtility(IStoreSelector).get(
+            MAIN_STORE, DEFAULT_FLAVOR).find(
+                SourcePackageFormatSelection, distroseries=distroseries,
+                format=format).one()
+
+    def add(self, distroseries, format):
+        """See `ISourcePackageFormatSelection`."""
+        spfs = SourcePackageFormatSelection()
+        spfs.distroseries = distroseries
+        spfs.format = format
+        return getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR).add(
+            spfs)
