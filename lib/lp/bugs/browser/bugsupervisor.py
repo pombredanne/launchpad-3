@@ -101,7 +101,10 @@ class BugSupervisorEditView(LaunchpadEditFormView):
                     "%(target)s because you are not an administrator of that "
                     "team.<br />If you believe that %(team)s should be the "
                     "bug supervisor for %(target)s, please notify one of the "
-                    "<a href=\"%(url)s\">%(team)s administrators</a>.",
+                    "<a href=\"%(url)s\">%(team)s administrators</a>. See "
+                    "<a href=\"https://help.launchpad.net/BugSupervisors\">"
+                    "the help wiki</a> for information about setting a bug "
+                    "supervisor.",
                     team=supervisor.displayname,
                     target=self.context.displayname,
                     url=(canonical_url(supervisor, rootsite='mainsite') +
@@ -110,9 +113,10 @@ class BugSupervisorEditView(LaunchpadEditFormView):
             else:
                 error = structured(
                     "You cannot set another person as the bug supervisor for "
-                    "%(target)s.<br/> If you believe that %(person)s should "
-                    "be the bug supervisor for %(target)s, please ask this "
-                    "person to make itself the bug supervisor.",
+                    "%(target)s.<br />See "
+                    "<a href=\"https://help.launchpad.net/BugSupervisors\">"
+                    "the help wiki</a> for information about setting a bug "
+                    "supervisor.",
                     person=supervisor.displayname,
                     target=self.context.displayname)
             self.setFieldError('bug_supervisor', error)

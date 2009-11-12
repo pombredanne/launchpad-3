@@ -50,9 +50,8 @@ If Sample Person tries to appoint another person, he'll get an error message.
     Edit bug supervisor for Mozilla Firefox : Mozilla Firefox
     ...
     You cannot set another person as the bug supervisor for Mozilla Firefox.
-    If you believe that Robert Collins should be the bug supervisor for
-    Mozilla Firefox, please ask this person to make itself the bug
-    supervisor.
+    See the help wiki for information about setting a bug supervisor.
+    The person or team responsible for bug management.
     ...
 
 If he tries to appoint a team which he does not administer, he'll get

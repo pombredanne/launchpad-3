@@ -25,7 +25,7 @@ Now we login as Colin...
 
 Anyone with launchpad.Edit permission can edit the distribution bug
 supervisor, but most users can select only themselves and the teams they
-administer. In this example, Carlos will set himself as the distribution
+administer. In this example, Colin will set himself as the distribution
 bug supervisor.
 
   >>> bug_supervisor_link.click()
@@ -73,7 +73,7 @@ do it.
   ...
 
 While anybody with edit permissions can set the bug supervisor, only
-only certain persons can be successfully selected. All users can set
+certain persons can be successfully selected. All users can set
 themselves self and teams they administer as the bug supervisor, as
 shown above. But ordinary users cannot appoint other persons and teams
 they do not administer.
