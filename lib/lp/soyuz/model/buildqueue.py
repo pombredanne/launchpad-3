@@ -26,7 +26,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.soyuz.interfaces.soyuzjob import SoyuzJobType
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
@@ -48,16 +48,6 @@ class BuildQueue(SQLBase):
     lastscore = IntCol(dbName='lastscore', default=0)
     manual = BoolCol(dbName='manual', default=False)
 
-    def _get_build(self):
-        """Object with data and behaviour specific to the job type at hand."""
-        from lp.soyuz.model.build import Build
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
-            Build,
-            BuildPackageJob.build == Build.id,
-            BuildPackageJob.job == self.job)
-        return result_set[0]
-
     def _get_specific_job(self):
         """Object with data and behaviour specific to the job type at hand."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -69,11 +59,6 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.lastscore = value
         self.manual = True
-
-    @property
-    def archseries(self):
-        """See `IBuildQueue`."""
-        return self._get_build().distroarchseries
 
     def score(self):
         """See `IBuildQueue`."""
@@ -102,7 +87,7 @@ class BuildQueue(SQLBase):
         self.builder = builder
         self.job.date_started = UTC_NOW
         self.job.status = JobStatus.RUNNING
-        build = self._get_build()
+        build = getUtility(IBuildSet).getByQueueEntry(self)
         build.buildstate = BuildStatus.BUILDING
         # The build started, set the start time if not set already.
         if build.date_first_dispatched is None:
@@ -114,13 +99,13 @@ class BuildQueue(SQLBase):
         self.job.date_started = None
         self.job.status = JobStatus.WAITING
         self.logtail = None
-        build = self._get_build()
+        build = getUtility(IBuildSet).getByQueueEntry(self)
         build.buildstate = BuildStatus.NEEDSBUILD
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
         """See `IBuildQueue`."""
-        build = self._get_build()
+        build = getUtility(IBuildSet).getByQueueEntry(self)
         logger.warn(
             "Builder %s forgot about build %s -- resetting buildqueue record"
             % (self.builder.url, build.title))
@@ -143,7 +128,7 @@ class BuildQueue(SQLBase):
         self.builder = None
         self.job.date_started = None
         self.job.status = JobStatus.FAILED
-        build = self._get_build()
+        build = getUtility(IBuildSet).getByQueueEntry(self)
         build.buildstate = BuildStatus.BUILDING
 
 

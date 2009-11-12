@@ -280,8 +280,10 @@ class BuilddMaster:
             "scanActiveBuilders() found %d active build(s) to check"
             % queueItems.count())
 
+        build_set = getUtility(IBuildSet)
         for job in queueItems:
-            proc = job.archseries.processorfamily
+            build = build_set.getByQueueEntry(job)
+            proc = build.distroarchseries.processorfamily
             try:
                 builders = notes[proc]["builders"]
             except KeyError:

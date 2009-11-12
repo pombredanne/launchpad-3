@@ -280,7 +280,8 @@ class Builder(SQLBase):
             "Soyuz is not yet capable of building SECURITY uploads.")
 
         # Ensure build has the needed chroot
-        chroot = build_queue_item.archseries.getChroot()
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        chroot = build.distroarchseries.getChroot()
         if chroot is None:
             raise CannotBuild(
                 "Missing CHROOT for %s/%s/%s" % (
@@ -307,7 +308,8 @@ class Builder(SQLBase):
     def _dispatchBuildToSlave(self, build_queue_item, args, buildid, logger):
         """Start the build on the slave builder."""
         # Send chroot.
-        chroot = build_queue_item.archseries.getChroot()
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        chroot = build.distroarchseries.getChroot()
         self.cacheFileOnSlave(logger, chroot)
 
         # Build filemap structure with the files required in this build
@@ -366,7 +368,8 @@ class Builder(SQLBase):
         # turn 'arch_indep' ON only if build is archindep or if
         # the specific architecture is the nominatedarchindep for
         # this distroseries (in case it requires any archindep source)
-        args['arch_indep'] = build_queue_item.archseries.isNominatedArchIndep
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        args['arch_indep'] = build.distroarchseries.isNominatedArchIndep
 
         suite = build_queue_item.build.distroarchseries.distroseries.name
         if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
