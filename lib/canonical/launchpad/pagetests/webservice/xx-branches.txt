@@ -33,12 +33,15 @@ The branches collection also offers operations to get a particular branch.
 
 === Getting many branches by URL ===
 
+    >>> from pprint import pprint
     >>> branches = webservice.get(
-    ...     '/branches?ws.op=getByUrls&urls=%s&urls=%s'
-    ...     % (branch_url, branch2_url)).jsonBody()
+    ...     '/branches?ws.op=getByUrls&urls=%s&urls=%s&urls=%s'
+    ...     % (branch_url, 'http://example.com/doesntexist', branch2_url))
+    >>> branches = branches.jsonBody()
+    >>> branches['total_size']
+    3
     >>> branches['entries'][0]['unique_name'] == branch_unique_name
     True
-    >>> branches['entries'][1]['unique_name'] == branch2_unique_name
+    >>> branches['entries'][2]['unique_name'] == branch2_unique_name
     True
-    >>> branches['total_size']
-    2
+
