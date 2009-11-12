@@ -34,7 +34,7 @@ class CannotUploadToArchive:
 
 
 class CannotUploadToPocket:
-    """Raised when a pocket is closed for uploads."""
+    """Returned when a pocket is closed for uploads."""
 
     def __init__(self, distroseries, pocket):
         super(CannotUploadToPocket, self).__init__(
@@ -82,7 +82,7 @@ class InvalidPocketForPPA(CannotUploadToArchive):
 
 
 class InvalidPocketForPartnerArchive(CannotUploadToArchive):
-    """PPAs only support some pockets."""
+    """Partner archives only support some pockets."""
 
     _fmt = "Partner uploads must be for the RELEASE or PROPOSED pocket."
 
@@ -140,7 +140,6 @@ def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
         uploaded to.
     :return: The reason for not being able to upload, None otherwise.
     """
-    # XXX: Tests
     if archive.purpose == ArchivePurpose.PARTNER:
         if pocket not in (
             PackagePublishingPocket.RELEASE,
