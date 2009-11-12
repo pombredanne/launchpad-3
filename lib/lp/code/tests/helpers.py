@@ -52,7 +52,7 @@ def make_erics_fooix_project(factory):
         review_requests=[(eric, 'code')])
     # And fake a diff.
     naked_bmp = removeSecurityProxy(bmp)
-    preview = removeSecurityProxy(bmp.updatePreviewDiff(
+    preview = removeSecurityProxy(naked_bmp.updatePreviewDiff(
         ''.join(unified_diff('', 'random content')), u'rev-a', u'rev-b'))
     naked_bmp.source_branch.last_scanned_id = preview.source_revision_id
     naked_bmp.target_branch.last_scanned_id = preview.target_revision_id
