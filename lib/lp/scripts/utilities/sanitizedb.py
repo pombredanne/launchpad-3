@@ -496,7 +496,10 @@ class SanitizeDb(LaunchpadScript):
 
         :param triggers_to_disable: List of (table_name, trigger_name).
         """
+        self.logger.debug("Disabling %d triggers." % len(triggers_to_disable))
         for table_name, trigger_name in triggers_to_disable:
+            self.logger.debug(
+                "Disabling trigger %s.%s." % (table_name, trigger_name))
             self.store.execute(
                 "ALTER TABLE %s DISABLE TRIGGER %s"
                 % (table_name, trigger_name))
@@ -506,7 +509,10 @@ class SanitizeDb(LaunchpadScript):
 
         :param triggers_to_disable: List of (table_name, trigger_name).
         """
+        self.logger.debug("Enabling %d triggers." % len(triggers_to_disable))
         for table_name, trigger_name in triggers_to_disable:
+            self.logger.debug(
+                "Enabling trigger %s.%s." % (table_name, trigger_name))
             self.store.execute(
                 "ALTER TABLE %s ENABLE TRIGGER %s"
                 % (table_name, trigger_name))
