@@ -2862,8 +2862,8 @@ class PersonSet:
 
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
         # Update MailingListSubscription. Note that since all the from_id
-        # email addresses are set to NEW, requiring that they be confirmed
-        # All the subscriptions must be removed.
+        # email addresses are set to NEW, all the subscriptions must be
+        # removed because the user must confirm them.
         cur.execute('''
             DELETE FROM MailingListSubscription WHERE person=%(from_id)d
             ''' % vars())
