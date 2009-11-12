@@ -163,7 +163,7 @@ class IStructuralSubscriptionTarget(Interface):
     parent_subscription_target = Attribute(
         "The target's parent, or None if one doesn't exist.")
 
-    def userCanAlterSubscription(self, subscriber, subscribed_by):
+    def userCanAlterSubscription(subscriber, subscribed_by):
         """Check if a user can change a subscription for a person."""
 
     def addSubscription(subscriber, subscribed_by):
