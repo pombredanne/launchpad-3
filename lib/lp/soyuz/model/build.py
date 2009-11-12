@@ -113,10 +113,7 @@ class Build(SQLBase):
             BuildQueue,
             BuildPackageJob.job == BuildQueue.jobID,
             BuildPackageJob.build == self.id)
-        if results.count() == 1:
-            return results[0]
-        else:
-            return None
+        return results.one()
 
     @property
     def upload_log_url(self):
@@ -1186,7 +1183,4 @@ class BuildSet:
             BuildPackageJob.build == Build.id,
             BuildPackageJob.job == queue_entry.job)
 
-        if result_set.count() == 0:
-            return None
-        else:
-            return result_set[0]
+        return result_set.one()
