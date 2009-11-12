@@ -123,9 +123,7 @@ messages.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.database.constants import UTC_NOW
     >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> in_progress_build.buildstate = BuildStatus.NEEDSBUILD
-    >>> in_progress_build.buildqueue_record.buildstart = None
-    >>> in_progress_build.buildqueue_record.builder = None
+    >>> in_progress_build.buildqueue_record.reset()
     >>> build.buildqueue_record.markAsBuilding(bob_builder)
     >>> build.buildqueue_record.logtail = 'one line\nanother line'
     >>> logout()
