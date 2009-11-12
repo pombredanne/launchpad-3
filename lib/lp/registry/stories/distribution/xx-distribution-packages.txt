@@ -47,7 +47,7 @@ here first:
     ...     'http://localhost'
     ...     '/ubuntu/breezy-autotest/+package/mozilla-firefox')
     >>> print browser.title
-    mozilla-firefox : 6.6.6 : Ubuntu
+    mozilla-firefox : Breezy Badger Autotest (6.6.6) : Ubuntu
 
 Now run a search for mozilla-firefox and check that it is found:
 
