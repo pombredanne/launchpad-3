@@ -279,18 +279,6 @@ class TestGetByUrl(TestCaseWithFactory):
         branch2 = branch_set.getByUrl('ftp://bazaar.launchpad.dev/~aa/b/c')
         self.assertIs(None, branch2)
 
-    def test_getByUrls(self):
-        a = self.factory.makeAnyBranch()
-        b = self.factory.makeAnyBranch()
-        branch_set = getUtility(IBranchLookup)
-        urls = branch_set.getByUrls([a.bzr_identity, b.bzr_identity])
-        self.assertEqual([a, b], list(urls))
-
-    def test_getByUrls_cant_find_url(self):
-        branch_set = getUtility(IBranchLookup)
-        urls = branch_set.getByUrls(['http://example.com/doesntexist'])
-        self.assertEqual([None], list(urls))
-
     def test_getByURL_with_lp_prefix(self):
         """lp: URLs for the configured prefix are supported."""
         branch_set = getUtility(IBranchLookup)
