@@ -17,6 +17,8 @@ The branches collection also offers operations to get a particular branch.
     >>> branch = factory.makeAnyBranch(branch_type=BranchType.MIRRORED)
     >>> branch_url = branch.url
     >>> branch_unique_name = branch.unique_name
+    >>> branch2 = factory.makeAnyBranch()
+    >>> branch2_url = branch2.bzr_identity
     >>> logout()
 
 
@@ -26,3 +28,16 @@ The branches collection also offers operations to get a particular branch.
     ...     '/branches?ws.op=getByUrl&url=%s' % branch_url).jsonBody()
     >>> found_branch['unique_name'] == branch_unique_name
     True
+
+
+=== Getting many branches by URL ===
+
+    >>> branches = webservice.get(
+    ...     '/branches?ws.op=getByUrls&urls=%s&urls=%s'
+    ...     % (branch_url, branch2_url)).jsonBody()
+    >>> branches[branch_url]['unique_name'] == branch.unique_name
+    True
+    >>> branches[branch2_url]['unique_name'] == branch2.unique_name
+    True
+    >>> len(branches.keys())
+    2

@@ -50,7 +50,8 @@ from lazr.restful.declarations import (
     call_with, collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_factory_operation,
     export_operation_as, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_entry, REQUEST_USER)
+    exported, operation_parameters, operation_returns_collection_of,
+    operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
 
@@ -1164,6 +1165,26 @@ class IBranchSet(Interface):
     @operation_returns_entry(IBranch)
     @export_read_operation()
     def getByUrl(url):
+        """Find a branch by URL.
+
+        Either from the external specified in Branch.url, from the URL on
+        http://bazaar.launchpad.net/ or the lp: URL.
+
+        Return None if no match was found.
+        """
+
+    @operation_parameters(
+        urls=List(
+            title=u'A list of URLs of branches',
+            description=(
+                u'These can be URLs external to '
+                u'Launchpad, lp: URLs, or http://bazaar.launchpad.net/ URLs, '
+                u'or any mix of all these different kinds.'),
+            value_type=TextLine(),
+            required=True))
+    @operation_returns_collection_of(IBranch)
+    @export_read_operation()
+    def getByUrls(urls):
         """Find a branch by URL.
 
         Either from the external specified in Branch.url, from the URL on
