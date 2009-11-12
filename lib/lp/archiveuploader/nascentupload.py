@@ -325,9 +325,6 @@ class NascentUpload:
 
 
         # It is never sane to upload more than one source at a time.
-        # XXX: What about orphaned files? How will that work?
-        #      I think we might need to verify that all source files are
-        #      claimed by a dsc.
         if dsc > 1:
             self.reject("Changes file lists more than one .dsc")
 
