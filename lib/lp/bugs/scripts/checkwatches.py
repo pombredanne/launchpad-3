@@ -1131,7 +1131,7 @@ class CheckWatchesCronScript(LaunchpadCronScript):
                 "one bugtracker using this option will check all the "
                 "bugtrackers specified.")
         self.parser.add_option(
-            '-b', '--batch-size', action='store', dest='batch_size',
+            '-b', '--batch-size', action='store', type=int, dest='batch_size',
             help="Set the number of watches to be checked per bug "
                  "tracker in this run. If BATCH_SIZE is 0, all watches "
                  "on the bug tracker that are eligible for checking will "
@@ -1150,21 +1150,17 @@ class CheckWatchesCronScript(LaunchpadCronScript):
 
         updater = BugWatchUpdater(self.txn, self.logger)
 
-        # Make sure batch_size is an integer or None.
-        batch_size = self.options.batch_size
-        if batch_size is not None:
-            batch_size = int(batch_size)
-
         if self.options.update_all and len(self.options.bug_trackers) > 0:
             # The user has requested that we update *all* the watches
             # for these bugtrackers
             for bug_tracker in self.options.bug_trackers:
-                updater.forceUpdateAll(bug_tracker, batch_size)
+                updater.forceUpdateAll(bug_tracker, self.options.batch_size)
         else:
             # Otherwise we just update those watches that need updating,
             # and we let the BugWatchUpdater decide which those are.
             updater.updateBugTrackers(
-                self.options.bug_trackers, batch_size, self.options.jobs)
+                self.options.bug_trackers, self.options.batch_size,
+                self.options.jobs)
 
         run_time = time.time() - start_time
         self.logger.info("Time for this run: %.3f seconds." % run_time)
