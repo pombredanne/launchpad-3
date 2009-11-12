@@ -2861,25 +2861,13 @@ class PersonSet:
                           name=name, new_name=new_name, product=product))
 
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
-        # Update MailingListSubscription. Note that no remaining records
-        # will have email_address set, as we assert earlier that the
-        # from_person has no email addresses.
-        # Update records that don't conflict.
-        cur.execute('''
-            UPDATE MailingListSubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
-                AND mailing_list NOT IN (
-                    SELECT mailing_list
-                    FROM MailingListSubscription
-                    WHERE person=%(to_id)d
-                    )
-            ''' % vars())
-        # Then trash the remainders.
+        # Update MailingListSubscription. Note that since all the from_id
+        # email addresses are set to NEW, requiring that they be confirmed
+        # All the subscriptions must be removed.
         cur.execute('''
             DELETE FROM MailingListSubscription WHERE person=%(from_id)d
             ''' % vars())
-
+            
     def _mergeBranchSubscription(self, cur, from_id, to_id):
         # Update only the BranchSubscription that will not conflict.
         cur.execute('''
