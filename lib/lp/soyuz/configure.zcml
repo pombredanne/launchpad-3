@@ -863,5 +863,11 @@
             interface="lp.soyuz.interfaces.packagesetgroup.IPackagesetGroup"/>
     </class>
 
+    <!-- BuildPackageJob -->
+    <class
+        class="lp.soyuz.model.buildpackagejob.BuildPackageJob">
+        <allow
+            interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
+    </class>
 
 </configure>
