@@ -159,7 +159,7 @@ class DistributionSourcePackage(BugTargetBase,
             clauseTables=["SourcePackagePublishingHistory",
                           "SourcePackageRelease", 
                           "DistroSeries"],
-            orderBy=["-status",
+            orderBy=["status",
                      SQLConstant(
                         "to_number(DistroSeries.version, '99.99') DESC"),
                      "-pocket"])
