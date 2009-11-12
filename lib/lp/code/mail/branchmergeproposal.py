@@ -152,6 +152,14 @@ class BMPMailer(BranchMailer):
             comment=comment, preview_diff=merge_proposal.preview_diff,
             direct_email=True)
 
+    def _getSubject(self, email):
+        """The subject template expanded with the template params.
+
+        Unlike the BranchMailer base class, the BMP mailer does use the
+        template params in the subject headings.
+        """
+        return self._subject_template % self._getTemplateParams(email)
+
     def _getReplyToAddress(self):
         """Return the address to use for the reply-to header."""
         return self.merge_proposal.address
