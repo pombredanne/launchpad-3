@@ -21,9 +21,11 @@ from storm.expr import In, Join, LeftJoin
 
 from canonical import encoding
 from canonical.database.constants import UTC_NOW
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.services.job.interfaces.job import Job, JobStatus
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.soyuz.interfaces.soyuzjob import SoyuzJobType
@@ -38,7 +40,9 @@ class BuildQueue(SQLBase):
     _defaultOrder = "id"
 
     job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
-    job_type = IntCol(dbName='job_type', default=1)
+    job_type = EnumCol(
+        enum=SoyuzJobType, notNull=True, default=SoyuzJobType.PACKAGEBUILD,
+        dbName='job_type')
     builder = ForeignKey(dbName='builder', foreignKey='Builder', default=None)
     logtail = StringCol(dbName='logtail', default=None)
     lastscore = IntCol(dbName='lastscore', default=0)
@@ -65,6 +69,11 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.lastscore = value
         self.manual = True
+
+    @property
+    def archseries(self):
+        """See `IBuildQueue`."""
+        return self._get_build().distroarchseries
 
     def score(self):
         """See `IBuildQueue`."""
@@ -208,13 +217,13 @@ class BuildQueueSet(object):
 
         origin = (
             BuildPackageJob,
-            Join(BuildQueue, BuildQueue.job == BuildPackageJob.job),
+            Join(BuildQueue, BuildPackageJob.job == BuildQueue.jobID),
             LeftJoin(
                 Builder,
                 BuildQueue.builderID == Builder.id),
             )
         result_set = store.using(*origin).find(
             (BuildQueue, Builder),
-            In(BuildPackageJob.buildID, build_ids))
+            In(BuildPackageJob.build, build_ids))
 
         return result_set

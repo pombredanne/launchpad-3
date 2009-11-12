@@ -47,12 +47,14 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
+from lp.soyuz.interfaces.soyuzjob import SoyuzJobType
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.builder import Builder
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
@@ -109,7 +111,7 @@ class Build(SQLBase):
         store = Store.of(self)
         results = store.find(
             BuildQueue,
-            BuildPackageJob.job == BuildQueue.job,
+            BuildPackageJob.job == BuildQueue.jobID,
             BuildPackageJob.build == self.id)
         if results.count() == 1:
             return results[0]
@@ -623,7 +625,18 @@ class Build(SQLBase):
 
     def createBuildQueueEntry(self):
         """See `IBuild`"""
-        return BuildQueue(build=self)
+        store = Store.of(self)
+        job = Job()
+        store.add(job)
+        specific_job = BuildPackageJob()
+        specific_job.build = self.id
+        specific_job.job = job.id
+        store.add(specific_job)
+        queue_entry = BuildQueue()
+        queue_entry.job = job.id
+        queue_entry.job_type = SoyuzJobType.PACKAGEBUILD
+        store.add(queue_entry)
+        return queue_entry
 
     def notify(self, extra_info=None):
         """See `IBuild`"""
@@ -984,6 +997,7 @@ class BuildSet:
         if status in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore", "Build.id"]
             clauseTables.append('BuildQueue')
+            clauseTables.append('BuildPackageJob')
             condition_clauses.append('BuildPackageJob.build = Build.id')
             condition_clauses.append('BuildPackageJob.job = BuildQueue.job')
         elif status == BuildStatus.SUPERSEDED or status is None:

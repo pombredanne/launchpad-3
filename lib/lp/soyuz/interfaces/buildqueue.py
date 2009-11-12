@@ -35,6 +35,9 @@ class IBuildQueue(Interface):
     lastscore = Attribute("Last score to be computed for this job")
     manual = Attribute("Whether or not the job was manually scored")
 
+    archseries = Attribute(
+        "DistroArchSeries target of the IBuild releated to this job.")
+
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
 
