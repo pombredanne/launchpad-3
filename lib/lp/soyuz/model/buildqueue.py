@@ -73,23 +73,20 @@ class BuildQueue(SQLBase):
 
         # Allow the `ISoyuzJob` instance with the data/logic specific to the
         # job at hand to calculate the score as appropriate.
-        the_job = self.specific_job
-        self.lastscore = the_job.score()
+        self.lastscore = self.specific_job.score()
 
     def getLogFileName(self):
         """See `IBuildQueue`."""
         # Allow the `ISoyuzJob` instance with the data/logic specific to the
         # job at hand to calculate the log file name as appropriate.
-        the_job = self.specific_job
-        return the_job.getLogFileName()
+        return self.specific_job.getLogFileName()
 
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
         self.builder = builder
         if self.job.status != JobStatus.RUNNING:
             self.job.start()
-        the_job = self.specific_job
-        the_job.jobStarted()
+        self.specific_job.jobStarted()
 
     def reset(self):
         """See `IBuildQueue`."""
@@ -99,8 +96,7 @@ class BuildQueue(SQLBase):
         self.job.date_started = None
         self.job.date_finished = None
         self.logtail = None
-        the_job = self.specific_job
-        the_job.jobReset()
+        self.specific_job.jobReset()
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
@@ -130,8 +126,7 @@ class BuildQueue(SQLBase):
             self.job.fail()
         self.job.date_started = None
         self.job.date_finished = None
-        the_job = self.specific_job
-        the_job.jobAborted()
+        self.specific_job.jobAborted()
 
 
 class BuildQueueSet(object):
