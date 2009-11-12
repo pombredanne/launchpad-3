@@ -241,7 +241,7 @@ class BranchLookup:
 
     def getByUrls(self, urls):
         """See `IBranchLookup`."""
-        return dict((url, self.getByUrl(url)) for url in urls)
+        return (self.getByUrl(url) for url in urls)
 
     def getByUniqueName(self, unique_name):
         """Find a branch by its unique name.

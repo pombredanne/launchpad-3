@@ -1182,7 +1182,7 @@ class BranchSet:
 
     def getByUrls(self, urls):
         """See `IBranchSet`."""
-        return getUtility(IBranchLookup).getByUrls(urls)
+        return list(getUtility(IBranchLookup).getByUrls(urls))
 
     def getBranches(self, limit=50):
         """See `IBranchSet`."""

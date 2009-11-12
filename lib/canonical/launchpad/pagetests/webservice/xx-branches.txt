@@ -19,6 +19,7 @@ The branches collection also offers operations to get a particular branch.
     >>> branch_unique_name = branch.unique_name
     >>> branch2 = factory.makeAnyBranch()
     >>> branch2_url = branch2.bzr_identity
+    >>> branch2_unique_name = branch2.unique_name
     >>> logout()
 
 
@@ -35,9 +36,9 @@ The branches collection also offers operations to get a particular branch.
     >>> branches = webservice.get(
     ...     '/branches?ws.op=getByUrls&urls=%s&urls=%s'
     ...     % (branch_url, branch2_url)).jsonBody()
-    >>> branches[branch_url]['unique_name'] == branch.unique_name
+    >>> branches['entries'][0]['unique_name'] == branch_unique_name
     True
-    >>> branches[branch2_url]['unique_name'] == branch2.unique_name
+    >>> branches['entries'][1]['unique_name'] == branch2_unique_name
     True
-    >>> len(branches.keys())
+    >>> branches['total_size']
     2

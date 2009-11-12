@@ -104,9 +104,9 @@ class IBranchLookup(Interface):
         """Find branches by their URLs.
 
         :param urls: A list of URLs.
-        :return: A dict mapping the URLs to branches. If we can't find the
-            branch for a URL, then the URL will be present in the dict and
-            map to None.
+        :return: A list of branches, each corresponding to a URL. If we can't
+            find the branch for a particular URL, then the item in the list
+            will be None.
         """
 
     def getByLPPath(path):

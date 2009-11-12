@@ -284,12 +284,12 @@ class TestGetByUrl(TestCaseWithFactory):
         b = self.factory.makeAnyBranch()
         branch_set = getUtility(IBranchLookup)
         urls = branch_set.getByUrls([a.bzr_identity, b.bzr_identity])
-        self.assertEqual({a.bzr_identity: a, b.bzr_identity: b}, urls)
+        self.assertEqual([a, b], list(urls))
 
     def test_getByUrls_cant_find_url(self):
         branch_set = getUtility(IBranchLookup)
         urls = branch_set.getByUrls(['http://example.com/doesntexist'])
-        self.assertEqual({'http://example.com/doesntexist': None}, urls)
+        self.assertEqual([None], list(urls))
 
     def test_getByURL_with_lp_prefix(self):
         """lp: URLs for the configured prefix are supported."""
