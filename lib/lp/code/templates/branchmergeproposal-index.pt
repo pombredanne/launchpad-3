@@ -141,7 +141,7 @@
 
   <div id="review-diff" tal:condition="view/preview_diff">
     <h2>Preview Diff</h2>
-    <div tal:replace="structure context/@@+diff"/>
+    <div tal:replace="structure context/@@++diff"/>
   </div>
 
 <tal:script
