@@ -139,3 +139,7 @@ class BuildPackageJob(Storm):
         return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
             distroname, distroseriesname, archname, sourcename, version, state
             ))
+
+    def getName(self):
+        """See `ISoyuzJob`."""
+        return self.build.sourcepackagerelease.name

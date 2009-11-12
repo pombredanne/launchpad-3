@@ -57,3 +57,6 @@ class ISoyuzJob(Interface):
     def getLogFileName():
         """The preferred file name for the log of this Soyuz job."""
 
+    def getName():
+        """An appropriate name for this Soyuz job."""
+

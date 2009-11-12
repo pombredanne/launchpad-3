@@ -311,7 +311,7 @@ class BuilddMaster:
                           % candidates.count())
 
         for job in candidates:
-            uptodate_build = getUtility(IBuildSet).getByBuildID(job.build.id)
+            uptodate_build = getUtility(IBuildSet).getByQueueEntry(job)
             if uptodate_build.buildstate != BuildStatus.NEEDSBUILD:
                 continue
             job.score()

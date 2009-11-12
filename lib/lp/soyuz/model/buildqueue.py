@@ -64,10 +64,11 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         # Grab any logger instance available.
         logger = logging.getLogger()
+        name = self._get_specific_job().getName()
 
         if self.manual:
             logger.debug(
-                "%s (%d) MANUALLY RESCORED" % (self.name, self.lastscore))
+                "%s (%d) MANUALLY RESCORED" % (name, self.lastscore))
             return
 
         # Allow the `ISoyuzJob` instance with the data/logic specific to the
