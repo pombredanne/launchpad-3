@@ -53,7 +53,7 @@ class BuildQueue(SQLBase):
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             BuildPackageJob, BuildPackageJob.job == self.job)
-        return result_set[0]
+        return result_set.one()
 
     def manualScore(self, value):
         """See `IBuildQueue`."""
