@@ -91,8 +91,8 @@ class IBuildQueue(Interface):
         Clean the builder for another jobs.
         """
 
-    def specific_job():
-        """Object with data and behaviour specific to the job type at hand."""
+    specific_job = Attribute(
+        "Object with data and behaviour specific to the job type at hand.")
 
 
 class IBuildQueueSet(Interface):
