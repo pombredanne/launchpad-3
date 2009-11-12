@@ -100,6 +100,28 @@
                 </tal:no_launchpad>
               </dl>
 
+              <dl id="dev-focus"
+                  tal:define="dev_focus context/development_focus;
+                              trunk dev_focus/branch">
+                <dt>Development focus:</dt>
+                <dd>
+                  <p>
+                  <a tal:attributes="href dev_focus/fmt:url"
+                     tal:content="string:${dev_focus/name} series" />&nbsp;
+                  <a tal:replace="structure overview_menu/edit/fmt:icon" /></p>
+                  <p tal:condition="trunk">
+                    <a tal:replace="structure trunk/fmt:link" />&nbsp;
+                    <a tal:replace="structure dev_focus/menu:overview/link_branch/fmt:icon" />
+                    <br/>
+                    <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
+                  </p>
+                  <p tal:condition="not: trunk">
+                    Development focus branch has not been specified
+                    <a tal:replace="structure dev_focus/menu:overview/link_branch/fmt:icon" />
+                  </p>
+                </dd>
+              </dl>
+
               <dl id="product-languages"
                 tal:condition="view/show_programming_languages">
                 <dt>Programming Languages:</dt>
@@ -158,7 +180,6 @@
             <p id="development-focus">
               <a tal:replace="structure context/development_focus/fmt:link" />
               is the current focus of development
-              <a tal:replace="structure overview_menu/edit/fmt:icon" />
             </p>
 
             <ul class="horizontal">
