@@ -3460,7 +3460,7 @@ class PersonSet:
         # flush its caches.
         store.invalidate()
 
-        # Inform the user of the merge changes
+        # Inform the user of the merge changes.
         if not to_person.isTeam():
             mail_text = get_email_template('person-merged.txt')
             mail_text = mail_text % {
