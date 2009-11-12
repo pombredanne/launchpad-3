@@ -52,6 +52,7 @@ from lp.soyuz.interfaces.builder import (
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus)
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.utils import copy_and_close
 
@@ -421,8 +422,9 @@ class Builder(SQLBase):
         if currentjob is None:
             return 'Idle'
 
-        msg = 'Building %s' % currentjob.build.title
-        archive = currentjob.build.archive
+        build = getUtility(IBuildSet).getByQueueEntry(currentjob)
+        msg = 'Building %s' % build.title
+        archive = build.archive
         if not archive.owner.private and (archive.is_ppa or archive.is_copy):
             return '%s [%s/%s]' % (msg, archive.owner.name, archive.name)
         else:
@@ -553,7 +555,8 @@ class Builder(SQLBase):
                       SourcePackagePublishingHistory.status IN %s))
               OR
               archive.private IS FALSE) AND
-            buildqueue.build = build.id AND
+            buildqueue.job = buildpackagejob.job AND
+            buildpackagejob.build = build.id AND
             build.distroarchseries = distroarchseries.id AND
             build.archive = archive.id AND
             archive.enabled = TRUE AND
@@ -563,7 +566,8 @@ class Builder(SQLBase):
         """ % sqlvalues(
             private_statuses, BuildStatus.NEEDSBUILD, self.processor.family)]
 
-        clauseTables = ['Build', 'DistroArchSeries', 'Archive']
+        clauseTables = [
+            'Build', 'BuildPackageJob', 'DistroArchSeries', 'Archive']
 
         clauses.append("""
             archive.require_virtualized = %s
@@ -612,26 +616,28 @@ class Builder(SQLBase):
         # Builds in those situation should not be built because they will
         # be wasting build-time, the former case already has a newer source
         # and the latter could not be built in DAK.
+        build_set = getUtility(IBuildSet)
         while candidate is not None:
-            if candidate.build.pocket == PackagePublishingPocket.SECURITY:
+            build = build_set.getByQueueEntry(candidate)
+            if build.pocket == PackagePublishingPocket.SECURITY:
                 # We never build anything in the security pocket.
                 logger.debug(
                     "Build %s FAILEDTOBUILD, queue item %s REMOVED"
-                    % (candidate.build.id, candidate.id))
-                candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
+                    % (build.id, candidate.id))
+                build.buildstate = BuildStatus.FAILEDTOBUILD
                 candidate.destroySelf()
                 candidate = self._findBuildCandidate()
                 continue
 
-            publication = candidate.build.current_source_publication
+            publication = build.current_source_publication
 
             if publication is None:
                 # The build should be superseded if it no longer has a
                 # current publishing record.
                 logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"
-                    % (candidate.build.id, candidate.id))
-                candidate.build.buildstate = BuildStatus.SUPERSEDED
+                    % (build.id, candidate.id))
+                build.buildstate = BuildStatus.SUPERSEDED
                 candidate.destroySelf()
                 candidate = self._findBuildCandidate()
                 continue
@@ -734,13 +740,15 @@ class BuilderSet(object):
         origin = (
             Archive,
             Build,
+            BuildPackageJob,
             BuildQueue,
             DistroArchSeries,
             Processor,
             )
         queue = store.using(*origin).find(
             BuildQueue,
-            BuildQueue.build == Build.id,
+            BuildPackageJob.job == BuildQueue.jobID,
+            BuildPackageJob.build == Build.id,
             Build.distroarchseries == DistroArchSeries.id,
             Build.archive == Archive.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,

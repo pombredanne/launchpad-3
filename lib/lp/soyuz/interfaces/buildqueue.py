@@ -13,6 +13,11 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import Choice, Object
+
+from canonical.launchpad import _
+from lp.services.job.interfaces.job import IJob
+from lp.soyuz.interfaces.soyuzjob import SoyuzJobType
 
 
 class IBuildQueue(Interface):
@@ -37,6 +42,14 @@ class IBuildQueue(Interface):
 
     archseries = Attribute(
         "DistroArchSeries target of the IBuild releated to this job.")
+
+    job = Object(
+        title=_("Generic job data"), schema=IJob, required=True,
+        description=_("The generic data (time stamps etc.) about this job."))
+
+    job_type = Choice(
+        title=_('Job type'), required=True, vocabulary=SoyuzJobType,
+        description=_("The type of this job."))
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
@@ -125,4 +138,3 @@ class IBuildQueueSet(Interface):
         Retrieve the build queue and related builder rows associated with the
         builds in question where they exist.
         """
-

@@ -201,7 +201,7 @@ class BuildQueueSet(object):
            BuildPackageJob.build = build.id AND
            BuildQueue.builder IS NULL
         """ % sqlvalues(
-            arch_ids, BuildStatus.NEEDSBUILD, SoyuzJobType.PACKAGEBUILDJOB)
+            arch_ids, BuildStatus.NEEDSBUILD, SoyuzJobType.PACKAGEBUILD)
 
         candidates = BuildQueue.select(
             query, clauseTables=['Build'], orderBy=['-BuildQueue.lastscore'])

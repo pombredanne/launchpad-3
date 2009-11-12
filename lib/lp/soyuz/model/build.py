@@ -1177,3 +1177,16 @@ class BuildSet:
         # this (pre_iter_hook()) method that will iterate over the
         # result set and force the query execution that way.
         return list(result_set)
+
+    def getByQueueEntry(self, queue_entry):
+        """See `IBuildSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            Build,
+            BuildPackageJob.build == Build.id,
+            BuildPackageJob.job == queue_entry.job)
+
+        if result_set.count() == 0:
+            return None
+        else:
+            return result_set[0]

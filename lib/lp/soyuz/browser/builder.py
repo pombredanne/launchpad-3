@@ -241,8 +241,8 @@ class BuilderView(LaunchpadView):
             return None
         else:
             UTC = pytz.timezone('UTC')
-            job.date_started = self.context.currentjob.job.date_started
-            return datetime.datetime.now(UTC) - job.date_started
+            date_started = self.context.currentjob.job.date_started
+            return datetime.datetime.now(UTC) - date_started
 
     @property
     def page_title(self):
