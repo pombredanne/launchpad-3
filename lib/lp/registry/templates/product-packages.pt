@@ -11,22 +11,17 @@
 
 <div metal:fill-slot="main">
   <div class="top-portlet">
-  <ul class="horizontal">
-    <li>
-      <a tal:replace="structure context/menu:overview/distributions/fmt:link" />
-    </li>
-  </ul>
-  </div>
+    <h2>Packages by project series</h2>
 
   <tal:series_dict repeat="series_dict view/series_packages">
   <tal:series_packagings
     define="series series_dict/series;
             packagings series_dict/packagings">
-    <h2>
+    <h3>
       <a tal:attributes="href series/name">
         <span tal:replace="series/name">main</span> series
       </a>
-    </h2>
+    </h3>
 
     <p tal:condition="not: packagings">
       No packages linked to this series.
@@ -42,8 +37,8 @@
         <thead>
           <tr>
             <th>Distribution</th>
-            <th>Series</th>
-            <th>Source Package</th>
+            <th>Distribution series</th>
+            <th>Source package</th>
             <th>Version</th>
             <th style="width: 1em;"
               tal:condition="view/can_delete_packaging">&nbsp;</th>
@@ -98,7 +93,53 @@
     </div>
   </tal:series_packagings>
   </tal:series_dict>
+  </div>
 
+  <div class="portlet">
+    <h2>Packages by distribution</h2>
+
+  <tal:distribution repeat="distro view/distro_packaging">
+    
+    <h3>
+      <a tal:attributes="href distro/distribution/fmt:url"
+        tal:content="distro/distribution/title">Ubuntu Linux</a>
+    </h3>
+
+    <table id="distribution-series" class="listing">
+      <thead>
+        <tr>
+          <th>Distribution series</th>
+          <th>Source package</th>
+          <th>Version</th>
+          <th>Project series</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr tal:repeat="pkging distro/packagings">
+          <td>
+            <a tal:attributes="href pkging/distroseries/fmt:url"
+                tal:content="pkging/distroseries/named_version" />
+          </td>
+          <td>
+            <a
+               tal:attributes="href string:${pkging/distroseries/fmt:url}/+source/${pkging/sourcepackagename/name}"
+               tal:content="pkging/sourcepackagename/name"
+              >Apache</a>
+          </td>
+          <td>
+            <span tal:condition="pkging/sourcepackage/currentrelease"
+                    tal:replace="pkging/sourcepackage/currentrelease/version"
+                    >2.3.4-1</span>
+          </td>
+          <td>
+            <a tal:replace="structure pkging/productseries/fmt:link" />
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+  </tal:distribution>
+  </div>
 </div>
 </body>
 </html>
