@@ -165,7 +165,7 @@ class BuildQueueSet(object):
         result_set = store.find(
             BuildQueue,
             BuildQueue.job == Job.id,
-            Job.date_started is not None)
+            Job.date_started != None)
         return result_set
 
     def calculateCandidates(self, archseries):
