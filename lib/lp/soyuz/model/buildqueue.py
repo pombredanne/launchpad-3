@@ -47,8 +47,9 @@ class BuildQueue(SQLBase):
     lastscore = IntCol(dbName='lastscore', default=0)
     manual = BoolCol(dbName='manual', default=False)
 
-    def _get_specific_job(self):
-        """Object with data and behaviour specific to the job type at hand."""
+    @property
+    def specific_job(self):
+        """See `IBuildQueue`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
             BuildPackageJob, BuildPackageJob.job == self.job)
@@ -63,7 +64,7 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         # Grab any logger instance available.
         logger = logging.getLogger()
-        name = self._get_specific_job().getName()
+        name = self.specific_job.getName()
 
         if self.manual:
             logger.debug(
@@ -72,14 +73,14 @@ class BuildQueue(SQLBase):
 
         # Allow the `ISoyuzJob` instance with the data/logic specific to the
         # job at hand to calculate the score as appropriate.
-        the_job = self._get_specific_job()
+        the_job = self.specific_job
         self.lastscore = the_job.score()
 
     def getLogFileName(self):
         """See `IBuildQueue`."""
         # Allow the `ISoyuzJob` instance with the data/logic specific to the
         # job at hand to calculate the log file name as appropriate.
-        the_job = self._get_specific_job()
+        the_job = self.specific_job
         return the_job.getLogFileName()
 
     def markAsBuilding(self, builder):
@@ -87,7 +88,7 @@ class BuildQueue(SQLBase):
         self.builder = builder
         if self.job.status != JobStatus.RUNNING:
             self.job.start()
-        the_job = self._get_specific_job()
+        the_job = self.specific_job
         the_job.jobStarted()
 
     def reset(self):
@@ -98,7 +99,7 @@ class BuildQueue(SQLBase):
         self.job.date_started = None
         self.job.date_finished = None
         self.logtail = None
-        the_job = self._get_specific_job()
+        the_job = self.specific_job
         the_job.jobReset()
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
@@ -129,7 +130,7 @@ class BuildQueue(SQLBase):
             self.job.fail()
         self.job.date_started = None
         self.job.date_finished = None
-        the_job = self._get_specific_job()
+        the_job = self.specific_job
         the_job.jobAborted()
 
 
