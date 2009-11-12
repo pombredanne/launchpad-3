@@ -60,3 +60,12 @@ class ISoyuzJob(Interface):
     def getName():
         """An appropriate name for this Soyuz job."""
 
+    def jobStarted():
+        """'Job started' life cycle event, handle as appropriate."""
+
+    def jobReset():
+        """'Job reset' life cycle event, handle as appropriate."""
+
+    def jobAborted():
+        """'Job aborted' life cycle event, handle as appropriate."""
+

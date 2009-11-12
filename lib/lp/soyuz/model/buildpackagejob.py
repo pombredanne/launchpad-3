@@ -12,9 +12,11 @@ from storm.locals import Int, Reference, Storm
 
 from zope.interface import implements
 
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 
 
@@ -143,3 +145,23 @@ class BuildPackageJob(Storm):
     def getName(self):
         """See `ISoyuzJob`."""
         return self.build.sourcepackagerelease.name
+
+    def jobStarted(self):
+        """See `ISoyuzJob`."""
+        self.build.buildstate = BuildStatus.BUILDING
+        # The build started, set the start time if not set already.
+        if self.build.date_first_dispatched is None:
+            self.build.date_first_dispatched = UTC_NOW
+
+    def jobReset(self):
+        """See `ISoyuzJob`."""
+        self.build.buildstate = BuildStatus.NEEDSBUILD
+
+    def jobAborted(self):
+        """See `ISoyuzJob`."""
+        # XXX, al-maisan, Thu, 12 Nov 2009 16:38:52 +0100
+        # The setting below was "inherited" from the previous code. We
+        # need to investigate whether and why this is really needed and
+        # fix it.
+        self.build.buildstate = BuildStatus.BUILDING
+

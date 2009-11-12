@@ -320,7 +320,7 @@ class Builder(SQLBase):
         if private:
             self.cachePrivateSourceOnSlave(logger, build_queue_item)
         filemap = {}
-        for source_file in build_queue_item.files:
+        for source_file in build.sourcepackagerelease.files:
             lfa = source_file.libraryfile
             filemap[lfa.filename] = lfa.content.sha1
             if not private:

@@ -20,7 +20,6 @@ from sqlobject import (
 from storm.expr import In, Join, LeftJoin
 
 from canonical import encoding
-from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -86,12 +85,10 @@ class BuildQueue(SQLBase):
     def markAsBuilding(self, builder):
         """See `IBuildQueue`."""
         self.builder = builder
-        self.job.start()
-        build = getUtility(IBuildSet).getByQueueEntry(self)
-        build.buildstate = BuildStatus.BUILDING
-        # The build started, set the start time if not set already.
-        if build.date_first_dispatched is None:
-            build.date_first_dispatched = UTC_NOW
+        if self.job.status != JobStatus.RUNNING:
+            self.job.start()
+        the_job = self._get_specific_job()
+        the_job.jobStarted()
 
     def reset(self):
         """See `IBuildQueue`."""
@@ -101,8 +98,8 @@ class BuildQueue(SQLBase):
         self.job.date_started = None
         self.job.date_finished = None
         self.logtail = None
-        build = getUtility(IBuildSet).getByQueueEntry(self)
-        build.buildstate = BuildStatus.NEEDSBUILD
+        the_job = self._get_specific_job()
+        the_job.jobReset()
 
     def updateBuild_IDLE(self, build_id, build_status, logtail,
                          filemap, dependencies, logger):
@@ -128,11 +125,12 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.builder.cleanSlave()
         self.builder = None
-        self.job.fail()
+        if self.job.status != JobStatus.FAILED:
+            self.job.fail()
         self.job.date_started = None
         self.job.date_finished = None
-        build = getUtility(IBuildSet).getByQueueEntry(self)
-        build.buildstate = BuildStatus.BUILDING
+        the_job = self._get_specific_job()
+        the_job.jobAborted()
 
 
 class BuildQueueSet(object):
