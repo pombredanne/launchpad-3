@@ -1140,6 +1140,10 @@ class CheckWatchesCronScript(LaunchpadCronScript):
             '--reset', action='store_true', dest='update_all',
             help="Update all the watches on the bug tracker, regardless of "
                  "whether or not they need checking.")
+        self.parser.add_option(
+            '--jobs', action='store', type=int, dest='jobs', default=1,
+            help=("The number of simulataneous jobs to run, %default by "
+                  "default."))
 
     def main(self):
         start_time = time.time()
@@ -1159,7 +1163,8 @@ class CheckWatchesCronScript(LaunchpadCronScript):
         else:
             # Otherwise we just update those watches that need updating,
             # and we let the BugWatchUpdater decide which those are.
-            updater.updateBugTrackers(self.options.bug_trackers, batch_size)
+            updater.updateBugTrackers(
+                self.options.bug_trackers, batch_size, self.options.jobs)
 
         run_time = time.time() - start_time
         self.logger.info("Time for this run: %.3f seconds." % run_time)
