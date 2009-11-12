@@ -16,12 +16,12 @@ from lp.registry.interfaces.person import (
 from lp.testing import TestCaseWithFactory
 from canonical.launchpad.testing.databasehelpers import (
     remove_all_sample_data_branches)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 
 class TestPersonSetBranchCounts(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
@@ -42,7 +42,7 @@ class TestPersonSetBranchCounts(TestCaseWithFactory):
 
 class TestPersonSetEnsurePerson(TestCaseWithFactory):
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
     email_address = 'testing.ensure.person@example.com'
     displayname = 'Testing ensurePerson'
     rationale = PersonCreationRationale.SOURCEPACKAGEUPLOAD
