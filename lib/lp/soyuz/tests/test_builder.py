@@ -77,7 +77,8 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
     def test_findBuildCandidate_first_build_finished(self):
         # When joe's first ppa build finishes, his second i386 build
         # will be the next build candidate.
-        self.first_job.build.buildstate = BuildStatus.FAILEDTOBUILD
+        build = getUtility(IBuildSet).getByQueueEntry(self.first_job)
+        build.buildstate = BuildStatus.FAILEDTOBUILD
         next_job = self.builder2.findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
@@ -120,8 +121,8 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
 
         # Now even if we set the build building, we'll still get the
         # second non-ppa build for the same archive as the next candidate.
-        next_job.build.buildstate = BuildStatus.BUILDING
-        next_job.build.builder = self.builder2
+        build.buildstate = BuildStatus.BUILDING
+        build.builder = self.builder2
         next_job = self.builder2.findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('primary', build.archive.name)
