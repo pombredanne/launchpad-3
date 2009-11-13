@@ -86,18 +86,17 @@ class TestCustomLanguageCode(unittest.TestCase):
         self.assertEqual(fresh_product.getCustomLanguageCode('pt_PT'), None)
 
         fresh_distro = Distribution.byName('gentoo')
-        fresh_package = fresh_distro.getPackage(self.sourcepackagename)
-        nocode = fresh_package.getCustomLanguageCode('nocode')
+        gentoo_package = fresh_distro.getSourcePackage(self.sourcepackagename)
+        nocode = gentoo_package.getCustomLanguageCode('nocode')
         self.assertEqual(nocode, None)
-        brazilian = fresh_distro.getCustomLanguageCode(
-            self.sourcepackagename, 'Brazilian')
+        brazilian = gentoo_package.getCustomLanguageCode('Brazilian')
         self.assertEqual(brazilian, None)
 
-        fresh_package = SourcePackageName.byName('cnews')
-        self.assertEqual(self.distro.getCustomLanguageCode(
-            fresh_package, 'nocode'), None)
-        self.assertEqual(self.distro.getCustomLanguageCode(
-            fresh_package, 'Brazilian'), None)
+        cnews = SourcePackageName.byName('cnews')
+        cnews_package = self.distro.getSourcePackage(cnews)
+        self.assertEqual(cnews_package.getCustomLanguageCode('nocode'), None)
+        self.assertEqual(
+            cnews_package.getCustomLanguageCode('Brazilian'), None)
 
     def test_UnsuccessfulCustomLanguageCodeLookup(self):
         # Look up nonexistent custom language code for product.

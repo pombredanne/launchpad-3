@@ -980,10 +980,6 @@
 
 <!-- CustomLanguageCode -->
 
-    <browser:navigation
-        module="lp.translations.browser.customlanguagecode"
-        classes="
-            HasCustomLanguageCodesNavigation"/>
     <browser:defaultView
         for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
         name="+index"
