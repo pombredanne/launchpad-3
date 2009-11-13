@@ -35,11 +35,6 @@ package.
 
     >>> owner_browser = setupBrowser("Basic o@example.com:test")
 
-When this test talks about an administrator, it means either a Launchpad
-administrator or a Rosetta administrator.
-
-    >>> admin_browser = setupBrowser("Basic r@example.com:test")
-
 An administrator sees the link to the custom language codes on a
 project's main translations page.
 
