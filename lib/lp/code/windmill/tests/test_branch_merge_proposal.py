@@ -11,7 +11,8 @@ import unittest
 
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
+from canonical.launchpad.windmill.testing.constants import (
+    FOR_ELEMENT, PAGE_LOAD, SLEEP)
 from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.code.windmill.testing import canonical_url, CodeWindmillLayer
 from lp.testing import TestCaseWithFactory
@@ -66,6 +67,53 @@ class TestCommitMessage(TestCaseWithFactory):
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         client.asserts.assertText(
             xpath=COMMIT_MESSAGE_TEXT, validator=message)
+
+
+class TestQueueStatus(TestCaseWithFactory):
+
+    layer = CodeWindmillLayer
+
+    def test_inline_queue_status_setting(self):
+        """Test setting the queue_status with the ChoiceWidget."""
+        mike = self.factory.makePerson(
+            name="mike", displayname="Mike Tyson", password="test",
+            email="mike@example.com")
+        branch = self.factory.makeBranch(owner=mike)
+        second_branch = self.factory.makeBranch(product=branch.product)
+        merge_proposal = second_branch.addLandingTarget(mike, branch)
+        transaction.commit()
+
+        client = WindmillTestClient("Queue status setting")
+
+        merge_url = canonical_url(merge_proposal)
+        client.open(url=merge_url)
+        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        login_person(mike, "test", client)
+
+        # Click on the element containing the branch status.
+        client.waits.forElement(
+            id=u'branchmergeproposal-status-value', timeout=PAGE_LOAD)
+        client.click(id=u'branchmergeproposal-status-value')
+        client.waits.forElement(
+            xpath=u'//div[contains(@class, "yui-ichoicelist-content")]')
+
+        # Change the status to experimental.
+        client.click(link=u'Rejected')
+        client.waits.sleep(milliseconds=SLEEP)
+
+        client.asserts.assertText(
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            validator=u'Rejected')
+
+        # Reload the page and make sure the change sticks.
+        client.open(url=merge_url)
+        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        client.waits.forElement(
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            timeout=FOR_ELEMENT)
+        client.asserts.assertText(
+            xpath=u'//td[@id="branchmergeproposal-status-value"]/span',
+            validator=u'Rejected')
 
 
 def test_suite():

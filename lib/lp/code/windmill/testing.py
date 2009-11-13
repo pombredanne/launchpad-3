@@ -21,6 +21,8 @@ class CodeWindmillLayer(BaseWindmillLayer):
     base_url = 'http://code.launchpad.dev:8085/'
 
 
+# XXX: rockstar 2009-11-10  bug=480137 - This function really needs to go
+# away.  I'm going to fix this in a followup branch.
 def canonical_url(*args, **kwargs):
     """Wrapper for canonical_url that ensures test URLs are returned.
 
