@@ -63,7 +63,6 @@ class DocumentationLinksTest(TestCaseWithFactory):
         import transaction
         transaction.commit()
 
-
         # Go to Evolution translations page logged in as translations admin.
         user.ensure_login(client)
 
@@ -83,7 +82,7 @@ class DocumentationLinksTest(TestCaseWithFactory):
         # is hidden.
         client.waits.forElementProperty(classname=u'important-notice-balloon',
                                         option=u'style.display|none',
-                                        timeout=u'800000')
+                                        timeout=u'8000')
 
         # Navigating to the next page of this translation doesn't show
         # the notification box.
