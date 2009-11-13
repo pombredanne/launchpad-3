@@ -163,7 +163,8 @@
             <div id="homepage-featured" class="homepage-portlet">
               <h2>Featured projects</h2>
               <div id="homepage-featured-top"
-                   tal:define="topproject view/featured_projects_top">
+                   tal:define="topproject view/featured_projects_top"
+                   tal:condition="topproject">
                 <a tal:attributes="href topproject/fmt:url">
                   <img tal:replace="structure topproject/image:logo" />
                   <div id="homepage-featured-top-title">

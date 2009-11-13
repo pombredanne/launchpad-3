@@ -80,10 +80,15 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
             self.FEATURED_PROJECT_ROWS * self.FEATURED_PROJECT_COLS + 1)
         self.featured_projects = list(
             getUtility(IPillarNameSet).featured_projects)[:max_projects]
-        # Select and get the top featured project (project of the day) and
-        # remove it from the list.
-        top_project = self._get_day_of_year() % len(self.featured_projects)
-        self.featured_projects_top = self.featured_projects.pop(top_project)
+        self._setFeaturedProjectsTop()
+
+    def _setFeaturedProjectsTop(self):
+        """Set the top featured project and remove it from the list."""
+        project_count = len(self.featured_projects)
+        if project_count > 0:
+            top_project = self._get_day_of_year() % project_count
+            self.featured_projects_top = self.featured_projects.pop(
+                top_project)
 
     def canRedirect(self):
         """Return True if the beta server is available to the user."""
@@ -455,7 +460,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         :param start: The index of the page that starts the set of pages.
         :return: A GooglBatchNavigator or None.
         """
-        if query_terms in [None , '']:
+        if query_terms in [None, '']:
             return None
         google_search = getUtility(ISearchService)
         try:
