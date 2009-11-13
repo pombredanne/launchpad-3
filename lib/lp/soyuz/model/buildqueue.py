@@ -110,6 +110,8 @@ class BuildQueue(SQLBase):
     def updateBuild_BUILDING(self, build_id, build_status,
                              logtail, filemap, dependencies, logger):
         """See `IBuildQueue`."""
+        if self.job.status != JobStatus.RUNNING:
+            self.job.start()
         self.logtail = encoding.guess(str(logtail))
 
     def updateBuild_ABORTING(self, buildid, build_status,

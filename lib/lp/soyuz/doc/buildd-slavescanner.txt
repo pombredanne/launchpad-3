@@ -389,6 +389,8 @@ next build round:
     >>> setupBuildQueue(bqItem8, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
+    >>> bqItem8.builder.setSlaveForTesting(BuildingSlave())
+    >>> buildergroup.updateBuild(bqItem8)
     >>> bqItem8.builder.setSlaveForTesting(AbortedSlave())
     >>> bqItem8.builder.name
     u'bob'
