@@ -1,7 +1,7 @@
 <div
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  id="global-actions" class="portlet"
+  id="global-actions" class="portlet vertical"
   tal:condition="view/enabled_links">
   <ul>
     <li tal:repeat="link view/enabled_links">

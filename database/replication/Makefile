@@ -37,6 +37,8 @@ _SLAVE_TABLESPACE=pg_default
 
 PGMASSACRE=../../utilities/pgmassacre.py
 
+SHHH=../../utilities/shhh.py
+
 default:
 	echo Usage: make [start|stop|restart]
 
@@ -88,6 +90,9 @@ stagingsetup:
 	# with security.py anyway.
 	pg_restore --dbname=lpmain_staging_new \
 	    --no-acl --exit-on-error ${STAGING_DUMP}
+	psql -q -d lpmain_staging_new -f authdb_drop.sql
+	psql -q -d lpmain_staging_new -f authdb_create.sql \
+	    2>&1 | grep -v _sl || true
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
@@ -143,9 +148,12 @@ _replicate:
 	# Setup the slave
 	./new-slave.py 2 "dbname=${_SLAVE}"
 	# Upgrade all databases in the cluster and reset security.
-	../schema/upgrade.py
-	../schema/fti.py
-	../schema/security.py --cluster -U slony
+	@echo Running upgrade.py
+	${SHHH} ../schema/upgrade.py
+	@echo Running fti.py
+	${SHHH} ../schema/fti.py
+	@echo Running security.py
+	${SHHH} ../schema/security.py --cluster -U slony
 	# Migrate tables to the authdb replication set, creating the set
 	# and subscribing nodes to it as necessary.
 	./populate_auth_replication_set.py -U slony

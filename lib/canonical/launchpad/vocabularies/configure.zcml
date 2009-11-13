@@ -29,8 +29,8 @@
     />
 
   <utility
-    name="BugNominatableSerieses"
-    component="canonical.launchpad.vocabularies.BugNominatableSeriesesVocabulary"
+    name="BugNominatableSeries"
+    component="canonical.launchpad.vocabularies.BugNominatableSeriesVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 

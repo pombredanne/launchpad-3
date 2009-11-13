@@ -27,16 +27,8 @@ supported for PPA.
     ...    find_tag_by_id(anon_browser.contents,
     ...                   'supports_virtualized_architectures'))
     PPA supported series
-    5.04
-    "Hoary"
-    - development
-    i386
-    (official)
-    4.10
-    "Warty"
-    - current
-    i386
-    (official)
+    Hoary (5.04) - development i386 (official)
+    Warty (4.10) - current i386 (official)
 
 The sample data contains three PPAs.  Only Celso's and Mark's have
 packages (the active ones). Altogether there 4 sources and 4 binaries
@@ -95,9 +87,8 @@ PPA supported architectures reflects what we have in sampledata.
     ...    find_tag_by_id(anon_browser.contents,
     ...                   'supports_virtualized_architectures'))
     PPA supported series
-    3.1 "Sarge" - frozen
-    3.0 "Woody" - current
-      i386 (official)
+    Sarge (3.1) - frozen
+    Woody (3.0) - current i386 (official)
 
 Archive and package counter are empty.
 

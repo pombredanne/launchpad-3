@@ -1770,13 +1770,6 @@
             DistributionNavigation"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
-        class="lp.registry.browser.distribution.DistributionAllPackagesView"
-        permission="zope.Public"
-        name="+allpackages"
-        facet="overview"
-        template="../templates/distribution-allpackages.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distribution.IDistribution"
         facet="overview"
         class="lp.registry.browser.distribution.DistributionArchiveMirrorsView"
         permission="zope.Public"
@@ -1875,9 +1868,6 @@
         <browser:page
             name="+portlet-lifecycle"
             template="../templates/distribution-portlet-lifecycle.pt"/>
-        <browser:page
-            name="+portlet-series"
-            template="../templates/distribution-portlet-series.pt"/>
         <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"/>

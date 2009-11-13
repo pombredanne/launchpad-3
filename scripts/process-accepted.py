@@ -80,7 +80,7 @@ def main():
                 for archive in distribution.all_distro_archives]
 
         for archive, description in target_archives:
-            for distroseries in distribution.serieses:
+            for distroseries in distribution.series:
 
                 log.debug("Processing queue for %s %s" % (
                         distroseries.name, description))

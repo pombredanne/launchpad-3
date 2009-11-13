@@ -308,7 +308,7 @@ class Branch(SQLBase):
                          prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
                          initial_comment=None, review_requests=None,
-                         review_diff=None):
+                         review_diff=None, commit_message=None):
         """See `IBranch`."""
         if not self.target.supports_merge_proposals:
             raise InvalidBranchMergeProposal(
@@ -360,7 +360,8 @@ class Branch(SQLBase):
             prerequisite_branch=prerequisite_branch, whiteboard=whiteboard,
             date_created=date_created,
             date_review_requested=date_review_requested,
-            queue_status=queue_status, review_diff=review_diff)
+            queue_status=queue_status, review_diff=review_diff,
+            commit_message=commit_message)
 
         if initial_comment is not None:
             bmp.createComment(
@@ -372,6 +373,24 @@ class Branch(SQLBase):
 
         notify(NewBranchMergeProposalEvent(bmp))
         return bmp
+
+    def _createMergeProposal(
+        self, registrant, target_branch, prerequisite_branch=None,
+        needs_review=True, initial_comment=None, commit_message=None,
+        reviewers=None, review_types=None):
+        """See `IBranch`."""
+        if reviewers is None:
+            reviewers = []
+        if review_types is None:
+            review_types = []
+        if len(reviewers) != len(review_types):
+            raise ValueError(
+                'reviewers and review_types must be equal length.')
+        review_requests = zip(reviewers, review_types)
+        return self.addLandingTarget(
+            registrant, target_branch, prerequisite_branch,
+            needs_review=needs_review, initial_comment=initial_comment,
+            commit_message=commit_message, review_requests=review_requests)
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
@@ -572,8 +591,6 @@ class Branch(SQLBase):
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
-        if self.code_import is not None:
-            deletion_operations.append(DeleteCodeImport(self.code_import))
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -604,6 +621,12 @@ class Branch(SQLBase):
             operation()
         for operation in deletion_operations:
             operation()
+        # Special-case code import, since users don't have lp.Edit on them,
+        # since if you can delete a branch you should be able to delete the
+        # code import and since deleting the code import object itself isn't
+        # actually a very interesting thing to tell the user about.
+        if self.code_import is not None:
+            DeleteCodeImport(self.code_import)()
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -958,6 +981,11 @@ class Branch(SQLBase):
             or BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
             return True
         return False
+
+    def requestUpgrade(self):
+        """See `IBranch`."""
+        from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
+        return getUtility(IBranchUpgradeJobSource).create(self)
 
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.

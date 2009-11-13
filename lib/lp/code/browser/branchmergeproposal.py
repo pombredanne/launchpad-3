@@ -32,6 +32,7 @@ __all__ = [
 
 import operator
 
+import simplejson
 from zope.app.form.browser import TextAreaWidget
 from zope.component import adapter, getUtility
 from zope.event import notify as zope_notify
@@ -60,7 +61,8 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
 from canonical.launchpad.webapp.tales import FormattersAPI
-from canonical.widgets.lazrjs import TextAreaEditorWidget
+from canonical.widgets.lazrjs import (
+    TextAreaEditorWidget, vocabulary_to_choice_edit_items)
 
 from lp.code.adapters.branch import BranchMergeProposalDelta
 from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
@@ -401,8 +403,34 @@ class ClaimButton(Interface):
     review_id = Int(required=True)
 
 
+class BranchMergeProposalStatusMixin:
+    '''A mixin for generating status vocabularies.'''
+
+    def _createStatusVocabulary(self):
+        # Create the vocabulary that is used for the status widget.
+        curr_status = self.context.queue_status
+        possible_next_states = (
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            BranchMergeProposalStatus.NEEDS_REVIEW,
+            BranchMergeProposalStatus.CODE_APPROVED,
+            BranchMergeProposalStatus.REJECTED,
+            # BranchMergeProposalStatus.QUEUED,
+            BranchMergeProposalStatus.MERGED,
+            )
+        terms = []
+        for status in possible_next_states:
+            if not self.context.isValidTransition(status, self.user):
+                continue
+            else:
+                title = status.title
+            terms.append(SimpleTerm(status, status.name, title))
+        return SimpleVocabulary(terms)
+
+
+
 class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
-                              BranchMergeProposalRevisionIdMixin):
+                              BranchMergeProposalRevisionIdMixin,
+                              BranchMergeProposalStatusMixin):
     """A basic view used for the index page."""
 
     implements(IBranchMergeProposalActionMenu)
@@ -530,6 +558,18 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             title="Commit Message",
             value=commit_message,
             accept_empty=True)
+
+    @property
+    def status_config(self):
+        """The config to configure the ChoiceSource JS widget."""
+        return simplejson.dumps({
+            'status_widget_items': vocabulary_to_choice_edit_items(
+                self._createStatusVocabulary(),
+                css_class_prefix='mergestatus'),
+            'status_value': self.context.queue_status.title,
+            'user_can_edit_status': check_permission(
+                'launchpad.Edit', self.context),
+            })
 
 
 class DecoratedCodeReviewVoteReference:
@@ -1090,31 +1130,12 @@ class BranchMergeProposalSubscribersView(LaunchpadView):
         return len(self.full_subscribers) + len(self.status_subscribers)
 
 
-class BranchMergeProposalChangeStatusView(MergeProposalEditView):
+class BranchMergeProposalChangeStatusView(MergeProposalEditView,
+                                          BranchMergeProposalStatusMixin):
 
     page_title = label = "Change merge proposal status"
     schema = IBranchMergeProposal
     field_names = []
-
-    def _createStatusVocabulary(self):
-        # Create the vocabulary that is used for the status widget.
-        curr_status = self.context.queue_status
-        possible_next_states = (
-            BranchMergeProposalStatus.WORK_IN_PROGRESS,
-            BranchMergeProposalStatus.NEEDS_REVIEW,
-            BranchMergeProposalStatus.CODE_APPROVED,
-            BranchMergeProposalStatus.REJECTED,
-            # BranchMergeProposalStatus.QUEUED,
-            BranchMergeProposalStatus.MERGED,
-            )
-        terms = []
-        for status in possible_next_states:
-            if not self.context.isValidTransition(status, self.user):
-                continue
-            else:
-                title = status.title
-            terms.append(SimpleTerm(status, status.name, title))
-        return SimpleVocabulary(terms)
 
     def setUpFields(self):
         MergeProposalEditView.setUpFields(self)
@@ -1267,5 +1288,5 @@ def text_xhtml_representation(context, field, request):
     def renderer(value):
         nomail  = formatter(value).obfuscate_email()
         html    = formatter(nomail).text_to_html()
-        return html
+        return html.encode('utf-8')
     return renderer
