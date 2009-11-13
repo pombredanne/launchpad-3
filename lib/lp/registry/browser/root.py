@@ -110,18 +110,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
             }
 
     @property
-    def featured_projects_col_a(self):
-        """Return a list of featured projects."""
-        return self.featured_projects[:self.FEATURED_PROJECT_ROWS]
-
-    @property
-    def featured_projects_col_b(self):
-        """The list of featured projects."""
-        index_from = self.FEATURED_PROJECT_ROWS
-        index_to = self.FEATURED_PROJECT_ROWS * 2
-        return self.featured_projects[index_from:index_to]
-
-    @property
     def branch_count(self):
         """The total branch count of public branches in all of Launchpad."""
         return getUtility(IAllBranches).visibleByUser(None).count()

@@ -242,7 +242,7 @@
 
               <div class="two-column-list">
                 <ul id="homepage-featured">
-                  <li tal:repeat="project view/featured_projects_col_a">
+                  <li tal:repeat="project view/featured_projects">
                     <a tal:replace="structure project/fmt:link" />
                   </li>
                 </ul>
