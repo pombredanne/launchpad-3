@@ -69,7 +69,7 @@ class DocumentationLinksTest(TestCaseWithFactory):
         client.open(
             url=(u'http://translations.launchpad.dev:8085/test-product/trunk'
                  u'/+pots/template/es/'))
-        client.waits.forPageLoad(timeout=u'2000000')
+        client.waits.forPageLoad(timeout=u'20000')
 
         # Make sure notification box is shown.
         client.waits.forElement(classname=u'important-notice-container',
