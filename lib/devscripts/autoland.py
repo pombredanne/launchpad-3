@@ -230,14 +230,15 @@ def get_reviewer_clause(reviewers):
         returned by 'get_reviews'.
     :return: A string like u'[r=foo,bar][ui=plop]'.
     """
-    # If no review type is specified it will be None and is assumed to be a
-    # code review.
+    # If no review type is specified it is assumed to be a code review.
     code_reviewers = reviewers.get(None, [])
     ui_reviewers = []
     rc_reviewers = []
     for review_type, reviewer in reviewers.items():
         if review_type is None:
             continue
+        if review_type == '':
+            code_reviewers.extend(reviewer)
         if 'code' in review_type or 'db' in review_type:
             code_reviewers.extend(reviewer)
         if 'ui' in review_type:
