@@ -8,15 +8,15 @@
 __metaclass__ = type
 
 __all__ = [
-    'IBuildfarmJob',
-    'BuildfarmJobType',
+    'IBuildFarmJob',
+    'BuildFarmJobType',
     ]
 
 from zope.interface import Interface
 from lazr.enum import DBEnumeratedType, DBItem
 
 
-class BuildfarmJobType(DBEnumeratedType):
+class BuildFarmJobType(DBEnumeratedType):
     """Soyuz build farm job type.
 
     An enumeration with the types of jobs that may be run on the Soyuz build
@@ -48,7 +48,7 @@ class BuildfarmJobType(DBEnumeratedType):
         """)
 
 
-class IBuildfarmJob(Interface):
+class IBuildFarmJob(Interface):
     """Operations that Soyuz build farm jobs must implement."""
 
     def score():

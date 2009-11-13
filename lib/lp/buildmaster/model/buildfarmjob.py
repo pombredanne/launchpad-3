@@ -2,39 +2,39 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['BuildfarmJob']
+__all__ = ['BuildFarmJob']
 
 
 from zope.interface import implements
 
-from lp.buildmaster.interfaces.buildfarmjob import IBuildfarmJob
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 
 
-class BuildfarmJob:
-    """Mix-in class for `IBuildfarmJob` implementations."""
-    implements(IBuildfarmJob)
+class BuildFarmJob:
+    """Mix-in class for `IBuildFarmJob` implementations."""
+    implements(IBuildFarmJob)
 
     def score(self):
-        """See `IBuildfarmJob`."""
+        """See `IBuildFarmJob`."""
         raise NotImplementedError
 
     def getLogFileName(self):
-        """See `IBuildfarmJob`."""
+        """See `IBuildFarmJob`."""
         raise NotImplementedError
 
     def getName(self):
-        """See `IBuildfarmJob`."""
+        """See `IBuildFarmJob`."""
         raise NotImplementedError
 
     def jobStarted(self):
-        """See `IBuildfarmJob`."""
+        """See `IBuildFarmJob`."""
         pass
 
     def jobReset(self):
-        """See `IBuildfarmJob`."""
+        """See `IBuildFarmJob`."""
         pass
 
     def jobAborted(self):
-        """See `IBuildfarmJob`."""
+        """See `IBuildFarmJob`."""
         pass
 

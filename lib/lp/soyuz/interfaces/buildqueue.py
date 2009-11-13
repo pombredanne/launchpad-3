@@ -19,7 +19,7 @@ from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildfarmJob, BuildfarmJobType)
+    IBuildFarmJob, BuildFarmJobType)
 from lp.services.job.interfaces.job import IJob
 
 
@@ -48,7 +48,7 @@ class IBuildQueue(Interface):
         description=_("Data common to all job types."))
 
     job_type = Choice(
-        title=_('Job type'), required=True, vocabulary=BuildfarmJobType,
+        title=_('Job type'), required=True, vocabulary=BuildFarmJobType,
         description=_("The type of this job."))
 
     def manualScore(value):
@@ -95,7 +95,7 @@ class IBuildQueue(Interface):
         """
 
     specific_job = Reference(
-        IBuildfarmJob, title=_("Job"),
+        IBuildFarmJob, title=_("Job"),
         description=_("Data and operations common to all build farm jobs."))
 
     def setDateStarted(timestamp):

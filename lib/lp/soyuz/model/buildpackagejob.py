@@ -14,7 +14,7 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import SourcePackageUrgency
-from lp.buildmaster.interfaces.buildfarmjob import IBuildfarmJob
+from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
@@ -23,7 +23,7 @@ from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 
 class BuildPackageJob(Storm):
     """See `IBuildPackageJob`."""
-    implements(IBuildfarmJob, IBuildPackageJob)
+    implements(IBuildFarmJob, IBuildPackageJob)
     __storm_table__ = 'buildpackagejob'
     id = Int(primary=True)
 

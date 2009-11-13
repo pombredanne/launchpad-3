@@ -45,7 +45,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
-from lp.buildmaster.interfaces.buildfarmjob import BuildfarmJobType
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
@@ -630,7 +630,7 @@ class Build(SQLBase):
         store.add(specific_job)
         queue_entry = BuildQueue()
         queue_entry.job = job.id
-        queue_entry.job_type = BuildfarmJobType.PACKAGEBUILD
+        queue_entry.job_type = BuildFarmJobType.PACKAGEBUILD
         store.add(queue_entry)
         return queue_entry
 
