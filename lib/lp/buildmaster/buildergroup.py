@@ -441,7 +441,9 @@ class BuilderGroup:
             # Notify the build failure.
             build.notify(extra_info=uploader_log_content)
         else:
-            self.logger.debug("Gathered build %s completely" % queueItem.name)
+            self.logger.debug(
+                "Gathered build %s completely" %
+                build.sourcepackagerelease.name)
 
         # Release the builder for another job.
         queueItem.builder.cleanSlave()

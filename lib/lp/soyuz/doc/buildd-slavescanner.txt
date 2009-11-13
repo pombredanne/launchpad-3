@@ -522,6 +522,7 @@ uploading to warty.
 
     >>> bqItem10 = getUtility(IBuildSet).getByBuildID(
     ...     6).createBuildQueueEntry()
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem10)
 
 XXX: The pocket attribute is not intended to be changed in regular code, but
 for this test we want to change it on the fly. An alternative would be to add
@@ -1158,7 +1159,8 @@ password for the archive):
     >>> cprov_archive.private = True
     >>> cprov_archive.buildd_secret = "secret"
     >>> cprov_archive.require_virtualized = False
-    >>> for build_file in candidate.files:
+    >>> build = getUtility(IBuildSet).getByQueueEntry(candidate)
+    >>> for build_file in build.sourcepackagerelease.files:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = True
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
