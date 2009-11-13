@@ -81,7 +81,7 @@ class TestTranslationsVHostBreadcrumb(BaseTranslationsBreadcrumbTestCase):
             ['http://launchpad.dev/crumb-tester',
              'http://launchpad.dev/crumb-tester/test',
              'http://translations.launchpad.dev/crumb-tester/test'],
-            ["Crumb Tester", "1.0", "Translations"])
+            ["Crumb Tester", "Test (1.0)", "Translations"])
 
     def test_project(self):
         project = self.factory.makeProject(
@@ -142,7 +142,7 @@ class TestSeriesLanguageBreadcrumbs(BaseTranslationsBreadcrumbTestCase):
              "http://launchpad.dev/crumb-tester/test",
              "http://translations.launchpad.dev/crumb-tester/test",
              "http://translations.launchpad.dev/crumb-tester/test/+lang/sr"],
-            ["Crumb Tester", "1.0", "Translations", "Serbian (sr)"])
+            ["Crumb Tester", "Test (1.0)", "Translations", "Serbian (sr)"])
 
     def test_productserieslanguage(self):
         product = self.factory.makeProduct(
