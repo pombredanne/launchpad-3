@@ -1435,6 +1435,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         series.status = status
         return series
 
+    # Most people think of distro releases as distro series.
+    makeDistroSeries = makeDistroRelease
+
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag='powerpc', processorfamily=None,
                              official=True, owner=None,
