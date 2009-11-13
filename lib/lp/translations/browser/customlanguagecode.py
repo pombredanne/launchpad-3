@@ -25,7 +25,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView, Navigation,
     stepthrough)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from canonical.launchpad.webapp.interfaces import UnexpectedFormData
+from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 
 
@@ -160,7 +160,7 @@ class HasCustomLanguageCodesTraversalMixin:
     def traverseCustomCode(self, name):
         """Traverse +customcode URLs."""
         if not check_code(name):
-            raise UnexpectedFormData("Invalid custom language code.")
+            raise NotFoundError("Invalid custom language code.")
 
         return self.context.getCustomLanguageCode(name)
 
