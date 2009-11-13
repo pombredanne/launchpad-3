@@ -49,7 +49,7 @@ BuildQueue entries.
     >>> def setUpBuildQueueEntry(
     ...     component_name='main', urgency=SourcePackageUrgency.HIGH,
     ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     date_created=LOCAL_NOW, manual=False):
+    ...     date_created=LOCAL_NOW, manual=False, archive=None):
     ...     global version
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
@@ -57,7 +57,7 @@ BuildQueue entries.
     ...        sourcename='test-build', version=str(version),
     ...        distroseries=hoary, component=component_name,
     ...        urgency=urgency, pocket=pocket,
-    ...        status=PackagePublishingStatus.PUBLISHED)
+    ...        status=PackagePublishingStatus.PUBLISHED, archive=archive)
     ...     commit()
     ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     ...     version += 1
@@ -252,10 +252,15 @@ No other aspects are considered when scoring builds from COPY archive,
 they all have a fixed score of -10. They will get built in the order
 they were created.
 
-    >>> from canonical.launchpad.interfaces import ArchivePurpose
-    >>> bqc = setUpBuildQueueEntry()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> from canonical.launchpad.interfaces import (
+    ...     ArchivePurpose, IArchiveSet)
+    >>> copy = getUtility(IArchiveSet).new(
+    ...     owner=ubuntu.owner, purpose=ArchivePurpose.COPY,
+    ...     name='test-rebuild')
+
+    >>> bqc = setUpBuildQueueEntry(archive=copy)
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqc)
-    >>> build.archive.purpose = ArchivePurpose.COPY
     >>> bqc.score()
     >>> bqc.lastscore
     -10
