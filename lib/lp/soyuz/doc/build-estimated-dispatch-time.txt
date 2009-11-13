@@ -76,7 +76,7 @@ that is currently building.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> cur_bqueue.lastscore = 1111
-    >>> removeSecurityProxy(cur_bqueue.job).date_started = (
+    >>> cur_bqueue.setDateStarted(
     ...     datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC))
     >>> print cur_bqueue.job.date_started
     2008-04-01 10:45:39+00:00
