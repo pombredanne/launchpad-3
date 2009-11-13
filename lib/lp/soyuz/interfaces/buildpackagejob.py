@@ -25,10 +25,10 @@ class IBuildPackageJob(ISoyuzJob):
     id = Int(title=_('ID'), required=True, readonly=True)
 
     job = Reference(
-        IJob, title=_("General build job data"), required=True, readonly=True,
-        description=_("General data about this build job."))
+        IJob, title=_("Job"), required=True, readonly=True,
+        description=_("Data common to all job types."))
 
     build = Reference(
-        IBuild, title=_("Associated build record"),
+        IBuild, title=_("Build"),
         required=True,readonly=True,
-        description=_("The build record associated with this job."))
+        description=_("Build record associated with this job."))

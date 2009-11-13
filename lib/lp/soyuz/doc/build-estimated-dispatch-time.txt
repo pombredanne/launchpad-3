@@ -78,7 +78,7 @@ that is currently building.
     >>> cur_bqueue.lastscore = 1111
     >>> cur_bqueue.setDateStarted(
     ...     datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC))
-    >>> print cur_bqueue.job.date_started
+    >>> print cur_bqueue.date_started
     2008-04-01 10:45:39+00:00
 
 Please note that the "estimated build duration" is an internal property

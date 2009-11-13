@@ -593,7 +593,7 @@ scanned it)
 
     >>> bqItem11.builder is None
     True
-    >>> bqItem11.job.date_started is None
+    >>> bqItem11.date_started is None
     True
     >>> bqItem11.lastscore
     0

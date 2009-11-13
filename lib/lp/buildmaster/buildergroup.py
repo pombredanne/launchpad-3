@@ -274,7 +274,7 @@ class BuilderGroup:
         # We need dynamic datetime.now() instance to be able to perform
         # the time operations for duration.
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
-        build.buildduration = RIGHT_NOW - queueItem.job.date_started
+        build.buildduration = RIGHT_NOW - queueItem.date_started
 
 
     def buildStatus_OK(self, queueItem, librarian, buildid,

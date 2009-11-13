@@ -494,7 +494,7 @@ class TestBuilddManagerScan(TrialTestCase):
 
         self.assertTrue(job is not None)
         self.assertEqual(job.builder, builder)
-        self.assertTrue(job.job.date_started is not None)
+        self.assertTrue(job.date_started is not None)
         build = getUtility(IBuildSet).getByQueueEntry(job)
         self.assertEqual(build.buildstate, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
@@ -618,7 +618,7 @@ class TestBuilddManagerScan(TrialTestCase):
 
         job = getUtility(IBuildQueueSet).get(job.id)
         self.assertTrue(job.builder is None)
-        self.assertTrue(job.job.date_started is None)
+        self.assertTrue(job.date_started is None)
         build = getUtility(IBuildSet).getByQueueEntry(job)
         self.assertEqual(build.buildstate, BuildStatus.NEEDSBUILD)
 
@@ -710,7 +710,7 @@ class TestDispatchResult(unittest.TestCase):
 
         self.assertEqual('BUILDING', build.buildstate.name)
         self.assertNotEqual(None, job.builder)
-        self.assertNotEqual(None, job.job.date_started)
+        self.assertNotEqual(None, job.date_started)
         self.assertNotEqual(None, job.logtail)
 
         transaction.commit()
@@ -723,7 +723,7 @@ class TestDispatchResult(unittest.TestCase):
         build = getUtility(IBuildSet).getByQueueEntry(job)
         self.assertEqual('NEEDSBUILD', build.buildstate.name)
         self.assertEqual(None, job.builder)
-        self.assertEqual(None, job.job.date_started)
+        self.assertEqual(None, job.date_started)
         self.assertEqual(None, job.logtail)
 
     def testResetDispatchResult(self):

@@ -13,11 +13,13 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Object
+from zope.schema import Choice, Datetime
+
+from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
 from lp.services.job.interfaces.job import IJob
-from lp.soyuz.interfaces.soyuzjob import SoyuzJobType
+from lp.soyuz.interfaces.soyuzjob import ISoyuzJob, SoyuzJobType
 
 
 class IBuildQueue(Interface):
@@ -40,9 +42,9 @@ class IBuildQueue(Interface):
     lastscore = Attribute("Last score to be computed for this job")
     manual = Attribute("Whether or not the job was manually scored")
 
-    job = Object(
-        title=_("Generic job data"), schema=IJob, required=True,
-        description=_("The generic data (time stamps etc.) about this job."))
+    job = Reference(
+        IJob, title=_("Job"), required=True, readonly=True,
+        description=_("Data common to all job types."))
 
     job_type = Choice(
         title=_('Job type'), required=True, vocabulary=SoyuzJobType,
@@ -91,11 +93,16 @@ class IBuildQueue(Interface):
         Clean the builder for another jobs.
         """
 
-    specific_job = Attribute(
-        "Object with data and behaviour specific to the job type at hand.")
+    specific_job = Reference(
+        ISoyuzJob, title=_("Job"),
+        description=_("Data and operations common to all build farm jobs."))
 
     def setDateStarted(timestamp):
         """Sets the date started property to the given value."""
+
+    date_started = Datetime(
+        title=_('Start time'),
+        description=_('Time when the job started.'))
 
 
 class IBuildQueueSet(Interface):

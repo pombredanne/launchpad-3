@@ -140,7 +140,7 @@ The single BuildQueue found is a non-virtual pending build:
     'NEEDSBUILD'
     >>> job.builder is None
     True
-    >>> job.job.date_started is None
+    >>> job.date_started is None
     True
     >>> build.is_virtualized
     False
@@ -204,7 +204,7 @@ Create BuildQueue record and inspect some parameters:
     3
     >>> ppa_job.builder == None
     True
-    >>> ppa_job.job.date_started == None
+    >>> ppa_job.date_started == None
     True
 
 The build job's archive requires virtualized builds.
@@ -317,7 +317,7 @@ Create BuildQueue record and inspect some parameters:
     4
     >>> print sec_job.builder
     None
-    >>> print sec_job.job.date_started
+    >>> print sec_job.date_started
     None
     >>> sec_build.is_virtualized
     False

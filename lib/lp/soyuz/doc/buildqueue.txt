@@ -45,7 +45,7 @@ instances:
     >>> bq.job.date_created
     datetime.datetime(2005, 6, 15, 9, 14, 12, 820778, tzinfo=<UTC>)
 
-    >>> bq.job.date_started
+    >>> bq.date_started
     datetime.datetime(2005, 6, 15, 9, 20, 12, 820778, tzinfo=<UTC>)
 
 Check Builder foreign key, which indicated which builder 'is processing'
@@ -110,7 +110,7 @@ builder.
 
     >>> print job.builder.name
     bob
-    >>> job.job.date_started is not None
+    >>> job.date_started is not None
     True
     >>> print job.logtail
     Dummy sampledata entry, not processing
@@ -130,7 +130,7 @@ to another build. The score value of the job is preserved.
 
     >>> print job.builder
     None
-    >>> print job.job.date_started
+    >>> print job.date_started
     None
     >>> print job.logtail
     None
@@ -149,7 +149,7 @@ the specified builder.
 
     >>> print job.builder.name
     bob
-    >>> job.job.date_started is not None
+    >>> job.date_started is not None
     True
     >>> print build.buildstate.name
     BUILDING

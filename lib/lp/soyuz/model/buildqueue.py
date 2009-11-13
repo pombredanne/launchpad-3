@@ -55,6 +55,11 @@ class BuildQueue(SQLBase):
             BuildPackageJob, BuildPackageJob.job == self.job)
         return result_set.one()
 
+    @property
+    def date_started(self):
+        """See `IBuildQueue`."""
+        return self.job.date_started
+
     def manualScore(self, value):
         """See `IBuildQueue`."""
         self.lastscore = value

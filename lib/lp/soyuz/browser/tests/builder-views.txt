@@ -215,7 +215,7 @@ all the 'private' information is exposed.
 
     >>> import datetime
     >>> import pytz
-    >>> private_job.job.date_started = (
+    >>> private_job.setDateStarted(
     ...     datetime.datetime.now(pytz.UTC) - datetime.timedelta(10))
     >>> print admin_view.current_build_duration
     10 days...
