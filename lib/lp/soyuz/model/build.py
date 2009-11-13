@@ -18,7 +18,6 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 from storm.expr import (
     Desc, In, Join, LeftJoin)
-from storm.references import Reference
 from storm.store import Store
 from sqlobject import (
     StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
