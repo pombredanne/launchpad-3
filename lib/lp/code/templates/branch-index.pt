@@ -30,7 +30,6 @@
       margin-bottom: 0;
     }
     .yui-diff-overlay-hidden {
-      visibility: hidden;
       display: none;
     }
     .yui-diff-overlay {
