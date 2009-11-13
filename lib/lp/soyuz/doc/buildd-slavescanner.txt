@@ -1283,7 +1283,8 @@ Mark's PPA:
 
     >>> cprov_archive.private = False
     >>> cprov_archive.require_virtualized = True
-    >>> for build_file in candidate.files:
+    >>> build = getUtility(IBuildSet).getByQueueEntry(candidate)
+    >>> for build_file in build.sourcepackagerelease.files:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = False
     >>> mark_archive = getUtility(IPersonSet).getByName('mark').archive
 

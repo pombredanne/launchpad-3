@@ -152,11 +152,11 @@ class Builder(SQLBase):
         # Avoid circular imports.
         from lp.soyuz.model.publishing import makePoolPath
 
-        build = build_queue_item.build
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
         archive = build.archive
         archive_url = archive.archive_url
         component_name = build.current_component.name
-        for source_file in build_queue_item.files:
+        for source_file in build.sourcepackagerelease.files:
             file_name = source_file.libraryfile.filename
             sha1 = source_file.libraryfile.content.sha1
             source_name = build.sourcepackagerelease.sourcepackagename.name
