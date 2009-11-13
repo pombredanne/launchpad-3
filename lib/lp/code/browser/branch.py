@@ -436,7 +436,7 @@ class BranchView(LaunchpadView, FeedsMixin):
             target_id = proposal.target_branch.id
             if target_id in targets_added:
                 continue
-            targets.append(DecoratedMergeProposal(proposal))
+            targets.append(proposal)
             targets_added.add(target_id)
         return targets
 
@@ -450,7 +450,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
-        return [DecoratedMergeProposal(proposal) for proposal in candidates
+        return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 
     @property
@@ -576,19 +576,6 @@ class BranchView(LaunchpadView, FeedsMixin):
                 'launchpad.Edit', self.context),
             'branch_path': '/' + self.context.unique_name,
             })
-
-
-class DecoratedMergeProposal:
-    """Provide some additional attributes to a normal branch merge proposal.
-    """
-    delegates(IBranchMergeProposal)
-
-    def __init__(self, context):
-        self.context = context
-
-    def show_registrant(self):
-        """Show the registrant if it was not the branch owner."""
-        return self.context.registrant != self.source_branch.owner
 
 
 class BranchInProductView(BranchView):
