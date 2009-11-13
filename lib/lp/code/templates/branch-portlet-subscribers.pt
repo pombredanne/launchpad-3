@@ -36,26 +36,6 @@
       </div>
     </div>
   </div>
-  <tal:script
-    replace="structure
-    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
-    <!--
-
-    YUI().use('io-base', 'node', 'code.branchsubscription', function(Y) {
-
-    if(Y.UA.ie) {
-        Y.get('#subscriber-list').set('innerHTML',
-            'Could not load subscribers, javascript is disabled.');
-        return;
-    }
-
-    Y.on('domready', function() {
-        Y.code.branchsubscription.update_subscriber_list();
-    });
-
-    });
-    -->
-  <tal:script replace="structure string:&lt;/script&gt;" />
-
+  <div tal:replace="structure context/@@+branch-portlet-subscriber-content" />
 
 </div>
