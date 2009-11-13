@@ -169,28 +169,12 @@ Check the dispatching method itself:
 
 Verify if the job (BuildQueue) was updated appropriately:
 
-    >>> def checkTimes(expected, actual):
-    ...     if expected != actual:
-    ...         return "expected: %s, actual: %s" % (expected, actual)
-    ...     else:
-    ...         return "OK"
-
     >>> job.builder.id == bob_builder.id
     True
 
     >>> build = getUtility(IBuildSet).getByQueueEntry(job)
     >>> build.buildstate.name
     'BUILDING'
-
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
-    >>> checkTimes(get_transaction_timestamp(), job.job.date_started)
-    'OK'
-
-The build start time will be set to the same value.
-
-    >>> checkTimes(get_transaction_timestamp(),
-    ...            build.date_first_dispatched)
-    'OK'
 
 Shutdown builder, mark the build record as failed and remove the
 buildqueue record, so the build was eliminated:
@@ -299,9 +283,6 @@ PPA job is building.
 
     >>> build.buildstate.name
     'BUILDING'
-
-    >>> ppa_job.job.date_started == get_transaction_timestamp()
-    True
 
 Shutdown builder slave, mark the ppa build record as failed, remove the
 buildqueue record and make 'bob' builder non-virtual again,  so the
