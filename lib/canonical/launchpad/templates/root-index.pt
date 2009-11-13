@@ -5,6 +5,66 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   metal:use-macro="view/macro:page/locationless"
   i18n:domain="launchpad">
+  <metal:head fill-slot="head_epilogue">
+    <style>
+      .homepage {
+          margin: auto;
+          width: 90%;
+          max-width: 80em;
+      }
+      .homepage-portlet {
+          margin-bottom: 3em;
+          line-height: 140%;
+      }
+      .homepage-portlet h2 {
+          border-bottom: 1px solid;
+          margin-top: 2em;
+          font-size: 167%;
+          }
+      .homepage-whatslaunchpad h2 {
+          font-size: 189%;
+          font-weight: bold;
+          line-height: 110%;
+          margin-bottom: 0.5em;
+      }
+      #homepage-whatslaunchpad ul {
+          margin-left: 1em;
+          margin-bottom: 0.5em;
+      }
+      #homepage-whatslaunchpad ul,
+      #homepage-whatslaunchpad-tour {
+          font-size: 116%;
+          font-weight: bold;
+      }
+      #homepage-stats {
+          max-width: 50em;
+          margin: auto;
+          padding-top: 0.5em;
+          color: gray;
+          font-size: 83.3%
+      }
+      #homepage-blogposts {
+          padding-right: 4em;
+      }
+      .homepage-getstarted h2 {
+          border-bottom: 1px solid;
+          margin-top: 1em;
+          font-size: 161%;
+          }
+      .featured-project h3 {
+          font-size: 131%;
+          font-weight: bold;
+          }
+      .featured-project h3 img {
+          vertical-align: middle;
+          }
+      .featured-project p {
+          margin-top: 0.5em;
+          margin-bottom: 1em;
+          border-bottom: 1px solid #888888;
+          }
+    </style>
+  </metal:head>
   <body>
     <div metal:fill-slot="main">
 
@@ -75,33 +135,35 @@
               <ul>
                 <li class="news">
                   <a href="http://blog.launchpad.net/bazaar/accessing-git-subversion-and-mercurial-from-bazaar">
-                  Git and Subversion from Bazaar</a><span class="blogdate"> &ndash; 29 Oct 2009</span><br />
+                  Git and Subversion from Bazaar</a><span class="registered"> &ndash; 29 Oct 2009</span><br />
                   Read how Bazaar and Launchpad work with Git branches and Subversion repositories.
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/api/new-lpx-project-group-for-launchpad-extensions">
-                  lpx project group for Launchpad extensions</a><span class="blogdate"> &ndash; 16 Oct 2009</span><br />
+                  lpx project group for Launchpad extensions</a><span class="registered"> &ndash; 16 Oct 2009</span><br />
                   If you've used the Launchpad API to create a script that interacts with or extends Launchpad, add it to our new lpx project group.
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/notifications/launchpads-status-page">
-                  New Launchpad status page</a><span class="blogdate"> &ndash; 13 Oct 2009</span><br />
+                  New Launchpad status page</a><span class="registered"> &ndash; 13 Oct 2009</span><br />
                   Our new identi.ca-hosted status page is the canonical source of service information about Launchpad.
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/general/launchpad-is-now-open-source">
-                    Launchpad now open source</a><span class="blogdate"> &ndash; 21 Jul 2009</span><br />
+                    Launchpad now open source</a><span class="registered"> &ndash; 21 Jul 2009</span><br />
                   Get the code to Launchpad and join our development community.
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/general/new-privacy-features-for-commercial-subscribers">
-                    Launchpad for commercial projects</a><span class="blogdate"> &ndash; 25 Feb 2009</span><br />
+                    Launchpad for commercial projects</a><span class="registered"> &ndash; 25 Feb 2009</span><br />
                   Find out more about Launchpad's privacy features for your commercial projects.
                 </li>
               </ul>
-              <div class="homepage-blogposts-older">
-                <a href="http://blog.launchpad.net">Read the blog</a>
-              </div>
+              <ul class="horizontal">
+                <li>
+                  <strong><a href="http://blog.launchpad.net">Read the blog</a></strong>
+                </li>
+              </ul>
             </div>
           </div>
 
@@ -160,41 +222,43 @@
                 </ul>
               </tal:logged_in>
             </div>
+
             <div id="homepage-featured" class="homepage-portlet">
               <h2>Featured projects</h2>
-              <div id="homepage-featured-top"
+
+              <div class="featured-project"
                    tal:define="topproject view/featured_projects_top"
                    tal:condition="topproject">
-                <a tal:attributes="href topproject/fmt:url">
-                  <img tal:replace="structure topproject/image:logo" />
-                  <div id="homepage-featured-top-title">
-                    <span tal:content="topproject/displayname">Foo project</span>
-                  </div>
-                </a>
-                <div id="homepage-featured-top-text"
-                   tal:content="structure view/featured_projects_top/summary/fmt:shorten/200">
+                <h3>
+                  <a tal:attributes="href topproject/fmt:url"><img
+                    tal:replace="structure topproject/image:logo" /></a>
+                  <a tal:attributes="href topproject/fmt:url"><tal:name
+                    replace="topproject/displayname">Foo project</tal:name></a>
+                </h3>
+                <p tal:content="structure view/featured_projects_top/summary/fmt:shorten/200">
                    Foo project is great...
-                </div>
+                </p>
               </div>
-              <ul id="homepage-featured-left">
-                <li tal:repeat="project view/featured_projects_col_a">
-                  <a tal:replace="structure project/fmt:link" />
+
+              <div class="two-column-list">
+                <ul id="homepage-featured">
+                  <li tal:repeat="project view/featured_projects_col_a">
+                    <a tal:replace="structure project/fmt:link" />
+                  </li>
+                </ul>
+              </div>
+
+              <ul class="horizontal">
+                <li>
+                  <strong><a href="/projects">Browse all
+                    <tal:count content="view/project_count">42</tal:count>
+                    projects</a>!</strong>
+                </li>
+                <li tal:condition="context/required:launchpad.Admin">
+                  <a class="sprite edit" href="+featuredprojects">Manage
+                  featured project list</a>
                 </li>
               </ul>
-              <ul id="homepage-featured-right">
-                <li tal:repeat="project view/featured_projects_col_b">
-                  <a tal:replace="structure project/fmt:link" />
-                </li>
-              </ul>
-              <div class="homepage-featured-more">
-                <a href="/projects">Browse all
-                  <strong class="registry-stat"
-                  tal:content="view/project_count">42</strong> projects</a>!
-              </div>
-              <div tal:condition="context/required:launchpad.Admin"
-                   style="margin:auto; clear:both; text-align: center; padding-top: 1em;">
-                <a href="+featuredprojects">&raquo; Manage featured project list</a>
-              </div>
             </div>
           </div><!-- yui-u -->
 
