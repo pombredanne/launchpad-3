@@ -33,6 +33,10 @@
                 tal:define="lp_js string:${icingroot}/build"
                 tal:attributes="src string:${lp_js}/lp/errors.js">
         </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/code/popupdiff.js">
+        </script>
       </tal:devmode>
       <script type="text/javascript">
         YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
@@ -288,9 +292,12 @@
                 button.style.display = 'none';
               </script>
               <script type="text/javascript">
-                YUI().use('lp.comment', function(Y) {
+                YUI().use('lp.comment', 'code.popupdiff', function(Y) {
                 var comment = new Y.lp.Comment();
                 comment.render();
+                Y.on('load', function(e) {
+                       Y.popupdiff.connect_diff_links();
+                     }, window);
                 })
               </script>
             </div>

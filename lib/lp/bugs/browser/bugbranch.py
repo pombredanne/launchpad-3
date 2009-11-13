@@ -26,6 +26,8 @@ from canonical.launchpad.webapp import (
     LaunchpadView)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from lp.bugs.interfaces.bugbranch import IBugBranch
+from lp.code.browser.branchmergeproposal import (
+    latest_proposals_for_each_branch)
 from lp.code.enums import BranchLifecycleStatus
 
 
@@ -96,14 +98,15 @@ class BugBranchView(LaunchpadView):
     __used_for__ = IBugBranch
 
     @cachedproperty
-    def active_merge_proposals(self):
+    def merge_proposals(self):
         """Return a list of active proposals for the branch."""
-        return list(self.context.branch.active_landing_targest)
+        branch = self.context.branch
+        return latest_proposals_for_each_branch(branch.landing_targets)
 
     @property
     def show_branch_status(self):
         """Show the branch status if merged and there are no proposals."""
-        return (len(self.active_merge_proposals) == 0 and
+        return (len(self.merge_proposals) == 0 and
                 self.branch.lifecycle_status == BranchLifecycleStatus.MERGED)
 
 

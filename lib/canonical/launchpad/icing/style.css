@@ -1815,6 +1815,25 @@ table.diff .diff-added { background-color: #92ED92; }
 table.diff .diff-removed { background-color: #FF7F7F; }
 .back-link { margin-top: 3em; }
 
+.reviews {
+    padding-left: 2em;
+}
+dl.reviews dd {
+    margin-bottom: 0;
+}
+.yui-diff-overlay-hidden {
+    display: none;
+}
+.yui-diff-overlay {
+    width: 80%;
+}
+.yui-diff-overlay #yui-pretty-overlay-modal {
+    width: auto;
+    font: inherit;
+    color: black;
+}
+
+
 /* === Bugs === */
 /* The Launchpad Bugs application uses a maroon color: */
 body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}
