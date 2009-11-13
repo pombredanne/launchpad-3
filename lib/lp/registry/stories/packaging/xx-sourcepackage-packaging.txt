@@ -7,7 +7,8 @@ package's +packaging page:
   ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+packaging")
 
   >>> print_location(user_browser.contents)
-  Hierarchy: Ubuntu > 4.10 > ...mozilla... source package > Upstream links
+  Hierarchy: Ubuntu > Warty (4.10) >
+    ...mozilla... source package > Upstream links
   Tabs:
   * Overview (selected) - http://launchpad.dev/ubuntu/warty/+source/mozilla
   * Branches - http://code.launchpad.dev/ubuntu/warty/+source/mozilla

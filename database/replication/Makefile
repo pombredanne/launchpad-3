@@ -90,6 +90,9 @@ stagingsetup:
 	# with security.py anyway.
 	pg_restore --dbname=lpmain_staging_new \
 	    --no-acl --exit-on-error ${STAGING_DUMP}
+	psql -q -d lpmain_staging_new -f authdb_drop.sql
+	psql -q -d lpmain_staging_new -f authdb_create.sql \
+	    2>&1 | grep -v _sl || true
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
