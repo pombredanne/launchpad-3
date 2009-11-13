@@ -1445,6 +1445,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         series.status = status
         return series
 
+    # Most people think of distro releases as distro series.
+    makeDistroSeries = makeDistroRelease
+
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag='powerpc', processorfamily=None,
                              official=True, owner=None,
@@ -1835,7 +1838,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return SourcePackagePublishingHistory.get(sspph.id)
 
     def makePackageset(self, name=None, description=None, owner=None,
-                       packages=()):
+                       packages=(), distroseries=None):
         """Make an `IPackageset`."""
         if name is None:
             name = self.getUniqueString(u'package-set-name')
@@ -1848,7 +1851,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         ps_set = getUtility(IPackagesetSet)
         package_set = run_with_login(
             techboard.teamowner,
-            lambda: ps_set.new(name, description, owner))
+            lambda: ps_set.new(name, description, owner, distroseries))
         run_with_login(owner, lambda: package_set.add(packages))
         return package_set
 

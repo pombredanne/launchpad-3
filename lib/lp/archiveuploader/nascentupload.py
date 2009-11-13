@@ -507,6 +507,7 @@ class NascentUpload:
         rejection_reason = check_upload_to_archive(
             signer, self.policy.distroseries, source_name, archive,
             self.changes.dsc.component, self.policy.pocket, not self.is_new)
+
         if rejection_reason is not None:
             self.reject(str(rejection_reason))
 

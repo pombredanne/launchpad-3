@@ -156,7 +156,8 @@ def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
     if archive.is_ppa and pocket != PackagePublishingPocket.RELEASE:
         return InvalidPocketForPPA()
     return verify_upload(
-        person, sourcepackagename, archive, component, strict_component)
+        person, sourcepackagename, archive, component, distroseries,
+        strict_component)
 
 
 def packagesets_valid_for(archive, person):
@@ -172,7 +173,7 @@ def packagesets_valid_for(archive, person):
 
 
 def verify_upload(person, sourcepackagename, archive, component,
-                  strict_component=True):
+                  distroseries, strict_component=True):
     """Can 'person' upload 'sourcepackagename' to 'archive'?
 
     :param person: The `IPerson` trying to upload to the package. Referred to
@@ -181,6 +182,7 @@ def verify_upload(person, sourcepackagename, archive, component,
         package is new.
     :param archive: The `IArchive` being uploaded to.
     :param component: The `IComponent` that the source package belongs to.
+    :param distroseries: The upload's target distro series.
     :param strict_component: True if access to the specific component for the
         package is needed to upload to it. If False, then access to any
         package will do.
@@ -196,10 +198,17 @@ def verify_upload(person, sourcepackagename, archive, component,
 
     # For any other archive...
     ap_set = getUtility(IArchivePermissionSet)
-    if sourcepackagename is not None and (
-        archive.canUpload(person, sourcepackagename)
-        or ap_set.isSourceUploadAllowed(archive, sourcepackagename, person)):
-        return None
+
+    if sourcepackagename is not None:
+        # Check whether user may upload because he holds a permission for
+        #   - the given source package directly
+        #   - a package set in the correct distro series that includes the
+        #     given source package
+        source_allowed = archive.canUpload(person, sourcepackagename)
+        set_allowed = ap_set.isSourceUploadAllowed(
+            archive, sourcepackagename, person, distroseries)
+        if source_allowed or set_allowed:
+            return None
 
     if not components_valid_for(archive, person):
         if not packagesets_valid_for(archive, person):
