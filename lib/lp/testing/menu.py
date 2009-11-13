@@ -13,7 +13,6 @@ from canonical.launchpad.webapp.publisher import canonical_url
 
 def check_menu_links(menu):
     context = menu.context
-    is_sane_menu = True
     for link in menu.iterlinks():
         if '?' in link.target:
             view_name, _args = link.target.split('?')
@@ -24,6 +23,5 @@ def check_menu_links(menu):
         try:
             view = getMultiAdapter((context, request), name=view_name)
         except:
-            is_sane_menu = False
-            print 'Bad link %s: %s' % (link.name, url)
-    return is_sane_menu
+            return 'Bad link %s: %s' % (link.name, url)
+    return True

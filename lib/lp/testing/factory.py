@@ -543,7 +543,8 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeProductNoCommit(
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
-        title=None, summary=None, official_malone=None):
+        title=None, summary=None, official_malone=None,
+        official_rosetta=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePersonNoCommit()
@@ -572,6 +573,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant=registrant)
         if official_malone is not None:
             product.official_malone = official_malone
+        if official_rosetta is not None:
+            removeSecurityProxy(product).official_rosetta = official_rosetta
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -1193,7 +1196,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, product=None, branch_name=None,
-                       git_repo_url=None):
+                       git_repo_url=None, registrant=None):
         """Create and return a new, arbitrary code import.
 
         The type of code import will be inferred from the source details
@@ -1207,7 +1210,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             product = self.makeProduct()
         if branch_name is None:
             branch_name = self.getUniqueString('name')
-        registrant = self.makePerson()
+        if registrant is None:
+            registrant = self.makePerson()
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
@@ -1434,6 +1438,9 @@ class LaunchpadObjectFactory(ObjectFactory):
             parent_series=parent_series, owner=distribution.owner)
         series.status = status
         return series
+
+    # Most people think of distro releases as distro series.
+    makeDistroSeries = makeDistroRelease
 
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag='powerpc', processorfamily=None,
@@ -1717,7 +1724,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return distroseries.getSourcePackage(sourcepackagename)
 
     def makePackageset(self, name=None, description=None, owner=None,
-                       packages=()):
+                       packages=(), distroseries=None):
         """Make an `IPackageset`."""
         if name is None:
             name = self.getUniqueString(u'package-set-name')
@@ -1730,7 +1737,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         ps_set = getUtility(IPackagesetSet)
         package_set = run_with_login(
             techboard.teamowner,
-            lambda: ps_set.new(name, description, owner))
+            lambda: ps_set.new(name, description, owner, distroseries))
         run_with_login(owner, lambda: package_set.add(packages))
         return package_set
 
