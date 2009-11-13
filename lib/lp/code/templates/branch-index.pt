@@ -43,6 +43,10 @@
       tal:attributes="src string:${lp_js}/code/branchstatus.js">
   </script>
   <script type="text/javascript"
+          tal:define="lp_js string:${icingroot}/build"
+          tal:attributes="src string:${lp_js}/code/subscription.js">
+  </script>
+  <script type="text/javascript"
           tal:content="string:
     YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
               'lazr.choiceedit', 'code.branchstatus', function(Y) {
