@@ -1193,7 +1193,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, product=None, branch_name=None,
-                       git_repo_url=None):
+                       git_repo_url=None, registrant=None):
         """Create and return a new, arbitrary code import.
 
         The type of code import will be inferred from the source details
@@ -1207,7 +1207,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             product = self.makeProduct()
         if branch_name is None:
             branch_name = self.getUniqueString('name')
-        registrant = self.makePerson()
+        if registrant is None:
+            registrant = self.makePerson()
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
