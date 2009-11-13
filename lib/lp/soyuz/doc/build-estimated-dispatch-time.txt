@@ -74,16 +74,16 @@ other jobs that are either currently building or pending but ahead
 of job N in the build queue. These values will now be set for the job
 that is currently building.
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> cur_bqueue.lastscore = 1111
-    >>> cur_bqueue.job.date_started = datetime(2008, 4, 1, 10, 45, 39,
-    ...                                        tzinfo=UTC)
+    >>> removeSecurityProxy(cur_bqueue.job).date_started = (
+    ...     datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC))
     >>> print cur_bqueue.job.date_started
     2008-04-01 10:45:39+00:00
 
 Please note that the "estimated build duration" is an internal property
 and not meant to be viewed or modified by an end user.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_build = removeSecurityProxy(cur_build)
     >>> naked_build.estimated_build_duration = timedelta(minutes=56)
 
