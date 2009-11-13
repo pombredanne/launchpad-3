@@ -640,7 +640,7 @@
   <adapter
       for="lp.registry.interfaces.product.IProductSeries"
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
-      factory="lp.code.model.branchtarget.get_branch_target_for_product_series"/>
+      factory="lp.code.model.branchtarget.get_branch_target_for_productseries"/>
   <adapter
       for="lp.code.interfaces.branchtarget.IBranchTarget"
       provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"

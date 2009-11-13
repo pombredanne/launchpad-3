@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'branch_to_target',
-    'get_branch_target_for_product_series',
+    'get_branch_target_for_productseries',
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
@@ -297,7 +297,7 @@ class ProductBranchTarget(_BaseBranchTarget):
         branch.sourcepackagename = None
 
 
-def get_branch_target_for_product_series(product_series):
+def get_branch_target_for_productseries(product_series):
     """Return a `ProductBranchTarget`."""
     return ProductBranchTarget(product_series.product)
 
