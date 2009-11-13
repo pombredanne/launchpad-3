@@ -1869,9 +1869,6 @@
             name="+portlet-lifecycle"
             template="../templates/distribution-portlet-lifecycle.pt"/>
         <browser:page
-            name="+portlet-series"
-            template="../templates/distribution-portlet-series.pt"/>
-        <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"/>
     </browser:pages>

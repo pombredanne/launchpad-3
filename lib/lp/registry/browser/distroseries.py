@@ -133,7 +133,7 @@ class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
     @property
     def text(self):
-        return self.context.version
+        return self.context.named_version
 
 
 class DistroSeriesFacets(StandardLaunchpadFacets):
