@@ -128,6 +128,10 @@ class BuildQueue(SQLBase):
         self.job.date_finished = None
         self.specific_job.jobAborted()
 
+    def setDateStarted(self, timestamp):
+        """See `IBuildQueue`."""
+        self.job.date_started = timestamp
+
 
 class BuildQueueSet(object):
     """Utility to deal with BuildQueue content class."""

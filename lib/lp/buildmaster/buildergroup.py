@@ -201,7 +201,7 @@ class BuilderGroup:
                 "Unknown status code (%s) returned from status() probe."
                 % builder_status)
             queueItem.builder = None
-            queueItem.job.date_started = None
+            queueItem.setDateStarted(None)
             self.commit()
             return
 
@@ -290,7 +290,7 @@ class BuilderGroup:
         self.logger.debug("Processing successful build %s" % buildid)
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
-        build = queueItem.build
+        build = getUtility(IBuildSet).getByQueueEntry(queueItem)
         if not build.archive.allowUpdatesToReleasePocket():
             assert build.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
@@ -517,7 +517,7 @@ class BuilderGroup:
         build.buildstate = BuildStatus.NEEDSBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder = None
-        queueItem.job.date_started = None
+        queueItem.setDateStarted(None)
 
     def buildStatus_GIVENBACK(self, queueItem, librarian, buildid,
                               filemap=None, dependencies=None):
@@ -538,7 +538,7 @@ class BuilderGroup:
         # to use this content. For now we just ensure it's stored.
         queueItem.builder.cleanSlave()
         queueItem.builder = None
-        queueItem.job.date_started = None
+        queueItem.setDateStarted(None)
         queueItem.logtail = None
         queueItem.lastscore = 0
 

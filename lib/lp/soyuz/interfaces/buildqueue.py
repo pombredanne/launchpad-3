@@ -94,6 +94,9 @@ class IBuildQueue(Interface):
     specific_job = Attribute(
         "Object with data and behaviour specific to the job type at hand.")
 
+    def setDateStarted(timestamp):
+        """Sets the date started property to the given value."""
+
 
 class IBuildQueueSet(Interface):
     """Launchpad Auto Build queue set handler and auxiliary methods."""

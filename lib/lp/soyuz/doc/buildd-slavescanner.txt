@@ -188,10 +188,11 @@ We want to get a Build and make BuildQueue items for it:
 To make testing easier we provide a convenience function to put a BuildQueue
 object into a preset fixed state:
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> default_start = datetime.datetime(2005, 1, 1, 8, 0, 0, tzinfo=UTC)
     >>> def setupBuildQueue(build_queue, builder):
     ...      build_queue.builder = builder
-    ...      build_queue.job.date_started = default_start
+    ...      build_queue.setDateStarted(default_start)
 
 Remove any previous buildmaster ROOT directory, to avoid any garbage
 lock conflict (it would be recreated automatically if necessary)
@@ -216,7 +217,7 @@ Make sure that a_builder has no active builds:
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> if a_builder.currentjob is not None:
     ...     currentjob = a_builder.currentjob
-    ...     currentjob.job.date_started = None
+    ...     currentjob.setDateStarted(None)
     ...     currentjob.builder = None
     ...     syncUpdate(currentjob)
 
@@ -525,7 +526,6 @@ for this test we want to change it on the fly. An alternative would be to add
 new sample data for a build that can be uploaded with binary packages attached
 to it.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> removeSecurityProxy(
     ...     build).pocket = PackagePublishingPocket.UPDATES
@@ -800,7 +800,7 @@ tests.
     >>> resurrect_build.buildstate = BuildStatus.NEEDSBUILD
     >>> syncUpdate(resurrect_build)
     >>> current_job.builder = None
-    >>> current_job.job.date_started = None
+    >>> current_job.setDateStarted(None)
     >>> syncUpdate(current_job)
 
 IBuilder.findCandidate also identifies if there are builds for
