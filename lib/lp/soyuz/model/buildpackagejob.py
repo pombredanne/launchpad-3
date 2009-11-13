@@ -14,6 +14,7 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import SourcePackageUrgency
+from lp.buildmaster.interfaces.buildfarmjob import IBuildfarmJob
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
@@ -22,7 +23,7 @@ from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 
 class BuildPackageJob(Storm):
     """See `IBuildPackageJob`."""
-    implements(IBuildPackageJob)
+    implements(IBuildfarmJob, IBuildPackageJob)
     __storm_table__ = 'buildpackagejob'
     id = Int(primary=True)
 
@@ -33,7 +34,7 @@ class BuildPackageJob(Storm):
     build = Reference(build_id, 'Build.id')
 
     def score(self):
-        """See `ISoyuzJob`."""
+        """See `IBuildPackageJob`."""
         score_pocketname = {
             PackagePublishingPocket.BACKPORTS: 0,
             PackagePublishingPocket.RELEASE: 1500,
@@ -120,7 +121,7 @@ class BuildPackageJob(Storm):
         return score
 
     def getLogFileName(self):
-        """See `ISoyuzJob`."""
+        """See `IBuildPackageJob`."""
         sourcename = self.build.sourcepackagerelease.name
         version = self.build.sourcepackagerelease.version
         # we rely on previous storage of current buildstate
@@ -143,22 +144,22 @@ class BuildPackageJob(Storm):
             ))
 
     def getName(self):
-        """See `ISoyuzJob`."""
+        """See `IBuildPackageJob`."""
         return self.build.sourcepackagerelease.name
 
     def jobStarted(self):
-        """See `ISoyuzJob`."""
+        """See `IBuildPackageJob`."""
         self.build.buildstate = BuildStatus.BUILDING
         # The build started, set the start time if not set already.
         if self.build.date_first_dispatched is None:
             self.build.date_first_dispatched = UTC_NOW
 
     def jobReset(self):
-        """See `ISoyuzJob`."""
+        """See `IBuildPackageJob`."""
         self.build.buildstate = BuildStatus.NEEDSBUILD
 
     def jobAborted(self):
-        """See `ISoyuzJob`."""
+        """See `IBuildPackageJob`."""
         # XXX, al-maisan, Thu, 12 Nov 2009 16:38:52 +0100
         # The setting below was "inherited" from the previous code. We
         # need to investigate whether and why this is really needed and

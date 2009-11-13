@@ -23,11 +23,11 @@ from canonical import encoding
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from lp.buildmaster.interfaces.buildfarmjob import BuildfarmJobType
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
-from lp.soyuz.interfaces.soyuzjob import SoyuzJobType
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -40,8 +40,8 @@ class BuildQueue(SQLBase):
 
     job = ForeignKey(dbName='job', foreignKey='Job', notNull=True)
     job_type = EnumCol(
-        enum=SoyuzJobType, notNull=True, default=SoyuzJobType.PACKAGEBUILD,
-        dbName='job_type')
+        enum=BuildfarmJobType, notNull=True,
+        default=BuildfarmJobType.PACKAGEBUILD, dbName='job_type')
     builder = ForeignKey(dbName='builder', foreignKey='Builder', default=None)
     logtail = StringCol(dbName='logtail', default=None)
     lastscore = IntCol(dbName='lastscore', default=0)
@@ -76,14 +76,14 @@ class BuildQueue(SQLBase):
                 "%s (%d) MANUALLY RESCORED" % (name, self.lastscore))
             return
 
-        # Allow the `ISoyuzJob` instance with the data/logic specific to the
-        # job at hand to calculate the score as appropriate.
+        # Allow the `IBuildfarmJob` instance with the data/logic specific to
+        # the job at hand to calculate the score as appropriate.
         self.lastscore = self.specific_job.score()
 
     def getLogFileName(self):
         """See `IBuildQueue`."""
-        # Allow the `ISoyuzJob` instance with the data/logic specific to the
-        # job at hand to calculate the log file name as appropriate.
+        # Allow the `IBuildfarmJob` instance with the data/logic specific to
+        # the job at hand to calculate the log file name as appropriate.
         return self.specific_job.getLogFileName()
 
     def markAsBuilding(self, builder):
@@ -194,7 +194,7 @@ class BuildQueueSet(object):
            BuildPackageJob.build = build.id AND
            BuildQueue.builder IS NULL
         """ % sqlvalues(
-            arch_ids, BuildStatus.NEEDSBUILD, SoyuzJobType.PACKAGEBUILD)
+            arch_ids, BuildStatus.NEEDSBUILD, BuildfarmJobType.PACKAGEBUILD)
 
         candidates = BuildQueue.select(
             query, clauseTables=['Build', 'BuildPackageJob'],

@@ -18,8 +18,9 @@ from zope.schema import Choice, Datetime
 from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildfarmJob, BuildfarmJobType)
 from lp.services.job.interfaces.job import IJob
-from lp.soyuz.interfaces.soyuzjob import ISoyuzJob, SoyuzJobType
 
 
 class IBuildQueue(Interface):
@@ -47,7 +48,7 @@ class IBuildQueue(Interface):
         description=_("Data common to all job types."))
 
     job_type = Choice(
-        title=_('Job type'), required=True, vocabulary=SoyuzJobType,
+        title=_('Job type'), required=True, vocabulary=BuildfarmJobType,
         description=_("The type of this job."))
 
     def manualScore(value):
@@ -94,7 +95,7 @@ class IBuildQueue(Interface):
         """
 
     specific_job = Reference(
-        ISoyuzJob, title=_("Job"),
+        IBuildfarmJob, title=_("Job"),
         description=_("Data and operations common to all build farm jobs."))
 
     def setDateStarted(timestamp):

@@ -45,6 +45,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
+from lp.buildmaster.interfaces.buildfarmjob import BuildfarmJobType
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
@@ -53,7 +54,6 @@ from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus, CannotBeRescored, IBuild, IBuildSet)
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
-from lp.soyuz.interfaces.soyuzjob import SoyuzJobType
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.builder import Builder
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
@@ -630,7 +630,7 @@ class Build(SQLBase):
         store.add(specific_job)
         queue_entry = BuildQueue()
         queue_entry.job = job.id
-        queue_entry.job_type = SoyuzJobType.PACKAGEBUILD
+        queue_entry.job_type = BuildfarmJobType.PACKAGEBUILD
         store.add(queue_entry)
         return queue_entry
 
