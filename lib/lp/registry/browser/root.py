@@ -57,7 +57,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     # The homepage has two columns to hold featured projects. This
     # determines the number of projects we display in each column.
     FEATURED_PROJECT_ROWS = 11
-    FEATURED_PROJECT_COLS = 2
 
     featured_projects = []
     featured_projects_top = None
@@ -75,9 +74,8 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         """Set up featured projects list and the top featured project."""
         super(LaunchpadRootIndexView, self).initialize()
         # The maximum number of projects to be displayed as defined by the
-        # number and size of the columns plus one top featured project.
-        max_projects = (
-            self.FEATURED_PROJECT_ROWS * self.FEATURED_PROJECT_COLS + 1)
+        # number of items plus one top featured project.
+        max_projects = self.FEATURED_PROJECT_ROWS + 1
         self.featured_projects = list(
             getUtility(IPillarNameSet).featured_projects)[:max_projects]
         self._setFeaturedProjectsTop()
