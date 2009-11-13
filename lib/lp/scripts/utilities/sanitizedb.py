@@ -19,6 +19,7 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.database.postgresql import ConnectionString, listReferences
+from canonical.launchpad.scripts.logger import DEBUG2
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.lp import initZopeless
@@ -113,9 +114,6 @@ class SanitizeDb(LaunchpadScript):
         for table in tables_to_empty:
             self.removeTableRows(table)
 
-        self.removeDeactivatedPeople()
-        self.removeDeactivatedAccounts()
-
         self.removePrivatePeople()
         self.removePrivateTeams()
         self.removePrivateBugs()
@@ -133,6 +131,9 @@ class SanitizeDb(LaunchpadScript):
         self.removePPAArchivePermissions()
         self.scrambleHiddenEmailAddresses()
         self.scrambleOpenIDIdentifiers()
+
+        self.removeDeactivatedPeople()
+        self.removeDeactivatedAccounts()
 
         # Remove unlinked records. These might contain private data.
         self.removeUnlinkedAccounts()
@@ -181,22 +182,36 @@ class SanitizeDb(LaunchpadScript):
 
         self.resetForeignKeysCascade()
         if self.options.dry_run:
-            self.logger.debug("Dry run - rolling back.")
+            self.logger.info("Dry run - rolling back.")
             transaction.abort()
         else:
-            self.logger.debug("Committing.")
+            self.logger.info("Committing.")
             transaction.commit()
 
     def removeDeactivatedPeople(self):
         """Remove all suspended and deactivated people."""
+        from canonical.launchpad.database.account import Account
         from canonical.launchpad.interfaces.account import AccountStatus
-        count = self.store.execute("""
-            DELETE FROM Person
-            USING Account
-            WHERE Account.id = Person.account AND Account.status != %s
-            """ % sqlvalues(AccountStatus.ACTIVE)).rowcount
+        from lp.registry.model.person import Person
+        # This is a slow operation due to the huge amount of cascading.
+        # We remove one row at a time for better reporting and PostgreSQL
+        # memory use.
+        deactivated_people = self.store.find(
+            Person,
+            Person.account == Account.id,
+            Account.status != AccountStatus.ACTIVE)
+        total_deactivated_count = deactivated_people.count()
+        deactivated_count = 0
+        for person in deactivated_people:
+            deactivated_count += 1
+            self.logger.debug(
+                "Removing %d of %d deactivated people (%s)",
+                deactivated_count, total_deactivated_count, person.name)
+            self.store.remove(person)
+            self.store.flush()
         self.logger.info(
-            "Removed %d suspended or deactivated people", count)
+            "Removed %d suspended or deactivated people",
+            total_deactivated_count)
 
     def removeDeactivatedAccounts(self):
         """Remove all suspended or deactivated accounts.
@@ -218,6 +233,7 @@ class SanitizeDb(LaunchpadScript):
             Person,
             Person.teamowner == None,
             Person.visibility != PersonVisibility.PUBLIC).remove()
+        self.store.flush()
         self.logger.info("Removed %d private people.", count)
 
     def removePrivateTeams(self):
@@ -228,12 +244,14 @@ class SanitizeDb(LaunchpadScript):
             Person,
             Person.teamowner != None,
             Person.visibility != PersonVisibility.PUBLIC).remove()
+        self.store.flush()
         self.logger.info("Removed %d private teams.", count)
 
     def removePrivateBugs(self):
         """Remove all private bugs."""
         from lp.bugs.model.bug import Bug
         count = self.store.find(Bug, Bug.private == True).remove()
+        self.store.flush()
         self.logger.info("Removed %d private bugs.", count)
 
     def removePrivateBugMessages(self):
@@ -241,12 +259,14 @@ class SanitizeDb(LaunchpadScript):
         from lp.bugs.model.bugmessage import BugMessage
         count = self.store.find(
             BugMessage, BugMessage.visible == False).remove()
+        self.store.flush()
         self.logger.info("Removed %d private bug messages.", count)
 
     def removePrivateBranches(self):
         """Remove all private branches."""
         from lp.code.model.branch import Branch
         count = self.store.find(Branch, Branch.private == True).remove()
+        self.store.flush()
         self.logger.info("Removed %d private branches.", count)
 
     def removePrivateHwSubmissions(self):
@@ -254,6 +274,7 @@ class SanitizeDb(LaunchpadScript):
         from canonical.launchpad.database.hwdb import HWSubmission
         count = self.store.find(
             HWSubmission, HWSubmission.private == True).remove()
+        self.store.flush()
         self.logger.info("Removed %d private hardware submissions.", count)
 
     def removePrivateSpecifications(self):
@@ -261,6 +282,7 @@ class SanitizeDb(LaunchpadScript):
         from lp.blueprints.model.specification import Specification
         count = self.store.find(
             Specification, Specification.private == True).remove()
+        self.store.flush()
         self.logger.info("Removed %d private specifications.", count)
 
     def removePrivateLocations(self):
@@ -268,6 +290,7 @@ class SanitizeDb(LaunchpadScript):
         from lp.registry.model.personlocation import PersonLocation
         count = self.store.find(
             PersonLocation, PersonLocation.visible == False).remove()
+        self.store.flush()
         self.logger.info("Removed %d person locations.", count)
 
     def removePrivateArchives(self):
@@ -277,6 +300,7 @@ class SanitizeDb(LaunchpadScript):
         """
         from lp.soyuz.model.archive import Archive
         count = self.store.find(Archive, Archive.private == True).remove()
+        self.store.flush()
         self.logger.info(
             "Removed %d private archives.", count)
 
@@ -288,6 +312,7 @@ class SanitizeDb(LaunchpadScript):
                 Announcement.date_announced == None,
                 Announcement.date_announced > UTC_NOW,
                 Announcement.active == False)).remove()
+        self.store.flush()
         self.logger.info(
             "Removed %d unpublished announcements.", count)
 
@@ -297,6 +322,7 @@ class SanitizeDb(LaunchpadScript):
         from canonical.launchpad.database.librarian import LibraryFileAlias
         count = self.store.find(
             LibraryFileAlias, LibraryFileAlias.restricted == True).remove()
+        self.store.flush()
         self.logger.info("Removed %d restricted librarian files.", count)
 
     def removeInactiveProjects(self):
@@ -304,6 +330,7 @@ class SanitizeDb(LaunchpadScript):
         from lp.registry.model.project import Project
         count = self.store.find(
             Project, Project.active == False).remove()
+        self.store.flush()
         self.logger.info("Removed %d inactive product groups.", count)
 
     def removeInactiveProducts(self):
@@ -311,6 +338,7 @@ class SanitizeDb(LaunchpadScript):
         from lp.registry.model.product import Product
         count = self.store.find(
             Product, Product.active == False).remove()
+        self.store.flush()
         self.logger.info("Removed %d inactive products.", count)
 
     def removeTableRows(self, table):
@@ -338,7 +366,7 @@ class SanitizeDb(LaunchpadScript):
                     "SELECT %s FROM %s" % (from_column, from_table))
         subquery = " UNION ".join(references)
         query = "DELETE FROM %s WHERE id NOT IN (%s)" % (table, subquery)
-        self.logger.debug(query)
+        self.logger.log(DEBUG2, query)
         count = self.store.execute(query).rowcount
         self.logger.info("Removed %d unlinked %s rows.", count, table)
 
@@ -353,6 +381,7 @@ class SanitizeDb(LaunchpadScript):
                 EmailAddress.status == EmailAddressStatus.OLD,
                 EmailAddress.email.lower().like(
                     '%@example.com', case_sensitive=True))).remove()
+        self.store.flush()
         self.logger.info(
             "Removed %d invalid, unvalidated and old email addresses.", count)
 
@@ -419,6 +448,7 @@ class SanitizeDb(LaunchpadScript):
         from canonical.launchpad.database.emailaddress import EmailAddress
         count = self.store.find(
             EmailAddress, EmailAddress.person == None).remove()
+        self.store.flush()
         self.logger.info(
             "Removed %d email addresses not linked to people.", count)
 
