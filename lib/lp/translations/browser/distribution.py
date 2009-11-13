@@ -92,20 +92,20 @@ class DistributionView(LaunchpadView):
         else:
             return self.context.translation_focus
 
-    def secondary_translatable_serieses(self):
+    def secondary_translatable_series(self):
         """Return a list of IDistroSeries that aren't the translation_focus.
 
         It only includes the ones that are still supported.
         """
-        serieses = [
+        series = [
             series
-            for series in self.context.serieses
+            for series in self.context.series
             if (series.status != DistroSeriesStatus.OBSOLETE
                 and (self.translation_focus is None or
                      self.translation_focus.id != series.id))
             ]
 
-        return sorted(serieses, key=operator.attrgetter('version'),
+        return sorted(series, key=operator.attrgetter('version'),
                       reverse=True)
 
 

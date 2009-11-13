@@ -819,6 +819,9 @@
         <browser:page
             name="+portlet-obsolete-translatables"
             template="../templates/product-portlet-obsolete-translatables.pt"/>
+        <browser:page
+            name="+portlet-not-using-launchpad"
+            template="../templates/product-portlet-not-using-launchpad.pt"/>
     </browser:pages>
 
 <!-- Project views -->

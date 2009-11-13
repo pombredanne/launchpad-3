@@ -15,7 +15,7 @@ import datetime
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import Sum
+from storm.expr import Sum, Max
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc
@@ -493,13 +493,16 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True,
                 Language.id!=english.id)
 
-            for language, pofile in query.order_by(['Language.englishname']):
+            ordered_results = query.order_by(['Language.englishname'])
+
+            for language, pofile in ordered_results:
                 psl = ProductSeriesLanguage(self, language, pofile=pofile)
                 psl.setCounts(pofile.potemplate.messageCount(),
                               pofile.currentCount(),
                               pofile.updatesCount(),
                               pofile.rosettaCount(),
-                              pofile.unreviewedCount())
+                              pofile.unreviewedCount(),
+                              pofile.date_changed)
                 results.append(psl)
         else:
             # If there is more than one template, do a single
@@ -517,7 +520,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                  Sum(POFile.currentcount),
                  Sum(POFile.updatescount),
                  Sum(POFile.rosettacount),
-                 Sum(POFile.unreviewed_count)),
+                 Sum(POFile.unreviewed_count),
+                 Max(POFile.date_changed)),
                 POFile.language==Language.id,
                 POFile.variant==None,
                 Language.visible==True,
@@ -526,10 +530,22 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True,
                 Language.id!=english.id).group_by(Language)
 
-            for (language, imported, changed, new, unreviewed) in (
-                query.order_by(['Language.englishname'])):
+            # XXX: Ursinha 2009-11-02: The Max(POFile.date_changed) result
+            # here is a naive datetime. My guess is that it happens
+            # because UTC awareness is attibuted to the field in the POFile
+            # model class, and in this case the Max function deals directly
+            # with the value returned from the database without
+            # instantiating it.
+            # This seems to be irrelevant to what we're trying to achieve
+            # here, but making a note either way.
+
+            ordered_results = query.order_by(['Language.englishname'])
+
+            for (language, imported, changed, new, unreviewed,
+                last_changed) in ordered_results:
                 psl = ProductSeriesLanguage(self, language)
-                psl.setCounts(total, imported, changed, new, unreviewed)
+                psl.setCounts(
+                    total, imported, changed, new, unreviewed, last_changed)
                 results.append(psl)
 
         return results

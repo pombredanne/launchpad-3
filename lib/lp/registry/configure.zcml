@@ -1167,7 +1167,8 @@
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
@@ -1426,7 +1427,8 @@
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 

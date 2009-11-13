@@ -11,7 +11,7 @@ __all__ = [
     'ISourcePackage',
     'ISourcePackageFactory',
     'SourcePackageFileType',
-    'SourcePackageFormat',
+    'SourcePackageType',
     'SourcePackageRelationships',
     'SourcePackageUrgency',
     ]
@@ -296,7 +296,7 @@ class SourcePackageFileType(DBEnumeratedType):
         used in the build process for this source package.  """)
 
 
-class SourcePackageFormat(DBEnumeratedType):
+class SourcePackageType(DBEnumeratedType):
     """Source Package Format
 
     Launchpad supports distributions that use source packages in a variety

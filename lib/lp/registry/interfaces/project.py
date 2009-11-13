@@ -328,9 +328,9 @@ class IProjectSet(Interface):
     @operation_returns_collection_of(IProject)
     @export_read_operation()
     def search(text=None, soyuz=None,
-                     rosetta=None, malone=None,
-                     bazaar=None,
-                     search_products=True):
+               rosetta=None, malone=None,
+               bazaar=None,
+               search_products=False):
         """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,
@@ -365,4 +365,3 @@ class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
     project = Object(schema=IProject,
                      title=u"The project this series belongs to",
                      required=True, readonly=True)
-
