@@ -554,11 +554,12 @@ class TestBranchDeletion(TestCaseWithFactory):
         self.assertEqual(True, self.branch.canBeDeleted())
 
     def test_codeImportCanStillBeDeleted(self):
-        """A branch that has an attached code import can't be deleted."""
+        """A branch that has an attached code import can be deleted."""
         code_import = LaunchpadObjectFactory().makeCodeImport()
         branch = code_import.branch
-        self.assertEqual(branch.canBeDeleted(), True,
-                         "A branch that has a import is not deletable.")
+        self.assertEqual(
+            branch.canBeDeleted(), True,
+            "A branch that has a import is deletable.")
 
     def test_bugBranchLinkDisablesDeletion(self):
         """A branch linked to a bug cannot be deleted."""
