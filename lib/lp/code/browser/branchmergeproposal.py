@@ -28,6 +28,7 @@ __all__ = [
     'BranchMergeProposalSubscribersView',
     'BranchMergeProposalView',
     'BranchMergeProposalVoteView',
+    'latest_proposals_for_each_branch',
     ]
 
 import operator
@@ -78,6 +79,30 @@ from lp.services.comments.interfaces.conversation import IConversation
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
+
+
+def latest_proposals_for_each_branch(proposals):
+    """Returns the most recent merge proposals for any particular branch.
+
+    Also filters out proposals that the logged in user can't see.
+    """
+    targets = {}
+    for proposal in proposals:
+        # Don't show the proposal if the user can't see it.
+        if not check_permission('launchpad.View', proposal):
+            continue
+        # Only show the must recent proposal for any given target.
+        date_created = proposal.date_created
+        target_id = proposal.target_branch.id
+        if target_id in targets:
+            if date_created > targets[target_id][1]:
+                targets[target_id] = (proposal, date_created)
+        else:
+            targets[target_id] = (proposal, date_created)
+
+    return sorted(
+        [proposal for proposal, date_created in targets.itervalues()],
+        key=operator.attrgetter('date_created'), reverse=True)
 
 
 class BranchMergeProposalPrimaryContext:
