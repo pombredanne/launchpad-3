@@ -13,6 +13,11 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
+from zope.schema import Choice, Object
+
+from canonical.launchpad import _
+from lp.services.job.interfaces.job import IJob
+from lp.soyuz.interfaces.soyuzjob import SoyuzJobType
 
 
 class IBuildQueue(Interface):
@@ -30,59 +35,24 @@ class IBuildQueue(Interface):
     """
 
     id = Attribute("Job identifier")
-    build = Attribute("The IBuild record that originated this job")
     builder = Attribute("The IBuilder instance processing this job")
-    created = Attribute("The datetime that the queue entry was created")
-    buildstart = Attribute("The datetime of the last build attempt")
     logtail = Attribute("The current tail of the log of the build")
     lastscore = Attribute("Last score to be computed for this job")
     manual = Attribute("Whether or not the job was manually scored")
 
-    # properties inherited from related Content classes.
-    archseries = Attribute(
-        "DistroArchSeries target of the IBuild releated to this job.")
-    name = Attribute(
-        "Name of the ISourcePackageRelease releated to this job.")
-    version = Attribute(
-        "Version of the ISourcePackageRelease releated to this job.")
-    files = Attribute(
-        "Collection of files related to the ISourcePackageRelease "
-        "releated to this job.")
-    urgency = Attribute(
-        "Urgency of the ISourcePackageRelease releated to this job.")
-    archhintlist = Attribute(
-        "architecturehintlist of the ISourcePackageRelease releated "
-        "to this job.")
-    builddependsindep = Attribute(
-        "builddependsindep of the ISourcePackageRelease releated to "
-        "this job.")
-    buildduration = Attribute(
-        "Duration of the job, calculated on-the-fly based on buildstart.")
-    is_virtualized = Attribute("See IBuild.is_virtualized.")
+    job = Object(
+        title=_("Generic job data"), schema=IJob, required=True,
+        description=_("The generic data (time stamps etc.) about this job."))
+
+    job_type = Choice(
+        title=_('Job type'), required=True, vocabulary=SoyuzJobType,
+        description=_("The type of this job."))
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
 
     def score():
-        """Perform scoring based on heuristic values.
-
-        Creates a 'score' (priority) value based on:
-
-         * Component: main component gets higher values
-           (main, 1000, restricted, 750, universe, 250, multiverse, 0)
-
-         * Urgency: EMERGENCY sources gets higher values
-           (EMERGENCY, 20, HIGH, 15, MEDIUM, 10, LOW, 5)
-
-         * Queue time: old records gets a relative higher priority
-           (The rate against component is something like: a 'multiverse'
-           build will be as important as a 'main' after 40 hours in queue)
-
-        This method automatically updates IBuildQueue.lastscore value and
-        skips 'manually-scored' records.
-
-        This method use any logger available in the standard logging system.
-        """
+        """The job score calculated for the job type in question."""
 
     def destroySelf():
         """Delete this entry from the database."""
@@ -120,6 +90,12 @@ class IBuildQueue(Interface):
 
         Clean the builder for another jobs.
         """
+
+    specific_job = Attribute(
+        "Object with data and behaviour specific to the job type at hand.")
+
+    def setDateStarted(timestamp):
+        """Sets the date started property to the given value."""
 
 
 class IBuildQueueSet(Interface):
@@ -165,4 +141,3 @@ class IBuildQueueSet(Interface):
         Retrieve the build queue and related builder rows associated with the
         builds in question where they exist.
         """
-
