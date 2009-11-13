@@ -1641,7 +1641,8 @@ def can_upload_linked_package(person, branch):
 
     # Is person authorised to upload the source package this branch
     # is targeting?
-    result = verify_upload(person, ssp.sourcepackagename, archive, component)
+    result = verify_upload(
+        person, ssp.sourcepackagename, archive, component, ssp.distroseries)
     # verify_upload() indicates that person *is* allowed to upload by
     # returning None.
     return result is None
