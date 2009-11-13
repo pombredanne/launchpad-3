@@ -638,6 +638,10 @@
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
       factory="lp.code.model.branchtarget.ProductBranchTarget"/>
   <adapter
+      for="lp.registry.interfaces.product.IProductSeries"
+      provides="lp.code.interfaces.branchtarget.IBranchTarget"
+      factory="lp.code.model.branchtarget.get_branch_target_for_product_series"/>
+  <adapter
       for="lp.code.interfaces.branchtarget.IBranchTarget"
       provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
       factory="lp.code.model.branchtarget.get_canonical_url_data_for_target"/>

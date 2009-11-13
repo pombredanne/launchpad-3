@@ -6,6 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'branch_to_target',
+    'get_branch_target_for_product_series',
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
@@ -294,6 +295,11 @@ class ProductBranchTarget(_BaseBranchTarget):
         branch.product = self.product
         branch.distroseries = None
         branch.sourcepackagename = None
+
+
+def get_branch_target_for_product_series(product_series):
+    """Return a `ProductBranchTarget`."""
+    return ProductBranchTarget(product_series.product)
 
 
 def get_canonical_url_data_for_target(branch_target):

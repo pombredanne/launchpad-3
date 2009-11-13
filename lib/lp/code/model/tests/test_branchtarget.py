@@ -364,6 +364,20 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
         self.assertEqual(branch, self.target.default_merge_target)
 
 
+class TestProductSeriesBranchTarget(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.original = self.factory.makeProductSeries()
+        self.target = ProductBranchTarget(self.original.product)
+
+    def test_adapter(self):
+        target = IBranchTarget(self.original)
+        self.assertIsInstance(target, ProductBranchTarget)
+
+
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):
     """Only certain branches are allowed to be default stacked-on branches."""
 
