@@ -459,7 +459,7 @@ class ObjectFormatterAPI:
     def __init__(self, context):
         self._context = context
 
-    def url(self, view_name=None, rootsite=None):
+    def url(self, view_name=None, rootsite=None, force_local_path=False):
         """Return the object's canonical URL.
 
         :param view_name: If not None, return the URL to the page with that
@@ -472,7 +472,8 @@ class ObjectFormatterAPI:
             url = canonical_url(
                 self._context, path_only_if_possible=True,
                 rootsite=rootsite,
-                view_name=view_name)
+                view_name=view_name,
+                force_local_path=force_local_path)
         except Unauthorized:
             url = ""
         return url
@@ -487,7 +488,7 @@ class ObjectFormatterAPI:
 
         # Some classes override the rootsite. We always want a path-only
         # URL, so we override it to nothing.
-        return self.url(rootsite=None)
+        return self.url(force_local_path=True)
 
     def traverse(self, name, furtherPath):
         if name.startswith('link:') or name.startswith('url:'):
