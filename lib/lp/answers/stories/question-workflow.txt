@@ -279,10 +279,9 @@ the answerer back to None.
 In addition, this creates a reopening record that is displayed in the
 reopening portlet.
 
-    >>> portlet = find_portlet(
-    ...     owner_browser.contents, 'This question was reopened')
-    >>> 'Sample Person' in extract_text(portlet.fetch('a')[-1])
-    True
+    >>> print extract_text(
+    ...     find_tag_by_id(owner_browser.contents, 'portlet-reopenings'))
+    This question was reopened ... Sample Person
 
 
 == Self-Answer ==
