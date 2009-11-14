@@ -591,8 +591,6 @@ class Branch(SQLBase):
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
-        if self.code_import is not None:
-            deletion_operations.append(DeleteCodeImport(self.code_import))
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -623,6 +621,12 @@ class Branch(SQLBase):
             operation()
         for operation in deletion_operations:
             operation()
+        # Special-case code import, since users don't have lp.Edit on them,
+        # since if you can delete a branch you should be able to delete the
+        # code import and since deleting the code import object itself isn't
+        # actually a very interesting thing to tell the user about.
+        if self.code_import is not None:
+            DeleteCodeImport(self.code_import)()
 
     def associatedProductSeries(self):
         """See `IBranch`."""

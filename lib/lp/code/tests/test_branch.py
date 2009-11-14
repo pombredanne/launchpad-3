@@ -15,7 +15,7 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.archiveuploader.permission import verify_upload
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    CodeReviewNotificationLevel)
+    BranchType, CodeReviewNotificationLevel)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -231,6 +231,16 @@ class TestWriteToBranch(PermissionTest):
         branch = self.factory.makeAnyBranch(owner=team)
         self.assertCanEdit(person, branch)
 
+    def test_vcs_imports_members_can_edit_import_branch(self):
+        # Even if a branch isn't owned by vcs-imports, vcs-imports members can
+        # edit it if it has a code import associated with it.
+        person = self.factory.makePerson()
+        branch = self.factory.makeCodeImport().branch
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        removeSecurityProxy(vcs_imports).addMember(
+            person, vcs_imports.teamowner)
+        self.assertCanEdit(person, branch)
+
     def makeOfficialPackageBranch(self):
         """Make a branch linked to the pocket of a source package."""
         branch = self.factory.makePackageBranch()
@@ -314,6 +324,28 @@ class TestWriteToBranch(PermissionTest):
         # Now person can edit the branch on the basis of the upload
         # permissions granted above.
         self.assertCanEdit(person, branch)
+
+    def test_arbitrary_person_cannot_edit(self):
+        # Arbitrary people cannot edit branches, you have to be someone
+        # special.
+        branch = self.factory.makeAnyBranch()
+        person = self.factory.makePerson()
+        self.assertCannotEdit(person, branch)
+
+    def test_code_import_registrant_can_edit(self):
+        # It used to be the case that all import branches were owned by the
+        # special, restricted team ~vcs-imports. This made a lot of work for
+        # the Launchpad development team, since they needed to delete and
+        # rename import branches whenever people wanted it. To reduce this
+        # work a little, whoever registered of a code import branch is allowed
+        # to edit the branch, even if they aren't one of the owners.
+        registrant = self.factory.makePerson()
+        code_import = self.factory.makeCodeImport(registrant=registrant)
+        branch = code_import.branch
+        removeSecurityProxy(branch).setOwner(
+            getUtility(ILaunchpadCelebrities).vcs_imports,
+            getUtility(ILaunchpadCelebrities).vcs_imports)
+        self.assertCanEdit(registrant, branch)
 
 
 def test_suite():
