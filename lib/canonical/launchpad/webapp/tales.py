@@ -471,8 +471,7 @@ class ObjectFormatterAPI:
         try:
             url = canonical_url(
                 self._context, path_only_if_possible=True,
-                rootsite=rootsite,
-                view_name=view_name)
+                rootsite=rootsite, view_name=view_name)
         except Unauthorized:
             url = ""
         return url
@@ -480,14 +479,15 @@ class ObjectFormatterAPI:
     def api_url(self, context):
         """Return the object's (partial) canonical web service URL.
 
-        This method returns everything that goes after the web service
-        version number. It's the same as 'url', but without any view
-        name.
+        This method returns everything that goes after the web service version
+        number.  Effectively the canonical URL but only the relative part with
+        no site.
         """
-
-        # Some classes override the rootsite. We always want a path-only
-        # URL, so we override it to nothing.
-        return self.url(rootsite=None)
+        try:
+            url = canonical_url(self._context, force_local_path=True)
+        except Unauthorized:
+            url = ""
+        return url
 
     def traverse(self, name, furtherPath):
         if name.startswith('link:') or name.startswith('url:'):
@@ -1368,7 +1368,8 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink', 'bzr-link': 'bzrLink'}
+        'title-link': 'titleLink', 'bzr-link': 'bzrLink',
+        'api_url': 'api_url'}
 
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""

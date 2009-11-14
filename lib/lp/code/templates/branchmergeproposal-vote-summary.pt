@@ -45,7 +45,7 @@
       tal:attributes="class string:popup-diff mp-${context/id}">
     Diff: <tal:diff replace="structure context/preview_diff/fmt:link"/>
     <a class="api-ref" style="display:none"
-       tal:attributes="href context/fmt:api_url">api</a>
+       tal:attributes="href context/preview_diff/fmt:api_url">api</a>
   </dd>
 
 </dl>

@@ -207,10 +207,11 @@ class BranchEditMenu(NavigationMenu):
         return Link(
             '+whiteboard', text, icon='edit', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Edit')
     def edit_import(self):
         text = 'Edit import source or review import'
-        enabled = self.branch_is_import()
+        enabled = (
+            self.branch_is_import() and
+            check_permission('launchpad.Edit', self.context.code_import))
         return Link(
             '+edit-import', text, icon='edit', enabled=enabled)
 
