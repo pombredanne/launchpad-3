@@ -19,7 +19,7 @@
         <tal:diff replace="structure view/preview_diff_text/fmt:diff" />
       </div>
       <div class="boardCommentFooter"
-           tal:condition="view/review_diff_oversized">
+           tal:condition="view/diff_oversized">
         The diff has been truncated for viewing.
       </div>
     </tal:real-diff>

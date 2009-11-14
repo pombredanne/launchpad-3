@@ -898,6 +898,13 @@
         attribute_to_parent="branch_merge_proposal"
         rootsite="code" />
 
+    <browser:page
+        name="+diff"
+        for="lp.code.interfaces.diff.IPreviewDiff"
+        class="lp.code.browser.branchmergeproposal.FormatPreviewDiffView"
+        permission="launchpad.AnyPerson"
+        template="../templates/branchmergeproposal-diff.pt"/>
+
     <browser:menus
         module="lp.code.browser.branchlisting"
         classes="PersonProductBranchesMenu"/>
@@ -991,6 +998,9 @@
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         factory="lp.code.browser.branchmergeproposal.BranchMergeProposalBreadcrumb"
         permission="zope.Public"/>
+    <adapter
+         factory="lp.code.browser.branchmergeproposal.PreviewDiffHTMLRepresentation"
+         name="lazr.restful.EntryResource"/>
 
     <adapter
         for="lp.code.interfaces.diff.IPreviewDiff"
