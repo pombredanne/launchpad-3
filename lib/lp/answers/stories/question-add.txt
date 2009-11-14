@@ -8,6 +8,12 @@ which support is desired:
     >>> print browser.title
     Questions : Ubuntu
 
+The user sees an involvement link to ask a question.
+
+    >>> link = find_tag_by_id(browser.contents, 'involvement').a
+    >>> print extract_text(link)
+    Ask a question
+
 Asking a new question requires logging in:
 
     >>> browser.getLink('Ask a question').click()
