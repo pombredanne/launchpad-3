@@ -604,5 +604,3 @@ class SourcePackageRelease(SQLBase):
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
             requester=requester, status=status)
-
-
