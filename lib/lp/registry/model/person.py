@@ -2861,21 +2861,9 @@ class PersonSet:
                           name=name, new_name=new_name, product=product))
 
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
-        # Update MailingListSubscription. Note that no remaining records
-        # will have email_address set, as we assert earlier that the
-        # from_person has no email addresses.
-        # Update records that don't conflict.
-        cur.execute('''
-            UPDATE MailingListSubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
-                AND mailing_list NOT IN (
-                    SELECT mailing_list
-                    FROM MailingListSubscription
-                    WHERE person=%(to_id)d
-                    )
-            ''' % vars())
-        # Then trash the remainders.
+        # Update MailingListSubscription. Note that since all the from_id
+        # email addresses are set to NEW, all the subscriptions must be
+        # removed because the user must confirm them.
         cur.execute('''
             DELETE FROM MailingListSubscription WHERE person=%(from_id)d
             ''' % vars())
@@ -3471,6 +3459,17 @@ class PersonSet:
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
+
+        # Inform the user of the merge changes.
+        if not to_person.isTeam():
+            mail_text = get_email_template('person-merged.txt')
+            mail_text = mail_text % {
+                'dupename': from_person.name,
+                'person': to_person.name,
+                }
+            subject = 'Launchpad accounts merged'
+            getUtility(IPersonNotificationSet).addNotification(
+                to_person, subject, mail_text)
 
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""

@@ -256,7 +256,9 @@ class ProductSeriesSpecificationsMenu(NavigationMenu,
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'assignments', 'setgoals', 'listdeclined', 'new']
+    links = [
+        'listall', 'assignments', 'setgoals', 'listdeclined',
+        'new', 'register_sprint']
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):
