@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n">
 
-  <div tal:attributes="class string:mp-${context/id}">
+  <div>
     <tal:merge-fragment tal:replace="structure context/@@+link-summary" />
   </div>
   <tal:merge-fragment tal:replace="structure context/@@+vote-summary" />
