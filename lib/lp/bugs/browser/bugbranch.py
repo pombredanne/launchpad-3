@@ -107,7 +107,7 @@ class BugBranchView(LaunchpadView):
     def show_branch_status(self):
         """Show the branch status if merged and there are no proposals."""
         return (len(self.merge_proposals) == 0 and
-                self.branch.lifecycle_status == BranchLifecycleStatus.MERGED)
+                self.context.branch.lifecycle_status == BranchLifecycleStatus.MERGED)
 
 
 class BranchLinkToBugView(LaunchpadFormView):
