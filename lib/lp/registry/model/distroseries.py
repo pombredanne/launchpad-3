@@ -82,7 +82,6 @@ from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
-from lp.soyuz.model.sourcepackageformat import SourcePackageFormatSelection
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.translations.model.translationimportqueue import (
@@ -119,6 +118,8 @@ from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet)
 
 
 class SeriesMixin:
@@ -1744,14 +1745,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return '%s%s' % (self.name, pocketsuffix[pocket])
 
     def isSourcePackageFormatPermitted(self, format):
-        return Store.of(self).find(
-            SourcePackageFormatSelection, distroseries=self,
-            format=format).count() == 1
-
-    def permitSourcePackageFormat(self, format):
-        if not self.isSourcePackageFormatPermitted(format):
-            return Store.of(self).add(
-                SourcePackageFormatSelection(self, format))
+        return getUtility(ISourcePackageFormatSelectionSet
+            ).getBySeriesAndFormat(self, format) is not None
 
 
 class DistroSeriesSet:

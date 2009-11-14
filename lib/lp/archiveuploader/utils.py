@@ -35,12 +35,11 @@ re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
 
+source_file_exts = [
+    'orig(?:-.+)?\.tar\.(?:gz|bz2)', 'diff.gz',
+    '(?:debian\.)?tar\.(?:gz|bz2)', 'dsc']
 re_issource = re.compile(
-    r"(.+)_(.+?)\."
-     "(orig(?:-.+)?\.tar\.(?:gz|bz2)"
-     "|diff\.gz"
-     "|(?:debian\.)?tar\.(?:gz|bz2)"
-     "|dsc)$")
+    r"(.+)_(.+?)\.(%s)" % "|".join(ext for ext in source_file_exts))
 re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2)$")
 re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2)$")
 re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2)$")
@@ -85,6 +84,8 @@ def determine_source_file_type(filename):
         return SourcePackageFileType.DEBIAN_TARBALL
     elif re_is_native_tar_ext.match(extension):
         return SourcePackageFileType.NATIVE_TARBALL
+    else:
+        return None
 
 
 def prefix_multi_line_string(str, prefix, include_blank_lines=0):

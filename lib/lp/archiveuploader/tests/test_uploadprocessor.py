@@ -50,7 +50,8 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -193,7 +194,9 @@ class TestUploadProcessorBase(TestCaseWithFactory):
             permitted_formats = [SourcePackageFormat.FORMAT_1_0]
 
         for format in permitted_formats:
-            self.breezy.permitSourcePackageFormat(format)
+            if not self.breezy.isSourcePackageFormatPermitted(format):
+                getUtility(ISourcePackageFormatSelectionSet).add(
+                    self.breezy, format)
 
     def addMockFile(self, filename, content="anything"):
         """Return a librarian file."""

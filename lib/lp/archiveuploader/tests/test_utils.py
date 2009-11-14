@@ -69,6 +69,9 @@ class TestUtilities(unittest.TestCase):
             determine_source_file_type('foo_1.0.tar.bz2'),
             SourcePackageFileType.NATIVE_TARBALL)
 
+        self.assertEquals(None, determine_source_file_type('foo_1.0'))
+        self.assertEquals(None, determine_source_file_type('foo_1.0.blah.gz'))
+
     def testPrefixMultilineString(self):
         """lp.archiveuploader.utils.prefix_multi_line_string should work"""
         from lp.archiveuploader.utils import prefix_multi_line_string
