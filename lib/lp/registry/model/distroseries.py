@@ -80,7 +80,8 @@ from lp.registry.interfaces.pocket import (
     PackagePublishingPocket, pocketsuffix)
 from lp.registry.model.sourcepackage import SourcePackage
 from lp.registry.model.sourcepackagename import SourcePackageName
-from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.soyuz.model.sourcepackagerelease import (
+    SourcePackageRelease)
 from lp.soyuz.model.sourcepackageformat import SourcePackageFormatSelection
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
