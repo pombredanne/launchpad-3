@@ -110,6 +110,7 @@
     <browser:page
         name="+addspec"
         for="lp.blueprints.interfaces.sprint.ISprint"
+        facet="specifications"
         class="lp.blueprints.browser.specification.NewSpecificationFromSprintView"
         permission="launchpad.AnyPerson"
         template="../../app/templates/generic-edit.pt"/>
@@ -235,6 +236,7 @@
         <browser:menus
             module="lp.blueprints.browser.specification"
             classes="
+                SpecificationActionMenu
                 SpecificationContextMenu"/>
         <browser:navigation
             module="lp.blueprints.browser.specification"
