@@ -36,11 +36,9 @@ class BugLinkView(LaunchpadFormView):
     focused_element_id = 'bug'
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         """See `LaunchpadFormview`."""
         return canonical_url(self.context)
-
-    cancel_url = next_url
 
     @action(_('Link'))
     def linkBug(self, action, data):
@@ -66,6 +64,7 @@ class BugLinkView(LaunchpadFormView):
               u'\N{right double quotation mark}.', mapping=bug_props))
         notify(ObjectModifiedEvent(
             self.context, target_unmodified, ['bugs']))
+        self.next_url = canonical_url(self.context)
 
 
 class BugLinksListingView:
@@ -99,11 +98,9 @@ class BugsUnlinkView(LaunchpadFormView):
     custom_widget('bugs', LabeledMultiCheckBoxWidget)
 
     @property
-    def next_url(self):
+    def cancel_url(self):
         """See `LaunchpadFormview`."""
         return canonical_url(self.context)
-
-    cancel_url = next_url
 
     @action(_('Remove'))
     def unlinkBugs(self, action, data):
@@ -121,6 +118,7 @@ class BugsUnlinkView(LaunchpadFormView):
                     _('Cannot remove link to private bug #$bugid.',
                       mapping=replacements))
         notify(ObjectModifiedEvent(self.context, target_unmodified, ['bugs']))
+        self.next_url = canonical_url(self.context)
 
     def bugsWithPermission(self):
         """Return the bugs that the user has permission to remove. This
