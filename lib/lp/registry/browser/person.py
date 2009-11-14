@@ -1808,6 +1808,7 @@ class PersonSpecWorkloadTableView(LaunchpadView):
 class PersonSpecFeedbackView(HasSpecificationsView):
 
     label = 'Feature feedback requests'
+    page_title = label
 
     @cachedproperty
     def feedback_specs(self):

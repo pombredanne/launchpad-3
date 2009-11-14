@@ -800,8 +800,6 @@ sprint_attend = ContextTitle('Register your attendance at %s')
 
 sprint_edit = ContextTitle(smartquote('Edit "%s" details'))
 
-sprint_index = ContextTitle('%s (sprint or meeting)')
-
 sprint_new = 'Register a meeting or sprint in Launchpad'
 
 sprint_specs = ContextTitle('Blueprints for %s')
