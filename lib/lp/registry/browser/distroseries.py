@@ -245,7 +245,7 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
 class DistroSeriesStatusMixin:
     """A mixin that provides status field support."""
 
-    def createStatusField(self):
+    def createStatusField(self, default=None):
         """Create the 'status' field.
 
         Create the status vocabulary according the current distroseries
@@ -272,6 +272,7 @@ class DistroSeriesStatusMixin:
         return form.Fields(
             Choice(__name__='status',
                    title=_('Status'),
+                   default=default,
                    vocabulary=status_vocabulary,
                    description=_("Select the distroseries status."),
                    required=True))
@@ -369,8 +370,8 @@ class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
         LaunchpadEditFormView.setUpFields(self)
         if not self.context.distribution.full_functionality:
             # This is an IDerivativeDistribution which may set its status.
-            self.form_fields = (
-                self.form_fields + self.createStatusField())
+            self.form_fields = (self.form_fields + 
+                self.createStatusField(self.context.status))
 
     @action("Change")
     def change_action(self, action, data):
