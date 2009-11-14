@@ -227,7 +227,9 @@ class DistroSeriesSpecificationsMenu(NavigationMenu,
 
     usedfor = IDistroSeries
     facet = 'specifications'
-    links = ['listall', 'listdeclined', 'assignments', 'setgoals', 'new']
+    links = [
+        'listall', 'listdeclined', 'assignments', 'setgoals',
+        'new', 'register_sprint']
 
 
 class DistroSeriesPackageSearchView(PackageSearchViewBase):
