@@ -61,6 +61,7 @@ question owner, No Privileges Person enters his question in the
     Link existing bug
     Create bug report
     Link to a FAQ
+    Create a new FAQ
 
     >>> support_browser.getControl('Message').value = (
     ...     "Can you provide an example of an URL displaying the problem?")
@@ -216,6 +217,7 @@ The History link should now show up.
     Link existing bug
     Create bug report
     Link to a FAQ
+    Create a new FAQ
 
 
 == Adding another Comment ==

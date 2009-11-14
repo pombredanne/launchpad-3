@@ -28,7 +28,7 @@
         </dl>
 
         <tal:last_updated_by condition="context/last_updated_by">
-          <dl style="clear: both">
+          <dl id="faq-updated" style="clear: both">
             <dt>Last updated by:</dt>
             <dd>
               <a tal:replace="structure context/last_updated_by/fmt:link" />
