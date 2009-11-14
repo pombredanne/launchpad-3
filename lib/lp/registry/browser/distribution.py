@@ -452,7 +452,7 @@ class DistributionSpecificationsMenu(NavigationMenu,
                                      HasSpecificationsMenuMixin):
     usedfor = IDistribution
     facet = 'specifications'
-    links = ['listall', 'doc', 'assignments', 'new']
+    links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
 
 
 class DistributionPackageSearchView(PackageSearchViewBase):
