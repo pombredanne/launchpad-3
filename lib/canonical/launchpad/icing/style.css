@@ -1796,12 +1796,12 @@ dl.reviews dd {
     display: none;
 }
 .yui-diff-overlay {
-    width: 80%;
+    width: 80% !important;
 }
 .yui-diff-overlay #yui-pretty-overlay-modal {
-    width: auto;
-    font: inherit;
-    color: black;
+    width: auto !important;
+    font: inherit !important;
+    color: black !important;
 }
 
 
