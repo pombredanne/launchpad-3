@@ -89,6 +89,11 @@ class QuestionLinksMixin:
             icon = 'mail'
         return Link('+subscribe', text, icon=icon)
 
+    def edit(self):
+        """Return a Link to the edit view."""
+        text = 'Edit question'
+        return Link('+edit', text, icon='edit')
+
 
 class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
     """A menu for different aspects of editing a object."""
@@ -96,17 +101,7 @@ class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
     usedfor = IQuestion
     facet = 'answers'
     title = 'Edit question'
-    links = ['edit', 'changestatus', 'reject', 'subscription']
-
-    def edit(self):
-        """Return a Link to the edit view."""
-        text = 'Edit question'
-        return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def changestatus(self):
-        """Return a Link to the change status view."""
-        return Link('+change-status', _('Change status'), icon='edit')
+    links = ['edit', 'reject', 'subscription']
 
     def reject(self):
         """Return a Link to the reject view."""
@@ -119,12 +114,18 @@ class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
     """Context menu of actions that can be performed upon a Question."""
     usedfor = IQuestion
     facet = 'answers'
-    links = ['history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
-        'createfaq']
+    links = [
+        'history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
+        'createfaq', 'edit', 'changestatus']
 
     def initialize(self):
         """Initialize the menu from the Question's state."""
         self.has_bugs = bool(self.context.bugs)
+
+    @enabled_with_permission('launchpad.Admin')
+    def changestatus(self):
+        """Return a Link to the change status view."""
+        return Link('+change-status', _('Change status'), icon='edit')
 
     def history(self):
         """Return a Link to the history view."""
@@ -153,7 +154,11 @@ class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
         """Link for linking to a FAQ."""
         text = 'Link to a FAQ'
         summary = 'Link this question to a FAQ.'
-        return Link('+linkfaq', text, summary, icon='add')
+        if self.context.faq is None:
+            icon = 'add'
+        else:
+            icon = 'edit'
+        return Link('+linkfaq', text, summary, icon=icon)
 
     def createfaq(self):
         """LInk for creating a FAQ."""
