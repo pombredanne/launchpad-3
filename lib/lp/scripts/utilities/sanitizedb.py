@@ -423,9 +423,9 @@ class SanitizeDb(LaunchpadScript):
         count = self.store.execute("""
             UPDATE Account SET
                 openid_identifier =
-                    'rnd' || text(id) || text(round(random()*10000)),
+                    'rnd' || text(id) || 'x' || text(round(random()*10000)),
                 old_openid_identifier =
-                    'rnd' || text(id) || text(round(random()*10000))
+                    'rnd' || text(id) || 'x' || text(round(random()*10000))
             """).rowcount
         self.logger.info("Randomized %d openid identifiers.", count)
 
