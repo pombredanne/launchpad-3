@@ -1,28 +1,30 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Implementation classes for Account and associates."""
 
 __metaclass__ = type
 __all__ = ['Account', 'AccountPassword', 'AccountSet']
 
-import random
-
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 from zope.interface import implements
 
+from storm.store import Store
+
 from sqlobject import ForeignKey, StringCol
-from sqlobject.sqlbuilder import OR
 
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.interfaces import IMasterObject, IMasterStore, IStore
 from canonical.launchpad.interfaces.account import (
-        AccountCreationRationale, AccountStatus,
-        IAccount, IAccountSet)
+    AccountCreationRationale, AccountStatus, IAccount, IAccountSet)
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressStatus, IEmailAddress, IEmailAddressSet)
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
-from canonical.launchpad.interfaces.openidserver import IOpenIDRPSummarySet
-from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class Account(SQLBase):
@@ -35,41 +37,140 @@ class Account(SQLBase):
     displayname = StringCol(dbName='displayname', notNull=True)
 
     creation_rationale = EnumCol(
-            dbName='creation_rationale', schema=AccountCreationRationale,
-            notNull=True)
+        dbName='creation_rationale', schema=AccountCreationRationale,
+        notNull=True)
     status = EnumCol(
-            enum=AccountStatus, default=AccountStatus.NOACCOUNT,
-            notNull=True)
+        enum=AccountStatus, default=AccountStatus.NOACCOUNT, notNull=True)
     date_status_set = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     status_comment = StringCol(dbName='status_comment', default=None)
 
     openid_identifier = StringCol(
-            dbName='openid_identifier', notNull=True, default=DEFAULT)
+        dbName='openid_identifier', notNull=True, default=DEFAULT)
 
-    # XXX sinzui 2008-09-04 bug=264783:
-    # Remove this attribute, in the DB, drop openid_identifier, then
-    # rename new_openid_identifier => openid_identifier.
-    new_openid_identifier = StringCol(
-            dbName='old_openid_identifier', notNull=False, default=DEFAULT)
+    def _getEmails(self, status):
+        """Get related `EmailAddress` objects with the given status."""
+        result = IStore(EmailAddress).find(
+            EmailAddress, accountID=self.id, status=status)
+        result.order_by(EmailAddress.email.lower())
+        return result
+
+    @property
+    def preferredemail(self):
+        """See `IAccount`."""
+        return self._getEmails(EmailAddressStatus.PREFERRED).one()
+
+    @property
+    def validated_emails(self):
+        """See `IAccount`."""
+        return self._getEmails(EmailAddressStatus.VALIDATED)
+
+    @property
+    def guessed_emails(self):
+        """See `IAccount`."""
+        return self._getEmails(EmailAddressStatus.NEW)
+
+    def setPreferredEmail(self, email):
+        """See `IAccount`."""
+        if email is None:
+            # Mark preferred email address as validated, if it exists.
+            # XXX 2009-03-30 jamesh bug=349482: we should be able to
+            # use ResultSet.set() here :(
+            for address in self._getEmails(EmailAddressStatus.PREFERRED):
+                address.status = EmailAddressStatus.VALIDATED
+            return
+
+        if not IEmailAddress.providedBy(email):
+            raise TypeError("Any person's email address must provide the "
+                            "IEmailAddress Interface. %r doesn't." % email)
+
+        email = IMasterObject(removeSecurityProxy(email))
+        assert email.accountID == self.id
+
+        # If we have the preferred email address here, we're done.
+        if email.status == EmailAddressStatus.PREFERRED:
+            return
+
+        existing_preferred_email = self.preferredemail
+        if existing_preferred_email is not None:
+            assert Store.of(email) is Store.of(existing_preferred_email), (
+                "Store of %r is not the same as store of %r" %
+                (email, existing_preferred_email))
+            existing_preferred_email.status = EmailAddressStatus.VALIDATED
+            # Make sure the old preferred email gets flushed before
+            # setting the new preferred email.
+            Store.of(email).add_flush_order(existing_preferred_email, email)
+
+        email.status = EmailAddressStatus.PREFERRED
+
+    def validateAndEnsurePreferredEmail(self, email):
+        """See `IAccount`."""
+        if not IEmailAddress.providedBy(email):
+            raise TypeError, (
+                "Any person's email address must provide the IEmailAddress "
+                "interface. %s doesn't." % email)
+
+        assert email.accountID == self.id, 'Wrong account! %r, %r' % (
+            email.accountID, self.id)
+
+        # This email is already validated and is this person's preferred
+        # email, so we have nothing to do.
+        if email.status == EmailAddressStatus.PREFERRED:
+            return
+
+        email = IMasterObject(email)
+
+        if self.preferredemail is None:
+            # This branch will be executed only in the first time a person
+            # uses Launchpad. Either when creating a new account or when
+            # resetting the password of an automatically created one.
+            self.setPreferredEmail(email)
+        else:
+            email.status = EmailAddressStatus.VALIDATED
+
+    def activate(self, comment, password, preferred_email):
+        """See `IAccountSpecialRestricted`."""
+        if preferred_email is None:
+            raise AssertionError(
+                "Account %s cannot be activated without a "
+                "preferred email address." % self.id)
+        self.status = AccountStatus.ACTIVE
+        self.status_comment = comment
+        self.password = password
+        self.validateAndEnsurePreferredEmail(preferred_email)
+
+    def reactivate(self, comment, password, preferred_email):
+        """See `IAccountSpecialRestricted`."""
+        if password in (None, ''):
+            raise AssertionError(
+                "Account %s cannot be reactivated without a "
+                "password." % self.id)
+        self.activate(comment, password, preferred_email)
 
     # The password is actually stored in a separate table for security
     # reasons, so use a property to hide this implementation detail.
     def _get_password(self):
-        password = AccountPassword.selectOneBy(account=self)
+        # We have to force the switch to the auth store, because the
+        # AccountPassword table is not visible via the main store
+        # for security reasons.
+        password = IStore(AccountPassword).find(
+            AccountPassword, accountID=self.id).one()
         if password is None:
             return None
         else:
             return password.password
 
     def _set_password(self, value):
-        password = AccountPassword.selectOneBy(account=self)
+        # Making a modification, so we explicitly use the auth store master.
+        store = IMasterStore(AccountPassword)
+        password = store.find(
+            AccountPassword, accountID=self.id).one()
 
         if value is not None and password is None:
             # There is currently no AccountPassword record and we need one.
-            AccountPassword(account=self, password=value)
+            AccountPassword(accountID=self.id, password=value)
         elif value is None and password is not None:
             # There is an AccountPassword record that needs removing.
-            AccountPassword.delete(password.id)
+            store.remove(password)
         elif value is not None:
             # There is an AccountPassword record that needs updating.
             password.password = value
@@ -81,25 +182,50 @@ class Account(SQLBase):
 
     password = property(_get_password, _set_password)
 
+    @property
+    def is_valid(self):
+        """See `IAccount`."""
+        if self.status != AccountStatus.ACTIVE:
+            return False
+        return self.preferredemail is not None
+
+    def createPerson(self, rationale, name=None, comment=None):
+        """See `IAccount`."""
+        # Need a local import because of circular dependencies.
+        from lp.registry.model.person import (
+            generate_nick, Person, PersonSet)
+        assert self.preferredemail is not None, (
+            "Can't create a Person for an account which has no email.")
+        person = IMasterStore(Person).find(Person, accountID=self.id).one()
+        assert person is None, (
+            "Can't create a Person for an account which already has one.")
+        if name is None:
+            name = generate_nick(self.preferredemail.email)
+        person = PersonSet()._newPerson(
+            name, self.displayname, hide_email_addresses=True,
+            rationale=rationale, account=self, comment=comment)
+
+        # Update all associated email addresses to point at the new person.
+        result = IMasterStore(EmailAddress).find(
+            EmailAddress, accountID=self.id)
+        # XXX 2009-03-30 jamesh bug=349482: we should be able to
+        # use ResultSet.set() here :(
+        for email in result:
+            email.personID = person.id
+
+        return person
+
 
 class AccountSet:
     """See `IAccountSet`."""
     implements(IAccountSet)
 
-    def new(self, rationale, displayname, openid_mnemonic=None,
-            password=None, password_is_encrypted=False):
+    def new(self, rationale, displayname, password=None,
+            password_is_encrypted=False):
         """See `IAccountSet`."""
 
-        # Create the openid_identifier for the OpenID identity URL.
-        if openid_mnemonic is not None:
-            new_openid_identifier = self.createOpenIDIdentifier(
-                openid_mnemonic)
-        else:
-            new_openid_identifier = None
-
         account = Account(
-                displayname=displayname, creation_rationale=rationale,
-                new_openid_identifier=new_openid_identifier)
+            displayname=displayname, creation_rationale=rationale)
 
         # Create the password record.
         if password is not None:
@@ -109,51 +235,44 @@ class AccountSet:
 
         return account
 
+    def get(self, id):
+        """See `IAccountSet`."""
+        account = IStore(Account).get(Account, id)
+        if account is None:
+            raise LookupError(id)
+        return account
+
+    def createAccountAndEmail(self, email, rationale, displayname, password,
+                              password_is_encrypted=False):
+        """See `IAccountSet`."""
+        # Convert the PersonCreationRationale to an AccountCreationRationale.
+        account_rationale = getattr(AccountCreationRationale, rationale.name)
+        account = self.new(
+            account_rationale, displayname, password=password,
+            password_is_encrypted=password_is_encrypted)
+        account.status = AccountStatus.ACTIVE
+        email = getUtility(IEmailAddressSet).new(
+            email, status=EmailAddressStatus.PREFERRED, account=account)
+        return account, email
+
     def getByEmail(self, email):
         """See `IAccountSet`."""
-        return Account.selectOne('''
-            EmailAddress.account = Account.id
-            AND lower(EmailAddress.email) = lower(trim(%s))
-            ''' % sqlvalues(email),
-            clauseTables=['EmailAddress'])
+        conditions = [EmailAddress.account == Account.id,
+                      EmailAddress.email.lower() == email.lower().strip()]
+        store = IStore(Account)
+        account = store.find(Account, *conditions).one()
+        if account is None:
+            raise LookupError(email)
+        return account
 
     def getByOpenIDIdentifier(self, openid_identifier):
         """See `IAccountSet`."""
-        # XXX sinzui 2008-09-09 bug=264783:
-        # Remove the OR clause, only openid_identifier should be used.
-        return Account.selectOne(
-            OR(
-                Account.q.openid_identifier == openid_identifier,
-                Account.q.new_openid_identifier == openid_identifier),)
-
-    _MAX_RANDOM_TOKEN_RANGE = 1000
-
-    def createOpenIDIdentifier(self, mnemonic):
-        """See `IAccountSet`.
-
-        The random component of the identifier is a number betwee 000 and 999.
-        """
-        assert isinstance(mnemonic, (str, unicode)) and mnemonic is not '', (
-            'The mnemonic must be a non-empty string.')
-        identity_url_root = allvhosts.configs['id'].rooturl
-        openidrpsummaryset = getUtility(IOpenIDRPSummarySet)
-        tokens = range(0, self._MAX_RANDOM_TOKEN_RANGE)
-        random.shuffle(tokens)
-        # This method might be faster by collecting all accounts and summaries
-        # that end with the mnemonic. The chances of collision seem minute,
-        # given that the intended mnemonic is a unique user name.
-        for token in tokens:
-            openid_identifier = '%03d/%s' % (token, mnemonic)
-            account = self.getByOpenIDIdentifier(openid_identifier)
-            if account is not None:
-                continue
-            summaries = openidrpsummaryset.getByIdentifier(
-                identity_url_root + openid_identifier)
-            if summaries.count() == 0:
-                return openid_identifier.encode('ascii')
-        raise AssertionError(
-            'An openid_identifier could not be created with the mnemonic '
-            "'%s'." % mnemonic)
+        store = IStore(Account)
+        account = store.find(
+            Account, Account.openid_identifier == openid_identifier).one()
+        if account is None:
+            raise LookupError(openid_identifier)
+        return account
 
 
 class AccountPassword(SQLBase):
@@ -163,6 +282,6 @@ class AccountPassword(SQLBase):
     AccountPassword table only needs to be known by this module.
     """
     account = ForeignKey(
-            dbName='account', foreignKey='Account', alternateID=True)
+        dbName='account', foreignKey='Account', alternateID=True)
     password = StringCol(dbName='password', notNull=True)
 

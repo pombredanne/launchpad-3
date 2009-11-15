@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -64,7 +66,11 @@ class TemporaryStorageManager:
     def new(self, blob, expires=None):
         """See ITemporaryStorageManager."""
         if expires is None:
-            expires = datetime.utcnow().replace(tzinfo=utc)
+            # A week might be quite a long time, but it shouldn't hurt,
+            # and it gives people enough time to create an account
+            # before accessing the uploaded blob.
+            expires = (
+                datetime.utcnow().replace(tzinfo=utc) + timedelta(weeks=1))
 
         # At this stage we could do some sort of throttling if we were
         # concerned about abuse of the temporary storage facility. For

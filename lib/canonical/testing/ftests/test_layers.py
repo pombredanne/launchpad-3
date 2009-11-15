@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """ Test layers
 
 Note that many tests are performed at run time in the layers themselves
@@ -316,7 +318,7 @@ class LaunchpadScriptTestCase(BaseTestCase):
         # Test that we can switch database configurations, and that we
         # end up connected as the right user.
 
-        self.assertEqual(dbconfig.dbuser, 'launchpad')
+        self.assertEqual(dbconfig.dbuser, 'launchpad_main')
         LaunchpadScriptLayer.switchDbConfig('librarian')
         self.assertEqual(dbconfig.dbuser, 'librarian')
 
@@ -341,7 +343,7 @@ class LayerProcessControllerInvariantsTestCase(BaseTestCase):
         mainsite = LayerProcessController.appserver_config.vhost.mainsite
         home_page = urlopen(mainsite.rooturl).read()
         self.failUnless(
-            'What is Launchpad?' in home_page,
+            'Is your project registered yet?' in home_page,
             "Home page couldn't be retrieved:\n%s" % home_page)
 
     def testSMTPServerIsAvailable(self):

@@ -1,0 +1,22 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  metal:use-macro="view/macro:page/main_only"
+>
+
+<body>
+
+<div metal:fill-slot="main">
+
+  <div metal:use-macro="context/@@launchpad_form/form">
+    <p metal:fill-slot="extra_info">
+      Links from distribution packages to upstream project series let
+      distribution and upstream maintainers share bugs, patches, and
+      translations efficiently.
+    </p>
+  </div>
+
+</div>
+</body>
+</html>

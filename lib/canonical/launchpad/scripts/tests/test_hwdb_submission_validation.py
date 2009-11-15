@@ -1,4 +1,6 @@
-# Copyright 2007, 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Tests of the HWDB submissions parser."""
 
 from datetime import datetime
@@ -373,8 +375,20 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
 
         The only allowed tags are specified by the Relax NG schema:
         live_cd, system_id, distribution, distroseries, architecture,
-        private, contactable, date_created.
+        private, contactable, date_created (tested in
+        testSummaryRequiredTags()), and the optional tag <kernel-release>.
         """
+        # we can add the tag <kernel-release>
+        sample_data = self.insertSampledata(
+            data=self.sample_data,
+            insert_text='<kernel-release value="2.6.28-15-generic"/>',
+            where='</summary>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Valid submission containing a <kernel-release> tag rejected.')
+
+        # Adding any other tag is not possible.
         sample_data = self.insertSampledata(
             data=self.sample_data,
             insert_text='<nonsense/>',
@@ -607,30 +621,105 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             'Invalid attribute foo for element plugin',
             'invalid attribute in client plugin')
 
-    def testHardwareSubTags(self):
+    def testHardwareSubTagHalOrUdev(self):
+        """The <hardware> tag requires data about hardware devices.
+
+        This data is stored either in the sub-tag <hal> or in the
+        three tags <udev>, <dmi>, <sysfs-attributes>.
+        """
+        # Omitting <hal> leads to an error.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<hal',
+            to_text='</hal>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting an element hal, got nothing',
+            'missing tag <hal> in <hardware>')
+
+        # But we may replace <hal> by the three tags <udev>, <dmi>,
+        #<sysfs-attributes>.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text="""
+               <udev>some text</udev>
+               <dmi>some text</dmi>
+               <sysfs-attributes>some text</sysfs-attributes>
+            """,
+            from_text='<hal',
+            to_text='</hal>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'submission with valid <udev>, <dmi>, <sysfs-attributes> tags '
+            'rejected')
+
+    def testHardwareSubTagUdevIncomplete(self):
         """The <hardware> tag has a fixed set of allowed sub-tags.
 
-        Valid sub-tags are <hal>, <processors>, <aliases>.
-        <aliases> is optional; <hal> and <processors> are required.
+        Valid sub-tags are <hal>, <udev>, <dmi>, <sysfs-attributes>,
+        <processors>, <aliases>. <aliases> is optional, <processors>
+        is required, and either <hal> or all three tags <udev>, <dmi>,
+        <sysfs-attributes> must be present.
         """
-        # Omitting either of the required tags leads on an error.
-        for tag in ('hal', 'processors'):
+        # Omitting any of the three tags <udev>, <dmi>, <sysfs-attributes>
+        # makes the data invalid.
+        all_tags = ['udev', 'dmi', 'sysfs-attributes']
+        for index, missing_tag in enumerate(all_tags):
+            test_tags = all_tags[:]
+            del test_tags[index]
+            replace_text = [
+                '<%s>text</%s>' % (tag, tag) for tag in test_tags]
+            replace_text = ''.join(replace_text)
             sample_data = self.replaceSampledata(
                 data=self.sample_data,
-                replace_text='',
-                from_text='<%s' % tag,
-                to_text='</%s>' % tag)
+                replace_text=replace_text,
+                from_text='<hal',
+                to_text='</hal>')
             result, submission_id = self.runValidator(sample_data)
             self.assertErrorMessage(
                 submission_id, result,
-                'Expecting an element %s, got nothing' % tag,
-                'missing tag <%s> in <hardware>' % tag)
+                'Expecting an element %s, got nothing' % missing_tag,
+                'missing tag <%s> in <hardware>' % missing_tag)
+
+    def testHardwareSubTagHalMixedWithUdev(self):
+        """Mixing <hal> with <udev>, <dmi>, <sysfs-attributes> is impossible.
+        """
+        # A submission containing the tag <hal> as well as one of <udev>,
+        # <dmi>, <sysfs-attributes> is invalid.
+        for tag in ['udev', 'dmi', 'sysfs-attributes']:
+            sample_data = self.insertSampledata(
+                data=self.sample_data,
+                insert_text='<%s>some text</%s>' % (tag, tag),
+                where='<hal')
+            result, submission_id = self.runValidator(sample_data)
+            self.assertErrorMessage(
+                submission_id, result,
+                'Invalid sequence in interleave',
+                '<hal> mixed with <%s> in <hardware>' % tag)
+
+    def testHardwareOtherSubTags(self):
+        """The <hardware> tag has a fixed set of allowed sub-tags.
+        """
+        # The <processors> tag must not be omitted.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<processors',
+            to_text='</processors>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertErrorMessage(
+            submission_id, result,
+            'Expecting an element processors, got nothing',
+            '<processor> tag omitted')
 
         # The <aliases> tag may be omitted.
         sample_data = self.replaceSampledata(
             data=self.sample_data,
             replace_text='',
-            from_text='<aliases>',
+            from_text='<aliases',
             to_text='</aliases>')
         result, submission_id = self.runValidator(sample_data)
         self.assertNotEqual(result, None,
@@ -1599,24 +1688,6 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
         self.assertErrorMessage(
             submission_id, result,
             'Extra element aliases in interleave',
-            'missing attribute of <alias>')
-
-        # target must be an integer.
-        sample_data = self.sample_data.replace(
-            '<alias target="65">', '<alias target="noInteger">')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result,
-            'Extra element aliases in interleave',
-            'missing attribute of <alias>')
-
-        # target must not be empty.
-        sample_data = self.sample_data.replace(
-            '<alias target="65">', '<alias target="">')
-        result, submission_id = self.runValidator(sample_data)
-        self.assertErrorMessage(
-            submission_id, result,
-            'Element hardware failed to validate content',
             'missing attribute of <alias>')
 
         # Other attributes are not allowed. We get again the same
@@ -2607,6 +2678,110 @@ class TestHWDBSubmissionRelaxNGValidation(TestCase):
             submission_id, result,
             'Element comment has extra content: nonsense',
             'detection of invalid sub-tag <nonsense> of <comment>')
+
+    def testMissingContextNode(self):
+        """Validation of the <context> node."""
+        # The default sample data contains this node. It is not a
+        # required node, we can omit it without making the data
+        # invalid.
+        sample_data = self.replaceSampledata(
+            data=self.sample_data,
+            replace_text='',
+            from_text='<context>',
+            to_text='</context>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertNotEqual(
+            result, None,
+            'Submission without a <context> node did not validate.')
+
+    def testContextNodeAttributes(self):
+        """Validation of the <context> node attributes."""
+        # This node must not have any attributes.
+        sample_data = self.sample_data.replace(
+            '<context>', '<context foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with attribute '
+            'not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of invalid attribute of <context>')
+
+    def testContextSubnodes(self):
+        """Validation of sub-nodes of <context>."""
+        # This node may only have the sub-node <info>.
+        sample_data = self.sample_data.replace(
+            '<context>', '<context><nonsense/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with a subnode '
+            'not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of invalid sub-node of <context>')
+
+    def testContextNodeCData(self):
+        """Validation of the <context> node containing CData."""
+        # this node must not have any CData content
+        sample_data = self.sample_data.replace(
+            '<context>', '<context>nonsense')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with CData '
+            'content not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of invalid sub-node of <context>')
+
+    def testInfoNodeAttributes(self):
+        """Validation of <info> attributes."""
+        # The attribute "command" is required.
+        sample_data = self.sample_data.replace(
+            '<info command="dmidecode">', '<info>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with CData '
+            'content not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of missing attribute "command" of <info> failed')
+        # Other attributes are not allowed.
+        sample_data = self.sample_data.replace(
+            '<info command="dmidecode">',
+            '<info command="dmidecode" foo="bar">')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with CData '
+            'content not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of missing attribute "command" of <info> failed')
+
+    def testInfoNodeSubnodes(self):
+        """Validation of an <info> containing a sub-node."""
+        # Sub-nodes are not allowed for <info>
+        sample_data = self.sample_data.replace(
+            '<info command="dmidecode">',
+            '<info command="dmidecode"><nonsense/>')
+        result, submission_id = self.runValidator(sample_data)
+        self.assertEqual(
+            result, None,
+            'Submission data containing a <context> node with CData '
+            'content not detected as being invalid.')
+        self.assertErrorMessage(
+            submission_id, result,
+            'Extra element context in interleave',
+            'detection of an invalid sub.node of <info> failed')
 
 
 def test_suite():

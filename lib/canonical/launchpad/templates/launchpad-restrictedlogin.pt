@@ -13,7 +13,7 @@
     <title>Log in to Launchpad</title>
     <style type="text/css">
       html {
-        font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
+        font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
         font-size: 8pt;
       }
       h1 {background: none; color: #83ad23; font-size: 3em; font-weight: normal;}
@@ -34,14 +34,14 @@
       <!-- 2. just logged in successfully: -->
       <p tal:condition="view/login_success">
         You are now logged in as <strong
-        tal:content="request/lp:person/browsername">Person Name</strong>.
+        tal:content="request/lp:person/displayname">Person Name</strong>.
       </p>
 
       <tal:block condition="not: view/login_success">
         <h1>You&#8217;re already logged in</h1>
         <p>
           You are already logged in as
-          <strong tal:content="request/lp:person/browsername">person
+          <strong tal:content="request/lp:person/displayname">person
           name</strong>.  If this is not you, please
           <a href="/+logout">log out now</a>.
         </p>

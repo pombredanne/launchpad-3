@@ -1,7 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0401
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad events."""
 
-from canonical.launchpad.event.sqlobjectevent import *
-from canonical.launchpad.event.team import *

@@ -3,6 +3,74 @@
 The LoginOrRegister view is responsible for the login form and how it
 operates within the Launchpad workflows.
 
+    # Import some stuff we'll use througout the test.
+    >>> from zope.component import getMultiAdapter, getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from canonical.launchpad.webapp.publisher import rootObject
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> person_set = getUtility(IPersonSet)
+
+    >>> def create_request(form):
+    ...     return LaunchpadTestRequest(
+    ...         SERVER_URL='http://launchpad.dev',
+    ...         PATH_INFO='/+login', method='POST', form=form)
+
+
+== Unregistered email addresses can't be used to login ==
+
+Trying to login with an email address that is not registered in Launchpad will
+cause an error message to be displayed.
+
+    >>> request = create_request(
+    ...     form={'loginpage_email': 'non-registered@canonical.com',
+    ...           'loginpage_password': u'test',
+    ...           'loginpage_submit_login': 'Log In'})
+    >>> login_view = getMultiAdapter(
+    ...     (rootObject, request), name="+login")
+    >>> login_view.process_login_form()
+    >>> login_view.login_success()
+    False
+    >>> print login_view.login_error
+    The email address and password do not match.
+
+
+== Can't login if using the wrong password ==
+
+If a user tries to login using a password that is not the correct one for the
+account with the given email address, an error message is displayed.
+
+This is what happens if you have a full-fledged account:
+
+    >>> person = factory.makePerson()
+    >>> request = create_request(
+    ...     form={'loginpage_email': person.preferredemail.email,
+    ...           'loginpage_password': person.password + 'foo',
+    ...           'loginpage_submit_login': 'Log In'})
+    >>> login_view = getMultiAdapter(
+    ...     (rootObject, request), name="+login")
+    >>> login_view.process_login_form()
+    >>> login_view.login_success()
+    False
+    >>> print login_view.login_error
+    The email address and password do not match.
+
+Or a personless one:
+
+    >>> account = factory.makeAccount(
+    ...     'Personless account', email='foo@example.com', password='foo')
+    >>> request = create_request(
+    ...     form={'loginpage_email': 'foo@example.com',
+    ...           'loginpage_password': u'wrong password',
+    ...           'loginpage_submit_login': 'Log In'})
+    >>> login_view = getMultiAdapter(
+    ...     (rootObject, request), name="+login")
+    >>> login_view.process_login_form()
+    >>> login_view.login_success()
+    False
+    >>> print login_view.login_error
+    The email address and password do not match.
+
 
 == Deactivated accounts cannot login ==
 
@@ -10,28 +78,20 @@ A deactivated account cannot use the LoginOrRegister view to login.
 The login_error message explains the situation to the user. Former User
 is an example of a user with a DEACTIVATED account.
 
-    >>> from zope.component import getMultiAdapter, getUtility
-    >>> from zope.security.proxy import removeSecurityProxy
-
-    >>> from canonical.launchpad.interfaces.person import IPersonSet
-    >>> from canonical.launchpad.webapp.publisher import rootObject
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-
-    >>> person_set = getUtility(IPersonSet)
     >>> former_user = person_set.getByEmail('former-user@canonical.com')
     >>> former_user_account = removeSecurityProxy(former_user.account)
     >>> former_user_account.status
     <DBItem AccountStatus.DEACTIVATED, ...>
 
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/+login',
-    ...     method='POST',
-    ...     form={
-    ...         'loginpage_email': 'former-user@canonical.com',
-    ...         'loginpage_password': u'test',
-    ...         'loginpage_submit_login': 'Log In',
-    ...         })
+    # Set the person's password so that we can try logging in.
+    >>> from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
+    >>> former_user_account.password = getUtility(
+    ...     IPasswordEncryptor).encrypt('foo')
+
+    >>> request = create_request(
+    ...     form={'loginpage_email': 'former-user@canonical.com',
+    ...           'loginpage_password': u'foo',
+    ...           'loginpage_submit_login': 'Log In'})
     >>> login_view = getMultiAdapter(
     ...     (rootObject, request), name="+login")
     >>> login_view.process_login_form()
@@ -57,19 +117,17 @@ explains the problem.
     >>> bad_user = factory.makePerson(
     ...     email='bad-user@canonical.com',
     ...     name='bad-user',
-    ...     password='invalid')
-    >>> bad_user.account.status = AccountStatus.SUSPENDED
+    ...     password='password')
+    >>> from canonical.launchpad.interfaces import IMasterObject
+    >>> IMasterObject(bad_user.account).status = AccountStatus.SUSPENDED
+    >>> import transaction
+    >>> transaction.commit()
 
     >>> login(ANONYMOUS, request)
-    >>> request = LaunchpadTestRequest(
-    ...     SERVER_URL='http://launchpad.dev',
-    ...     PATH_INFO='/+login',
-    ...     method='POST',
-    ...     form={
-    ...         'loginpage_email': 'bad-user@canonical.com',
-    ...         'loginpage_password': u'test',
-    ...         'loginpage_submit_login': 'Log In',
-    ...         })
+    >>> request = create_request(
+    ...     form={'loginpage_email': 'bad-user@canonical.com',
+    ...           'loginpage_password': u'password',
+    ...           'loginpage_submit_login': 'Log In'})
     >>> login_view = getMultiAdapter(
     ...     (rootObject, request), name="+login")
     >>> login_view.process_login_form()

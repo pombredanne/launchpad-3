@@ -1,5 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -7,6 +7,7 @@ import os
 import md5
 import sha
 import errno
+import shutil
 import tempfile
 
 from zope.component import getUtility
@@ -171,7 +172,7 @@ class LibraryFileUpload(object):
             # If the directory already exists, that's ok.
             if e.errno != errno.EEXIST:
                 raise
-        os.rename(self.tmpfilepath, location)
+        shutil.move(self.tmpfilepath, location)
 
 
 def _sameFile(path1, path2):
@@ -186,7 +187,11 @@ def _sameFile(path1, path2):
     return True
 
 
-def _relFileLocation(fileid):
-    h = "%08x" % int(fileid)
-    return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])
+def _relFileLocation(file_id):
+    """Return the relative location for the given file_id.
 
+    The relative location is obtained by converting file_id into a 8-digit hex
+    and then splitting it across four path segments.
+    """
+    h = "%08x" % int(file_id)
+    return '%s/%s/%s/%s' % (h[:2], h[2:4], h[4:6], h[6:])

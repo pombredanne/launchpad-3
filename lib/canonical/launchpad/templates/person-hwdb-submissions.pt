@@ -3,16 +3,10 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
   <body>
-    <metal:pageheading fill-slot="pageheading">
-      <h1>Hardware submissions for <span tal:replace="context/title" /></h1>
-    </metal:pageheading>
 
     <div metal:fill-slot="main"
        tal:define="batchnav view/getAllBatched;
@@ -54,7 +48,8 @@
         <div tal:replace="structure batchnav/@@+navigation-links-lower" />
       </tal:results>
       <p tal:condition="not: batch">
-        <span tal:replace="context/displayname" /> has posted no submissions.
+        <span tal:replace="context/fmt:displayname" />
+        has posted no submissions.
       </p>
     </div>
   </body>

@@ -11,7 +11,7 @@ if a specific user exists...
     >>> browser.open('http://launchpad.dev:8085/~stimpy')
     Traceback (most recent call last):
     ...
-    HTTPError: HTTP Error 404: Not Found
+    httperror_seek_wrapper: HTTP Error 404: Not Found
 
 ...and when he doesn't, create him.
 

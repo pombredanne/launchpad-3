@@ -1,11 +1,5 @@
 Launchpad has a copyright notice in different templates in the code base.
 
-The login page for the OpenID workflow.
-
-  >>> browser.open('http://openid.launchpad.dev/')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
-  &copy; 2004-2009 Canonical Ltd.
-
 The tour pages.
 
   >>> browser.open('http://launchpad.dev/')
@@ -13,20 +7,9 @@ The tour pages.
   >>> print extract_text(find_tag_by_id(browser.contents, 'footer-navigation'))
   Next...&copy; 2004-2009 Canonical Ltd...
 
-Shipit sites.
-
-  >>> browser.open('http://shipit.ubuntu.dev')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
-  &copy; 2009 Canonical Ltd.
-
-  >>> browser.open('http://shipit.kubuntu.dev')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
-  &copy; 2004-2009 Canonical Ltd.
-  ...
-
 The main template.
 
   >>> browser.open('http://launchpad.dev')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'lp-arcana'))
-  &copy; 2004-2009 Canonical Ltd.
+  >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
+  &bull; ... &copy; 2004-2009 Canonical Ltd.
   ...

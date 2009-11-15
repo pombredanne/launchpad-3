@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Browser notification messages
 
 Provides an API for displaying arbitrary  notifications to users after
@@ -313,6 +315,9 @@ class NotificationTestView1(LaunchpadView):
     in the test suite, as this page is useful for adjusting the visual style
     of the notifications
     """
+
+    label = page_title = 'Notification test'
+
     def initialize(self):
         response = self.request.response
 

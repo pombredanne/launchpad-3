@@ -1,13 +1,20 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
-__all__ = ['LoopTuner']
+__all__ = ['DBLoopTuner', 'LoopTuner']
 
 
-import logging
+from datetime import timedelta
 import time
 
+import transaction
+from zope.component import getUtility
+
+import canonical.launchpad.scripts
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 
 
@@ -38,8 +45,10 @@ class LoopTuner:
     and troughs in processing speed.
     """
 
-    def __init__(self, operation, goal_seconds, minimum_chunk_size=1,
-            maximum_chunk_size=1000000000):
+    def __init__(
+        self, operation, goal_seconds,
+        minimum_chunk_size=1, maximum_chunk_size=1000000000,
+        abort_time=None, cooldown_time=None, log=None):
         """Initialize a loop, to be run to completion at most once.
 
         Parameters:
@@ -58,12 +67,27 @@ class LoopTuner:
             needed even if the ITunableLoop ignores chunk size for whatever
             reason, since reaching floating-point infinity would seriously
             break the algorithm's arithmetic.
+
+        cooldown_time: time (in seconds, float) to sleep between consecutive
+            operation runs.  Defaults to None for no sleep.
+
+        abort_time: abort the loop, logging a WARNING message, if the runtime
+            takes longer than this many seconds.
+
+        log: The log object to use. DEBUG level messages are logged
+            giving iteration statistics.
         """
         assert(ITunableLoop.providedBy(operation))
         self.operation = operation
         self.goal_seconds = float(goal_seconds)
         self.minimum_chunk_size = minimum_chunk_size
         self.maximum_chunk_size = maximum_chunk_size
+        self.cooldown_time = cooldown_time
+        self.abort_time = abort_time
+        if log is None:
+            self.log = canonical.launchpad.scripts.log
+        else:
+            self.log = log
 
     def run(self):
         """Run the loop to completion."""
@@ -73,13 +97,22 @@ class LoopTuner:
         start_time = self._time()
         last_clock = start_time
         while not self.operation.isDone():
+
+            if (self.abort_time is not None
+                and last_clock >= start_time + self.abort_time):
+                self.log.warn(
+                    "Task aborted after %d seconds." % self.abort_time)
+                break
+
             self.operation(chunk_size)
 
             new_clock = self._time()
             time_taken = new_clock - last_clock
             last_clock = new_clock
-            logging.info("Iteration %d (size %.1f): %.3f seconds" %
+            self.log.debug("Iteration %d (size %.1f): %.3f seconds" %
                          (iteration, chunk_size, time_taken))
+
+            last_clock = self._coolDown(last_clock)
 
             total_size += chunk_size
 
@@ -102,12 +135,29 @@ class LoopTuner:
         total_time = last_clock - start_time
         average_size = total_size/max(1, iteration)
         average_speed = total_size/max(1, total_time)
-        logging.info(
+        self.log.debug(
             "Done. %d items in %d iterations, "
             "%.3f seconds, "
             "average size %f (%s/s)" %
                 (total_size, iteration, total_time, average_size,
                  average_speed))
+
+    def _coolDown(self, bedtime):
+        """Sleep for `self.cooldown_time` seconds, if set.
+
+        Assumes that anything the main LoopTuner loop does apart from
+        doing a chunk of work or sleeping takes zero time.
+
+        :param bedtime: Time the cooldown started, i.e. the time the
+        chunk of real work was completed.
+        :return: Time when cooldown completed, i.e. the starting time
+        for a next chunk of work.
+        """
+        if self.cooldown_time is None or self.cooldown_time <= 0.0:
+            return bedtime
+        else:
+            time.sleep(self.cooldown_time)
+            return self._time()
 
     def _time(self):
         """Monotonic system timer with unit of 1 second.
@@ -116,4 +166,99 @@ class LoopTuner:
         actually waiting.
         """
         return time.time()
+
+
+def timedelta_to_seconds(td):
+    return 24 * 60 * td.days + td.seconds
+
+
+class DBLoopTuner(LoopTuner):
+    """A LoopTuner that plays well with PostgreSQL and replication.
+
+    This LoopTuner blocks when database replication is lagging.
+    Making updates faster than replication can deal with them is
+    counter productive and in extreme cases can put the database
+    into a death spiral. So we don't do that.
+
+    This LoopTuner also blocks when there are long running
+    transactions. Vacuuming is ineffective when there are long
+    running transactions. We block when long running transactions
+    have been detected, as it means we have already been bloating
+    the database for some time and we shouldn't make it worse. Once
+    the long running transactions have completed, we know the dead
+    space we have already caused can be cleaned up so we can keep
+    going.
+
+    INFO level messages are logged when the DBLoopTuner blocks in addition
+    to the DEBUG level messages emitted by the standard LoopTuner.
+    """
+
+    # We block until replication lag is under this threshold.
+    acceptable_replication_lag = timedelta(seconds=30) # In seconds.
+
+    # We block if there are transactions running longer than this threshold.
+    long_running_transaction = 30*60 # In seconds
+
+    def _blockWhenLagged(self):
+        """When database replication lag is high, block until it drops."""
+        # Lag is most meaningful on the master.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        while True:
+            lag = store.execute("SELECT replication_lag()").get_one()[0]
+            if lag is None:
+                lag = timedelta(seconds=0)
+            if lag <= self.acceptable_replication_lag:
+                return
+
+            # Minimum 2 seconds, max 5 minutes.
+            time_to_sleep = int(min(
+                5*60, max(2, timedelta_to_seconds(
+                    lag - self.acceptable_replication_lag))))
+
+            self.log.info(
+                "Database replication lagged. Sleeping %d seconds"
+                % time_to_sleep)
+
+            transaction.abort() # Don't become a long running transaction!
+            time.sleep(time_to_sleep)
+
+    def _blockForLongRunningTransactions(self):
+        """If there are long running transactions, block to avoid making
+        bloat worse."""
+        if self.long_running_transaction is None:
+            return
+        store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        while True:
+            results = list(store.execute("""
+                SELECT
+                    CURRENT_TIMESTAMP - xact_start,
+                    procpid,
+                    usename,
+                    datname,
+                    current_query
+                FROM activity()
+                WHERE xact_start < CURRENT_TIMESTAMP - interval '%f seconds'
+                    AND datname = current_database()
+                """ % self.long_running_transaction).get_all())
+            if not results:
+                break
+            for runtime, procpid, usename, datname, query in results:
+                self.log.info(
+                    "Blocked on %s old xact %s@%s/%d - %s."
+                    % (runtime, usename, datname, procpid, query))
+            self.log.info("Sleeping for 5 minutes.")
+            transaction.abort() # Don't become a long running transaction!
+            time.sleep(5*60)
+
+    def _coolDown(self, bedtime):
+        """As per LoopTuner._coolDown, except we always wait until there
+        is no replication lag.
+        """
+        self._blockForLongRunningTransactions()
+        self._blockWhenLagged()
+        if self.cooldown_time is not None and self.cooldown_time > 0.0:
+            remaining_nap = self._time() - bedtime + self.cooldown_time
+            if remaining_nap > 0.0:
+                time.sleep(remaining_nap)
+        return self._time()
 

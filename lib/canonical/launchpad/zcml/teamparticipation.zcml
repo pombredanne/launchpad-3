@@ -1,7 +1,0 @@
-<configure xmlns="http://namespaces.zope.org/zope">
-
-    <class class="canonical.launchpad.database.TeamParticipation">
-        <allow interface="canonical.launchpad.interfaces.ITeamParticipation"/>
-    </class>
-
-</configure>

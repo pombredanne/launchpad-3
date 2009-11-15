@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Stuff to do with logging in and logging out."""
 
 __metaclass__ = type
@@ -6,27 +8,35 @@ __metaclass__ = type
 import cgi
 import urllib
 from datetime import datetime, timedelta
+import md5
+import random
+
+from BeautifulSoup import UnicodeDammit
 
 from zope.component import getUtility
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.event import notify
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
-from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
+from z3c.ptcompat import ViewPageTemplateFile
+
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.logintoken import (
-    ILoginTokenSet, LoginTokenType)
-from canonical.launchpad.interfaces.person import IPersonSet
-from canonical.launchpad.interfaces.shipit import ShipItConstants
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthTokenSet, LoginTokenType)
+from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
+from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from lp.registry.interfaces.person import (
+    IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.webapp.interfaces import (
-    IPlacelessAuthUtility, IPlacelessLoginSource)
-from canonical.launchpad.webapp.interfaces import (
-    CookieAuthLoggedInEvent, LoggedOutEvent)
 from canonical.launchpad.webapp.error import SystemErrorView
+from canonical.launchpad.webapp.interfaces import (
+    CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility,
+    IPlacelessLoginSource, LoggedOutEvent)
+from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.url import urlappend
 
 
@@ -37,7 +47,25 @@ class UnauthorizedView(SystemErrorView):
     forbidden_page = ViewPageTemplateFile(
         '../templates/launchpad-forbidden.pt')
 
+    read_only_page = ViewPageTemplateFile(
+        '../templates/launchpad-readonlyfailure.pt')
+
+    notification_message = _('To continue, you must log in to Launchpad.')
+
     def __call__(self):
+        # In read only mode, Unauthorized exceptions get raised by the
+        # security policy when write permissions are requested. We need
+        # to render the read-only failure screen so the user knows their
+        # request failed for operational reasons rather than a genuine
+        # permission problem.
+        if config.launchpad.read_only:
+            # Our context is an Unauthorized exception, which acts like
+            # a tuple containing (object, attribute_requested, permission).
+            lp_permission = getUtility(ILaunchpadPermission, self.context[2])
+            if lp_permission.access_level != "read":
+                self.request.response.setStatus(503) # Service Unavailable
+                return self.read_only_page()
+
         if IUnauthenticatedPrincipal.providedBy(self.request.principal):
             if 'loggingout' in self.request.form:
                 target = '%s?loggingout=1' % self.request.URL[-2]
@@ -57,29 +85,36 @@ class UnauthorizedView(SystemErrorView):
                         'page that requires authentication.')
             # If we got any query parameters, then preserve them in the
             # new URL. Except for the BrowserNotifications
-            query_string = self.request.get('QUERY_STRING', '')
-            if query_string:
-                query_string = '?' + query_string
-            target = self.request.getURL()
+            current_url = self.request.getURL()
             while True:
                 nextstep = self.request.stepstogo.consume()
                 if nextstep is None:
                     break
-                target = urlappend(target, nextstep)
-            target = urlappend(target, '+login' + query_string)
+                current_url = urlappend(current_url, nextstep)
+            query_string = self.request.get('QUERY_STRING', '')
+            if query_string:
+                query_string = '?' + query_string
+            target = self.getRedirectURL(current_url, query_string)
             # A dance to assert that we want to break the rules about no
             # unauthenticated sessions. Only after this next line is it safe
             # to use the ``addNoticeNotification`` method.
             allowUnauthenticatedSession(self.request)
-            self.request.response.addNoticeNotification(_(
-                    'To continue, you must log in to Launchpad.'
-                    ))
+            self.request.response.addNoticeNotification(
+                self.notification_message)
             self.request.response.redirect(target)
             # Maybe render page with a link to the redirection?
             return ''
         else:
             self.request.response.setStatus(403) # Forbidden
             return self.forbidden_page()
+
+    def getRedirectURL(self, current_url, query_string):
+        """Get the URL to redirect to.
+        :param current_url: The URL of the current page.
+        :param query_string: The string that should be appended to the current
+            url.
+        """
+        return urlappend(current_url, '+login' + query_string)
 
 
 class BasicLoginPage:
@@ -119,8 +154,44 @@ class RestrictedLoginInfo:
         return getUtility(IPersonSet).getByName(
             config.launchpad.restrict_to_team).title
 
+class CaptchaMixin:
+    """Mixin class to provide simple captcha capabilities."""
+    def validateCaptcha(self):
+        """Validate the submitted captcha value matches what we expect."""
+        expected = self.request.form.get(self.captcha_hash)
+        submitted = self.request.form.get(self.captcha_submission)
+        if expected is not None and submitted is not None:
+            return md5.new(submitted).hexdigest() == expected
+        return False
 
-class LoginOrRegister:
+    @cachedproperty
+    def captcha_answer(self):
+        """Get the answer for the current captcha challenge.
+
+        With each failed attempt a new challenge will be given.  Our answer
+        space is acknowledged to be ridiculously small but is chosen in the
+        interest of ease-of-use.  We're not trying to create an iron-clad
+        challenge but only a minimal obstacle to dumb bots.
+        """
+        return random.randint(10, 20)
+
+    @property
+    def get_captcha_hash(self):
+        """Get the captcha hash.
+
+        The hash is the value we put in the form for later comparison.
+        """
+        return md5.new(str(self.captcha_answer)).hexdigest()
+
+    @property
+    def captcha_problem(self):
+        """Create the captcha challenge."""
+        op1 = random.randint(1, self.captcha_answer - 1)
+        op2 = self.captcha_answer - op1
+        return '%d + %d =' % (op1, op2)
+
+
+class LoginOrRegister(CaptchaMixin):
     """Merges the former CookieLoginPage and JoinLaunchpadView classes
     to allow the two forms to appear on a single page.
 
@@ -136,22 +207,14 @@ class LoginOrRegister:
     submit_registration = form_prefix + 'submit_registration'
     input_email = form_prefix + 'email'
     input_password = form_prefix + 'password'
+    captcha_submission = form_prefix + 'captcha_submission'
+    captcha_hash = form_prefix + 'captcha_hash'
 
     # Instance variables that represent the state of the form.
     login_error = None
     registration_error = None
     submitted = False
     email = None
-
-    # XXX Guilherme Salgado 2006-09-27: If you add a new origin here, you
-    # must also add a new entry on NewAccountView.urls_and_rationales in
-    # browser/logintoken.py. Ideally, we should be storing the rationale in
-    # the logintoken too, but this should do for now.
-    registered_origins = {
-        'shipit-ubuntu': ShipItConstants.ubuntu_url,
-        'shipit-edubuntu': ShipItConstants.edubuntu_url,
-        'shipit-kubuntu': ShipItConstants.kubuntu_url,
-        }
 
     def process_restricted_form(self):
         """Entry-point for the team-restricted login page.
@@ -178,33 +241,13 @@ class LoginOrRegister:
         elif self.request.form.get(self.submit_registration):
             self.process_registration_form()
 
-    def getApplicationURL(self):
-        # XXX Guilherme Salgado 2005-12-09: This method is needed because
-        # this view is used on shipit and we have to use an application URL
-        # different than the one we have in the request.
-        return self.request.getApplicationURL()
-
     def getRedirectionURL(self):
         """Return the URL we should redirect the user to, after finishing a
         registration or password reset process.
 
-        If the request has an 'origin' query parameter, that means the user
-        came from shipit, and thus we return the URL for it. When there's no
-        'origin' query parameter, we check the HTTP_REFERER header and if it's
-        under any URL specified in registered_origins we return it, otherwise
-        we return the current URL without the "/+login" bit.
+        IOW, the current URL without the "/+login" bit.
         """
-        request = self.request
-        origin = request.get('origin')
-        try:
-            return self.registered_origins[origin]
-        except KeyError:
-            referrer = request.getHeader('Referer')
-            if referrer:
-                for url in self.registered_origins.values():
-                    if referrer.startswith(url):
-                        return referrer
-        return request.getURL(1)
+        return self.request.getURL(1)
 
     def process_login_form(self):
         """Process the form data.
@@ -226,23 +269,25 @@ class LoginOrRegister:
                 "The password provided contains non-ASCII characters.")
             return
 
-        appurl = self.getApplicationURL()
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
-        if (principal is not None
-            and principal.person.account_status == AccountStatus.DEACTIVATED):
+        if principal is None or not principal.validate(password):
+            self.login_error = "The email address and password do not match."
+        elif principal.person is None:
+            logInPrincipalAndMaybeCreatePerson(self.request, principal, email)
+            self.redirectMinusLogin()
+        elif principal.person.account_status == AccountStatus.DEACTIVATED:
             self.login_error = _(
                 'The email address belongs to a deactivated account. '
                 'Use the "Forgotten your password" link to reactivate it.')
-        elif (principal is not None
-            and principal.person.account_status == AccountStatus.SUSPENDED):
+        elif principal.person.account_status == AccountStatus.SUSPENDED:
             email_link = (
                 'mailto:feedback@launchpad.net?subject=SUSPENDED%20account')
             self.login_error = _(
                 'The email address belongs to a suspended account. '
                 'Contact a <a href="%s">Launchpad admin</a> '
                 'about this issue.' % email_link)
-        elif principal is not None and principal.validate(password):
+        else:
             person = getUtility(IPersonSet).getByEmail(email)
             if person.preferredemail is None:
                 self.login_error = _(
@@ -255,10 +300,10 @@ class LoginOrRegister:
                     ) % email
                 token = getUtility(ILoginTokenSet).new(
                     person, email, email, LoginTokenType.VALIDATEEMAIL)
-                token.sendEmailValidationRequest(appurl)
+                token.sendEmailValidationRequest()
                 return
             if person.is_valid_person:
-                logInPerson(self.request, principal, email)
+                logInPrincipal(self.request, principal, email)
                 self.redirectMinusLogin()
             else:
                 # Normally invalid accounts will have a NULL password
@@ -267,8 +312,6 @@ class LoginOrRegister:
                 # such as having them flagged as OLD by a email bounce
                 # processor or manual changes by the DBA.
                 self.login_error = "This account cannot be used."
-        else:
-            self.login_error = "The email address and password do not match."
 
     def process_registration_form(self):
         """A user has asked to join launchpad.
@@ -291,26 +334,48 @@ class LoginOrRegister:
             redirection_url = redirection_url_list[0]
 
         self.email = request.form.get(self.input_email).strip()
+
         if not valid_email(self.email):
             self.registration_error = (
                 "The email address you provided isn't valid. "
                 "Please verify it and try again.")
             return
 
-        person = getUtility(IPersonSet).getByEmail(self.email)
-        if person is not None:
-            if person.is_valid_person:
+        # Validate the user is human, more or less.
+        if not self.validateCaptcha():
+            self.registration_error = (
+                "The answer to the simple math question was incorrect "
+                "or missing.  Please try again.")
+            return
+
+        registered_email = getUtility(IEmailAddressSet).getByEmail(self.email)
+        if registered_email is not None:
+            person = registered_email.person
+            if person is not None:
+                if person.is_valid_person:
+                    self.registration_error = (
+                        "Sorry, someone with the address %s already has a "
+                        "Launchpad account. If this is you and you've "
+                        "forgotten your password, Launchpad can "
+                        '<a href="/+forgottenpassword">reset it for you.</a>'
+                        % cgi.escape(self.email))
+                    return
+                else:
+                    # This is an unvalidated profile; let's move on with the
+                    # registration process as if we had never seen it.
+                    pass
+            else:
+                account = registered_email.account
+                assert IPerson(account, None) is None, (
+                    "This email address should be linked to the person who "
+                    "owns it.")
                 self.registration_error = (
-                    "Sorry, someone with the address %s already has a "
-                    "Launchpad account. If this is you and you've "
-                    "forgotten your password, Launchpad can "
-                    '<a href="/+forgottenpassword">reset it for you.</a>'
+                    'The email address %s is already registered in the '
+                    'Launchpad Login Service (used by the Ubuntu shop and '
+                    'other OpenID sites). Please use the same email and '
+                    'password to log into Launchpad.'
                     % cgi.escape(self.email))
                 return
-            else:
-                # This is an unvalidated profile; let's move on with the
-                # registration process as if we had never seen it.
-                pass
 
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
@@ -363,24 +428,42 @@ class LoginOrRegister:
     def preserve_query(self):
         """Return zero or more hidden inputs that preserve the URL's query."""
         L = []
+        html = u'<input type="hidden" name="%s" value="%s" />'
         for name, value in self.iter_form_items():
-            L.append('<input type="hidden" name="%s" value="%s" />' % (
-                name, cgi.escape(value, quote=True)
-                ))
-
+            # Thanks to apport (https://launchpad.net/bugs/61171), we need to
+            # do this here.
+            value = UnicodeDammit(value).markup
+            L.append(html % (name, cgi.escape(value, quote=True)))
         return '\n'.join(L)
 
-
-def logInPerson(request, principal, email):
-    """Log the person in. Password validation must be done in callsites."""
+def logInPrincipal(request, principal, email):
+    """Log the principal in. Password validation must be done in callsites."""
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
     assert principal.id is not None, 'principal.id is None!'
     request.setPrincipal(principal)
-    authdata['personid'] = principal.id
+    authdata['accountid'] = principal.id
     authdata['logintime'] = datetime.utcnow()
     authdata['login'] = email
     notify(CookieAuthLoggedInEvent(request, email))
+
+
+def logInPrincipalAndMaybeCreatePerson(request, principal, email):
+    """Log the principal in, creating a Person if necessary.
+
+    If the given principal has no associated person, we create a new
+    person, fetch a new principal and set it in the request.
+
+    Password validation must be done in callsites.
+    """
+    logInPrincipal(request, principal, email)
+    if ILaunchpadPrincipal.providedBy(principal) and principal.person is None:
+        person = principal.account.createPerson(
+            PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
+        new_principal = getUtility(IPlacelessLoginSource).getPrincipal(
+            principal.id)
+        assert ILaunchpadPrincipal.providedBy(new_principal)
+        request.setPrincipal(new_principal)
 
 
 def expireSessionCookie(request, client_id_manager=None,
@@ -414,13 +497,22 @@ def allowUnauthenticatedSession(request, duration=timedelta(minutes=10)):
         expireSessionCookie(request, client_id_manager, duration)
 
 
+# XXX: salgado, 2009-02-19: Rename this to logOutPrincipal(), to be consistent
+# with logInPrincipal().  Or maybe logUserOut(), in case we don't care about
+# consistency.
 def logoutPerson(request):
     """Log the user out."""
     session = ISession(request)
     authdata = session['launchpad.authenticateduser']
-    previous_login = authdata.get('personid')
+    account_variable_name = 'accountid'
+    previous_login = authdata.get(account_variable_name)
+    if previous_login is None:
+        # This is for backwards compatibility, when we used to store the
+        # person's ID in the 'personid' session variable.
+        account_variable_name = 'personid'
+        previous_login = authdata.get(account_variable_name)
     if previous_login is not None:
-        authdata['personid'] = None
+        authdata[account_variable_name] = None
         authdata['logintime'] = datetime.utcnow()
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.unauthenticatedPrincipal()
@@ -452,33 +544,50 @@ class CookieLogoutPage:
         return ''
 
 
-class ForgottenPasswordPage:
+class ForgottenPasswordPage(CaptchaMixin):
 
     errortext = None
     submitted = False
+    captcha_submission = 'captcha_submission'
+    captcha_hash = 'captcha_hash'
 
     def process_form(self):
         request = self.request
         if request.method != "POST":
             return
 
+        # Validate the user is human, more or less.
+        if not self.validateCaptcha():
+            self.errortext = (
+                "The answer to the simple math question was incorrect "
+                "or missing.  Please try again.")
+            return
+
         email = request.form.get("email").strip()
-        person = getUtility(IPersonSet).getByEmail(email)
-        if person is None:
+        email_address = getUtility(IEmailAddressSet).getByEmail(email)
+        if email_address is None:
             self.errortext = ("Your account details have not been found. "
                               "Please check your subscription email "
                               "address and try again.")
             return
 
-        if person.isTeam():
+        person = email_address.person
+        if person is not None and person.isTeam():
             self.errortext = ("The email address <strong>%s</strong> "
                               "belongs to a team, and teams cannot log in to "
                               "Launchpad." % email)
             return
 
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-            person, email, email, LoginTokenType.PASSWORDRECOVERY)
+        if person is None:
+            account = email_address.account
+            redirection_url = urlappend(
+                self.request.getApplicationURL(), '+login')
+            token = getUtility(IAuthTokenSet).new(
+                account, email, email, LoginTokenType.PASSWORDRECOVERY,
+                redirection_url=redirection_url)
+        else:
+            token = getUtility(ILoginTokenSet).new(
+                person, email, email, LoginTokenType.PASSWORDRECOVERY)
         token.sendPasswordResetEmail()
         self.submitted = True
         return

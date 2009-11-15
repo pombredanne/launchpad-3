@@ -1,3 +1,5 @@
+-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+-- GNU Affero General Public License version 3 (see the file LICENSE).
 
 -- Autotest distrorelease
 INSERT INTO Distrorelease (name, title, description, distribution, version,
@@ -9,7 +11,7 @@ INSERT INTO Distrorelease (name, title, description, distribution, version,
 	'6.6.6', 'Autosync uploader test',
 	'2005-12-01 10:00:00', 1,
 	(SELECT id FROM Distrorelease WHERE name = 'warty'),
-	(SELECT id FROM Person WHERE name = 'sabdfl'),
+	(SELECT id FROM Person WHERE name = 'mark'),
         'Breezy Badger Autotest');
 
 -- distroarchrelease for i386
@@ -19,7 +21,7 @@ INSERT INTO Distroarchrelease (distrorelease, processorfamily,
             (SELECT id FROM Distrorelease WHERE name = 'breezy-autotest'),
             (SELECT id FROM ProcessorFamily WHERE name = 'x86')
             'i386',
-            (SELECT id FROM Person WHERE name = 'sabdfl'),
+            (SELECT id FROM Person WHERE name = 'mark'),
             true);
 
 -- section selection

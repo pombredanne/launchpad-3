@@ -1,0 +1,22 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <class class="lazr.lifecycle.event.ObjectCreatedEvent">
+    <allow interface="lazr.lifecycle.interfaces.IObjectCreatedEvent" />
+  </class>
+
+  <class class="lazr.lifecycle.event.ObjectDeletedEvent">
+    <allow interface="lazr.lifecycle.interfaces.IObjectDeletedEvent" />
+  </class>
+
+  <class class="lazr.lifecycle.event.ObjectModifiedEvent">
+    <allow interface="lazr.lifecycle.interfaces.IObjectModifiedEvent" />
+  </class>
+
+</configure>

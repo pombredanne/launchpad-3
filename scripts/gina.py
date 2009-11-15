@@ -1,8 +1,10 @@
 #!/usr/bin/python2.4
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # This module uses relative imports.
 # pylint: disable-msg=W0403
-
 
 """
 Gina launcher script. Handles commandline options and makes the proper
@@ -36,19 +38,18 @@ from contrib.glock import GlobalLock, LockAlreadyAcquired
 from canonical import lp
 from canonical.lp import initZopeless
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IComponentSet, PackagePublishingPocket)
+from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger_options, log)
 
-from canonical.launchpad.scripts.gina import ExecutionError
-from canonical.launchpad.scripts.gina.katie import Katie
-from canonical.launchpad.scripts.gina.archive import (ArchiveComponentItems,
+from lp.soyuz.scripts.gina import ExecutionError
+from lp.soyuz.scripts.gina.katie import Katie
+from lp.soyuz.scripts.gina.archive import (ArchiveComponentItems,
     PackagesMap, MangledArchiveError)
 
-from canonical.launchpad.scripts.gina.handlers import (ImporterHandler,
+from lp.soyuz.scripts.gina.handlers import (ImporterHandler,
     MultiplePackageReleaseError, NoSourcePackageError, DataSetupError)
-from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
+from lp.soyuz.scripts.gina.packages import (SourcePackageData,
     BinaryPackageData, MissingRequiredArguments, DisplayNameDecodingError,
     PoolFileNotFound, InvalidVersionError)
 
@@ -115,6 +116,9 @@ def main():
 
 
 def run_gina(options, ztm, target_section):
+    # Avoid circular imports.
+    from lp.registry.interfaces.pocket import PackagePublishingPocket
+
     package_root = target_section.root
     keyrings_root = target_section.keyrings
     distro = target_section.distro

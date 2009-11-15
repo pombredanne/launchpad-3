@@ -1,7 +1,9 @@
-# Copyright 2004-2005, 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
+from cStringIO import StringIO
 from email.Message import Message
 from email.MIMEText import MIMEText
 from email.MIMEMultipart import MIMEMultipart
@@ -10,11 +12,20 @@ import transaction
 import unittest
 
 from canonical.testing import LaunchpadFunctionalLayer
+from sqlobject import SQLObjectNotFound
 from zope.testing.doctestunit import DocTestSuite
+from zope.component import getUtility
 
-from canonical.launchpad.database import MessageSet
+from canonical.launchpad.database import (
+    MessageSet, MessageJob, MessageJobAction)
+from lp.services.job.model.job import Job
 from canonical.launchpad.ftests import login
-from canonical.launchpad.testing import LaunchpadObjectFactory
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.message import IMessageJob
+from lp.services.mail.sendmail import MailController
+from lp.testing import TestCaseWithFactory
+from lp.testing.factory import LaunchpadObjectFactory
+from canonical.launchpad.webapp.testing import verifyObject
 
 
 class TestMessageSet(unittest.TestCase):
@@ -96,6 +107,44 @@ class TestMessageSet(unittest.TestCase):
         # Need to commit in order to read back out of the librarian.
         transaction.commit()
         self.assertEqual('This is the diff, honest.', diff.blob.read())
+
+
+class TestMessageJob(TestCaseWithFactory):
+    """Tests for MessageJob."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchJob implements IBranchJob."""
+        # Ensure database constraints are satisfied.
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
+        job = MessageJob(file_alias, MessageJobAction.CREATE_MERGE_PROPOSAL)
+        job.sync()
+        verifyObject(IMessageJob, job)
+
+    def test_destroySelf_destroys_job(self):
+        """Ensure that MessageJob.destroySelf destroys the Job as well."""
+        file_alias = self.factory.makeMergeDirectiveEmail()[1]
+        message_job = MessageJob(
+            file_alias, MessageJobAction.CREATE_MERGE_PROPOSAL)
+        job_id = message_job.job.id
+        message_job.destroySelf()
+        self.assertRaises(SQLObjectNotFound, Job.get, job_id)
+
+    def test_getMessage(self):
+        """getMessage should return a Message with appropriate values."""
+        ctrl = MailController(
+            'from@example.com', ['to@example.com'], 'subject', 'body')
+        content = ctrl.makeMessage().as_string()
+        lfa = getUtility(ILibraryFileAliasSet).create(
+            'message', len(content), StringIO(content), 'text/x-diff')
+        message_job = MessageJob(lfa, MessageJobAction.CREATE_MERGE_PROPOSAL)
+        transaction.commit()
+        message = message_job.getMessage()
+        self.assertEqual('from@example.com', message['From'])
+        self.assertEqual('to@example.com', message['To'])
+        self.assertEqual('subject', message['Subject'])
+        self.assertEqual('body', message.get_payload())
 
 
 def test_suite():

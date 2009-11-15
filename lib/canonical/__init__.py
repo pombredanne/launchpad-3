@@ -1,5 +1,6 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # This is the python package that defines the 'canonical' package namespace.
 
 # We currently only translate launchpad specific stuff using the Zope3 i18n

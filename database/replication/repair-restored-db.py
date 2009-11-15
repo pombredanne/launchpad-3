@@ -1,5 +1,7 @@
 #!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Remove the broken Slony-I information from database populated by
 pg_restore(1).
@@ -21,12 +23,15 @@ import _pythonpath
 from optparse import OptionParser
 import sys
 
-import replication.helpers
+import psycopg2
 
 from canonical.config import config
 from canonical.database.postgresql import ConnectionString
 from canonical.database.sqlbase import connect, quote
 from canonical.launchpad.scripts import db_options, logger_options, logger
+
+import replication.helpers
+
 
 def main():
     parser = OptionParser()
@@ -48,12 +53,23 @@ def main():
     cur = con.cursor()
 
     # Determine the node id the database thinks it is.
-    cmd = "SELECT %s.getlocalnodeid(%s)" % (
-        replication.helpers.CLUSTER_NAMESPACE,
-        quote(replication.helpers.CLUSTER_NAMESPACE))
-    cur.execute(cmd)
-    node_id = cur.fetchone()[0]
-    log.debug("Node Id is %d" % node_id)
+    try:
+        cmd = "SELECT %s.getlocalnodeid(%s)" % (
+            replication.helpers.CLUSTER_NAMESPACE,
+            quote(replication.helpers.CLUSTER_NAMESPACE))
+        cur.execute(cmd)
+        node_id = cur.fetchone()[0]
+        log.debug("Node Id is %d" % node_id)
+    except psycopg2.InternalError:
+        # Not enough information to determine node id. Possibly
+        # this is an empty database. Just drop the _sl schema as
+        # it is 'good enough' with Slony-I 1.2 - this mechanism
+        # fails with Slony added primary keys, but we don't do that.
+        con.rollback()
+        cur = con.cursor()
+        cur.execute("DROP SCHEMA _sl CASCADE")
+        con.commit()
+        return 0
 
     # Get a list of set ids in the database.
     cur.execute(

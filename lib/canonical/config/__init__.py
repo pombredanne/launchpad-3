@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 '''
 Configuration information pulled from launchpad.conf.
 
@@ -14,16 +16,76 @@ import logging
 import sys
 from urlparse import urlparse, urlunparse
 
+import pkg_resources
 import ZConfig
 
 from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
 
 
+__all__ = [
+    'DatabaseConfig',
+    'dbconfig',
+    'config',
+    ]
+
+
+# The config to use can be specified in one of these files.
+CONFIG_LOOKUP_FILES = ['/etc/launchpad/config']
+if os.environ.get('HOME'):
+    CONFIG_LOOKUP_FILES.insert(
+        0, os.path.join(os.environ['HOME'], '.lpconfig'))
+
 # LPCONFIG specifies the config to use, which corresponds to a subdirectory
-# of configs.
+# of configs. It overrides any setting in the CONFIG_LOOKUP_FILES.
 LPCONFIG = 'LPCONFIG'
+
+# If no CONFIG_LOOKUP_FILE is found and there is no LPCONFIG environment
+# variable, we have a fallback. This is what developers normally use.
 DEFAULT_CONFIG = 'development'
+
+PACKAGE_DIR = os.path.abspath(os.path.dirname(__file__))
+
+# Root of the launchpad tree so code can stop jumping through hoops
+# with __file__.
+TREE_ROOT = os.path.abspath(
+    os.path.join(PACKAGE_DIR, os.pardir, os.pardir, os.pardir))
+
+# The directories containing instances configuration directories.
+CONFIG_ROOT_DIRS = [
+    os.path.join(TREE_ROOT, 'configs'),
+    os.path.join(TREE_ROOT, 'production-configs')
+    ]
+
+
+def find_instance_name():
+    # Pull instance_name from the environment if possible.
+    instance_name = os.environ.get(LPCONFIG, None)
+
+    # Or pull instance_name from a disk file if no environment
+    # variable is set.
+    if instance_name is None:
+        for config_lookup_file in CONFIG_LOOKUP_FILES:
+            if os.path.exists(config_lookup_file):
+                instance_name = file(
+                    config_lookup_file, 'r').read()[:80].strip()
+                break
+
+    # Of instance_name falls back for developers.
+    if instance_name is None:
+        instance_name = DEFAULT_CONFIG
+
+    return instance_name
+
+
+def find_config_dir(instance_name):
+    """Look through CONFIG_ROOT_DIRS for instance_name."""
+    for root in CONFIG_ROOT_DIRS:
+        config_dir = os.path.join(root, instance_name)
+        if os.path.isdir(config_dir):
+            return config_dir
+    raise ValueError(
+        "Can't find %s in %s" % (instance_name, ", ".join(CONFIG_ROOT_DIRS)))
 
 
 class CanonicalConfig:
@@ -44,11 +106,13 @@ class CanonicalConfig:
        """
         self._config = None
         if instance_name is None:
-            instance_name = os.environ.get(LPCONFIG, DEFAULT_CONFIG)
+            instance_name = find_instance_name()
+
         if process_name is None:
             process_name = os.path.splitext(os.path.basename(sys.argv[0]))[0]
         self._instance_name = instance_name
         self._process_name = process_name
+        self.root = TREE_ROOT
 
     @property
     def instance_name(self):
@@ -59,6 +123,11 @@ class CanonicalConfig:
         loaded from.
         """
         return self._instance_name
+
+    @property
+    def config_dir(self):
+        """Return the directory containing this instance configuration."""
+        return find_config_dir(self._instance_name)
 
     def setInstance(self, instance_name):
         """Set the instance name where the conf files are stored.
@@ -71,6 +140,8 @@ class CanonicalConfig:
         """
         self._instance_name = instance_name
         os.environ[LPCONFIG] = instance_name
+        # Need to reload the config.
+        self._config = None
 
     @property
     def process_name(self):
@@ -90,6 +161,8 @@ class CanonicalConfig:
         it will load launchpad-lazr.conf.
         """
         self._process_name = process_name
+        # Need to reload the config.
+        self._config = None
 
     def _getConfig(self):
         """Get the schema and config for this environment.
@@ -100,11 +173,8 @@ class CanonicalConfig:
         if self._config is not None:
             return
 
-        here = os.path.abspath(os.path.dirname(__file__))
-        schema_file = os.path.join(here, 'schema-lazr.conf')
-        config_dir = os.path.abspath(os.path.join(
-            here, os.pardir, os.pardir, os.pardir,
-            'configs', self.instance_name))
+        schema_file = os.path.join(PACKAGE_DIR, 'schema-lazr.conf')
+        config_dir = self.config_dir
         config_file = os.path.join(
             config_dir, '%s-lazr.conf' % self.process_name)
         if not os.path.isfile(config_file):
@@ -116,20 +186,20 @@ class CanonicalConfig:
         except ConfigErrors, error:
             message = '\n'.join([str(e) for e in error.errors])
             raise ConfigErrors(message)
-        self._setZConfig(here, config_dir)
+        self._setZConfig()
 
-    def _setZConfig(self, here, config_dir):
+    @property
+    def zope_config_file(self):
+        """Return the path to the ZConfig file for this instance."""
+        return os.path.join(self.config_dir, 'launchpad.conf')
+
+    def _setZConfig(self):
         """Modify the config, adding automatically generated settings"""
-        # Root of the launchpad tree so code can stop jumping through hoops
-        # with __file__.
-        self.root = os.path.abspath(os.path.join(
-            here, os.pardir, os.pardir, os.pardir))
-
-        schemafile = os.path.join(
-            self.root, 'lib/zope/app/server/schema.xml')
-        configfile = os.path.join(config_dir, 'launchpad.conf')
+        schemafile = pkg_resources.resource_filename(
+            'zope.app.server', 'schema.xml')
         schema = ZConfig.loadSchema(schemafile)
-        root_options, handlers = ZConfig.loadConfig(schema, configfile)
+        root_options, handlers = ZConfig.loadConfig(
+            schema, self.zope_config_file)
 
         # Devmode from the zope.app.server.main config, copied here for
         # ease of access.
@@ -140,6 +210,22 @@ class CanonicalConfig:
 
         # The number of configured threads.
         self.threads = root_options.threads
+
+    def generate_overrides(self):
+        """Ensure correct config .zcml overrides will be called.
+
+        Call this method before letting any ZCML processing occur.
+        """
+        loader_file = os.path.join(self.root, '+config-overrides.zcml')
+        loader = open(loader_file, 'w')
+
+        print >> loader, """<configure xmlns="http://namespaces.zope.org/zope">
+                <!-- This file automatically generated using
+                     canonical.config.CanonicalConfig.generate_overrides.
+                     DO NOT EDIT. -->
+                <include files="%s/*.zcml" />
+                </configure>""" % self.config_dir
+        loader.close()
 
     def __getattr__(self, name):
         self._getConfig()
@@ -288,7 +374,7 @@ class DatabaseConfig:
           ...
         AttributeError: ...
         >>> print config.launchpad.dbuser
-        launchpad
+        launchpad_main
         >>> print config.librarian.dbuser
         librarian
 
@@ -302,7 +388,7 @@ class DatabaseConfig:
         >>> print dbconfig.main_master
         dbname=...
         >>> print dbconfig.dbuser
-        launchpad
+        launchpad_main
 
     Some values are required to have a value, such as dbuser.  So we
     get an exception if they are not set:
@@ -320,15 +406,21 @@ class DatabaseConfig:
     """
     _config_section = None
     _db_config_attrs = frozenset([
-        'dbuser', 'main_master', 'main_slave', 'auth_master', 'auth_slave',
+        'dbuser', 'auth_dbuser',
+        'main_master', 'main_slave', 'auth_master', 'auth_slave',
         'db_statement_timeout', 'db_statement_timeout_precision',
         'isolation_level', 'randomise_select_results',
-        'soft_request_timeout'])
+        'soft_request_timeout', 'storm_cache', 'storm_cache_size'])
     _db_config_required_attrs = frozenset([
         'dbuser', 'main_master', 'main_slave', 'auth_master', 'auth_slave'])
 
     def setConfigSection(self, section_name):
         self._config_section = section_name
+
+    def getSectionName(self):
+        """The name of the config file section this DatabaseConfig references.
+        """
+        return self._config_section
 
     def _getConfigSections(self):
         """Returns a list of sections to search for database configuration.

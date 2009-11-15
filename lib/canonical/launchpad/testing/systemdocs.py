@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Infrastructure for setting up doctests."""
 
@@ -17,21 +18,25 @@ import logging
 import os
 import sys
 
+# pprint25 is a copy of pprint.py from Python 2.5, which is almost
+# identical to that in 2.4 except that it resolves an ordering issue
+# which makes the 2.4 version unsuitable for use in a doctest.
+import pprint25
+
 import transaction
-from zope.component import getUtility, getMultiAdapter
+from zope.component import getUtility
 from zope.testing import doctest
 from zope.testing.loggingsupport import Handler
 
 from canonical.chunkydiff import elided_source
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.ftests import ANONYMOUS, login, login_person, logout
 from canonical.launchpad.interfaces import ILaunchBag
-from canonical.launchpad.layers import setFirstLayer
-from canonical.launchpad.testing import LaunchpadObjectFactory
-from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import reset_logging
+from lp.testing import ANONYMOUS, login, login_person, logout
+from lp.testing.factory import LaunchpadObjectFactory
+from lp.testing.views import create_view, create_initialized_view
 
 
 default_optionflags = (doctest.REPORT_NDIFF |
@@ -149,42 +154,6 @@ class SpecialOutputChecker(doctest.OutputChecker):
             self, example, newgot, optionflags)
 
 
-def create_view(context, name, form=None, layer=None, server_url=None,
-                method='GET', principal=None):
-    """Return a view based on the given arguments.
-
-    :param context: The context for the view.
-    :param name: The web page the view should handle.
-    :param form: A dictionary with the form keys.
-    :param layer: The layer where the page we are interested in is located.
-    :param server_url: The URL from where this request was done.
-    :param method: The method used in the request. Defaults to 'GET'.
-    :param principal: The principal for the request, if there is one.
-    :return: The view class for the given context and the name.
-    """
-    request = LaunchpadTestRequest(
-        form=form, SERVER_URL=server_url, method=method)
-    if principal is not None:
-        request.setPrincipal(principal)
-    if layer is not None:
-        setFirstLayer(request, layer)
-    return getMultiAdapter((context, request), name=name)
-
-
-def create_initialized_view(context, name, form=None, layer=None,
-                            server_url=None, method=None, principal=None):
-    """Return a view that has already been initialized."""
-    if method is None:
-        if form is None:
-            method = 'GET'
-        else:
-            method = 'POST'
-    view = create_view(
-        context, name, form, layer, server_url, method, principal)
-    view.initialize()
-    return view
-
-
 def ordered_dict_as_string(dict):
     """Return the contents of a dict as an ordered string.
 
@@ -220,6 +189,7 @@ def setGlobs(test):
     test.globs['factory'] = LaunchpadObjectFactory()
     test.globs['ordered_dict_as_string'] = ordered_dict_as_string
     test.globs['verifyObject'] = verifyObject
+    test.globs['pretty'] = pprint25.PrettyPrinter(width=1).pformat
 
 
 def setUp(test):

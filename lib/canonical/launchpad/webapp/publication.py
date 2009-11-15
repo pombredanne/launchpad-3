@@ -1,4 +1,5 @@
-# (c) Canonical Ltd. 2004-2006, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -9,6 +10,7 @@ __all__ = [
 
 import gc
 import os
+import re
 import thread
 import threading
 import traceback
@@ -31,6 +33,8 @@ from zope.app import zapi  # used to get at the adapters service
 from zope.app.publication.interfaces import BeforeTraverseEvent
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility, queryMultiAdapter
+from zope.component.interfaces import ComponentLookupError
+from zope.error.interfaces import IErrorReportingUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
 from zope.publisher.interfaces import IPublishTraverse, Retry
@@ -47,19 +51,24 @@ from canonical.mem import (
     countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
     resident)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.person import (
+from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
     IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
-    ILaunchpadRoot, IOpenLaunchBag, OffsiteFormPostError,
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+    ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
+    OffsiteFormPostError, IStoreSelector, MASTER_FLAVOR)
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
+from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
+from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
+
+
+class ProfilingOops(Exception):
+    """Fake exception used to log OOPS information when profiling pages."""
 
 
 class LoginRoot:
@@ -96,7 +105,6 @@ class LaunchpadBrowserPublication(
     def __init__(self, db):
         self.db = db
         self.thread_locals = threading.local()
-        self.thread_locals.db_policy = None
 
     def annotateTransaction(self, txn, request, ob):
         """See `zope.app.publication.zopepublication.ZopePublication`.
@@ -158,8 +166,9 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
-        self.thread_locals.db_policy = IDatabasePolicy(request)
-        self.thread_locals.db_policy.beforeTraversal()
+        # Now we are logged in, install the correct IDatabasePolicy for
+        # this request.
+        getUtility(IStoreSelector).push(IDatabasePolicy(request))
 
         getUtility(IOpenLaunchBag).clear()
 
@@ -173,12 +182,34 @@ class LaunchpadBrowserPublication(
         request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
         self.maybeBlockOffsiteFormPost(request)
+        self.maybeNotifyReadOnlyMode(request)
+
+    def maybeNotifyReadOnlyMode(self, request):
+        """Hook to notify about read-only mode."""
+        if config.launchpad.read_only:
+            try:
+                INotificationResponse(request).addWarningNotification(
+                    structured("""
+                        Launchpad is undergoing maintenance and is in
+                        read-only mode. <i>You cannot make any
+                        changes.</i> Please see the <a
+                        href="http://blog.launchpad.net/maintenance">Launchpad
+                        Blog</a> for details.
+                        """))
+            except ComponentLookupError:
+                pass
 
     def getPrincipal(self, request):
-        """Return the authenticated principal for this request."""
+        """Return the authenticated principal for this request.
+
+        If there is no authenticated principal or the principal represents a
+        personless account, return the unauthenticated principal.
+        """
         auth_utility = getUtility(IPlacelessAuthUtility)
         principal = auth_utility.authenticate(request)
-        if principal is None:
+        if principal is None or principal.person is None:
+            # This is either an unauthenticated user or a user who
+            # authenticated on our OpenID server using a personless account.
             principal = auth_utility.unauthenticatedPrincipal()
             assert principal is not None, "Missing unauthenticated principal."
         return principal
@@ -362,10 +393,6 @@ class LaunchpadBrowserPublication(
         txn = transaction.get()
         self.annotateTransaction(txn, request, ob)
 
-        if self.thread_locals.db_policy is not None:
-            self.thread_locals.db_policy.afterCall()
-            self.thread_locals.db_policy = None
-
         # Abort the transaction on a read-only request.
         # NOTHING AFTER THIS SHOULD CAUSE A RETRY.
         if request.method in ['GET', 'HEAD']:
@@ -381,6 +408,15 @@ class LaunchpadBrowserPublication(
         if request.method == 'HEAD':
             request.response.setResult('')
 
+        try:
+            getUtility(IStoreSelector).pop()
+        except IndexError:
+            # We have to cope with no database policy being installed
+            # to allow doc/webapp-publication.txt tests to pass. These
+            # tests rely on calling the afterCall hook without first
+            # calling beforeTraversal or doing proper cleanup.
+            pass
+
     def finishReadOnlyRequest(self, txn):
         """Hook called at the end of a read-only request.
 
@@ -392,6 +428,11 @@ class LaunchpadBrowserPublication(
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
         zopepublication """
+        # In some cases we seem to be called more than once for a given
+        # traversed object, so we need to be careful here and only append an
+        # object the first time we see it.
+        if ob not in request.traversed_objects:
+            request.traversed_objects.append(ob)
         notify(BeforeTraverseEvent(ob, request))
 
     def afterTraversal(self, request, ob):
@@ -411,6 +452,13 @@ class LaunchpadBrowserPublication(
         raise NotImplementedError
 
     def handleException(self, object, request, exc_info, retry_allowed=True):
+        # Uninstall the database policy.
+        store_selector = getUtility(IStoreSelector)
+        if store_selector.get_current() is not None:
+            db_policy = store_selector.pop()
+        else:
+            db_policy = None
+
         orig_env = request._orig_env
         ticks = tickcount.tickcount()
         if (hasattr(request, '_publicationticks_start') and
@@ -432,7 +480,12 @@ class LaunchpadBrowserPublication(
             # The exception wasn't raised in the middle of the traversal nor
             # the publication, so there's nothing we need to do here.
             pass
-    
+
+        # Log a soft OOPS for DisconnectionErrors as per Bug #373837.
+        # We need to do this before we re-raise the exception as a Retry.
+        if isinstance(exc_info[1], DisconnectionError):
+            getUtility(IErrorReportingUtility).handling(exc_info, request)
+
         def should_retry(exc_info):
             if not retry_allowed:
                 return False
@@ -442,12 +495,9 @@ class LaunchpadBrowserPublication(
             # returning the 404 error page. We do this in case the
             # LookupError is caused by replication lag. Our database
             # policy forces the use of the master database for retries.
-            if (isinstance(exc_info[1], LookupError) and isinstance(
-                self.thread_locals.db_policy, LaunchpadDatabasePolicy)):
-                store_selector = getUtility(IStoreSelector)
-                default_store = store_selector.get(MAIN_STORE, DEFAULT_FLAVOR)
-                master_store = store_selector.get(MAIN_STORE, MASTER_FLAVOR)
-                if default_store is master_store:
+            if (isinstance(exc_info[1], LookupError)
+                and isinstance(db_policy, LaunchpadDatabasePolicy)):
+                if db_policy.default_flavor == MASTER_FLAVOR:
                     return False
                 else:
                     return True
@@ -470,7 +520,7 @@ class LaunchpadBrowserPublication(
 
             return False
 
-        # Reraise Retry exceptions ourselves rather than invoke
+        # Re-raise Retry exceptions ourselves rather than invoke
         # our superclass handleException method, as it will log OOPS
         # reports etc. This would be incorrect, as transaction retry
         # is a normal part of operation.
@@ -552,7 +602,12 @@ class LaunchpadBrowserPublication(
                     OpStats.stats['503s'] += 1
 
                 # Increment counters for status code groups.
-                OpStats.stats[str(status)[0] + 'XXs'] += 1
+                status_group = str(status)[0] + 'XXs'
+                OpStats.stats[status_group] += 1
+
+                # Increment counter for 5XXs_b.
+                if is_browser(request) and status_group == '5XXs':
+                    OpStats.stats['5XXs_b'] += 1
 
         # Reset all Storm stores when not running the test suite. We could
         # reset them when running the test suite but that'd make writing tests
@@ -589,12 +644,16 @@ class LaunchpadBrowserPublication(
             profiler = self.thread_locals.profiler
             profiler.disable()
 
-            if oopsid:
-                oopsid_part = '-%s' % oopsid
-            else:
-                oopsid_part = ''
-            filename = '%s-%s%s-%s.prof' % (
-                timestamp, pageid, oopsid_part,
+            if oopsid is None:
+                # Log an OOPS to get a log of the SQL queries, and other
+                # useful information,  together with the profiling
+                # information.
+                info = (ProfilingOops, None, None)
+                error_utility = getUtility(IErrorReportingUtility)
+                error_utility.raising(info, request)
+                oopsid = request.oopsid
+            filename = '%s-%s-%s-%s.prof' % (
+                timestamp, pageid, oopsid,
                 threading.currentThread().getName())
 
             profiler.dump_stats(
@@ -717,3 +776,30 @@ class DefaultPrimaryContext:
 
     def __init__(self, context):
         self.context = context
+
+
+_browser_re = re.compile(r"""(?x)^(
+    Mozilla |
+    Opera |
+    Lynx |
+    Links |
+    w3m
+    )""")
+
+def is_browser(request):
+    """Return True if we believe the request was from a browser.
+
+    There will be false positives and false negatives, as we can
+    only tell this from the User-Agent: header and this cannot be
+    trusted.
+
+    Almost all web browsers provide a User-Agent: header starting
+    with 'Mozilla'. This is good enough for our uses. We also
+    add a few other common matches as well for good measure.
+    We could massage one of the user-agent databases that are
+    available into a usable, but we would gain little.
+    """
+    user_agent = request.getHeader('User-Agent')
+    return (
+        user_agent is not None
+        and _browser_re.search(user_agent) is not None)

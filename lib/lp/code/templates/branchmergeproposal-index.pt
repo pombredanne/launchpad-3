@@ -1,0 +1,187 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_side"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+
+<metal:block fill-slot="head_epilogue">
+  <style type="text/css">
+    #code-review-votes {
+      margin: 2em 0;
+    }
+    #edit-description {
+      margin: 1em 0 0 0;
+    }
+    /* A page-specific fix for inline text are editing to line up box. */
+    #edit-description .yui-ieditor-input { top: 0; }
+  </style>
+</metal:block>
+
+<tal:registering metal:fill-slot="registering">
+  Proposed by
+  <tal:registrant replace="structure context/registrant/fmt:link"/>
+  <tal:modified replace="context/date_created/fmt:displaydate" />
+</tal:registering>
+
+
+<metal:side fill-slot="side"
+            tal:define="context_menu context/menu:context">
+
+  <tal:menu replace="structure context/@@+global-actions" />
+  <div tal:replace="structure context/@@+pagelet-subscribers" />
+</metal:side>
+
+
+<div metal:fill-slot="main">
+
+  <div class="yui-g first">
+    <tal:summary replace="structure context/@@+pagelet-summary" />
+  </div>
+
+  <div class="yui-g">
+    <div id="votes-target"
+         tal:content="structure context/@@+votes" />
+  </div>
+
+  <div class="yui-g" tal:condition="context/supersedes">
+    <p id="superseded-proposal">
+      This proposal supersedes a
+      <a tal:attributes="href context/supersedes/fmt:url">
+        proposal from
+        <tal:when replace="context/supersedes/date_created/fmt:date" /></a>.
+    </p>
+  </div>
+  <div class="yui-g" tal:condition="context/superseded_by">
+    <p id="superseded-by">
+      This proposal has been superseded by a
+      <a tal:attributes="href context/superseded_by/fmt:url">
+        proposal from
+        <tal:when replace="context/superseded_by/date_created/fmt:date" /></a>.
+    </p>
+  </div>
+
+  <div class="yui-g">
+    <div tal:define="link context/menu:context/add_comment"
+         tal:condition="link/enabled"
+         tal:content="structure link/render">
+         Add comment
+    </div>
+
+    <div id="edit-description" class="lazr-multiline-edit"
+         tal:content="structure view/commit_message_html"/>
+
+    <div id="conversation"
+         tal:content="structure view/conversation/@@+render"/>
+  </div>
+  <!-- Hide inline commenting if YUI isn't used. -->
+  <div id="inline-add-comment" style="display: none">
+  <tal:comment replace="structure context/@@+comment/++form++" />
+      <div class="actions" id="launchpad-form-actions">
+        <input type="submit" id="field.actions.add" name="field.actions.add" value="Save Comment" class="button" />
+      </div>
+  </div>
+
+  <script type="text/javascript">
+    YUI().use('lp.comment', function(Y) {
+    var comment = new Y.lp.CodeReviewComment();
+    comment.render();
+    })
+  </script>
+  <div class="yui-g">
+    <div class="yui-u first">
+      <div id="source-revisions"
+           tal:condition="not: context/queue_status/enumvalue:MERGED">
+
+        <tal:history-available condition="context/source_branch/revision_count"
+                               define="branch context/source_branch;
+                                       revisions view/unlanded_revisions">
+          <h2>Unmerged revisions</h2>
+          <metal:landing-target use-macro="branch/@@+macros/branch-revisions"/>
+        </tal:history-available>
+
+        <tal:remote-branch condition="context/source_branch/branch_type/enumvalue:REMOTE">
+          <h2>Unmerged revisions</h2>
+          <p>Recent revisions are not available due to the source branch being remote.</p>
+        </tal:remote-branch>
+      </div>
+    </div>
+
+    <div class="yui-u" tal:condition="view/has_bug_or_spec">
+      <div id="related-bugs-and-blueprints"
+        tal:define="branch context/source_branch">
+        <h2>Linked bug reports and blueprints</h2>
+        <div class="actions">
+
+          <metal:bug-branch-links use-macro="branch/@@+macros/bug-branch-links"/>
+        </div>
+        <div class="actions">
+          <metal:spec-branch-links use-macro="branch/@@+macros/spec-branch-links"/>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="review-diff" tal:condition="view/preview_diff">
+  <h2>Preview Diff</h2>
+  <div class="boardComment attachment"
+       tal:define="attachment view/preview_diff/diff_text">
+    <tal:real-diff condition="attachment">
+      <div class="boardCommentDetails filename">
+        <ul class="horizontal">
+          <li>
+            <a tal:attributes="href attachment/getURL">
+              <img src="/@@/download"/>
+              Download diff
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="boardCommentBody attachmentBody">
+        <tal:diff replace="structure view/preview_diff_text/fmt:diff" />
+      </div>
+      <div class="boardCommentFooter"
+           tal:condition="view/review_diff_oversized">
+        The diff has been truncated for viewing.
+      </div>
+    </tal:real-diff>
+    <tal:empty-diff condition="not: attachment">
+      <div class="boardCommentBody attachmentBody">
+        <em>Empty</em>
+      </div>
+    </tal:empty-diff>
+  </div>
+  </div>
+
+<tal:script
+  replace="structure
+  string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
+  conf = <tal:status-config replace="view/status_config" />
+  <!--
+  YUI().use('io-base', 'code.codereview', 'code.branchmergeproposal',
+            function(Y) {
+
+
+  if(Y.UA.ie) {
+      return;
+  }
+
+  Y.on('domready', function() {
+      Y.code.codereview.connect_links();
+      Y.code.branchmergeproposal.connect_status(conf);
+  });
+
+  (new Y.codereview.NumberToggle()).render();
+
+  });
+  -->
+<tal:script replace="structure string:&lt;/script&gt;" />
+
+</div>
+</body>
+</html>

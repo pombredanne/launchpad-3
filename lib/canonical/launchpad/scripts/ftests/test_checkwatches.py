@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the checkwatches remote bug synchronisation code."""
 
@@ -12,7 +13,7 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import login
-from canonical.launchpad.ftests.externalbugtracker import new_bugtracker
+from lp.bugs.tests.externalbugtracker import new_bugtracker
 from canonical.launchpad.interfaces import (BugTaskStatus, BugTrackerType,
     IBugSet, IBugTaskSet, ILaunchpadCelebrities, IPersonSet,
     IProductSet, IQuestionSet)
@@ -61,7 +62,7 @@ class TestCheckwatches(unittest.TestCase):
             bug_with_question, sample_person,
             product=getUtility(IProductSet).getByName('firefox'))
         self.bugwatch_with_question = bug_with_question.addWatch(
-            bugtracker, '1', sample_person)
+            bugtracker, '1', getUtility(ILaunchpadCelebrities).janitor)
         self.bugtask_with_question.bugwatch = self.bugwatch_with_question
         commit()
 

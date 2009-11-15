@@ -1,0 +1,43 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad"
+>
+
+<body>
+
+<tal:heading metal:fill-slot="heading">
+  <h1 tal:content="view/label">Subscribe to question</h1>
+</tal:heading>
+
+<div metal:fill-slot="main">
+
+  <p>
+    Subscribing to a question makes it show up on
+    <a tal:attributes="href string:/~${request/lp:person/name}/+questions"
+    >your Answers page</a>.
+  </p>
+
+  <form action="."
+        tal:attributes="action request/URL"
+        method="post">
+
+    <div class="actions">
+      <input tal:condition="not: view/subscription"
+             type="submit"
+             name="subscribe"
+             value="Subscribe" />
+      <input tal:condition="view/subscription"
+             type="submit"
+             name="subscribe"
+             value="Unsubscribe" />
+    </div>
+  </form>
+
+</div>
+
+</body>
+</html>

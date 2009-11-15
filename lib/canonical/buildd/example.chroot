@@ -3,7 +3,7 @@
 [chroot]
 # What distroarchrelease are we after
 distribution=ubuntu
-distrorelease=breezy
+distroseries=breezy
 # Specify "host" to build for this host, otherwise try specifying an archtag
 architecture=host
 

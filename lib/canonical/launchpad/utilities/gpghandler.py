@@ -1,4 +1,5 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -27,13 +28,13 @@ from gpgme import editutil as gpgme_editutil
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.interfaces.gpg import GPGKeyAlgorithm
+from lp.registry.interfaces.gpg import (
+    GPGKeyAlgorithm, valid_fingerprint)
 from canonical.launchpad.interfaces.gpghandler import (
     GPGKeyNotFoundError, GPGUploadFailure, GPGVerificationError,
     IGPGHandler, IPymeKey, IPymeSignature, IPymeUserId,
     MoreThanOneGPGKeyFound, SecretGPGKeyImportDetected)
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.gpg import valid_fingerprint
 
 
 signing_only_param = """

@@ -46,6 +46,7 @@ are adjusted after the request has been served:
     500s: 0
     503s: 0
     5XXs: 0
+    5XXs_b: 0
     6XXs: 0
     http requests: 0
     requests: 0
@@ -108,6 +109,26 @@ particular need to differentiate these cases though:
     http requests: 1
     requests: 1
 
+We also have a special metric counting server errors returned to known
+web browsers (5XXs_b) - in the production environment we care more
+about errors returned to people than robots crawling obscure parts of
+the site.
+
+    >>> from textwrap import dedent
+    >>> output = http(dedent("""\
+    ...     GET /error-test HTTP/1.1
+    ...     Host: launchpad.dev
+    ...     User-Agent: Mozilla/42.0
+    ...     """))
+    >>> output.getStatus()
+    500
+    >>> report()
+    500s: 1
+    5XXs: 1
+    5XXs_b: 1
+    http requests: 1
+    requests: 1
+
 == Number of XML-RPC Faults ==
 
     >>> try:
@@ -123,7 +144,6 @@ particular need to differentiate these cases though:
 
 == Number of soft timeouts ==
 
-    >>> from textwrap import dedent
     >>> from canonical.config import config
     >>> test_data = dedent("""
     ...     [database]
@@ -182,6 +202,7 @@ Stats can also be retrieved via HTTP in cricket-graph format:
     HTTP/1.1 200 Ok
     ...
     Content-Type: text/plain; charset=US-ASCII
+    ...
     <BLANKLINE>
     1XXs:0@...
     2XXs:2@...

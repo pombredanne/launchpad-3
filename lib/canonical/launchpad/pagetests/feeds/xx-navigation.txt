@@ -52,6 +52,7 @@ redirects to remote sites, but http() can be used instead.
    HTTP/1.0 301 Moved Permanently
    ...
    Location: https://help.launchpad.net/Feeds
+   ...
 
 
 == Query String Normalization ==

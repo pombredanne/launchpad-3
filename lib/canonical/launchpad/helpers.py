@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Various functions and classes that are useful across different parts of
 launchpad.
 
@@ -13,7 +15,6 @@ import gettextpo
 import os
 import random
 import re
-import sys
 import tarfile
 import warnings
 from StringIO import StringIO
@@ -21,7 +22,7 @@ from difflib import unified_diff
 import sha
 
 from zope.component import getUtility
-from zope.error.interfaces import IErrorReportingUtility
+from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
 from canonical.launchpad.interfaces import (
@@ -290,7 +291,7 @@ def validate_translation(original, translation, flags):
     msg.check_format()
 
 
-class ShortListTimeoutError(Exception):
+class ShortListTooBigError(Exception):
     """This error is raised when the shortlist hardlimit is reached"""
 
 
@@ -302,34 +303,60 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
     >>> shortlist([1, 2])
     [1, 2]
 
-    >>> shortlist([1, 2, 3], 2)
+    >>> shortlist([1, 2, 3], 2) #doctest: +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
-        ...
-    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 3 items.
+    ...
+    UserWarning: shortlist() should not be used here. It's meant to listify
+    sequences with no more than 2 items.  There were 3 items.
 
     >>> shortlist([1, 2, 3, 4], hardlimit=2)
     Traceback (most recent call last):
-        ...
-    ShortListTimeoutError: Hard limit of 2 exceeded.  There were 4 items.
+    ...
+    ShortListTooBigError: Hard limit of 2 exceeded.
 
-    >>> shortlist([1, 2, 3, 4], 2, hardlimit=4)
+    >>> shortlist(
+    ...     [1, 2, 3, 4], 2, hardlimit=4) #doctest: +NORMALIZE_WHITESPACE
     Traceback (most recent call last):
-        ...
-    UserWarning: shortlist() should not be used here. It's meant to listify sequences with no more than 2 items.  There were 4 items.
+    ...
+    UserWarning: shortlist() should not be used here. It's meant to listify
+    sequences with no more than 2 items.  There were 4 items.
+
+    It works on iterable also which don't support the extended slice protocol.
+
+    >>> xrange(5)[:1] #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    TypeError: ...
+
+    >>> shortlist(xrange(10), 5, hardlimit=8) #doctest: +ELLIPSIS
+    Traceback (most recent call last):
+    ...
+    ShortListTooBigError: ...
 
     """
-    L = list(sequence)
-    size = len(L)
+    if hardlimit is not None:
+        last = hardlimit + 1
+    else:
+        last = None
+    try:
+        results = list(sequence[:last])
+    except (TypeError, ForbiddenAttribute):
+        results = []
+        for idx, item in enumerate(sequence):
+            if hardlimit and idx > hardlimit:
+                break
+            results.append(item)
+
+    size = len(results)
     if hardlimit and size > hardlimit:
-        msg = 'Hard limit of %d exceeded.  There were %d items.'
-        raise ShortListTimeoutError(msg % (hardlimit, size))
-    if size > longest_expected:
+        raise ShortListTooBigError(
+           'Hard limit of %d exceeded.' % hardlimit)
+    elif size > longest_expected:
         warnings.warn(
             "shortlist() should not be used here. It's meant to listify"
-            " sequences with no more than %d items.  There were %s items." %
-              (longest_expected, size),
-              stacklevel=2)
-    return L
+            " sequences with no more than %d items.  There were %s items."
+            % (longest_expected, size), stacklevel=2)
+    return results
 
 
 def preferred_or_request_languages(request):
@@ -547,13 +574,18 @@ def positiveIntOrZero(value):
     return value
 
 
-def get_email_template(filename):
+def get_email_template(filename, app=None):
     """Returns the email template with the given file name.
 
     The templates are located in 'lib/canonical/launchpad/emailtemplates'.
     """
-    base = os.path.dirname(canonical.launchpad.__file__)
-    fullpath = os.path.join(base, 'emailtemplates', filename)
+    if app is None:
+        base = os.path.dirname(canonical.launchpad.__file__)
+        fullpath = os.path.join(base, 'emailtemplates', filename)
+    else:
+        import lp
+        base = os.path.dirname(lp.__file__)
+        fullpath = os.path.join(base, app, 'emailtemplates', filename)
     return open(fullpath).read()
 
 

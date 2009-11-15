@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 PostgreSQL specific helper functions, such as database introspection
 and table manipulation
@@ -8,7 +10,8 @@ __metaclass__ = type
 
 import re
 
-from sqlbase import quote, quoteIdentifier, sqlvalues
+from canonical.database.sqlbase import quote, quoteIdentifier, sqlvalues
+
 
 def listReferences(cur, table, column, _state=None):
     """Return a list of all foreign key references to the given table column
@@ -142,7 +145,7 @@ def listUniques(cur, table, column):
             AND a.attnum > 0
         '''
     cur.execute(sql, dict(table=table))
-    for num,name in cur.fetchall():
+    for num, name in cur.fetchall():
         attributes[int(num)] = name
 
     # Initialize our return value
@@ -478,7 +481,7 @@ class ConnectionString:
     Some PostgreSQL tools take libpq connection strings. Other tools
     need the components seperated out (such as pg_dump command line
     arguments). This class allows you to switch easily between formats.
-    
+
     >>> cs = ConnectionString('user=foo dbname=launchpad_dev')
     >>> cs.dbname
     'launchpad_dev'
@@ -493,12 +496,22 @@ class ConnectionString:
         'dbname', 'user', 'host', 'port', 'connect_timeout', 'sslmode']
 
     def __init__(self, conn_str):
-        for key in self.CONNECTION_KEYS:
-            match = re.search(r'%s=(\w+)' % key, conn_str)
-            if match is None:
+        if '=' not in conn_str:
+            # Just a dbname
+            for key in self.CONNECTION_KEYS:
                 setattr(self, key, None)
-            else:
-                setattr(self, key, match.group(1))
+            self.dbname = conn_str.strip()
+        else:
+            # A 'key=value' connection string.
+            # We don't check for required attributes, as these might
+            # be added after construction or not actually required
+            # at all in some instances.
+            for key in self.CONNECTION_KEYS:
+                match = re.search(r'%s=(\w+)' % key, conn_str)
+                if match is None:
+                    setattr(self, key, None)
+                else:
+                    setattr(self, key, match.group(1))
 
     def __repr__(self):
         params = []

@@ -1,0 +1,104 @@
+= Displaying recently fixed bugs =
+
+On the Bugs frontpage, the 5 most recently fixed bugs are displayed.
+There's a view class called MaloneView that helps getting the list of
+bugs.
+
+    >>> from lp.bugs.browser.bug import MaloneView
+    >>> class TestMaloneView(MaloneView):
+    ...     """Test version of MaloneView.
+    ...
+    ...     Override the user attribute, so we don't need the component
+    ...     architecture set up.
+    ...     """
+    ...     user = None
+
+MaloneView.getMostRecentlyFixedBugs() calls the context's searchTasks()
+method, getting all the FIXRELEASED bugs, ordered by date_closed, with
+the newly closed bugs first.
+
+    >>> class FakeBugTask:
+    ...     def __init__(self):
+    ...         self.bug = object()
+
+    >>> class FakeContext:
+    ...     def searchTasks(self, search_params):
+    ...         print "status: %s" % search_params.status.name
+    ...         print "order by: %s" % search_params.orderby
+    ...         return [FakeBugTask() for dummy in range(5)]
+    >>> view = TestMaloneView(FakeContext(), None)
+    >>> view.user = None
+    >>> fixed_bugs = view.getMostRecentlyFixedBugs()
+    status: FIXRELEASED
+    order by: -date_closed
+    >>> len(fixed_bugs)
+    5
+
+Searching through all the bug tasks can be quite slow. It's much faster
+(compare 4 seconds to less than 100 ms) to limit the search, so that
+only the very recently closed bugs are considered. It starts with
+searching for bugs that have been closed during the last day.
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> utc_now = datetime(2008, 8, 31, 12, 0, 0, tzinfo=pytz.timezone('UTC'))
+    >>> class LimitByDateClosedContext:
+    ...     def __init__(self, date_closed_limit):
+    ...         self.date_closed_limit = date_closed_limit
+    ...     def searchTasks(self, search_params):
+    ...         print "Searching for bugs with date_closed: %s" % (
+    ...             search_params.date_closed)
+    ...         if (search_params.date_closed is not None and
+    ...             search_params.date_closed.value < self.date_closed_limit):
+    ...             return [FakeBugTask() for dummy in range(5)]
+    ...         else:
+    ...             return [FakeBugTask() for dummy in range(4)]
+    >>> view = TestMaloneView(LimitByDateClosedContext(utc_now), None)
+    >>> fixed_bugs = view.getMostRecentlyFixedBugs(when=utc_now)
+    Searching for bugs with date_closed:
+        greater_than(datetime.datetime(2008, 8, 30, 12, 0, tzinfo=<UTC>))
+
+Since we can't guarantee that enough bugs have been closed during a
+certain time period, the search is limited with regard to date_closed
+using increasing ranges. If not enough bugs have been closed during the
+last day, the search is increased to a week.
+
+    >>> view = TestMaloneView(
+    ...    LimitByDateClosedContext(utc_now-timedelta(days=2)), None)
+    >>> fixed_bugs = view.getMostRecentlyFixedBugs(when=utc_now)
+    Searching for bugs with date_closed:
+        greater_than(datetime.datetime(2008, 8, 30, 12, 0, tzinfo=<UTC>))
+    Searching for bugs with date_closed:
+        greater_than(datetime.datetime(2008, 8, 24, 12, 0, tzinfo=<UTC>))
+
+If not enough bugs are closed during the last week, the search is
+extended to the last 30 days.
+
+    >>> view = TestMaloneView(
+    ...    LimitByDateClosedContext(utc_now-timedelta(days=8)), None)
+    >>> fixed_bugs = view.getMostRecentlyFixedBugs(when=utc_now)
+    Searching for bugs with date_closed:
+        greater_than(datetime.datetime(2008, 8, 30, 12, 0, tzinfo=<UTC>))
+    Searching for bugs with date_closed:
+        greater_than(datetime.datetime(2008, 8, 24, 12, 0, tzinfo=<UTC>))
+    Searching for bugs with date_closed:
+        greater_than(datetime.datetime(2008, 8, 1, 12, 0, tzinfo=<UTC>))
+
+And finally, if not enough bugs have been closed during the last 30
+days, the date_closed limit is removed.
+
+    >>> view = TestMaloneView(
+    ...    LimitByDateClosedContext(utc_now-timedelta(days=31)), None)
+    >>> fixed_bugs = view.getMostRecentlyFixedBugs(when=utc_now)
+    Searching for bugs with date_closed:
+        greater_than(datetime.datetime(2008, 8, 30, 12, 0, tzinfo=<UTC>))
+    Searching for bugs with date_closed:
+        greater_than(datetime.datetime(2008, 8, 24, 12, 0, tzinfo=<UTC>))
+    Searching for bugs with date_closed:
+        greater_than(datetime.datetime(2008, 8, 1, 12, 0, tzinfo=<UTC>))
+    Searching for bugs with date_closed: None
+
+It doesn't matter that less than 4 bugs were returned.
+
+    >>> len(fixed_bugs)
+    4

@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test harness for running tests against IStructuralsubscriptionTarget
 implementations.
@@ -11,7 +12,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     CreateBugParams, IDistributionSet, ILaunchBag, IProductSet,
     ISourcePackageNameSet)
-from canonical.launchpad.interfaces.ftests.test_bugtarget import (
+from lp.bugs.tests.test_bugtarget import (
     bugtarget_filebug)
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
@@ -54,6 +55,7 @@ def distroseries_sourcepackage_filebug(distroseries, summary, status=None):
     bug = distroseries.distribution.createBug(params)
     nomination = bug.addNomination(
         distroseries.distribution.owner, distroseries)
+    nomination.approve(distroseries.distribution.owner)
     return bug
 
 def distroSeriesSourcePackageSetUp(test):

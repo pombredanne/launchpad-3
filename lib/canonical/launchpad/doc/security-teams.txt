@@ -17,18 +17,18 @@ a "security contact" on a Distribution or a Product.
     >>> IHasSecurityContact.providedBy(firefox)
     True
 
-    >>> sabdfl = personset.get(1)
+    >>> mark = personset.get(1)
     >>> ubuntu_team = personset.get(17)
 
 Security contacts are set through properties.
 
     >>> login("foo.bar@canonical.com")
 
-    >>> ubuntu.security_contact = sabdfl
+    >>> ubuntu.security_contact = mark
     >>> firefox.security_contact = ubuntu_team
 
     >>> print ubuntu.security_contact.name
-    sabdfl
+    mark
 
     >>> print firefox.security_contact.name
     ubuntu-team
@@ -61,7 +61,7 @@ Shuttleworth are both subscribed to the bug.
     ...     return sorted(subscriber.name for subscriber in subscribers)
 
     >>> subscriber_names(bug)
-    [u'name16', u'sabdfl']
+    [u'mark', u'name16']
 
 If the bug were not reported as security-related, only Foo Bar would
 have been subscribed:
@@ -218,14 +218,13 @@ contact for thunderbird to see how this works.
     >>> thunderbird.security_contact = stub
 
     >>> from zope.event import notify
-    >>> from canonical.launchpad.event.sqlobjectevent import (
-    ...     SQLObjectModifiedEvent)
-    >>> from canonical.launchpad.webapp.snapshot import Snapshot
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import IUpstreamBugTask
 
     >>> old_state = Snapshot(bug_in_evolution, providing=IUpstreamBugTask)
     >>> bug_in_evolution.product = thunderbird
-    >>> bug_product_changed = SQLObjectModifiedEvent(
+    >>> bug_product_changed = ObjectModifiedEvent(
     ...     bug_in_evolution, old_state, ["product"])
 
 First, let's publish the change event with the bug still marked private,
@@ -249,3 +248,31 @@ stub will be added to the subscriber list:
 
     >>> subscriber_names(bug)
     [u'name12', u'name16', u'stub']
+
+When a bug becomes security-related, the security contacts for the pillars it
+affects are subscribed to it.
+
+    >>> from canonical.launchpad.interfaces import IBug
+    >>> from zope.event import notify
+    >>> from lazr.lifecycle.event import ObjectModifiedEvent
+    >>> from lazr.lifecycle.snapshot import Snapshot
+
+    >>> product = factory.makeProduct()
+    >>> product.security_contact = factory.makePerson(
+    ...     displayname='Product Security Contact')
+    >>> distribution = factory.makeDistribution()
+    >>> distribution.security_contact = factory.makePerson(
+    ...     displayname='Distribution Security Contact')
+    >>> reporter = factory.makePerson(displayname=u'Bug Reporter')
+    >>> bug = factory.makeBug(product=product, owner=reporter)
+    >>> bug.addTask(owner=reporter, target=distribution)
+    <BugTask at ...>
+    >>> old_state = Snapshot(bug, providing=IBug)
+    >>> bug.security_related = True
+    >>> notify(ObjectModifiedEvent(bug, old_state, ['security_related']))
+    >>> for subscriber_name in sorted(
+    ...     s.displayname for s in bug.getDirectSubscribers()):
+    ...         print subscriber_name
+    Bug Reporter
+    Distribution Security Contact
+    Product Security Contact

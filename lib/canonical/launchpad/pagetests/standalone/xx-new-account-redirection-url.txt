@@ -32,15 +32,17 @@ them back to that same team, after the registration is complete.
     'http://launchpad.dev/%7Eubuntu-team/+join'
 
     # Clean up stub.test_emails to make sure other tests don't fuck us over.
-    >>> from canonical.launchpad.mail import stub
+    >>> from lp.services.mail import stub
     >>> stub.test_emails = []
 
 
 If she now creates a new account, we'll certainly redirect her back to
 whatever we had stored on the redirection_url hidden field.
 
+    >>> from lp.testing.registration import set_captcha_answer
     >>> anon_browser.getControl('E-mail address:', index=1).value = (
     ...     'granny@canonical.com')
+    >>> set_captcha_answer(anon_browser, prefix='loginpage_')
     >>> anon_browser.getControl('Register').click()
     >>> print anon_browser.contents
     <...

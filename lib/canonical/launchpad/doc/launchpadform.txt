@@ -469,7 +469,7 @@ through a custom_widget() call.
 First we'll create a fake pagetemplate which doesn't use Launchpad's main
 template and thus is way simpler.
 
-  >>> from zope.app.pagetemplate import ViewPageTemplateFile
+  >>> from z3c.ptcompat import ViewPageTemplateFile
   >>> from StringIO import StringIO
   >>> from tempfile import mkstemp
   >>> file, filename = mkstemp()

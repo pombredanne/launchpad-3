@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Start and stop the Mailman processes."""
 
@@ -47,6 +48,10 @@ def mailmanctl(command, quiet=False, config=None, *additional_arguments):
         stderr = None
     env = dict(os.environ)
     env['LPCONFIG'] = config.instance_name
+    # We want to make sure that the Launchpad process will have the benefit of
+    # all of the dependency paths inserted by the buildout bin/run script. We
+    # pass them via PYTHONPATH.
+    env['PYTHONPATH'] = os.path.pathsep.join(sys.path)
     process = subprocess.Popen(
         args, cwd=mailman_bin, stdout=stdout, stderr=stderr, env=env)
     code = process.wait()

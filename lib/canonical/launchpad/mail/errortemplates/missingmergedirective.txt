@@ -1,0 +1,2 @@
+Your email did not contain a merge directive. Please resend your email with
+the merge directive attached.

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
@@ -9,6 +11,7 @@ __all__ = [
     'IIndexedMessage',
     'IMessage',
     'IMessageChunk',
+    'IMessageJob',
     'IMessageSet',
     'IUserToUserEmail',
     'IndexedMessage',
@@ -24,13 +27,14 @@ from zope.schema import Bool, Datetime, Int, Object, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import NotFoundError
-from canonical.launchpad.interfaces.bugtask import IBugTask
+from lp.bugs.interfaces.bugtask import IBugTask
+from lp.services.job.interfaces.job import IJob
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.launchpad.interfaces.person import IPerson
+from lp.registry.interfaces.person import IPerson
 
 from lazr.delegates import delegates
-from canonical.lazr.fields import CollectionField, Reference
-from canonical.lazr.rest.declarations import (
+from lazr.restful.fields import CollectionField, Reference
+from lazr.restful.declarations import (
     export_as_webservice_entry, exported)
 
 
@@ -62,10 +66,6 @@ class IMessage(Interface):
         Reference(title=_('Parent'), schema=Interface,
                   required=False, readonly=True))
 
-    distribution = Reference(
-        title=_('Distribution'),
-        schema=Interface, # Redefined in distribution.py
-        required=False, readonly=True)
     rfc822msgid = TextLine(
         title=_('RFC822 Msg ID'), required=True, readonly=True)
     raw = Reference(title=_('Original unmodified email'),
@@ -271,6 +271,22 @@ class IDirectEmailAuthorization(Interface):
         :param message: The email message that was sent.
         :type message: `email.Message.Message`
         """
+
+
+class IMessageJob(Interface):
+    """Interface for jobs triggered by messages."""
+
+    job = Object(schema=IJob, required=True)
+
+    message_bytes = Object(
+        title=_('Full MIME content of Email.'), required=True,
+        schema=ILibraryFileAlias)
+
+    def getMessage():
+        """Return an email.Message representing this job's message."""
+
+    def destroySelf():
+        """Remove this object (and its job) from the database."""
 
 
 class UnknownSender(NotFoundError):

@@ -48,30 +48,99 @@ the existing subscription.
     >>> target.addBugSubscription(no_priv, no_priv)
     <StructuralSubscription ...>
 
-Let's add an ITeam as one of the subscribers:
+People can only be subscribed by themselves, and only the team admins may
+subscribe a team.
+
+no-priv, who has no relationship to ubuntu-team, cannot subscribe it.
 
     >>> ubuntu_team = personset.getByName("ubuntu-team")
-    >>> target.addBugSubscription(ubuntu_team, ubuntu_team)
+    >>> target.addBugSubscription(ubuntu_team, no_priv)
+    Traceback (most recent call last):
+      ...
+    UserCannotSubscribePerson: no-priv does not have permission to subscribe ubuntu-team.
+
+But kamion, an admin of the team, can.
+
+    >>> kamion = personset.getByName("kamion")
+    >>> target.addBugSubscription(ubuntu_team, kamion)
     <StructuralSubscription ...>
 
     >>> sorted([sub.subscriber.name for sub in target.bug_subscriptions])
     [u'no-priv', u'ubuntu-team']
 
+foobar, a Launchpad administrator, can as well.
+
+    >>> foobar = personset.getByName("name16")
+    >>> target.addBugSubscription(ubuntu_team, foobar)
+    <StructuralSubscription ...>
+
+A non-admin cannot subscribe a person other than themselves.
+
+    >>> target.addBugSubscription(kamion, no_priv)
+    Traceback (most recent call last):
+      ...
+    UserCannotSubscribePerson: no-priv does not have permission to subscribe kamion.
+    >>> sorted([sub.subscriber.name for sub in target.bug_subscriptions])
+    [u'no-priv', u'ubuntu-team']
+
+But again, an admin can.
+
+    >>> target.addBugSubscription(kamion, foobar)
+    <StructuralSubscription ...>
+    >>> sorted([sub.subscriber.name for sub in target.bug_subscriptions])
+    [u'kamion', u'no-priv', u'ubuntu-team']
+
 To remove a bug subscription, use
 IStructuralSubscriptionTarget.removeBugSubscription:
 
-    >>> target.removeBugSubscription(no_priv)
+    >>> target.removeBugSubscription(no_priv, no_priv)
     >>> sorted([sub.subscriber.name for sub in target.bug_subscriptions])
-    [u'ubuntu-team']
+    [u'kamion', u'ubuntu-team']
+
+The subscription rules apply to unsubscription as well.
+
+An unprivileged user cannot unsubscribe a team.
+
+    >>> target.removeBugSubscription(ubuntu_team, no_priv)
+    Traceback (most recent call last):
+      ...
+    UserCannotSubscribePerson: no-priv does not have permission to unsubscribe ubuntu-team.
+    >>> sorted([sub.subscriber.name for sub in target.bug_subscriptions])
+    [u'kamion', u'ubuntu-team']
+
+But a team admin can.
+
+    >>> target.removeBugSubscription(ubuntu_team, kamion)
+    >>> sorted([sub.subscriber.name for sub in target.bug_subscriptions])
+    [u'kamion']
+
+An unprivileged user also cannot unsubscribe another user.
+
+    >>> target.removeBugSubscription(kamion, no_priv)
+    Traceback (most recent call last):
+      ...
+    UserCannotSubscribePerson: no-priv does not have permission to unsubscribe kamion.
+    >>> sorted([sub.subscriber.name for sub in target.bug_subscriptions])
+    [u'kamion']
+
+But the user themselves can.
+
+    >>> target.removeBugSubscription(kamion, kamion)
+    >>> sorted([sub.subscriber.name for sub in target.bug_subscriptions])
+    []
 
 Trying to remove a subscription that doesn't exist on a target raises a
 DeleteSubscriptionError.
 
-    >>> foobar = personset.getByName("name16")
-    >>> target.removeBugSubscription(foobar)
+    >>> target.removeBugSubscription(foobar, foobar)
     Traceback (most recent call last):
       ...
     DeleteSubscriptionError: ...
+
+Let's subscribe ubuntu-team again.
+
+    >>> target.addBugSubscription(ubuntu_team, foobar)
+    <StructuralSubscription ...>
 
 Trying to remove a bug subscription when notification levels for other
 applications are set, doesn't remove the subscription. Instead the
@@ -93,7 +162,7 @@ notification level for bugs is set to NOTHING.
     >>> print_subscriptions_list(target.getSubscriptions())
     name16 COMMENTS LIFECYCLE
     ubuntu-team COMMENTS NOTHING
-    >>> target.removeBugSubscription(foobar)
+    >>> target.removeBugSubscription(foobar, foobar)
     >>> print_subscriptions_list(target.getSubscriptions())
     name16 NOTHING LIFECYCLE
     ubuntu-team COMMENTS NOTHING

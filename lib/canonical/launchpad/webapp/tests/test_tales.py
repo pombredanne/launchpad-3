@@ -1,10 +1,22 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """tales.py doctests."""
 
-
+from difflib import unified_diff
+from textwrap import dedent
 import unittest
 
+from storm.store import Store
+from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctestunit import DocTestSuite
+
+from canonical.launchpad.ftests import test_tales
+from canonical.launchpad.testing.pages import find_tags_by_class
+from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from lp.testing import login, TestCase, TestCaseWithFactory
 
 
 def test_requestapi():
@@ -72,7 +84,7 @@ def test_cookie_scope():
 def test_dbschemaapi():
     """
     >>> from canonical.launchpad.webapp.tales import DBSchemaAPI
-    >>> from canonical.launchpad.interfaces.branch import BranchType
+    >>> from lp.code.enums import BranchType
 
     The syntax to get the title is: number/lp:DBSchemaClass
 
@@ -182,9 +194,213 @@ def test_break_long_words():
     """
 
 
+class TestDiffFormatter(TestCase):
+    """Test the string formtter fmt:diff."""
+    layer = DatabaseFunctionalLayer
+
+    def test_emptyString(self):
+        # An empty string gives an empty string.
+        self.assertEqual(
+            '', FormattersAPI('').format_diff())
+
+    def test_almostEmptyString(self):
+        # White space doesn't count as empty, and is formtted.
+        self.assertEqual(
+            '<table class="diff"><tr><td class="line-no">1</td>'
+            '<td class="text"> </td></tr></table>',
+            FormattersAPI(' ').format_diff())
+
+    def test_format_unicode(self):
+        # Sometimes the strings contain unicode, those should work too.
+        self.assertEqual(
+            u'<table class="diff"><tr><td class="line-no">1</td>'
+            u'<td class="text">Unicode \u1010</td></tr></table>',
+            FormattersAPI(u'Unicode \u1010').format_diff())
+
+    def test_cssClasses(self):
+        # Different parts of the diff have different css classes.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,6 +2435,8 @@
+                 def format_diff(self):
+            -        removed this line
+            +        added this line
+            ########
+            # A merge directive comment.
+            ''')
+        html = FormattersAPI(diff).format_diff()
+        line_numbers = find_tags_by_class(html, 'line-no')
+        self.assertEqual(
+            ['1','2','3','4','5','6','7','8','9'],
+            [tag.renderContents() for tag in line_numbers])
+        text = find_tags_by_class(html, 'text')
+        self.assertEqual(
+            ['diff-file text',
+             'diff-header text',
+             'diff-header text',
+             'diff-chunk text',
+             'text',
+             'diff-removed text',
+             'diff-added text',
+             'diff-comment text',
+             'diff-comment text'],
+            [str(tag['class']) for tag in text])
+
+    def test_config_value_limits_line_count(self):
+        # The config.diff.max_line_format contains the maximum number of lines
+        # to format.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,6 +2435,8 @@
+                 def format_diff(self):
+            -        removed this line
+            +        added this line
+            ########
+            # A merge directive comment.
+            ''')
+        self.pushConfig("diff", max_format_lines=3)
+        html = FormattersAPI(diff).format_diff()
+        line_count = html.count('<td class="line-no">')
+        self.assertEqual(3, line_count)
+
+
+class TestPreviewDiffFormatter(TestCaseWithFactory):
+    """Test the PreviewDiffFormatterAPI class."""
+
+    layer = LaunchpadFunctionalLayer
+
+    def _createPreviewDiff(self, line_count=0, added=None, removed=None,
+                           conflicts=None):
+        # Login an admin to avoid the launchpad.Edit requirements.
+        login('admin@canonical.com')
+        # Create a dummy preview diff, and make sure the branches have the
+        # correct last scanned ids to ensure that the new diff is not stale.
+        bmp = self.factory.makeBranchMergeProposal()
+        if line_count:
+            content = ''.join(unified_diff('', 'random content'))
+        else:
+            content = ''
+        preview = bmp.updatePreviewDiff(
+            content, u'rev-a', u'rev-b', conflicts=conflicts)
+        bmp.source_branch.last_scanned_id = preview.source_revision_id
+        bmp.target_branch.last_scanned_id = preview.target_revision_id
+        # Update the values directly sidestepping the security.
+        naked_diff = removeSecurityProxy(preview)
+        naked_diff.diff_lines_count = line_count
+        naked_diff.added_lines_count = added
+        naked_diff.removed_lines_count = removed
+        # In order to get the canonical url of the librarian file, we need to
+        # commit.
+        # transaction.commit()
+        # Make sure that the preview diff is in the db for the test.
+        # Storm bug: 324724
+        Store.of(bmp).flush()
+        return preview
+
+    def _createStalePreviewDiff(self, line_count=0, added=None, removed=None,
+                                conflicts=None):
+        preview = self._createPreviewDiff(
+            line_count, added, removed, conflicts)
+        preview.branch_merge_proposal.source_branch.last_scanned_id = 'other'
+        return preview
+
+    def test_creation_method(self):
+        # Just confirm that our helpers do what they say.
+        preview = self._createPreviewDiff(12, 45, 23)
+        self.assertEqual(12, preview.diff_lines_count)
+        self.assertEqual(45, preview.added_lines_count)
+        self.assertEqual(23, preview.removed_lines_count)
+        self.assertEqual(False, preview.stale)
+        self.assertEqual(True, self._createStalePreviewDiff().stale)
+
+    def test_fmt_no_diff(self):
+        # If there is no diff, there is no link.
+        preview = self._createPreviewDiff(0)
+        self.assertEqual(
+            '<span title="" class="clean-diff">0 lines</span>',
+            test_tales('preview/fmt:link', preview=preview))
+
+    def test_fmt_lines_no_add_or_remove(self):
+        # If there is no diff, there is no link.
+        preview = self._createPreviewDiff(10, 0, 0)
+        self.assertEqual(
+            '<a href="%s" title="" class="clean-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
+            % preview.diff_text.getURL(),
+            test_tales('preview/fmt:link', preview=preview))
+
+    def test_fmt_lines_some_added_no_removed(self):
+        # If there is no diff, there is no link.
+        preview = self._createPreviewDiff(10, 4, 0)
+        self.assertEqual(
+            '<a href="%s" title="4 added" class="clean-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
+            % preview.diff_text.getURL(),
+            test_tales('preview/fmt:link', preview=preview))
+
+    def test_fmt_lines_no_added_some_removed(self):
+        # If there is no diff, there is no link.
+        preview = self._createPreviewDiff(10, 0, 4)
+        self.assertEqual(
+            '<a href="%s" title="4 removed" class="clean-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
+            % preview.diff_text.getURL(),
+            test_tales('preview/fmt:link', preview=preview))
+
+    def test_fmt_lines_added_and_removed(self):
+        # If there is no diff, there is no link.
+        preview = self._createPreviewDiff(10, 6, 4)
+        self.assertEqual(
+            '<a href="%s" title="6 added, 4 removed" class="clean-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
+            % preview.diff_text.getURL(),
+            test_tales('preview/fmt:link', preview=preview))
+
+    def test_fmt_simple_conflicts(self):
+        # If there is no diff, there is no link.
+        preview = self._createPreviewDiff(10, 2, 3, u'conflicts')
+        self.assertEqual(
+            '<a href="%s" title="CONFLICTS, 2 added, 3 removed" '
+            'class="conflicts-diff">'
+            '<img src="/@@/download"/>&nbsp;10 lines</a>'
+            % preview.diff_text.getURL(),
+            test_tales('preview/fmt:link', preview=preview))
+
+    def test_fmt_stale_empty_diff(self):
+        # If there is no diff, there is no link.
+        preview = self._createStalePreviewDiff(0)
+        self.assertEqual(
+            '<span title="Stale" class="stale-diff">0 lines</span>',
+            test_tales('preview/fmt:link', preview=preview))
+
+    def test_fmt_stale_non_empty_diff(self):
+        # If there is no diff, there is no link.
+        preview = self._createStalePreviewDiff(500, 89, 340)
+        self.assertEqual(
+            '<a href="%s" title="Stale, 89 added, 340 removed" '
+            'class="stale-diff"><img src="/@@/download"/>&nbsp;500 lines</a>'
+            % preview.diff_text.getURL(),
+            test_tales('preview/fmt:link', preview=preview))
+
+    def test_fmt_stale_non_empty_diff_with_conflicts(self):
+        # If there is no diff, there is no link.
+        preview = self._createStalePreviewDiff(500, 89, 340, u'conflicts')
+        self.assertEqual(
+            '<a href="%s" title="CONFLICTS, Stale, 89 added, 340 removed" '
+            'class="stale-diff"><img src="/@@/download"/>&nbsp;500 lines</a>'
+            % preview.diff_text.getURL(),
+            test_tales('preview/fmt:link', preview=preview))
+
+
 def test_suite():
-    """Return this module's doctest Suite. Unit tests are not run."""
-    suite = DocTestSuite()
+    """Return this module's doctest Suite. Unit tests are also run."""
+    suite = unittest.TestSuite()
+    suite.addTests(DocTestSuite())
+    suite.addTests(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
 
 

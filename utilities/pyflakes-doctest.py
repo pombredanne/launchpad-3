@@ -1,5 +1,8 @@
 #!/usr/bin/python
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=F0401
 """Perform pyflakes checks on doctests."""
 
@@ -77,6 +80,8 @@ GLOBAL_NAMES = set([
     # For archiveuploader tests.
     'getUploadForSource',
     'getUploadForBinary',
+    # For answers linked to bugs tests
+    'get_bugtask_linked_to_question',
     ])
 
 

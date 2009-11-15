@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Publisher of objects as web pages.
 
 """
@@ -12,6 +14,7 @@ __all__ = [
     'canonical_url',
     'canonical_url_iterator',
     'get_current_browser_request',
+    'HTTP_MOVED_PERMANENTLY',
     'nearest',
     'Navigation',
     'rootObject',
@@ -24,8 +27,6 @@ __all__ = [
     ]
 
 
-import zope.security.management
-
 from zope.app import zapi
 from zope.app.publisher.interfaces.xmlrpc import IXMLRPCView
 from zope.app.publisher.xmlrpc import IMethodPublisher
@@ -34,19 +35,23 @@ from zope.interface import implements
 from zope.interface.advice import addClassAdvisor
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
-from zope.publisher.interfaces.http import IHTTPApplicationRequest
 from zope.security.checker import ProxyFactory, NamesChecker
+from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.layers import (
-    setFirstLayer, ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer,
-    WebServiceLayer)
+from canonical.config import config
+from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, ILaunchBag, ILaunchpadApplication, ILaunchpadContainer,
     ILaunchpadRoot, IOpenLaunchBag, IStructuredString, NoCanonicalUrl,
     NotFoundError)
 from canonical.launchpad.webapp.url import urlappend
+from canonical.lazr.utils import get_current_browser_request
+
+
+# HTTP Status code constants - define as appropriate.
+HTTP_MOVED_PERMANENTLY = 301
 
 
 class DecoratorAdvisor:
@@ -184,6 +189,13 @@ class UserAttributeCache:
 
     _no_user = object()
     _user = _no_user
+    _account = _no_user
+
+    @property
+    def account(self):
+        if self._account is self._no_user:
+            self._account = getUtility(ILaunchBag).account
+        return self._account
 
     @property
     def user(self):
@@ -260,6 +272,10 @@ class LaunchpadView(UserAttributeCache):
         Check if the response status is one of 301, 302, 303 or 307.
         """
         return self.request.response.getStatus() in [301, 302, 303, 307]
+
+    def isRedirectInhibited(self):
+        """Returns True if redirection has been inhibited."""
+        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
 
     def __call__(self):
         self.initialize()
@@ -384,6 +400,34 @@ def canonical_url_iterator(obj):
             yield urldata.inside
 
 
+class CanonicalAbsoluteURL:
+    """A bridge between Zope's IAbsoluteURL and Launchpad's canonical_url.
+
+    We don't implement the whole interface; only what's needed to
+    make absoluteURL() succceed.
+    """
+    implements(IAbsoluteURL)
+
+    def __init__(self, context, request):
+        """Initialize with respect to a context and request."""
+        self.context = context
+        self.request = request
+
+    def __unicode__(self):
+        """Returns the URL as a unicode string."""
+        raise NotImplementedError()
+
+    def __str__(self):
+        """Returns an ASCII string with all unicode characters url quoted."""
+        return canonical_url(self.context, self.request)
+
+    def __repr__(self):
+        """Get a string representation """
+        raise NotImplementedError()
+
+    __call__ = __str__
+
+
 def canonical_url(
     obj, request=None, rootsite=None, path_only_if_possible=False,
     view_name=None):
@@ -429,6 +473,21 @@ def canonical_url(
         # Look for a request from the interaction.
         current_request = get_current_browser_request()
         if current_request is not None:
+            if WebServiceLayer.providedBy(current_request):
+                from canonical.launchpad.webapp.publication import (
+                    LaunchpadBrowserPublication)
+                from canonical.launchpad.webapp.servers import (
+                    LaunchpadBrowserRequest)
+                current_request = LaunchpadBrowserRequest(
+                    current_request.bodyStream.getCacheStream(),
+                    dict(current_request.environment))
+                current_request.setPublication(
+                    LaunchpadBrowserPublication(None))
+                current_request.setVirtualHostRoot(names=[])
+                main_root_url = current_request.getRootURL(
+                    'mainsite')
+                current_request._app_server = main_root_url.rstrip('/')
+
             request = current_request
 
     if view_name is not None:
@@ -450,45 +509,13 @@ def canonical_url(
                     'step for "%s".' % (view_name, obj.__class__.__name__))
         urlparts.insert(0, view_name)
 
-    # XXX flacoste 2008/03/18 The check for the WebServiceLayer is kind
-    # of hackish, the idea is that when browsing the web service, we want
-    # URLs to point back at the web service, so we basically ignore rootsite.
-    # I don't feel like designing a proper solution today, we'll need
-    # to revisit this anyway once we tackle API versioning.
-    # Plus we already have a bunch of layer-specific hacks below...
-    if WebServiceLayer.providedBy(request) or rootsite is None:
-        # This means we should use the request, or fall back to the main site.
-
-        # If there is no request, fall back to the root_url from the
-        # config file.
-        if request is None:
-            root_url = allvhosts.configs['mainsite'].rooturl
-        else:
-            root_url = request.getApplicationURL() + '/'
+    if request is None:
+        if rootsite is None:
+            rootsite = 'mainsite'
+        root_url = allvhosts.configs[rootsite].rooturl
     else:
-        # We should use the site given.
-        if rootsite in allvhosts.configs:
-            root_url = allvhosts.configs[rootsite].rooturl
-        elif rootsite == 'shipit':
-            # Special case for shipit.  We need to take the request's layer
-            # into account.
-            if ShipItUbuntuLayer.providedBy(request):
-                root_url = allvhosts.configs['shipitubuntu'].rooturl
-            elif ShipItEdUbuntuLayer.providedBy(request):
-                root_url = allvhosts.configs['shipitedubuntu'].rooturl
-            elif ShipItKUbuntuLayer.providedBy(request):
-                root_url = allvhosts.configs['shipitkubuntu'].rooturl
-            elif request is None:
-                # Fall back to shipitubuntu_root_url
-                root_url = allvhosts.configs['shipitubuntu'].rooturl
-            else:
-                raise AssertionError(
-                    "Shipit canonical urls must be used only with request "
-                    "== None or a request providing one of the ShipIt Layers")
-        else:
-            raise AssertionError("rootsite is %s.  Must be in %r." % (
-                    rootsite, sorted(allvhosts.configs.keys())
-                    ))
+        root_url = request.getRootURL(rootsite)
+
     path = u'/'.join(reversed(urlparts))
     if (path_only_if_possible and
         request is not None and
@@ -513,27 +540,6 @@ def canonical_name(name):
     return name.lower()
 
 
-def get_current_browser_request():
-    """Return the current browser request, looked up from the interaction.
-
-    If there is no suitable request, then return None.
-
-    Returns only requests that provide IHTTPApplicationRequest.
-    """
-    interaction = zope.security.management.queryInteraction()
-    requests = [
-        participation
-        for participation in interaction.participations
-        if IHTTPApplicationRequest.providedBy(participation)
-        ]
-    if not requests:
-        return None
-    assert len(requests) == 1, (
-        "We expect only one IHTTPApplicationRequest in the interaction."
-        " Got %s." % len(requests))
-    return requests[0]
-
-
 def nearest(obj, *interfaces):
     """Return the nearest object up the canonical url chain that provides
     one of the interfaces given.
@@ -541,13 +547,17 @@ def nearest(obj, *interfaces):
     The object returned might be the object given as an argument, if that
     object provides one of the given interfaces.
 
-    Return None is no suitable object is found.
+    Return None is no suitable object is found or if there is no canonical_url
+    defined for the object.
     """
-    for current_obj in canonical_url_iterator(obj):
-        for interface in interfaces:
-            if interface.providedBy(current_obj):
-                return current_obj
-    return None
+    try:
+        for current_obj in canonical_url_iterator(obj):
+            for interface in interfaces:
+                if interface.providedBy(current_obj):
+                    return current_obj
+        return None
+    except NoCanonicalUrl:
+        return None
 
 
 class RootObject:
@@ -691,10 +701,6 @@ class Navigation:
         # this request.
         if self.newlayer is not None:
             setFirstLayer(request, self.newlayer)
-
-        # store the current context object in the request's
-        # traversed_objects list:
-        request.traversed_objects.append(self.context)
 
         # Next, see if we're being asked to stepto somewhere.
         stepto_traversals = self.stepto_traversals

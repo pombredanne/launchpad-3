@@ -1,0 +1,61 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet" id="portlet-subscribers">
+  <div class="portletBody portletContent"
+       tal:define="context_menu context/menu:context">
+
+    <div>
+      <div class="actions">
+      <div
+        tal:define="link context_menu/subscription"
+        tal:condition="link/enabled"
+        id="selfsubscriptioncontainer"
+        >
+        <a id="selfsubscription"
+           class="sprite add"
+           tal:attributes="href link/url"
+           tal:content="link/text" />
+      </div>
+      <div
+        tal:define="link context_menu/add_subscriber"
+        tal:condition="link/enabled"
+        tal:content="structure link/render"
+        />
+      </div>
+      <h2>Subscribers</h2>
+      <p id="subscriber-list">
+        <noscript>
+          Please enable javascript to view branch subscribers.
+        </noscript>
+      </p>
+      <div id="subscribers-portlet-spinner"
+          style="text-align: center; display: none;">
+        <img src="/@@/spinner" />
+      </div>
+    </div>
+  </div>
+  <tal:script
+    replace="structure
+    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
+    <!--
+
+    YUI().use('io-base', 'node', 'code.branchsubscription', function(Y) {
+
+    if(Y.UA.ie) {
+        Y.get('#subscriber-list').set('innerHTML',
+            'Could not load subscribers, javascript is disabled.');
+        return;
+    }
+
+    Y.on('domready', function() {
+        Y.code.branchsubscription.update_subscriber_list();
+    });
+
+    });
+    -->
+  <tal:script replace="structure string:&lt;/script&gt;" />
+
+
+</div>

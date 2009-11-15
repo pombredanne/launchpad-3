@@ -1,4 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213,W0611
 # XXX Aaron Bentley 2008-01-24: See comment from kiko re:import shims
 
@@ -42,7 +44,6 @@ __all__ = [
     'IHasIcon',
     'IHasLogo',
     'IHasMugshot',
-    'IHasOwner',
     'IHasProduct',
     'IHasProductAndAssignee',
     'IHasSecurityContact',
@@ -52,16 +53,15 @@ __all__ = [
     'ILaunchpadSearch',
     'ILaunchpadUsage',
     'INotificationRecipientSet',
-    'IOpenIDApplication',
     'IOpenLaunchBag',
     'IPasswordChangeApp',
     'IPasswordEncryptor',
     'IPasswordResets',
     'IPrivateApplication',
     'IPrivateMaloneApplication',
+    'IPrivacy',
     'IReadZODBAnnotation',
     'IRosettaApplication',
-    'IShipItApplication',
     'IStructuralHeaderPresentation',
     'IStructuralObjectPresentation',
     'IWebServiceApplication',
@@ -103,29 +103,35 @@ class ILaunchpadCelebrities(Interface):
     bazaar_experts = Attribute("The Bazaar Experts team.")
     bug_importer = Attribute("The bug importer.")
     bug_watch_updater = Attribute("The Bug Watch Updater.")
+    buildd_admin = Attribute("The Build Daemon administrator.")
     commercial_admin = Attribute("The Launchpad Commercial team.")
     debbugs = Attribute("The Debian Bug Tracker")
     debian = Attribute("The Debian Distribution.")
     english = Attribute("The English language.")
     gnome_bugzilla = Attribute("The Gnome Bugzilla.")
+    hwdb_team = Attribute("The HWDB team.")
     janitor = Attribute("The Launchpad Janitor.")
     katie = Attribute("The Debian Auto-sync user.")
     launchpad = Attribute("The Launchpad project.")
     launchpad_beta_testers = Attribute("The Launchpad Beta Testers team.")
     launchpad_developers = Attribute("The Launchpad development team.")
+    lp_translations = Attribute("The Launchpad Translations product.")
     mailing_list_experts = Attribute("The Mailing List Experts team.")
+    obsolete_junk = Attribute("The Obsolete Junk project.")
+    ppa_key_guard = Attribute("The PPA signing keys owner.")
+    registry_experts = Attribute("The Registry Administrators team.")
     rosetta_experts = Attribute("The Rosetta Experts team.")
     savannah_tracker = Attribute("The GNU Savannah Bug Tracker.")
     shipit_admin = Attribute("The ShipIt Administrators.")
     sourceforge_tracker = Attribute("The SourceForge Bug Tracker")
-    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
     ubuntu = Attribute("The Ubuntu Distribution.")
+    ubuntu_archive_mirror = Attribute("The main archive mirror for Ubuntu.")
+    ubuntu_branches = Attribute("The Ubuntu branches team")
     ubuntu_bugzilla = Attribute("The Ubuntu Bugzilla.")
     ubuntu_cdimage_mirror = Attribute("The main cdimage mirror for Ubuntu.")
+    ubuntu_security = Attribute("The 'ubuntu-security' team.")
+    ubuntu_techboard = Attribute("The Ubuntu technical board.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
-    lp_translations = Attribute("The Launchpad Translations product.")
-    ppa_key_guard = Attribute("The PPA signing keys owner.")
-
 
 
 class ICrowd(Interface):
@@ -185,16 +191,8 @@ class IRosettaApplication(ILaunchpadApplication):
         """Return the number of people who have given translations."""
 
 
-class IShipItApplication(ILaunchpadApplication):
-    """ShipIt application root."""
-
-
 class IBazaarApplication(ILaunchpadApplication):
     """Bazaar Application"""
-
-
-class IOpenIDApplication(ILaunchpadApplication):
-    """Launchpad Login Service application root."""
 
 
 class IPrivateApplication(ILaunchpadApplication):
@@ -309,12 +307,6 @@ class IZODBAnnotation(IReadZODBAnnotation, IWriteZODBAnnotation):
     pass
 
 
-class IHasOwner(Interface):
-    """An object that has an owner."""
-
-    owner = Attribute("The object's owner, which is an IPerson.")
-
-
 class IHasDrivers(Interface):
     """An object that has drivers.
 
@@ -396,6 +388,16 @@ class IAging(Interface):
 
         Values returned are things like '2 minutes', '3 hours', '1 month', etc.
         """
+
+
+class IPrivacy(Interface):
+    """Something that can be private."""
+
+    private = Bool(
+        title=_("This is private"),
+        required=False,
+        description=_(
+            "Private objects are visible to members or subscribers."))
 
 
 class IHasDateCreated(Interface):

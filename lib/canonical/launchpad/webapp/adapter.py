@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # We use global in this module.
 # pylint: disable-msg=W0602
 
@@ -12,26 +14,34 @@ import traceback
 from time import time
 import warnings
 
+import psycopg2
 from psycopg2.extensions import (
     ISOLATION_LEVEL_AUTOCOMMIT, ISOLATION_LEVEL_READ_COMMITTED,
     ISOLATION_LEVEL_SERIALIZABLE, QueryCanceledError)
 
 from storm.database import register_scheme
-from storm.databases.postgres import Postgres, PostgresTimeoutTracer
+from storm.databases.postgres import (
+    Postgres, PostgresConnection, PostgresTimeoutTracer)
 from storm.exceptions import TimeoutError
+from storm.store import Store
 from storm.tracer import install_tracer
 from storm.zope.interfaces import IZStorm
 
 import transaction
 from zope.component import getUtility
-from zope.interface import classImplements, classProvides, implements
+from zope.interface import (
+    classImplements, classProvides, alsoProvides, implements)
+from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config, dbconfig
+from canonical.config import config, dbconfig, DatabaseConfig
 from canonical.database.interfaces import IRequestExpired
-from canonical.lazr.utils import safe_hasattr
+from canonical.launchpad.interfaces import IMasterObject, IMasterStore
+from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
-        IStoreSelector, DEFAULT_FLAVOR, MAIN_STORE, MASTER_FLAVOR)
+    AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
+    MAIN_STORE, MASTER_FLAVOR, ReadOnlyModeViolation, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.opstats import OpStats
+from canonical.lazr.utils import safe_hasattr
 
 
 __all__ = [
@@ -42,6 +52,7 @@ __all__ = [
     'get_request_statements',
     'get_request_start_time',
     'get_request_duration',
+    'get_store_name',
     'hard_timeout_expired',
     'soft_timeout_expired',
     'StoreSelector',
@@ -101,7 +112,15 @@ def summarize_requests():
     """Produce human-readable summary of requests issued so far."""
     secs = get_request_duration()
     statements = getattr(_local, 'request_statements', [])
-    log = "%s queries issued in %.2f seconds" % (len(statements), secs)
+    from canonical.launchpad.webapp.errorlog import (
+        maybe_record_user_requested_oops)
+    oopsid = maybe_record_user_requested_oops()
+    if oopsid is None:
+        oops_str = ""
+    else:
+        oops_str = " %s" % oopsid
+    log = "%s queries issued in %.2f seconds%s" % (
+        len(statements), secs, oops_str)
     return log
 
 
@@ -115,7 +134,7 @@ def store_sql_statements_and_request_duration(event):
 def get_request_statements():
     """Get the list of executed statements in the request.
 
-    The list is composed of (starttime, endtime, statement) tuples.
+    The list is composed of (starttime, endtime, db_id, statement) tuples.
     Times are given in milliseconds since the start of the request.
     """
     return getattr(_local, 'request_statements', [])
@@ -146,7 +165,11 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
     # convert times to integer millisecond values
     starttime = int((starttime - request_starttime) * 1000)
     endtime = int((endtime - request_starttime) * 1000)
-    _local.request_statements.append((starttime, endtime, statement))
+    # A string containing no whitespace that lets us identify which Store
+    # is being used.
+    database_identifier = connection_wrapper._database.name
+    _local.request_statements.append(
+        (starttime, endtime, database_identifier, statement))
 
     # store the last executed statement as an attribute on the current
     # thread
@@ -230,6 +253,22 @@ isolation_level_map = {
     }
 
 
+class ReadOnlyModeConnection(PostgresConnection):
+    """storm.database.Connection for read-only mode Launchpad."""
+    def execute(self, statement, params=None, noresult=False):
+        """See storm.database.Connection."""
+        try:
+            return super(ReadOnlyModeConnection, self).execute(
+                statement, params, noresult)
+        except psycopg2.InternalError, exception:
+            # Error 25006 is 'ERROR:  transaction is read-only'. This
+            # is raised when an attempt is made to make changes when
+            # the connection has been put in read-only mode.
+            if exception.pgcode == '25006':
+                raise ReadOnlyModeViolation, None, sys.exc_info()[2]
+            raise
+
+
 class LaunchpadDatabase(Postgres):
 
     def __init__(self, uri):
@@ -239,6 +278,8 @@ class LaunchpadDatabase(Postgres):
         # opinion on what uri is.
         # pylint: disable-msg=W0231
         self._uri = uri
+        # A unique name for this database connection.
+        self.name = uri.database
 
     def raw_connect(self):
         # Prevent database connections from the main thread if
@@ -247,29 +288,74 @@ class LaunchpadDatabase(Postgres):
             _main_thread_id == thread.get_ident()):
             raise StormAccessFromMainThread()
 
+        try:
+            config_section, realm, flavor = self._uri.database.split('-')
+        except ValueError:
+            raise AssertionError(
+                'Connection uri %s does not match section-realm-flavor format'
+                % repr(self._uri.database))
+
+        assert realm in ('main', 'auth'), 'Unknown realm %s' % realm
+        assert flavor in ('master', 'slave'), 'Unknown flavor %s' % flavor
+
+        my_dbconfig = DatabaseConfig()
+        my_dbconfig.setConfigSection(config_section)
+
         # We set self._dsn here rather than in __init__ so when the Store
         # is reconnected it pays attention to any config changes.
-        config_entry = self._uri.database.replace('-', '_')
-        connection_string = getattr(dbconfig, config_entry)
+        config_entry = '%s_%s' % (realm, flavor)
+        connection_string = getattr(my_dbconfig, config_entry)
         assert 'user=' not in connection_string, (
                 "Database username should not be specified in "
                 "connection string (%s)." % connection_string)
-        self._dsn = "%s user=%s" % (connection_string, dbconfig.dbuser)
+
+        # Try to lookup dbuser using the $realm_dbuser key. If this fails,
+        # fallback to the dbuser key.
+        dbuser = getattr(my_dbconfig, '%s_dbuser' % realm, my_dbconfig.dbuser)
+
+        self._dsn = "%s user=%s" % (connection_string, dbuser)
 
         flags = _get_dirty_commit_flags()
+
+        if my_dbconfig.isolation_level is None:
+            self._isolation = ISOLATION_LEVEL_SERIALIZABLE
+        else:
+            self._isolation = isolation_level_map[my_dbconfig.isolation_level]
+
         raw_connection = super(LaunchpadDatabase, self).raw_connect()
 
-        if dbconfig.isolation_level is None:
-            isolation_level = ISOLATION_LEVEL_SERIALIZABLE
+        # Set read only mode for the session.
+        # An alternative would be to use the _ro users generated by
+        # security.py, but this would needlessly double the number
+        # of database users we need to maintain ACLs for on production.
+        if flavor == SLAVE_FLAVOR:
+            raw_connection.cursor().execute(
+                'SET DEFAULT_TRANSACTION_READ_ONLY TO TRUE')
+            # Make the altered session setting stick.
+            raw_connection.commit()
         else:
-            isolation_level = isolation_level_map[dbconfig.isolation_level]
-        raw_connection.set_isolation_level(isolation_level)
+            assert config_entry.endswith('_master'), (
+                'DB connection URL %s does not meet naming convention.')
 
         _reset_dirty_commit_flags(*flags)
         return raw_connection
 
+    @property
+    def connection_factory(self):
+        """Return the correct connection factory for the current mode.
+
+        If we are running in read-only mode, returns a
+        ReadOnlyModeConnection. Otherwise it returns the Storm default.
+        """
+        if config.launchpad.read_only:
+            return ReadOnlyModeConnection
+        return super(LaunchpadDatabase, self).connection_factory
+
 
 class LaunchpadSessionDatabase(Postgres):
+
+    # A unique name for this database connection.
+    name = 'session'
 
     def raw_connect(self):
         self._dsn = 'dbname=%s user=%s' % (config.launchpad_session.dbname,
@@ -381,29 +467,100 @@ class LaunchpadStatementTracer:
             connection, raw_cursor, statement, params)
 
 
-install_tracer(LaunchpadTimeoutTracer())
+# The LaunchpadTimeoutTracer needs to be installed last, as it raises
+# TimeoutError exceptions. When this happens, tracers installed later
+# are not invoked.
 install_tracer(LaunchpadStatementTracer())
+install_tracer(LaunchpadTimeoutTracer())
 
 
 class StoreSelector:
+    """See `canonical.launchpad.webapp.interfaces.IStoreSelector`."""
     classProvides(IStoreSelector)
 
     @staticmethod
-    def getDefaultFlavor():
-        """Return the DEFAULT_FLAVOR for the current thread."""
-        return getattr(_local, 'default_store_flavor', DEFAULT_FLAVOR)
+    def push(db_policy):
+        """See `IStoreSelector`."""
+        if not safe_hasattr(_local, 'db_policies'):
+            _local.db_policies = []
+        db_policy.install()
+        _local.db_policies.append(db_policy)
 
     @staticmethod
-    def setDefaultFlavor(flavor):
-        """Change what the DEFAULT_FLAVOR is for the current thread."""
-        _local.default_store_flavor = flavor
+    def pop():
+        """See `IStoreSelector`."""
+        db_policy = _local.db_policies.pop()
+        db_policy.uninstall()
+        return db_policy
+
+    @staticmethod
+    def get_current():
+        """See `IStoreSelector`."""
+        try:
+            return _local.db_policies[-1]
+        except (AttributeError, IndexError):
+            return None
 
     @staticmethod
     def get(name, flavor):
         """See `IStoreSelector`."""
-        if flavor == DEFAULT_FLAVOR:
-            flavor = StoreSelector.getDefaultFlavor()
-            if flavor == DEFAULT_FLAVOR:
-                # None set, use MASTER by default.
-                flavor = MASTER_FLAVOR
-        return getUtility(IZStorm).get('%s-%s' % (name, flavor))
+        db_policy = StoreSelector.get_current()
+        if db_policy is None:
+            db_policy = MasterDatabasePolicy(None)
+        return db_policy.getStore(name, flavor)
+
+
+# There are not many tables outside of the main replication set, so we
+# can just maintain a hardcoded list of what isn't in there for now.
+_auth_store_tables = frozenset([
+    'Account', 'AccountPassword', 'AuthToken', 'EmailAddress',
+    'OpenIDAssociation', 'OpenIDAuthorization', 'OpenIDNonce',
+    'OpenIDRPSummary'])
+
+
+# We want to be able to adapt a Storm class to an IStore, IMasterStore or
+# ISlaveStore. Unfortunately, the component architecture provides no
+# way for us to declare that a class, and all its subclasses, provides
+# a given interface. This means we need to use an global adapter.
+
+def get_store(storm_class, flavor=DEFAULT_FLAVOR):
+    """Return a flavored Store for the given database class."""
+    table = getattr(removeSecurityProxy(storm_class), '__storm_table__', None)
+    if table in _auth_store_tables:
+        return getUtility(IStoreSelector).get(AUTH_STORE, flavor)
+    elif table is not None:
+        return getUtility(IStoreSelector).get(MAIN_STORE, flavor)
+    else:
+        return None
+
+
+def get_master_store(storm_class):
+    """Return the master Store for the given database class."""
+    return get_store(storm_class, MASTER_FLAVOR)
+
+
+def get_slave_store(storm_class):
+    """Return the master Store for the given database class."""
+    return get_store(storm_class, SLAVE_FLAVOR)
+
+
+def get_object_from_master_store(obj):
+    """Return a copy of the given object retrieved from its master Store.
+
+    Returns the object if it already comes from the relevant master Store.
+
+    Registered as a trusted adapter, so if the input is security wrapped,
+    so is the result. Otherwise an unwrapped object is returned.
+    """
+    master_store = IMasterStore(obj)
+    if master_store is not Store.of(obj):
+        obj = master_store.get(obj.__class__, obj.id)
+        if obj is None:
+            return None
+    alsoProvides(obj, IMasterObject)
+    return obj
+
+
+def get_store_name(store):
+    """Helper to retrieve the store name for a ZStorm Store."""
+    return getUtility(IZStorm).get_name(store)

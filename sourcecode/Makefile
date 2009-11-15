@@ -4,29 +4,17 @@ PYTHON=python${PYTHON_VERSION}
 # the ones we test.  If we fix them all to have EITHER a good makefile
 # (build and check targets work), or no makefile we can reenable auto
 # detection.
-build_dirs:=bzr cscvs lazr-js lsprof pygettextpo pygpgme storm twisted zope
-test_dirs:=bzr cscvs pygettextpo storm twisted zope
-launchpad_test_dirs:=
-
-STORM_TESTDB = storm_test
+build_dirs:=cscvs dulwich lsprof pygettextpo pygpgme twisted
+test_dirs:=cscvs pygettextpo twisted
 
 TEST_ENV_VARS = \
   PYTHON=$(PYTHON) \
-  PYTHON_VERSION=$(PYTHON_VERSION) \
-  STORM_POSTGRES_URI=postgres:$(STORM_TESTDB) \
-  STORM_POSTGRES_HOST_URI=postgres://localhost/$(STORM_TESTDB) \
-  STORM_MYSQL_URI= \
-  STORM_MYSQL_HOST_URI=
+  PYTHON_VERSION=$(PYTHON_VERSION)
 
 all:
 
-check: build storm_testdb
+check: build
 	@ for subdir in ${test_dirs}; do \
-		$(MAKE) -C $$subdir check $(TEST_ENV_VARS) || exit $$?;\
-	done
-
-check_for_launchpad: build
-	@ for subdir in ${launchpad_test_dirs}; do \
 		$(MAKE) -C $$subdir check $(TEST_ENV_VARS) || exit $$?;\
 	done
 
@@ -37,13 +25,4 @@ build:
 		fi;\
 	done
 
-# Storm's test suite expects the test database to exist before the
-# test suite is run.
-storm_testdb:
-	@echo "* Creating $(STORM_TESTDB)"
-	@if psql -l | grep -q " $(STORM_TESTDB) "; then \
-	    dropdb $(STORM_TESTDB) >/dev/null; \
-	fi
-	createdb $(STORM_TESTDB)
-
-.PHONY: check check_for_launchpad all build storm_testdb
+.PHONY: check all build

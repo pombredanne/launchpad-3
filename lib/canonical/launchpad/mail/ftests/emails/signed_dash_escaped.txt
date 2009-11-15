@@ -12,12 +12,12 @@ Hash: SHA1
 
 Some signed content.
 
-- -- 
+- --
 Sample Person
 -----BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.1 (GNU/Linux)
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-iD8DBQFDiyqsuiuTid/SBUMRAl+EAJ91DIusKWwfOslxW38u27yIwo+qxQCgk63F
-q9usafS2mHuFpn/9uixtoms=
-=efuK
+iEYEARECAAYFAkmcST8ACgkQ2yWXVgK6XvYKsgCfaIlwwwPyPnvh8pFAeU8xcfme
+blkAoMKYnntBH1s42+72h5fn01Pow/qM
+=tgNW
 -----END PGP SIGNATURE-----

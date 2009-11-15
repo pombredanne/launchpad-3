@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
-# Copyright (C) 2005, 2008  Canonical Software Ltd.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # <james.troup@canonical.com>
 # pylint: disable-msg=W0403
 
@@ -11,6 +14,7 @@ Long term once soyuz is monitoring other archives regularly, syncing
 will become a matter of simply 'publishing' source from Debian unstable
 wherever) into Ubuntu dapper and the whole fake upload trick can go away.
 """
+import _pythonpath
 
 import apt_pkg
 import commands
@@ -26,21 +30,20 @@ import tempfile
 import time
 import urllib
 
-import _pythonpath
 import dak_utils
-from syncorigins import origins
+from _syncorigins import origins
 
 from zope.component import getUtility
 from contrib.glock import GlobalLock
 
 from canonical.database.sqlbase import sqlvalues, cursor
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, PackagePublishingStatus,
-    PackagePublishingPocket)
+    IDistributionSet, IPersonSet, PackagePublishingStatus)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.librarian.client import LibrarianClient
 from canonical.lp import initZopeless
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 reject_message = ""

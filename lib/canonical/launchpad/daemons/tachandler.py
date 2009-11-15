@@ -1,6 +1,8 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test harness for TAC (Twisted Application Configuration) files.
 """
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -19,8 +21,7 @@ from twisted.python import log
 
 twistd_script = os.path.abspath(os.path.join(
     os.path.dirname(__file__),
-    os.pardir, os.pardir, os.pardir, os.pardir,
-    'sourcecode', 'twisted', 'bin', 'twistd'))
+    os.pardir, os.pardir, os.pardir, os.pardir, 'bin', 'twistd'))
 
 LOG_MAGIC = 'daemon ready!'
 
@@ -64,7 +65,9 @@ class TacTestSetup:
         start = time.time()
         while True:
             if time.time() > start + 10:
-                raise TacException('Unable to start %s' % (self.tacfile,))
+                raise TacException(
+                    'Unable to start %s. Check %s.'
+                    % (self.tacfile, self.logfile))
             if os.path.exists(self.logfile):
                 if LOG_MAGIC in open(self.logfile, 'r').read():
                     break

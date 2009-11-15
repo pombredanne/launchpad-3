@@ -28,7 +28,7 @@
     <tbody>
       <tr tal:repeat="bugtask context/getBugListingItems">
         <td class="icon right">
-          <img src="/@@/bug" tal:replace="structure bugtask/image:icon" />
+          <span tal:attributes="class bugtask/image:sprite_css" />
         </td>
         <td
           class="amount"
@@ -44,17 +44,17 @@
           </a>
         </td>
         <td align="right" style="padding-right: 5px">
-          <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
+          <tal:block replace="structure bugtask/image:badges" />
         </td>
         <td tal:content="bugtask/bugtargetdisplayname"
             tal:condition="context/show_column/bugtargetdisplayname|nothing"
         >mozilla-firefox (Ubuntu)</td>
-        <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
+        <td tal:content="structure bugtask/sourcepackagename/name|default"
             tal:condition="context/show_column/packagename|nothing"
-        >mozilla-firefox (Ubuntu)</td>
-        <td tal:content="structure bugtask/product/name|string:&mdash;"
+        >&mdash;</td>
+        <td tal:content="structure bugtask/product/name|default"
             tal:condition="context/show_column/productname|nothing"
-        >firefox</td>
+        >&mdash;</td>
         <td tal:content="bugtask/importance/title"
             tal:attributes="class string:importance${bugtask/importance/name}"
             tal:condition="context/show_column/importance|nothing">Critical</td>

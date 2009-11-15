@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A view for changing the owner or registrant of an object.
 
@@ -10,17 +11,22 @@ __metaclass__ = type
 __all__ = ["ObjectReassignmentView"]
 
 
-from zope.app.form.interfaces import (
-    IInputWidget, ConversionError, WidgetInputError)
-from zope.app.form.utility import setUpWidgets
+from zope.app.form.interfaces import ConversionError, WidgetInputError
 from zope.component import getUtility
+from zope.formlib.form import FormFields
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
-from canonical.launchpad.interfaces import (
-    ILaunchBag, IObjectReassignment, IPersonSet)
+from canonical.launchpad import _
+from lp.registry.interfaces.person import IObjectReassignment, IPersonSet
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadFormView)
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 
 
-class ObjectReassignmentView:
+class ObjectReassignmentView(LaunchpadFormView):
     """A view class used when reassigning an object that implements IHasOwner.
 
     By default we assume that the owner attribute is IHasOwner.owner and the
@@ -41,15 +47,42 @@ class ObjectReassignmentView:
 
     ownerOrMaintainerAttr = 'owner'
     ownerOrMaintainerName = 'owner'
-    schema = IObjectReassignment
+    # Called after changing the owner if it is overridden in a subclass.
     callback = None
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.user = getUtility(ILaunchBag).user
-        self.errormessage = ''
-        setUpWidgets(self, self.schema, IInputWidget)
+    schema = IObjectReassignment
+    custom_widget('existing', LaunchpadRadioWidget)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Change the %s of %s' % (
+            self.ownerOrMaintainerName, self.contextName)
+
+    page_title = label
+
+    def setUpFields(self):
+        super(ObjectReassignmentView, self).setUpFields()
+        self.form_fields = FormFields(
+            self.form_fields, self.auto_create_team_field)
+
+    @property
+    def auto_create_team_field(self):
+        terms = [
+            SimpleTerm('existing', token='existing',
+                       title='An existing person or team'),
+            SimpleTerm('new', token='new',
+                       title="A new team I'm creating here"),
+            ]
+        return Choice(
+            __name__='existing',
+            title=_('This is'),
+            source=SimpleVocabulary(terms),
+            default='existing',
+            description=_(
+              "The new team's name must begin with a lower-case letter "
+              "or number, and contain only letters, numbers, dots, hyphens, "
+              "or plus signs."))
 
     @property
     def ownerOrMaintainer(self):
@@ -59,26 +92,24 @@ class ObjectReassignmentView:
     def contextName(self):
         return self.context.displayname or self.context.name
 
-    nextUrl = '.'
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
-    def processForm(self):
-        if self.request.method == 'POST':
-            self.changeOwner()
+    cancel_url = next_url
 
-    def changeOwner(self):
+    @property
+    def owner_widget(self):
+        return self.widgets['owner']
+
+    @action("Change", name="change")
+    def changeOwner(self, action, data):
         """Change the owner of self.context to the one choosen by the user."""
-        newOwner = self._getNewOwner()
-        if newOwner is None:
-            return
-
-        if not self.isValidOwner(newOwner):
-            return
-
+        newOwner = data['owner']
         oldOwner = getattr(self.context, self.ownerOrMaintainerAttr)
         setattr(self.context, self.ownerOrMaintainerAttr, newOwner)
         if callable(self.callback):
             self.callback(self.context, oldOwner, newOwner)
-        self.request.response.redirect(self.nextUrl)
 
     def isValidOwner(self, newOwner):
         """Check whether the new owner is acceptable for the context object.
@@ -88,40 +119,49 @@ class ObjectReassignmentView:
         """
         return True
 
-    def _getNewOwner(self):
-        """Return the new owner for self.context, as specified by the user.
+    def _validate(self, action, data):
+        """Override _validate() method."""
+        # Don't let widgets validate themselves, just call validate().
+        self.validate(data)
+        if len(self.errors) > 0:
+            return self.errors
+        self.validate_widgets(data)
+        return self.errors
 
-        If anything goes wrong, return None and assign an error message to
-        self.errormessage to inform the user about what happened.
-        """
+    def validate(self, data):
+        """Create new team if necessary."""
         personset = getUtility(IPersonSet)
         request = self.request
         owner_name = request.form.get(self.owner_widget.name)
         if not owner_name:
-            self.errormessage = (
+            self.setFieldError(
+                'owner',
                 "You have to specify the name of the person/team that's "
                 "going to be the new %s." % self.ownerOrMaintainerName)
             return None
 
-        if request.form.get('existing') == 'existing':
+        if request.form.get('field.existing') == 'existing':
             try:
                 # By getting the owner using getInputValue() we make sure
                 # it's valid according to the vocabulary of self.schema's
                 # owner widget.
                 owner = self.owner_widget.getInputValue()
             except WidgetInputError:
-                self.errormessage = (
+                self.setFieldError(
+                    'owner',
                     "The person/team named '%s' is not a valid owner for %s."
                     % (owner_name, self.contextName))
                 return None
             except ConversionError:
-                self.errormessage = (
+                self.setFieldError(
+                    self.ownerOrMaintainerName,
                     "There's no person/team named '%s' in Launchpad."
                     % owner_name)
                 return None
         else:
             if personset.getByName(owner_name):
-                self.errormessage = (
+                self.setFieldError(
+                    'owner',
                     "There's already a person/team with the name '%s' in "
                     "Launchpad. Please choose a different name or select "
                     "the option to make that person/team the new owner, "
@@ -129,7 +169,8 @@ class ObjectReassignmentView:
                 return None
 
             if not valid_name(owner_name):
-                self.errormessage = (
+                self.setFieldError(
+                    'owner',
                     "'%s' is not a valid name for a team. Please make sure "
                     "it contains only the allowed characters and no spaces."
                     % owner_name)
@@ -138,4 +179,5 @@ class ObjectReassignmentView:
             owner = personset.newTeam(
                 self.user, owner_name, owner_name.capitalize())
 
-        return owner
+        if not self.isValidOwner(owner):
+            self.setFieldError(self.ownerOrMaintainerName, 'Invalid owner.')

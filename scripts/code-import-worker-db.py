@@ -1,5 +1,7 @@
 #!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """When passed a CodeImportJob id on the command line, process that job.
 
@@ -21,9 +23,9 @@ import os
 from twisted.internet import defer, reactor
 from twisted.python import log
 
-from canonical.codehosting.codeimport.workermonitor import (
+from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor)
-from canonical.launchpad.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadScript
 from canonical.twistedsupport.loggingsupport import set_up_oops_reporting
 
 

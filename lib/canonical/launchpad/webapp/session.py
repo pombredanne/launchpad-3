@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Support for browser-cookie sessions."""
 
 __metaclass__ = type
@@ -75,7 +77,7 @@ class LaunchpadCookieClientIdManager(CookieClientIdManager):
         # Secret is looked up here rather than in __init__, because
         # we can't be sure the database connections are setup at that point.
         if self._secret is None:
-            store = getUtility(IZStorm).get('session')
+            store = getUtility(IZStorm).get('session', 'launchpad-session:')
             result = store.execute("SELECT secret FROM secret")
             self._secret = result.get_one()[0]
         return self._secret

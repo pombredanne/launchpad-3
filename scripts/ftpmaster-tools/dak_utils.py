@@ -154,7 +154,7 @@ def build_file_list(changes, is_a_dsc=0):
     # Make sure we recognise the format of the Files: field
     format = changes.get("format", "");
     if format != "":
-	format = float(format);
+	format = float(format.split()[0]);
     if not is_a_dsc and (format < 1.5 or format > 2.0):
 	raise nk_format_exc, format;
 

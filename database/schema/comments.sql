@@ -1,6 +1,9 @@
 /*
   Add Comments to Launchpad database. Please keep these alphabetical by
   table.
+
+     Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
 */
 
 -- Announcement
@@ -45,6 +48,7 @@ COMMENT ON COLUMN Branch.metadir_format IS 'The bzr metadir format';
 COMMENT ON COLUMN Branch.stacked_on IS 'The Launchpad branch that this branch is stacked on (if any).';
 COMMENT ON COLUMN Branch.distroseries IS 'The distribution series that the branch belongs to.';
 COMMENT ON COLUMN Branch.sourcepackagename IS 'The source package this is a branch of.';
+COMMENT ON COLUMN Branch.size_on_disk IS 'The size in bytes of this branch in the mirrored area.';
 
 -- BranchJob
 
@@ -149,13 +153,13 @@ COMMENT ON COLUMN Bug.date_last_message IS 'When the last BugMessage was attache
 COMMENT ON COLUMN Bug.number_of_duplicates IS 'The number of bugs marked as duplicates of this bug, populated by a trigger after setting the duplicateof of bugs.';
 COMMENT ON COLUMN Bug.message_count IS 'The number of messages (currently just comments) on this bugbug, maintained by the set_bug_message_count_t trigger.';
 COMMENT ON COLUMN Bug.users_affected_count IS 'The number of users affected by this bug, maintained by the set_bug_users_affected_count_t trigger.';
+COMMENT ON COLUMN Bug.hotness IS 'The relevance of this bug. This value is computed periodically using bug_affects_person and other bug values.';
 
 -- BugBranch
 COMMENT ON TABLE BugBranch IS 'A branch related to a bug, most likely a branch for fixing the bug.';
 COMMENT ON COLUMN BugBranch.bug IS 'The bug associated with this branch.';
 COMMENT ON COLUMN BugBranch.branch IS 'The branch associated to the bug.';
 COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this branch became interesting to this bug, and/or may contain a fix for the bug.';
-COMMENT ON COLUMN BugBranch.status IS 'The status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
 
@@ -208,6 +212,8 @@ COMMENT ON COLUMN BugTask.date_triaged IS 'The date when this bug transitioned t
 COMMENT ON COLUMN BugTask.date_fix_committed IS 'The date when this bug transitioned to a status >= FIXCOMMITTED.';
 COMMENT ON COLUMN BugTask.date_fix_released IS 'The date when this bug transitioned to a FIXRELEASED status.';
 COMMENT ON COLUMN BugTask.date_left_closed IS 'The date when this bug last transitioned out of a CLOSED status.';
+COMMENT ON COLUMN BugTask.date_milestone_set IS 'The date when this bug was targed to the milestone that is currently set.';
+COMMENT ON COLUMN BugTask.hotness_rank IS 'The hotness bin in which this bugtask appears, as a value from the BugTaskHotnessRank enumeration.';
 
 
 -- BugNotification
@@ -599,11 +605,12 @@ COMMENT ON COLUMN ProductLicense.license IS 'An integer referencing a value in t
 -- ProductRelease
 
 COMMENT ON TABLE ProductRelease IS 'A Product Release. This is table stores information about a specific ''upstream'' software release, like Apache 2.0.49 or Evolution 1.5.4.';
-COMMENT ON COLUMN ProductRelease.version IS 'This is a text field containing the version string for this release, such as ''1.2.4'' or ''2.0.38'' or ''7.4.3''.';
---COMMENT ON COLUMN ProductRelease.codename IS 'This is the GSV Name of this release, like ''that, and a pair of testicles'' or ''All your base-0 are belong to us''. Many upstream projects are assigning fun names to their releases - these go in this field.';
-COMMENT ON COLUMN ProductRelease.summary IS 'A summary of this ProductRelease. This should be a very brief overview of changes and highlights, just a short paragraph of text. The summary is usually displayed in bold at the top of a page for this product release, above the more detailed description or changelog.';
-COMMENT ON COLUMN ProductRelease.productseries IS 'A pointer to the Product Series this release forms part of. Using a Product Series allows us to distinguish between releases on stable and development branches of a product even if they are interspersed in time.';
 COMMENT ON COLUMN ProductRelease.milestone IS 'The milestone for this product release. This is scheduled to become a NOT NULL column, so every product release will be linked to a unique milestone.';
+COMMENT ON COLUMN ProductRelease.datecreated IS 'The timestamp when this product release was created.';
+COMMENT ON COLUMN ProductRelease.datereleased IS 'The date when this version of the product was released.';
+COMMENT ON COLUMN ProductRelease.release_notes IS 'Description of changes in this product release.';
+COMMENT ON COLUMN ProductRelease.changelog IS 'Detailed description of changes in this product release.';
+COMMENT ON COLUMN ProductRelease.owner IS 'The person who created this product release.';
 
 -- ProductReleaseFile
 
@@ -623,32 +630,6 @@ COMMENT ON COLUMN ProductSeries.name IS 'The name of the ProductSeries is like a
 COMMENT ON COLUMN ProductSeries.status IS 'The current status of this productseries.';
 COMMENT ON COLUMN ProductSeries.summary IS 'A summary of this Product Series. A good example would include the date the series was initiated and whether this is the current recommended series for people to use. The summary is usually displayed at the top of the page, in bold, just beneath the title and above the description, if there is a description field.';
 COMMENT ON COLUMN ProductSeries.driver IS 'This is a person or team who can approve spes and bugs for implementation or fixing in this specific series. Note that the product drivers and project drivers can also do this for any series in the product or project, so use this only for the specific team responsible for this specific series.';
-COMMENT ON COLUMN ProductSeries.importstatus IS 'A status flag which
-gives the state of our efforts to import the upstream code from its revision
-control system and publish that in the baz revision control system. The
-allowed values are documented in ImportStatus.';
-COMMENT ON COLUMN ProductSeries.rcstype IS 'The revision control system used
-by upstream for this product series. The value is defined in
-dbschema.RevisionControlSystems.  If NULL, then there should be no CVS or
-SVN information attached to this productseries, otherwise the relevant
-fields for CVS or SVN etc should be filled out.';
-COMMENT ON COLUMN ProductSeries.cvsroot IS 'The CVS root where this
-productseries hosts its code. Only used if rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.cvsmodule IS 'The CVS module which contains
-the upstream code for this productseries. Only used if rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.cvsmodule IS 'The CVS branch that contains
-the upstream code for this productseries.  Only used if rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.cvstarfileurl IS 'The URL of a tarfile of
-the CVS repository for this productseries. This is an optimisation of the
-CVS import process - instead of hitting the server to pass us every set of
-changes in history, we can sometimes arrange to be given a tarfile of the
-CVS repository and then process it all locally. Once imported, we switch
-back to using the CVS server for ongoing syncronization.  Only used if
-rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.svnrepository IS 'The URL of the SVN branch
-where the upstream productseries code can be found. This single URL is the
-equivalent of the cvsroot, cvsmodule and cvsbranch for CVS. Only used if
-rcstype is SVN.';
 COMMENT ON COLUMN ProductSeries.releasefileglob IS 'A fileglob that lets us
 see which URLs are potentially new upstream tarball releases. For example:
 http://ftp.gnu.org/gnu/libtool/libtool-1.5.*.gz.';
@@ -656,31 +637,12 @@ COMMENT ON COLUMN ProductSeries.releaseverstyle IS 'An enum giving the style
 of this product series release version numbering system.  The options are
 documented in dbschema.UpstreamReleaseVersionStyle.  Most applications use
 Gnu style numbering, but there are other alternatives.';
-COMMENT ON COLUMN ProductSeries.dateprocessapproved IS 'The timestamp when
-this upstream import was certified for processing. Processing means it has
-passed autotesting, and is being moved towards production syncing. If the
-sync goes well, it will be approved for sync and then be fully in
-production.';
-COMMENT ON COLUMN ProductSeries.datesyncapproved IS 'The timestamp when this
-upstream import was certified for ongoing syncronisation.';
-COMMENT ON COLUMN ProductSeries.dateautotested IS 'This upstream revision
-control system target has passed automatic testing. It can probably be moved
-towards production sync status. This date is the timestamp when it passed
-the autotester. The autotester allows us to find the low hanging fruit that
-is easily brought into the bazaar import system by highlighting repositories
-which had no apparent difficulty in being imported.';
-COMMENT ON COLUMN ProductSeries.datestarted IS 'The timestamp when we last
-initiated an import test or sync of this upstream repository.';
-COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
-completed an import test or sync of this upstream repository.';
-COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last successfully completed a production sync of this upstream repository.';
-COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch''s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
-COMMENT ON COLUMN ProductSeries.import_branch IS 'The VCS imports branch for
-this product series.  If user_branch is not set, then this is considered the
-product series branch.';
-COMMENT ON COLUMN ProductSeries.user_branch IS 'The branch for this product
-series, as set by the user.  If this is not set, then import_branch is
-considered to be the product series branch';
+COMMENT ON COLUMN ProductSeries.branch IS 'The branch for this product
+series.';
+COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'Level of
+translations imports from codehosting branch: None, templates only, templates
+and translations. See TranslationsBranchImportMode.';
+COMMENT ON COLUMN ProductSeries.translations_branch IS 'Branch to push translations updates to.';
 
 -- ProductSeriesCodeImport
 
@@ -780,6 +742,16 @@ COMMENT ON COLUMN RevisionAuthor.name IS 'The exact text extracted from the bran
 COMMENT ON COLUMN RevisionAuthor.email IS 'A valid email address extracted from the name.  This email address may or may not be associated with a Launchpad user at this stage.';
 COMMENT ON COLUMN RevisionAuthor.person IS 'The Launchpad person that has a verified email address that matches the email address of the revision author.';
 
+-- RevisionCache
+COMMENT ON TABLE RevisionCache IS 'A cache of revisions where the revision date is in the last 30 days.';
+COMMENT ON COLUMN RevisionCache.revision IS 'A reference to the actual revision.';
+COMMENT ON COLUMN RevisionCache.revision_author IS 'A refernce to the revision author for the revision.';
+COMMENT ON COLUMN RevisionCache.revision_date IS 'The date the revision was made.  Should be within 30 days of today (or the cleanup code is not cleaning up).';
+COMMENT ON COLUMN RevisionCache.product IS 'The product that the revision is found in (if it is indeed in a particular product).';
+COMMENT ON COLUMN RevisionCache.distroseries IS 'The distroseries for which a source package branch contains the revision.';
+COMMENT ON COLUMN RevisionCache.sourcepackagename IS 'The sourcepackagename for which a source package branch contains the revision.';
+COMMENT ON COLUMN RevisionCache.private IS 'True if the revision is only found in private branches, False if it can be found in a non-private branch.';
+
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
 COMMENT ON COLUMN Sprint.driver IS 'The driver (together with the registrant or owner) is responsible for deciding which topics will be accepted onto the agenda of the sprint.';
@@ -791,8 +763,11 @@ COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of
 
 -- SprintAttendance
 COMMENT ON TABLE SprintAttendance IS 'The record that someone will be attending a particular sprint or meeting.';
+COMMENT ON COLUMN SprintAttendance.attendee IS 'The person attending the sprint.';
+COMMENT ON COLUMN SprintAttendance.sprint IS 'The sprint the person is attending.';
 COMMENT ON COLUMN SprintAttendance.time_starts IS 'The time from which the person will be available to participate in meetings at the sprint.';
 COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the sprint or conference - this is the last time at which the person is available for meetings during the sprint.';
+COMMENT ON COLUMN SprintAttendance.is_physical IS 'Is the person physically attending the sprint';
 
 
 -- SprintSpecification
@@ -1016,7 +991,7 @@ COMMENT ON COLUMN PackageUpload.distroseries IS 'This integer field refers to th
 
 COMMENT ON COLUMN PackageUpload.pocket IS 'This is the pocket the upload is targeted at.';
 
-COMMENT ON COLUMN PackageUpload.changesfile IS 'The changes file associated with this upload.';
+COMMENT ON COLUMN PackageUpload.changesfile IS 'The changes file associated with this upload. It is null for records refering to a delayed-copy.';
 
 COMMENT ON COLUMN PackageUpload.archive IS 'The archive to which this upload is targetted.';
 
@@ -1455,6 +1430,7 @@ COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
+COMMENT ON COLUMN LibraryFileContent.sha256 IS 'The SHA256 sum of the file''s contents';
 
 -- LibraryFileAlias
 
@@ -1466,6 +1442,17 @@ COMMENT ON COLUMN LibraryFileAlias.expires IS 'The expiry date of this file. If 
 COMMENT ON COLUMN LibraryFileAlias.last_accessed IS 'Roughly when this file was last retrieved from the Librarian. Initially set to this item''s creation date.';
 COMMENT ON COLUMN LibraryFileAlias.date_created IS 'The timestamp when this alias was created.';
 COMMENT ON COLUMN LibraryFileAlias.restricted IS 'Is this file available only from the restricted librarian?';
+COMMENT ON COLUMN LibraryFileAlias.hits IS 'The number of times this file has been downloaded.';
+
+COMMENT ON TABLE LibraryFileDownloadCount IS 'The number of daily downloads for a given LibraryFileAlias.';
+COMMENT ON COLUMN LibraryFileDownloadCount.libraryfilealias IS 'The LibraryFileAlias.';
+COMMENT ON COLUMN LibraryFileDownloadCount.day IS 'The day of the downloads.';
+COMMENT ON COLUMN LibraryFileDownloadCount.count IS 'The number of downloads.';
+COMMENT ON COLUMN LibraryFileDownloadCount.country IS 'The country from where the download requests came from.';
+
+COMMENT ON TABLE ParsedApacheLog IS 'A parsed apache log file for librarian.';
+COMMENT ON COLUMN ParsedApacheLog.first_line IS 'The first line of this log file, smashed to ASCII. This uniquely identifies the log file, even if its filename is changed by log rotation or archival.';
+COMMENT ON COLUMN ParsedApacheLog.bytes_read IS 'The number of bytes from this log file that have been parsed.';
 
 -- SourcePackageReleaseFile
 
@@ -1498,12 +1485,13 @@ COMMENT ON COLUMN AuthToken.date_consumed IS 'The date and time when this token 
 COMMENT ON TABLE Milestone IS 'An identifier that helps a maintainer group together things in some way, e.g. "1.2" could be a Milestone that bazaar developers could use to mark a task as needing fixing in bazaar 1.2.';
 COMMENT ON COLUMN Milestone.name IS 'The identifier text, e.g. "1.2."';
 COMMENT ON COLUMN Milestone.product IS 'The product for which this is a milestone.';
+COMMENT ON COLUMN Milestone.codename IS 'A fun or easier to remember name for the milestone/release.';
 COMMENT ON COLUMN Milestone.distribution IS 'The distribution to which this milestone belongs, if it is a distro milestone.';
 COMMENT ON COLUMN Milestone.distroseries IS 'The distroseries for which this is a milestone. A milestone on a distroseries is ALWAYS also a milestone for the same distribution. This is because milestones started out on products/distributions but are moving to being on series/distroseries.';
 COMMENT ON COLUMN Milestone.productseries IS 'The productseries for which this is a milestone. A milestone on a productseries is ALWAYS also a milestone for the same product. This is because milestones started out on products/distributions but are moving to being on series/distroseries.';
 COMMENT ON COLUMN Milestone.dateexpected IS 'If set, the date on which we expect this milestone to be delivered. This allows for optional sorting by date.';
-COMMENT ON COLUMN Milestone.visible IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
-COMMENT ON COLUMN Milestone.description IS 'A description of the milestone. This can be used to summarize the changes included in past milestones and to document the status of current milestones.';
+COMMENT ON COLUMN Milestone.active IS 'Whether or not this milestone should be displayed in general listings. All milestones will be visible on the "page of milestones for product foo", but we want to be able to screen out obviously old milestones over time, for the general listings and vocabularies.';
+COMMENT ON COLUMN Milestone.summary IS 'This can be used to summarize the changes included in past milestones and to document the status of current milestones.';
 
 COMMENT ON TABLE PushMirrorAccess IS 'Records which users can update which push mirrors';
 COMMENT ON COLUMN PushMirrorAccess.name IS 'Name of an arch archive on the push mirror, e.g. lord@emf.net--2003-example';
@@ -1844,10 +1832,10 @@ COMMENT ON COLUMN TranslationImportQueueEntry.error_output IS 'Error output from
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
 COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
+COMMENT ON COLUMN Archive.displayname IS 'User defined displayname for this archive.';
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size, in MiB, allowed for this PPA.';
-COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
 COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
 COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 COMMENT ON COLUMN Archive.private IS 'Whether or not the archive is private. This affects the global visibility of the archive.';
@@ -1856,7 +1844,7 @@ COMMENT ON COLUMN Archive.sources_cached IS 'Number of sources already cached fo
 COMMENT ON COLUMN Archive.binaries_cached IS 'Number of binaries already cached for this archive.';
 COMMENT ON COLUMN Archive.require_virtualized IS 'Whether this archive has binaries that should be built on a virtual machine, e.g. PPAs';
 COMMENT ON COLUMN Archive.name IS 'The name of the archive.';
-COMMENT ON COLUMN Archive.name IS 'Whether this archive should be published.';
+COMMENT ON COLUMN Archive.publish IS 'Whether this archive should be published.';
 COMMENT ON COLUMN Archive.date_updated IS 'When were the rebuild statistics last updated?';
 COMMENT ON COLUMN Archive.total_count IS 'How many source packages are in the rebuild archive altogether?';
 COMMENT ON COLUMN Archive.pending_count IS 'How many packages still need building?';
@@ -1864,6 +1852,10 @@ COMMENT ON COLUMN Archive.succeeded_count IS 'How many source packages were buil
 COMMENT ON COLUMN Archive.failed_count IS 'How many packages failed to build?';
 COMMENT ON COLUMN Archive.building_count IS 'How many packages are building at present?';
 COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archive.';
+COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days before superseded or deleted binary files are expired in the librarian, or zero for never.';
+COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
+COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
+COMMENT ON COLUMN Archive.external_dependencies IS 'Newline-separated list of repositories to be used to retrieve any external build dependencies when building packages in this archive, in the format: deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]  The series variable is replaced with the series name of the context build.  This column is specifically and only intended for OEM migration to Launchpad and should be re-examined in October 2010 to see if it is still relevant.';
 
 -- ArchiveAuthToken
 
@@ -1889,6 +1881,8 @@ COMMENT ON COLUMN ArchivePermission.permission IS 'The permission type being gra
 COMMENT ON COLUMN ArchivePermission.person IS 'The person or team to whom the permission is being granted.';
 COMMENT ON COLUMN ArchivePermission.component IS 'The component to which this upload permission applies.';
 COMMENT ON COLUMN ArchivePermission.sourcepackagename IS 'The source package name to which this permission applies.  This can be used to provide package-level permissions to single users.';
+COMMENT ON COLUMN ArchivePermission.packageset IS 'The package set to which this permission applies.';
+COMMENT ON COLUMN ArchivePermission.explicit IS 'This flag is set for package sets containing high-profile packages that must not break and/or require specialist skills for proper handling e.g. the kernel.';
 
 -- ArchiveSubscriber
 
@@ -1999,6 +1993,9 @@ COMMENT ON COLUMN Entitlement.distribution IS 'The distribution to which this en
 COMMENT ON COLUMN Entitlement.product IS 'The product to which this entitlement applies.';
 COMMENT ON COLUMN Entitlement.project IS 'The project to which this entitlement applies.';
 
+-- OpenIdNonce
+COMMENT ON TABLE OpenIdNonce IS 'Nonces for our OpenID consumer.';
+
 -- OpenIdRPConfig
 COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
 COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';
@@ -2008,6 +2005,7 @@ COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
 COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
 COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
 COMMENT ON COLUMN OpenIdRPConfig.can_query_any_team IS 'This RP can query for membership of any or all teams, including private teams. This setting overrides any other private team query ACLs, and should not be used if more granular options are suitable.';
+COMMENT ON COLUMN OpenIdRPConfig.auto_authorize IS 'True if the user authorisation page is skipped by default for this RP.';
 
 --OpenIDRPSummary
 COMMENT ON TABLE OpenIDRPSummary IS 'The summary of the activity between a person and an RP.';
@@ -2053,6 +2051,12 @@ COMMENT ON COLUMN HWSystemFingerprint.fingerprint IS 'The fingerprint';
 COMMENT ON TABLE HWDriver IS 'Information about a driver for a device';
 COMMENT ON COLUMN HWDriver.package_name IS 'The Debian package name a driver is a part of';
 COMMENT ON COLUMN HWDriver.name IS 'The name of a driver.';
+
+COMMENT ON VIEW HWDriverNames IS 'A view returning the distinct driver names stored in HWDriver.';
+COMMENT ON COLUMN HWDriverNames.name IS 'The name of a driver.';
+
+COMMENT ON VIEW HWDriverPackageNames IS 'A view returning the distinct Debian package names stored in HWDriver.';
+COMMENT ON COLUMN HWDriverPackageNames.package_name IS 'The Debian package name a driver is a part of.';
 
 COMMENT ON TABLE HWVendorName IS 'A list of hardware vendor names.';
 COMMENT ON COLUMN HWVendorName.name IS 'The name of a vendor.';
@@ -2121,6 +2125,16 @@ COMMENT ON TABLE HWTestAnswerCountDevice IS 'Association of accumulated test res
 COMMENT ON COLUMN HWTestAnswerCountDevice.answer IS 'The test answer.';
 COMMENT ON COLUMN HWTestAnswerCountDevice.device_driver IS 'The device/driver combination.';
 
+
+COMMENT ON TABLE HWDMIHandle IS 'A DMI Handle appearing in the DMI data of a submission.';
+COMMENT ON COLUMN HWDMIHandle.handle IS 'The ID of the handle.';
+COMMENT ON COLUMN HWDMIHandle.type IS 'The type of the handle.';
+
+
+COMMENT ON TABLE HWDMIValue IS 'Key/value pairs of DMI data of a handle.';
+COMMENT ON COLUMN HWDMIValue.key IS 'The key.';
+COMMENT ON COLUMN HWDMIValue.value IS 'The value';
+COMMENT ON COLUMN HWDMIValue.handle IS 'The handle to which this key/value pair belongs.';
 
 -- Job
 
@@ -2212,3 +2226,42 @@ COMMENT ON COLUMN UserToUserEmail.recipient IS 'The person receiving this email.
 COMMENT ON COLUMN UserToUserEmail.date_sent IS 'The date the email was sent.';
 COMMENT ON COLUMN UserToUserEmail.subject IS 'The Subject: header.';
 COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';
+
+-- Packageset
+
+COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages (in a given distro series) for purposes like the control of upload permissions, etc.';
+COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
+COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package set';
+COMMENT ON COLUMN Packageset.name IS 'The name for the package set on hand.';
+COMMENT ON COLUMN Packageset.description IS 'The description for the package set on hand.';
+COMMENT ON COLUMN Packageset.packagesetgroup IS 'The group this package set is affiliated with.';
+COMMENT ON COLUMN Packageset.distroseries IS 'The distro series this package set belongs to.';
+
+-- PackagesetGroup
+
+COMMENT ON TABLE PackagesetGroup IS 'Package set groups keep track of equivalent package sets across distro series boundaries.';
+COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
+COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package
+set group.';
+
+-- PackagesetSources
+
+COMMENT ON TABLE PackagesetSources IS 'This table associates package sets and source package names.';
+COMMENT ON COLUMN PackagesetSources.packageset IS 'The associated package set.';
+COMMENT ON COLUMN PackagesetSources.sourcepackagename IS 'The associated source package name.';
+
+-- PackagesetInclusion
+COMMENT ON TABLE PackagesetInclusion IS 'sets may form a set-subset hierarchy; this table facilitates the definition of these set-subset relationships.';
+COMMENT ON COLUMN PackagesetInclusion.parent IS 'The package set that is including a subset.';
+COMMENT ON COLUMN PackagesetInclusion.child IS 'The package set that is being included as a subset.';
+
+-- FlatPackagesetInclusion
+COMMENT ON TABLE FlatPackagesetInclusion IS 'In order to facilitate the querying of set-subset relationships an expanded or flattened representation of the set-subset hierarchy is provided by this table.';
+COMMENT ON COLUMN FlatPackagesetInclusion.parent IS 'The package set that is (directly or indirectly) including a subset.';
+COMMENT ON COLUMN FlatPackagesetInclusion.child IS 'The package set that is being included as a subset.';
+
+-- SourcePackageFormatSelection
+COMMENT ON TABLE SourcePackageFormatSelection IS 'Allowed source package formats for a given distroseries.';
+COMMENT ON COLUMN SourcePackageFormatSelection.distroseries IS 'Refers to the distroseries in question.';
+COMMENT ON COLUMN SourcePackageFormatSelection.format IS 'The SourcePackageFormat to allow.';
+

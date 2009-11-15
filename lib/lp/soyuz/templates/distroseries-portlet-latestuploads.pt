@@ -1,0 +1,34 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  class="portlet"
+  tal:condition="context/getLatestUploads">
+  <h2>
+    <span class="see-all"><a
+      tal:attributes="href context/menu:overview/queue/fmt:url">All
+      uploads</a></span>
+    Latest uploads
+  </h2>
+
+  <ul id="latest-uploads" class="binary package">
+    <li tal:repeat="source context/getLatestUploads">
+      <a
+       tal:attributes="href source/fmt:url"
+       tal:content="source/displayname" />
+      <br /><span class="registered"> Upload by
+      <a tal:replace="structure source/sourcepackagerelease/creator/fmt:link" />
+      <tal:dateuploaded replace="source/dateuploaded/fmt:displaydate" />
+      </span>
+    </li>
+  </ul>
+
+  <ul class="horizontal">
+    <li>
+      <a tal:replace="structure context/menu:overview/queue/fmt:link" />
+    </li>
+    <li>
+      <a tal:replace="structure context/menu:overview/packaging/fmt:icon-link" />
+    </li>
+  </ul>
+</div>

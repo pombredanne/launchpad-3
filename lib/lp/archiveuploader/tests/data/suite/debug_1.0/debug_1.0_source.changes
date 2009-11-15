@@ -1,0 +1,20 @@
+Format: 1.8
+Date: Thu, 15 Apr 2009 15:14:09 +0100
+Source: debug
+Binary: debug-bin debug-dbg
+Architecture: source
+Version: 1.0
+Distribution: hoary
+Urgency: low
+Maintainer: Launchpad team <launchpad@lists.canonical.com>
+Changed-By: Celso Providelo <cprov@canonical.com>
+Description: 
+ debug-bin  - Stuff for testing
+ debug-dbg  - Stuff for testing DDEBs
+Changes: 
+ debug (1.0) hoary; urgency=low
+ .
+   * Testing debug binaries
+Files: 
+ f9361791f0d81a607f6b4ce911fdbb0d 419 devel optional debug_1.0.dsc
+ 499069ad47e21b7dde887b46eada8972 744 devel optional debug_1.0.tar.gz

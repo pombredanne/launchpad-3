@@ -1,10 +1,12 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 import warnings
 from datetime import datetime
 import re
+from textwrap import dedent
 
 import psycopg2
 from psycopg2.extensions import (
@@ -13,6 +15,11 @@ from psycopg2.extensions import (
 import pytz
 import storm
 from storm.databases.postgres import compile as postgres_compile
+from storm.expr import State
+from storm.expr import compile as storm_compile
+from storm.locals import Storm, Store
+from storm.zope.interfaces import IZStorm
+
 from sqlobject.sqlbuilder import sqlrepr
 import transaction
 
@@ -20,9 +27,11 @@ from twisted.python.util import mergeFunctionMetadata
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.interfaces import ISQLBase
+
 
 __all__ = [
     'alreadyInstalledMsg',
@@ -32,6 +41,7 @@ __all__ = [
     'commit',
     'ConflictingTransactionManagerError',
     'connect',
+    'convert_storm_clause_to_string',
     'cursor',
     'expire_from_cache',
     'flush_database_caches',
@@ -50,6 +60,7 @@ __all__ = [
     'rollback',
     'SQLBase',
     'sqlvalues',
+    'StupidCache',
     'ZopelessTransactionManager',]
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
@@ -100,11 +111,6 @@ class StupidCache:
         return self._cache.keys()
 
 
-# Monkey patch the cache into storm.store to override the standard
-# cache implementation for all stores.
-storm.store.Cache = StupidCache
-
-
 def _get_sqlobject_store():
     """Return the store used by the SQLObject compatibility layer."""
     # XXX: Stuart Bishop 20080725 bug=253542: The import is here to work
@@ -150,16 +156,7 @@ class LaunchpadStyle(storm.sqlobject.SQLObjectStyle):
 
 
 class SQLBase(storm.sqlobject.SQLObjectBase):
-    """Base class to use instead of SQLObject/SQLOS.
-
-    Annoying hack to allow us to use SQLOS features in Zope, and plain
-    SQLObject outside of Zope.  ("Zope" in this case means the Zope 3 Component
-    Architecture, i.e. the basic suite of services should be accessible via
-    zope.component.getService)
-
-    By default, this will act just like SQLOS.  Use a
-    ZopelessTransactionManager object to disable all the tricksy
-    per-thread connection stuff that SQLOS does.
+    """Base class emulating SQLObject for legacy database classes.
     """
     implements(ISQLBase)
     _style = LaunchpadStyle()
@@ -168,9 +165,49 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
     # SQLBase-derived objects missing an id.
     id = None
 
-    @staticmethod
-    def _get_store():
-        return _get_sqlobject_store()
+    def __init__(self, *args, **kwargs):
+        """Extended version of the SQLObjectBase constructor.
+
+        We we force use of the the master Store.
+
+        We refetch any parameters from different stores from the
+        correct master Store.
+        """
+        from canonical.launchpad.interfaces import IMasterStore
+        store = IMasterStore(self.__class__)
+
+        # The constructor will fail if objects from a different Store
+        # are passed in. We need to refetch these objects from the correct
+        # master Store if necessary so the foreign key references can be
+        # constructed.
+        # XXX StuartBishop 2009-03-02 bug=336867: We probably want to remove
+        # this code - there are enough other places developers have to be
+        # aware of the replication # set boundaries. Why should
+        # Person(..., account=an_account) work but
+        # some_person.account = an_account fail?
+        for key, argument in kwargs.items():
+            argument = removeSecurityProxy(argument)
+            if not isinstance(argument, Storm):
+                continue
+            argument_store = Store.of(argument)
+            if argument_store is not store:
+                new_argument = store.find(
+                    argument.__class__, id=argument.id).one()
+                assert new_argument is not None, (
+                    '%s not yet synced to this store' % repr(argument))
+                kwargs[key] = new_argument
+
+        store.add(self)
+        try:
+            self._create(None, **kwargs)
+        except:
+            store.remove(self)
+            raise
+
+    @classmethod
+    def _get_store(cls):
+        from canonical.launchpad.interfaces import IStore
+        return IStore(cls)
 
     def __repr__(self):
         # XXX jamesh 2008-05-09:
@@ -178,6 +215,37 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
         # A number of the doctests rely on this formatting.
         return '<%s at 0x%x>' % (self.__class__.__name__, id(self))
 
+    def destroySelf(self):
+        from canonical.launchpad.interfaces import IMasterObject
+        my_master = IMasterObject(self)
+        if self is my_master:
+            super(SQLBase, self).destroySelf()
+        else:
+            my_master.destroySelf()
+
+    def __eq__(self, other):
+        """Equality operator.
+
+        Objects compare equal if:
+            - They are the same instance, or
+            - They have the same class and id, and the id is not None.
+
+        These rules allows objects retrieved from different stores to
+        compare equal. The 'is' comparison is to support newly created
+        objects that don't yet have an id (and by definition only exist
+        in the Master store).
+        """
+        naked_self = removeSecurityProxy(self)
+        naked_other = removeSecurityProxy(other)
+        return (
+            (naked_self is naked_other)
+            or (naked_self.__class__ == naked_other.__class__
+                and naked_self.id is not None
+                and naked_self.id == naked_other.id))
+
+    def __ne__(self, other):
+        """Inverse of __eq__."""
+        return not (self == other)
 
 alreadyInstalledMsg = ("A ZopelessTransactionManager with these settings is "
 "already installed.  This is probably caused by calling initZopeless twice.")
@@ -198,43 +266,65 @@ class ZopelessTransactionManager(object):
                              "directly instantiated.")
 
     @classmethod
-    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
-                     isolation=ISOLATION_LEVEL_DEFAULT):
-        # Get the existing connection info. We use the MAIN MASTER
-        # Store, as this is the only Store code still using this
-        # deprecated code interacts with.
-        connection_string = config.database.main_master
+    def _get_zopeless_connection_config(self, dbname, dbhost):
+        # This method exists for testability.
+        main_connection_string = config.database.main_master
+        auth_connection_string = config.database.auth_master
 
         # Override dbname and dbhost in the connection string if they
         # have been passed in.
         if dbname is not None:
-            connection_string = re.sub(
-                    r'dbname=\S*', r'dbname=%s' % dbname, connection_string)
+            main_connection_string = re.sub(
+                r'dbname=\S*', r'dbname=%s' % dbname, main_connection_string)
         else:
-            match = re.search(r'dbname=(\S*)', connection_string)
+            match = re.search(r'dbname=(\S*)', main_connection_string)
             if match is not None:
                 dbname = match.group(1)
 
         if dbhost is not None:
-            connection_string = re.sub(
-                    r'host=\S*', r'host=%s' % dbhost, connection_string)
+            main_connection_string = re.sub(
+                    r'host=\S*', r'host=%s' % dbhost, main_connection_string)
         else:
-            match = re.search(r'host=(\S*)', connection_string)
+            match = re.search(r'host=(\S*)', main_connection_string)
             if match is not None:
                 dbhost = match.group(1)
+        return main_connection_string, auth_connection_string, dbname, dbhost
 
-        if dbuser is None:
-            dbuser = config.launchpad.dbuser
+    @classmethod
+    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
+                     isolation=ISOLATION_LEVEL_DEFAULT):
+        # Connect to the auth master store as well, as some scripts might need
+        # to create EmailAddresses and Accounts.
 
-        # Construct a config fragment:
-        overlay = '[database]\n'
-        overlay += 'main_master: %s\n' % connection_string
-        overlay += 'isolation_level: %s\n' % {
+        main_connection_string, auth_connection_string, dbname, dbhost = (
+            cls._get_zopeless_connection_config(dbname, dbhost))
+
+        assert dbuser is not None, '''
+            dbuser is now required. All scripts must connect as unique
+            database users.
+            '''
+
+        isolation_level = {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
             ISOLATION_LEVEL_READ_COMMITTED: 'read_committed',
             ISOLATION_LEVEL_SERIALIZABLE: 'serializable'}[isolation]
+
+        # Construct a config fragment:
+        overlay = dedent("""\
+            [database]
+            main_master: %(main_connection_string)s
+            auth_master: %(auth_connection_string)s
+            isolation_level: %(isolation_level)s
+            """ % vars())
+
         if dbuser:
-            overlay += '\n[launchpad]\ndbuser: %s\n' % dbuser
+            # XXX 2009-05-07 stub bug=373252: Scripts should not be connecting
+            # as the launchpad_auth database user.
+            overlay += dedent("""\
+                [launchpad]
+                dbuser: %(dbuser)s
+                auth_dbuser: launchpad_auth
+                """ % vars())
 
         if cls._installed is not None:
             if cls._config_overlay != overlay:
@@ -264,13 +354,33 @@ class ZopelessTransactionManager(object):
         Other stores do not need to be reset, as code using other stores
         or explicit flavors isn't using this compatibility layer.
         """
-        store = _get_sqlobject_store()
-        connection = store._connection
-        if connection._state == storm.database.STATE_CONNECTED:
-            if connection._raw_connection is not None:
-                connection._raw_connection.close()
-            connection._raw_connection = None
-            connection._state = storm.database.STATE_DISCONNECTED
+        main_store = _get_sqlobject_store()
+        # XXX: salgado, 2009-11-06, bug=253542: The import is here to work
+        # around a particularly convoluted circular import.
+        from canonical.launchpad.webapp.interfaces import (
+            IStoreSelector, AUTH_STORE, DEFAULT_FLAVOR)
+        auth_store = getUtility(IStoreSelector).get(
+            AUTH_STORE, DEFAULT_FLAVOR)
+        for store in [main_store, auth_store]:
+            connection = store._connection
+            if connection._state == storm.database.STATE_CONNECTED:
+                if connection._raw_connection is not None:
+                    connection._raw_connection.close()
+
+                # This method assumes that calling transaction.abort() will
+                # call rollback() on the store, but this is no longer the
+                # case as of jamesh's fix for bug 230977; Stores are not
+                # registered with the transaction manager until they are
+                # used. While storm doesn't provide an API which does what
+                # we want, we'll go under the covers and emit the
+                # register-transaction event ourselves. This method is
+                # only called by the test suite to kill the existing
+                # connections so the Store's reconnect with updated
+                # connection settings.
+                store._event.emit('register-transaction')
+
+                connection._raw_connection = None
+                connection._state = storm.database.STATE_DISCONNECTED
         transaction.abort()
 
     @classmethod
@@ -484,9 +594,9 @@ def sqlvalues(*values, **kwvalues):
         raise TypeError(
             "Use either positional or keyword values with sqlvalue.")
     if values:
-        return tuple([quote(item) for item in values])
+        return tuple(quote(item) for item in values)
     elif kwvalues:
-        return dict([(key, quote(value)) for key, value in kwvalues.items()])
+        return dict((key, quote(value)) for key, value in kwvalues.items())
 
 
 def quote_identifier(identifier):
@@ -512,12 +622,53 @@ def quote_identifier(identifier):
 quoteIdentifier = quote_identifier # Backwards compatibility for now.
 
 
-def flush_database_updates():
-    """Flushes all pending database updates for the MAIN DEFAULT store.
+def convert_storm_clause_to_string(storm_clause):
+    """Convert a Storm expression into a plain string.
 
-    We only bother with the MAIN DEFAULT store as this is all that is needed
-    for the SQLObject compatibility layer. Storm aware code should be using
-    the Storm stores directly.
+    :param storm_clause: A Storm expression
+
+    A helper function allowing to use a Storm expressions in old-style
+    code which builds for example WHERE expressions as plain strings.
+
+    >>> from lp.bugs.model.bug import Bug
+    >>> from lp.bugs.model.bugtask import BugTask
+    >>> from lp.bugs.interfaces.bugtask import BugTaskImportance
+    >>> from storm.expr import And, Or
+
+    >>> print convert_storm_clause_to_string(BugTask)
+    BugTask
+
+    >>> print convert_storm_clause_to_string(BugTask.id == 16)
+    BugTask.id = 16
+
+    >>> print convert_storm_clause_to_string(
+    ...     BugTask.importance == BugTaskImportance.UNKNOWN)
+    BugTask.importance = 999
+
+    >>> print convert_storm_clause_to_string(Bug.title == "foo'bar'")
+    Bug.title = 'foo''bar'''
+
+    >>> print convert_storm_clause_to_string(
+    ...     Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...        BugTask.importance == BugTaskImportance.HIGH))
+    BugTask.importance = 999 OR BugTask.importance = 40
+
+    >>> print convert_storm_clause_to_string(
+    ...    And(Bug.title == 'foo', BugTask.bug == Bug.id,
+    ...        Or(BugTask.importance == BugTaskImportance.UNKNOWN,
+    ...           BugTask.importance == BugTaskImportance.HIGH)))
+    Bug.title = 'foo' AND BugTask.bug = Bug.id AND
+    (BugTask.importance = 999 OR BugTask.importance = 40)
+    """
+    state = State()
+    clause = storm_compile(storm_clause, state)
+    if len(state.parameters):
+        parameters = [param.get(to_db=True) for param in state.parameters]
+        clause = clause.replace('?', '%s') % sqlvalues(*parameters)
+    return clause
+
+def flush_database_updates():
+    """Flushes all pending database updates.
 
     When SQLObject's _lazyUpdate flag is set, then it's possible to have
     changes written to objects that aren't flushed to the database, leading to
@@ -539,12 +690,13 @@ def flush_database_updates():
         assert Beer.select("name LIKE 'Vic%'").count() == 0  # This will pass
 
     """
-    _get_sqlobject_store().flush()
+    zstorm = getUtility(IZStorm)
+    for name, store in zstorm.iterstores():
+        store.flush()
 
 
 def flush_database_caches():
-    """Flush all cached values from the database for the current connection.
-    SQLObject compatibility - DEPRECATED.
+    """Flush all database caches.
 
     SQLObject caches field values from the database in SQLObject
     instances.  If SQL statements are issued that change the state of
@@ -555,31 +707,32 @@ def flush_database_caches():
     connection's cache, and synchronises them with the database.  This
     ensures that they all reflect the values in the database.
     """
-    store = _get_sqlobject_store()
-    store.flush()
-    store.invalidate()
+    zstorm = getUtility(IZStorm)
+    for name, store in zstorm.iterstores():
+        store.flush()
+        store.invalidate()
 
 
 def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
-    def wrapped(*args, **kwargs):
+    def block_implicit_flushes_decorator(*args, **kwargs):
         store = _get_sqlobject_store()
         store.block_implicit_flushes()
         try:
             return func(*args, **kwargs)
         finally:
             store.unblock_implicit_flushes()
-    return mergeFunctionMetadata(func, wrapped)
+    return mergeFunctionMetadata(func, block_implicit_flushes_decorator)
 
 
 def reset_store(func):
     """Function decorator that resets the main store."""
-    def wrapped(*args, **kwargs):
+    def reset_store_decorator(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         finally:
             _get_sqlobject_store().reset()
-    return mergeFunctionMetadata(func, wrapped)
+    return mergeFunctionMetadata(func, reset_store_decorator)
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid

@@ -18,10 +18,11 @@ follows:
     4) The token is now marked as consumed, together with any other
        tokens of the same type and for the same email address.
 
-    >>> from canonical.launchpad.database.person import Person
+    >>> from lp.registry.model.person import Person
+    >>> from canonical.launchpad.interfaces.authtoken import LoginTokenType
     >>> from canonical.launchpad.interfaces.logintoken import (
-    ...     ILoginTokenSet, LoginTokenType)
-    >>> from canonical.launchpad.mail import stub
+    ...     ILoginTokenSet)
+    >>> from lp.services.mail import stub
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> import transaction
     >>> foobar = Person.byName('name16')
@@ -31,11 +32,20 @@ Let's create a new LoginToken to confirm an email address for foobar.
     >>> token = getUtility(ILoginTokenSet).new(
     ...     foobar, 'foo.bar@canonical.com', 'foo.bar2@canonical.com',
     ...     LoginTokenType.VALIDATEEMAIL)
-    >>> token.sendEmailValidationRequest('http://localhost:9000')
+    >>> token.sendEmailValidationRequest()
     >>> transaction.commit()
     >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
     >>> to_addrs
     ['foo.bar2@canonical.com']
+
+The email does not have a precedence header because the user implicitly
+requested it to complete his task.
+
+    >>> import email
+
+    >>> msg = email.message_from_string(raw_msg)
+    >>> print msg['Precedence']
+    None
 
 As the process is not yet finished, foobar will see this as one of his
 unconfirmed email addresses.

@@ -1,5 +1,8 @@
 #!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """Send branch mail.
@@ -13,10 +16,11 @@ import _pythonpath
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.codehosting.branchfs import get_scanner_server
-from canonical.codehosting.jobs import JobRunner
-from canonical.launchpad.interfaces.branch import IRevisionMailJobSource
-from canonical.launchpad.scripts.base import LaunchpadCronScript
+from lp.codehosting.vfs import get_scanner_server
+from lp.services.job.runner import JobRunner
+from lp.code.interfaces.branchjob import (
+    IRevisionMailJobSource, IRevisionsAddedJobSource)
+from lp.services.scripts.base import LaunchpadCronScript
 from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
@@ -25,16 +29,20 @@ class RunRevisionMailJobs(LaunchpadCronScript):
 
     def main(self):
         globalErrorUtility.configure('sendbranchmail')
-        runner = JobRunner.fromReady(getUtility(IRevisionMailJobSource))
+        jobs = list(getUtility(IRevisionMailJobSource).iterReady())
+        jobs.extend(getUtility(IRevisionsAddedJobSource).iterReady())
+        runner = JobRunner(jobs, self.logger)
         server = get_scanner_server()
         server.setUp()
         try:
             runner.runAll()
         finally:
             server.tearDown()
-        print 'Ran %d RevisionMailJobs.' % len(runner.completed_jobs)
+        self.logger.info(
+            'Ran %d RevisionMailJobs.' % len(runner.completed_jobs))
 
 
 if __name__ == '__main__':
-    script = RunRevisionMailJobs('sendcodemail', config.branchscanner.dbuser)
+    script = RunRevisionMailJobs(
+        'sendbranchmail', config.sendbranchmail.dbuser)
     script.lock_and_run()

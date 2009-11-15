@@ -8,15 +8,15 @@
 
 * googlesearchservice-no-results.xml
 
-/cse?client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=bug&start=0 googlesearchservice-bugs-1.xml
+/cse?client=google-csbe&cx=ABCDEF2323&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=bug&start=0 googlesearchservice-bugs-1.xml
 
-/cse?client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=bug&start=20 googlesearchservice-bugs-2.xml
+/cse?client=google-csbe&cx=ABCDEF2323&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=bug&start=20 googlesearchservice-bugs-2.xml
 
-/cse?client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=launchpad&start=0 googlesearchservice-bugs-1.xml
+/cse?client=google-csbe&cx=ABCDEF2323&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=launchpad&start=0 googlesearchservice-bugs-1.xml
 
-/cse?client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=launchpad&start=20 googlesearchservice-bugs-2.xml
+/cse?client=google-csbe&cx=ABCDEF2323&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=launchpad&start=20 googlesearchservice-bugs-2.xml
 
-/cse?client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=gnomebaker&start=0 googlesearchservice-incomplete-response.xml
+/cse?client=google-csbe&cx=ABCDEF2323&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=gnomebaker&start=0 googlesearchservice-incomplete-response.xml
 
-/cse?client=google-csbe&cx=011948274177882366108%3Aixpjdn21yfg&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=no-meaningful&start=0 googlesearchservice-no-meaningful-results.xml
+/cse?client=google-csbe&cx=ABCDEF2323&ie=utf8&num=20&oe=utf8&output=xml_no_dtd&q=no-meaningful&start=0 googlesearchservice-no-meaningful-results.xml
 

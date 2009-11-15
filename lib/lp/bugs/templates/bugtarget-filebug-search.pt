@@ -1,0 +1,60 @@
+<filebug-search
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only">
+
+  <div metal:fill-slot="heading">
+    <div tal:condition="view/isPrivate" id="privacy" class="aside private">
+      This report will be private, though you can disclose it later.
+    </div>
+    <h2>Report a bug</h2>
+  </div>
+
+  <div metal:fill-slot="main">
+    <div class="yui-g">
+
+      <tal:does-not-use-malone condition="not: view/contextUsesMalone">
+        <div class="top-portlet">
+          <metal:not_uses_malone
+              use-macro="context/@@+filebug-macros/not_uses_malone" />
+        </div>
+      </tal:does-not-use-malone>
+
+      <tal:uses-malone tal:condition="view/contextUsesMalone">
+        <div class="top-portlet">
+          <div metal:use-macro="context/@@launchpad_form/form">
+            <table class="form" metal:fill-slot="widgets">
+              <tal:product_widget
+                  tal:define="widget nocall:view/widgets/product|nothing"
+                  tal:condition="widget">
+                <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+              </tal:product_widget>
+              <tal:bugtarget
+                  tal:define="widget nocall:view/widgets/bugtarget|nothing"
+                  tal:condition="widget">
+                <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+              </tal:bugtarget>
+              <tal:hidden_tags tal:replace="structure view/widgets/tags/hidden" />
+              <tr>
+                <td colspan="2">
+                  Please describe the bug in a few words, for example,
+                  "weather applet crashes on logout":
+                </td>
+              </tr>
+              <tal:title_widget tal:define="widget nocall:view/widgets/title">
+                <metal:widget use-macro="context/@@launchpad_form/widget_row" />
+              </tal:title_widget>
+            </table>
+            <div class="actions" metal:fill-slot="buttons">
+              <input tal:replace="structure view/actions/field.actions.search/render" />
+            </div>
+          </div>
+        </div>
+      </tal:uses-malone>
+
+    </div>
+  </div>
+
+</filebug-search>

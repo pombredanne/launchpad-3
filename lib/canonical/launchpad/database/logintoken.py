@@ -1,10 +1,10 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
 __all__ = ['LoginToken', 'LoginTokenSet']
-
-import random
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -19,13 +19,16 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.components.tokens import (
+    create_unique_token_for_table)
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import (
     ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
     LoginTokenType)
+from canonical.launchpad.interfaces.lpstorm import IMasterObject
+from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -41,13 +44,20 @@ class LoginToken(SQLBase):
     email = StringCol(dbName='email', notNull=True)
     token = StringCol(dbName='token', unique=True)
     tokentype = EnumCol(dbName='tokentype', notNull=True, enum=LoginTokenType)
-    created = UtcDateTimeCol(dbName='created', notNull=True)
+    date_created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False,
                             default=None)
     date_consumed = UtcDateTimeCol(default=None)
     password = '' # Quick fix for Bug #2481
 
     title = 'Launchpad Email Verification'
+
+    @property
+    def requester_account(self):
+        """See `ILoginToken`."""
+        if self.requester is None or self.requester.account is None:
+            return None
+        return IMasterObject(self.requester.account)
 
     def consume(self):
         """See ILoginToken."""
@@ -67,22 +77,25 @@ class LoginToken(SQLBase):
         for token in tokens:
             token.date_consumed = UTC_NOW
 
-    def sendEmailValidationRequest(self, appurl):
+    def _send_email(self, from_name, subject, message, headers=None):
+        """Send an email to this token's email address."""
+        from_address = format_address(
+            from_name, config.canonical.noreply_from_address)
+        to_address = str(self.email)
+        simple_sendmail(
+            from_address, to_address, subject, message,
+            headers=headers, bulk=False)
+
+    def sendEmailValidationRequest(self):
         """See ILoginToken."""
         template = get_email_template('validate-email.txt')
-        fromaddress = format_address(
-            "Launchpad Email Validator",
-            config.canonical.noreply_from_address)
-
-        replacements = {'longstring': self.token,
-                        'requester': self.requester.browsername,
+        replacements = {'token_url': canonical_url(self),
+                        'requester': self.requester.displayname,
                         'requesteremail': self.requesteremail,
-                        'toaddress': self.email,
-                        'appurl': appurl}
+                        'toaddress': self.email}
         message = template % replacements
-
         subject = "Launchpad: Validate your email address"
-        simple_sendmail(fromaddress, str(self.email), subject, message)
+        self._send_email("Launchpad Email Validator", subject, message)
 
     def sendGPGValidationRequest(self, key):
         """See ILoginToken."""
@@ -103,7 +116,7 @@ class LoginToken(SQLBase):
 
         # Here are the instructions that need to be encrypted.
         template = get_email_template('validate-gpg.txt')
-        replacements = {'requester': self.requester.browsername,
+        replacements = {'requester': self.requester.displayname,
                         'requesteremail': self.requesteremail,
                         'displayname': key.displayname,
                         'fingerprint': key.fingerprint,
@@ -128,74 +141,48 @@ class LoginToken(SQLBase):
 
         # Concatenate the message parts and send it.
         text = salutation + instructions + token_text + closing
-        simple_sendmail(format_address('Launchpad OpenPGP Key Confirmation',
-                                       config.canonical.noreply_from_address),
-                        str(self.email),
-                        'Launchpad: Confirm your OpenPGP Key',
-                        text)
-
-    def sendPasswordResetNeutralEmail(self):
-        """See ILoginToken."""
-        template = get_email_template('forgottenpassword-neutral.txt')
-        fromaddress = format_address(
-            "Login Service", config.canonical.noreply_from_address)
-        message = template % dict(token_url=canonical_url(self))
-        subject = "Login Service: Forgotten Password"
-        simple_sendmail(fromaddress, str(self.email), subject, message)
-
-    def sendNewUserNeutralEmail(self):
-        """See ILoginToken."""
-        template = get_email_template('newuser-email-neutral.txt')
-        message = template % dict(token_url=canonical_url(self))
-
-        fromaddress = format_address(
-            "Launchpad", config.canonical.noreply_from_address)
-        subject = "Login Service: Finish your registration"
-        simple_sendmail(fromaddress, str(self.email), subject, message)
+        from_name = 'Launchpad OpenPGP Key Confirmation'
+        subject = 'Launchpad: Confirm your OpenPGP Key'
+        self._send_email(from_name, subject, text)
 
     def sendPasswordResetEmail(self):
         """See ILoginToken."""
         template = get_email_template('forgottenpassword.txt')
-        fromaddress = format_address(
-            "Login Service", config.canonical.noreply_from_address)
+        from_name = "Launchpad"
         message = template % dict(token_url=canonical_url(self))
-        subject = "Login Service: Forgotten Password"
-        simple_sendmail(fromaddress, str(self.email), subject, message)
+        subject = "Launchpad: Forgotten Password"
+        self._send_email(from_name, subject, message)
 
     def sendNewUserEmail(self):
         """See ILoginToken."""
         template = get_email_template('newuser-email.txt')
         message = template % dict(token_url=canonical_url(self))
 
-        fromaddress = format_address(
-            "Launchpad", config.canonical.noreply_from_address)
+        from_name = "Launchpad"
         subject = "Launchpad: complete your registration"
-        simple_sendmail(fromaddress, str(self.email), subject, message)
+        self._send_email(from_name, subject, message)
 
     def sendProfileCreatedEmail(self, profile, comment):
         """See ILoginToken."""
         template = get_email_template('profile-created.txt')
         replacements = {'token_url': canonical_url(self),
-                        'requester': self.requester.browsername,
+                        'requester': self.requester.displayname,
                         'comment': comment,
                         'profile_url': canonical_url(profile)}
         message = template % replacements
 
         headers = {'Reply-To': self.requester.preferredemail.email}
-        fromaddress = format_address(
-            "Launchpad", config.canonical.noreply_from_address)
+        from_name = "Launchpad"
         subject = "Launchpad profile"
-        simple_sendmail(
-            fromaddress, str(self.email), subject, message, headers=headers)
+        self._send_email(from_name, subject, message, headers=headers)
 
     def sendMergeRequestEmail(self):
         """See ILoginToken."""
         template = get_email_template('request-merge.txt')
-        fromaddress = format_address(
-            "Launchpad Account Merge", config.canonical.noreply_from_address)
+        from_name = "Launchpad Account Merge"
 
         dupe = getUtility(IPersonSet).getByEmail(self.email)
-        replacements = {'dupename': "%s (%s)" % (dupe.browsername, dupe.name),
+        replacements = {'dupename': "%s (%s)" % (dupe.displayname, dupe.name),
                         'requester': self.requester.name,
                         'requesteremail': self.requesteremail,
                         'toaddress': self.email,
@@ -203,56 +190,52 @@ class LoginToken(SQLBase):
         message = template % replacements
 
         subject = "Launchpad: Merge of Accounts Requested"
-        simple_sendmail(fromaddress, str(self.email), subject, message)
+        self._send_email(from_name, subject, message)
 
     def sendTeamEmailAddressValidationEmail(self, user):
         """See ILoginToken."""
         template = get_email_template('validate-teamemail.txt')
 
-        fromaddress = format_address(
-            "Launchpad Email Validator",
-            config.canonical.noreply_from_address)
+        from_name = "Launchpad Email Validator"
         subject = "Launchpad: Validate your team's contact email address"
-        replacements = {'team': self.requester.browsername,
+        replacements = {'team': self.requester.displayname,
                         'requester': '%s (%s)' % (
-                            user.browsername, user.name),
+                            user.displayname, user.name),
                         'toaddress': self.email,
                         'admin_email': config.canonical.admin_address,
                         'token_url': canonical_url(self)}
         message = template % replacements
-        simple_sendmail(fromaddress, str(self.email), subject, message)
+        self._send_email(from_name, subject, message)
 
     def sendClaimProfileEmail(self):
         """See ILoginToken."""
         template = get_email_template('claim-profile.txt')
-        fromaddress = format_address(
-            "Launchpad", config.canonical.noreply_from_address)
+        from_name = "Launchpad"
         profile = getUtility(IPersonSet).getByEmail(self.email)
         replacements = {'profile_name': (
-                            "%s (%s)" % (profile.browsername, profile.name)),
+                            "%s (%s)" % (profile.displayname, profile.name)),
                         'email': self.email,
                         'token_url': canonical_url(self)}
         message = template % replacements
 
         subject = "Launchpad: Claim Profile"
-        simple_sendmail(fromaddress, str(self.email), subject, message)
+        self._send_email(from_name, subject, message)
 
     def sendClaimTeamEmail(self):
         """See `ILoginToken`."""
         template = get_email_template('claim-team.txt')
-        fromaddress = format_address(
-            "Launchpad", config.canonical.noreply_from_address)
+        from_name = "Launchpad"
         profile = getUtility(IPersonSet).getByEmail(self.email)
         replacements = {'profile_name': (
-                            "%s (%s)" % (profile.browsername, profile.name)),
+                            "%s (%s)" % (profile.displayname, profile.name)),
                         'requester_name': (
-                            "%s (%s)" % (self.requester.browsername,
+                            "%s (%s)" % (self.requester.displayname,
                                          self.requester.name)),
                         'email': self.email,
                         'token_url': canonical_url(self)}
         message = template % replacements
         subject = "Launchpad: Claim existing team"
-        simple_sendmail(fromaddress, str(self.email), subject, message)
+        self._send_email(from_name, subject, message)
 
 
 class LoginTokenSet:
@@ -347,12 +330,8 @@ class LoginTokenSet:
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
 
-        characters = '0123456789bcdfghjklmnpqrstvwxzBCDFGHJKLMNPQRSTVWXZ'
-        length = 20
-        token = ''.join(
-            [random.choice(characters) for count in range(length)])
-        reqid = getattr(requester, 'id', None)
-        return LoginToken(requesterID=reqid, requesteremail=requesteremail,
+        token = create_unique_token_for_table(20, LoginToken.token)
+        return LoginToken(requester=requester, requesteremail=requesteremail,
                           email=email, token=token, tokentype=tokentype,
                           created=UTC_NOW, fingerprint=fingerprint,
                           redirection_url=redirection_url)

@@ -1,0 +1,36 @@
+<tal:root
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  omit-tag="">
+
+<table class="narrow-listing" style="margin-bottom: 1em;">
+  <tr>
+    <td width="80%">
+      <a tal:replace="structure context/fmt:link" />
+      <img src="/@@/info" alt="Informational"
+           title="Informational specification"
+           tal:condition="context/informational" />
+    </td>
+    <td>
+      <a class="sprite external-link"
+        tal:attributes="href context/specurl"
+        tal:condition="context/specurl">Spec</a>
+    </td>
+  </tr>
+  <tr>
+    <td colspan="2">
+      <span tal:replace="context/summary/fmt:shorten/500">summary</span>.
+    </td>
+  </tr>
+  <tr class="lesser" tal:repeat="fbreq view/feedbackrequests">
+    <td colspan="2">
+      <a tal:replace="structure fbreq/requester/fmt:link">Foo Bar</a>
+      wants your feedback:<br />
+      <span tal:replace="fbreq/queuemsg">
+        Feedback queue message
+      </span>
+    </td>
+  </tr>
+</table>
+</tal:root>

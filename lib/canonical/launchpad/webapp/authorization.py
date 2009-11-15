@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -20,6 +21,7 @@ from zope.security.permission import (
     checkPermission as check_permission_is_registered)
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
+from canonical.config import config
 from canonical.lazr.canonicalurl import nearest_adapter
 from canonical.lazr.interfaces import IObjectPrivacy
 
@@ -32,8 +34,7 @@ from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 steveIsFixingThis = False
 
 
-LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = (
-    'launchpad.security_policy_cache')
+LAUNCHPAD_SECURITY_POLICY_CACHE_KEY = 'launchpad.security_policy_cache'
 
 
 class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
@@ -101,6 +102,11 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         If the object is a view, then consider the object to be the view's
         context.
 
+        If we are running in read-only mode, all permission checks are
+        failed except for launchpad.View requests, which are checked
+        as normal. All other permissions are used to protect write
+        operations.
+
         Workflow:
         - If the principal is not None and its access level is not what is
           required by the permission, deny.
@@ -113,6 +119,15 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
           after the permission, use that to check the permission.
         - Otherwise, deny.
         """
+        # Shortcut in read-only mode. We have to do this now to avoid
+        # accidentally using cached results. This will be important when
+        # Launchpad automatically fails over to read-only mode when the
+        # master database is unavailable.
+        if config.launchpad.read_only:
+            lp_permission = getUtility(ILaunchpadPermission, permission)
+            if lp_permission.access_level != "read":
+                return False
+
         # If we have a view, get its context and use that to get an
         # authorization adapter.
         if IView.providedBy(object):
@@ -157,10 +172,6 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             if not self._checkPrivacy(access_level, objecttoauthorize):
                 return False
 
-        # XXX kiko 2007-02-07:
-        # webapp shouldn't be depending on launchpad interfaces..
-        from canonical.launchpad.interfaces import IPerson
-
         # This check shouldn't be needed, strictly speaking.
         # However, it is here as a "belt and braces".
 
@@ -187,11 +198,11 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
             if authorization is None:
                 return False
             else:
-                user = IPerson(principal, None)
-                if user is None:
-                    result = authorization.checkUnauthenticated()
+                if ILaunchpadPrincipal.providedBy(principal):
+                    result = authorization.checkAccountAuthenticated(
+                        principal.account)
                 else:
-                    result = authorization.checkAuthenticated(user)
+                    result = authorization.checkUnauthenticated()
                 if type(result) is not bool:
                     warnings.warn(
                         'authorization returning non-bool value: %r' %
@@ -199,6 +210,17 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
                 if cache is not None:
                     cache[permission] = result
                 return bool(result)
+
+
+def precache_permission_for_objects(participation, permission_name, objects):
+    """Precaches the permission for the objects into the policy cache."""
+    permission_cache = participation.annotations.setdefault(
+        LAUNCHPAD_SECURITY_POLICY_CACHE_KEY,
+        weakref.WeakKeyDictionary())
+    for obj in objects:
+        naked_obj = removeSecurityProxy(obj)
+        obj_permission_cache = permission_cache.setdefault(naked_obj, {})
+        obj_permission_cache[permission_name] = True
 
 
 def check_permission(permission_name, context):
