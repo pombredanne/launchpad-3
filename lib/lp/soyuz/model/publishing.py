@@ -40,6 +40,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.binarypackagename import BinaryPackageName
+from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
@@ -1243,18 +1244,49 @@ class PublishingSet:
             SourcePackagePublishingHistory.distroseriesID ==
                 DistroArchSeries.distroseriesID,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID)
+                Build.sourcepackagereleaseID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids)
+            )
 
-        result_set = store.find(
+        # First, we'll find the builds that were built in the same
+        # archive context as the published sources.
+        builds_in_same_archive = store.find(
             find_spec,
             builds_for_distroseries_expr,
             SourcePackagePublishingHistory.archiveID == Build.archiveID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids),
             *extra_exprs)
 
+        # Next get all the builds that have a binary published in the
+        # same archive... even though the build was not built in
+        # the same context archive.
+        builds_copied_into_archive = store.find(
+            find_spec,
+            builds_for_distroseries_expr,
+            SourcePackagePublishingHistory.archiveID != Build.archiveID,
+            BinaryPackagePublishingHistory.archive == Build.archiveID,
+            BinaryPackagePublishingHistory.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.build == Build.id,
+            *extra_exprs)
+
+        result_set = builds_copied_into_archive.union(
+            builds_in_same_archive).config(distinct=True)
+
+        # XXX 2009-11-15 Michael Nelson bug=366043. It is not possible
+        # to sort by the name `SourcePackagePublishingHistory.id` as after
+        # the union there are no tables. Nor can we sort by ambiguous `id`
+        # as in this case there are 3 id columns in the result. Specifying
+        # the column index is the only option that I can find. So we're
+        # relying on an implementation detail of Storm that it lists
+        # columns in alphabetical order in sql queries.
+        sql_columns = SourcePackagePublishingHistory._storm_columns.values()
+        sql_column_names = [column.name for column in sql_columns]
+        sql_column_names.sort()
+
+        # SQL order by uses 1-based column numbers.
+        source_pub_id_col_number = sql_column_names.index('id') + 1
         result_set.order_by(
-            SourcePackagePublishingHistory.id,
-            DistroArchSeries.architecturetag)
+            source_pub_id_col_number, DistroArchSeries.architecturetag)
 
         return result_set
 

@@ -1055,22 +1055,22 @@ It returns a `ResultSet` and it contains 3-element tuples as
 each build found.
 
     >>> cprov_builds.count()
-    7
+    8
 
 The `ResultSet` is ordered by ascending
 `SourcePackagePublishingHistory.id` and ascending
 `DistroArchseries.architecturetag` in this order.
 
-    >>> source_pub, build, arch = cprov_builds.last()
-
-    >>> print source_pub.displayname
-    foo 666 in breezy-autotest
-
-    >>> print build.title
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
-
-    >>> print arch.displayname
-    ubuntutest Breezy Badger Autotest i386
+    # The easiest thing we can do here (without printing ids)
+    # is to show that sorting a list of the resulting ids+tags does not
+    # modify the list.
+    >>> from copy import copy
+    >>> ids_and_tags = [(pub.id, arch.architecturetag)
+    ...     for pub, build, arch in cprov_builds]
+    >>> ids_and_tags_sorted = copy(ids_and_tags)
+    >>> ids_and_tags_sorted.sort()
+    >>> ids_and_tags == ids_and_tags_sorted
+    True
 
 If a source package is copied from another archive (including the
 binaries), then these builds will also be included in the result (even
@@ -1101,7 +1101,7 @@ build - even though the build's context is not Celso's PPA.
     >>> cprov_builds_new = publishing_set.getBuildsForSources(
     ...     cprov_sources_new)
     >>> cprov_builds_new.count()
-    8
+    9
 
 Next we'll create two sources with two builds each (the SoyuzTestPublisher
 default) and show that the number of unpublished builds for these sources
