@@ -2859,7 +2859,9 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
 
     def should_show_polls_portlet(self):
         menu = TeamOverviewMenu(self.context)
-        return self.hasCurrentPolls() or menu.add_poll().enabled
+        return (
+            self.hasCurrentPolls() or self.closedpolls
+            or menu.add_poll().enabled)
 
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
