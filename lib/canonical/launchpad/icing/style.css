@@ -1753,10 +1753,13 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   text-align: right;
 }
 .codereviewcomment {font: 120% monospace;}
-.codereviewcomment .attachment, #review-diff .attachment {
+.codereviewcomment .attachment, #review-diff .attachment,
+div.diff .attachmentBody {
   background-color: #f6f6f6;
 }
-
+div.diff .horizontal {
+  margin: 0;
+}
 body.tab-branches table.listing .section-heading {
   color: #d18b39;
 }
@@ -1765,12 +1768,16 @@ body.tab-branches table.listing tr.thead, body.tab-branches table.listing thead 
   color: #666666;
 }
 
+.yui-diff-overlay table.diff {
+  font-size: 98%;
+}
 #proposal-summary td, #proposal-summary th { padding-bottom: 2px; }
 table.diff {
    white-space: pre-wrap;
    font: 120% monospace;
    width: 100%;
    background-color: white;
+   margin-bottom: 0.5em;
 }
 table.diff .text { width: 99%; padding-left: 0.5em; }
 table.diff .line-no {
@@ -1800,7 +1807,6 @@ dl.reviews dd {
 }
 .yui-diff-overlay #yui-pretty-overlay-modal {
     width: auto !important;
-    font: inherit !important;
     color: black !important;
 }
 
