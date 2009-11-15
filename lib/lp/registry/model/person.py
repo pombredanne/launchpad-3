@@ -551,20 +551,6 @@ class Person(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
 
-        # Make a note that we need to tell this person that their
-        # information was updated by the user. We can only do this if we
-        # have a validated email address for this person.
-        if user != self and self.preferredemail is not None:
-            mail_text = get_email_template('person-location-modified.txt')
-            mail_text = mail_text % {
-                'actor': user.name,
-                'actor_browsername': user.displayname,
-                'person': self.name}
-            subject = '%s updated your location and time zone' % (
-                user.displayname)
-            getUtility(IPersonNotificationSet).addNotification(
-                self, subject, mail_text)
-
     # specification-related joins
     @property
     def assigned_specs(self):
