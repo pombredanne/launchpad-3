@@ -1072,6 +1072,37 @@ The `ResultSet` is ordered by ascending
     >>> print arch.displayname
     ubuntutest Breezy Badger Autotest i386
 
+If a source package is copied from another archive (including the
+binaries), then these builds will also be included in the result (even
+though they were build in a different archive context).
+
+    # Create a new PPA and publish a source with some builds
+    # and binaries.
+    >>> other_ppa = factory.makeArchive()
+    >>> binaries = test_publisher.getPubBinaries(archive=other_ppa)
+    >>> build = binaries[0].binarypackagerelease.build
+    >>> source_pub = build.sourcepackagerelease.publishings[0]
+
+    # Copy the source into Celso's PPA, ensuring that the binaries
+    # are alse published there.
+    >>> source_pub_cprov = source_pub.copyTo(
+    ...     source_pub.distroseries, source_pub.pocket,
+    ...     cprov.archive)
+    >>> binaries_cprov = test_publisher.publishBinaryInArchive(
+    ...     binaries[0].binarypackagerelease, cprov.archive)
+
+Now we will see an extra source in Celso's PPA as well as an extra
+build - even though the build's context is not Celso's PPA.
+
+    >>> cprov_sources_new = cprov.archive.getPublishedSources()
+    >>> cprov_sources_new.count()
+    9
+
+    >>> cprov_builds_new = publishing_set.getBuildsForSources(
+    ...     cprov_sources_new)
+    >>> cprov_builds_new.count()
+    8
+
 Next we'll create two sources with two builds each (the SoyuzTestPublisher
 default) and show that the number of unpublished builds for these sources
 is correct:
