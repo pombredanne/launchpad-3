@@ -1233,14 +1233,22 @@ class PublishingSet:
                 Build.buildstate.is_in(build_states))
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result_set = store.find(
-            (SourcePackagePublishingHistory, Build, DistroArchSeries),
+        find_spec = (
+            SourcePackagePublishingHistory, Build, DistroArchSeries)
+
+        # We'll be looking for builds in the same distroseries as the
+        # SPPH for the same release.
+        builds_for_distroseries_expr = (
             Build.distroarchseriesID == DistroArchSeries.id,
-            SourcePackagePublishingHistory.archiveID == Build.archiveID,
             SourcePackagePublishingHistory.distroseriesID ==
                 DistroArchSeries.distroseriesID,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
+                Build.sourcepackagereleaseID)
+
+        result_set = store.find(
+            find_spec,
+            builds_for_distroseries_expr,
+            SourcePackagePublishingHistory.archiveID == Build.archiveID,
             In(SourcePackagePublishingHistory.id, source_publication_ids),
             *extra_exprs)
 
