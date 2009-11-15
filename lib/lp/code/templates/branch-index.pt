@@ -37,7 +37,6 @@
     }
     .yui-diff-overlay #yui-pretty-overlay-modal {
       width: auto;
-      font: inherit;
       color: black;
     }
 
