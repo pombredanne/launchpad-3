@@ -38,53 +38,22 @@ The location for a person is set with the "setLocation" method. This
 requires that the user providing the information is passed as a
 parameter.
 
-We'll use jdub as a prolific source of location information for
-community members.
+A user cannot set another user's location.
 
     >>> jdub = personset.getByName('jdub')
     >>> login_person(jdub)
-
-First, jdub will provide information about cprov, who doesn't have any
-location data in the sampledata.
-
     >>> cprov = personset.getByName('cprov')
-    >>> print cprov.latitude
-    None
-    >>> print cprov.time_zone
-    None
-    >>> cprov.setLocation(-43.0, -62.1, 'America/Sao_Paulo', jdub)
-    >>> print cprov.time_zone
-    America/Sao_Paulo
-
-When a person's location is changed by somebody else, we notify the
-person through email.
-
-    >>> from canonical.launchpad.database import PersonNotification
-    >>> notification = PersonNotification.selectOneBy(person=cprov)
-    >>> print notification.subject
-    Jeff Waugh updated your location and time zone
-
-    # Delete the notification so that it doesn't interfere in other tests.
-    >>> notification.destroySelf()
-
-And once cprov provides data for himself, jdub won't be able to edit it
-any more.
-
-    >>> login_person(cprov)
-    >>> cprov.setLocation(-43.2, -61.93, 'America/Sao_Paulo', cprov)
-
-    >>> login_person(jdub)
     >>> cprov.setLocation(-43.0, -62.1, 'America/Sao_Paulo', jdub)
     Traceback (most recent call last):
     ...
     Unauthorized:...
 
-When a user changes his own location, no notification is sent, though.
+A user can set his own location.
 
-    >>> PersonNotification.selectBy(person=cprov).count()
-    0
+    >>> login_person(cprov)
+    >>> cprov.setLocation(-43.2, -61.93, 'America/Sao_Paulo', cprov)
 
-But cprov can obviously still edit his own information. We need to deal
+cprov can change his location information. We need to deal
 with some floating point precision issues here, hence the rounding.
 
     >>> login_person(cprov)
@@ -92,27 +61,13 @@ with some floating point precision issues here, hence the rounding.
     >>> abs(cprov.latitude + 43.52) < 0.001
     True
 
-And admins can, too.
+Admins can set a user's location.
 
     >>> admin = personset.getByName('name16')
     >>> login_person(admin)
     >>> cprov.setLocation(-43.0, -62.1, 'America/Sao_Paulo', admin)
     >>> abs(cprov.longitude + 62.1) < 0.001
     True
-
-If a user had provided only his time zone but not his location, other
-people would still be able to set his location.  That's the case of
-most our existing users, who set their time zone but hadn't set their
-locations (since there was no UI for that).
-
-    >>> salgado = personset.getByName('salgado')
-    >>> login_person(salgado)
-    >>> salgado.setLocation(None, None, 'America/Sao_Paulo', salgado)
-
-    >>> login_person(jdub)
-    >>> salgado.setLocation(-43.0, -62.1, 'America/Sao_Paulo', jdub)
-    >>> print salgado.latitude
-    -43.0
 
 We cannot store a location for a team, though.
 
@@ -214,8 +169,15 @@ Some people may not want their location to be disclosed to others, so
 we provide a way for them to hide their location from other users. By
 default a person's location is visible.
 
+    >>> salgado = personset.getByName('salgado')
+    >>> login_person(salgado)
+    >>> salgado.setLocation(-43.0, -62.1, 'America/Sao_Paulo', salgado)
     >>> salgado.location.visible
     True
+    >>> salgado.location.latitude
+    -43...
+
+    >>> login_person(jdub)
     >>> salgado.location.latitude
     -43...
 
