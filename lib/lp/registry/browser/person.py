@@ -3355,12 +3355,19 @@ class PersonEditWikiNamesView(LaunchpadView):
             if wiki and wikiname:
                 existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
                 if existingwiki and existingwiki.person != context:
-                    self.error_message = structured(
+                    owner_name = urllib.quote(existingwiki.person.name)
+                    merge_url = (
+                        '%s/+requestmerge?field.dupe_person=%s'
+                        % (canonical_url(getUtility(IPersonSet)), owner_name))
+                    self.error_message =  structured(
                         'The WikiName %s%s is already registered by '
-                        '<a href="%s">%s</a>.',
+                        '<a href="%s">%s</a>. If you think this is a '
+                        'duplicated account, you can <a href="%s">merge it'
+                        '</a> into your account.',
                         wiki, wikiname, canonical_url(existingwiki.person),
-                        existingwiki.person.displayname)
+                        existingwiki.person.displayname, merge_url)
                     return
+
                 elif existingwiki:
                     self.error_message = structured(
                         'The WikiName %s%s already belongs to you.',
