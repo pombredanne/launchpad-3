@@ -830,7 +830,7 @@
             name="+editlocation"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonEditLocationView"
-            permission="launchpad.EditLocation"
+            permission="launchpad.Edit"
             template="../templates/person-editlocation.pt"/>
         <browser:page
             name="+contactuser"

@@ -624,38 +624,6 @@ class EditTranslationsPersonByPerson(AuthorizationBase):
         return person == user or user.inTeam(admins)
 
 
-class EditPersonLocation(AuthorizationBase):
-    permission = 'launchpad.EditLocation'
-    usedfor = IPerson
-
-    def checkAuthenticated(self, user):
-        """Anybody can edit a person's location until that person sets it.
-
-        Once a person sets his own location that information can only be
-        changed by the person himself or admins.
-        """
-        location = self.obj.location
-        if location is None:
-            # No PersonLocation entry exists for this person, so anybody can
-            # change this person's location.
-            return True
-
-        # There is a PersonLocation entry for this person, so we'll check its
-        # details to find out whether or not the user can edit them.
-        if (location.visible
-            and (location.latitude is None
-                 or location.last_modified_by != self.obj)):
-            # No location has been specified yet or it has been specified
-            # by a non-authoritative source (not the person himself), so
-            # anybody can change it.
-            return True
-        else:
-            admins = getUtility(ILaunchpadCelebrities).admin
-            # The person himself and LP admins can always change that person's
-            # location.
-            return user == self.obj or user.inTeam(admins)
-
-
 class ViewPersonLocation(AuthorizationBase):
     permission = 'launchpad.View'
     usedfor = IPersonLocation
