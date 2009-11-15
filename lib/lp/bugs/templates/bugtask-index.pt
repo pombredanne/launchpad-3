@@ -50,6 +50,7 @@
         #add-comment-form textarea { width: 100%; max-width=60em;}
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
+        .bug-branch-summary dd { font-size: 85% }
       </style>
     </metal:block>
 
