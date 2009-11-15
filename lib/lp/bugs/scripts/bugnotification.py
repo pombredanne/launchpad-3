@@ -118,10 +118,17 @@ def construct_email_notifications(bug_notifications):
         reason = recipient.reason_body
         rationale = recipient.reason_header
 
+        if 'direct subscriber' in reason and 'member of' not in reason:
+            unsubscribe_url = ('To unsubscribe from this bug, go to:\n'
+                '%s/+subscribe' % canonical_url(bug.bugtasks[0]))
+        else:
+            unsubscribe_url = ''
+
         body_data = {
             'content': mail_wrapper.format(content),
             'bug_title': bug.title,
             'bug_url': canonical_url(bug),
+            'unsubscribe_url': unsubscribe_url,
             'notification_rationale': mail_wrapper.format(reason)}
 
         # If the person we're sending to receives verbose notifications
