@@ -31,8 +31,7 @@ class IBugSubscription(Interface):
     person = exported(ParticipatingPersonChoice(
         title=_('Person'), required=True, vocabulary='ValidPersonOrTeam',
         readonly=True, description=_("The person's Launchpad ID or "
-        "e-mail address. You can only subscribe someone who has a Launchpad "
-        "account.")))
+        "e-mail address.")))
     bug = exported(Reference(
         IBug, title=_("Bug"), required=True, readonly=True))
     subscribed_by = exported(ParticipatingPersonChoice(
