@@ -1328,12 +1328,10 @@ class PublishingSet:
     def _getSourceBinaryJoinForSources(self, source_publication_ids,
         active_binaries_only=True):
         """Return the join linking sources with binaries."""
-        # Import Build, BinaryPackageRelease and DistroArchSeries locally
+        # Import Build and DistroArchSeries locally
         # to avoid circular imports, since Build uses
         # SourcePackagePublishingHistory, BinaryPackageRelease uses Build
         # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.binarypackagerelease import (
-            BinaryPackageRelease)
         from lp.soyuz.model.build import Build
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
@@ -1408,12 +1406,8 @@ class PublishingSet:
 
     def getFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
-        # Import Build and BinaryPackageRelease locally to avoid circular
-        # imports, since that Build already imports
-        # SourcePackagePublishingHistory and BinaryPackageRelease imports
-        # Build.
-        from lp.soyuz.model.binarypackagerelease import (
-            BinaryPackageRelease)
+        # Import Build locally to avoid circular imports, since that
+        # Build already imports SourcePackagePublishingHistory.
         from lp.soyuz.model.build import Build
 
         source_publication_ids = self._extractIDs(
