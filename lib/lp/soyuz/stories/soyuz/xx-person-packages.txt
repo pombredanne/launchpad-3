@@ -70,7 +70,7 @@ source package page:
     <Link text='Ubuntu Hoary' url='http://launchpad.dev/ubuntu/hoary/+source/cnews'>
     >>> link.click()
     >>> browser.title
-    '...cnews... package : 5.04 : Ubuntu'
+    '...cnews... package : Hoary (5.04) : Ubuntu'
 
 Same again for the third column should take us to a distribution source
 package release page:

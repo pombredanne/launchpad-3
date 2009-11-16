@@ -19,16 +19,17 @@ Branch merge proposals can be created through the API.
     ...     registrant, permission=OAuthPermission.WRITE_PUBLIC)
     >>> bmp_result = registrant_webservice.named_post(
     ...     source_url, 'createMergeProposal', target_branch=target_url,
-    ...     prerequisite_branch=prerequisite_url, initial_comment='Merge it!',
-    ...     needs_review=True, commit_message='It was merged!',
-    ...     reviewers=[reviewer_url], review_types=['green'])
+    ...     prerequisite_branch=prerequisite_url,
+    ...     initial_comment='Merge\nit!', needs_review=True,
+    ...     commit_message='It was merged!\n', reviewers=[reviewer_url],
+    ...     review_types=['green'])
     >>> bmp_url = bmp_result.getHeader('Location')
     >>> bmp = registrant_webservice.get(bmp_url).jsonBody()
     >>> pprint_entry(bmp)
     address: u'mp+...@code.launchpad.dev'
     all_comments_collection_link:
         u'http://api.launchpad.dev/beta/~.../+merge/.../all_comments'
-    commit_message: u'It was merged!'
+    commit_message: u'It was merged!\n'
     date_created: u'...'
     date_merged: None
     date_queued: None
@@ -59,11 +60,11 @@ Branch merge proposals can be created through the API.
     >>> all_comments = webservice.get(
     ...     bmp['all_comments_collection_link']).jsonBody()
     >>> pprint_entry(all_comments['entries'][0])
-    as_quoted_email: u'> Merge it!'
+    as_quoted_email: u'> Merge\n> it!'
     branch_merge_proposal_link:
         u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/...'
     id: ...
-    message_body: u'Merge it!'
+    message_body: u'Merge\nit!'
     resource_type_link: u'http://api.launchpad.dev/beta/#code_review_comment'
     self_link: u'http://api.launchpad.dev/beta/~person-name.../product-name.../branch.../+merge/.../comments/...'
     title: u'Comment on proposed merge of lp://dev/~person-name.../product-name.../branch... into lp://dev/~person-name.../product-name.../branch...'

@@ -805,7 +805,7 @@
                 permission="launchpad.View"
                 interface="lp.registry.interfaces.person.IPersonViewRestricted"/>
             <require
-                permission="launchpad.EditLocation"
+                permission="launchpad.Edit"
                 interface="lp.registry.interfaces.location.ISetLocation"/>
             <require
                 permission="launchpad.Edit"
@@ -1162,7 +1162,8 @@
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
@@ -1421,7 +1422,8 @@
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 

@@ -1056,9 +1056,13 @@ class POTMsgSet(SQLBase):
         if self.is_translation_credit:
             translation = self.getSharedTranslationMessage(pofile.language)
             if translation is None:
+                translator = pofile.lasttranslator
+                if translator is None:
+                    translator = pofile.owner
                 message = self.updateTranslation(
-                    pofile, pofile.owner, [credits_message_str],
-                    is_imported=False, allow_credits=True, force_shared=True,
+                    pofile, translator, [credits_message_str],
+                    is_imported=False, allow_credits=True,
+                    force_shared=True, force_edition_rights=True,
                     lock_timestamp=datetime.datetime.now(pytz.UTC))
 
     def setSequence(self, potemplate, sequence):

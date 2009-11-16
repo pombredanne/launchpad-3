@@ -29,11 +29,11 @@
           <a
                 tal:define="link context/menu:navigation/translationupload"
                 tal:attributes="href link/url"
-              >upload</a> templates and translations, or set up
+              >manually upload</a> templates and translations, or set up
               <a
                 tal:define="link context/menu:navigation/settings"
                 tal:attributes="href link/url"
-              >import from branches</a>
+              >automatic import from branches</a>
               (<a href="https://help.launchpad.net/Translations/ImportingFromBazaarBranches">read more</a>).
         </p>
         </div>

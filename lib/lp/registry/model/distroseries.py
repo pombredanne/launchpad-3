@@ -196,6 +196,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         intermediateTable='SectionSelection')
 
     @property
+    def named_version(self):
+        return '%s (%s)' % (self.displayname, self.version)
+
+    @property
     def upload_components(self):
         """See `IDistroSeries`."""
         return Component.select("""
