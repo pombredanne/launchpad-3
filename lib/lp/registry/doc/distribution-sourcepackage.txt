@@ -85,8 +85,8 @@ publication is considered more relevant than an obsolete publication.
     ...     status=PackagePublishingStatus.OBSOLETE, component='main')
     >>> compiz = ubuntu.getSourcePackage('compiz')
 
-The component of the package in the newer distroseries is 'main' and in the 
-older distroseries it is 'universe'.
+The component of the package in the newer obsolete distroseries is 'main' and
+in the older distroseries it is 'universe'.
 
     >>> print compiz.latest_overall_publication.component.name
     universe
