@@ -23,8 +23,9 @@ sampledata builder.
     >>> bob_builder.builderok = True
 
     # Set a known duration for the current job.
-    >>> in_progress_build = removeSecurityProxy(
-    ...     bob_builder.currentjob.build)
+    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> build2 = getUtility(IBuildSet).getByQueueEntry(bob_builder.currentjob)
+    >>> in_progress_build = removeSecurityProxy(build2)
     >>> one_minute = datetime.timedelta(seconds=60)
     >>> in_progress_build.estimated_build_duration = one_minute
 
@@ -122,12 +123,8 @@ messages.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.database.constants import UTC_NOW
     >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> in_progress_build.buildstate = BuildStatus.NEEDSBUILD
-    >>> in_progress_build.buildqueue_record.buildstart = None
-    >>> in_progress_build.buildqueue_record.builder = None
-    >>> build.buildstate = BuildStatus.BUILDING
-    >>> build.buildqueue_record.buildstart = UTC_NOW
-    >>> build.buildqueue_record.builder = bob_builder
+    >>> in_progress_build.buildqueue_record.reset()
+    >>> build.buildqueue_record.markAsBuilding(bob_builder)
     >>> build.buildqueue_record.logtail = 'one line\nanother line'
     >>> logout()
 

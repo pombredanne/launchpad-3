@@ -754,6 +754,53 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Expected email containing 'Cannot mix partner files with "
             "non-partner.', got:\n%s" % raw_msg)
 
+    def testPartnerReusingOrigFromPartner(self):
+        """Partner uploads reuse 'orig.tar.gz' from the partner archive."""
+        # Make the official bar orig.tar.gz available in the system.
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor(
+            policy='absolutely-anything')
+
+        upload_dir = self.queueUpload("foocomm_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.NEW)
+
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name="foocomm",
+            version="1.0-1", exact_match=True)
+        queue_item.setAccepted()
+        queue_item.realiseUpload()
+        self.layer.commit()
+
+        archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distribution=self.ubuntu, purpose=ArchivePurpose.PARTNER)
+        try:
+            self.ubuntu.getFileByName(
+                'foocomm_1.0.orig.tar.gz', archive=archive, source=True,
+                binary=False)
+        except NotFoundError:
+            self.fail('foocomm_1.0.orig.tar.gz is not yet published.')
+
+        # Please note: this upload goes to the Ubuntu main archive.
+        upload_dir = self.queueUpload("foocomm_1.0-3")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Discard the announcement email and check the acceptance message
+        # content.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        # This is now a MIMEMultipart message.
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
+
+        self.assertEqual(
+            '[ubuntu/breezy] foocomm 1.0-3 (Accepted)', msg['Subject'])
+        self.assertFalse(
+            'Unable to find foocomm_1.0.orig.tar.gz in upload or '
+            'distribution.' in body,
+            'Unable to find foocomm_1.0.orig.tar.gz')
+
     def testPartnerUpload(self):
         """Partner packages should be uploaded to the partner archive.
 
