@@ -3208,10 +3208,10 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         specified (latitude), or if the user has permission to view the
         person's location.
         """
-        if self.context.latitude is None:
-            return self.user == self.context
+        if self.user == self.context:
+            return True
         else:
-            return check_permission('launchpad.View', self.context.location)
+            return self.has_visible_location
 
 
 class TeamIndexView(PersonIndexView):

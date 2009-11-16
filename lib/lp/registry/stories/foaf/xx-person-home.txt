@@ -167,11 +167,18 @@ Teams don't have member-since; they have created-date:
 
 The user's time zone is displayed next to their location details:
 
-    >>> browser.open('http://launchpad.dev/~name12')
+    >>> browser.open('http://launchpad.dev/~kamion')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'portlet-map'))
     Location
-    Time zone: Australia/Perth
+    Time zone: Europe/London...
+
+If the user does not have location data set then the portlet will not
+be shown.
+
+    >>> browser.open('http://launchpad.dev/~bac')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'portlet-map'))
 
 Teams don't have a time zone field.
 
