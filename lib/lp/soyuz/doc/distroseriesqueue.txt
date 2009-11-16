@@ -196,7 +196,7 @@ Check the behaviour of @cachedproperty  attributes:
   mozilla-firefox
 
   >>> print qitem.displayname
-  mozilla-firefox
+  mozilla-firefox (0.9, i386)
 
   >>> print qitem.displayversion
   0.9
@@ -1047,6 +1047,18 @@ A 'delayed-copy' is a PackageUpload record.
    >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
    ...     ubuntu.main_archive, hoary,
    ...     PackagePublishingPocket.RELEASE, testing_key)
+
+Delayed copies are manipulated exactly as normal uploads
+are. Contents can be attached to it.
+
+   >>> a_source_package = test_publisher.createSource(
+   ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
+   >>> transaction.commit()
+   >>> unused = delayed_copy.addSource(a_source_package.sourcepackagerelease)
+
+   >>> print delayed_copy.displayname
+   foocomm (2.0-1, source) (delayed)
+
    >>> verifyObject(IPackageUpload, delayed_copy)
    True
 
@@ -1089,14 +1101,6 @@ requester of the copy.
 
    >>> print delayed_copy.signing_key.owner.displayname
    Foo Bar
-
-Delayed copies are further manipulated exactly as normal uploads
-are. Contents can be attached to it.
-
-   >>> a_source_package = test_publisher.createSource(
-   ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
-   >>> transaction.commit()
-   >>> unused = delayed_copy.addSource(a_source_package.sourcepackagerelease)
 
 IPackageUpload.acceptFromCopy() simply checks and accepts a
 delayed-copy record. Bugs mentioned in the changelog are closed by
