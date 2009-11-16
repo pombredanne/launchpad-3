@@ -1270,11 +1270,6 @@ class PublishingSet:
         builds_union = builds_copied_into_archive.union(
             builds_in_same_archive).config(distinct=True)
 
-        # Storm doesn't let us do builds_union.values('id') -
-        # ('Union' object has no attribute 'columns'). So instead
-        # we have to instantiate the objects just to get the id.
-        build_ids = [build.id for build in builds_union]
-
         # Now that we have a result_set of all the builds, we'll use it
         # as a subquery to get the required publishing and arch to do
         # the ordering. We do this in this round-about way because we
@@ -1282,6 +1277,11 @@ class PublishingSet:
         # union. See bug 443353 for details.
         find_spec = (
             SourcePackagePublishingHistory, Build, DistroArchSeries)
+
+        # Storm doesn't let us do builds_union.values('id') -
+        # ('Union' object has no attribute 'columns'). So instead
+        # we have to instantiate the objects just to get the id.
+        build_ids = [build.id for build in builds_union]
 
         result_set = store.find(
             find_spec, builds_for_distroseries_expr,
