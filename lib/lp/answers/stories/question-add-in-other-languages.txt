@@ -91,8 +91,8 @@ the language in the question details portlet.
     pt-BR
     >>> print soup.html['dir']
     ltr
-    >>> print soup.find('b', text='Language:').next.strip()
-    Portuguese (Brazil)
+    >>> print extract_text(find_tag_by_id(soup, 'question-lang'))
+    Language: Portuguese (Brazil) ...
 
 It's also possible that the user chose English in the first page but
 then changed his mind on the second page.
