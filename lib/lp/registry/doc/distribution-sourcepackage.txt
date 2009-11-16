@@ -77,19 +77,34 @@ before an older distroseries. The latest_overall_publication property will
 return the publication from the older distroseries because a published
 publication is considered more relevant than an obsolete publication.
 
-    >>> compiz_warty = publisher.getPubSource(
+Note that the component of the package in the newer obsolete distroseries 
+is 'main' and in the older distroseries it is 'universe'.
+
+    >>> compiz_publication_warty = publisher.getPubSource(
     ...     sourcename='compiz', version='0.01-1ubuntu1', distroseries=warty,
     ...     status=PackagePublishingStatus.PUBLISHED, component='universe')
-    >>> compiz_hoary = publisher.getPubSource(
+    >>> compiz_publication_hoary = publisher.getPubSource(
     ...     sourcename='compiz', version='0.01-1ubuntu1', distroseries=hoary,
     ...     status=PackagePublishingStatus.OBSOLETE, component='main')
     >>> compiz = ubuntu.getSourcePackage('compiz')
-
-The component of the package in the newer obsolete distroseries is 'main' and
-in the older distroseries it is 'universe'.
-
     >>> print compiz.latest_overall_publication.component.name
     universe
+
+When more than one published publication exists in a single distroseries, 
+latest_overall_publication will favour updates over security and security over
+release.
+
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> firefox_publication_warty = publisher.getPubSource(
+    ...     sourcename='firefox', version='0.01-1ubuntu1', distroseries=hoary,
+    ...     status=PackagePublishingStatus.PUBLISHED, component='main')
+    >>> firefox_publication_hoary = publisher.getPubSource(
+    ...     sourcename='firefox', version='0.01-1ubuntu1.1', distroseries=hoary,
+    ...     status=PackagePublishingStatus.PUBLISHED, component='main',
+    ...     pocket=PackagePublishingPocket.SECURITY)
+    >>> firefox = ubuntu.getSourcePackage('firefox')
+    >>> print firefox.latest_overall_publication.pocket.name
+    SECURITY
 
 === Release-related properties ===
 
