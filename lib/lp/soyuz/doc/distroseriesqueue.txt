@@ -236,8 +236,9 @@ records that match the supplied build IDs.
   >>> ids = (18,19)
   >>> for package_upload_build in qset.getBuildByBuildIDs(ids):
   ...     print package_upload_build.packageupload.displayname
-  mozilla-firefox
-  pmount
+  mozilla-firefox (0.9, i386)
+  pmount (0.1-1, i386)
+
 
 If the supplied IDs is empty or None, an empty list is returned:
 
@@ -375,8 +376,8 @@ Look for every queue entry which package name is like 'mo'
   >>> for item in items:
   ...     a_binary = item.builds[0].build.binarypackages[0]
   ...     print item.displayname
-  pmount
-  mozilla-firefox
+  pmount (0.1-1, i386)
+  mozilla-firefox (0.9, i386)
 
 Got both sampledata results 'p_mo_unt' & '_mo_zilla-firefox'
 
@@ -465,10 +466,10 @@ Performing full acceptance:
   ...      syncUpdate(item)
   netapplet-1.0.0.tar.gz ACCEPTED
   netapplet-1.0.0.tar.gz ACCEPTED
-  alsa-utils ACCEPTED
-  netapplet ACCEPTED
-  pmount ACCEPTED
-  mozilla-firefox ACCEPTED
+  alsa-utils (1.0.9a-4ubuntu1, source) ACCEPTED
+  netapplet (0.99.6-1, source) ACCEPTED
+  pmount (0.1-1, i386) ACCEPTED
+  mozilla-firefox (0.9, i386) ACCEPTED
 
 Move the ACCEPTED items back to NEW.
 
@@ -479,10 +480,10 @@ Move the ACCEPTED items back to NEW.
   ...     syncUpdate(item)
   netapplet-1.0.0.tar.gz NEW
   netapplet-1.0.0.tar.gz NEW
-  alsa-utils NEW
-  netapplet NEW
-  pmount NEW
-  mozilla-firefox NEW
+  alsa-utils (1.0.9a-4ubuntu1, source) NEW
+  netapplet (0.99.6-1, source) NEW
+  pmount (0.1-1, i386) NEW
+  mozilla-firefox (0.9, i386) NEW
 
 Check if the state machine methods raise when trying to set the same state:
 
@@ -496,10 +497,10 @@ Check if the state machine methods raise when trying to set the same state:
   ...          print item.displayname, 'BOGUS'
   netapplet-1.0.0.tar.gz Queue item already new
   netapplet-1.0.0.tar.gz Queue item already new
-  alsa-utils Queue item already new
-  netapplet Queue item already new
-  pmount Queue item already new
-  mozilla-firefox Queue item already new
+  alsa-utils (1.0.9a-4ubuntu1, source) Queue item already new
+  netapplet (0.99.6-1, source) Queue item already new
+  pmount (0.1-1, i386) Queue item already new
+  mozilla-firefox (0.9, i386) Queue item already new
 
 Check several available state machine methods on a NEW queue item
 (except setAccepted, it's already covered by other tests, check if they
@@ -535,7 +536,7 @@ XXX cprov 20060118: remove proxy magic is required for BPR instances.
   ...     print item.displayname, e
   ... else:
   ...     print item.displayname, 'ACCEPTED'
-  mozilla-firefox Component "hell" is not allowed in breezy-autotest
+  mozilla-firefox (0.9, i386) Component "hell" is not allowed in breezy-autotest
 
 Check how we treat source upload duplications in UNAPPROVED queue (NEW
 has a similar behaviour):
@@ -546,10 +547,10 @@ has a similar behaviour):
   2
   >>> dup_one, dup_two = list(dups)
 
-  >>> dup_one.displayname, dup_one.displayversion
-  (u'cnews', u'1.0')
-  >>> dup_two.displayname, dup_two.displayversion
-  (u'cnews', u'1.0')
+  >>> dup_one.displayname
+  u'cnews (1.0, source)'
+  >>> dup_two.displayname
+  u'cnews (1.0, source)'
 
 The upload admin can not accept both since we check unique
 (name, version) accross distribution:
@@ -646,7 +647,7 @@ Anonymous can view all queue items, public and private ones.
   >>> login(ANONYMOUS)
 
   >>> pub_qitem.displayname
-  u'mozilla-firefox'
+  u'mozilla-firefox (0.9, i386)'
 
   >>> priv_qitem.displayname
   u'netapplet-1.0.0.tar.gz'
@@ -671,7 +672,7 @@ launchpad.Edit on a packageupload record.
   >>> login('foo.bar@canonical.com')
 
   >>> pub_qitem.displayname
-  u'mozilla-firefox'
+  u'mozilla-firefox (0.9, i386)'
 
   >>> priv_qitem.displayname
   u'netapplet-1.0.0.tar.gz'
@@ -696,15 +697,13 @@ Sampledata contains only a i386 binary exactly matching 'pmount 0.1-1'.
 
   >>> def print_queue_items(queue_items):
   ...     for queue_item in queue_items:
-  ...         print "%s  %s  %s" % (
-  ...             queue_item.displayname, queue_item.displayversion,
-  ...             queue_item.displayarchs)
+  ...         print queue_item.displayname
 
   >>> queue_items = breezy_autotest.getQueueItems(
   ...     PackageUploadStatus.NEW, name='pmount', version='0.1-1',
   ...     exact_match=True)
   >>> print_queue_items(queue_items)
-  pmount  0.1-1  i386
+  pmount (0.1-1, i386)
 
 We will setup a very peculiar environment to test this aspect of
 `getQueueItems`. First we will include another a non-matching source
@@ -724,7 +723,7 @@ the queue for 'pmount 0.1-1', via the existing binary path.
   ...     PackageUploadStatus.NEW, name='pmount', version='0.1-1',
   ...     exact_match=True)
   >>> print_queue_items(queue_items)
-  pmount  0.1-1  i386
+  pmount (0.1-1, i386)
 
 Also, when we can create a source 'pmount 0.1-1' upload in the
 breezy-autotest context. It also becomes part of the lookup results.
@@ -741,8 +740,8 @@ breezy-autotest context. It also becomes part of the lookup results.
   ...     PackageUploadStatus.NEW, name='pmount', version='0.1-1',
   ...     exact_match=True)
   >>> print_queue_items(queue_items)
-  pmount  0.1-1  i386
-  pmount  0.1-1  source
+  pmount (0.1-1, i386)
+  pmount (0.1-1, source)
 
 It means that call sites querying the upload queue should be aware of
 this aspect and filter the results appropriately.
@@ -760,7 +759,7 @@ is a 'pmount 0.1-1' binary upload already accepted in its context.
   ...     PackageUploadStatus.ACCEPTED, name='pmount', version='0.1-1',
   ...     exact_match=True)
   >>> print_queue_items(queue_items)
-  pmount  0.1-1  i386
+  pmount (0.1-1, i386)
 
 Binary accepted, let's accept the source.
 
@@ -772,8 +771,8 @@ Both uploads are waiting to be published.
   ...     PackageUploadStatus.ACCEPTED, name='pmount', version='0.1-1',
   ...     exact_match=True)
   >>> print_queue_items(queue_items)
-  pmount  0.1-1  i386
-  pmount  0.1-1  source
+  pmount (0.1-1, i386)
+  pmount (0.1-1, source)
 
 Let's publish them.
 
