@@ -187,10 +187,11 @@ class ProductSeriesOverviewMenu(
         if self.context.branch is None:
             text = 'Link to branch'
             icon = 'add'
+            summary = 'Set the branch for this series'
         else:
             text = "Change branch"
             icon = 'edit'
-        summary = 'The code branch that for this series.'
+            summary = 'Change the branch for this series'
         return Link('+linkbranch', text, summary, icon=icon)
 
     @enabled_with_permission('launchpad.View')
@@ -255,7 +256,9 @@ class ProductSeriesSpecificationsMenu(NavigationMenu,
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'assignments', 'setgoals', 'listdeclined', 'new']
+    links = [
+        'listall', 'assignments', 'setgoals', 'listdeclined',
+        'new', 'register_sprint']
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):

@@ -2018,7 +2018,26 @@ class BaseDevice:
 
             'hwmon' is is used  in submissions with udev data in
             many sub-nodes.
-        """
+
+            'sas_phy', 'sas_device', 'sas_end_device', 'sas_port',
+            'sas_host' is used in submissions with udev data for
+            details of SAS controllers.
+
+            'mISDN' is used  in submissions with udev data for the
+            I/O aspects of ISDN adapters.
+
+            'pvrusb2' is used  in submissions with udev data for the
+            input aspect of some DVB adapters.
+
+            'memstick' is used  in submissions with udev data for the
+            I/O aspect of memory stick controllers.
+
+            'bttv-sub' is used  in submissions with udev data for the
+            I/O aspects of some TV receivers.
+
+            'scsi_tape' is used  in submissions with udev data for
+            details of SCSI tape drives.
+            """
         # The root node is always a real device, but its raw_bus
         # property can have different values: None or 'Unknown' in
         # submissions with HAL data, 'acpi' for submissions with udev
@@ -2030,11 +2049,13 @@ class BaseDevice:
         # This set of buses is only used once; it's easier to have it
         # here than to put it elsewhere and have to document its
         # location and purpose.
-        if bus in (None, 'ac97', 'disk', 'drm', 'drm_minor', 'dvb',
-                   'enclosure', 'gameport', 'graphics', 'hid', 'host',
-                   'hwmon', 'ieee80211', 'link', 'lirc', 'memstick_host',
-                   'net', 'partition', 'pci_express', 'pcmcia_socket',
-                   'scsi_disk', 'scsi_generic', 'scsi_host', 'scsi_target',
+        if bus in (None, 'ac97', 'bttv-sub', 'disk', 'drm', 'drm_minor',
+                   'dvb', 'enclosure', 'gameport', 'graphics', 'hid', 'host',
+                   'hwmon', 'ieee80211', 'link', 'lirc', 'mISDN', 'memstick',
+                   'memstick_host', 'net', 'partition', 'pci_express',
+                   'pcmcia_socket', 'pvrusb2', 'sas_device', 'sas_end_device',
+                   'sas_host', 'sas_phy', 'sas_port', 'scsi_disk',
+                   'scsi_generic', 'scsi_host', 'scsi_tape', 'scsi_target',
                    'sound', 'spi_host', 'spi_transport', 'ssb', 'tifm',
                    'tifm_adapter', 'tty', 'usb', 'usb-serial', 'usb_endpoint',
                    'usb_host', 'usb_interface', 'usbmon', 'video4linux',
@@ -2148,8 +2169,9 @@ class BaseDevice:
 
         raw_bus == 'video_output', 'thermal', 'vtconsole', 'bdi',
         'mem', 'ppp', 'vc', 'dmi', 'hidraw', 'hwmon', 'heci', 'rfkill',
-        'i2c-adapter', 'ttm', 'ppdev', 'printer' is used in submissions
-        with udev data for virtual devices.
+        'i2c-adapter', 'ttm', 'ppdev', 'printer', 'cardman_4040', 'msr',
+        'ieee1394_protocol', 'dahdi', 'atm', 'asus_oled', 'pktcdvd' is
+        used in submissions with udev data for virtual devices.
 
         'pci_bus' is used in submissions with udev data for a node
         describing a PCI bus.
@@ -2183,11 +2205,13 @@ class BaseDevice:
             # The root node is course a real device; storing data
             # about other devices with the bus "unkown" is pointless.
             return False
-        if bus in ('backlight', 'bdi', 'bluetooth', 'dmi', 'heci', 'hidraw',
-                   'hwmon', 'i2c-adapter', 'ieee1394', 'input', 'leds', 'mem',
-                   'misc', 'mmc', 'mmc_host', 'pci_bus', 'pcmcia', 'platform',
-                   'pnp', 'power_supply', 'ppdev', 'ppp', 'printer', 'rfkill',
-                   'thermal', 'ttm', 'vc', 'video_output', 'vtconsole'):
+        if bus in ('asus_oled', 'atm', 'backlight', 'bdi', 'bluetooth',
+                    'cardman_4040', 'dahdi', 'dmi', 'heci', 'hidraw', 'hwmon',
+                   'i2c-adapter', 'ieee1394', 'ieee1394_protocol', 'input',
+                   'leds', 'mem', 'misc', 'mmc', 'mmc_host', 'msr', 'pci_bus',
+                   'pcmcia', 'pktcdvd', 'platform', 'pnp', 'power_supply',
+                   'ppdev', 'ppp', 'printer', 'rfkill', 'thermal', 'ttm',
+                   'vc', 'video_output', 'vtconsole'):
             return False
 
         # We identify devices by bus, vendor ID and product ID;

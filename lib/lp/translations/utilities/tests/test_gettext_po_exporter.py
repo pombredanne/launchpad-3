@@ -14,9 +14,13 @@ from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.testing import TestCaseWithFactory
 from lp.translations.utilities.gettext_po_exporter import (
+    comments_text_representation, strip_last_newline)
+from lp.translations.utilities.gettext_po_exporter import (
     GettextPOExporter)
 from lp.translations.utilities.gettext_po_parser import (
     POParser)
+from lp.translations.utilities.translation_common_format import (
+    TranslationMessageData)
 from canonical.testing import LaunchpadZopelessLayer
 
 
@@ -396,6 +400,44 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
 
         body = exported_file.split('\n\n', 1)[1].strip()
         self.assertEqual(body, expected_output)
+
+    def test_strip_last_newline(self):
+        # `strip_last_newline` strips only the last newline.
+        self.assertEqual('text\n', strip_last_newline('text\n\n'))
+        self.assertEqual('text\nx', strip_last_newline('text\nx'))
+        self.assertEqual('text', strip_last_newline('text'))
+
+        # It supports '\r' as well (Mac-style).
+        self.assertEqual('text', strip_last_newline('text\r'))
+        # And DOS-style '\r\n'.
+        self.assertEqual('text', strip_last_newline('text\r\n'))
+
+        # With weird combinations, it strips only the last
+        # newline-indicating character.
+        self.assertEqual('text\n', strip_last_newline('text\n\r'))
+
+    def test_comments_text_representation_multiline(self):
+        # Comments with newlines should be correctly exported.
+        data = TranslationMessageData()
+        data.comment = "Line One\nLine Two"
+        self.assertEqual("#Line One\n#Line Two",
+                         comments_text_representation(data))
+
+        # It works the same when there's a final newline as well.
+        data.comment = "Line One\nLine Two\n"
+        self.assertEqual("#Line One\n#Line Two",
+                         comments_text_representation(data))
+
+        # And similar processing happens for source comments.
+        data = TranslationMessageData()
+        data.source_comment = "Line One\nLine Two"
+        self.assertEqual("#. Line One\n#. Line Two",
+                         comments_text_representation(data))
+
+        # It works the same when there's a final newline as well.
+        data.source_comment = "Line One\nLine Two\n"
+        self.assertEqual("#. Line One\n#. Line Two",
+                         comments_text_representation(data))
 
 
 def test_suite():
