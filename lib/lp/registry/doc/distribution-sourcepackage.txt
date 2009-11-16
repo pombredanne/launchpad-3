@@ -59,36 +59,37 @@ Current publishing records for 'pmount in Ubuntu':
 
 Current overall publications:
 
-    >>> alsa_utils = ubuntu.getSourcePackage("alsa-utils")
-    >>> pub = alsa_utils.latest_overall_publication
-    >>> (pub.sourcepackagerelease.sourcepackagename.name,
-    ...  pub.sourcepackagerelease.version,
-    ...  pub.distroseries.name,
-    ...  pub.status)
-    (u'alsa-utils',
-     u'1.0.9a-4ubuntu1',
-     u'hoary',
-     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
-    >>> linux_source = ubuntu.getSourcePackage("linux-source-2.6.15")
-    >>> pub = linux_source.latest_overall_publication
-    >>> (pub.sourcepackagerelease.sourcepackagename.name,
-    ...  pub.sourcepackagerelease.version,
-    ...  pub.distroseries.name,
-    ...  pub.status)
-    (u'linux-source-2.6.15',
-     u'2.6.15.3',
-     u'hoary',
-     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
-    >>> commercial = ubuntu.getSourcePackage("commercialpackage")
-    >>> pub = linux_source.latest_overall_publication
-    >>> (pub.sourcepackagerelease.sourcepackagename.name,
-    ...  pub.sourcepackagerelease.version,
-    ...  pub.distroseries.name,
-    ...  pub.status)
-    (u'linux-source-2.6.15',
-     u'2.6.15.3',
-     u'hoary',
-     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
+A DistributionSourcePackage has a property called 'latest_overall_publication'
+which returns the latest overall relevant publication. Relevant is currently
+defined as being either published or obsolete with published being preferred,
+sorted by distroseries and component with publications in proposed and backports
+excluded.
+
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> publisher = SoyuzTestPublisher()
+    >>> publisher.prepareBreezyAutotest()
+    >>> warty = ubuntu['warty']
+    >>> hoary = ubuntu['hoary']
+
+This demonstrates the scenario where a newer distroseries becomes obsolete 
+before an older distroseries. The latest_overall_publication property will
+return the publication from the older distroseries because a published
+publication is considered more relevant than an obsolete publication.
+
+    >>> compiz_warty = publisher.getPubSource(
+    ...     sourcename='compiz', version='0.01-1ubuntu1', distroseries=warty,
+    ...     status=PackagePublishingStatus.PUBLISHED, component='universe')
+    >>> compiz_hoary = publisher.getPubSource(
+    ...     sourcename='compiz', version='0.01-1ubuntu1', distroseries=hoary,
+    ...     status=PackagePublishingStatus.OBSOLETE, component='main')
+    >>> compiz = ubuntu.getSourcePackage('compiz')
+
+The component of the package in the newer distroseries is 'main' and in the 
+older distroseries it is 'universe'.
+
+    >>> print compiz.latest_overall_publication.component.name
+    universe
 
 === Release-related properties ===
 
