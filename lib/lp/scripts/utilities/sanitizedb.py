@@ -12,7 +12,7 @@ import re
 import subprocess
 import sys
 
-from storm.locals import Or
+from storm.locals import Or, Not
 import transaction
 from zope.component import getUtility
 
@@ -190,6 +190,8 @@ class SanitizeDb(LaunchpadScript):
 
     def removeDeactivatedPeople(self):
         """Remove all suspended and deactivated people."""
+        # Deactivated accounts we don't want to remove.
+        people_whitelist = ['janitor']
         from canonical.launchpad.database.account import Account
         from canonical.launchpad.interfaces.account import AccountStatus
         from lp.registry.model.person import Person
@@ -199,7 +201,8 @@ class SanitizeDb(LaunchpadScript):
         deactivated_people = self.store.find(
             Person,
             Person.account == Account.id,
-            Account.status != AccountStatus.ACTIVE)
+            Account.status != AccountStatus.ACTIVE,
+            Not(Person.name.is_in(people_whitelist)))
         total_deactivated_count = deactivated_people.count()
         deactivated_count = 0
         for person in deactivated_people:
