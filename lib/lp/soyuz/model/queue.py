@@ -442,15 +442,9 @@ class PackageUpload(SQLBase):
         """See `IPackageUpload`"""
         names = []
         for queue_source in self.sources:
-            names.append("%s (%s, source)" % (
-                queue_source.sourcepackagerelease.name,
-                queue_source.sourcepackagerelease.version,
-                ))
+            names.append(queue_source.sourcepackagerelease.name)
         for queue_build in self.builds:
-            names.append("%s (%s, %s)" % (
-                queue_build.build.sourcepackagerelease.name,
-                queue_build.build.sourcepackagerelease.version,
-                queue_build.build.distroarchseries.architecturetag))
+            names.append(queue_build.build.sourcepackagerelease.name)
         for queue_custom in self.customfiles:
             names.append(queue_custom.libraryfilealias.filename)
         # Make sure the list items have a whitespace separator so
