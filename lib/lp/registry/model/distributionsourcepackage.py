@@ -20,33 +20,30 @@ from storm.store import EmptyResultSet
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
-from lp.answers.interfaces.questiontarget import IQuestionTarget
-from lp.registry.interfaces.product import IDistributionSourcePackage
 from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.structuralsubscription import (
+    StructuralSubscriptionTargetMixin)
+from canonical.launchpad.interfaces.lpstorm import IStore
+from canonical.lazr.utils import smartquote
+from lp.answers.interfaces.questiontarget import IQuestionTarget
 from lp.bugs.model.bug import BugSet, get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.product import IDistributionSourcePackage
+from lp.registry.model.karma import KarmaTotalCache
+from lp.registry.model.person import Person
+from lp.registry.model.sourcepackage import (SourcePackage, 
+    SourcePackageQuestionTargetMixin)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from lp.soyuz.model.publishing import (
-    SourcePackagePublishingHistory)
-from lp.soyuz.model.sourcepackagerelease import (
-    SourcePackageRelease)
-from lp.registry.model.karma import KarmaTotalCache
-from lp.registry.model.person import Person
-from lp.registry.model.sourcepackage import (
-    SourcePackage, SourcePackageQuestionTargetMixin)
-from canonical.launchpad.database.emailaddress import EmailAddress
-from canonical.launchpad.database.structuralsubscription import (
-    StructuralSubscriptionTargetMixin)
-from canonical.launchpad.interfaces.lpstorm import IStore
-
-from canonical.lazr.utils import smartquote
-
+from lp.soyuz.model.publishing import (SourcePackagePublishingHistory)
+from lp.soyuz.model.sourcepackagerelease import (SourcePackageRelease)
 
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
@@ -151,11 +148,15 @@ class DistributionSourcePackage(BugTargetBase,
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
-            pocket NOT IN (30, 40) AND
-            status in (2,5)""" %
+            pocket NOT IN (%s, %s) AND
+            status in (%s, %s)""" %
                 sqlvalues(self.distribution,
                           self.sourcepackagename,
-                          self.distribution.all_distro_archive_ids),
+                          self.distribution.all_distro_archive_ids,
+                          PackagePublishingPocket.PROPOSED,
+                          PackagePublishingPocket.BACKPORTS,
+                          PackagePublishingStatus.PUBLISHED,
+                          PackagePublishingStatus.OBSOLETE),
             clauseTables=["SourcePackagePublishingHistory",
                           "SourcePackageRelease", 
                           "DistroSeries"],
