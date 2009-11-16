@@ -468,7 +468,7 @@ class ProductSpecificationsMenu(NavigationMenu,
                                 HasSpecificationsMenuMixin):
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'assignments', 'new']
+    links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
 
 
 def _sort_distros(a, b):
