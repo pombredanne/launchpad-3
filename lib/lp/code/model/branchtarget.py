@@ -6,10 +6,10 @@
 __metaclass__ = type
 __all__ = [
     'branch_to_target',
-    'get_branch_target_for_productseries',
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
+    'ProductSeriesBranchTarget',
     ]
 
 from zope.component import getUtility
@@ -280,7 +280,7 @@ class ProductBranchTarget(_BaseBranchTarget):
 
     def getBugTask(self, bug):
         """See `IBranchTarget`."""
-        task = bug.getBugTask(self.context)
+        task = bug.getBugTask(self.product)
         if task is None:
             # Just choose the first task for the bug.
             task = bug.bugtasks[0]
@@ -297,9 +297,16 @@ class ProductBranchTarget(_BaseBranchTarget):
         branch.sourcepackagename = None
 
 
-def get_branch_target_for_productseries(product_series):
-    """Return a `ProductBranchTarget`."""
-    return ProductBranchTarget(product_series.product)
+class ProductSeriesBranchTarget(ProductBranchTarget):
+
+    def __init__(self, productseries):
+        self.productseries = productseries
+        self.product = productseries.product
+
+    @property
+    def context(self):
+        """See `IBranchTarget`."""
+        return self.productseries
 
 
 def get_canonical_url_data_for_target(branch_target):
