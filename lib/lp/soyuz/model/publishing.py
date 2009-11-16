@@ -1234,8 +1234,6 @@ class PublishingSet:
                 Build.buildstate.is_in(build_states))
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        find_spec = (
-            SourcePackagePublishingHistory, Build, DistroArchSeries)
 
         # We'll be looking for builds in the same distroseries as the
         # SPPH for the same release.
@@ -1251,7 +1249,7 @@ class PublishingSet:
         # First, we'll find the builds that were built in the same
         # archive context as the published sources.
         builds_in_same_archive = store.find(
-            find_spec,
+            Build,
             builds_for_distroseries_expr,
             SourcePackagePublishingHistory.archiveID == Build.archiveID,
             *extra_exprs)
@@ -1260,7 +1258,7 @@ class PublishingSet:
         # same archive... even though the build was not built in
         # the same context archive.
         builds_copied_into_archive = store.find(
-            find_spec,
+            Build,
             builds_for_distroseries_expr,
             SourcePackagePublishingHistory.archiveID != Build.archiveID,
             BinaryPackagePublishingHistory.archive == Build.archiveID,
@@ -1269,26 +1267,29 @@ class PublishingSet:
             BinaryPackageRelease.build == Build.id,
             *extra_exprs)
 
-        result_set = builds_copied_into_archive.union(
+        builds_union = builds_copied_into_archive.union(
             builds_in_same_archive).config(distinct=True)
 
-        # XXX 2009-11-15 Michael Nelson bug=366043. It is not possible
-        # to sort by the name `SourcePackagePublishingHistory.id` as after
-        # the union there are no tables. Nor can we sort by ambiguous `id`
-        # as in this case there are 3 id columns in the result. Specifying
-        # the column index is the only option that I can find. So we're
-        # relying on an implementation detail of Storm that it lists
-        # columns in alphabetical order in sql queries.
-        sql_columns = SourcePackagePublishingHistory._storm_columns.values()
-        sql_column_names = [column.name for column in sql_columns]
-        sql_column_names.sort()
+        # Storm doesn't let us do builds_union.values('id') -
+        # ('Union' object has no attribute 'columns'). So instead
+        # we have to instantiate the objects just to get the id.
+        build_ids = [build.id for build in builds_union]
 
-        # SQL order by uses 1-based column numbers.
-        source_pub_id_col_number = sql_column_names.index('id') + 1
-        result_set.order_by(
-            source_pub_id_col_number, DistroArchSeries.architecturetag)
+        # Now that we have a result_set of all the builds, we'll use it
+        # as a subquery to get the required publishing and arch to do
+        # the ordering. We do this in this round-about way because we
+        # can't sort on SourcePackagePublishingHistory.id after the
+        # union. See bug 443353 for details.
+        find_spec = (
+            SourcePackagePublishingHistory, Build, DistroArchSeries)
 
-        return result_set
+        result_set = store.find(
+            find_spec, builds_for_distroseries_expr,
+            Build.id.is_in(build_ids))
+
+        return result_set.order_by(
+            SourcePackagePublishingHistory.id,
+            DistroArchSeries.architecturetag)
 
     def getByIdAndArchive(self, id, archive, source=True):
         """See `IPublishingSet`."""
