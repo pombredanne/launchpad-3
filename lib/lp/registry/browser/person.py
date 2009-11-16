@@ -3205,11 +3205,11 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         """Should the map portlet be displayed?
 
         The map portlet is displayed only if the person has no location
-        specified, or if the user has permission to view the person's
-        location.
+        specified (latitude), or if the user has permission to view the
+        person's location.
         """
-        if self.context.location is None:
-            return True
+        if self.context.latitude is None:
+            return self.user == self.context
         else:
             return check_permission('launchpad.View', self.context.location)
 
