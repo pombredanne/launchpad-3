@@ -442,7 +442,7 @@ class IBuildSet(Interface):
         """
 
     def getPendingBuildsForArchSet(archseries):
-        """Return all pending build records within a group of ArchSerieses
+        """Return all pending build records within a group of ArchSeries
 
         Pending means that buildstate is NEEDSBUILD.
         """
@@ -522,6 +522,13 @@ class IBuildSet(Interface):
                     'builds':[build3]
                 }
         :rtype: ``dict``.
+        """
+
+    def getByQueueEntry(queue_entry):
+        """Return an IBuild instance for the given build queue entry.
+
+        Retrieve the only one possible build record associated with the given
+        build queue entry. If not found, return None.
         """
 
 

@@ -16,7 +16,7 @@
     is packaged in different distributions.
   </p>
 
-  <p class="informational message" tal:condition="not: context/serieses">
+  <p class="informational message" tal:condition="not: context/series">
     No project branches registered for 
     <span tal:replace="context/displayname">Foomatic</span>. Please
     <a href="+addseries">register a branch</a> and then you will be able to
@@ -39,9 +39,8 @@
       <tbody>
         <tr tal:repeat="pkging distro/packagings">
           <td>
-            <a tal:attributes="href pkging/distroseries/fmt:url"><tal:version
-              replace="pkging/distroseries/version" />
-              (<tal:name replace="pkging/distroseries/displayname" />)</a>
+            <a tal:attributes="href pkging/distroseries/fmt:url"
+                tal:replace="pkging/distroseries/named_version" />
           </td>
             
           <td>

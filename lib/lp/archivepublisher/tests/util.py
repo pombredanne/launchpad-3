@@ -25,13 +25,13 @@ class FakeDistribution:
     def __init__(self, name, conf):
         self.name = name.decode('utf-8')
         self.lucilleconfig = conf.decode('utf-8')
-        self.serieses = []
+        self.series = []
 
     def registerSeries(self, series):
-        self.serieses.append(series)
+        self.series.append(series)
 
     def __getitem__(self, name):
-        for series in self.serieses:
+        for series in self.series:
             if series.name == name:
                 return series
         return None
@@ -258,7 +258,7 @@ cacheroot=FOO/cache
 miscroot=FOO/misc
                         """.replace("FOO",datadir("distro")).replace("BAR","ubuntu"));
 
-fake_ubuntu_serieses = [
+fake_ubuntu_series = [
     FakeDistroSeries("warty",
                       """
 [publishing]

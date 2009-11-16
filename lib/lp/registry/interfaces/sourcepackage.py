@@ -11,7 +11,7 @@ __all__ = [
     'ISourcePackage',
     'ISourcePackageFactory',
     'SourcePackageFileType',
-    'SourcePackageFormat',
+    'SourcePackageType',
     'SourcePackageRelationships',
     'SourcePackageUrgency',
     ]
@@ -231,6 +231,15 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
             or one.  If not, they are sorted from oldest to newest.
         """
 
+    @export_read_operation()
+    def linkedBranches():
+        """Get the official branches for this package.
+
+        This operation returns a {`Pocket`-name : `IBranch`} dict.
+
+        :return: A {`Pocket`-name : `IBranch`} dict.
+        """
+
 
 class ISourcePackageFactory(Interface):
     """A creator of source packages."""
@@ -296,7 +305,7 @@ class SourcePackageFileType(DBEnumeratedType):
         used in the build process for this source package.  """)
 
 
-class SourcePackageFormat(DBEnumeratedType):
+class SourcePackageType(DBEnumeratedType):
     """Source Package Format
 
     Launchpad supports distributions that use source packages in a variety

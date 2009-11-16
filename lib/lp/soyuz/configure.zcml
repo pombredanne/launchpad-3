@@ -560,7 +560,7 @@
 
         <require
             permission="zope.Public"
-            set_attributes="lastscore builder buildstart logtail"/>
+            set_attributes="lastscore builder logtail date_started"/>
     </class>
 
     <!-- BuildQueueSet -->
@@ -863,5 +863,11 @@
             interface="lp.soyuz.interfaces.packagesetgroup.IPackagesetGroup"/>
     </class>
 
+    <!-- BuildPackageJob -->
+    <class
+        class="lp.soyuz.model.buildpackagejob.BuildPackageJob">
+        <allow
+            interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
+    </class>
 
 </configure>

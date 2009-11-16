@@ -954,7 +954,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
         text = 'Update Jabber IDs'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.EditLocation')
+    @enabled_with_permission('launchpad.Edit')
     def editlocation(self):
         target = '+editlocation'
         text = 'Set location and time zone'
@@ -1808,6 +1808,7 @@ class PersonSpecWorkloadTableView(LaunchpadView):
 class PersonSpecFeedbackView(HasSpecificationsView):
 
     label = 'Feature feedback requests'
+    page_title = label
 
     @cachedproperty
     def feedback_specs(self):
@@ -5332,6 +5333,7 @@ class PersonEditLocationView(LaunchpadFormView):
     """Edit a person's location."""
 
     schema = PersonLocationForm
+    field_names = ['location', 'hide']
     custom_widget('location', LocationWidget)
 
     @property
@@ -5340,19 +5342,6 @@ class PersonEditLocationView(LaunchpadFormView):
             "%s's location and timezone" % self.context.displayname)
 
     label = page_title
-
-    @property
-    def field_names(self):
-        """See `LaunchpadFormView`.
-
-        If the user has launchpad.Edit on this context, then allow him to set
-        whether or not the location should be visible.  The field for setting
-        the person's location is always shown.
-        """
-        if check_permission('launchpad.Edit', self.context):
-            return ['location', 'hide']
-        else:
-            return ['location']
 
     @property
     def initial_values(self):

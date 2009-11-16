@@ -89,6 +89,14 @@ we'll get the new branch.
     >>> print branch['unique_name']
     ~devo/ubuntu/hoary/evolution/branch
 
+    >>> linked_branches = webservice.named_get(
+    ...     evolution['self_link'], 'linkedBranches').jsonBody()
+    >>> print linked_branches.keys()
+    [u'RELEASE']
+    >>> branch = linked_branches[u'RELEASE']
+    >>> print branch['unique_name']
+    ~devo/ubuntu/hoary/evolution/branch
+
 Of course, we're also allowed to change our minds. If we set the branch for
 the RELEASE pocket to 'null' (i.e. the JSON for Python' None), then there is
 no longer an official branch for that pocket.

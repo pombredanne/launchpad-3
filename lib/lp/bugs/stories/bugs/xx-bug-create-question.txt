@@ -102,16 +102,12 @@ questions' portlet, and uses it to go to the question page.
 No Privileges Person case see that the question was created from a
 bug. He uses the link to Related bug to return to the bug.
 
-    >>> user_browser.title
-    'Questions : \xe2\x80\x9clinux-source-2.6.15\xe2\x80\x9d package : Ubuntu'
+    >>> print user_browser.title
+    Question #... : Questions : ...linux-source-2.6.15... package : Ubuntu
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'original-bug'))
     This question was originally filed as bug #10.
-
-    >>> portlet = find_portlet(user_browser.contents, 'Related bugs')
-    >>> portlet.a
-    <a class="sprite bug" href="http://bugs.launchpad.dev/bugs/10">Bug #10: another test bug</a>
 
     >>> user_browser.getLink('#10: another test bug').click()
     >>> user_browser.title
@@ -239,11 +235,11 @@ it is still in the Open status.
     ...     'Copy, Cut and Delete operations should work on '
     ...     'selections').click()
     >>> print user_browser.title
-    Questions : Jokosher
+    Question #... : Questions : Jokosher
 
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'registration'))
-    Open Question #..., asked ... by Foo Bar
+    ...     find_tag_by_id(user_browser.contents, 'question-status'))
+    Status: Open
 
 No Privileges Person uses his browser's back button to view the bug
 again. The bug status is sill Invalid for Jokosher, but he can edit it.
