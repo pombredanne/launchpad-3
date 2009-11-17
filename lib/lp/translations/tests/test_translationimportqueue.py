@@ -17,14 +17,14 @@ from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestTranslationImpportQueueEntryStatus(TestCaseWithFactory):
+class TestTranslationImportQueueEntryStatus(TestCaseWithFactory):
     """Test handling of the status of a queue entry."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up context to test in."""
-        super(TestTranslationImpportQueueEntryStatus, self).setUp()
+        super(TestTranslationImportQueueEntryStatus, self).setUp()
 
         self.queue = getUtility(ITranslationImportQueue)
         self.rosetta_experts = (
@@ -100,7 +100,7 @@ class TestTranslationImpportQueueEntryStatus(TestCaseWithFactory):
             self.factory.makeTranslationGroup(self.ubuntu_group_owner))
 
     def test_canSetStatus_ubuntu_translation_group(self):
-        # Owners of the Ubuntu translation Groups can set entries 
+        # Owners of the Ubuntu translation Groups can set entries to approved
         # that are targeted to Ubuntu.
         self._setUpUbuntu()
         ubuntu_entry = self.queue.addOrUpdateEntry(

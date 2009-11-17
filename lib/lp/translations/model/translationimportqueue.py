@@ -310,7 +310,7 @@ class TranslationImportQueueEntry(SQLBase):
             # that's only possible if we know where to import it
             # (import_into not None).
             return False
-        if (new_status == RosettaImportStatus.BLOCKED and not can_admin):
+        if new_status == RosettaImportStatus.BLOCKED and not can_admin:
             # Only administrators are able to set an entry to BLOCKED.
             return False
         if (new_status in (RosettaImportStatus.FAILED,
@@ -319,7 +319,7 @@ class TranslationImportQueueEntry(SQLBase):
             # Only scripts set these statuses and they report as a rosetta
             # expert.
             return False
-        return (self.isUserUploaderOrOwner(user) or can_admin)
+        return self.isUserUploaderOrOwner(user) or can_admin
 
     def setStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
