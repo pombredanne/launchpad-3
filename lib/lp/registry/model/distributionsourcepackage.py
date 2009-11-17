@@ -35,15 +35,15 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IDistributionSourcePackage
 from lp.registry.model.karma import KarmaTotalCache
 from lp.registry.model.person import Person
-from lp.registry.model.sourcepackage import (SourcePackage, 
-    SourcePackageQuestionTargetMixin)
+from lp.registry.model.sourcepackage import (
+    SourcePackage, SourcePackageQuestionTargetMixin)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
-from lp.soyuz.model.publishing import (SourcePackagePublishingHistory)
-from lp.soyuz.model.sourcepackagerelease import (SourcePackageRelease)
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
+from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,

@@ -1,7 +1,7 @@
 = Distribution Source Packages =
 
 A distribution source package represents a named source package in a
-distribution, independant of any particular release of that source
+distribution, independent of any particular release of that source
 package.
 
 This is useful for, among other things, tracking bugs in source
@@ -91,13 +91,14 @@ is 'main' and in the older distroseries it is 'universe'.
     universe
 
 When more than one published publication exists in a single distroseries, 
-latest_overall_publication will favour updates over security and security over
+latest_overall_publication will favor updates over security and security over
 release.
 
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> firefox_publication_warty = publisher.getPubSource(
     ...     sourcename='firefox', version='0.01-1ubuntu1', distroseries=hoary,
-    ...     status=PackagePublishingStatus.PUBLISHED, component='main')
+    ...     status=PackagePublishingStatus.PUBLISHED, component='main',
+    ...     pocket=PackagePublishingPocket.RELEASE)
     >>> firefox_publication_hoary = publisher.getPubSource(
     ...     sourcename='firefox', version='0.01-1ubuntu1.1', distroseries=hoary,
     ...     status=PackagePublishingStatus.PUBLISHED, component='main',
@@ -180,7 +181,6 @@ archive (bug #60440):
     ...     print pub.distroseries.name, pub.status.name, is_removed
     breezy-autotest DELETED True
 
-
 == __hash__ ==
 
 DistributionSourcePackage defines a custom __hash__ method, so that
@@ -208,7 +208,6 @@ This means that packages can be used as keys in dictionaries.
     >>> mapping[ubuntu.getSourcePackage('mozilla-firefox')] is firefox_marker
     True
 
-
 == Upstream links ==
 
 DistributionSourcePackages can be linked to upstream Products. You can
@@ -224,7 +223,6 @@ will be None.
 
     >>> print pmount.upstream_product
     None
-
 
 == Finding archives where this package is published ==
 
