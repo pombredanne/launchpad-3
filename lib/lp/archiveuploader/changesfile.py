@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """ ChangesFile class
 
@@ -306,10 +307,24 @@ class ChangesFile(SignableTagFile):
         """Return changesfile claimed version."""
         return self._dict['version']
 
+    @classmethod
+    def formatChangesComment(cls, comment):
+        """A class utility method for formatting changes for display."""
+
+        # Return the display version of the comment using the
+        # debian policy rules. First replacing the blank line
+        # indicator '\n .' and then stripping one space from each
+        # successive line.
+        comment = comment.replace('\n .', '\n')
+        comment = comment.replace('\n ', '\n')
+        return comment
+
     @property
     def changes_comment(self):
         """Return changesfile 'change' comment."""
-        return self._dict['changes']
+        comment = self._dict['changes']
+
+        return self.formatChangesComment(comment)
 
     @property
     def date(self):

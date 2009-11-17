@@ -1,4 +1,6 @@
-# (c) Canonical Software Ltd. 2004-2006, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Processes removals of packages that are scheduled for deletion.
 """
@@ -21,7 +23,8 @@ from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.publishing import (
     ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory)
-from canonical.launchpad.interfaces import NotInPool
+from lp.soyuz.interfaces.publishing import (
+    MissingSymlinkInPool, NotInPool)
 
 
 def getDeathRow(archive, log, pool_root_override):
@@ -290,12 +293,16 @@ class DeathRow:
             try:
                 bytes += self._removeFile(
                     component_name, source_name, file_name)
-            except NotInPool:
+            except NotInPool, info:
                 # It's safe for us to let this slide because it means that
                 # the file is already gone.
-                self.logger.debug(
-                    "File for removing %s %s/%s is not in pool, skipping" %
-                    (component_name, source_name, file_name))
+                self.logger.debug(str(info))
+            except MissingSymlinkInPool, info:
+                # This one is a little more worrying, because an expected
+                # symlink has vanished from the pool/ (could be a code
+                # mistake) but there is nothing we can do about it at this
+                # point.
+                self.logger.warn(str(info))
 
         self.logger.info("Total bytes freed: %s" % bytes)
 

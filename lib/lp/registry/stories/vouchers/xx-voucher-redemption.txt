@@ -17,11 +17,10 @@ Mark is an administrator for at least one project that does not have a
 valid open source license so he is displayed the voucher redemption
 page.
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
-    >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
+    >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Profile...
     Redeem Vouchers for Commercial Subscriptions
     ...Select the project you wish to subscribe...
 
@@ -32,8 +31,7 @@ the page she is not given the option to redeem a voucher.
     >>> browser.open('http://launchpad.dev/~marilize/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Profile...
-    Redeem Vouchers for Commercial Subscriptions
+    Redeem Vouchers for Commercial Subscriptions...
     Marilize Coetzee does not own any commercial projects. Only project owners can redeem
     vouchers for a project.
 
@@ -41,19 +39,18 @@ A user can access her voucher page but not someone else's.  Here
 Marilize tries to access '+vouchers' on another user and is not
 allowed.
 
-    >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
+    >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     Traceback (most recent call last):
-        ...
+    ...
     Unauthorized: ...
 
 Unless, of course, that user is an administrator.  Then he can access
 the '+vouchers' page on any user.
 
     >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/~sabdfl/+vouchers')
+    >>> browser.open('http://launchpad.dev/~mark/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Profile...
     Redeem Vouchers for Commercial Subscriptions
     ...Select the project you wish to subscribe...
 
@@ -63,7 +60,6 @@ Foo Bar has no vouchers.  Accessing the +vouchers page results in a message.
     >>> browser.open('http://launchpad.dev/~name12/+vouchers')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Profile...
     Redeem Vouchers for Commercial Subscriptions
     ...Sample Person does not have any unredeemed vouchers available.
     Here are the steps to obtain a commercial subscription:...
@@ -111,15 +107,26 @@ setting up Canonical-internal projects.
     ...     auth='Basic commercial-member@canonical.com:test')
 
 Show that the commercial member does not own or drive any projects by
-viewing his +related-software page.
+viewing his +related-projects page.
 
-    >>> browser.open('http://launchpad.dev/~commercial-member/+related-software')
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> commercial_member = getUtility(IPersonSet).getByEmail(
+    ...     'commercial-member@canonical.com')
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> celebs.registry_experts.addMember(commercial_member, commercial_member)
+    >>> logout()
+
+    >>> browser.open(
+    ...     'http://launchpad.dev/~commercial-member/+related-projects')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Profile...
-    Related projects...
-    Commercial Member
-    doesn't own or drive any projects...
+    Projects related to Commercial Member
+    ...
+    Commercial Member doesn't own or drive any projects.
 
 He can still redeem a voucher against a commercial project even though
 he is not responsible for it.

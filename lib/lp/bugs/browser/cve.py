@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """CVE views."""
 
@@ -82,7 +83,16 @@ class CveLinkView(LaunchpadFormView):
         self.context.bug.linkCVE(cve, self.user)
         self.request.response.addInfoNotification(
             'CVE-%s added.' % data['sequence'])
-        self.next_url = canonical_url(self.context)
+
+    label = 'Link to CVE report'
+
+    page_title = label
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
 
 
 class CveUnlinkView(CveLinkView):
@@ -94,7 +104,14 @@ class CveUnlinkView(CveLinkView):
         self.context.bug.unlinkCVE(cve, self.user)
         self.request.response.addInfoNotification(
             'CVE-%s removed.' % data['sequence'])
-        self.next_url = canonical_url(self.context)
+
+    @property
+    def label(self):
+        return  'Bug # %s Remove link to CVE report' % self.context.bug.id
+
+    page_title = label
+
+    heading = 'Remove links to bug reports'
 
 
 class CveSetView:

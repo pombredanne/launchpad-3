@@ -1,12 +1,12 @@
 In addition to what Storm provides, we also have some Launchpad
 specific Storm tools to cope with our master and slave store arrangement.
 
-    >>> import canonical.launchpad.webapp.adapter
     >>> from canonical.launchpad.interfaces import (
     ...     EmailAddressStatus, IAccountSet, IEmailAddressSet,
     ...     IMasterObject, IMasterStore, ISlaveStore, IStore)
     >>> from canonical.launchpad.database import (
-    ...     Account, AccountPassword, EmailAddress, Person)
+    ...     Account, AccountPassword, EmailAddress)
+    >>> from lp.registry.model.person import Person
     >>> from zope.security.proxy import ProxyFactory
 
 
@@ -76,16 +76,17 @@ from a store other than the correct Master.
     >>> auth_slave = ISlaveStore(Account)
     >>> t = transaction.begin()
     >>> account = auth_slave.find(
-    ...     Account, openid_identifier='sabdfl_oid').one()
+    ...     Account, openid_identifier='mark_oid').one()
     >>> account.displayname = 'Cannot change'
     >>> transaction.commit()
     Traceback (most recent call last):
     ...
     InternalError: transaction is read-only
 
+    >>> transaction.abort()
     >>> t = transaction.begin()
     >>> account = auth_slave.find(
-    ...     Account, openid_identifier='sabdfl_oid').one()
+    ...     Account, openid_identifier='mark_oid').one()
     >>> IMasterObject(account).displayname = 'Can change'
     >>> transaction.commit()
 

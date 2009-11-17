@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Death row processor base script class
 
 This script removes obsolete files from the selected archive(s) pool.
@@ -18,11 +20,11 @@ __all__ = [
 from zope.component import getUtility
 
 from lp.archivepublisher.deathrow import getDeathRow
-from lp.services.scripts.base import LaunchpadScript
+from lp.services.scripts.base import LaunchpadCronScript
 from lp.registry.interfaces.distribution import IDistributionSet
 
 
-class DeathRowProcessor(LaunchpadScript):
+class DeathRowProcessor(LaunchpadCronScript):
 
     def add_my_options(self):
         self.parser.add_option(

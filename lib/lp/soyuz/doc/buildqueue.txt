@@ -235,7 +235,7 @@ Use all architectures available in ubuntu/hoary, i.e, i386 and hppa:
 Create a new Builds and corresponding BuildQueues in ubuntu/hoary/hppa
 for testing if we will also be able to deal with more than one architecture.
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
     >>> alsa_hoary = hoary.getSourcePackage('alsa-utils')
     >>> alsa_spr = alsa_hoary['1.0.9a-4'].sourcepackagerelease

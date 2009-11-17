@@ -130,7 +130,7 @@ are currently published. This special-case is important because it
 avoids changes to accommodate the backported source in the already
 released series.
 
-    >>> from lp.soyuz.interfaces.publishing import (
+    >>> from lp.registry.interfaces.pocket import (
     ...      PackagePublishingPocket)
     >>> from zope.security.proxy import removeSecurityProxy
 
@@ -250,13 +250,13 @@ returned 'sources_list' content.
 Similarly, populated PPA dependencies are listed in the building
 'sources_list'.
 
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> pub_binaries = test_publisher.getPubBinaries(
-    ...     binaryname='dep-bin', archive=sabdfl.archive,
+    ...     binaryname='dep-bin', archive=mark.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> archive_dependency = cprov.archive.addArchiveDependency(
-    ...     sabdfl.archive, PackagePublishingPocket.RELEASE,
+    ...     mark.archive, PackagePublishingPocket.RELEASE,
     ...     getUtility(IComponentSet)['main'])
 
     >>> print_building_sources_list(a_build)
@@ -267,16 +267,16 @@ Similarly, populated PPA dependencies are listed in the building
     deb http://ftpmaster.internal/ubuntu hoary-updates
     	main restricted universe multiverse
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
-    deb http://ppa.launchpad.dev/sabdfl/ppa/ubuntu hoary main
+    deb http://ppa.launchpad.dev/mark/ppa/ubuntu hoary main
 
 The authentication information gets added for private PPA
 dependencies.
 
-    >>> sabdfl.archive.buildd_secret = "not-so-secret"
-    >>> sabdfl.archive.private = True
+    >>> mark.archive.buildd_secret = "not-so-secret"
+    >>> mark.archive.private = True
 
     >>> print_building_sources_list(a_build)
-    deb http://buildd:not-so-secret@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
+    deb http://buildd:not-so-secret@private-ppa.launchpad.dev/mark/ppa/ubuntu
     	hoary main
     deb http://ftpmaster.internal/ubuntu hoary
     	main restricted universe multiverse
@@ -288,7 +288,7 @@ dependencies.
 
 Good enough, let's delete the archive dependency on Mark's PPA.
 
-    >>> cprov.archive.removeArchiveDependency(sabdfl.archive)
+    >>> cprov.archive.removeArchiveDependency(mark.archive)
 
 
 == Overriding default primary archive dependencies ==
@@ -407,3 +407,71 @@ Similarly an extension of the BACKPORTS environment can be set.
     deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
 
     >>> cprov.archive.removeArchiveDependency(ubuntu.main_archive)
+
+
+== Partner archive builds ==
+
+Similarly to what happens with PPA builds, PARTNER builds may depend
+on any Ubuntu component in the PRIMARY archive. This behavior allows
+scenarios where partner packages may use other restricted/non-free
+applications from 'multiverse', for instance 'sun-java', and also
+other partner applications by default.
+
+    # Populate the ubuntutest PARTNER archive with one built and one
+    # pending build source.
+    >>> primary, partner, debug = ubuntu.all_distro_archives
+    >>> unused_source = test_publisher.getPubSource(
+    ...     archive=partner, component='partner')
+    >>> unused = test_publisher.getPubBinaries(
+    ...     pub_source=unused_source,
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> pub_source = test_publisher.getPubSource(
+    ...     version='1.2', archive=partner, component='partner')
+    >>> [partner_build] = pub_source.createMissingBuilds()
+
+    >>> print_building_sources_list(partner_build)
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu-partner hoary partner
+
+
+== External build dependencies ==
+
+Via an administrator change, any PPA hosted in launchpad can be
+assigned to one or more 'external' build dependencies additionally to
+the internal ones.
+
+There is a column on IArchive called 'external_dependencies' which can be set
+for any hosted PPA.  It is a string listing the comma-separated external
+dependencies in the debian sources_list format.
+
+ deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]
+
+The '%(series)s' part is optional and will be replaced on-the-fly with
+the series name for the build record being dispatched.
+
+We will create some dependencies for Celso's PPA.
+
+    >>> cprov.archive.external_dependencies = (
+    ... "deb http://user:pass@repository zoing everything\n"
+    ... "deb http://user:pass@repository %(series)s public private\n"
+    ... "deb http://user:pass@repository %(series)s-extra public")
+
+Now builds in Celso's PPA will use the external dependencies.
+
+    >>> print_building_sources_list(a_build)
+    deb http://ftpmaster.internal/ubuntu hoary
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-security
+        main restricted universe multiverse
+    deb http://ftpmaster.internal/ubuntu hoary-updates
+        main restricted universe multiverse
+    deb http://ppa.launchpad.dev/cprov/ppa/ubuntu hoary main
+    deb http://user:pass@repository hoary public private
+    deb http://user:pass@repository hoary-extra public
+    deb http://user:pass@repository zoing everything
+

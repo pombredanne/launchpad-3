@@ -24,7 +24,7 @@ Look up a few Launchpad objects to be used in the tests
 
   >>> ubz = getUtility(ISprintSet)['ubz']
   >>> carlos = getUtility(IPersonSet).getByName('carlos')
-  >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+  >>> mark = getUtility(IPersonSet).getByName('mark')
   >>> sampleperson = getUtility(IPersonSet).getByName('name12')
   >>> firefox = getUtility(IProductSet).getByName('firefox')
   >>> svg_support = firefox.getSpecification('svg-support')
@@ -81,7 +81,7 @@ sprint.  If we add them as an attendee, then they will be available:
 
   >>> time_starts = datetime(2005, 10, 8, 7, 0, 0, tzinfo=timezone('UTC'))
   >>> time_ends = datetime(2005, 11, 17, 20, 0, 0, tzinfo=timezone('UTC'))
-  >>> ubz.attend(sampleperson, time_starts, time_ends)
+  >>> ubz.attend(sampleperson, time_starts, time_ends, True)
   <SprintAttendance at ...>
 
   >>> view = getMultiAdapter((ubz, request), name='+temp-meeting-export')
@@ -113,7 +113,7 @@ sprint:
   >>> link = js_spec.sprint_links[0]
   >>> link.sprint == ubz
   True
-  >>> ubz.acceptSpecificationLinks([link.id], sabdfl)
+  >>> ubz.acceptSpecificationLinks([link.id], mark)
   0
 
 Even though the Javascript spec has now been accepted for the sprint now,
@@ -131,7 +131,7 @@ of specs:
   >>> link = ext_spec.sprint_links[0]
   >>> link.sprint == ubz
   True
-  >>> ubz.declineSpecificationLinks([link.id], sabdfl)
+  >>> ubz.declineSpecificationLinks([link.id], mark)
   0
 
   >>> view = getMultiAdapter((ubz, request), name='+temp-meeting-export')

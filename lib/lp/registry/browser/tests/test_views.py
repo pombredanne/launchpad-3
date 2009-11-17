@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Run the view tests.
 """
@@ -22,8 +24,8 @@ special_test_layer = {
     'milestone-views.txt': LaunchpadFunctionalLayer,
     'person-views.txt': LaunchpadFunctionalLayer,
     'user-to-user-views.txt': LaunchpadFunctionalLayer,
-    'distribution-views.txt': LaunchpadFunctionalLayer,
     'distributionsourcepackage-views.txt': LaunchpadFunctionalLayer,
+    'product-edit-people-view.txt': LaunchpadFunctionalLayer,
 }
 
 
@@ -39,10 +41,7 @@ def test_suite():
     filenames.sort()
     for filename in filenames:
         path = filename
-        if path in special_test_layer:
-            layer = special_test_layer[path]
-        else:
-            layer = DatabaseFunctionalLayer
+        layer = special_test_layer.get(path, DatabaseFunctionalLayer)
         one_test = LayeredDocFileSuite(
             path, setUp=setUp, tearDown=tearDown, layer=layer,
             stdout_logging_level=logging.WARNING

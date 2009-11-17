@@ -28,7 +28,7 @@ Foo Bar, an admin, subscribe Sample Person to a private bug.
     ...     "/+addsubscriber" % latest_evo_bug)
     >>> browser.open(add_subscriber_url)
     >>> browser.getControl("Person").value = "name12"
-    >>> browser.getControl("Add").click()
+    >>> browser.getControl("Subscribe user").click()
     >>> browser.url
     'http://bugs.launchpad.dev/ubuntu/+source/evolution/+bug/...'
 

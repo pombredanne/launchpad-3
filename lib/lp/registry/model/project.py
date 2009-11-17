@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 """Launchpad Project-related Database Table Objects."""
 
@@ -13,7 +15,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
-    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
+    AND, ForeignKey, StringCol, BoolCol, SQLObjectNotFound)
 from storm.expr import And, In, SQL
 from storm.store import Store
 
@@ -28,9 +30,7 @@ from lp.blueprints.interfaces.specification import (
     SpecificationFilter, SpecificationImplementationStatus, SpecificationSort)
 from lp.blueprints.interfaces.sprintspecification import (
     SprintSpecificationStatus)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     TranslationPermission)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.answers.interfaces.faqcollection import IFAQCollection
@@ -57,7 +57,6 @@ from lp.registry.model.announcement import MakesAnnouncements
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.product import Product
 from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.database.projectbounty import ProjectBounty
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
@@ -76,8 +75,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     """A Project"""
 
     implements(IProject, IFAQCollection, IHasIcon, IHasLogo,
-               IHasMugshot, ISearchableByQuestionOwner,
-               IStructuralSubscriptionTarget)
+               IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -126,24 +124,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     # convenient joins
 
-    bounties = SQLRelatedJoin('Bounty', joinColumn='project',
-                            otherColumn='bounty',
-                            intermediateTable='ProjectBounty')
-
     @property
     def products(self):
         return Product.selectBy(project=self, active=True, orderBy='name')
 
     def getProduct(self, name):
         return Product.selectOneBy(project=self, name=name)
-
-    def ensureRelatedBounty(self, bounty):
-        """See `IProject`."""
-        for curr_bounty in self.bounties:
-            if bounty.id == curr_bounty.id:
-                return None
-        ProjectBounty(project=self, bounty=bounty)
-        return None
 
     @property
     def drivers(self):
@@ -491,17 +477,19 @@ class ProjectSet:
         return Project.select("reviewed IS FALSE")
 
     def search(self, text=None, soyuz=None,
-                     rosetta=None, malone=None,
-                     bazaar=None,
-                     search_products=True,
-                     show_inactive=False):
+               rosetta=None, malone=None,
+               bazaar=None,
+               search_products=False,
+               show_inactive=False):
         """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,
-        bounties, bazaar, malone etc are hints as to whether the search
+        bazaar, malone etc are hints as to whether the search
         should be limited to projects that are active in those Launchpad
         applications.
         """
+        if text:
+            text = text.replace("%", "%%")
         clauseTables = set()
         clauseTables.add('Project')
         queries = []
@@ -522,9 +510,11 @@ class ProjectSet:
         if text:
             if search_products:
                 clauseTables.add('Product')
-                queries.append("Product.fti @@ ftq(%s)" % sqlvalues(text))
+                product_query = "Product.fti @@ ftq(%s)" % sqlvalues(text)
+                queries.append(product_query)
             else:
-                queries.append("Project.fti @@ ftq(%s)" % sqlvalues(text))
+                project_query = "Project.fti @@ ftq(%s)" % sqlvalues(text)
+                queries.append(project_query)
 
         if 'Product' in clauseTables:
             queries.append('Product.project=Project.id')

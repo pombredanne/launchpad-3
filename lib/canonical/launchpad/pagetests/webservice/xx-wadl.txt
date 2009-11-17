@@ -10,7 +10,7 @@ development instance will use the file
 canonical/launchpad/apidoc/wadl-development.xml.
 
     >>> test_wadl = webservice.get(
-    ...     '/', 'application/vd.sun.wadl+xml').getBody()
+    ...     '/', 'application/vd.sun.wadl+xml').body
     >>> print test_wadl
     <?xml version="1.0"?>
     <wadl:application xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
@@ -32,7 +32,7 @@ class.
     >>> WebServiceApplication.cached_wadl = None
 
     >>> wadl = webservice.get(
-    ...     '/', 'application/vd.sun.wadl+xml').getBody()
+    ...     '/', 'application/vd.sun.wadl+xml').body
     >>> wadl = wadl.decode('UTF-8')
 
 The real file is much bigger than the test file.

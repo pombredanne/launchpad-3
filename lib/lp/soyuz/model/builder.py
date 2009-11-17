@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -35,6 +37,7 @@ from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.helpers import filenameToContentType
 from canonical.launchpad.interfaces._schema_circular_imports import (
     IHasBuildRecords)
@@ -48,7 +51,7 @@ from lp.soyuz.interfaces.builder import (
     IBuilder, IBuilderSet, ProtocolVersionMismatch)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingStatus)
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.utils import copy_and_close
 
@@ -112,7 +115,7 @@ class Builder(SQLBase):
     implements(IBuilder, IHasBuildRecords)
     _table = 'Builder'
 
-    _defaultOrder = ['processor', 'virtualized', 'name']
+    _defaultOrder = ['id']
 
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
                            notNull=True)
@@ -430,10 +433,11 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
-    def getBuildRecords(self, build_state=None, name=None, user=None):
+    def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
+                        user=None):
         """See IHasBuildRecords."""
         return getUtility(IBuildSet).getBuildsForBuilder(
-            self.id, build_state, name, user)
+            self.id, build_state, name, arch_tag, user)
 
     def slaveStatus(self):
         """See IBuilder."""
@@ -556,8 +560,8 @@ class Builder(SQLBase):
             build.buildstate = %s AND
             distroarchseries.processorfamily = %s AND
             buildqueue.builder IS NULL
-        """ % sqlvalues(private_statuses,
-                        BuildStatus.NEEDSBUILD, self.processor.family)]
+        """ % sqlvalues(
+            private_statuses, BuildStatus.NEEDSBUILD, self.processor.family)]
 
         clauseTables = ['Build', 'DistroArchSeries', 'Archive']
 
@@ -565,8 +569,41 @@ class Builder(SQLBase):
             archive.require_virtualized = %s
         """ % sqlvalues(self.virtualized))
 
-        query = " AND ".join(clauses)
+        # Ensure that if BUILDING builds exist for the same
+        # public ppa archive and architecture and another would not
+        # leave at least 20% of them free, then we don't consider
+        # another as a candidate.
+        #
+        # This clause selects the count of currently building builds on
+        # the arch in question, then adds one to that total before
+        # deriving a percentage of the total available builders on that
+        # arch.  It then makes sure that percentage is under 80.
+        #
+        # The extra clause is only used if the number of available
+        # builders is greater than one, or nothing would get dispatched
+        # at all.
+        num_arch_builders = Builder.selectBy(
+            processor=self.processor, manual=False, builderok=True).count()
+        if num_arch_builders > 1:
+            clauses.append("""
+                EXISTS (SELECT true
+                WHERE ((
+                    SELECT COUNT(build2.id)
+                    FROM Build build2, DistroArchSeries distroarchseries2
+                    WHERE
+                        build2.archive = build.archive AND
+                        archive.purpose = %s AND
+                        archive.private IS FALSE AND
+                        build2.distroarchseries = distroarchseries2.id AND
+                        distroarchseries2.processorfamily = %s AND
+                        build2.buildstate = %s) + 1::numeric)
+                    *100 / %s
+                    < 80)
+            """ % sqlvalues(
+                ArchivePurpose.PPA, self.processor.family,
+                BuildStatus.BUILDING, num_arch_builders))
 
+        query = " AND ".join(clauses)
         candidate = BuildQueue.selectFirst(
             query, clauseTables=clauseTables, prejoins=['build'],
             orderBy=['-buildqueue.lastscore', 'build.id'])
@@ -691,7 +728,8 @@ class BuilderSet(object):
 
     def getBuilders(self):
         """See IBuilderSet."""
-        return Builder.selectBy(active=True)
+        return Builder.selectBy(
+            active=True, orderBy=['virtualized', 'processor', 'name'])
 
     def getBuildersByArch(self, arch):
         """See IBuilderSet."""
@@ -729,7 +767,7 @@ class BuilderSet(object):
             Archive.require_virtualized == virtualized,
             )
 
-        return queue.count()
+        return (queue.count(), queue.sum(Build.estimated_build_duration))
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""

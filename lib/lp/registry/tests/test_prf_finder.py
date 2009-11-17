@@ -1,4 +1,5 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import logging
 import os
@@ -20,7 +21,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.scripts.productreleasefinder.filter import (
     FilterPattern)
 from lp.registry.scripts.productreleasefinder.finder import (
-    ProductReleaseFinder)
+    extract_version, ProductReleaseFinder)
 
 
 class FindReleasesTestCase(unittest.TestCase):
@@ -101,6 +102,7 @@ class HandleProductTestCase(unittest.TestCase):
     def test_handleProduct(self):
         # test that handleProduct() correctly calls handleRelease()
         class DummyProductReleaseFinder(ProductReleaseFinder):
+
             def __init__(self, ztm, log):
                 ProductReleaseFinder.__init__(self, ztm, log)
                 self.seen_releases = []
@@ -153,6 +155,16 @@ class HandleReleaseTestCase(unittest.TestCase):
 
     layer = LaunchpadZopelessLayer
 
+    def create_tarball(self, file_name):
+        """create a release tarball for testing"""
+        file_path = os.path.join(self.release_root, file_name)
+        try:
+            fp = open(file_path, 'w')
+            fp.write('foo')
+        finally:
+            fp.close()
+        return file_path, file_name
+
     def setUp(self):
         LaunchpadZopelessLayer.switchDbUser(
             config.productreleasefinder.dbuser)
@@ -167,21 +179,25 @@ class HandleReleaseTestCase(unittest.TestCase):
         ztm = self.layer.txn
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
+        alt_file_name = 'evolution-42.0.orig.tar.bz2'
+        file_path, file_name = self.create_tarball(
+            'evolution-42.0.orig.tar.gz')
 
-        # create a release tarball
-        fp = open(os.path.join(
-            self.release_root, 'evolution-42.0.orig.tar.gz'), 'w')
-        fp.write('foo')
-        fp.close()
+        self.assertEqual(
+            prf.hasReleaseFile('evolution', 'trunk', '42.0', file_name),
+            False)
+        self.assertEqual(
+            prf.hasReleaseFile('evolution', 'trunk', '42.0', alt_file_name),
+            False)
 
-        self.assertEqual(prf.hasReleaseTarball('evolution', 'trunk', '42.0'),
-                         False)
+        prf.handleRelease('evolution', 'trunk', file_path)
 
-        prf.handleRelease('evolution', 'trunk',
-                          self.release_url + '/evolution-42.0.orig.tar.gz')
-
-        self.assertEqual(prf.hasReleaseTarball('evolution', 'trunk', '42.0'),
-                         True)
+        self.assertEqual(
+            prf.hasReleaseFile('evolution', 'trunk', '42.0', file_name),
+            True)
+        self.assertEqual(
+            prf.hasReleaseFile('evolution', 'trunk', '42.0', alt_file_name),
+            False)
 
         # check to see that the release has been created
         evo = getUtility(IProductSet).getByName('evolution')
@@ -191,8 +207,7 @@ class HandleReleaseTestCase(unittest.TestCase):
         self.assertEqual(release.files.count(), 1)
         fileinfo = release.files[0]
         self.assertEqual(fileinfo.filetype, UpstreamFileType.CODETARBALL)
-        self.assertEqual(fileinfo.libraryfile.filename,
-                         'evolution-42.0.orig.tar.gz')
+        self.assertEqual(fileinfo.libraryfile.filename, file_name)
 
         # verify that the fileinfo object is sane
         self.failUnless(verifyObject(IProductReleaseFile, fileinfo))
@@ -224,15 +239,8 @@ class HandleReleaseTestCase(unittest.TestCase):
 
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
-
-        # create a release tarball
-        fp = open(os.path.join(
-            self.release_root, 'evolution-2.1.6.tar.gz'), 'w')
-        fp.write('foo')
-        fp.close()
-
-        prf.handleRelease('evolution', 'trunk',
-                          self.release_url + '/evolution-2.1.6.tar.gz')
+        file_path, file_name = self.create_tarball('evolution-2.1.6.tar.gz')
+        prf.handleRelease('evolution', 'trunk', file_path)
 
         # verify that we now have files attached to the release:
         evo = getUtility(IProductSet).getByName('evolution')
@@ -247,30 +255,40 @@ class HandleReleaseTestCase(unittest.TestCase):
         ztm = self.layer.txn
         logging.basicConfig(level=logging.CRITICAL)
         prf = ProductReleaseFinder(ztm, logging.getLogger())
-
-        # create a release tarball
-        fp = open(os.path.join(
-            self.release_root, 'evolution-42.0.tar.gz'), 'w')
-        fp.write('foo')
-        fp.close()
-
-        prf.handleRelease('evolution', 'trunk',
-                          self.release_url + '/evolution-42.0.tar.gz')
-        prf.handleRelease('evolution', 'trunk',
-                          self.release_url + '/evolution-42.0.tar.gz')
-
+        file_path, file_name = self.create_tarball('evolution-42.0.tar.gz')
+        prf.handleRelease('evolution', 'trunk', file_path)
+        prf.handleRelease('evolution', 'trunk', file_path)
         evo = getUtility(IProductSet).getByName('evolution')
         trunk = evo.getSeries('trunk')
         release = trunk.getRelease('42.0')
         self.assertEqual(release.files.count(), 1)
+
+    def test_handleRelease_alternate_verstion(self):
+        """Verify that tar.gz and tar.bz2 versions are both uploaded."""
+        ztm = self.layer.txn
+        logging.basicConfig(level=logging.CRITICAL)
+        prf = ProductReleaseFinder(ztm, logging.getLogger())
+        file_path, file_name = self.create_tarball('evolution-45.0.tar.gz')
+        alt_file_path, alt_file_name = self.create_tarball(
+            'evolution-45.0.tar.bz2')
+        prf.handleRelease('evolution', 'trunk', file_path)
+        prf.handleRelease('evolution', 'trunk', alt_file_path)
+        evo = getUtility(IProductSet).getByName('evolution')
+        trunk = evo.getSeries('trunk')
+        release = trunk.getRelease('45.0')
+        release_filenames = [file_info.libraryfile.filename
+                             for file_info in release.files]
+        self.assertEqual(len(release_filenames), 2)
+        self.assertTrue(file_name in release_filenames)
+        self.assertTrue(alt_file_name in release_filenames)
 
     def test_handleReleaseUnableToParseVersion(self):
         # Test that handleRelease() handles the case where a version can't be
         # parsed from the url given.
         ztm = self.layer.txn
         output = StringIO()
-        logging.basicConfig(level=logging.CRITICAL)
         logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
         logger.addHandler(logging.StreamHandler(output))
         prf = ProductReleaseFinder(ztm, logger)
 
@@ -284,6 +302,80 @@ class HandleReleaseTestCase(unittest.TestCase):
         prf.handleRelease('evolution', 'trunk', url)
         self.assertEqual(
             "Unable to parse version from %s\n" % url, output.getvalue())
+
+
+class ExtractVersionTestCase(unittest.TestCase):
+    """Verify that release version names are correctly extracted."""
+
+    def test_extract_version_common_name(self):
+        """Verify the common file names."""
+        version = extract_version('emacs-21.10.tar.gz')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.01.tar.gz')
+        self.assertEqual(version, '21.10.01')
+        version = extract_version('emacs-21.10.01.2.tar.gz')
+        self.assertEqual(version, '21.10.01.2')
+        version = extract_version('bzr-1.15rc1.tar.gz')
+        self.assertEqual(version, '1.15rc1')
+        version = extract_version('bzr-1.15_rc1.tar.gz')
+        self.assertEqual(version, '1.15-rc1')
+        version = extract_version('bzr-1.15_beta1.tar.gz')
+        self.assertEqual(version, '1.15-beta1')
+
+    def test_extract_version_debian_name(self):
+        """Verify that the debian-style .orig suffix is handled."""
+        version = extract_version('emacs-21.10.orig.tar.gz')
+        self.assertEqual(version, '21.10')
+
+    def test_extract_version_name_with_supported_types(self):
+        """Verify that the file's mimetype is supported."""
+        version = extract_version('emacs-21.10.tar.gz')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.tar')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.gz')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.tar.Z')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.tar.bz2')
+        self.assertEqual(version, '21.10')
+        version = extract_version('emacs-21.10.zip')
+        self.assertEqual(version, '21.10')
+
+    def test_extract_version_name_with_flavors(self):
+        """Verify that language, processor, and packaging are removed."""
+        version = extract_version('furiusisomount-0.8.1.0_de_DE.tar.gz')
+        self.assertEqual(version, '0.8.1.0')
+        version = extract_version('glow-0.2.0_all.deb')
+        self.assertEqual(version, '0.2.0')
+        version = extract_version('glow-0.2.1_i386.deb')
+        self.assertEqual(version, '0.2.1')
+        version = extract_version('ipython-0.8.4.win32-setup.exe')
+        self.assertEqual(version, '0.8.4')
+        version = extract_version('Bazaar-1.16.1.win32-py2.5.exe')
+        self.assertEqual(version, '1.16.1')
+        version = extract_version(' Bazaar-1.16.0-OSX10.5.dmg')
+        self.assertEqual(version, '1.16.0')
+        version = extract_version('Bazaar-1.16.2-OSX10.4-universal-py25.dmg')
+        self.assertEqual(version, '1.16.2')
+        version = extract_version('Bazaar-1.16.3.exe')
+        self.assertEqual(version, '1.16.3')
+        version = extract_version('partitionmanager-21-2.noarch.rpm')
+        self.assertEqual(version, '21-2')
+        version = extract_version('php-fpm-0.6~5.3.1.tar.gz')
+        self.assertEqual(version, '0.6')
+
+    def test_extract_version_name_with_uppercase(self):
+        """Verify that the file's version is lowercases."""
+        version = extract_version('client-2.4p1A.tar.gz')
+        self.assertEqual(version, '2.4p1a')
+
+    def test_extract_version_name_with_bad_characters(self):
+        """Verify that the file's version is lowercases."""
+        version = extract_version('vpnc-0.2-rm+zomb-pre1.tar.gz')
+        self.assertEqual(version, '0.2-rm-zomb-pre1')
+        version = extract_version('warzone2100-2.0.5_rc1.tar.bz2')
+        self.assertEqual(version, '2.0.5-rc1')
 
 
 def test_suite():

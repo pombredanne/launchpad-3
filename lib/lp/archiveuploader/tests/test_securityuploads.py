@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test security uploads use-cases."""
 
@@ -12,10 +13,11 @@ from zope.component import getUtility
 from lp.archiveuploader.tests.test_uploadprocessor import (
     TestUploadProcessorBase)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
-    IDistributionSet, PackagePublishingPocket, PackageUploadStatus)
+    IDistributionSet, PackageUploadStatus)
 
 
 class TestStagedBinaryUploadBase(TestUploadProcessorBase):

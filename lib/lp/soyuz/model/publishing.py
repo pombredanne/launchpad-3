@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -20,6 +22,7 @@ from datetime import datetime
 import operator
 import os
 import pytz
+import re
 from warnings import warn
 
 from zope.component import getUtility
@@ -35,6 +38,7 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
@@ -42,15 +46,15 @@ from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
     IPublishingSet, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
-    ISourcePackagePublishingHistory, PackagePublishingPocket,
-    PackagePublishingPriority, PackagePublishingStatus,
-    PoolFileOverwriteError)
+    ISourcePackagePublishingHistory, PackagePublishingPriority,
+    PackagePublishingStatus, PoolFileOverwriteError)
 from lp.soyuz.interfaces.build import BuildSetStatus, BuildStatus, IBuildSet
 from lp.soyuz.scripts.changeoverride import ArchiveOverriderError
 from canonical.launchpad.components.decoratedresultset import (
@@ -74,6 +78,12 @@ class FilePublishingBase:
 
     def publish(self, diskpool, log):
         """See IFilePublishing."""
+        # DDEB publication for PPAs is temporarily disabled, see bug #399444.
+        if (self.archive.is_ppa and
+            self.libraryfilealiasfilename.endswith('.ddeb')):
+            log.debug('Skipping DDEB disk publication.')
+            return
+
         # XXX cprov 2006-06-12 bug=49510: The encode should not be needed
         # when retrieving data from DB.
         source = self.sourcepackagename.encode('utf-8')
@@ -427,9 +437,28 @@ class IndexStanzaFields:
         for name, value in self.fields:
             if not value:
                 continue
+
             # do not add separation space for the special field 'Files'
             if name != 'Files':
                 value = ' %s' % value
+
+            # XXX Michael Nelson 20090930 bug=436182. We have an issue
+            # in the upload parser that has
+            #   1. introduced '\n' at the end of multiple-line-spanning
+            #      fields, such as dsc_binaries, but potentially others,
+            #   2. stripped the leading space from each subsequent line
+            #      of dsc_binaries values that span multiple lines.
+            # This is causing *incorrect* Source indexes to be created.
+            # This work-around can be removed once the fix for bug 436182
+            # is in place and the tainted data has been cleaned.
+            # First, remove any trailing \n or spaces.
+            value = value.rstrip()
+
+            # Second, as we have corrupt data where subsequent lines
+            # of values spanning multiple lines are not preceded by a
+            # space, we ensure that any \n in the value that is *not*
+            # followed by a white-space character has a space inserted.
+            value = re.sub(r"\n(\S)", r"\n \1", value)
 
             output_lines.append('%s:%s' % (name, value))
 
@@ -466,6 +495,23 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         dbName="removed_by", foreignKey="Person",
         storm_validator=validate_public_person, default=None)
     removal_comment = StringCol(dbName="removal_comment", default=None)
+
+    @property
+    def package_creator(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.creator
+
+    @property
+    def package_maintainer(self):
+        """See `ISourcePackagePublishingHistory`."""
+        return self.sourcepackagerelease.maintainer
+
+    @property
+    def package_signer(self):
+        """See `ISourcePackagePublishingHistory`."""
+        if self.sourcepackagerelease.dscsigningkey is not None:
+            return self.sourcepackagerelease.dscsigningkey.owner
+        return None
 
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -754,17 +800,14 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def copyTo(self, distroseries, pocket, archive):
         """See `ISourcePackagePublishingHistory`."""
         current = self.secure_record
-        secure_copy = SecureSourcePackagePublishingHistory(
-            distroseries=distroseries,
-            pocket=pocket,
-            archive=archive,
-            sourcepackagerelease=current.sourcepackagerelease,
-            component=current.component,
-            section=current.section,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            embargo=False)
-        return SourcePackagePublishingHistory.get(secure_copy.id)
+        return getUtility(IPublishingSet).newSourcePublication(
+            archive,
+            current.sourcepackagerelease,
+            distroseries,
+            current.component,
+            current.section,
+            pocket
+            )
 
     def getStatusSummaryForBuilds(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1006,35 +1049,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
-        current = self.secure_record
 
-        if current.binarypackagerelease.architecturespecific:
-            try:
-                target_architecture = distroseries[
-                    current.distroarchseries.architecturetag]
-            except NotFoundError:
-                return []
-            destination_architectures = [target_architecture]
-        else:
-            destination_architectures = distroseries.architectures
-
-        copies = []
-        for architecture in destination_architectures:
-            copy = SecureBinaryPackagePublishingHistory(
-                archive=archive,
-                binarypackagerelease=self.binarypackagerelease,
-                distroarchseries=architecture,
-                component=current.component,
-                section=current.section,
-                priority=current.priority,
-                status=PackagePublishingStatus.PENDING,
-                datecreated=UTC_NOW,
-                pocket=pocket,
-                embargo=False)
-            copies.append(copy)
-
-        return [
-            BinaryPackagePublishingHistory.get(copy.id) for copy in copies]
+        return getUtility(IPublishingSet).copyBinariesTo(
+            [self], distroseries, pocket, archive)
 
     def getAncestry(self, archive=None, distroseries=None, pocket=None,
                     status=None):
@@ -1079,6 +1096,118 @@ class PublishingSet:
     """Utilities for manipulating publications in batches."""
 
     implements(IPublishingSet)
+
+    def copyBinariesTo(self, binaries, distroseries, pocket, archive):
+        """See `IPublishingSet`."""
+
+        # If the target archive is a ppa then we will need to override
+        # the component for each copy - so lookup the main component
+        # here once.
+        override_component = None
+        if archive.is_ppa:
+            override_component = getUtility(IComponentSet)['main']
+
+        secure_copies = []
+
+        for binary in binaries:
+            binarypackagerelease = binary.binarypackagerelease
+            target_component = override_component or binary.component
+
+            if binarypackagerelease.architecturespecific:
+                # If the binary is architecture specific and the target
+                # distroseries does not include the architecture then we
+                # skip the binary and continue.
+                try:
+                    # For safety, we use the architecture the binary was
+                    # built, and not the one it is published, coping with
+                    # single arch-indep publications for architectures that
+                    # do not exist in the destination series.
+                    # See #387589 for more information.
+                    target_architecture = distroseries[
+                        binarypackagerelease.build.arch_tag]
+                except NotFoundError:
+                    continue
+                destination_architectures = [target_architecture]
+            else:
+                destination_architectures = distroseries.architectures
+
+            for distroarchseries in destination_architectures:
+
+                # We only copy the binary if it doesn't already exist
+                # in the destination.
+                binary_in_destination = archive.getAllPublishedBinaries(
+                    name=binarypackagerelease.name, exact_match=True,
+                    version=binarypackagerelease.version,
+                    status=active_publishing_status, pocket=pocket,
+                    distroarchseries=distroarchseries)
+
+                if binary_in_destination.count() == 0:
+                    pub = SecureBinaryPackagePublishingHistory(
+                        archive=archive,
+                        binarypackagerelease=binarypackagerelease,
+                        distroarchseries=distroarchseries,
+                        component=target_component,
+                        section=binary.section,
+                        priority=binary.priority,
+                        status=PackagePublishingStatus.PENDING,
+                        datecreated=UTC_NOW,
+                        pocket=pocket,
+                        embargo=False)
+                    secure_copies.append(pub)
+
+        # One day, this will not be necessary when we have time to kill
+        # the Secure* records.
+        copy_ids = [secure_copy.id for secure_copy in secure_copies]
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.id.is_in(copy_ids))
+
+    def newBinaryPublication(self, archive, binarypackagerelease,
+                             distroarchseries, component, section, priority,
+                             pocket):
+        """See `IPublishingSet`."""
+        if archive.is_ppa:
+            # PPA component must always be 'main', so we override it
+            # here.
+            component = getUtility(IComponentSet)['main']
+        pub = SecureBinaryPackagePublishingHistory(
+            archive=archive,
+            binarypackagerelease=binarypackagerelease,
+            distroarchseries=distroarchseries,
+            component=component,
+            section=section,
+            priority=priority,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            pocket=pocket,
+            embargo=False)
+
+        # One day, this will not be necessary when we have time to kill
+        # the Secure* records.
+        return BinaryPackagePublishingHistory.get(pub.id)
+
+    def newSourcePublication(self, archive, sourcepackagerelease,
+                             distroseries, component, section, pocket):
+        """See `IPublishingSet`."""
+        if archive.is_ppa:
+            # PPA component must always be 'main', so we override it
+            # here.
+            component = getUtility(IComponentSet)['main']
+        pub = SecureSourcePackagePublishingHistory(
+            distroseries=distroseries,
+            pocket=pocket,
+            archive=archive,
+            sourcepackagerelease=sourcepackagerelease,
+            component=component,
+            section=section,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            embargo=False)
+
+        # One day, this will not be necessary when we have time to kill
+        # the Secure* records.
+        return SourcePackagePublishingHistory.get(pub.id)
 
     def getBuildsForSourceIds(
         self, source_publication_ids, archive=None, build_states=None):
@@ -1156,7 +1285,8 @@ class PublishingSet:
 
         return self.getBuildsForSourceIds(source_publication_ids)
 
-    def _getSourceBinaryJoinForSources(self, source_publication_ids):
+    def _getSourceBinaryJoinForSources(self, source_publication_ids,
+        active_binaries_only=True):
         """Return the join linking sources with binaries."""
         # Import Build, BinaryPackageRelease and DistroArchSeries locally
         # to avoid circular imports, since Build uses
@@ -1168,7 +1298,7 @@ class PublishingSet:
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
-        return (
+        join = [
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
                 Build.sourcepackagereleaseID,
             BinaryPackageRelease.build == Build.id,
@@ -1184,9 +1314,18 @@ class PublishingSet:
                SourcePackagePublishingHistory.pocket,
             BinaryPackagePublishingHistory.archiveID ==
                SourcePackagePublishingHistory.archiveID,
-            In(BinaryPackagePublishingHistory.status,
-               [enum.value for enum in active_publishing_status]),
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+            In(SourcePackagePublishingHistory.id, source_publication_ids)
+            ]
+
+        # If the call-site requested to join only on binaries published
+        # with an active publishing status then we need to further restrict
+        # the join.
+        if active_binaries_only:
+            join.append(
+                In(BinaryPackagePublishingHistory.status,
+                    [enum.value for enum in active_publishing_status]))
+
+        return join
 
     def getUnpublishedBuildsForSources(self,
                                        one_or_more_source_publications,
@@ -1210,7 +1349,8 @@ class PublishingSet:
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         published_builds = store.find(
             (SourcePackagePublishingHistory, Build, DistroArchSeries),
-            self._getSourceBinaryJoinForSources(source_publication_ids),
+            self._getSourceBinaryJoinForSources(
+                source_publication_ids, active_binaries_only=False),
             BinaryPackagePublishingHistory.datepublished != None,
             Build.buildstate.is_in(build_states))
 
@@ -1393,13 +1533,17 @@ class PublishingSet:
         summary = getUtility(IBuildSet).getStatusSummaryForBuilds(
             builds)
 
-        # We only augment the result if we (the SPPH) are ourselves in
-        # the pending/published state and all the builds are fully-built.
+        # We only augment the result if:
+        #   1. we (the SPPH) are ourselves in an active publishing state, and
+        #   2. all the builds are fully-built, and
+        #   3. we are not being published in a rebuild/copy archive (in
+        #      which case the binaries are not currently published anyway)
         # In this case we check to see if they are all published, and if
         # not we return FULLYBUILT_PENDING:
         augmented_summary = summary
         if (source_publication.status in active_publishing_status and
-                summary['status'] == BuildSetStatus.FULLYBUILT):
+                summary['status'] == BuildSetStatus.FULLYBUILT and
+                source_publication.archive.purpose != ArchivePurpose.COPY):
 
             unpublished_builds = list(
                 source_publication.getUnpublishedBuilds())

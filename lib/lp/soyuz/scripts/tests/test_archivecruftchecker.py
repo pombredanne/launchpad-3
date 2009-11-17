@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """ArchiveCruftChecker tests.
 
 Check how scripts/ftpmaster-tools/archive-cruft-check.py works on a
@@ -17,7 +19,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.scripts.ftpmaster import (
     ArchiveCruftChecker, ArchiveCruftCheckerError)
 from canonical.launchpad.scripts.logger import QuietFakeLogger

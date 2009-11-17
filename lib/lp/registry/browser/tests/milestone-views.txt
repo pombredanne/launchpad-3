@@ -1,22 +1,48 @@
-
-= Milestone pages =
+Milestone pages
+===============
 
 Users can directly see and edit milestones through the milestone views.
 
-    >>> product = factory.makeProduct(name="puffin")
+    >>> person = factory.makePerson(name='puffin-owner')
+    >>> product = factory.makeProduct(name="puffin", owner=person)
     >>> series = factory.makeProductSeries(product=product, name="awk")
     >>> milestone = factory.makeMilestone(productseries=series, name="kakapo")
-    >>> person = milestone.product.owner
+
+The default url for a milestone is to the main site.
+
+    >>> from canonical.launchpad.ftests import test_tales
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> request = LaunchpadTestRequest(SERVER_URL='http://bugs.launchpad.net')
+    >>> login(ANONYMOUS, request)
+    >>> print test_tales("milestone/fmt:url", milestone=milestone)
+    http://launchpad.dev/puffin/+milestone/kakapo
+
+Milestone defines several menus.
+
+    >>> from lp.registry.browser.milestone import (
+    ...     MilestoneContextMenu, MilestoneOverviewMenu,
+    ...     MilestoneOverviewNavigationMenu)
+    >>> from lp.testing.menu import check_menu_links
+
+    >>> check_menu_links(MilestoneContextMenu(milestone))
+    True
+    >>> check_menu_links(MilestoneOverviewMenu(milestone))
+    True
+    >>> check_menu_links(MilestoneOverviewNavigationMenu(milestone))
+    True
+
+The MilestoneView provides access to the milestone and to its release if
+it has one.
+
     >>> login_person(person)
     >>> view = create_view(milestone, '+index')
     >>> print view.context.name
     kakapo
 
-The MilestoneView provides access to the milestone and to its release if
-it has one.
-
     >>> print view.milestone.name
     kakapo
+
     >>> print view.release
     None
 
@@ -24,6 +50,11 @@ it has one.
     >>> view = create_view(milestone, '+index')
     >>> print view.release.version
     kakapo
+
+The view makes the HTML page title.
+
+    >>> print view.page_title
+    Puffin kakapo
 
 Bugs and specifications targeted to the milestone are accessible too.
 The has_bugs_or_specs boolean property can be used to verify if the
@@ -34,6 +65,7 @@ milestone has any bugs or specifications.
 
     >>> bug = factory.makeBug(title="kiwi")
     >>> bugtask = factory.makeBugTask(bug=bug, target=milestone.product)
+    >>> bugtask.transitionToAssignee(person)
     >>> bugtask.milestone = milestone
     >>> spec = factory.makeSpecification(
     ...     product=milestone.product, title='dodo')
@@ -42,16 +74,33 @@ milestone has any bugs or specifications.
     >>> view = create_view(milestone, '+index')
     >>> view.has_bugs_or_specs
     True
+
     >>> for bugtask in view.bugtasks:
     ...     print bugtask.bug.title
     kiwi
+
     >>> for spec in view.specifications:
     ...     print spec.title
     dodo
 
-The bugtasks are decorated. They are wrapped by the BugTaskListingItem that
-has cached information to create badges quickly. The _bug_badge_properties
-property provides the additional information that is used by the decorator.
+On a IDistroSeries/IProductSeries main page, we use this view to list detailed
+information about the context's milestones. However, generating the summary of
+bugs/blueprints for a milestone is rather expensive, so we only do that for
+active milestones.
+
+    >>> milestone.active
+    True
+    >>> view.should_show_bugs_and_blueprints
+    True
+
+    >>> milestone.active = False
+    >>> view.should_show_bugs_and_blueprints
+    False
+
+The bugtasks are decorated. They are wrapped by the BugTaskListingItem
+that has cached information to create badges quickly. The
+_bug_badge_properties property provides the additional information that
+is used by the decorator.
 
     >>> view.bugtasks
     [<...BugTaskListingItem ...>]
@@ -66,12 +115,16 @@ property provides the additional information that is used by the decorator.
         has_mentoring_offer: False
         has_specification: False
 
+    >>> view.bugtasks[0].last_significant_change_date
+    datetime.datetime(...)
+
 There bugtask_count_text and specification_count_text properties provide
 formatted text descriptions of the bugtasks and specifications. The text
 supports plural descriptions.
 
     >>> print view.bugtask_count_text
     <strong>1 bug</strong>
+
     >>> print view.specification_count_text
     <strong>1 blueprint</strong>
 
@@ -85,6 +138,7 @@ supports plural descriptions.
     >>> view = create_view(milestone, '+index')
     >>> print view.bugtask_count_text
     <strong>2 bugs</strong>
+
     >>> print view.specification_count_text
     <strong>2 blueprints</strong>
 
@@ -94,8 +148,13 @@ specifications and bugtasks.
     >>> from lp.blueprints.interfaces.specification import (
     ...     SpecificationImplementationStatus)
 
+    >>> bugtask.transitionToAssignee(person)
+    >>> engineer = factory.makePerson(name='engineer')
+    >>> spec.assignee = engineer
+    >>> status = spec.updateLifecycleStatus(person)
     >>> spec.implementation_status = SpecificationImplementationStatus.GOOD
     >>> status = spec.updateLifecycleStatus(person)
+
     >>> for status_count in view.specification_status_counts:
     ...     print '%s: %s' % (status_count.status.title, status_count.count)
     Unknown: 1
@@ -105,12 +164,36 @@ specifications and bugtasks.
     ...     print '%s: %s' % (status_count.status.title, status_count.count)
     New: 2
 
-The view uses ProductDownloadFileMixin to provide access to downloadable
-files. It implements getReleases() that always returns the view's release
-as a set.
+The assignment_counts property returns all the users and count of bugs and
+specifications assigned to them.
 
+    >>> for status_count in view.assignment_counts:
+    ...     print '%s: %s' % (status_count.status.name, status_count.count)
+    engineer: 1
+    puffin-owner: 2
+
+The user_counts property is the count items assigned to the current user.
+
+    >>> for status_count in view.user_counts:
+    ...     print '%s: %s' % (status_count.status, status_count.count)
+    bugs: 2
+
+The user_counts property is an empty list if the user is None.
+
+    >>> logout()
+    >>> view = create_view(milestone, '+index')
+    >>> view.user_counts
+    []
+
+The view uses ProductDownloadFileMixin to provide access to downloadable
+files. It implements getReleases() that always returns the view's
+release as a set.
+
+    >>> login_person(person)
+    >>> view = create_view(milestone, '+index')
     >>> view.getReleases()
     set([<ProductRelease ...>])
+
     >>> [release.version for release in view.getReleases()]
     [u'kakapo']
 
@@ -131,11 +214,94 @@ If there are files, these files will be returned as a list.
     [u'test.txt']
 
 
-== Editing milestones ==
+Milestone product release data
+------------------------------
+
+The +productrelease-data named view uses the same view as +index to display
+the product release data for a milestone.
+
+    >>> from canonical.launchpad.testing.pages import (
+    ...     extract_text, find_tag_by_id)
+
+    >>> view = create_view(
+    ...     milestone, '+productrelease-data', principal=person)
+    >>> content = find_tag_by_id(view.render(), 'release-data')
+    >>> print find_tag_by_id(content, 'how-to-verify').a['href']
+    /+help/verify-downloads.html
+
+    >>> print extract_text(find_tag_by_id(content, 'downloads'))
+    File                 Description  Downloads  Delete
+    test.txt (md5, sig)  test file ...
+
+    >>> print find_tag_by_id(content, 'delete-files')['type']
+    submit
+
+This release does not not have release notes or a change log.
+
+    >>> print find_tag_by_id(content, 'release-notes')
+    None
+
+    >>> print find_tag_by_id(content, 'changelog')
+    None
+
+This release notes and change log do appear when the release has them.
+
+    >>> release.release_notes = 'My release notes'
+    >>> release.changelog = 'My changelog'
+    >>> view = create_view(
+    ...     milestone, '+productrelease-data', principal=person)
+    >>> content = find_tag_by_id(view.render(), 'release-data')
+    >>> print extract_text(find_tag_by_id(content, 'release-notes'))
+    My release notes
+
+    >>> print extract_text(find_tag_by_id(content, 'changelog'))
+    My changelog
+
+The delete column and delete submit are not rendered if the user does
+not have edit permission.
+
+    >>> login_person(engineer)
+    >>> view = create_view(
+    ...     milestone, '+productrelease-data', principal=engineer)
+    >>> content = find_tag_by_id(view.render(), 'release-data')
+    >>> print extract_text(find_tag_by_id(content, 'downloads'))
+    File                 Description  Downloads
+    test.txt (md5, sig)  test file ...
+
+    >>> print find_tag_by_id(content, 'delete-files')
+    None
+
+    >>> login_person(person)
+
+
+Project milestones
+------------------
+
+The projectgroup milestones are virtual and cannot be modified. The template
+generates CSS that hides the space occupied by the side portlets.
+
+    >>> projectgroup = factory.makeProject(name='flock')
+    >>> product.project = projectgroup
+    >>> project_milestone = projectgroup.getMilestone('kakapo')
+    >>> view = create_initialized_view(
+    ...     project_milestone, '+index', principal=person)
+    >>> print find_tag_by_id(view.render(), 'hide-side-portlets')['type']
+    text/css
+
+A normal milestone does not have the CSS rule.
+
+    >>> view = create_initialized_view(
+    ...     milestone, '+index', principal=person)
+    >>> print find_tag_by_id(content, 'hide-side-portlets')
+    None
+
+
+Editing milestones
+------------------
 
 Persons with launchpad.Edit permissions for milestones may edit them.
-The MilestoneEditView is responsible for controlling the fields that
-the user may edit.
+The MilestoneEditView is responsible for controlling the fields that the
+user may edit.
 
     >>> from lp.registry.interfaces.product import IProductSet
     >>> from canonical.launchpad.webapp.authorization import check_permission
@@ -163,16 +329,21 @@ cancel_url property can be used to return to the milestone.
     http://launchpad.dev/firefox/+milestone/1.0.8
 
 This milestone belongs to a product, so the productseries field is
-included in the list of field names. The user can change the field values.
+included in the list of field names. The user can change the field
+values.
 
     >>> print milestone.name
     1.0.8
+
     >>> print milestone.dateexpected
     None
+
     >>> print milestone.summary
     None
+
     >>> milestone.active
     True
+
     >>> print milestone.productseries.name
     1.0
 
@@ -188,12 +359,16 @@ included in the list of field names. The user can change the field values.
 
     >>> print milestone.name
     1.0.9
+
     >>> print milestone.dateexpected
     2007-05-11
+
     >>> print milestone.summary
     a summary
+
     >>> milestone.active
     False
+
     >>> print milestone.productseries.name
     trunk
 
@@ -212,6 +387,7 @@ The milestone's name is unique to the product or series.
     >>> for error in view.errors:
     ...     print error.errors
     The name 1.0 is already used by a milestone in Mozilla Firefox.
+
     >>> for milestone in milestone.target.milestones:
     ...     print milestone.name, milestone.code_name
     1.0 None
@@ -259,14 +435,19 @@ The distroseries milestone can be updated too.
 
     >>> print milestone.name
     omega
+
     >>> print milestone.code_name
     omega-licious
+
     >>> print milestone.dateexpected
     2007-05-11
+
     >>> print milestone.summary
     a summary
+
     >>> milestone.active
     False
+
     >>> print milestone.distroseries.name
     grumpy
 
@@ -295,7 +476,8 @@ Users without launchpad.Edit permissions cannot access the view.
     False
 
 
-== Adding milestones ==
+Adding milestones
+-----------------
 
 The AddMilestoneView is used to create a new milestone.
 
@@ -304,6 +486,7 @@ The AddMilestoneView is used to create a new milestone.
     >>> view = create_view(firefox_1_0, '+addmilestone')
     >>> print view.label
     Register a new milestone
+
     >>> view.field_names
     ['name', 'code_name', 'dateexpected', 'summary']
 
@@ -312,6 +495,7 @@ submitting the form or aborting the action.
 
     >>> print view.action_url
     http://launchpad.dev/firefox/1.0/+addmilestone
+
     >>> print view.cancel_url
     http://launchpad.dev/firefox/1.0
 
@@ -341,6 +525,7 @@ cannot create a duplicate milestone.
     >>> for error in view.errors:
     ...     print error.errors
     The name 1.1 is already used by a milestone in Mozilla Firefox.
+
     >>> for milestone in firefox_1_0.milestones:
     ...     print milestone.name, milestone.code_name
     1.1 None
@@ -361,11 +546,60 @@ An empty code_name or summary (submitted via AJAX) is converted to None.
     1.1 None None
 
 
-== Deleting milestones ==
+Distroseries driver and milestones
+----------------------------------
 
-The DeleteMilestoneView allows users to edit permissions to delete Milestones.
-The view is restricted to owners of the project and drivers of the series.
+The driver of a series that belongs to an `IDerivativeDistribution` is a
+release manager and can create milestones.
 
+    >>> distroseries = factory.makeDistroRelease(name='pumpkin')
+    >>> driver = factory.makePerson(name='a-driver')
+    >>> distroseries.driver = driver
+    >>> login_person(driver)
+
+    >>> form = {
+    ...     'field.name': 'pie',
+    ...     'field.actions.register': 'Register Milestone',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     distroseries, '+addmilestone', form=form)
+    >>> milestone = distroseries.milestones[0]
+    >>> print milestone.name
+    pie
+
+The driver has access to the milestone.
+
+    >>> view = create_initialized_view(milestone, '+edit')
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+The driver of an `IBaseDistribution` such as Ubuntu cannot create a
+milestone.
+
+    >>> login_person(ubuntu_distro.owner.teamowner)
+    >>> hoary_series.driver = driver
+    >>> login_person(driver)
+
+    >>> view = create_initialized_view(hoary_series, '+addmilestone')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+Nor can the driver edit it.
+
+    >>> milestone = factory.makeMilestone(distribution=ubuntu_distro)
+    >>> view = create_initialized_view(milestone, '+edit')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
+Deleting milestones
+-------------------
+
+The DeleteMilestoneView allows users to edit permissions to delete
+Milestones. The view is restricted to owners of the project and drivers
+of the series.
+
+    >>> login_person(owner)
     >>> milestone = firefox_1_0.newMilestone('1.0.10')
     >>> print milestone.name
     1.0.10
@@ -374,28 +608,32 @@ The view is restricted to owners of the project and drivers of the series.
     >>> check_permission('launchpad.Edit', view)
     True
 
-The view provides a few properties to access the dependent artifacts. This
-milestone does not have any bugtasks, specifications, a product release or
-product release files.
+The view provides a few properties to access the dependent artifacts.
+This milestone does not have any bugtasks, specifications, a product
+release or product release files.
 
     >>> view.bugtasks
     []
+
     >>> view.specifications
     []
+
     >>> print view.product_release
     None
+
     >>> view.product_release_files
     []
 
 The milestone is deleted when the delete action is called.
 
     >>> form = {
-    ...     'field.actions.delete': 'Delete this Milestone',
+    ...     'field.actions.delete': 'Delete Milestone',
     ...     }
     >>> view = create_initialized_view(milestone, '+delete', form=form)
     >>> for notification in view.request.response.notifications:
     ...     print notification.message
     Milestone 1.0.10 deleted.
+
     >>> print firefox.getMilestone('1.0.10')
     None
 
@@ -416,14 +654,20 @@ milestone.
     >>> bug = factory.makeBug(product=firefox)
     >>> bugtask = bug.bugtasks[0]
     >>> bugtask.milestone = milestone
+    >>> subscription = milestone.addSubscription(owner, owner)
+    >>> [subscription for subscription in owner.structural_subscriptions]
+    [<StructuralSubscription ...>]
 
     >>> view = create_initialized_view(milestone, '+delete')
     >>> [bugtask.milestone.name for bugtask in view.bugtasks]
     [u'1.0.11']
+
     >>> [spec.milestone.name for spec in view.specifications]
     [u'1.0.11']
+
     >>> view.product_release.version
     u'1.0.11'
+
     >>> [file_.description for file_ in view.product_release_files]
     [u'test file']
 
@@ -434,12 +678,18 @@ milestone.
 
     >>> print firefox.getMilestone('1.0.11')
     None
+
     >>> print firefox_1_0.getRelease('1.0.11')
     None
+
     >>> print specification.milestone
     None
+
     >>> print bugtask.milestone
     None
+
+    >>> [subscription for subscription in owner.structural_subscriptions]
+    []
 
 No Privileges Person cannot access this view because he is neither the
 project owner or series driver..
@@ -449,3 +699,4 @@ project owner or series driver..
     >>> view = create_initialized_view(milestone, '+delete')
     >>> check_permission('launchpad.Edit', view)
     False
+

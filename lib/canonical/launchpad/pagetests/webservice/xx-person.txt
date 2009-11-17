@@ -90,7 +90,7 @@ for teams (as they're defined in the ITeam interface).
     subscription_policy: u'Moderated Team'
     super_teams_collection_link: u'http://.../~ubuntu-team/super_teams'
     team_description: u'This Team is responsible for the Ubuntu Distribution'
-    team_owner_link: u'http://.../~sabdfl'
+    team_owner_link: u'http://.../~mark'
     time_zone: None
     visibility: u'Public'
     wiki_names_collection_link: u'http://.../~ubuntu-team/wiki_names'
@@ -387,7 +387,7 @@ But only if we supply valid data.
     ...    u'wikiname': 'MrExample'}
     >>> response = webservice.patch(
     ...     wiki_name['self_link'], 'application/json', dumps(patch))
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 400 Bad Request
     ...
     wiki: The URI scheme "javascript" is not allowed.
@@ -398,12 +398,12 @@ But only if we supply valid data.
 
 Jabber IDs of a person are also linked.
 
-    >>> sabdfl = webservice.get("/~sabdfl").jsonBody()
-    >>> jabber_ids_link = sabdfl['jabber_ids_collection_link']
+    >>> mark = webservice.get("/~mark").jsonBody()
+    >>> jabber_ids_link = mark['jabber_ids_collection_link']
     >>> print jabber_ids_link
-    http://.../~sabdfl/jabber_ids
+    http://.../~mark/jabber_ids
     >>> print_self_link_of_entries(webservice.get(jabber_ids_link).jsonBody())
-    http://.../~sabdfl/+jabberid/markshuttleworth@jabber.org
+    http://.../~mark/+jabberid/markshuttleworth@jabber.org
 
 Jabber IDs are first-class objects with their own URLs and
 representations too.
@@ -412,9 +412,9 @@ representations too.
     ...     webservice.get(jabber_ids_link).jsonBody()['entries'])[0]
     >>> pprint_entry(jabber_id)
     jabberid: u'markshuttleworth@jabber.org'
-    person_link: u'http://.../~sabdfl'
+    person_link: u'http://.../~mark'
     resource_type_link: u'http://.../#jabber_id'
-    self_link: u'http://.../~sabdfl/+jabberid/markshuttleworth@jabber.org'
+    self_link: u'http://.../~mark/+jabberid/markshuttleworth@jabber.org'
 
 One can only traverse to the Jabber IDs of the person already traversed
 to, obviously.
@@ -429,11 +429,11 @@ to, obviously.
 
 The same for IRC nicknames
 
-    >>> irc_ids_link = sabdfl['irc_nicknames_collection_link']
+    >>> irc_ids_link = mark['irc_nicknames_collection_link']
     >>> print irc_ids_link
-    http://.../~sabdfl/irc_nicknames
+    http://.../~mark/irc_nicknames
     >>> print_self_link_of_entries(webservice.get(irc_ids_link).jsonBody())
-    http://.../~sabdfl/+ircnick/1
+    http://.../~mark/+ircnick/1
 
 IRC IDs are first-class objects with their own URLs and representations
 too.
@@ -442,9 +442,9 @@ too.
     >>> pprint_entry(irc_id)
     network: u'irc.freenode.net'
     nickname: u'mark'
-    person_link: u'http://.../~sabdfl'
+    person_link: u'http://.../~mark'
     resource_type_link: u'http://.../#irc_id'
-    self_link: u'http://.../~sabdfl/+ircnick/1'
+    self_link: u'http://.../~mark/+ircnick/1'
 
 One can only traverse to the IRC IDs of the person already traversed
 to, obviously.
@@ -458,34 +458,34 @@ to, obviously.
 
 We can get to the person's default PPA via the 'archive' property:
 
-    >>> sabdfl_archive_link = sabdfl['archive_link']
-    >>> print sabdfl_archive_link
-    http://.../~sabdfl/+archive/ppa
+    >>> mark_archive_link = mark['archive_link']
+    >>> print mark_archive_link
+    http://.../~mark/+archive/ppa
 
-    >>> sabdfl_archive = webservice.get(sabdfl_archive_link).jsonBody()
-    >>> print sabdfl_archive['description']
+    >>> mark_archive = webservice.get(mark_archive_link).jsonBody()
+    >>> print mark_archive['description']
     packages to help the humanity (you know, ubuntu)
 
 The 'ppas' property returns a collection of PPAs owned by that
 person.
 
     >>> print_self_link_of_entries(webservice.get(
-    ...     sabdfl['ppas_collection_link']).jsonBody())
-    http://.../~sabdfl/+archive/ppa
+    ...     mark['ppas_collection_link']).jsonBody())
+    http://.../~mark/+archive/ppa
 
 A specific PPA can be looked up by name via 'getPPAByName'
 named-operation on IPerson.
 
     >>> print webservice.named_get(
-    ...     sabdfl['self_link'], 'getPPAByName',
+    ...     mark['self_link'], 'getPPAByName',
     ...     name='ppa').jsonBody()['self_link']
-    http://.../~sabdfl/+archive/ppa
+    http://.../~mark/+archive/ppa
 
 In cases where a PPA with a given name cannot be found, None is
 returned.
 
     >>> print webservice.named_get(
-    ...     sabdfl['self_link'], 'getPPAByName', name='boing')
+    ...     mark['self_link'], 'getPPAByName', name='boing')
     HTTP/1.1 400 Bad Request
     ...
     NoSuchPPA: No such ppa: 'boing'.
@@ -495,7 +495,7 @@ The method doesn't even bother to execute the lookup if the given
 indicating what was wrong is returned.
 
     >>> print webservice.named_get(
-    ...     sabdfl['self_link'], 'getPPAByName', name='XpTo@#$%')
+    ...     mark['self_link'], 'getPPAByName', name='XpTo@#$%')
     HTTP/1.1 400 Bad Request
     ...
     name:

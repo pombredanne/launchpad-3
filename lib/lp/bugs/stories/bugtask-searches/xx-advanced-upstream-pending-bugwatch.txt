@@ -20,9 +20,6 @@ see that there are '0 bugs need forwarding upstream'.
 
     >>> pending_watches_link = user_browser.getLink(
     ...     'need forwarding upstream')
-    >>> pending_watches_link.text
-    '0 bugs need forwarding upstream'
-
 
 == Marking and searching for pending bugwatches ==
 
@@ -34,8 +31,8 @@ product. He does not provide bug watch information.
     >>> browser.addHeader("Authorization", 'Basic test@canonical.com:test')
     >>> browser.open('http://bugs.launchpad.dev/ubuntu/+source/alsa-utils/')
     >>> browser.getLink('Report a bug').click()
-    >>> browser.getLink('Advanced reporting options').click()
     >>> browser.getControl('Summary').value = 'Test Bug 1'
+    >>> browser.getControl('Continue').click()
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
     >>> print extract_text(find_main_content(browser.contents))
@@ -75,10 +72,7 @@ He wants to link bugs to to the upstream bug tracker.
     'Bugs in ALSA utilities'
 
     >>> pending_watches_link = user_browser.getLink(
-    ...     'needs forwarding upstream')
-    >>> pending_watches_link.text
-    '1 bug needs forwarding upstream'
-
+    ...     'Bugs need forwarding upstream')
     >>> pending_watches_link.click()
 
     >>> bug_listing = find_tag_by_id(user_browser.contents, 'buglisting')

@@ -1,34 +1,48 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views which export vocabularies as JSON for widgets."""
 
 __metaclass__ = type
 
 __all__ = [
+    'branch_to_vocabularyjson',
+    'default_vocabularyjson_adapter',
     'HugeVocabularyJSONView',
     'IPickerEntry',
     'person_to_vocabularyjson',
-    'default_vocabularyjson_adapter',
+    'sourcepackagename_to_vocabularyjson',
     ]
 
 import simplejson
 
+from zope.app.schema.vocabulary import IVocabularyFactory
+from zope.component import getUtility
 from zope.interface import implementer
 from zope.component import adapter
+from zope.component.interfaces import ComponentLookupError
 from zope.interface import Attribute, implements, Interface
-from zope.schema.vocabulary import getVocabularyRegistry
 from zope.app.form.interfaces import MissingInputError
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 
+from lp.code.interfaces.branch import IBranch
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
+from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import (
+    NoCanonicalUrl, UnexpectedFormData)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.tales import ObjectImageDisplayAPI
 from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
-MAX_DESCRIPTION_LENGTH = 80
+# XXX: EdwinGrubbs 2009-07-27 bug=405476
+# This limits the output to one line of text, since the sprite class
+# cannot clip the background image effectively for vocabulary items
+# with more than single line description below the title.
+MAX_DESCRIPTION_LENGTH = 55
 
 
 class IPickerEntry(Interface):
@@ -49,6 +63,7 @@ class PickerEntry:
         self.image = image
         self.css = css
 
+
 @implementer(IPickerEntry)
 @adapter(Interface)
 def default_pickerentry_adapter(obj):
@@ -58,6 +73,8 @@ def default_pickerentry_adapter(obj):
         extra.description = obj.summary
     display_api = ObjectImageDisplayAPI(obj)
     extra.css = display_api.sprite_css()
+    if extra.css is None:
+        extra.css = 'sprite bullet'
     return extra
 
 @implementer(IPickerEntry)
@@ -67,6 +84,24 @@ def person_to_pickerentry(person):
     extra = default_pickerentry_adapter(person)
     if person.preferredemail is not None:
         extra.description = person.preferredemail.email
+    return extra
+
+@implementer(IPickerEntry)
+@adapter(IBranch)
+def branch_to_pickerentry(branch):
+    """Adapts IBranch to IPickerEntry."""
+    extra = default_pickerentry_adapter(branch)
+    extra.description = branch.bzr_identity
+    return extra
+
+@implementer(IPickerEntry)
+@adapter(ISourcePackageName)
+def sourcepackagename_to_pickerentry(sourcepackagename):
+    """Adapts ISourcePackageName to IPickerEntry."""
+    extra = default_pickerentry_adapter(sourcepackagename)
+    descriptions = getSourcePackageDescriptions([sourcepackagename])
+    extra.description = descriptions.get(
+        sourcepackagename.name, "Not yet built")
     return extra
 
 
@@ -91,8 +126,17 @@ class HugeVocabularyJSONView:
         if search_text is None:
             raise MissingInputError('search_text', '')
 
-        registry = getVocabularyRegistry()
-        vocabulary = registry.get(IHugeVocabulary, name)
+        try:
+            factory = getUtility(IVocabularyFactory, name)
+        except ComponentLookupError:
+            raise UnexpectedFormData(
+                'Unknown vocabulary %r' % name)
+
+        vocabulary = factory(self.context)
+
+        if not IHugeVocabulary.providedBy(vocabulary):
+            raise UnexpectedFormData(
+                'Non-huge vocabulary %r' % name)
 
         matches = vocabulary.searchForTerms(search_text)
         batch_navigator = BatchNavigator(matches, self.request)
@@ -104,8 +148,15 @@ class HugeVocabularyJSONView:
             # The canonical_url without just the path (no hostname) can
             # be passed directly into the REST PATCH call.
             api_request = IWebServiceClientRequest(self.request)
-            entry['api_uri'] = canonical_url(
-                term.value, request=api_request, path_only_if_possible=True)
+            try:
+                entry['api_uri'] = canonical_url(
+                    term.value, request=api_request,
+                    path_only_if_possible=True)
+            except NoCanonicalUrl:
+                # The exception is caught, because the api_url is only
+                # needed for inplace editing via a REST call. The
+                # form picker doesn't need the api_url.
+                entry['api_uri'] = 'Could not find canonical url.'
             picker_entry = IPickerEntry(term.value)
             if picker_entry.description is not None:
                 if len(picker_entry.description) > MAX_DESCRIPTION_LENGTH:

@@ -49,3 +49,6 @@ dist
 ./download-cache
 ./_pythonpath.py
 ./production-configs
+bzr.dev
+_trial_temp
+lazr-js

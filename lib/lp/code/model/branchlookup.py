@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database implementation of the branch lookup utility."""
 
@@ -7,8 +8,7 @@ __metaclass__ = type
 # then get the IBranchLookup utility.
 __all__ = []
 
-from zope.component import (
-    adapts, getSiteManager, getUtility, queryMultiAdapter)
+from zope.component import adapts, getUtility, queryMultiAdapter
 from zope.interface import implements
 
 from storm.expr import Join
@@ -26,17 +26,21 @@ from lp.code.interfaces.branchlookup import (
     IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
-from lp.code.interfaces.linkedbranch import get_linked_branch, NoLinkedBranch
+from lp.code.interfaces.linkedbranch import (
+    CannotHaveLinkedBranch, get_linked_branch, NoLinkedBranch)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
-    IDistroSeries, IDistroSeriesSet)
+    IDistroSeries, IDistroSeriesSet, NoSuchDistroSeries)
+from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
 from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
+from lp.services.utils import iter_split
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -65,7 +69,7 @@ class RootTraversable:
 
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name):
+    def traverse(self, name, segments):
         """See `ITraversable`.
 
         :raise NoSuchProduct: If 'name' doesn't match an existing pillar.
@@ -102,7 +106,7 @@ class ProductTraversable(_BaseTraversable):
     adapts(IProduct)
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name):
+    def traverse(self, name, segments):
         """See `ITraversable`.
 
         :raises NoSuchProductSeries: if 'name' doesn't match an existing
@@ -124,12 +128,18 @@ class DistributionTraversable(_BaseTraversable):
     adapts(IDistribution)
     implements(ILinkedBranchTraversable)
 
-    def traverse(self, name):
+    def traverse(self, name, segments):
         """See `ITraversable`."""
-        # XXX: JonathanLange 2009-03-20 spec=package-branches bug=345737: This
-        # could also try to find a package and then return a reference to its
-        # development focus.
-        return getUtility(IDistroSeriesSet).fromSuite(self.context, name)
+        try:
+            return getUtility(IDistroSeriesSet).fromSuite(self.context, name)
+        except NoSuchDistroSeries:
+            sourcepackage = self.context.getSourcePackage(name)
+            if sourcepackage is None:
+                if segments:
+                    raise
+                else:
+                    raise NoSuchSourcePackageName(name)
+            return sourcepackage
 
 
 class DistroSeriesTraversable:
@@ -145,18 +155,12 @@ class DistroSeriesTraversable:
         self.distroseries = distroseries
         self.pocket = pocket
 
-    def traverse(self, name):
+    def traverse(self, name, segments):
         """See `ITraversable`."""
         sourcepackage = self.distroseries.getSourcePackage(name)
         if sourcepackage is None:
             raise NoSuchSourcePackageName(name)
         return sourcepackage.getSuiteSourcePackage(self.pocket)
-
-
-sm = getSiteManager()
-sm.registerAdapter(ProductTraversable)
-sm.registerAdapter(DistributionTraversable)
-sm.registerAdapter(DistroSeriesTraversable)
 
 
 class LinkedBranchTraverser:
@@ -170,7 +174,7 @@ class LinkedBranchTraverser:
         traversable = RootTraversable()
         while segments:
             name = segments.pop(0)
-            context = traversable.traverse(name)
+            context = traversable.traverse(name, segments)
             traversable = adapt(context, ILinkedBranchTraversable)
             if traversable is None:
                 break
@@ -226,7 +230,11 @@ class BranchLookup:
                 return None
             try:
                 return self.getByLPPath(uri.path.lstrip('/'))[0]
-            except NoSuchBranch:
+            except (
+                CannotHaveLinkedBranch, InvalidNamespace, InvalidProductName,
+                NoSuchBranch, NoSuchPerson, NoSuchProduct,
+                NoSuchProductSeries, NoSuchDistroSeries,
+                NoSuchSourcePackageName, NoLinkedBranch):
                 return None
 
         return Branch.selectOneBy(url=url)
@@ -251,6 +259,25 @@ class BranchLookup:
         except InvalidNamespace:
             return None
         return self._getBranchInNamespace(namespace_data, branch_name)
+
+    def getIdAndTrailingPath(self, path, from_slave=False):
+        """See `IBranchLookup`. """
+        if from_slave:
+            store = ISlaveStore(Branch)
+        else:
+            store = IMasterStore(Branch)
+        prefixes = []
+        for first, second in iter_split(path[1:], '/'):
+            prefixes.append(first)
+        result = store.find(
+            (Branch.id, Branch.unique_name),
+            Branch.unique_name.is_in(prefixes), Branch.private == False).one()
+        if result is None:
+            return None, None
+        else:
+            branch_id, unique_name = result
+            trailing = path[len(unique_name) + 1:]
+            return branch_id, trailing
 
     def _getBranchInNamespace(self, namespace_data, branch_name):
         if namespace_data['product'] == '+junk':
@@ -332,7 +359,7 @@ class BranchLookup:
             namespace_set = getUtility(IBranchNamespaceSet)
             segments = iter(path.lstrip('~').split('/'))
             branch = namespace_set.traverse(segments)
-            suffix =  '/'.join(segments)
+            suffix = '/'.join(segments)
             if not check_permission('launchpad.View', branch):
                 raise NoSuchBranch(path)
             if suffix == '':

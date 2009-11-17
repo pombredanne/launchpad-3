@@ -5,14 +5,6 @@ first finding out if you're bug has already been reported.
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
 
-There are no duplicate bugs reported in Ubuntu so the most common bugs
-table is not shown.
-
-    >>> most_common_bugs_table = find_tag_by_id(
-    ...     user_browser.contents, "most-common-bugs")
-    >>> print most_common_bugs_table
-    None
-
 Submitting a bug title...
 
     >>> user_browser.getControl("Summary").value = (
@@ -24,7 +16,7 @@ Submitting a bug title...
     >>> from lp.bugs.tests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #9 Thunderbird crashes
-    Confirmed (0 comments) last updated 2006-07-14
+    Confirmed (0 comments) last updated 2006-07-14...
     Every time I start Thunderbird...
 
 Subscribing to one of the similar bugs takes us to the bug page.

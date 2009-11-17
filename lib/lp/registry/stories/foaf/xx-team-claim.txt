@@ -20,7 +20,7 @@ definitely doesn't seem to be a team.
 If a profile does look like a team and there is a logged in user, the link
 is different...
 
-    >>> from canonical.launchpad.database import PersonSet
+    >>> from lp.registry.model.person import PersonSet
     >>> doc_team = PersonSet().getByName('doc')
     >>> [email.email for email in doc_team.guessedemails]
     [u'doc@lists.ubuntu.com']
@@ -36,12 +36,14 @@ Non-logged-in users see only a link to claim the profile..
     <Link text='Are you Ubuntu Doc Team?'...
 
 While logged-in users get a link to claim that profile and turn it into a
-team.
+team. This works even if the profile's email addresses would normally be
+hidden.
 
+    >>> doc_team.hide_email_addresses = True
     >>> user_browser.open('http://launchpad.dev/~doc')
     >>> user_browser.getLink('Is this a team you run?').click()
     >>> user_browser.title
-    'Claim team'
+    'Claim team...
 
 Now we enter the doc team's email address to continue the process of
 turning that profile into a team.
@@ -106,8 +108,9 @@ page.
     Team claimed successfully
 
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'team-details'))
-    Team owned by No Privileges Person, ...
+    ...     find_tag_by_id(user_browser.contents, 'team-owner'))
+    Owner:
+    No Privileges Person
 
 
 Trying to access +claimteam for an already active team 404s as you would

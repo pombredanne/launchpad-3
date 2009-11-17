@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for ISourcePackage implementations."""
 
@@ -13,7 +14,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.ftests import login_person, logout
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.testing import TestCaseWithFactory
@@ -153,6 +154,17 @@ class TestSourcePackage(TestCaseWithFactory):
             dev_sourcepackage, other_sourcepackage.development_version)
         self.assertEqual(
             dev_sourcepackage, dev_sourcepackage.development_version)
+
+    def test_distribution_sourcepackage(self):
+        # ISourcePackage.distribution_sourcepackage is the distribution source
+        # package for the ISourcePackage.
+        sourcepackage = self.factory.makeSourcePackage()
+        distribution = sourcepackage.distribution
+        distribution_sourcepackage = distribution.getSourcePackage(
+            sourcepackage.sourcepackagename)
+        self.assertEqual(
+            distribution_sourcepackage,
+            sourcepackage.distribution_sourcepackage)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):

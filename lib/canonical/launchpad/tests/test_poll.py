@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import unittest
 from datetime import datetime, timedelta
@@ -14,7 +15,7 @@ class TestPoll(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def test_getWinners_handle_polls_with_only_spoilt_votes(self):
-        login('mark@hbd.com')
+        login('mark@example.com')
         owner = self.factory.makePerson()
         team = self.factory.makeTeam(owner)
         poll = self.factory.makePoll(team, 'name', 'title', 'proposition')

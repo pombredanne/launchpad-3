@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
@@ -26,7 +30,7 @@
     for="lp.answers.interfaces.question.IQuestion"
     class=".browser.QuestionMakeBugView"
     permission="launchpad.AnyPerson"
-    template="templates/question-makebug.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:page

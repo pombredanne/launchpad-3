@@ -1,5 +1,5 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities to aid testing archivepublisher."""
 
@@ -8,8 +8,8 @@ __metaclass__ = type
 # Utility functions/classes for testing the archive publisher.
 
 from lp.archivepublisher.tests import datadir
-from canonical.launchpad.interfaces import (
-    DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus)
+from canonical.launchpad.interfaces import DistroSeriesStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 __all__ = ['FakeLogger']
 
@@ -25,13 +25,13 @@ class FakeDistribution:
     def __init__(self, name, conf):
         self.name = name.decode('utf-8')
         self.lucilleconfig = conf.decode('utf-8')
-        self.serieses = []
+        self.series = []
 
     def registerSeries(self, series):
-        self.serieses.append(series)
+        self.series.append(series)
 
     def __getitem__(self, name):
-        for series in self.serieses:
+        for series in self.series:
             if series.name == name:
                 return series
         return None
@@ -258,7 +258,7 @@ cacheroot=FOO/cache
 miscroot=FOO/misc
                         """.replace("FOO",datadir("distro")).replace("BAR","ubuntu"));
 
-fake_ubuntu_serieses = [
+fake_ubuntu_series = [
     FakeDistroSeries("warty",
                       """
 [publishing]

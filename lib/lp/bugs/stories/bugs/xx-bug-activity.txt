@@ -7,16 +7,19 @@ The bug activity page is where you find the "changelog" of a bug.
     ...     'mozilla-firefox/+bug/3/+activity')
     >>> main_content = find_main_content(anon_browser.contents)
 
-The page heading contains a link back to the bug page.
+The page contains a link back to the bug page in the breadcrumbs and
+the main heading repeats the bug number for clarity:
 
-    >>> bug_link = main_content.p.a
-    >>> print '%s --> %s' % (extract_text(bug_link), bug_link['href'])
-    Bug #3: Bug Title Test --> /debian/+source/mozilla-firefox/+bug/3
-
-The title repeats the bug number for clarity.
-
-    >>> print extract_text(main_content.h1)
-    Activity log for bug #3
+    >>> print_location(anon_browser.contents)
+    Hierarchy: Debian > ?mozilla-firefox? package > Bugs > Bug #3...
+    Tabs:
+    * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
+    * Branches - http://code.launchpad.dev/debian/+source/mozilla-firefox
+    * Bugs (selected) - http://bugs.launchpad.dev/debian/+source/mozilla-firefox
+    * Blueprints - not linked
+    * Translations - not linked
+    * Answers - http://answers.launchpad.dev/debian/+source/mozilla-firefox
+    Main heading: Activity log for bug #3
 
 The activity log itself is presented as a table.
 
@@ -27,9 +30,17 @@ The activity log itself is presented as a table.
     >>> for row in main_content.table('tr'):
     ...     print_row(row)
     Date | Who | What changed | Old value | New value | Message
-    10 Aug 05 16:30 | Sample Person | bug |  |  | assigned to source ...
-    10 Aug 05 16:30 | Sample Person | bug |  |  | assigned to source ...
-    24 Feb 06 21:34 | Foo Bar | mozilla-firefox: statusexplanation |  |  |
+    2005-08-10 16:30:32 | Sample Person | bug |  |  | assigned to source ...
+    2005-08-10 16:30:47 | Sample Person | bug |  |  | assigned to source ...
+    2006-02-24 21:34:52 | Foo Bar | mozilla-firefox: statusexplanation |  |  |
+
+The bug page contains a link to the activity log.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/debian/+source/'
+    ...     'mozilla-firefox/+bug/3')
+    >>> print anon_browser.getLink('See full activity log').url
+    http://.../+bug/3/+activity
 
 
 == Activity interleaved with comments ==
@@ -48,15 +59,17 @@ page.
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+addcomment')
     >>> user_browser.getControl(name='field.comment').value = (
     ...     "Here's a comment for testing, like.")
-    >>> user_browser.getControl('Save Changes').click()
+    >>> user_browser.getControl('Post Comment').click()
     >>> print_comments(user_browser.contents)
     Bug Watch Updater
     on 2007-12-18
     Changed in thunderbird:
-                    status: Unknown &#8594; New
+    status:
+    Unknown &#8594; New
     --------
+    No Privileges Person
+    ...
     #7
-    No Privileges Person wrote ...
     Here's a comment for testing, like.
     --------
 
@@ -230,13 +243,13 @@ package, the name of the package and the distro will be displayed.
     >>> admin_browser.getControl('Status').value = ['Confirmed']
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
-    #1
     Sample Person
     ...
-    --------
-    Foo Bar ... ago
+    Foo Bar
+    ...
     Changed in mozilla-firefox (Ubuntu):
-                                 status: New &#8594; Confirmed
+    status:
+    New &#8594; Confirmed
     --------
 
 If a change has a comment associated with it it will be displayed in the
@@ -251,14 +264,12 @@ bundled with that comment in the UI.
     >>> admin_browser.getControl('Comment').value = "Lookit, a change!"
     >>> admin_browser.getControl("Save Changes").click()
     >>> print_comments(admin_browser.contents)
-    #1
     Sample Person
     ...
-    --------
-    #2
     Foo Bar
     wrote
     ...
+    #2
     Lookit, a change!
     Changed in mozilla-firefox (Ubuntu):
     importance:

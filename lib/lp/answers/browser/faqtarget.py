@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """`IFAQTarget` browser views."""
 
@@ -26,7 +27,7 @@ class FAQTargetNavigationMixin:
         try:
             id_ = int(name)
         except ValueError:
-            return NotFoundError
+            raise NotFoundError(name)
         return self.context.getFAQ(id_)
 
 
@@ -38,6 +39,10 @@ class FAQCreateView(LaunchpadFormView):
     field_names = ['title', 'keywords', 'content']
 
     custom_widget('keywords', TokensTextWidget)
+
+    @property
+    def page_title(self):
+        return 'Create a FAQ for %s' % self.context.displayname
 
     @action(_('Create'), name='create')
     def create__action(self, action, data):

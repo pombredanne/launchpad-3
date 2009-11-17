@@ -1,6 +1,11 @@
-# (C) Canonical Software Ltd. 2004-2006, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-__all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
+__all__ = [
+    'Publisher',
+    'suffixpocket',
+    'getPublisher',
+    ]
 
 __metaclass__ = type
 
@@ -23,12 +28,13 @@ from lp.archivepublisher.interfaces.archivesigningkey import (
 from lp.archivepublisher.utils import (
     RepositoryIndexFile, get_ppa_reference)
 from canonical.database.sqlbase import sqlvalues
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.soyuz.interfaces.publishing import (
-    pocketsuffix, PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 from canonical.librarian.client import LibrarianClient
 
@@ -210,7 +216,7 @@ class Publisher(object):
         """
         self.log.debug("* Step A: Publishing packages")
 
-        for distroseries in self.distro.serieses:
+        for distroseries in self.distro.series:
             for pocket, suffix in pocketsuffix.items():
                 if (self.allowed_suites and not (distroseries.name, pocket) in
                     self.allowed_suites):
@@ -250,7 +256,7 @@ class Publisher(object):
         # added to the dirty_pockets set.
 
         # Loop for each pocket in each distroseries:
-        for distroseries in self.distro.serieses:
+        for distroseries in self.distro.series:
             for pocket, suffix in pocketsuffix.items():
                 if self.cannotModifySuite(distroseries, pocket):
                     # We don't want to mark release pockets dirty in a
@@ -286,7 +292,7 @@ class Publisher(object):
         """Second step in publishing: domination."""
         self.log.debug("* Step B: dominating packages")
         judgejudy = Dominator(self.log, self.archive)
-        for distroseries in self.distro.serieses:
+        for distroseries in self.distro.series:
             for pocket in PackagePublishingPocket.items:
                 if not force_domination:
                     if not self.isDirty(distroseries, pocket):
@@ -304,7 +310,7 @@ class Publisher(object):
     def C_writeIndexes(self, is_careful):
         """Write Index files (Packages & Sources) using LP information.
 
-        Iterates over all distroserieses and its pockets and components.
+        Iterates over all distroseries and its pockets and components.
         """
         self.log.debug("* Step C': write indexes directly from DB")
         for distroseries in self.distro:

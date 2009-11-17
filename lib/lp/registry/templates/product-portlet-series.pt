@@ -3,7 +3,6 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-
 <div class="portlet" id="portlet-series">
   <h2>
     <tal:name content="context/displayname">Firefox</tal:name>
@@ -11,16 +10,13 @@
   </h2>
 
   <div class="portletBody portletContent">
-
   <ul>
-    <li tal:repeat="series context/serieses"
+    <li tal:repeat="series context/series"
         class="product">
       <a tal:attributes="href series/fmt:url"
          tal:content="series/displayname">Evolution MAIN</a>
     </li>
   </ul>
-	
   </div>
-
 </div>
 </tal:root>

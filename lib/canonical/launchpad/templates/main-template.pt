@@ -27,6 +27,7 @@
       is_demo modules/canonical.config/config/launchpad/is_demo;
       is_edge modules/canonical.config/config/launchpad/is_edge;
       is_lpnet modules/canonical.config/config/launchpad/is_lpnet;
+      site_message modules/canonical.config/config/launchpad/site_message;
       CONTEXTS python:{'template':template, 'context': context, 'view':view};
   "
 >
@@ -72,46 +73,9 @@
       </style>
     </noscript>
 
-    <metal:load-javascript
-      use-macro="context/@@+main-template-macros/load-javascript" />
+    <metal:page-javascript
+      use-macro="context/@@+main-template-macros/page-javascript" />
 
-    <script type="text/javascript">
-      YUI().use('node', function(Y) {
-          Y.on('load', function(e) {
-              sortables_init();
-              initInlineHelp();
-              activateCollapsibles();
-              activateFoldables();
-              activateConstrainBugExpiration();
-          }, window);
-
-          // Hook up the function that dismisses the help window if we click
-          // anywhere outside of it.
-          Y.on('click', handleClickOnPage, window);
-      });
-    </script>
-
-    <tal:needs_json tal:condition="request/needs_json">
-      <script type="text/javascript"
-        tal:attributes="src string:${icingroot_contrib}/json2.js"></script>
-      <script type="text/javascript"
-        tal:attributes="src string:${icingroot_contrib}/JSONScriptRequest.js"></script>
-    </tal:needs_json>
-    <tal:needs-gmap2 condition="request/needs_gmap2">
-      <tal:devmode condition="devmode">
-        <script type="text/javascript"
-                tal:attributes="src string:http://maps.google.com/maps?file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};"
-                ></script>
-      </tal:devmode>
-      <tal:not-devmode condition="not: devmode">
-        <script type="text/javascript"
-                tal:attributes="src string:https://maps-api-ssl.google.com/maps?oe=utf-8&amp;client=gme-canonical&amp;file=api&amp;v=2&amp;key=${modules/canonical.config/config/google/maps_api_key};"
-                ></script>
-      </tal:not-devmode>
-    </tal:needs-gmap2>
-    <script type="text/javascript"
-            tal:define="lp_js string:${icingroot}/build"
-            tal:attributes="src string:${lp_js}/lp/mapping.js"></script>
     <link rel="shortcut icon" href="/@@/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
@@ -134,7 +98,6 @@
         <input type="search" id="search-text" name="field.text" />
       </form>
       <tal:hierarchy replace="structure context/@@+hierarchy" />
-
     <div
       tal:condition="view/macro:pagehas/applicationtabs"
       tal:define="facetmenu view/menu:facet"
@@ -270,6 +233,10 @@
           <a tal:condition="request/lp:person" href="/feedback"
           >Contact us</a> | <a href="https://help.launchpad.net/">Get help with Launchpad</a>
         </div>
+
+        <metal:site-message
+          use-macro="context/@@+base-layout-macros/site-message"/>
+
         <div id="lp-arcana">
             &copy;&nbsp;2004-2009&nbsp;<a
                 href="http://canonical.com/">Canonical&nbsp;Ltd.</a>

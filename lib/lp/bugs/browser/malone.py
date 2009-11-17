@@ -1,10 +1,12 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Browser code for the malone application."""
 
 __metaclass__ = type
 __all__ = [
     'MaloneApplicationNavigation',
-    'MaloneContextMenu',
+    'MaloneRelatedPages',
     ]
 
 
@@ -14,9 +16,11 @@ from zope.security.interfaces import Unauthorized
 import canonical.launchpad.layers
 
 from canonical.launchpad.webapp import (
-    ContextMenu, Link, Navigation, canonical_url, stepto)
+    Link, Navigation, canonical_url, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.menu import NavigationMenu
 
+from lp.bugs.browser.bug import MaloneView
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtracker import IBugTrackerSet
 from lp.bugs.interfaces.cve import ICveSet
@@ -65,10 +69,17 @@ class MaloneApplicationNavigation(Navigation):
         return bug
 
 
-class MaloneContextMenu(ContextMenu):
-    # XXX mpt 2006-03-27: No longer visible on Bugs front page.
-    usedfor = IMaloneApplication
-    links = ['cvetracker']
+class MaloneRelatedPages(NavigationMenu):
+
+    facet = 'bugs'
+    title = 'Related pages'
+    usedfor = MaloneView
+    links = ['bugtrackers', 'cvetracker']
+
+    def bugtrackers(self):
+        url = canonical_url(getUtility(IBugTrackerSet))
+        text = "Bug trackers"
+        return Link(url, text, icon='bug')
 
     def cvetracker(self):
         text = 'CVE tracker'

@@ -1,14 +1,18 @@
-<configure xmlns="http://namespaces.zope.org/zope">
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
 
-  <utility
-    name="Bounty"
-    component="canonical.launchpad.vocabularies.BountyVocabulary"
-    provides="zope.schema.interfaces.IVocabularyFactory"
-    />
+<configure xmlns="http://namespaces.zope.org/zope">
 
   <utility
     name="Branch"
     component="canonical.launchpad.vocabularies.BranchVocabulary"
+    provides="zope.schema.interfaces.IVocabularyFactory"
+    />
+
+  <utility
+    name="HostedBranchRestrictedOnOwner"
+    component="canonical.launchpad.vocabularies.HostedBranchRestrictedOnOwnerVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
@@ -25,8 +29,8 @@
     />
 
   <utility
-    name="BugNominatableSerieses"
-    component="canonical.launchpad.vocabularies.BugNominatableSeriesesVocabulary"
+    name="BugNominatableSeries"
+    component="canonical.launchpad.vocabularies.BugNominatableSeriesVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 

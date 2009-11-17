@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the transport-backed SFTP server implementation."""
 
@@ -139,8 +140,8 @@ class SFTPTestMixin:
         self.assertEqual(os.getuid(), attrs['uid'])
         self.assertEqual(os.getgid(), attrs['gid'])
         self.assertEqual(stat_value.st_mode, attrs['permissions'])
-        self.assertEqual(int(stat_value.st_mtime), attrs['mtime'])
-        self.assertEqual(int(stat_value.st_atime), attrs['atime'])
+        self.assertEqual(stat_value.st_mtime, attrs['mtime'])
+        self.assertEqual(stat_value.st_atime, attrs['atime'])
 
     def getPathSegment(self):
         """Return a unique path segment for testing.
@@ -451,6 +452,13 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
     def test_removeFileError(self):
         # Errors in removeFile are translated into SFTPErrors.
         filename = self.getPathSegment()
+        deferred = self.sftp_server.removeFile(filename)
+        return self.assertFailure(deferred, filetransfer.SFTPError)
+
+    def test_removeFile_directory(self):
+        # Errors in removeFile are translated into SFTPErrors.
+        filename = self.getPathSegment()
+        self.build_tree_contents([(filename+'/',)])
         deferred = self.sftp_server.removeFile(filename)
         return self.assertFailure(deferred, filetransfer.SFTPError)
 

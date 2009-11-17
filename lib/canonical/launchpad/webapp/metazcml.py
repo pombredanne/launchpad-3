@@ -1,4 +1,5 @@
-# (c) Canonical Software Ltd. 2004-2007, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -7,12 +8,11 @@ import inspect
 import zope.app.form.browser.metadirectives
 import zope.app.publisher.browser.metadirectives
 import zope.configuration.config
-from zope.app.component.metaconfigure import (
-    handler, PublicPermission, utility, view)
+from zope.app.component.metaconfigure import PublicPermission, view
 from zope.app.file.image import Image
 from zope.app.pagetemplate.engine import TrustedEngine
 from zope.component import getUtility
-from zope.component.zcml import adapter
+from zope.component.zcml import adapter, handler, utility
 from zope.configuration.fields import (
     GlobalInterface, GlobalObject, Path, PythonIdentifier, Tokens)
 from zope.interface import Interface, implements
@@ -466,12 +466,13 @@ class IPagesDirective(
 
 
 class pages(original_pages):
+    """Override the browser:pages directive to set a facet on it."""
 
-    def __init__(self, _context, for_, permission,
+    def __init__(self, _context, permission, for_,
         layer=IDefaultBrowserLayer, class_=None,
         allowed_interface=None, allowed_attributes=None,
         facet=None):
-        original_pages.__init__(self, _context, for_, permission,
+        original_pages.__init__(self, _context, permission, for_,
             layer=layer, class_=class_,
             allowed_interface=allowed_interface,
             allowed_attributes=allowed_attributes)
@@ -531,8 +532,8 @@ def renamed_page(_context, for_, name, new_name, layer=IDefaultBrowserLayer,
         discriminator = ('view', for_, name, IBrowserRequest, layer),
         callable = handler,
         args = (
-            'provideAdapter',
-            (for_, layer), Interface, name, renamed_factory, _context.info))
+            'registerAdapter',
+            renamed_factory, (for_, layer), Interface, name, _context.info))
 
 
 class IEditFormDirective(

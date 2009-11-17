@@ -5,6 +5,7 @@ First create a copy archive for us to see:
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet)
+    >>> from lp.registry.interfaces.person import IPersonSet
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
 
@@ -16,9 +17,9 @@ First create a copy archive for us to see:
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     copy_location, copy_archive.owner)
 
-    >>> marty = factory.makePerson(displayname='Marty Jupiter')
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
     >>> disabled_location = factory.makeCopyArchiveLocation(
-    ...     distribution=ubuntu, owner=marty,
+    ...     distribution=ubuntu, owner=nopriv,
     ...     name="disabled-security-rebuild")
     >>> disabled_archive = disabled_location.archive
     >>> disabled_archive.enabled = False
@@ -42,17 +43,16 @@ Currently (until we get some UI input) there is no link to the archives
 page, but it exists at:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+archives")
-    >>> anon_browser.title
-    'Ubuntu Linux Copy Archives'
+    >>> print anon_browser.title
+    Ubuntu Linux Copy Archives...
 
 This index of /ubuntu/+archives provides an overview describing
 what the viewer can expect to find here
 
     >>> main_content = find_main_content(anon_browser.contents)
     >>> print extract_text(main_content)
-    Details...
-    ...
     Copy Archives related to Ubuntu Linux
+    Ubuntu...
     'Copy' archives containing packages copied from other archives
     (the main archive or PPAs) for a distribution.
     ...
@@ -69,13 +69,23 @@ details:
 
     >>> link.click()
     >>> print anon_browser.title
-    Copy archive intrepid-security-rebuild for Joe Bloggs
+    Copy archive intrepid-security-rebuild for Joe Bloggs : Ubuntu
 
 Copy archives only have minor differences from PPAs in their presentation.
 In particular, the source.list entries are not displayed for a copy
 archive:
 
     >>> print find_tag_by_id(anon_browser.contents, 'sources-list-entries')
+    None
+
+The package counters are not displayed for a copy archive:
+
+    >>> print find_tag_by_id(anon_browser.contents, 'package-counters')
+    None
+
+Neither is the repository-size javascript present:
+
+    >>> print find_tag_by_id(anon_browser.contents, 'repository-size-update')
     None
 
 Whereas, for a PPA which uses the same template, the sources list is
@@ -86,6 +96,14 @@ present:
     <pre id="sources-list-entries"...
     ...
     deb-src ...</pre>
+
+The package details can be accessed for a distribution archive.
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archives")
+    >>> anon_browser.getLink("intrepid-security-rebuild").click()
+    >>> anon_browser.getLink("View package details").click()
+    >>> print anon_browser.title
+    Packages in “Copy archive intrepid-security-rebuild...
 
 The list of copy archives for a distribution may also include private
 copy archives. These should not be displayed unless the user has
@@ -124,20 +142,56 @@ For example:
     >>> 'intrepid-private-security-rebuild' in extract_text(main_content)
     True
 
+Disabled copy archives are not presented in the copy archives list
+when it's accessed anonymously.
+
+    >>> anon_browser.open("http://launchpad.dev/ubuntu/+archives")
+    >>> main_content = find_main_content(anon_browser.contents)
+    >>> 'disabled-security-rebuild' in extract_text(main_content)
+    False
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+archive/disabled-security-rebuild")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ... 'launchpad.View')
+
 Disabled copy archives have the title rendered in gray colour
 (class="disabled") and a warning message stating that the archive
 is disabled.
 
-    >>> anon_browser.open(
+    >>> nopriv_browser = setupBrowser(
+    ...     auth="Basic no-priv@canonical.com:test")
+    >>> nopriv_browser.open(
     ...     "http://launchpad.dev/ubuntu/+archive/disabled-security-rebuild")
-    >>> print anon_browser.title
-    Copy archive disabled-security-rebuild for Marty Jupiter
 
-    >>> main_content = find_main_content(anon_browser.contents)
+    >>> print nopriv_browser.title
+    Copy archive disabled-security-rebuild for No Privileges Person : Ubuntu
+
+    >>> main_content = find_main_content(nopriv_browser.contents)
     >>> print main_content.h1['class']
     disabled
 
-    >>> tag = first_tag_by_class(anon_browser.contents, 'warning message')
+    >>> tag = first_tag_by_class(nopriv_browser.contents, 'warning message')
     >>> print extract_text(tag)
     This archive has been disabled.
+
+When a COPY archive gets enabled, No Privileges users can still access
+it and the 'disabled' styling is gone.
+
+    >>> login('foo.bar@canonical.com')
+    >>> disabled_archive.enabled = True
+    >>> logout()
+
+    >>> nopriv_browser.reload()
+
+    >>> print nopriv_browser.title
+    Copy archive disabled-security-rebuild for No Privileges Person : Ubuntu
+
+    >>> main_content = find_main_content(nopriv_browser.contents)
+    >>> print main_content.h1
+    <h1 id="displayname">...</h1>
+
+    >>> print first_tag_by_class(nopriv_browser.contents, 'warning message')
+    None
 

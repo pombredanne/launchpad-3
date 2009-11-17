@@ -160,8 +160,8 @@ We remove Sample Person's bug subscription to the package.
 
     >>> evolution_sub.blueprint_notification_level = (
     ...     BlueprintNotificationLevel.METADATA)
-    >>> evolution_package.removeBugSubscription(sampleperson)
-    >>> ubuntu.removeBugSubscription(sampleperson)
+    >>> evolution_package.removeBugSubscription(sampleperson, sampleperson)
+    >>> ubuntu.removeBugSubscription(sampleperson, sampleperson)
     >>> syncUpdate(evolution_sub)
 
 Sample Person is no longer a subscriber to the package, but Foo Bar

@@ -3,43 +3,43 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/default"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
   <body>
+    <tal:registering metal:fill-slot="registering">
+      Registered
+      <tal:created replace="context/datecreated/fmt:approximatedate" />
+      by
+      <tal:registrant replace="structure context/registrant/fmt:link" />
+    </tal:registering>
 
-    <metal:portlets fill-slot="portlets">
-      <tal:portlet tal:replace="structure context/@@+portlet-lifecycle" />
-      <tal:portlet tal:replace="structure context/@@+portlet-milestones" />
-    </metal:portlets>
-
-    <div metal:fill-slot="main">
-
-    <p id="project-inactive" tal:condition="not: context/active" class="warning message"> 
-      This project is currently inactive <a href="+review">(change this)</a>
-    </p>
-
-    <tal:block condition="view/required:launchpad.Edit">
-      <p tal:condition="not: context/products" class="warning message"> 
-        There are no projects registered for
-        <span tal:replace="context/displayname">project displayname</span>.
-        <br />
-        You need to <a href="+newproduct">register another project that is
-        part of <tal:project replace="context/displayname" /></a> or associate
-        an existing project with it.
-      </p>
-    </tal:block>
-
-      <div
-        style="width: 200px; height: 200px; float: right;"
-        tal:content="structure context/image:mugshot"
-      />
+    <tal:heading metal:fill-slot="heading">
       <h1 tal:content="context/title">Mozilla</h1>
+    </tal:heading>
 
-      <div class="description" tal:content="context/summary">
+    <tal:main metal:fill-slot="main">
+
+    <div class="top-portlet">
+      <p id="project-inactive" class="warning message"
+         tal:condition="not: context/active">
+        This project is currently inactive
+        <a tal:attributes="href context/menu:overview/administer/url"
+          >(change this)</a>
+      </p>
+
+      <tal:block condition="view/required:launchpad.Edit">
+        <p tal:condition="not: context/products" class="warning message">
+          There are no projects registered for
+          <span tal:replace="context/displayname">project displayname</span>.
+          <br />
+          You need to <a href="+newproduct">register another project that is
+          part of <tal:project replace="context/displayname" /></a> or associate
+          an existing project with it.
+        </p>
+      </tal:block>
+
+      <div class="summary" tal:content="context/summary">
         This is the project group Summary, which should be a single paragraph
         summarising the project group's purpose.
       </div>
@@ -58,92 +58,85 @@
         Apache Server, and mention other projects such as APR.
       </div>
 
-      <ul tal:condition="context/homepageurl">
+      <ul id="external-links" class="horizontal"
+          tal:condition="context/homepageurl">
         <li>
-          <a rel="nofollow"
-            tal:attributes="href context/homepageurl;
-                            class string:sprite external-link">
-            <strong>Visit the <tal:name replace="context/title" />
-            home page &raquo;</strong>
-          </a>
+          <a rel="nofollow" class="sprite external-link"
+             tal:attributes="href context/homepageurl">Home page</a>
         </li>
       </ul>
-      <ul class="buttons" tal:condition="context/products">
-        <li>
-          <a href="+filebug">
-            <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
-          </a>
-        </li>
-        <li tal:content="structure context/@@+ask-a-question-button" />
-        <li tal:content="structure context/@@+help-translate-button" />
-        <li tal:define="has_mentoring context/mentoring_offers/count">
-          <a href="+mentoring" tal:condition="has_mentoring">
-            <img alt="Mentoring available"
-                 src="/+icing/but-sml-mentoring.gif"/>
-          </a>
-          <a href="+mentoring" tal:condition="not: has_mentoring">
-            <img alt="No mentoring available"
-                 src="/+icing/but-sml-mentoring-off.gif" />
-          </a>
-        </li>
-      </ul>
-      <div class="left">
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-coming-sprints"
-        />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestannouncements"
-        />
-        <div class="portlet" id="products">
+    </div>
+
+    <div class="yui-g">
+      <div class="yui-u first">
+        <tal:details replace="structure context/@@+details" />
+
+        <tal:faqs content="structure context/@@+portlet-listfaqs"
+          condition="context/@@+get-involved/official_answers" />
+
+        <tal:has-many-project condition="view/has_many_projects">
+          <tal:questions content="structure context/@@+portlet-latestquestions"
+            condition="context/@@+get-involved/official_answers" />
+        </tal:has-many-project>
+
+        <tal:bugs content="structure context/@@+portlet-latestbugs"
+          condition="context/@@+get-involved/official_malone" />
+
+        <tal:has-many-project condition="view/has_many_projects">
+          <tal:specs content="structure context/@@+portlet-latestspecs"
+            condition="context/@@+get-involved/official_blueprints" />
+        </tal:has-many-project>
+
+        <tal:contributors content="structure context/@@+portlet-top-contributors"/>
+
+        <tal:has-many-project condition="view/has_many_projects">
+          <tal:sprints content="structure context/@@+portlet-coming-sprints" />
+        </tal:has-many-project>
+      </div>
+
+      <div class="yui-u" id="products">
+        <div class="portlet">
           <h2>Projects</h2>
-          <p tal:condition="not: context/products"> 
+          <p tal:condition="not: context/products">
             There are no projects registered for
             <span tal:replace="context/displayname">project displayname</span>.
           </p>
-          <div
-            tal:condition="context/products"
-            tal:repeat="product context/products">
-            <tal:link replace="structure product/fmt:link" />
-            <div tal:condition="product/releases/count">
-              Releases:
-              <tal:release repeat="release product/releases">
-                <a
-                  tal:attributes="href release/fmt:url"
-                  tal:content="release/version"
-                >version</a><tal:comma
-                condition="not:repeat/release/end">,</tal:comma>
-              </tal:release>
-            </div>
-            <div tal:condition="product/milestones">
-              Milestones:
-              <tal:milestone repeat="milestone product/milestones">
-                <a
-                  tal:attributes="href milestone/fmt:url"
-                  tal:content="milestone/name"
-                >name</a><tal:comma
-                condition="not:repeat/milestone/end">,</tal:comma>
-              </tal:milestone>
-            </div>
-          </div>
-          <tal:block condition="context/required:launchpad.Edit">
-            <a href="+newproduct">&raquo; Register another project that is
-            part of <tal:project replace="context/displayname" /></a>
-          </tal:block>
+          <ul tal:condition="context/products"
+              tal:repeat="product context/products">
+            <li><a tal:replace="structure product/fmt:link">product</a></li>
+          </ul>
+          <ul style="margin-top: 0.5em;">
+            <li tal:condition="context/menu:overview/new_product/enabled">
+              <a tal:replace="structure context/menu:overview/new_product/fmt:link" />
+            </li>
+            <li>
+              <a tal:replace="structure context/menu:overview/milestones/fmt:link" />
+            </li>
+          </ul>
         </div>
-        <div tal:replace="structure context/@@+portlet-latestspecs" />
-      </div>
-      <div class="right">
-        <div tal:replace="structure context/@@+details" />
-        <div tal:replace="structure context/@@+portlet-top-contributors" />
-        <div tal:replace="structure context/@@+portlet-latestbugs" />
-        <div
-          class="section"
-          tal:content="structure context/@@+portlet-latestquestions"
-        />
+
+        <tal:has-few-project condition="not: view/has_many_projects">
+          <tal:questions content="structure context/@@+portlet-latestquestions"
+            condition="context/@@+get-involved/official_answers" />
+
+          <tal:specs content="structure context/@@+portlet-latestspecs"
+            condition="context/@@+get-involved/official_blueprints" />
+
+          <tal:sprints content="structure context/@@+portlet-coming-sprints" />
+        </tal:has-few-project>
       </div>
     </div>
+    </tal:main>
+
+    <tal:side metal:fill-slot="side">
+      <div id="object-actions" class="top-portlet">
+        <tal:menu replace="structure view/@@+global-actions" />
+      </div>
+
+      <div tal:replace="structure context/@@+get-involved" />
+
+      <tal:portlet tal:replace="structure context/@@+portlet-latestannouncements" />
+    </tal:side>
+
   </body>
 </html>
-

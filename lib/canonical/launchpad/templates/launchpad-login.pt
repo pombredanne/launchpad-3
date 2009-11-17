@@ -5,15 +5,7 @@
   omit-tag="">
 <tal:do-this-first tal:content="view/process_form" />
 <html
-  xmlns="http://www.w3.org/1999/xhtml"
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/freeform" 
-  i18n:domain="launchpad"
+  metal:use-macro="view/macro:page/locationless"
 >
   <head metal:fill-slot="head_epilogue">
     <meta name="robots" content="noindex" />
@@ -35,7 +27,7 @@
       See also launchpad-restictedlogin.pt, which also uses
       these numbers in comments.
     </tal:comment>
-    <div metal:fill-slot="main">
+    <div class="top-portlet" metal:fill-slot="main">
 
       <!-- 1. already logged in and shouldn't be here: -->
       <tal:block condition="request/lp:person">
@@ -162,33 +154,40 @@
               <!-- Preserve extra query parameters as hidden fields. -->
               <tal:replacement tal:replace="structure view/preserve_query" />
             </form>
-            <p><strong>Note:</strong> You must enable cookies in your browser to log into or register for Launchpad.</p>
+            <p><strong>Note:</strong> You must enable cookies in your browser
+              to log into or register for Launchpad.</p>
             <!-- 5a. didn't try to register last time: -->
             <h1 tal:condition="not: view/registration_error">
-              Not registered yet? 
+              Not registered yet?
             </h1>
             <!-- 5b. just tried to register and failed: -->
             <tal:block condition="view/registration_error">
               <h1>Your registration was unsuccessful</h1>
               <p class="error message"
+                 style="margin-top: 2em;"
                  tal:content="structure view/registration_error" />
             </tal:block>
             <!-- 5. might want to register: -->
             <p>
               Creating your Launchpad account is easy. Here's what to do:</p>
-              
-              <ol>
-                 <li>Make sure cookies are enabled in your browser.</li>
-                 <li>Enter your e-mail address.</li>
-                 <li>Follow the URL in the confirmation e-mail that Launchpad sends and you're done!</li>
-             </ol>
-             
+
+            <ol class="subordinate">
+                <li>Make sure cookies are enabled in your browser.</li>
+                <li>Enter your e-mail address and answer our random question
+                    so we know that you're human.
+                </li>
+                <li>Follow the URL in the confirmation e-mail that Launchpad sends and you're done!</li>
+            </ol>
+
 
 
             <form name="join" method="POST">
               <input type="hidden" name="redirection_url"
                      tal:condition="not: request/form/redirection_url|nothing"
                      tal:attributes="value view/getRedirectionURL" />
+              <input type="hidden"
+                     tal:attributes="name view/captcha_hash;
+                                     value view/get_captcha_hash" />
               <table>
                 <tr>
                   <th>
@@ -198,6 +197,18 @@
                     <input type="text" size="30" name="loginpage_email"
                       id="registeremail"
                       tal:attributes="value view/email|nothing"
+                    />
+                  </td>
+                </tr>
+                <tr>
+                  <th>
+                    <label>Random question:</label>
+                  </th>
+                  <td>
+                    <span id="problem" tal:content="view/captcha_problem" />
+                    <input type="text" size="5"
+                           id="captcha_submission" value=""
+                           tal:attributes="name view/captcha_submission"
                     />
                   </td>
                 </tr>

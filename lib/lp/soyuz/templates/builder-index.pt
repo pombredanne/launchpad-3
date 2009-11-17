@@ -3,68 +3,179 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
-  <body>
+<body>
 
-<metal:block fill-slot="head_epilogue">
+  <metal:block fill-slot="head_epilogue">
     <meta http-equiv="refresh" content="300" />
-</metal:block>
+  </metal:block>
 
-<metal:leftportlets fill-slot="portlets">
-    <div tal:replace="structure context/@@+portlet-details" />
-</metal:leftportlets>
+  <metal:heading fill-slot="heading">
+    <h1 tal:content="context/title">Bob the builder</h1>
+  </metal:heading>
 
   <div metal:fill-slot="main" tal:define="job context/currentjob">
-      <h1 tal:content="context/title">Bob the Builder</h1>
+    <div class="top-portlet">
+      <span style="float:right;"
+        tal:content="structure view/menu:overview/edit/fmt:icon-link" />
+      <p style="max-width: 100%; margin-top: .5em;">
+         <tal:title content="context/title">Bob the builder</tal:title>
+         builds
+         <tal:arch content="context/processor/title">Intel 386</tal:arch>
+         binaries and is owned by
+         <a tal:replace="structure context/owner/fmt:link">OWNER</a>.
+       </p>
+    </div>
+    <div class="yui-ge">
 
-      <h2>Current status</h2>
+      <div class="first yui-u">
+        <div metal:use-macro="template/macros/status" />
+      </div><!-- yui-u -->
 
-      <div tal:condition="not: job">
-        <p><tal:builder content="context/title" />
-           <tal:builderok condition="context/builderok"
-             >is idle.</tal:builderok>
-           <tal:buildernok condition="not: context/builderok"
-             >is deactivated.</tal:buildernok></p>
-      </div>
+      <div class="yui-u">
+        <div class="portlet">
+          <h2>Builder information</h2>
+          <dl>
+            <dt>Architecture:</dt>
+            <dd>
+              <span tal:replace="context/processor/title">Intel 386</span>
+              <tal:virtual condition="context/virtualized">(virtual)
+              </tal:virtual>
+            </dd>
+            <dt>Location:</dt>
+            <dd tal:content="context/url" />
+            <dt>Owner:</dt>
+            <dd><a tal:replace="structure context/owner/fmt:link">OWNER</a>
+            </dd>
+            <dt>Mode:</dt>
+            <dd>
+              <tal:manual condition="context/manual">This builder is in
+                manual-mode and not accepting jobs from the auto-build system.
+              </tal:manual>
+              <tal:auto condition="not: context/manual">This builder is in
+                auto-mode and accepting jobs from the auto-build system.
+              </tal:auto>
+              <form tal:attributes="action view/menu:overview/edit/fmt:url"
+                    tal:condition="view/menu:overview/mode/enabled"
+                    method="post" style="display:inline">
+                <input type="hidden" value="" name="field.manual.used"
+                       id="field.manual.used" class="hiddenType"/>
+                <input id="field.manual" name="field.manual" type="hidden"
+                       value="on" tal:condition="not: context/manual" />
+                <button type="submit" name="field.actions.update"
+                        id="field.actions.update"
+                        tal:content="view/toggle_mode_text">
+                  Switch to x-mode</button>
+              </form>
+            </dd>
+          </dl>
+        </div><!-- portlet -->
+      </div><!-- yui-u -->
+      <tal:menu replace="structure view/@@+related-pages" />
+    </div>
+  </div>
+
+
+<metal:macros fill-slot="bogus">
+
+  <metal:macro define-macro="status-summary">
+    <tal:comment replace="nothing">
+      Status summary.
+      :param builder: IBuilder, context builder.
+      :param job: IBuildQueue, job assigned to the builder.
+    </tal:comment>
+
+    <tal:no_job condition="not: job">
+      <tal:builderok condition="builder/builderok">
+        <tal:idle condition="not: builder/manual">
+          <span class="sortkey" tal:content="string:0" />
+          <span class="sprite yes green">Idle</span>
+        </tal:idle>
+        <tal:manual tal:condition="builder/manual">
+          <span class="sortkey" tal:content="string:1" />
+          <span class="sprite info">Manual</span>
+        </tal:manual>
+      </tal:builderok>
+      <tal:buildernok condition="not: builder/builderok">
+        <span class="sortkey" tal:content="string:2" />
+        <span class="sprite no red">Disabled</span>
+      </tal:buildernok>
+    </tal:no_job>
+
+    <tal:job condition="job">
+      <span class="sortkey" tal:content="job/id" />
+      <tal:build define="build job/build">
+        <tal:visible condition="build/required:launchpad.View">
+          <tal:icon replace="structure build/image:icon" />
+          Building
+          <a tal:attributes="href build/fmt:url"
+             tal:content="build/title"
+            >i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE</a>
+          <tal:ppa condition="build/archive/is_ppa"
+                   define="ppa build/archive;">
+            <span tal:replace="string: [${ppa/owner/name}/${ppa/name}]"
+              >[cprov/ppa]</span>
+          </tal:ppa>
+        </tal:visible>
+        <tal:restricted condition="not: build/required:launchpad.View">
+          <img src="/@@/processing" alt="[building]" />
+          Building private source
+        </tal:restricted>
+      </tal:build>
+    </tal:job>
+
+  </metal:macro>
+
+
+  <metal:macro define-macro="status">
+    <tal:comment replace="nothing">
+      Status summary.
+      :param job: IBuildQueue, job assigned to the context builder.
+    </tal:comment>
+
+    <div class="portlet">
+      <h2>
+        <span class="see-all"><a
+          tal:replace="structure view/menu:overview/history/fmt:link" />
+        </span>
+      Current status</h2>
+
+      <p tal:define="builder context">
+        <metal:summary use-macro="template/macros/status-summary" />
+      </p>
+
+      <tal:buildernok condition="not: context/builderok">
+        <div tal:content="structure
+                          context/failnotes/fmt:text-to-html" />
+      </tal:buildernok>
 
       <tal:job condition="job">
-        <table class="listing sortable">
-          <tbody>
-            <tr>
-              <td class="left icon">
-                  <tal:icon replace="structure job/build/image:icon" />
-              </td>
-              <td>
-                <a tal:attributes="href job/build/fmt:url">
-                  <span tal:replace="job/build/title">NAME</span>
-                </a>
-              </td>
-            </tr>
-            <tr class="secondary">
-              <td></td>
-              <td>
-                Started
-                <span
-                  tal:attributes="title job/buildstart/fmt:datetime"
-                  tal:content="view/current_build_duration/fmt:exactduration" />
-                  ago
-              </td>
-            </tr>
-          </tbody>
-        </table>
-        <div
-          tal:condition="job/logtail"
-          tal:content="structure job/logtail/fmt:text-to-html"
-        >Things are crashing and burning all over the place.</div>
+        <p class="sprite">Started
+          <span tal:attributes="title job/buildstart/fmt:datetime"
+                tal:content="view/current_build_duration/fmt:exactduration"
+            /> ago.</p>
+        <tal:visible condition="job/build/required:launchpad.View">
+          <tal:logtail condition="job/logtail">
+            <h3>Buildlog</h3>
+            <div tal:content="structure job/logtail/fmt:text-to-html"
+                 id="buildlog-tail" class="logtail">
+              Things are crashing and burning all over the place.
+            </div>
+            <p class="discreet" tal:condition="view/user">
+              Updated on
+              <span tal:replace="structure view/user/fmt:local-time"/>
+            </p>
+          </tal:logtail>
+        </tal:visible>
       </tal:job>
-
-      <p>Last updated <span tal:replace="view/now"/></p>
-
     </div>
-  </body>
+
+  </metal:macro>
+
+</metal:macros>
+
+
+</body>
 </html>

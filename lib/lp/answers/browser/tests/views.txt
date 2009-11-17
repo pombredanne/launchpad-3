@@ -102,21 +102,21 @@ Unlogged-in users cannot post any comments on the question:
     >>> getAvailableActionNames(workflow_harness.view)
     []
 
-When question is in the OPEN state, the owner can either answer his own
-question or provide more information.
+When question is in the OPEN state, the owner can comment, answer his
+own question or provide more information.
 
     >>> login('test@canonical.com')
     >>> workflow_harness.submit('', {})
     >>> getAvailableActionNames(workflow_harness.view)
-    ['giveinfo', 'selfanswer']
+    ['comment', 'giveinfo', 'selfanswer']
 
-But when another user sees the question, he can provide an answer or
-request for more information.
+But when another user sees the question, he can comment, provide an
+answer or request more information.
 
     >>> login('no-priv@canonical.com')
     >>> workflow_harness.submit('', {})
     >>> getAvailableActionNames(workflow_harness.view)
-    ['answer', 'requestinfo']
+    ['answer', 'comment', 'requestinfo']
 
 When the other user requests for more information, a confirmation is
 displayed, the question status is changed to NEEDSINFO and the user is
@@ -141,18 +141,18 @@ answer-tracker-notifications.txt)
     >>> len(pop_notifications())
     1
 
-The available actions for that other user are still between giving an
-answer or requesting for more information:
+The available actions for that other user are still comment, give an
+answer or request more information:
 
     >>> getAvailableActionNames(workflow_harness.view)
-    ['answer', 'requestinfo']
+    ['answer', 'comment', 'requestinfo']
 
-And the question owner still has the same possibilities then initially:
+And the question owner still has the same possibilities as at first:
 
     >>> login('test@canonical.com')
     >>> workflow_harness.submit('', {})
     >>> getAvailableActionNames(workflow_harness.view)
-    ['giveinfo', 'selfanswer']
+    ['comment', 'giveinfo', 'selfanswer']
 
 If he replies with the requested information, the question is moved back
 to the OPEN state.
@@ -185,14 +185,15 @@ The other user can come back and gives an answer:
     >>> workflow_harness.redirectionTarget()
     '.../+question/2'
 
-Once the question is answered, the set of possible actions for the question
-owner changes. He can now either confirm the answer, answer the problem
-himself, or reopen the request because that answer isn't working.
+Once the question is answered, the set of possible actions for the
+question owner changes. He can now either comment, confirm the answer,
+answer the problem himself, or reopen the request because that answer
+isn't working.
 
     >>> login('test@canonical.com')
     >>> workflow_harness.submit('', {})
     >>> getAvailableActionNames(workflow_harness.view)
-    ['confirm', 'reopen', 'selfanswer']
+    ['comment', 'confirm', 'reopen', 'selfanswer']
 
 Let's say he confirms the previous answer, in this case, the question will
 move to the 'SOLVED' state. Note that the UI doesn't enable the user to
@@ -452,8 +453,9 @@ distribution, source package, product and whiteboard.
     >>> print question_three.product
     None
 
-Since only a user with launchpad.Admin privilege can change the
-assignee and status whiteboard, the values won't have been changed:
+Since a user must have launchpad.Moderator privilege to change the
+assignee and launchpad.Admin privilege to change status whiteboard, the
+values are unchanged.
 
     >>> question_three.assignee is None
     True
@@ -796,7 +798,7 @@ no results are found based on the selected search filter:
 
     >>> from zope.i18n import translate
     >>> search_view_harness.submit('', {})
-    >>> print translate(search_view_harness.view.pageheading)
+    >>> print translate(search_view_harness.view.page_title)
     Questions for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no questions for Ubuntu with the requested statuses.
@@ -804,7 +806,7 @@ no results are found based on the selected search filter:
     >>> MyCustomSearchQuestionsView.default_filter = dict(
     ...     status=[QuestionStatus.OPEN], search_text='Firefox')
     >>> search_view_harness.submit('', {})
-    >>> print translate(search_view_harness.view.pageheading)
+    >>> print translate(search_view_harness.view.page_title)
     Open questions matching "Firefox" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no open questions matching "Firefox" for Ubuntu.
@@ -816,7 +818,7 @@ It works also with user submitted values:
     ...     'field.search_text': '',
     ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
-    >>> print translate(search_view_harness.view.pageheading)
+    >>> print translate(search_view_harness.view.page_title)
     Expired questions for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no expired questions for Ubuntu.
@@ -826,7 +828,7 @@ It works also with user submitted values:
     ...     'field.search_text': 'evolution',
     ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
-    >>> print translate(search_view_harness.view.pageheading)
+    >>> print translate(search_view_harness.view.page_title)
     Questions matching "evolution" for Ubuntu
     >>> print translate(search_view_harness.view.empty_listing_message)
     There are no questions matching "evolution" for Ubuntu with the

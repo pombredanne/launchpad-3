@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright (c) 2005-2009 Canonical Ltd.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0141
 
 import datetime
@@ -18,18 +21,21 @@ from bzrlib.tests import TestCaseWithTransport
 import pytz
 from twisted.python.util import mergeFunctionMetadata
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
+from lp.code.model.branchmergeproposaljob import IUpdatePreviewDiffJobSource
 from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
 from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.scanner.bzrsync import (
-    BzrSync, InvalidStackedBranchURL, schedule_translation_upload)
+    BzrSync, InvalidStackedBranchURL, schedule_diff_updates,
+    schedule_translation_upload)
 from lp.codehosting.scanner.fixture import make_zope_event_fixture
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.testing import LaunchpadZopelessLayer
@@ -643,6 +649,31 @@ class TestBzrTranslationsUploadJob(BzrSyncTestCase):
         job = ready_jobs[0]
         # The right job will have our branch.
         self.assertEqual(self.db_branch, job.branch)
+
+
+class TestUpdatePreviewDiffJob(BzrSyncTestCase):
+    """Test the scheduling of jobs to update preview diffs."""
+
+    def setUp(self):
+        """Set up `schedule_diff_updates` to handle tip changes."""
+        BzrSyncTestCase.setUp(self)
+        fixture = make_zope_event_fixture(schedule_diff_updates)
+        fixture.setUp()
+        self.addCleanup(fixture.tearDown)
+
+    @run_as_db_user(config.launchpad.dbuser)
+    def test_create_on_new_revision(self):
+        """When branch tip changes, a job is created."""
+        revision_id = self.commitRevision()
+        bmp = self.factory.makeBranchMergeProposal(
+            source_branch=self.db_branch)
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        jobs = list(getUtility(IUpdatePreviewDiffJobSource).iterReady())
+        self.assertEqual(1, len(jobs))
+        self.assertEqual(
+            bmp, removeSecurityProxy(jobs[0]).branch_merge_proposal)
 
 
 class TestRevisionProperty(BzrSyncTestCase):

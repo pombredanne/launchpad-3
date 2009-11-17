@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -22,12 +23,14 @@ from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.registry.interfaces.person import (
     IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
-from canonical.launchpad.database import (
-    AnswerContact, Bug, BugTask, BugSubscription, Person, Specification)
+from canonical.launchpad.database import Bug, BugTask, BugSubscription
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscription)
+from lp.registry.model.person import Person
+from lp.answers.model.answercontact import AnswerContact
+from lp.blueprints.model.specification import Specification
 from lp.testing import TestCaseWithFactory
-from canonical.launchpad.testing.systemdocs import create_initialized_view
+from lp.testing.views import create_initialized_view
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
@@ -213,12 +216,13 @@ class TestPerson(TestCaseWithFactory):
             self.assertEqual(
                 str(exc),
                 'This team cannot be converted to Private Membership since '
-                'it is referenced by a bug, a bugaffectsperson, '
-                'a bugnotificationrecipient, a bugsubscription, '
-                'a bugtask and a message.')
+                'it is referenced by a bug, a bugactivity, '
+                'a bugaffectsperson, a bugnotificationrecipient, '
+                'a bugsubscription, a bugtask and a message.')
 
     def test_visibility_validator_product_subscription(self):
-        self.bzr.addSubscription(self.otherteam, self.guadamen)
+        self.bzr.addSubscription(
+            self.otherteam, getUtility(IPersonSet).getByName('name16'))
         try:
             self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         except ImmutableVisibilityError, exc:

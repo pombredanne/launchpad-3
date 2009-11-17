@@ -10,8 +10,8 @@ branches that have been created in error.
     >>> browser.getControl('Branch URL').value = 'http://foo.bar.com/oops'
     >>> browser.getControl('Name').value = 'to-delete'
     >>> browser.getControl('Register Branch').click()
-    >>> browser.title
-    '...~name12/firefox/to-delete... branch in Launchpad'
+    >>> print browser.title
+    to-delete : Branches : Mozilla Firefox
 
 The newly created branch has an action 'Delete branch'.
 
@@ -24,10 +24,8 @@ delete the branch.
 
     >>> delete_link.click()
     >>> print extract_text(find_main_content(browser.contents))
-    Created by Sample Person ...
-    lp://dev/~name12/firefox/to-delete
-    ...
     Delete branch
+    Mozilla Firefox...
     Branch deletion is permanent.
     or Cancel
 
@@ -71,8 +69,7 @@ Even if you are an admin.
     >>> admin_browser.open(branch_location)
     >>> admin_browser.getLink('Delete branch').click()
     >>> print extract_text(find_main_content(admin_browser.contents))
-    Created by ...
-    Delete branch
+    Delete branch...
     This branch cannot be deleted as it has 1 branch sharing revisions.
 
 However, you can delete a branch that's the official branch of a source
@@ -82,7 +79,7 @@ package.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> login(ANONYMOUS)
     >>> name12 = getUtility(IPersonSet).getByName('name12')

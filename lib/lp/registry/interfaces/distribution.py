@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IDistribution."""
@@ -6,7 +8,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'IBaseDistribution',
+    'IDerivativeDistribution',
     'IDistribution',
+    'IDistributionDriverRestricted',
     'IDistributionEditRestricted',
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
@@ -14,7 +19,7 @@ __all__ = [
     'NoSuchDistribution',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Text, TextLine
+from zope.schema import Bool, Choice, Datetime, List, Text, TextLine
 from zope.interface import Attribute, Interface
 
 from lazr.restful.fields import CollectionField, Reference
@@ -29,6 +34,9 @@ from lazr.restful.declarations import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
 from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
@@ -44,7 +52,7 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
 from lp.blueprints.interfaces.sprint import IHasSprints
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.validators.name import name_validator
@@ -67,6 +75,10 @@ class DistributionNameField(PillarNameField):
 
 class IDistributionEditRestricted(IOfficialBugTagTargetRestricted):
     """IDistribution properties requiring launchpad.Edit permission."""
+
+
+class IDistributionDriverRestricted(Interface):
+    """IDistribution properties requiring launchpad.Driver permission."""
 
     def newSeries(name, displayname, title, summary, description,
                   version, parent_series, owner):
@@ -173,8 +185,8 @@ class IDistributionPublic(
         vocabulary='ValidPersonOrTeam')
     mirror_admin = PublicPersonChoice(
         title=_("Mirror Administrator"),
-        description=_("The person or team that has the rights to administer "
-                      "this distribution's mirrors"),
+        description=_("The person or team that has the rights to review and "
+                      "mark this distribution's mirrors as official."),
         required=True, vocabulary='ValidPersonOrTeam')
     lucilleconfig = TextLine(
         title=_("Lucille Config"),
@@ -189,17 +201,15 @@ class IDistributionPublic(
         "All unofficial mirrors of this Distribution.")
     pending_review_mirrors = Attribute(
         "All mirrors of this Distribution that haven't been reviewed yet.")
-    serieses = exported(
+    series = exported(
         CollectionField(
             title=_("DistroSeries inside this Distribution"),
             # Really IDistroSeries, see below.
             value_type=Reference(schema=Interface)),
         exported_as="series")
-    bounties = Attribute(_("The bounties that are related to this distro."))
+    architectures = List(
+        title=_("DistroArchSeries inside this Distribution"))
     bugCounter = Attribute("The distro bug counter")
-    is_read_only = Attribute(
-        "True if this distro is just monitored by Launchpad, rather than "
-        "allowing you to use Launchpad to actually modify the distro.")
     uploaders = Attribute(_(
         "ArchivePermission records for uploaders with rights to upload to "
         "this distribution."))
@@ -279,8 +289,8 @@ class IDistributionPublic(
     @operation_returns_collection_of(Interface)
     @export_operation_as(name="getDevelopmentSeries")
     @export_read_operation()
-    def getDevelopmentSerieses():
-        """Return the DistroSerieses which are marked as in development."""
+    def getDevelopmentSeries():
+        """Return the DistroSeries which are marked as in development."""
 
     @operation_parameters(
         name_or_version=TextLine(title=_("Name or version"), required=True))
@@ -334,11 +344,6 @@ class IDistributionPublic(
             and the value is a `IDistributionSourcePackageRelease`.
         """
 
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this distribution. Return
-        None.
-        """
-
     def getDistroSeriesAndPocket(distroseriesname):
         """Return a (distroseries,pocket) tuple which is the given textual
         distroseriesname in this distribution."""
@@ -351,12 +356,20 @@ class IDistributionPublic(
         """
 
     def removeOldCacheItems(archive, log):
-        """Delete any cache records for removed packages."""
+        """Delete any cache records for removed packages.
+
+        Also purges all existing cache records for disabled archives.
+
+        :param archive: target `IArchive`.
+        :param log: the context logger object able to print DEBUG level
+            messages.
+        """
 
     def updateCompleteSourcePackageCache(archive, log, ztm, commit_chunk=500):
         """Update the source package cache.
 
-        Consider every non-REMOVED sourcepackage.
+        Consider every non-REMOVED sourcepackage and entirely skips updates
+        for disabled archives.
 
         :param archive: target `IArchive`;
         :param log: logger object for printing debug level information;
@@ -509,7 +522,8 @@ class IDistributionPublic(
         """Can the user edit this distribution?"""
 
 
-class IDistribution(IDistributionEditRestricted, IDistributionPublic):
+class IDistribution(IDistributionEditRestricted, IDistributionPublic,
+                    IRootContext, IStructuralSubscriptionTarget):
     """An operating system distribution."""
     export_as_webservice_entry()
 
@@ -519,6 +533,14 @@ class IDistribution(IDistributionEditRestricted, IDistributionPublic):
 writable_obt_field = copy_field(IDistribution['official_bug_tags'])
 writable_obt_field.readonly = False
 IDistribution._v_attrs['official_bug_tags'] = writable_obt_field
+
+
+class IBaseDistribution(IDistribution):
+    """A Distribution that is the base for other Distributions."""
+
+
+class IDerivativeDistribution(IDistribution):
+    """A Distribution that derives from another Distribution."""
 
 
 class IDistributionSet(Interface):
@@ -538,7 +560,7 @@ class IDistributionSet(Interface):
         """Retrieve a distribution by name"""
 
     @collection_default_content()
-    def getDistros(self):
+    def getDistros():
         """Return all distributions.
 
         Ubuntu and its flavours will always be at the top of the list, with

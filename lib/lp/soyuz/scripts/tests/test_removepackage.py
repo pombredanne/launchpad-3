@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Functional Tests for PackageRemover script class.
 
 This file performs tests on the PackageRemover script class and on the script
@@ -99,7 +101,7 @@ class TestPackageRemover(unittest.TestCase):
     Perform tests directly on the script class.
     """
     layer = LaunchpadZopelessLayer
-    user_name = 'sabdfl'
+    user_name = 'mark'
     removal_comment = 'fooooooo'
 
     def getRemover(self, name='foo', version=None,

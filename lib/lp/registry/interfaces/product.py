@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Interfaces including and related to IProduct."""
@@ -8,7 +10,7 @@ __metaclass__ = type
 __all__ = [
     'InvalidProductName',
     'IProduct',
-    'IProductCommercialRestricted',
+    'IProductProjectReviewRestricted',
     'IProductDriverRestricted',
     'IProductEditRestricted',
     'IProductPublic',
@@ -22,7 +24,6 @@ __all__ = [
 
 
 import re
-import sets
 
 from textwrap import dedent
 
@@ -35,8 +36,11 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
-    ProductBugTracker, ProductNameField, PublicPersonChoice,
-    Summary, Title, URIField)
+    ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
+    PublicPersonChoice, Summary, Title, URIField)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
+from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
@@ -60,7 +64,7 @@ from lp.registry.interfaces.project import IProject
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationTarget)
 from lp.blueprints.interfaces.sprint import IHasSprints
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -276,8 +280,8 @@ class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
     """`IProduct` properties which require launchpad.Edit permission."""
 
 
-class IProductCommercialRestricted(Interface):
-    """`IProduct` properties which require launchpad.Commercial permission."""
+class IProductProjectReviewRestricted(Interface):
+    """`IProduct` properties which require launchpad.ProjectReview."""
 
     qualifies_for_free_hosting = exported(
         Bool(
@@ -316,7 +320,7 @@ class IProductCommercialRestricted(Interface):
             title=_("Project approved"),
             description=_(
                 "The project is legitimate and its license appears valid. "
-                "Not application to 'Other/Proprietary'.")))
+                "Not applicable to 'Other/Proprietary'.")))
 
 
 class IProductPublic(
@@ -351,7 +355,7 @@ class IProductPublic(
         exported_as='project_group')
 
     owner = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_('Maintainer'),
             required=True,
             vocabulary='ValidOwner',
@@ -368,7 +372,7 @@ class IProductPublic(
                           "Launchpad.")))
 
     driver = exported(
-        PublicPersonChoice(
+        ParticipatingPersonChoice(
             title=_("Driver"),
             description=_(
                 "This person or team will be able to set feature goals for "
@@ -552,9 +556,8 @@ class IProductPublic(
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
-    serieses = exported(
-        CollectionField(value_type=Object(schema=IProductSeries)),
-        exported_as='series')
+    series = exported(
+        CollectionField(value_type=Object(schema=IProductSeries)))
 
     development_focus = exported(
         ReferenceChoice(
@@ -572,8 +575,6 @@ class IProductPublic(
             title=_("An iterator over the ProductReleases for this product."),
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
-
-    bounties = Attribute(_("The bounties that are related to this product."))
 
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
@@ -661,12 +662,11 @@ class IProductPublic(
     def getRelease(version):
         """Return the release for this product that has the version given."""
 
+    def getMilestonesAndReleases():
+        """Return all the milestones and releases for this product."""
+
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
-
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this product. Return None.
-        """
 
     def getCustomLanguageCode(language_code):
         """Look up `ICustomLanguageCode` for `language_code`, if any.
@@ -686,14 +686,18 @@ class IProductPublic(
         this Product.
         """
 
+    @operation_parameters(
+        include_inactive=Bool(title=_("Include inactive"),
+                              required=False, default=False))
     @export_read_operation()
     @export_operation_as('get_timeline')
-    def getTimeline():
+    def getTimeline(include_inactive):
         """Return basic timeline data useful for creating a diagram."""
 
 
-class IProduct(IProductEditRestricted, IProductCommercialRestricted,
-               IProductDriverRestricted, IProductPublic):
+class IProduct(IProductEditRestricted, IProductProjectReviewRestricted,
+               IProductDriverRestricted, IProductPublic, IRootContext,
+               IStructuralSubscriptionTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -875,10 +879,6 @@ class IProductSet(Interface):
         """Return a count of the number of products that have
         upstream-oriented translations configured in Rosetta."""
 
-    def count_bounties():
-        """Return a number of products that have bounties registered in the
-        Launchpad for them."""
-
     def count_buggy():
         """Return the number of products that have bugs associated with them
         in Launchpad."""
@@ -941,15 +941,13 @@ class IProductReviewSearch(Interface):
         title=_('Description of additional licenses'),
         description=_('Either this field or any one of the selected licenses'
                       ' must match.'),
-        vocabulary=emptiness_vocabulary, required=False, default=False)
+        vocabulary=emptiness_vocabulary, required=False, default=None)
 
     licenses = Set(
         title=_('Licenses'),
         value_type=Choice(vocabulary=License),
         required=False,
-        # Zope requires sets.Set() instead of the builtin set().
-        default=sets.Set(
-            [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
+        default=set())
 
     has_zero_licenses = Choice(
         title=_('Or has no license specified'),

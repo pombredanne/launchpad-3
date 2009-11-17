@@ -1,10 +1,12 @@
-# Copyright 2004-2006 Canonical Ltd. All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
 
 __all__ = [
-    'can_be_nominated_for_serieses',
+    'can_be_nominated_for_series',
     'validate_url',
     'valid_webref',
     'valid_branch_url',
@@ -37,16 +39,16 @@ from canonical.launchpad.validators.url import valid_absolute_url
 from canonical.launchpad.webapp.menu import structured
 
 
-def can_be_nominated_for_serieses(serieses):
-    """Can the bug be nominated for these serieses?"""
+def can_be_nominated_for_series(series):
+    """Can the bug be nominated for these series?"""
     current_bug = getUtility(ILaunchBag).bug
-    unnominatable_serieses = []
-    for series in serieses:
-        if not current_bug.canBeNominatedFor(series):
-            unnominatable_serieses.append(series.name.capitalize())
+    unnominatable_series = []
+    for s in series:
+        if not current_bug.canBeNominatedFor(s):
+            unnominatable_series.append(s.name.capitalize())
 
-    if unnominatable_serieses:
-        series_str = ", ".join(unnominatable_serieses)
+    if unnominatable_series:
+        series_str = ", ".join(unnominatable_series)
         raise LaunchpadValidationError(_(
             "This bug has already been nominated for these "
             "series: ${series}", mapping={'series': series_str}))
@@ -273,7 +275,7 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
 
     If validation fails, a LaunchpadValidationError will be raised.
     """
-    if sourcepackagename is not None and len(distribution.serieses) > 0:
+    if sourcepackagename is not None and len(distribution.series) > 0:
         # If the distribution has at least one series, check that the
         # source package has been published in the distribution.
         try:

@@ -1,10 +1,12 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test native archive index generation for Soyuz."""
 
 import apt_pkg
 import os
 import tempfile
-from unittest import TestLoader
+import unittest
 
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
@@ -168,45 +170,135 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
              ],
             pub_binary.getIndexStanza().splitlines())
 
-    def testBinaryStanzaWithApt(self):
-        """Check a binary stanza with APT parser."""
-        pub_binary = self.getPubBinaries()[0]
 
+class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
+    """Tests for ensuring the native archive indexes that we publish
+    can be parsed correctly by apt_get.ParseTagFiles.
+    """
+    def setUp(self):
+        """Setup global attributes."""
+        TestNativePublishingBase.setUp(self)
+        apt_pkg.InitSystem()
+
+    def write_stanza_and_reparse(self, stanza):
+        """Helper method to return the apt_pkg parser for the stanza."""
         index_filename = tempfile.mktemp()
         index_file = open(index_filename, 'w')
-        index_file.write(pub_binary.getIndexStanza().encode('utf-8'))
+        index_file.write(stanza.encode('utf-8'))
         index_file.close()
 
         parser = apt_pkg.ParseTagFile(open(index_filename))
 
+        # We're only interested in one stanza, so we'll parse it and remove
+        # the tmp file again.
         parser.Step()
+        os.remove(index_filename)
+
+        return parser
+
+    def test_getIndexStanza_binary_stanza(self):
+        """Check a binary stanza with APT parser."""
+        pub_binary = self.getPubBinaries()[0]
+
+        parser = self.write_stanza_and_reparse(pub_binary.getIndexStanza())
 
         self.assertEqual(parser.Section.get('Package'), 'foo-bin')
         self.assertEqual(
             parser.Section.get('Description').splitlines(),
             ['Foo app is great', ' Well ...', ' it does nothing, though'])
 
-        os.remove(index_filename)
-
-    def testSourceStanzaWithApt(self):
+    def test_getIndexStanza_source_stanza(self):
         """Check a source stanza with APT parser."""
         pub_source = self.getPubSource()
 
-        index_filename = tempfile.mktemp()
-        index_file = open(index_filename, 'w')
-        index_file.write(pub_source.getIndexStanza().encode('utf-8'))
-        index_file.close()
-
-        parser = apt_pkg.ParseTagFile(open(index_filename))
-
-        parser.Step()
+        parser = self.write_stanza_and_reparse(pub_source.getIndexStanza())
 
         self.assertEqual(parser.Section.get('Package'), 'foo')
         self.assertEqual(
             parser.Section.get('Maintainer'), 'Foo Bar <foo@bar.com>')
 
-        os.remove(index_filename)
+    def test_getIndexStanza_with_corrupt_dsc_binaries(self):
+        """Ensure corrupt binary fields are written correctly to indexes.
 
+        This is a regression test for bug 436182.
+
+        During upload, our custom parser at:
+          lp.archiveuploader.tagfiles.parse_tagfile_lines
+        strips leading spaces from subsequent lines of fields with values
+        spanning multiple lines, such as the binary field, and in addition
+        leaves a trailing '\n' (which results in a blank line after the
+        Binary field).
+
+        The second issue causes apt_pkg.ParseTagFile() to error during
+        germination when it attempts to parse the generated Sources index.
+        But the first issue will also cause apt_pkg.ParseTagFile to
+        skip each newline of a multiline field that is not preceded with
+        a space.
+
+        This test ensures that binary fields saved as such will continue
+        to be written correctly to index files.
+
+        This test can be removed if the parser is fixed and the corrupt
+        data has been cleaned.
+        """
+        pub_source = self.getPubSource()
+
+        # An example of a corrupt dsc_binaries field. We need to ensure
+        # that the corruption is not carried over into the index stanza.
+        pub_source.sourcepackagerelease.dsc_binaries = (
+            'foo_bin,\nbar_bin,\nzed_bin')
+
+        parser = self.write_stanza_and_reparse(pub_source.getIndexStanza())
+
+        self.assertEqual('foo', parser.Section['Package'])
+
+        # Without the fix, this raises a key-error due to apt-pkg not
+        # being able to parse the file.
+        self.assertEqual(
+            '666', parser.Section['Version'],
+            'The Version field should be parsed correctly.')
+
+        # Without the fix, the second binary would not be parsed at all.
+        self.assertEqual(
+            'foo_bin,\n bar_bin,\n zed_bin', parser.Section['Binary'])
+
+    def test_getIndexStanza_with_correct_dsc_binaries(self):
+        """Ensure correct binary fields are written correctly to indexes.
+
+        During upload, our custom parser at:
+          lp.archiveuploader.tagfiles.parse_tagfile_lines
+        strips leading spaces from subsequent lines of fields with values
+        spanning multiple lines, such as the binary field, and in addition
+        leaves a trailing '\n' (which results in a blank line after the
+        Binary field).
+
+        This test ensures that when our parser is updated to store
+        the binary field in the same way that apt_pkg.ParseTagFiles would,
+        that it will continue to be written correctly to index files.
+        """
+        pub_source = self.getPubSource()
+
+        # An example of a corrupt dsc_binaries field. We need to ensure
+        # that the corruption is not carried over into the index stanza.
+        pub_source.sourcepackagerelease.dsc_binaries = (
+            'foo_bin,\n bar_bin,\n zed_bin')
+
+        parser = self.write_stanza_and_reparse(pub_source.getIndexStanza())
+
+        self.assertEqual('foo', parser.Section['Package'])
+
+        # Without the fix, this raises a key-error due to apt-pkg not
+        # being able to parse the file.
+        self.assertEqual(
+            '666', parser.Section['Version'],
+            'The Version field should be parsed correctly.')
+
+        # Without the fix, the second binary would not be parsed at all.
+        self.assertEqual(
+            'foo_bin,\n bar_bin,\n zed_bin', parser.Section['Binary'])
+
+
+class TestIndexStanzaFieldsHelper(unittest.TestCase):
     def testIndexStanzaFields(self):
         """Check how this auxiliary class works...
 
@@ -249,4 +341,4 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
 
 
 def test_suite():
-    return TestLoader().loadTestsFromName(__name__)
+    return unittest.TestLoader().loadTestsFromName(__name__)

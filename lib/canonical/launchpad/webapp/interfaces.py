@@ -1,4 +1,6 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
@@ -7,8 +9,8 @@ import logging
 
 import zope.app.publication.interfaces
 from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
-from zope.app.pluggableauth.interfaces import IPrincipalSource
+from zope.app.security.interfaces import (
+    IAuthentication, IPrincipal, IPrincipalSource)
 from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from lazr.batchnavigator.interfaces import IBatchNavigator
@@ -208,6 +210,8 @@ class ILink(ILinkData):
         "The full url this link points to.  Set by the menus infrastructure. "
         "None before it is set.")
 
+    path = Attribute("The path portion of the URL.")
+
     linked = Attribute(
         "A boolean value saying whether this link should appear as a "
         "clickable link in the UI.  The general rule is that a link to "
@@ -252,16 +256,6 @@ class IBreadcrumb(Interface):
 
     text = Attribute('Text of this breadcrumb.')
 
-    icon = Attribute("An <img> tag showing this breadcrumb's 14x14 icon.")
-
-
-class IBreadcrumbBuilder(IBreadcrumb):
-    """An object that builds `IBreadcrumb` objects."""
-    # We subclass IBreadcrumb to minimize interface drift.
-
-    def make_breadcrumb():
-        """Return an object implementing the `IBreadcrumb` interface."""
-
 
 #
 # Canonical URLs
@@ -290,54 +284,6 @@ class NoCanonicalUrl(TypeError):
         TypeError.__init__(self, 'No url for %r because %r broke the chain.' %
             (object_url_requested_for, broken_link_in_chain)
             )
-
-#
-# DBSchema
-#
-
-
-# XXX kiko 2007-02-08: this is currently unused. We need somebody to come
-# in and set up interfaces for the enums.
-class IDBSchema(Interface):
-    """A DBSchema enumeration."""
-
-    name = Attribute("Lower-cased-spaces-inserted class name of this schema.")
-
-    title = Attribute("Title of this schema.")
-
-    description = Attribute("Description of this schema.")
-
-    items = Attribute("A mapping of [name or value] -> dbschema item.")
-
-
-class IDBSchemaItem(Interface):
-    """An Item in a DBSchema enumeration."""
-
-    value = Attribute("Integer value of this enum item.")
-
-    name = Attribute("Symbolic name of this item.")
-
-    title = Attribute("Title text of this item.")
-
-    description = Attribute("Description text of this item.")
-
-    def __sqlrepr__(dbname):
-        """Return an SQL representation of this item.
-
-        The dbname attribute is required as part of the sqlobject
-        interface, but it not used in this case.
-        """
-
-    def __eq__(other):
-        """An item is equal if it is from the same DBSchema and has the same
-        value.
-        """
-
-    def __ne__(other):
-        """not __eq__"""
-
-    def __hash__():
-        """Returns a hash value."""
 
 # XXX kiko 2007-02-08: this needs reconsideration if we are to make it a truly
 # generic thing. The problem lies in the fact that half of this (user, login,
@@ -402,7 +348,7 @@ class IBasicLaunchpadRequest(Interface):
 
     def getRootURL(rootsite):
         """Return this request's root URL.
-        
+
         If rootsite is not None, then return the root URL for that rootsite,
         looked up from our config.
         """
@@ -514,7 +460,7 @@ class LoggedOutEvent:
         self.request = request
 
 
-class IPlacelessAuthUtility(IAuthenticationUtility):
+class IPlacelessAuthUtility(IAuthentication):
     """This is a marker interface for a utility that supplies the interface
     of the authentication service placelessly, with the addition of
     a method to allow the acquisition of a principal using his
@@ -665,7 +611,7 @@ class INotificationRequest(Interface):
 
 
 class INotificationResponse(Interface):
-    """This class is responsible for propogating any notifications that
+    """This class is responsible for propagating any notifications that
     have been set when redirect() is called.
     """
 
@@ -678,11 +624,11 @@ class INotificationResponse(Interface):
         instance of a Zope internationalized message will cause the
         message to be translated, then CGI escaped.
 
-        :param msg: This may be a string, an instance of
-        	`zope.i18n.Message`, , or an instance of `IStructuredString`.
+        :param msg: This may be a string, an instance of `zope.i18n.Message`,
+            or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
-        	INFO, NOTICE, WARNING, ERROR.
+            INFO, NOTICE, WARNING, ERROR.
         """
 
     def removeAllNotifications():
@@ -711,9 +657,12 @@ class INotificationResponse(Interface):
     def addErrorNotification(msg):
         """Shortcut to addNotification(msg, ERROR)."""
 
-    def redirect(location, status=None):
-        """As per IHTTPApplicationResponse.redirect, except notifications
-        are preserved.
+    def redirect(location, status=None, trusted=True):
+        """Like IHTTPApplicationResponse.redirect, preserving notifications.
+
+        Also, for convenience we use trusted=True here, so that our callsites
+        that redirect from lp.net to vhost.lp.net don't have to pass
+        trusted=True explicitly.
         """
 
 
@@ -848,7 +797,7 @@ class IStoreSelector(Interface):
     """Get a Storm store with a desired flavor.
 
     Stores come in two flavors - MASTER_FLAVOR and SLAVE_FLAVOR.
- 
+
     The master is writable and up to date, but we should not use it
     whenever possible because there is only one master and we don't want
     it to be overloaded.

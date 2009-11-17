@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Run the doctests and pagetests.
 """
@@ -6,9 +8,7 @@ Run the doctests and pagetests.
 import logging
 import os
 import transaction
-import unittest
 
-from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.testing import (
@@ -133,6 +133,18 @@ special = {
         tearDown=tearDown,
         layer=LaunchpadFunctionalLayer,
         ),
+    'product.txt': LayeredDocFileSuite(
+        '../doc/product.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
+    'private-team-roles.txt': LayeredDocFileSuite(
+        '../doc/private-team-roles.txt',
+        setUp=setUp,
+        tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
     'productrelease.txt': LayeredDocFileSuite(
         '../doc/productrelease.txt',
         setUp=setUp,
@@ -162,8 +174,12 @@ special = {
         '../doc/sourcepackage.txt',
         layer=LaunchpadFunctionalLayer,
         setUp=setUp, tearDown=tearDown),
+    'distribution-sourcepackage.txt': LayeredDocFileSuite(
+        '../doc/distribution-sourcepackage.txt',
+        layer=LaunchpadZopelessLayer,
+        setUp=setUp, tearDown=tearDown),
     }
 
 
 def test_suite():
-    return build_test_suite(here, special)
+    return build_test_suite(here, special, layer=DatabaseFunctionalLayer)

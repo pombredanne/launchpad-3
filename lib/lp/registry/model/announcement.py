@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Database classes for project news and announcement."""
 
@@ -100,7 +101,7 @@ class Announcement(SQLBase):
         self.active = False
         self.date_last_modified = UTC_NOW
 
-    def set_publication_date(self, publication_date):
+    def setPublicationDate(self, publication_date):
         """See `IAnnouncement`."""
         self.date_announced = publication_date
         self.date_last_modified = None
@@ -138,7 +139,7 @@ class HasAnnouncements:
             return None
         return announcement
 
-    def announcements(self, limit=5, published_only=True):
+    def getAnnouncements(self, limit=5, published_only=True):
         """See IHasAnnouncements."""
 
         # Create the SQL query.
@@ -203,7 +204,7 @@ class MakesAnnouncements(HasAnnouncements):
             distribution = distribution
             )
 
-        announcement.set_publication_date(publication_date)
+        announcement.setPublicationDate(publication_date)
         return announcement
 
 

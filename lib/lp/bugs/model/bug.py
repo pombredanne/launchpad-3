@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Launchpad bug-related database table classes."""
@@ -31,7 +33,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
-from storm.store import Store
+from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
@@ -47,6 +49,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
 from canonical.launchpad.interfaces.structuralsubscription import (
@@ -66,7 +69,6 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
-from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)
@@ -97,7 +99,6 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
-from lp.registry.model.person import Person, ValidPersonCache
 from lp.registry.model.pillar import pillar_sort_key
 
 
@@ -255,7 +256,7 @@ class Bug(SQLBase):
     questions = SQLRelatedJoin('Question', joinColumn='bug',
         otherColumn='question', intermediateTable='QuestionBug',
         orderBy='-datecreated')
-    bug_branches = SQLMultipleJoin(
+    linked_branches = SQLMultipleJoin(
         'BugBranch', joinColumn='bug', orderBy='id')
     date_last_message = UtcDateTimeCol(default=None)
     number_of_duplicates = IntCol(notNull=True, default=0)
@@ -277,7 +278,7 @@ class Bug(SQLBase):
     @property
     def indexed_messages(self):
         """See `IMessageTarget`."""
-        inside = self.bugtasks[0]
+        inside = self.default_bugtask
         return [
             IndexedMessage(message, inside, index)
             for index, message in enumerate(self.messages)]
@@ -473,6 +474,7 @@ class Bug(SQLBase):
         # the same time as retrieving the bug subscriptions (as a left
         # join). However, this ran slowly (far from optimal query
         # plan), so we're doing it as two queries now.
+        from lp.registry.model.person import Person, ValidPersonCache
         valid_persons = Store.of(self).find(
             (Person, ValidPersonCache),
             Person.id == ValidPersonCache.id,
@@ -495,6 +497,7 @@ class Bug(SQLBase):
         the relevant subscribers and rationales will be registered on
         it.
         """
+        from lp.registry.model.person import Person
         subscribers = list(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -531,17 +534,6 @@ class Bug(SQLBase):
                 Bug.duplicateof = %d""" % self.id,
                 prejoins=["person"], clauseTables=["Bug"]))
 
-        # Direct and "also notified" subscribers take precedence
-        # over subscribers from duplicates.
-        duplicate_subscriptions -= set(self.getDirectSubscriptions())
-        also_notified_subscriptions = set()
-        for also_notified_subscriber in self.getAlsoNotifiedSubscribers():
-            for duplicate_subscription in duplicate_subscriptions:
-                if also_notified_subscriber == duplicate_subscription.person:
-                    also_notified_subscriptions.add(duplicate_subscription)
-                    break
-        duplicate_subscriptions -= also_notified_subscriptions
-
         # Only add a subscriber once to the list.
         duplicate_subscribers = set(
             sub.person for sub in duplicate_subscriptions)
@@ -566,6 +558,7 @@ class Bug(SQLBase):
         if self.private:
             return []
 
+        from lp.registry.model.person import Person
         dupe_subscribers = set(
             Person.select("""
                 Person.id = BugSubscription.person AND
@@ -645,7 +638,8 @@ class Bug(SQLBase):
             key=operator.attrgetter('displayname'))
 
     def getBugNotificationRecipients(self, duplicateof=None, old_bug=None,
-                                     level=None):
+                                     level=None,
+                                     include_master_dupe_subscribers=True):
         """See `IBug`."""
         recipients = BugNotificationRecipients(duplicateof=duplicateof)
         self.getDirectSubscribers(recipients)
@@ -655,7 +649,7 @@ class Bug(SQLBase):
                 "A private bug should never have implicit subscribers!")
         else:
             self.getIndirectSubscribers(recipients, level=level)
-            if self.duplicateof:
+            if include_master_dupe_subscribers and self.duplicateof:
                 # This bug is a public duplicate of another bug, so include
                 # the dupe target's subscribers in the recipient list. Note
                 # that we only do this for duplicate bugs that are public;
@@ -732,6 +726,8 @@ class Bug(SQLBase):
                    content=None, parent=None, bugwatch=None,
                    remote_comment_id=None):
         """Create a new Message and link it to this bug."""
+        if subject is None:
+            subject = self.followup_subject()
         msg = Message(
             parent=parent, owner=owner, subject=subject,
             rfc822msgid=make_msgid('malone'))
@@ -862,9 +858,9 @@ class Bug(SQLBase):
 
         return branch is not None
 
-    def addBranch(self, branch, registrant):
+    def linkBranch(self, branch, registrant):
         """See `IBug`."""
-        for bug_branch in shortlist(self.bug_branches):
+        for bug_branch in shortlist(self.linked_branches):
             if bug_branch.branch == branch:
                 return bug_branch
 
@@ -877,7 +873,7 @@ class Bug(SQLBase):
 
         return bug_branch
 
-    def removeBranch(self, branch, user):
+    def unlinkBranch(self, branch, user):
         """See `IBug`."""
         bug_branch = BugBranch.selectOneBy(bug=self, branch=branch)
         if bug_branch is not None:
@@ -1057,6 +1053,7 @@ class Bug(SQLBase):
         # Since we can't prejoin, cache all people at once so we don't
         # have to do it while rendering, which is a big deal for bugs
         # with a million comments.
+        from lp.registry.model.person import Person
         owner_ids = set()
         for chunk in chunks:
             if chunk.message.ownerID:
@@ -1077,74 +1074,79 @@ class Bug(SQLBase):
 
     def addNomination(self, owner, target):
         """See `IBug`."""
+        if not self.canBeNominatedFor(target):
+            raise NominationError(
+                "This bug cannot be nominated for %s." %
+                    target.bugtargetdisplayname)
+
         distroseries = None
         productseries = None
         if IDistroSeries.providedBy(target):
             distroseries = target
-            target_displayname = target.fullseriesname
             if target.status == DistroSeriesStatus.OBSOLETE:
                 raise NominationSeriesObsoleteError(
-                    "%s is an obsolete series." % target_displayname)
+                    "%s is an obsolete series." % target.bugtargetdisplayname)
         else:
             assert IProductSeries.providedBy(target)
             productseries = target
-            target_displayname = target.title
-
-        if not self.canBeNominatedFor(target):
-            raise NominationError(
-                "This bug cannot be nominated for %s." % target_displayname)
 
         nomination = BugNomination(
             owner=owner, bug=self, distroseries=distroseries,
             productseries=productseries)
-        if nomination.canApprove(owner):
-            nomination.approve(owner)
-        else:
-            self.addChange(SeriesNominated(UTC_NOW, owner, target))
+        self.addChange(SeriesNominated(UTC_NOW, owner, target))
         return nomination
 
-    def canBeNominatedFor(self, nomination_target):
+    def canBeNominatedFor(self, target):
         """See `IBug`."""
         try:
-            self.getNominationFor(nomination_target)
+            self.getNominationFor(target)
         except NotFoundError:
             # No nomination exists. Let's see if the bug is already
-            # directly targeted to this nomination_target.
-            if IDistroSeries.providedBy(nomination_target):
-                target_getter = operator.attrgetter("distroseries")
-            elif IProductSeries.providedBy(nomination_target):
-                target_getter = operator.attrgetter("productseries")
+            # directly targeted to this nomination target.
+            if IDistroSeries.providedBy(target):
+                series_getter = operator.attrgetter("distroseries")
+                pillar_getter = operator.attrgetter("distribution")
+            elif IProductSeries.providedBy(target):
+                series_getter = operator.attrgetter("productseries")
+                pillar_getter = operator.attrgetter("product")
             else:
-                raise AssertionError(
-                    "Expected IDistroSeries or IProductSeries target. "
-                    "Got %r." % nomination_target)
+                return False
 
             for task in self.bugtasks:
-                if target_getter(task) == nomination_target:
+                if series_getter(task) == target:
                     # The bug is already targeted at this
-                    # nomination_target.
+                    # nomination target.
                     return False
 
             # No nomination or tasks are targeted at this
-            # nomination_target.
-            return True
+            # nomination target. But we also don't want to nominate for a
+            # series of a product or distro for which we don't have a
+            # plain pillar task.
+            for task in self.bugtasks:
+                if pillar_getter(task) == pillar_getter(target):
+                    return True
+
+            # No tasks match the candidate's pillar. We must refuse.
+            return False
         else:
-            # The bug is already nominated for this nomination_target.
+            # The bug is already nominated for this nomination target.
             return False
 
-    def getNominationFor(self, nomination_target):
+    def getNominationFor(self, target):
         """See `IBug`."""
-        if IDistroSeries.providedBy(nomination_target):
-            filter_args = dict(distroseriesID=nomination_target.id)
+        if IDistroSeries.providedBy(target):
+            filter_args = dict(distroseriesID=target.id)
+        elif IProductSeries.providedBy(target):
+            filter_args = dict(productseriesID=target.id)
         else:
-            filter_args = dict(productseriesID=nomination_target.id)
+            return None
 
         nomination = BugNomination.selectOneBy(bugID=self.id, **filter_args)
 
         if nomination is None:
             raise NotFoundError(
                 "Bug #%d is not nominated for %s." % (
-                self.id, nomination_target.displayname))
+                self.id, target.displayname))
 
         return nomination
 
@@ -1625,6 +1627,14 @@ class BugSet:
                     break
 
         return bugs
+
+    def getByNumbers(self, bug_numbers):
+        """see `IBugSet`."""
+        if bug_numbers is None or len(bug_numbers) < 1:
+            return EmptyResultSet()
+        store = IStore(Bug)
+        result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        return result_set.order_by('id')
 
 
 class BugAffectsPerson(SQLBase):

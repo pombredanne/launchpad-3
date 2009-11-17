@@ -1,4 +1,5 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # arch-tag: f230218f-d4b6-42f6-ac6a-0f15373476da
 

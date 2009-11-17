@@ -1,11 +1,13 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """View classes for `IProductSeries`."""
 
 __metaclass__ = type
 
 __all__ = [
     'get_series_branch_error',
-    'ProductSeriesBreadcrumbBuilder',
+    'ProductSeriesBreadcrumb',
     'ProductSeriesBugsMenu',
     'ProductSeriesDeleteView',
     'ProductSeriesEditView',
@@ -20,76 +22,69 @@ __all__ = [
     'ProductSeriesReviewView',
     'ProductSeriesSourceListView',
     'ProductSeriesSpecificationsMenu',
-    'ProductSeriesTemplatesView',
-    'ProductSeriesTranslationsBzrImportView',
-    'ProductSeriesTranslationsExportView',
-    'ProductSeriesTranslationsMenu',
-    'ProductSeriesTranslationsSettingsView',
+    'ProductSeriesUbuntuPackagingView',
     'ProductSeriesView',
     ]
 
 import cgi
-import os.path
+from operator import attrgetter
 
 from bzrlib.revision import NULL_REVISION
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
-from zope.publisher.browser import FileUpload
 
 from z3c.ptcompat import ViewPageTemplateFile
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from lp.code.browser.branchref import BranchRef
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
+from lp.blueprints.interfaces.specification import (
+    ISpecificationSet, SpecificationImplementationStatus)
+from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from canonical.launchpad.browser.poexportrequest import BaseExportView
-from canonical.launchpad.browser.translations import TranslationsMixin
-from canonical.launchpad.helpers import browserLanguages, is_tar_filename
+from canonical.launchpad.helpers import browserLanguages
+from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.codeimport import (
     ICodeImportSet)
-from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.services.worlddata.interfaces.country import ICountry
-from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
+from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
-from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.productserieslanguage import (
+from lp.registry.browser import StatusCount
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin)
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguageSet)
-from canonical.launchpad.interfaces.translations import (
-    TranslationsBranchImportMode)
-from canonical.launchpad.interfaces.translationimporter import (
-    ITranslationImporter)
-from canonical.launchpad.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
-from canonical.launchpad.searchbuilder import any
+from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, custom_widget,
-    enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
+    enabled_with_permission, LaunchpadEditFormView,
     LaunchpadView, Link, Navigation, NavigationMenu, StandardLaunchpadFacets,
     stepthrough, stepto)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
-from canonical.widgets.itemswidgets import (
-    LaunchpadRadioWidgetWithDescription)
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from lp.registry.browser import (
-    get_status_counts, MilestoneOverlayMixin, RegistryDeleteViewMixin)
+    MilestoneOverlayMixin, RegistryDeleteViewMixin)
+from lp.registry.browser.packaging import PackagingAddView
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
-from lp.registry.interfaces.sourcepackagename import (
-    ISourcePackageNameSet)
-
 
 def quote(text):
     """Escape and quite text."""
     return cgi.escape(text, quote=True)
 
 
-class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
+class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
     """A class to navigate `IProductSeries` URLs."""
     usedfor = IProductSeries
 
@@ -131,11 +126,11 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
         return self.context.getRelease(name)
 
 
-class ProductSeriesBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProductSeries`."""
     @property
     def text(self):
-        """See `IBreadcrumbBuilder`."""
+        """See `IBreadcrumb`."""
         return 'Series ' + self.context.name
 
 
@@ -148,13 +143,14 @@ class ProductSeriesFacets(StandardLaunchpadFacets):
     def branches(self):
         """Return a link to view the branches related to this series."""
         # Override to go to the branches for the product.
-        text = 'Code'
+        text = 'Branches'
         summary = 'View related branches of code'
         link = canonical_url(self.context.product, rootsite='code')
         return Link(link, text, summary=summary)
 
 
-class ProductSeriesOverviewMenu(ApplicationMenu):
+class ProductSeriesOverviewMenu(
+    ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The overview menu."""
     usedfor = IProductSeries
     facet = 'overview'
@@ -191,20 +187,23 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         if self.context.branch is None:
             text = 'Link to branch'
             icon = 'add'
+            summary = 'Set the branch for this series'
         else:
             text = "Change branch"
             icon = 'edit'
-        summary = 'The code branch that for this series.'
+            summary = 'Change the branch for this series'
         return Link('+linkbranch', text, summary, icon=icon)
 
+    @enabled_with_permission('launchpad.View')
     def ubuntupkg(self):
         """Return a link to link this series to an ubuntu sourcepackage."""
         text = 'Link to Ubuntu package'
         return Link('+ubuntupkg', text, icon='add')
 
+    @enabled_with_permission('launchpad.View')
     def add_package(self):
         """Return a link to link this series to a sourcepackage."""
-        text = 'Link to other package'
+        text = 'Link package'
         return Link('+addpackage', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
@@ -225,13 +224,8 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         text = 'Download RDF metadata'
         return Link('+rdf', text, icon='download')
 
-    def subscribe(self):
-        """Return a link to subscribe to bug mail."""
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
-
-class ProductSeriesBugsMenu(ApplicationMenu):
+class ProductSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
     """The bugs menu."""
     usedfor = IProductSeries
     facet = 'bugs'
@@ -249,12 +243,9 @@ class ProductSeriesBugsMenu(ApplicationMenu):
         """Return a link to review bugs nominated for this series."""
         return Link('+nominations', 'Review nominations', icon='bug')
 
-    def subscribe(self):
-        """Return a link to subscribe to bug mail."""
-        return Link('+subscribe', 'Subscribe to bug mail')
 
-
-class ProductSeriesSpecificationsMenu(ApplicationMenu):
+class ProductSeriesSpecificationsMenu(NavigationMenu,
+                                      HasSpecificationsMenuMixin):
     """Specs menu for ProductSeries.
 
     This menu needs to keep track of whether we are showing all the
@@ -265,81 +256,9 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
-
-    def listall(self):
-        """Return a link to show all blueprints."""
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def listaccepted(self):
-        """Return a link to show the approved goals."""
-        text = 'List approved blueprints'
-        return Link('+specs?acceptance=accepted', text, icon='info')
-
-    def listproposed(self):
-        """Return a link to show the proposed goals."""
-        text = 'List proposed blueprints'
-        return Link('+specs?acceptance=proposed', text, icon='info')
-
-    def listdeclined(self):
-        """Return a link to show the declined goals."""
-        text = 'List declined blueprints'
-        summary = 'Show the goals which have been declined'
-        return Link('+specs?acceptance=declined', text, summary, icon='info')
-
-    def setgoals(self):
-        """Return a link to set the series goals."""
-        text = 'Set series goals'
-        summary = 'Approve or decline feature goals that have been proposed'
-        return Link('+setgoals', text, summary, icon='edit')
-
-    def table(self):
-        """Return a link to show the people assigned to the blueprint."""
-        text = 'Assignments'
-        summary = 'Show the assignee, drafter and approver of these specs'
-        return Link('+assignments', text, summary, icon='info')
-
-    def new(self):
-        """Return a link to register a blueprint."""
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
-
-
-class ProductSeriesTranslationsMenuMixIn:
-    """Translation menu for `IProductSeries`."""
-    def overview(self):
-        """Return a link to the overview page."""
-        return Link('', 'Overview')
-
-    @enabled_with_permission('launchpad.Edit')
-    def templates(self):
-        """Return a link to series PO templates."""
-        return Link('+templates', 'Templates')
-
-    @enabled_with_permission('launchpad.Edit')
-    def settings(self):
-        """Return a link to configure the translations settings."""
-        return Link('+translations-settings', 'Settings')
-
-    @enabled_with_permission('launchpad.Edit')
-    def requestbzrimport(self):
-        """Return a link to request a bazaar import."""
-        return Link('+request-bzr-import', 'Request Bazaar import')
-
-    @enabled_with_permission('launchpad.Edit')
-    def translationupload(self):
-        """Return a link to upload translations."""
-        return Link('+translations-upload', 'Upload')
-
-    def translationdownload(self):
-        """Return a link to download the translations."""
-        return Link('+export', 'Download')
-
-    def imports(self):
-        """Return a link to the import queue."""
-        return Link('+imports', 'Import queue')
+    links = [
+        'listall', 'assignments', 'setgoals', 'listdeclined',
+        'new', 'register_sprint']
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):
@@ -349,39 +268,6 @@ class ProductSeriesOverviewNavigationMenu(NavigationMenu):
     usedfor = IProductSeries
     facet = 'overview'
     links = ()
-
-
-class ProductSeriesTranslationsMenu(NavigationMenu,
-                                    ProductSeriesTranslationsMenuMixIn):
-    """Translations navigation menus for `IProductSeries` objects."""
-    usedfor = IProductSeries
-    facet = 'translations'
-    links = ('overview', 'templates', 'settings', 'requestbzrimport',
-             'translationupload', 'translationdownload', 'imports')
-
-
-class ProductSeriesTranslationsExportView(BaseExportView):
-    """Request tarball export of productseries' complete translations.
-
-    Only complete downloads are supported for now; there is no option to
-    select languages, and templates are always included.
-    """
-
-    def processForm(self):
-        """Process form submission requesting translations export."""
-        pofiles = []
-        translation_templates = self.context.getCurrentTranslationTemplates()
-        pofiles = self.context.getCurrentTranslationFiles()
-        if not bool(pofiles.any()):
-            pofiles = None
-        return (translation_templates, pofiles)
-
-    def getDefaultFormat(self):
-        """Return the default template format."""
-        templates = self.context.getCurrentTranslationTemplates()
-        if not bool(templates.any()):
-            return None
-        return templates[0].source_file_format
 
 
 def get_series_branch_error(product, branch):
@@ -399,104 +285,13 @@ def get_series_branch_error(product, branch):
     return None
 
 
-# A View Class for ProductSeries
-#
-# XXX: StuartBishop 2005-05-02:
-# We should be using autogenerated add forms and edit forms so that
-# this becomes maintainable and form validation handled for us.
-# Currently, the pages just return 'System Error' as they trigger database
-# constraints.
-class ProductSeriesView(LaunchpadView, TranslationsMixin,
-                        MilestoneOverlayMixin):
+class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
     """A view to show a series with translations."""
-    def initialize(self):
-        """See `LaunchpadFormView`."""
-        self.form = self.request.form
-        self.has_errors = False
 
-        # Whether there is more than one PO template.
-        self.has_multiple_templates = (
-            self.context.getCurrentTranslationTemplates().count() > 1)
-
-        # Let's find out what source package is associated with this
-        # productseries in the current release of ubuntu.
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.curr_ubuntu_series = ubuntu.currentseries
-        self.setUpPackaging()
-
-        # Check the form submission.
-        self.processForm()
-
-    def processForm(self):
-        """Process a form if it was submitted."""
-        if not self.request.method == "POST":
-            # The form was not posted, we don't do anything.
-            return
-
-        dispatch_table = {
-            'set_ubuntu_pkg': self.setCurrentUbuntuPackage,
-            'translations_upload': self.translationsUpload,
-        }
-        dispatch_to = [(key, method)
-                        for key,method in dispatch_table.items()
-                        if key in self.form
-                      ]
-        if len(dispatch_to) == 0:
-            # None of the know forms have been submitted.
-            # XXX CarlosPerelloMarin 2005-11-29 bug=5244:
-            # This 'if' should be removed.
-            return
-        if len(dispatch_to) != 1:
-            raise AssertionError(
-                "There should be only one command in the form",
-                dispatch_to)
-        key, method = dispatch_to[0]
-        method()
-
-    def setUpPackaging(self):
-        """Ensure that the View class correctly reflects the packaging of
-        its product series context."""
-        self.curr_ubuntu_package = None
-        self.curr_ubuntu_pkgname = ''
-        try:
-            cr = self.curr_ubuntu_series
-            self.curr_ubuntu_package = self.context.getPackage(cr)
-            cp = self.curr_ubuntu_package
-            self.curr_ubuntu_pkgname = cp.sourcepackagename.name
-        except NotFoundError:
-            pass
-        ubuntu = self.curr_ubuntu_series.distribution
-        self.ubuntu_history = self.context.getPackagingInDistribution(ubuntu)
-
-    def setCurrentUbuntuPackage(self):
-        """Set the Packaging record for this product series in the current
-        Ubuntu distroseries to be for the source package name that is given
-        in the form.
-        """
-        ubuntupkg = self.form.get('ubuntupkg', '')
-        if ubuntupkg == '':
-            # No package was selected.
-            self.request.response.addWarningNotification(
-                'Request ignored. You need to select a source package.')
-            return
-        # make sure we have a person to work with
-        if self.user is None:
-            self.request.response.addErrorNotification('Please log in first!')
-            self.has_errors = True
-            return
-        # see if the name that is given is a real source package name
-        spns = getUtility(ISourcePackageNameSet)
-        try:
-            spn = spns[ubuntupkg]
-        except NotFoundError:
-            self.request.response.addErrorNotification(
-                'Invalid source package name %s' % ubuntupkg)
-            self.has_errors = True
-            return
-        # set the packaging record for this productseries in the current
-        # ubuntu series. if none exists, one will be created
-        self.context.setPackaging(self.curr_ubuntu_series, spn, self.user)
-        self.setUpPackaging()
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return self.context.title
 
     def requestCountry(self):
         """The country associated with the IP of the request."""
@@ -505,146 +300,6 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin,
     def browserLanguages(self):
         """The languages the user's browser requested."""
         return browserLanguages(self.request)
-
-    def translationsUpload(self):
-        """Upload new translatable resources related to this IProductSeries.
-
-        Uploads may fail if there are already entries with the same path name
-        and uploader (importer) in the queue and the new upload cannot be
-        safely matched to any of them.  The user will be informed about the
-        failure with a warning message."""
-        # XXX henninge 20008-12-03 bug=192925: This code is duplicated for
-        # potemplate and pofile and should be unified.
-
-        file = self.request.form['file']
-        if not isinstance(file, FileUpload):
-            if file == '':
-                self.request.response.addErrorNotification(
-                    "Ignored your upload because you didn't select a file to"
-                    " upload.")
-            else:
-                # XXX: Carlos Perello Marin 2004-12-30 bug=116:
-                # Epiphany seems to have an unpredictable bug with upload
-                # forms (or perhaps it's launchpad because I never had
-                # problems with bugzilla). The fact is that some uploads don't
-                # work and we get a unicode object instead of a file-like
-                # object in "file". We show an error if we see that behaviour.
-                self.request.response.addErrorNotification(
-                    "The upload failed because there was a problem receiving"
-                    " the data.")
-            return
-
-        filename = file.filename
-        content = file.read()
-
-        if len(content) == 0:
-            self.request.response.addWarningNotification(
-                "Ignored your upload because the uploaded file is empty.")
-            return
-
-        translation_import_queue_set = getUtility(ITranslationImportQueue)
-
-        root, ext = os.path.splitext(filename)
-        translation_importer = getUtility(ITranslationImporter)
-        if ext in translation_importer.supported_file_extensions:
-            # Add it to the queue.
-            entry = translation_import_queue_set.addOrUpdateEntry(
-                filename, content, True, self.user,
-                productseries=self.context)
-            if entry is None:
-                self.request.response.addWarningNotification(
-                    "Upload failed.  The name of the file you "
-                    "uploaded matched multiple existing "
-                    "uploads, for different templates.  This makes it "
-                    "impossible to determine which template the new "
-                    "upload was for.  Try uploading to a specific "
-                    "template: visit the page for the template that you "
-                    "want to upload to, and select the upload option "
-                    "from there.")
-            else:
-                self.request.response.addInfoNotification(
-                    structured(
-                    'Thank you for your upload.  It will be automatically '
-                    'reviewed in the next few hours.  If that is not '
-                    'enough to determine whether and where your file '
-                    'should be imported, it will be reviewed manually by an '
-                    'administrator in the coming few days.  You can track '
-                    'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' %(
-                        canonical_url(self.context))))
-
-        elif is_tar_filename(filename):
-            # Add the whole tarball to the import queue.
-            (num, conflicts) = (
-                translation_import_queue_set.addOrUpdateEntriesFromTarball(
-                    content, True, self.user,
-                    productseries=self.context))
-
-            if num > 0:
-                if num == 1:
-                    plural_s = ''
-                    itthey = 'it'
-                else:
-                    plural_s = 's'
-                    itthey = 'they'
-                self.request.response.addInfoNotification(
-                    structured(
-                    'Thank you for your upload. %d file%s from the tarball '
-                    'will be automatically '
-                    'reviewed in the next few hours.  If that is not enough '
-                    'to determine whether and where your file%s should '
-                    'be imported, %s will be reviewed manually by an '
-                    'administrator in the coming few days.  You can track '
-                    'your upload\'s status in the '
-                    '<a href="%s/+imports">Translation Import Queue</a>' %(
-                        num, plural_s, plural_s, itthey,
-                        canonical_url(self.context))))
-                if len(conflicts) > 0:
-                    if len(conflicts) == 1:
-                        warning = (
-                            "A file could not be uploaded because its "
-                            "name matched multiple existing uploads, for "
-                            "different templates." )
-                        ul_conflicts = (
-                            "The conflicting file name was:<br /> "
-                            "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
-                    else:
-                        warning = (
-                            "%d files could not be uploaded because their "
-                            "names matched multiple existing uploads, for "
-                            "different templates." % len(conflicts))
-                        ul_conflicts = (
-                            "The conflicting file names were:<br /> "
-                            "<ul><li>%s</li></ul>" % (
-                            "</li><li>".join(map(cgi.escape, conflicts))))
-                    self.request.response.addWarningNotification(
-                        structured(
-                        warning + "  This makes it "
-                        "impossible to determine which template the new "
-                        "upload was for.  Try uploading to a specific "
-                        "template: visit the page for the template that you "
-                        "want to upload to, and select the upload option "
-                        "from there.<br />"+ ul_conflicts))
-            else:
-                if len(conflicts) == 0:
-                    self.request.response.addWarningNotification(
-                        "Upload ignored.  The tarball you uploaded did not "
-                        "contain any files that the system recognized as "
-                        "translation files.")
-                else:
-                    self.request.response.addWarningNotification(
-                        "Upload failed.  One or more of the files you "
-                        "uploaded had names that matched multiple existing "
-                        "uploads, for different templates.  This makes it "
-                        "impossible to determine which template the new "
-                        "upload was for.  Try uploading to a specific "
-                        "template: visit the page for the template that you "
-                        "want to upload to, and select the upload option "
-                        "from there.")
-        else:
-            self.request.response.addWarningNotification(
-                "Upload failed because the file you uploaded was not"
-                " recognised as a file that can be imported.")
 
     @property
     def request_import_link(self):
@@ -659,113 +314,105 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin,
                 check_permission('launchpad.View', branch))
 
     @property
-    def productserieslanguages(self):
-        """Get ProductSeriesLanguage objects to display.
+    def is_obsolete(self):
+        """Return True if the series is OBSOLETE.
 
-        Produces a list containing a ProductSeriesLanguage object for
-        each language this product has been translated into, and for each
-        of the user's preferred languages. Where the series has no
-        ProductSeriesLanguage for that language, we use a
-        DummyProductSeriesLanguage.
+        Obsolete series do not need to display as much information as other
+        series. Accessing private bugs is an expensive operation and showing
+        them for obsolete series can be a problem if many series are being
+        displayed.
         """
-
-        if self.context.potemplate_count == 0:
-            return None
-
-        # Find the existing PSLs.
-        productserieslangs = list(self.context.productserieslanguages)
-
-        # Make a set of the existing languages.
-        existing_languages = set(psl.language for psl in productserieslangs)
-
-        # Find all the preferred languages which are not in the set of
-        # existing languages, and add a dummy PSL for each of them.
-        if self.user is not None:
-            productserieslangset = getUtility(IProductSeriesLanguageSet)
-            for lang in self.user.languages:
-                if lang.code != 'en' and lang not in existing_languages:
-                    if self.single_potemplate:
-                        pot = self.context.getCurrentTranslationTemplates()[0]
-                        pofile = pot.getPOFileByLang(lang.code)
-                        if pofile is None:
-                            pofile = pot.getDummyPOFile(lang.code)
-                        productserieslang = productserieslangset.getDummy(
-                            self.context, lang, pofile=pofile)
-                    else:
-                        productserieslang = productserieslangset.getDummy(
-                            self.context, lang)
-                    productserieslangs.append(
-                        productserieslang)
-
-        return sorted(productserieslangs,
-                      key=lambda a: a.language.englishname)
-
-    @property
-    def has_translation_documentation(self):
-        """Are there translation instructions for this product."""
-        translation_group = self.context.product.translationgroup
-        return (translation_group is not None and
-                translation_group.translation_guide_url is not None)
-
-    @property
-    def single_potemplate(self):
-        """Does this ProductSeries have exactly one POTemplate."""
-        return self.context.potemplate_count == 1
-
-    @cachedproperty
-    def released_and_active_milestones(self):
-        """Milestones that are active or have releases."""
-        return [
-            milestone
-            for milestone in self.context.all_milestones
-            if milestone.active or milestone.product_release is not None]
+        return self.context.status == DistroSeriesStatus.OBSOLETE
 
     @cachedproperty
     def bugtask_status_counts(self):
         """A list StatusCounts summarising the targeted bugtasks."""
         bugtaskset = getUtility(IBugTaskSet)
-        # Nominated to be fixes in this series.
-        params = BugTaskSearchParams(self.user)
-        params.setProductSeries(self.context)
-        all_bugtasks = set(
-            list(bugtaskset.search(params)))
-        # Targeted to be fixed in this series.
-        milestones = [
-            milestone.id for milestone in self.released_and_active_milestones]
-        if len(milestones) > 0:
-            params = BugTaskSearchParams(
-                self.user, milestone=any(*milestones))
-            all_bugtasks = all_bugtasks.union(
-                list(bugtaskset.search(params)))
-        return get_status_counts(all_bugtasks, 'status')
+        status_id_counts = bugtaskset.getStatusCountsForProductSeries(
+            self.user, self.context)
+        status_counts = dict([(BugTaskStatus.items[status_id], count)
+                              for status_id, count in status_id_counts])
+        return [StatusCount(status, status_counts[status])
+                for status in sorted(status_counts,
+                                     key=attrgetter('sortkey'))]
 
     @cachedproperty
     def specification_status_counts(self):
         """A list StatusCounts summarising the targeted specification."""
-        # Series goals.
-        all_specifications = set(
-            list(self.context.all_specifications))
-        # Targeted to be fixed in this series.
-        for milestone in self.released_and_active_milestones:
-            all_specifications = all_specifications.union(
-                list(milestone.specifications))
-        return get_status_counts(all_specifications, 'implementation_status')
+        specification_set = getUtility(ISpecificationSet)
+        status_id_counts = specification_set.getStatusCountsForProductSeries(
+            self.context)
+        SpecStatus = SpecificationImplementationStatus
+        status_counts = dict([(SpecStatus.items[status_id], count)
+                              for status_id, count in status_id_counts])
+        return [StatusCount(status, status_counts[status])
+                for status in sorted(status_counts,
+                                     key=attrgetter('sortkey'))]
 
     @property
-    def milestone_table_class(self):
-        """The milestone table will be unseen if there are no milestones."""
-        if len(self.released_and_active_milestones) > 0:
-            return 'listing'
-        else:
-            # The page can remove the 'unseen' class to make the table
-            # visible.
-            return 'listing unseen'
+    def latest_release_with_download_files(self):
+        for release in self.context.releases:
+            if len(list(release.files)) > 0:
+                return release
+        return None
+
+
+class ProductSeriesUbuntuPackagingView(PackagingAddView):
+
+    field_names = ['sourcepackagename']
+    page_title = 'Ubuntu source packaging'
+    label = page_title
+
+    def __init__(self, context, request):
+        """Set the static packaging information for this series."""
+        super(ProductSeriesUbuntuPackagingView, self).__init__(
+            context, request)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self._ubuntu_series = ubuntu.currentseries
+        try:
+            package = self.context.getPackage(self._ubuntu_series)
+            self.default_sourcepackagename = package.sourcepackagename
+        except NotFoundError:
+            # The package has never been set.
+            self.default_sourcepackagename = None
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`.
+
+        Set the current `ISourcePackageName` as the default value.
+        """
+        super(ProductSeriesUbuntuPackagingView, self).setUpWidgets()
+        if self.default_sourcepackagename is not None:
+            widget = self.widgets.get('sourcepackagename')
+            widget.setRenderedValue(self.default_sourcepackagename)
 
     @property
-    def milestone_row_uri_template(self):
-        return (
-            '%s/+milestone/{name}/+productseries-table-row' %
-            canonical_url(self.context.product, path_only_if_possible=True))
+    def default_distroseries(self):
+        """The current Ubuntu distroseries"""
+        return self._ubuntu_series
+
+    @property
+    def ubuntu_history(self):
+        return self.context.getPackagingInDistribution(
+            self.default_distroseries.distribution)
+
+    def validate(self, data):
+        sourcepackagename = data.get('sourcepackagename', None)
+        if sourcepackagename == self.default_sourcepackagename:
+            # The data has not changed, so nothing else needs to be done.
+            return
+        super(ProductSeriesUbuntuPackagingView, self).validate(data)
+
+    @action('Update', name='continue')
+    def continue_action(self, action, data):
+        # set the packaging record for this productseries in the current
+        # ubuntu series. if none exists, one will be created
+        sourcepackagename = data['sourcepackagename']
+        if self.default_sourcepackagename == sourcepackagename:
+            # There is no change.
+            return
+        self.context.setPackaging(
+            self.default_distroseries, sourcepackagename, self.user)
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
@@ -775,6 +422,17 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         'name', 'summary', 'status', 'branch', 'releasefileglob']
     custom_widget('summary', TextAreaWidget, height=7, width=62)
     custom_widget('releasefileglob', StrippedTextWidget, displayWidth=40)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
@@ -794,6 +452,11 @@ class ProductSeriesEditView(LaunchpadEditFormView):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
 
 class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     """A view to remove a productseries from a product."""
@@ -803,8 +466,13 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @property
     def label(self):
         """The form label."""
-        return 'Delete %s series %s' % (
+        return 'Delete %s %s series' % (
             self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     @cachedproperty
     def milestones(self):
@@ -814,7 +482,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def bugtasks(self):
         """A list of all `IBugTask`s targeted to this series."""
-        all_bugtasks = []
+        all_bugtasks = self._getBugtasks(self.context)
         for milestone in self.milestones:
             all_bugtasks.extend(self._getBugtasks(milestone))
         return all_bugtasks
@@ -822,7 +490,7 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     @cachedproperty
     def specifications(self):
         """A list of all `ISpecification`s targeted to this series."""
-        all_specifications = []
+        all_specifications = self._getSpecifications(self.context)
         for milestone in self.milestones:
             all_specifications.extend(self._getSpecifications(milestone))
         return all_specifications
@@ -831,6 +499,11 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
     def has_bugtasks_and_specifications(self):
         """Does the series have any targeted bugtasks or specifications."""
         return len(self.bugtasks) > 0 or len(self.specifications) > 0
+
+    @property
+    def has_linked_branch(self):
+        """Is the series linked to a branch."""
+        return self.context.branch is not None
 
     @cachedproperty
     def product_release_files(self):
@@ -872,6 +545,17 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
     field_names = ['branch']
 
     @property
+    def label(self):
+        """The form label."""
+        return 'Link an existing branch to %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
     def next_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
@@ -889,9 +573,10 @@ class ProductSeriesLinkBranchView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Series code location updated.')
 
-    @action('Cancel', name='cancel', validator='validate_cancel')
-    def cancel_action(self, action, data):
-        """Do nothing and go back to the product series page."""
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class ProductSeriesLinkBranchFromCodeView(ProductSeriesLinkBranchView):
@@ -907,8 +592,23 @@ class ProductSeriesReviewView(LaunchpadEditFormView):
     """A view to review and change the series `IProduct` and name."""
     schema = IProductSeries
     field_names = ['product', 'name']
-    label = 'Review product series details'
     custom_widget('name', TextWidget, width=20)
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Administer %s %s series' % (
+            self.context.product.displayname, self.context.name)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     @action(_('Change'), name='change')
     def change_action(self, action, data):
@@ -953,6 +653,9 @@ class ProductSeriesSourceListView(LaunchpadView):
     See `ICodeImportSet.getActiveImports` for our definition of running.
     """
 
+    page_title = 'Available code imports'
+    label = page_title
+
     def initialize(self):
         """See `LaunchpadFormView`."""
         self.text = self.request.get('text')
@@ -968,126 +671,3 @@ class ProductSeriesFileBugRedirect(LaunchpadView):
         """See `LaunchpadFormView`."""
         filebug_url = "%s/+filebug" % canonical_url(self.context.product)
         self.request.response.redirect(filebug_url)
-
-
-class ProductSeriesTranslationsMixin(object):
-    """Common properties for all ProductSeriesTranslations*View classes."""
-
-    @property
-    def series_title(self):
-        """The series title."""
-        return self.context.title.replace(' ', '&nbsp;')
-
-    @property
-    def has_imports_enabled(self):
-        """Is imports enabled for the series?"""
-        return (self.context.translations_autoimport_mode !=
-                TranslationsBranchImportMode.NO_IMPORT)
-
-    @property
-    def request_bzr_import_url(self):
-        """URL to request a bazaar import."""
-        return canonical_url(self.context,
-                             view_name="+request-bzr-import")
-
-    @property
-    def link_branch_url(self):
-        """URL to link the series to a branch."""
-        return canonical_url(self.context, rootsite="mainsite",
-                             view_name="+linkbranch")
-
-    @property
-    def translations_settings_url(self):
-        """URL to change the translations for the series."""
-        return canonical_url(self.context,
-                             view_name="+translations-settings")
-
-    @property
-    def product_edit_url(self):
-        """URL to edit the `IProduct`."""
-        return canonical_url(self.context.product, rootsite="mainsite",
-                             view_name="+edit")
-
-
-class SettingsRadioWidget(LaunchpadRadioWidgetWithDescription):
-    """Remove the confusing hint under the widget."""
-
-    def __init__(self, field, vocabulary, request):
-        super(SettingsRadioWidget, self).__init__(field, vocabulary, request)
-        self.hint = None
-
-
-class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
-                                            ProductSeriesTranslationsMixin):
-    """Edit settings for translations import and export."""
-
-    schema = IProductSeries
-    field_names = ['translations_autoimport_mode']
-    settings_widget = custom_widget('translations_autoimport_mode',
-                  SettingsRadioWidget)
-
-    def __init__(self, context, request):
-        super(ProductSeriesTranslationsSettingsView, self).__init__(
-            context, request)
-        self.cancel_url = canonical_url(self.context)
-
-    @action(u"Save settings", name="save_settings")
-    def change_settings_action(self, action, data):
-        """Change the translation settings."""
-        if (self.context.translations_autoimport_mode !=
-            data['translations_autoimport_mode']
-            ):
-            self.updateContextFromData(data)
-            # Request an initial upload of translation files.
-            getUtility(IRosettaUploadJobSource).create(
-                self.context.branch, NULL_REVISION)
-        else:
-            self.updateContextFromData(data)
-        self.request.response.addInfoNotification(
-            _("The settings have been updated."))
-
-
-class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
-                                             ProductSeriesTranslationsMixin):
-    """Edit settings for translations import and export."""
-
-    schema = IProductSeries
-    field_names = []
-
-    def __init__(self, context, request):
-        super(ProductSeriesTranslationsBzrImportView, self).__init__(
-            context, request)
-        self.cancel_url = canonical_url(self.context)
-
-    def validate(self, action):
-        """See `LaunchpadFormView`."""
-        if self.context.branch is None:
-            self.addError(
-                "Please set the official Bazaar branch first.")
-
-    @action(u"Request one-time import", name="request_import")
-    def request_import_action(self, action, data):
-        """ Request an upload of translation files. """
-        job = getUtility(IRosettaUploadJobSource).create(
-            self.context.branch, NULL_REVISION, True)
-        if job is None:
-            self.addError(
-                _("Your request could not be filed."))
-        else:
-            self.request.response.addInfoNotification(
-                _("The import has been requested."))
-
-
-class ProductSeriesTemplatesView(LaunchpadView):
-    """Show a list of all templates for the ProductSeries."""
-
-    is_distroseries = False
-
-    def iter_templates(self):
-        """Return an iterator of all `IPOTemplates` for the series."""
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(productseries=self.context)
-
-    def can_administer(self, template):
-        """Can the user administer the template?"""
-        return check_permission('launchpad.Admin', template)

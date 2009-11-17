@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -13,6 +15,7 @@ from zope.component import getUtility
 from sqlobject import (
     BoolCol, IntCol, StringCol, ForeignKey, SQLRelatedJoin, SQLObjectNotFound)
 from storm.locals import SQL, Join
+from storm.store import EmptyResultSet
 
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.database.constants import DEFAULT
@@ -22,13 +25,14 @@ from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.interfaces._schema_circular_imports import (
     IHasBuildRecords)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageName
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
 from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.distroarchseries import (
     IDistroArchSeries, IDistroArchSeriesSet, IPocketChroot)
 from lp.soyuz.interfaces.publishing import (
-    ICanPublishPackages, PackagePublishingPocket, PackagePublishingStatus)
+    ICanPublishPackages, PackagePublishingStatus)
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.distroarchseriesbinarypackage import (
     DistroArchSeriesBinaryPackage)
@@ -218,11 +222,16 @@ class DistroArchSeries(SQLBase):
             self, name)
 
     def getBuildRecords(self, build_state=None, name=None, pocket=None,
-                        user=None):
+                        arch_tag=None, user=None):
         """See IHasBuildRecords"""
         # Ignore "user", since it would not make any difference to the
         # records returned here (private builds are only in PPA right
         # now).
+
+        # For consistency we return an empty resultset if arch_tag
+        # is provided but doesn't match our architecture.
+        if arch_tag is not None and arch_tag != self.architecturetag:
+            return EmptyResultSet()
 
         # Use the facility provided by IBuildSet to retrieve the records.
         return getUtility(IBuildSet).getBuildsByArchIds(
@@ -329,6 +338,25 @@ class DistroArchSeriesSet:
 
     def count(self):
         return DistroArchSeries.select().count()
+
+    def getIdsForArchitectures(self, architectures, arch_tag=None):
+        """Filter architectures and return the ids.
+
+        This method is not exposed via the public interface as it is
+        used simply to keep trusted code DRY.
+
+        :param architectures: an iterable of architectures to process.
+        :param arch_tag: an optional architecture tag with which to filter
+            the results.
+        :return: a list of the ids of the architectures matching arch_tag.
+        """
+        # If arch_tag was not provided, just return the ids without
+        # filtering.
+        if arch_tag is None:
+            return [arch.id for arch in architectures]
+        else:
+            return [arch.id for arch in architectures
+                        if arch_tag == arch.architecturetag]
 
 
 class PocketChroot(SQLBase):

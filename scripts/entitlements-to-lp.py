@@ -1,13 +1,13 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
-# pylint: disable-msg=W0403
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-__metaclass__ = type
+# pylint: disable-msg=W0403
+import _pythonpath
 
 import logging
 import sys
-
-import _pythonpath
 
 from lp.services.scripts.base import LaunchpadScript
 from lp.registry.scripts.entitlement import (

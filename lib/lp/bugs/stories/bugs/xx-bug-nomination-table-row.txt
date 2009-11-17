@@ -134,16 +134,3 @@ Clicking "Approve" approves the nomination.
     True
     >>> logout()
 
-
-== Links ==
-
-Certain items in the bug nomination row are linked for useful navigation to
-other pages.  For example, a milestone name is linked to the project's
-milestone page.
-
-    >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/5')
-    >>> browser.getControl(name='firefox.milestone').value = ['1']
-    >>> browser.getControl(name='firefox.actions.save').click()
-    >>> browser.getLink('1.0').click()
-    >>> print browser.title
-    Mozilla Firefox 1.0

@@ -1,4 +1,5 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the internal codehosting API."""
 
@@ -22,7 +23,7 @@ from lp.services.scripts.interfaces.scriptactivity import (
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc import faults
@@ -35,7 +36,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
 from lp.code.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES,
-    iter_split, run_with_login)
+    run_with_login)
 
 
 UTC = pytz.timezone('UTC')
@@ -514,6 +515,7 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
 
     def assertBranchIsAquired(self, branch):
         """See `AcquireBranchToPullTests`."""
+        branch = removeSecurityProxy(branch)
         pull_info = self.storage.acquireBranchToPull()
         default_branch = branch.target.default_stacked_on_branch
         if default_branch:
@@ -560,7 +562,22 @@ class AcquireBranchToPullTestsViaEndpoint(TestCaseWithFactory,
         _, _, _, default_stacked_on_branch, _ = pull_info
         self.assertEqual(
             default_stacked_on_branch,
-            branch.target.default_stacked_on_branch.unique_name)
+            '/' + branch.target.default_stacked_on_branch.unique_name)
+
+    def test_private_default_stacked_not_returned_for_mirrored_branch(self):
+        # We don't stack mirrored branches on a private default stacked on
+        # branch.
+        product = self.factory.makeProduct()
+        default_branch = self.factory.makeProductBranch(
+            product=product, private=True)
+        self.factory.enableDefaultStackingForProduct(product, default_branch)
+        mirrored_branch = self.factory.makeProductBranch(
+            branch_type=BranchType.MIRRORED, product=product)
+        mirrored_branch.requestMirror()
+        pull_info = self.storage.acquireBranchToPull()
+        _, _, _, default_stacked_on_branch, _ = pull_info
+        self.assertEqual(
+            '', default_stacked_on_branch)
 
 
 class BranchFileSystemTest(TestCaseWithFactory):
@@ -1092,23 +1109,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
             trailing_path='.bzr')
 
 
-class TestIterateSplit(TestCase):
-    """Tests for iter_split."""
-
-    def test_iter_split(self):
-        # iter_split loops over each way of splitting a string in two using
-        # the given splitter.
-        self.assertEqual([('one', '')], list(iter_split('one', '/')))
-        self.assertEqual([], list(iter_split('', '/')))
-        self.assertEqual(
-            [('one/two', ''), ('one', 'two')],
-            list(iter_split('one/two', '/')))
-        self.assertEqual(
-            [('one/two/three', ''), ('one/two', 'three'),
-             ('one', 'two/three')],
-            list(iter_split('one/two/three', '/')))
-
-
 class LaunchpadDatabaseFrontend:
     """A 'frontend' to Launchpad's branch services.
 
@@ -1165,7 +1165,5 @@ def test_suite():
                       'layer': FunctionalLayer}),
         ]
     multiply_tests(puller_tests, scenarios, suite)
-    suite.addTests(
-        map(loader.loadTestsFromTestCase,
-            [TestRunWithLogin, TestIterateSplit]))
+    suite.addTests(loader.loadTestsFromTestCase(TestRunWithLogin))
     return suite

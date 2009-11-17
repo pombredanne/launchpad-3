@@ -1,4 +1,5 @@
-# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Launchpad XMLRPC faults."""
 
@@ -308,7 +309,7 @@ class CannotHaveLinkedBranch(LaunchpadFault):
     error_code = 230
     msg_template = (
         "%(component_name)s is a %(component_type)s, and a "
-        "%(component_type)s doesn't have a default branch.")
+        "%(component_type)s cannot have a default branch.")
 
     def __init__(self, component):
         LaunchpadFault.__init__(

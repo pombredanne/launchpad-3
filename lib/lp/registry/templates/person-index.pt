@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
 
@@ -22,20 +19,20 @@
     <meta tal:condition="not: context/is_valid_person_or_team"
           name="robots" content="noindex,nofollow" />
     <tal:openid_delegation condition="view/is_delegated_identity">
-      <link rel="openid.server" 
-            href="https://login.launchpad.net/" 
+      <link rel="openid.server"
+            href="https://login.launchpad.net/"
             tal:attributes="href view/openid_server_url" />
-      <link rel="openid.delegate" 
+      <link rel="openid.delegate"
             href="https://login.launchpad.net/+id/xxxxxxxx"
             tal:attributes="href view/openid_identity_url" />
-      <link rel="openid2.provider" 
-            href="https://login.launchpad.net/" 
+      <link rel="openid2.provider"
+            href="https://login.launchpad.net/"
             tal:attributes="href view/openid_server_url" />
-      <link rel="openid2.local_id" 
+      <link rel="openid2.local_id"
             href="https://login.launchpad.net/+id/xxxxxxxx"
             tal:attributes="href view/openid_identity_url" />
 
-      <meta http-equiv="X-XRDS-Location" 
+      <meta http-equiv="X-XRDS-Location"
         content="https://login.launchpad.net/+id/xxxxxxx/+xrds"
         tal:attributes="content string:${view/openid_identity_url}/+xrds" />
 
@@ -45,45 +42,92 @@
 
 <body>
 
-<div metal:fill-slot="main" class="pillar"
-  tal:define="overview_menu context/menu:overview">
-  <div class="actions" style="float:right;">
-    <tal:is-person condition="not: context/is_team">
-      <tal:administer
-        replace="structure overview_menu/administer/fmt:link-icon" />
-    </tal:is-person>
-    <tal:edit
-      replace="structure overview_menu/edit/fmt:link-icon" />
+<div metal:fill-slot="side" tal:define="overview_menu context/menu:overview">
+  <tal:menu replace="structure view/@@+global-actions" />
+
+  <metal:contact use-macro="context/@@+person-macros/contact">
+    Contact this person
+  </metal:contact>
+
+  <div id="involvement" class="portlet involvement"
+    tal:condition="context/is_valid_person">
+    <h2>Participation</h2>
+
+    <ul>
+      <li>
+        <a class="sprite bugs"
+          tal:attributes="href context/fmt:url:bugs">Bugs</a>
+      </li>
+      <li>
+        <a class="sprite answers"
+          tal:attributes="href context/fmt:url:answers">Answers</a>
+      </li>
+      <li>
+        <a class="sprite translations"
+          tal:attributes="href context/fmt:url:translations">Translations</a>
+      </li>
+      <li>
+        <a class="sprite code"
+          tal:attributes="href context/fmt:url:code">Code</a>
+      </li>
+      <li>
+        <a class="sprite blueprints"
+          tal:attributes="href context/fmt:url:blueprints">Blueprints</a>
+      </li>
+    </ul>
   </div>
+</div>
 
+<div metal:fill-slot="main"
+  tal:define="overview_menu context/menu:overview">
   <tal:is-valid-person tal:condition="context/is_valid_person">
-    <tal:mugshot replace="structure context/image:mugshot" />
-
-    <h1 tal:content="context/displayname">Some Person</h1>
 
     <div
       class="description"
       tal:condition="context/homepage_content"
       tal:content="structure context/homepage_content/fmt:text-to-html"
     />
+    <ul class="horizontal">
+      <tal:comment condition="nothing">
+        This link name is different from the menu, since it refers
+        to several pages that are all accessible when you click on this link.
+      </tal:comment>
+      <li
+        tal:define="link context/menu:overview/related_software_summary"
+        tal:condition="link/enabled">
+        <a class="sprite info" tal:attributes="href link/fmt:url">
+          Related software and packages
+        </a>
+      </li>
+      <li
+        tal:define="link context/menu:overview/oauth_tokens"
+        tal:condition="link/enabled"
+        tal:content="structure link/fmt:link" />
+    </ul>
 
-    <div tal:replace="structure context/@@+portlet-contact-details"/>
-    <div tal:replace="structure context/@@+portlet-map" />
-    <div tal:replace="structure context/@@+portlet-contributions"/>
-    <div tal:condition="view/should_show_ppa_section"
-         tal:replace="structure context/@@+portlet-ppas"/>
-    <div tal:replace="structure context/@@+portlet-currentfocus"/>
-    <div tal:replace="structure context/@@+portlet-memberships"/>
-    <div tal:replace="structure context/@@+portlet-details"/>
+    <div class="yui-g">
+      <div tal:content="structure context/@@+portlet-contact-details"/>
+    </div>
 
+    <div tal:content="structure context/@@+portlet-currentfocus"/>
+
+    <div class="yui-g">
+      <!-- First portlet column. -->
+      <div class="first yui-u">
+        <div tal:content="structure context/@@+portlet-ppas"/>
+        <div tal:content="structure context/@@+portlet-memberships"/>
+      </div>
+      <div class="yui-u">
+        <div tal:content="structure context/@@+portlet-contributions"/>
+
+      </div>
+    </div>
+
+    <div tal:content="structure context/@@+portlet-map" />
   </tal:is-valid-person>
 
   <div id="not-lp-user-or-team"
        tal:condition="not: context/is_valid_person_or_team">
-
-    <tal:mugshot replace="structure context/image:mugshot" />
-
-    <h1 tal:content="context/displayname">Some Person</h1>
 
     <tal:noaccount tal:condition="context/account_status/enumvalue:NOACCOUNT">
       <p><span tal:replace="context/displayname" /> does not use Launchpad.
@@ -132,7 +176,7 @@
             </p>
           </tal:editable>
           <a tal:attributes="
-            href string:/people/+requestmerge?field.dupeaccount=${context/name}"
+            href string:/people/+requestmerge?field.dupe_person=${context/name}"
           >Are you <span tal:replace="context/displayname" />?</a>
         </tal:person>
         <tal:team condition="view/context_is_probably_a_team">

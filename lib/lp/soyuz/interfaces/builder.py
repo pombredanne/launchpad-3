@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Builder interfaces."""
@@ -93,7 +95,7 @@ class IBuilder(IHasOwner):
         description=_('The builder slave title. Should be just a few words.'))
 
     description = Description(
-        title=_('Description'), required=True,
+        title=_('Description'), required=False,
         description=_('The builder slave description, may be several '
                       'paragraphs of text, giving the highlights and '
                       'details.'))
@@ -260,6 +262,10 @@ class IBuilder(IHasOwner):
 
         The pending BuildQueue item with the highest score for this builder
         ProcessorFamily or None if no candidate is available.
+
+        For public PPA builds, subsequent builds for a given ppa and
+        architecture will not be returned until the current build for
+        the ppa and architecture is finished.
         """
 
     def dispatchBuildCandidate(candidate):
@@ -332,7 +338,9 @@ class IBuilderSet(Interface):
         :param virtualized: boolean, controls which queue to check,
             'virtualized' means PPA.
 
-        :return the size of the queue, integer.
+        :return: a tuple containing the size of the queue, as an integer,
+            and the sum of the jobs 'estimated_build_duration' in queue,
+            as a timedelta or None for empty queues.
         """
 
     def pollBuilders(logger, txn):

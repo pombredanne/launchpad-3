@@ -20,22 +20,25 @@ Get an instance of Builder from the current sampledata:
 
 Test some attributes:
 
-    >>> builder.id, builder.name
-    (1, u'bob')
+    >>> print builder.name
+    bob
 
 Test 'status' property:
 
-    >>> builder.failnotes = 'Could not open Socket'
-    >>> print builder.status
-    Could not open Socket
-
-    >>> builder.builderok = True
     >>> print builder.status
     Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
 
     >>> builder.manual = True
     >>> print builder.status
     Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
+
+    >>> builder.builderok = False
+    >>> builder.failnotes = 'Could not open Socket'
+    >>> print builder.status
+    Could not open Socket
+
+    >>> builder.builderok = True
+    >>> builder.failnotes = None
 
 In case of copy archives the status string will show both the copy
 archive owner as well as the copy archive name.
@@ -173,20 +176,20 @@ they are interested via the 'virtualized' argument.
     >>> amd64 = Processor.selectOneBy(name='amd64')
 
 'virtualized' defaults to False, so if not passed, it will return the
-size of the non-virtualized (trusted) build queue.
+size and estimated duration of the non-virtualized (trusted) build queue.
 
     >>> builderset.getBuildQueueSizeForProcessor(p386)
-    1
+    (1, datetime.timedelta(0, 60))
 
 The 'amd64' build queue is empty.
 
     >>> builderset.getBuildQueueSizeForProcessor(amd64)
-    0
+    (0, None)
 
 The virtualized build queue for 386 is also empty.
 
     >>> builderset.getBuildQueueSizeForProcessor(p386, virtualized=True)
-    0
+    (0, None)
 
 The queue size is not affect by builds target to disabled
 archives. Builds for disabled archive are not dispatched as well, this
@@ -194,18 +197,16 @@ is an effective manner to hold activity in a specific archive.
 
 We will temporarily disable the ubuntu primary archive.
 
-    >>> from lp.registry.interfaces.distribution import (
-    ...     IDistributionSet)
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-
     >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu.main_archive.enabled = False
     >>> login(ANONYMOUS)
 
 That done, the non-virtualized queue for i386 becomes empty.
 
     >>> builderset.getBuildQueueSizeForProcessor(p386)
-    0
+    (0, None)
 
 Let's re-enable the ubuntu primary archive.
 
@@ -216,7 +217,7 @@ Let's re-enable the ubuntu primary archive.
 The build for the ubuntu primary archive shows up again.
 
     >>> builderset.getBuildQueueSizeForProcessor(p386)
-    1
+    (1, datetime.timedelta(0, 60))
 
 
 == Resuming buildd slaves ==

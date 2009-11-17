@@ -26,7 +26,7 @@ You can ask an IBugTask for its representation as an email header value:
     >>> warty_firefox_bugtask = bugtaskset.get(16)
 
     >>> upstream_firefox_bugtask.asEmailHeaderValue()
-    u'product=firefox; status=New; importance=Low; assignee=mark@hbd.com;'
+    u'product=firefox; status=New; importance=Low; assignee=mark@example.com;'
 
     >>> upstream_firefox_bugtask_no_assignee.asEmailHeaderValue()
     u'product=firefox; status=New; importance=Medium; assignee=None;'

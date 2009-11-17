@@ -1,26 +1,39 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Utilities for dealing with Bazaar.
 
-Everything in here should be submitted upstream.
+Much of the code in here should be submitted upstream. The rest is code that
+integrates between Bazaar's infrastructure and Launchpad's infrastructure.
 """
 
 __metaclass__ = type
 __all__ = [
+    'add_exception_logging_hook',
     'DenyingServer',
     'ensure_base',
     'get_branch_stacked_on_url',
+    'get_vfs_format_classes',
     'HttpAsLocalTransport',
+    'identical_formats',
+    'install_oops_handler',
     'is_branch_stackable',
+    'remove_exception_logging_hook',
     ]
 
-from bzrlib import config
+import os
+import sys
+
+from bzrlib import config, trace
 from bzrlib.errors import (
     NoSuchFile, NotStacked, UnstackableBranchFormat,
     UnstackableRepositoryFormat)
-from bzrlib.remote import RemoteBzrDir
+from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
+
+from canonical.launchpad.webapp.errorlog import (
+    ErrorReportingUtility, ScriptRequest)
 
 from lazr.uri import URI
 
@@ -116,6 +129,83 @@ def ensure_base(transport):
             _create_prefix(transport)
 
 
+_exception_logging_hooks = []
+
+_original_log_exception_quietly = trace.log_exception_quietly
+
+
+def _hooked_log_exception_quietly():
+    """Wrapper around `trace.log_exception_quietly` that calls hooks."""
+    _original_log_exception_quietly()
+    for hook in _exception_logging_hooks:
+        hook()
+
+
+def add_exception_logging_hook(hook_function):
+    """Call 'hook_function' when bzr logs an exception.
+
+    :param hook_function: A nullary callable that relies on sys.exc_info()
+        for exception information.
+    """
+    if trace.log_exception_quietly == _original_log_exception_quietly:
+        trace.log_exception_quietly = _hooked_log_exception_quietly
+    _exception_logging_hooks.append(hook_function)
+
+
+def remove_exception_logging_hook(hook_function):
+    """Cease calling 'hook_function' whenever bzr logs an exception.
+
+    :param hook_function: A nullary callable that relies on sys.exc_info()
+        for exception information. It will be removed from the exception
+        logging hooks.
+    """
+    _exception_logging_hooks.remove(hook_function)
+    if len(_exception_logging_hooks) == 0:
+        trace.log_exception_quietly == _original_log_exception_quietly
+
+
+def make_oops_logging_exception_hook(error_utility, request):
+    """Make a hook for logging OOPSes."""
+    def log_oops():
+        error_utility.raising(sys.exc_info(), request)
+    return log_oops
+
+
+class BazaarOopsRequest(ScriptRequest):
+    """An OOPS request specific to bzr."""
+
+    def __init__(self, user_id):
+        """Construct a `BazaarOopsRequest`.
+
+        :param user_id: The database ID of the user doing this.
+        """
+        data = [('user_id', user_id)]
+        super(BazaarOopsRequest, self).__init__(data, URL=None)
+
+
+def make_error_utility(pid=None):
+    """Make an error utility for logging errors from bzr."""
+    if pid is None:
+        pid = os.getpid()
+    error_utility = ErrorReportingUtility()
+    error_utility.configure('bzr_lpserve')
+    error_utility.setOopsToken(str(pid))
+    return error_utility
+
+
+def install_oops_handler(user_id):
+    """Install an OOPS handler for a bzr process.
+
+    When installed, logs any exception passed to `log_exception_quietly`.
+
+    :param user_id: The database ID of the user the process is running as.
+    """
+    error_utility = make_error_utility()
+    request = BazaarOopsRequest(user_id)
+    hook = make_oops_logging_exception_hook(error_utility, request)
+    add_exception_logging_hook(hook)
+
+
 class HttpAsLocalTransport(LocalTransport):
     """A LocalTransport that works using http URLs.
 
@@ -172,3 +262,33 @@ class DenyingServer:
         raise AssertionError(
             "Creation of transport for %r is currently forbidden" % url)
 
+
+def get_vfs_format_classes(branch):
+    """Return the vfs classes of the branch, repo and bzrdir formats.
+
+    'vfs' here means that it will return the underlying format classes of a
+    remote branch.
+    """
+    if isinstance(branch, RemoteBranch):
+        branch._ensure_real()
+        branch = branch._real_branch
+    repository = branch.repository
+    if isinstance(repository, RemoteRepository):
+        repository._ensure_real()
+        repository = repository._real_repository
+    bzrdir = branch.bzrdir
+    if isinstance(bzrdir, RemoteBzrDir):
+        bzrdir._ensure_real()
+        bzrdir = bzrdir._real_bzrdir
+    return (
+        branch._format.__class__,
+        repository._format.__class__,
+        bzrdir._format.__class__,
+        )
+
+
+def identical_formats(branch_one, branch_two):
+    """Check if two branches have the same bzrdir, repo, and branch formats.
+    """
+    return (get_vfs_format_classes(branch_one) ==
+            get_vfs_format_classes(branch_two))

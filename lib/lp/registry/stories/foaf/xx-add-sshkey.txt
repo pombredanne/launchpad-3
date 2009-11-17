@@ -15,16 +15,16 @@ User keys are shown on profile pages, and any user can see that.
     Sample Person in Launchpad
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'sshkeys'))
-    SSH Keys: andrew@trogdor
+    SSH keys: andrew@trogdor
 
-Salgado does not have a key, and any user can see that.
+Salgado does not have a key, so we omit the 'SSH keys' section for anonymous
+users.
 
     >>> anon_browser.open('http://launchpad.dev/~salgado')
     >>> print anon_browser.title
     Guilherme Salgado in Launchpad
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'sshkeys'))
-    SSH Keys: No keys registered
+    >>> print find_tag_by_id(anon_browser.contents, 'sshkeys')
+    None
 
 Salgado sees a message explaining that he can register his ssh key.
 
@@ -35,7 +35,8 @@ Salgado sees a message explaining that he can register his ssh key.
     Guilherme Salgado in Launchpad
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'sshkeys'))
-    SSH Keys: Add an SSH key
+    SSH keys: Add an SSH key
+    No SSH keys registered.
 
 
 Updating SSH keys
@@ -47,10 +48,7 @@ his SSH keys. The page allows him to add a key.
 
     >>> browser.getLink('Add an SSH key').click()
     >>> print browser.title
-    Guilherme Salgado's SSH keys
-    >>> print extract_text(
-    ...     find_main_content(browser.contents).h2)
-    Add an SSH key
+    Change your SSH keys...
 
 Any key must be of the form "keytype keytext comment", where keytype must be
 either ssh-rsa or ssh-dss.  If the key doesn't match the expected format, an
@@ -104,21 +102,6 @@ Launchpad administrators are not allowed to poke at other user's ssh keys.
     ...
     Unauthorized: ...
 
-Nor is the option to edit the user's SSH keys displayed in the navigation
-menu:
-
-    >>> admin_browser.open('http://launchpad.dev/~salgado')
-    >>> admin_browser.getLink('Change details').click()
-    >>> print_navigation_links(admin_browser.contents)
-    Profile
-    Related Software: .../~salgado/+related-software
-    Karma: .../~salgado/+karma
-    Personal Package Archives: .../~salgado#ppas
-    Personal
-    E-mail Settings: .../~salgado/+editemails
-    OpenPGP Keys: .../~salgado/+editpgpkeys
-    Passwords: .../~salgado/+changepassword
-
 Salgado chooses to remove one of his ssh keys from Launchpad. The link
 to edit his keys is on the page.
 
@@ -127,13 +110,12 @@ to edit his keys is on the page.
     Guilherme Salgado in Launchpad
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'sshkeys'))
-    SSH Keys: 
+    SSH keys: Update SSH keys
     salgado@canario
-    Update SSH keys
     salgado@canario
     >>> browser.getLink('Update SSH keys').click()
     >>> print browser.title
-    Guilherme Salgado's SSH keys
+    Change your SSH keys...
 
     >>> browser.getControl('Remove', index=0).click()
     >>> soup = find_main_content(browser.contents)

@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for TemporaryBlobStorage."""
 
@@ -17,8 +18,13 @@ from canonical.librarian.interfaces import UploadFailed
 
 
 class TemporaryBlobStorageAddView(LaunchpadFormView):
+    # XXX: gary 2009-09-18 bug=31358
+    # This page might be able to be removed after the referenced bug is
+    # fixed and apport (Ubuntu's bug reporting tool) has been changed to use
+    # it.
     schema = ITemporaryBlobStorage
     label = 'Store BLOB'
+    page_title = 'Store a BLOB temporarily in Launchpad'
     field_names = ['blob']
     for_input = True
 

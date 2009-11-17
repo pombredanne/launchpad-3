@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -59,6 +60,7 @@ __all__ = [
     'rollback',
     'SQLBase',
     'sqlvalues',
+    'StupidCache',
     'ZopelessTransactionManager',]
 
 # Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
@@ -107,11 +109,6 @@ class StupidCache:
 
     def get_cached(self):
         return self._cache.keys()
-
-
-# Monkey patch the cache into storm.store to override the standard
-# cache implementation for all stores.
-storm.store.Cache = StupidCache
 
 
 def _get_sqlobject_store():
@@ -170,7 +167,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
 
     def __init__(self, *args, **kwargs):
         """Extended version of the SQLObjectBase constructor.
-        
+
         We we force use of the the master Store.
 
         We refetch any parameters from different stores from the
@@ -199,7 +196,7 @@ class SQLBase(storm.sqlobject.SQLObjectBase):
                 assert new_argument is not None, (
                     '%s not yet synced to this store' % repr(argument))
                 kwargs[key] = new_argument
-                
+
         store.add(self)
         try:
             self._create(None, **kwargs)
@@ -269,33 +266,43 @@ class ZopelessTransactionManager(object):
                              "directly instantiated.")
 
     @classmethod
-    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
-                     isolation=ISOLATION_LEVEL_DEFAULT):
-        # Get the existing connection info. We use the MAIN MASTER
-        # Store, as this is the only Store code still using this
-        # deprecated code interacts with.
-        connection_string = config.database.main_master
+    def _get_zopeless_connection_config(self, dbname, dbhost):
+        # This method exists for testability.
+        main_connection_string = config.database.main_master
+        auth_connection_string = config.database.auth_master
 
         # Override dbname and dbhost in the connection string if they
         # have been passed in.
         if dbname is not None:
-            connection_string = re.sub(
-                    r'dbname=\S*', r'dbname=%s' % dbname, connection_string)
+            main_connection_string = re.sub(
+                r'dbname=\S*', r'dbname=%s' % dbname, main_connection_string)
         else:
-            match = re.search(r'dbname=(\S*)', connection_string)
+            match = re.search(r'dbname=(\S*)', main_connection_string)
             if match is not None:
                 dbname = match.group(1)
 
         if dbhost is not None:
-            connection_string = re.sub(
-                    r'host=\S*', r'host=%s' % dbhost, connection_string)
+            main_connection_string = re.sub(
+                    r'host=\S*', r'host=%s' % dbhost, main_connection_string)
         else:
-            match = re.search(r'host=(\S*)', connection_string)
+            match = re.search(r'host=(\S*)', main_connection_string)
             if match is not None:
                 dbhost = match.group(1)
+        return main_connection_string, auth_connection_string, dbname, dbhost
 
-        if dbuser is None:
-            dbuser = config.launchpad.dbuser
+    @classmethod
+    def initZopeless(cls, dbname=None, dbhost=None, dbuser=None,
+                     isolation=ISOLATION_LEVEL_DEFAULT):
+        # Connect to the auth master store as well, as some scripts might need
+        # to create EmailAddresses and Accounts.
+
+        main_connection_string, auth_connection_string, dbname, dbhost = (
+            cls._get_zopeless_connection_config(dbname, dbhost))
+
+        assert dbuser is not None, '''
+            dbuser is now required. All scripts must connect as unique
+            database users.
+            '''
 
         isolation_level = {
             ISOLATION_LEVEL_AUTOCOMMIT: 'autocommit',
@@ -305,8 +312,8 @@ class ZopelessTransactionManager(object):
         # Construct a config fragment:
         overlay = dedent("""\
             [database]
-            main_master: %(connection_string)s
-            auth_master: %(connection_string)s
+            main_master: %(main_connection_string)s
+            auth_master: %(auth_connection_string)s
             isolation_level: %(isolation_level)s
             """ % vars())
 
@@ -347,13 +354,33 @@ class ZopelessTransactionManager(object):
         Other stores do not need to be reset, as code using other stores
         or explicit flavors isn't using this compatibility layer.
         """
-        store = _get_sqlobject_store()
-        connection = store._connection
-        if connection._state == storm.database.STATE_CONNECTED:
-            if connection._raw_connection is not None:
-                connection._raw_connection.close()
-            connection._raw_connection = None
-            connection._state = storm.database.STATE_DISCONNECTED
+        main_store = _get_sqlobject_store()
+        # XXX: salgado, 2009-11-06, bug=253542: The import is here to work
+        # around a particularly convoluted circular import.
+        from canonical.launchpad.webapp.interfaces import (
+            IStoreSelector, AUTH_STORE, DEFAULT_FLAVOR)
+        auth_store = getUtility(IStoreSelector).get(
+            AUTH_STORE, DEFAULT_FLAVOR)
+        for store in [main_store, auth_store]:
+            connection = store._connection
+            if connection._state == storm.database.STATE_CONNECTED:
+                if connection._raw_connection is not None:
+                    connection._raw_connection.close()
+
+                # This method assumes that calling transaction.abort() will
+                # call rollback() on the store, but this is no longer the
+                # case as of jamesh's fix for bug 230977; Stores are not
+                # registered with the transaction manager until they are
+                # used. While storm doesn't provide an API which does what
+                # we want, we'll go under the covers and emit the
+                # register-transaction event ourselves. This method is
+                # only called by the test suite to kill the existing
+                # connections so the Store's reconnect with updated
+                # connection settings.
+                store._event.emit('register-transaction')
+
+                connection._raw_connection = None
+                connection._state = storm.database.STATE_DISCONNECTED
         transaction.abort()
 
     @classmethod
@@ -688,24 +715,24 @@ def flush_database_caches():
 
 def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
-    def wrapped(*args, **kwargs):
+    def block_implicit_flushes_decorator(*args, **kwargs):
         store = _get_sqlobject_store()
         store.block_implicit_flushes()
         try:
             return func(*args, **kwargs)
         finally:
             store.unblock_implicit_flushes()
-    return mergeFunctionMetadata(func, wrapped)
+    return mergeFunctionMetadata(func, block_implicit_flushes_decorator)
 
 
 def reset_store(func):
     """Function decorator that resets the main store."""
-    def wrapped(*args, **kwargs):
+    def reset_store_decorator(*args, **kwargs):
         try:
             return func(*args, **kwargs)
         finally:
             _get_sqlobject_store().reset()
-    return mergeFunctionMetadata(func, wrapped)
+    return mergeFunctionMetadata(func, reset_store_decorator)
 
 
 # Some helpers intended for use with initZopeless.  These allow you to avoid

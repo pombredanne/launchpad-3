@@ -20,11 +20,10 @@ FooBar will now request that FooBarDupe be merged into his account.
     >>> browser = setupBrowser(auth="Basic foobar@baz.com:test")
     >>> browser.open('http://launchpad.dev/people/+requestmerge')
     >>> browser.getControl('Duplicated Account').value = 'foobar-dupe'
-    >>> browser.getControl('Submit').click()
+    >>> browser.getControl('Continue').click()
     >>> browser.url
     'http://launchpad.dev/people/+mergerequest-sent?dupe=...
     >>> print extract_text(find_main_content(browser.contents))
-    Merge accounts
     An email message was sent to...
     Please follow the instructions on that message to complete the merge.
 

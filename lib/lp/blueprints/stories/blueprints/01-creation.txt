@@ -52,11 +52,12 @@ Starting from the Ubuntu distribution page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu')
 
-Users can press the graphical "Register a blueprint" button:
+Users can use the ISpecificationTarget involvement menu to register a
+blueprint.
 
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/ubuntu/+addspec"
-    id="addspec"> <img alt="Register a blueprint"...
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'involvement').a)
+    Register a blueprint
 
 Users can also follow the textual "Register a blueprint" link:
 
@@ -64,7 +65,7 @@ Users can also follow the textual "Register a blueprint" link:
     ...     user_browser.contents, 'menu-link-new'):
     ...     print tag
     <a href="http://blueprints.launchpad.dev/ubuntu/+addspec"
-       class="menu-link-new" ...>Register a blueprint</a>
+       class="menu-link-new...>Register a blueprint</a>
 
 
 === From a distribution series ===
@@ -73,19 +74,13 @@ Starting from the Ubuntu Hoary distribution series page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/hoary')
 
-Users can press the graphical "Register a blueprint" button:
-
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/ubuntu/hoary/+addspec"
-    id="addspec"> <img alt="Register a blueprint"...
-
 Users can also follow the textual "Register a blueprint" link:
 
     >>> for tag in find_tags_by_class(
     ...     user_browser.contents, 'menu-link-new'):
     ...     print tag
     <a href="http://blueprints.launchpad.dev/ubuntu/hoary/+addspec"
-       class="menu-link-new" ...>Register a blueprint</a>
+       class="menu-link-new...>Register a blueprint</a>
 
 
 === From a product ===
@@ -94,11 +89,6 @@ Starting from the Bazaar product page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/bzr')
 
-Users can press the graphical "Register a blueprint" button:
-
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/bzr/+addspec"
-    id="addspec"> <img alt="Register a blueprint"...
 
 Users can also follow the textual "Register a blueprint" link:
 
@@ -106,7 +96,7 @@ Users can also follow the textual "Register a blueprint" link:
     ...     user_browser.contents, 'menu-link-new'):
     ...     print tag
     <a href="http://blueprints.launchpad.dev/bzr/+addspec"
-       class="menu-link-new" ...>Register a blueprint</a>
+       class="menu-link-new...>Register a blueprint</a>
 
 For products without any blueprints, users can follow the special "register
 it here as a blueprint" link:
@@ -114,9 +104,10 @@ it here as a blueprint" link:
     >>> user_browser.getLink('register it here as a blueprint').click()
     >>> print user_browser.url
     http://blueprints.launchpad.dev/bzr/+addspec
+    >>> print user_browser.title
+    Register a blueprint in...
     >>> print extract_text(find_main_content(user_browser.contents))
     Register a new blueprint...
-
 
 === From a product series ===
 
@@ -124,11 +115,6 @@ Starting from the Mozilla Firefox product series page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/firefox/1.0')
 
-Users can press the graphical "Register a blueprint" button:
-
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/firefox/1.0/+addspec"
-    id="addspec"> <img alt="Register a blueprint" ...
 
 Users can also follow the textual "Register a blueprint" link:
 
@@ -136,7 +122,7 @@ Users can also follow the textual "Register a blueprint" link:
     ...     user_browser.contents, 'menu-link-new'):
     ...     print tag
     <a href="http://blueprints.launchpad.dev/firefox/1.0/+addspec"
-       class="menu-link-new" ...>Register a blueprint</a>
+       class="menu-link-new...>Register a blueprint</a>
 
 
 === From a project ===
@@ -145,19 +131,13 @@ Starting from the Mozilla project page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/mozilla')
 
-Users can press the graphical "Register a blueprint" button:
-
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/mozilla/+addspec"
-    id="addspec"> <img alt="Register a blueprint" ...
-
 Users can follow the textual "Register a blueprint" link:
 
     >>> for tag in find_tags_by_class(
     ...     user_browser.contents, 'menu-link-new'):
     ...     print tag
     <a href="http://blueprints.launchpad.dev/mozilla/+addspec"
-       class="menu-link-new" ...>Register a blueprint</a>
+       class="menu-link-new...>Register a blueprint</a>
 
 
 === From a sprint ===
@@ -166,19 +146,13 @@ Starting from the Future Mega Meeting sprint page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/sprints/futurista')
 
-Users can press the graphical "Register a blueprint" button:
-
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/sprints/futurista/+addspec"
-    id="addspec"> <img alt="Register a blueprint"...
-
 Users can also follow the textual "Register a blueprint" link:
 
     >>> for tag in find_tags_by_class(
-    ...     user_browser.contents, 'menu-link-addspec'):
+    ...     user_browser.contents, 'menu-link-new'):
     ...     print tag
     <a href="http://blueprints.launchpad.dev/sprints/futurista/+addspec"
-       class="menu-link-addspec" ...>Register a blueprint</a>
+       class="menu-link-new...>Register a blueprint</a>
 
 
 == Registering a blueprint ==
@@ -193,6 +167,11 @@ from.
 We'll start from the default blueprint registration form:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/specs/+new')
+
+Canceling creation, brings one back to the blueprints home page.
+
+    >>> user_browser.getLink('Cancel').url
+    'http://blueprints.launchpad.dev/'
 
 When a blueprint is registered from the Blueprints home page, Launchpad
 requires the user to specify a target for the new blueprint. This target
@@ -233,8 +212,7 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
-    >>> main = find_main_content(user_browser.contents)
-    >>> print extract_text(main).encode('ascii', 'backslashreplace')
+    >>> print user_browser.title
     Network Magic: Auto Network Detection...
 
 
@@ -257,7 +235,7 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic-1'
-    >>> print extract_text(find_main_content(user_browser.contents))
+    >>> print user_browser.title
     Network Magic: Auto Network Detection...
 
 
@@ -277,6 +255,11 @@ Let's register a blueprint from the Ubuntu Hoary distribution series:
     >>> control('URL').value = 'http://wiki.ubuntu.com/NetworkMagic2'
     >>> control('Summary').value = summary
 
+Canceling creation, brings one back to the blueprints Hoary home.
+
+    >>> user_browser.getLink('Cancel').url
+    'http://blueprints.launchpad.dev/ubuntu/hoary'
+
 By default, blueprints are not proposed as series goals:
 
     >>> control('series goal').control.value
@@ -288,7 +271,7 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic-2'
-    >>> print extract_text(find_main_content(user_browser.contents))
+    >>> print user_browser.title
     Network Magic: Auto Network Detection...
 
 The new blueprint is not proposed as a series goal:
@@ -315,14 +298,14 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic-3'
-    >>> print extract_text(find_main_content(user_browser.contents))
+    >>> print user_browser.title
     Network Magic: Auto Network Detection...
 
 As requested, the new blueprint is proposed as a series goal:
 
-    >>> print(first_tag_by_class(user_browser.contents,
-    ...                          'summary'))
-    <...Series goal:...Proposed...for...hoary...
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'series-goal'))
+    Series goal: Proposed for hoary
 
 If the registration is performed by a user with permission to accept goals
 for the series, the new blueprint is automatically accepted as a series goal:
@@ -336,10 +319,11 @@ for the series, the new blueprint is automatically accepted as a series goal:
     >>> control('Summary').value = summary
     >>> control('series goal').control.value = True
     >>> control('Register Blueprint').click()
-    >>> print extract_text(find_main_content(admin_browser.contents))
+    >>> print admin_browser.title
     Network Magic: Auto Network Detection...
-    >>> print(first_tag_by_class(admin_browser.contents, 'summary'))
-    <...Series goal:...Accepted...for...hoary...
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'series-goal'))
+    Series goal: Accepted for hoary
 
 
 === Registering a blueprint from a product ===
@@ -356,13 +340,18 @@ Let's register a blueprint from the Mozilla Firefox product:
     >>> control('URL').value = 'http://wiki.firefox.com/SvgSupport1'
     >>> control('Summary').value = summary
 
+Canceling creation, brings one back to the blueprints Firefox home.
+
+    >>> user_browser.getLink('Cancel').url
+    'http://blueprints.launchpad.dev/firefox'
+
 Pressing the "Register Blueprint" button creates a blueprint targeted to the
 Mozilla Firefox product, then redirects the user to the new blueprint's page:
 
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-1'
-    >>> print extract_text(find_main_content(user_browser.contents))
+    >>> print user_browser.title
     SVG Support...
 
 
@@ -393,7 +382,7 @@ Mozilla Firefox product, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-2'
-    >>> print extract_text(find_main_content(user_browser.contents))
+    >>> print user_browser.title
     SVG Support...
 
 The new blueprint is not proposed as a series goal:
@@ -420,14 +409,14 @@ Mozilla Firefox product, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-3'
-    >>> print extract_text(find_main_content(user_browser.contents))
+    >>> print user_browser.title
     SVG Support...
 
 As requested, the new blueprint is proposed as a series goal:
 
-    >>> print(first_tag_by_class(user_browser.contents,
-    ...                                       'summary'))
-    <...Series goal:...Proposed...for...1.0...
+    >>> content = find_main_content(user_browser.contents)
+    >>> print extract_text(find_tag_by_id(content, 'series-goal'))
+    Series goal: Proposed for 1.0
 
 If the registration is performed by a user with permission to accept goals
 for the series, the new blueprint is automatically accepted as a series goal:
@@ -441,10 +430,11 @@ for the series, the new blueprint is automatically accepted as a series goal:
     >>> control('Summary').value = summary
     >>> control('series goal').control.value = True
     >>> control('Register Blueprint').click()
-    >>> print extract_text(find_main_content(admin_browser.contents))
+    >>> content = find_main_content(admin_browser.contents)
+    >>> print extract_text(content.h1)
     SVG Support...
-    >>> print(first_tag_by_class(admin_browser.contents, 'summary'))
-    <...Series goal:...Accepted...for...1.0...
+    >>> print extract_text(find_tag_by_id(content, 'series-goal'))
+    Series goal: Accepted for 1.0
 
 
 === Registering a blueprint from a project ===
@@ -476,7 +466,7 @@ Mozilla Firefox project, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-5'
-    >>> print extract_text(find_main_content(user_browser.contents))
+    >>> print user_browser.title
     SVG Support...
 
 
@@ -562,7 +552,7 @@ permission, the blueprint will be automatically added to the sprint agenda:
     >>> sample_browser.getControl('Register Blueprint').click()
     >>> sample_browser.url
     'http://blueprints.launchpad.dev/jokosher/+spec/spec-for-sprint'
-    >>> print extract_text(find_main_content(sample_browser.contents))
+    >>> print sample_browser.title
     Spec for Sprint...
     >>> sample_browser.open('http://blueprints.launchpad.dev/sprints/paris')
     >>> find_tag_by_id(sample_browser.contents, 'speclisting')
@@ -641,7 +631,7 @@ automatically for the user:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/new-network-magic'
-    >>> print extract_text(find_main_content(user_browser.contents))
+    >>> print user_browser.title
     Network Magic: Automatic Network Detection...
 
 
@@ -669,7 +659,7 @@ There are some locations in Launchpad from which it's not possible to register
 a blueprint. To start with, it's not possible to register a blueprint from an
 individual user's blueprint listing page:
 
-    >>> user_browser.open('http://blueprints.launchpad.dev/~sabdfl')
+    >>> user_browser.open('http://blueprints.launchpad.dev/~mark')
     >>> print user_browser.getLink('Register a blueprint')
     Traceback (most recent call last):
         ...

@@ -1,72 +1,95 @@
-  First we check that Sample Person never signed a code of conduct.
+=========================
+Signing a Code of Conduct
+=========================
 
-  >>> browser.addHeader("Authorization", "Basic test@canonical.com:test")
-  >>> browser.open("http://launchpad.dev/~name12/+codesofconduct")
+Sample person has never signed a code of conduct.
 
-  >>> "Sample Person has never signed" in browser.contents
-  True
+    >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~name12/+codesofconduct')
+    >>> print extract_text(find_main_content(browser.contents))
+    Codes of Conduct for Sample Person
+    ...
+    Launchpad records codes of conduct you sign as commitments to the
+    principles of collaboration, tolerance and open communication that
+    drive the open source community.
+    Sample Person has never signed a code
+    of conduct.
+    See or sign new code of conduct releases
 
-
-  First we define a helper function
-
-  >>> import os.path
-  >>> def filename_path(filename):
-  ...   return os.path.join(os.path.dirname(__file__), filename)
-  ...
-
-  Then we try to register a code of conduct with a truncated CoC:
-
-  >>> filename = filename_path("truncated_coc.asc")
-  >>> truncated_coc = open(filename).read()
-
-  >>> browser.open("http://launchpad.dev/codeofconduct/1.0.1/+sign")
-  >>> browser.getControl("Signed Code").value = truncated_coc
-  >>> browser.getControl("Continue").click()
-
-  >>> message = (
-  ... "The signed text does not match the Code of Conduct. Make sure that "
-  ... "you signed the correct text (white space differences are acceptable")
-  >>> message in browser.contents
-  True
-
-  We try to register an old version of the code (version 1.0)
-
-  >>> filename = filename_path("10_coc.asc")
-  >>> old_coc = open(filename).read()
-  >>> browser.getControl("Signed Code").value = old_coc
-  >>> browser.getControl("Continue").click()
-
-  >>> message in browser.contents
-  True
-
-  If we try to access the old version page to sign it
-  >>> browser.open("http://launchpad.dev/codeofconduct/1.0/+sign")
-
-  We're presented with a link to the current code page
-  >>> current_coc_link = browser.getLink("the current version")
-  >>> current_coc_link.url
-  'http://launchpad.dev/codeofconduct/1.0.1'
-
-  We navigate to the current Code page
-  >>> current_coc_link.click()
-  >>> browser.getLink("Sign this version").click()
-  >>> browser.url
-  'http://launchpad.dev/codeofconduct/1.0.1/+sign'
+    # A helper function for reading a code-of-conduct file.
+    >>> import os
+    >>> def read_file(filename):
+    ...     path = os.path.join(os.path.dirname(__file__), filename)
+    ...     file_object = open(path)
+    ...     # Change this to a with-statement when we switch to Python 2.5.
+    ...     try:
+    ...         return file_object.read()
+    ...     finally:
+    ...         file_object.close()
 
 
-  Now we try to register the code of conduct, using an reformatted copy
-  (leading spaces removed).
+Code of Conduct registration problems
+=====================================
 
-  >>> filename = filename_path("reformatted_101_coc.asc")
-  >>> reformatted_coc = open(filename).read()
-  >>> browser.getControl("Signed Code").value = reformatted_coc
-  >>> browser.getControl("Continue").click()
+Sample Person tries unsuccessfully to register a truncated code of conduct.
 
-  This succeeds because the words are the same and in the same order.
+    >>> truncated_coc = read_file('truncated_coc.asc')
+    >>> browser.open('http://launchpad.dev/codeofconduct/1.0.1/+sign')
+    >>> browser.getControl('Signed Code').value = truncated_coc
+    >>> browser.getControl('Continue').click()
+    >>> print_errors(browser.contents)
+    There is 1 error.
+    The signed text does not match the Code of Conduct. Make sure that you
+    signed the correct text (white space differences are acceptable).
 
-  >>> browser.url
-  'http://launchpad.dev/~name12/+codesofconduct'
+Sample Person tries unsuccessfully to register an old version of the code.
 
-  >>> browser.open("http://launchpad.dev/~name12/+codesofconduct")
-  >>> "1024D/DFD20543" in browser.contents
-  True
+    >>> coc_version_1_0 = read_file('10_coc.asc')
+    >>> browser.getControl('Signed Code').value = coc_version_1_0
+    >>> browser.getControl('Continue').click()
+    >>> print_errors(browser.contents)
+    There is 1 error.
+    The signed text does not match the Code of Conduct. Make sure that you
+    signed the correct text (white space differences are acceptable).
+
+
+Sample Person tries to access the old version page to sign it, and is informed
+that there is a new version available.
+
+    >>> browser.open('http://launchpad.dev/codeofconduct/1.0/+sign')
+    >>> browser.getLink('the current version').click()
+    >>> print browser.url
+    http://launchpad.dev/codeofconduct/1.0.1
+
+    >>> browser.getLink('Sign it').click()
+    >>> print browser.url
+    http://launchpad.dev/codeofconduct/1.0.1/+sign
+
+
+Code of Conduct registration
+============================
+
+Sample Person registers the code of conduct, using a reformatted copy which
+has leading spaces removed.  This succeeds because the words the same and
+appear in the same order.
+
+    >>> reformatted_coc = read_file('reformatted_101_coc.asc')
+    >>> browser.getControl('Signed Code').value = reformatted_coc
+    >>> browser.getControl('Continue').click()
+    >>> print browser.url
+    http://launchpad.dev/~name12/+codesofconduct
+
+And now Sample Person's Codes of Conduct page shows that he's signed it.
+
+    >>> browser.open('http://launchpad.dev/~name12/+codesofconduct')
+    >>> print extract_text(find_main_content(browser.contents))
+    Codes of Conduct for Sample Person
+    ...
+    Launchpad records codes of conduct you sign as commitments to the
+    principles of collaboration, tolerance and open communication that
+    drive the open source community.
+    Active signatures
+    If you change your mind about agreeing to a code of conduct,
+    you can deactivate your signature.
+    ...: digitally signed by Sample Person (1024D/DFD20543)
+    ...

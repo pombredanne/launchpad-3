@@ -15,7 +15,7 @@ team and the name of the team owner as arguments.
 
     >>> from subprocess import Popen, PIPE
     >>> process = Popen(
-    ...     'scripts/convert-person-to-team.py -q matsubara sabdfl',
+    ...     'scripts/convert-person-to-team.py -q matsubara mark',
     ...     shell=True, stdin=PIPE, stdout=PIPE, stderr=PIPE)
     >>> (out, err) = process.communicate()
     >>> out, err

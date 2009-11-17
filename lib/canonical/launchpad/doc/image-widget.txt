@@ -2,8 +2,8 @@
 
 In Launchpad we have images associated with people, products, distributions,
 etc, and we want to allow people to have full control over their images. That
-is, they must be able to upload a new image and delete (or keep) an existing 
-one. For this we created this widget, which can be embeded into any form we 
+is, they must be able to upload a new image and delete (or keep) an existing
+one. For this we created this widget, which can be embeded into any form we
 want, which doesn't require us to add any submit buttons to indicate that the
 image should be kept, deleted or changed.
 
@@ -165,12 +165,12 @@ creates a new database object for us.
 
 
 # This section is commented out because we are not doing the autoscaling
-# magic for 1.0 (sabdfl - 2007-03-29)
+# magic for 1.0 (mark - 2007-03-29)
 
 #=== The LogoTiedWithMugshotWidget ===
 #
 #This is a specialized version of the ImageChangeWidget which also returns a
-#resized version of the uploaded image, in case one was uploaded. 
+#resized version of the uploaded image, in case one was uploaded.
 #
 #    >>> from canonical.widgets.image import LogoTiedWithMugshotWidget
 #    >>> mugshot_file_name = os.path.join(
@@ -365,7 +365,6 @@ an image with a byte size smaller than person_mugshot.max_size BUT dimensions
 smaller than person_mugshot.dimensions, it must be rejected.
 
     >>> import PIL.Image
-    >>> from canonical.launchpad.fields import MugshotImageUpload
     >>> person_mugshot = IPerson['mugshot'].bind(salgado)
     >>> logo_file_name = os.path.join(
     ...     os.path.dirname(canonical.launchpad.__file__),
@@ -385,7 +384,8 @@ smaller than person_mugshot.dimensions, it must be rejected.
     Traceback (most recent call last):
     ...
     WidgetInputError: ('field.mugshot', u'Mugshot',
-                       This image is not exactly 192x192 pixels in size.)
+                       LaunchpadValidationError(u'\nThis image is not exactly
+                                                  192x192\npixels in size.'))
 
 
 This is what we see when the image is the correct dimensions, and within the
@@ -429,7 +429,9 @@ get a validation error.
     Traceback (most recent call last):
     ...
     WidgetInputError: ('field.mugshot', u'Mugshot',
-                       This image exceeds the maximum allowed size in bytes.)
+                       LaunchpadValidationError(u'\nThis image exceeds the
+                                                  maximum allowed size in
+                                                  bytes.'))
 
 A similar error will be raised if the image's dimensions are bigger than the
 maximum we allow.
@@ -443,7 +445,8 @@ maximum we allow.
     Traceback (most recent call last):
     ...
     WidgetInputError: ('field.mugshot', u'Mugshot',
-                       This image is not exactly 191x193 pixels in size.)
+                       LaunchpadValidationError(u'\nThis image is not exactly
+                                                  191x193\npixels in size.'))
 
     >>> person_mugshot.dimensions = (image.size[0] + 1, image.size[1] - 1)
     >>> mugshot.seek(0)
@@ -453,7 +456,8 @@ maximum we allow.
     Traceback (most recent call last):
     ...
     WidgetInputError: ('field.mugshot', u'Mugshot',
-                       This image is not exactly 193x191 pixels in size.)
+                       LaunchpadValidationError(u'\nThis image is not exactly
+                                                  193x191\npixels in size.'))
 
 We also won't accept anything that is not an image; that is, we only accept
 what can be parsed by the Python Imaging Library module.
@@ -468,8 +472,10 @@ what can be parsed by the Python Imaging Library module.
     Traceback (most recent call last):
     ...
     WidgetInputError: ('field.mugshot', u'Mugshot',
-                       The file uploaded was not recognized as an image;
-                       please check it and retry.)
+                       LaunchpadValidationError(u'\nThe file uploaded was not
+                                                  recognized as an image;
+                                                  please\ncheck it and
+                                                  retry.'))
 
 Finally, if the user specifies the 'change' action he must also provide a file
 to be uploaded.
@@ -481,7 +487,8 @@ to be uploaded.
     Traceback (most recent call last):
     ...
     WidgetInputError: ('field.mugshot', u'Mugshot',
-                       Please specify the image you want to use.)
+                       LaunchpadValidationError(u'Please specify the image you
+                                                  want to use.'))
 
 
 == Non-exact Image Dimensions ==
@@ -503,7 +510,8 @@ False:
     Traceback (most recent call last):
     ...
     WidgetInputError: ('field.mugshot', u'Mugshot',
-                       This image is larger than 64x64 pixels in size.)
+                       LaunchpadValidationError(u'\nThis image is larger than
+                                                  64x64\npixels in size.'))
 
 If the image is smaller than the dimensions, the input validates:
 
@@ -524,4 +532,3 @@ The same occurs if the image matches the specified dimensions:
     >>> fileupload = widget.getInputValue()
     >>> fileupload.filename
     u'mugshot.png'
-

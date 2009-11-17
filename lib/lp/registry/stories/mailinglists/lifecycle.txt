@@ -12,9 +12,10 @@ The owner of Landscape Developers applies for a mailing list.
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> browser.getLink('Configure mailing list').click()
-    >>> browser.title
-    'Configure mailing list'
+    >>> browser.getLink(url='+mailinglist').click()
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> print backslashreplace(browser.title)
+    Mailing list configuration...
 
     >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.title
@@ -25,7 +26,7 @@ The owner of Landscape Developers applies for a mailing list.
 
 Before the mailing list is created, the application must be approved.
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> print find_tag_by_id(browser.contents,
     ...                      'mailing_list_pending_approval').p.string
     The application for this team's mailing list is pending approval.
@@ -77,7 +78,7 @@ we'll ask the user to contact a Launchpad administrator.
     # objects so that we can call syncUpdate on them and change their status
     # at our discretion.
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.database import MailingListSet
+    >>> from lp.registry.model.mailinglist import MailingListSet
     >>> list_set = MailingListSet()
     >>> mailing_list = list_set.get('landscape-developers')
     >>> mailing_list.status = MailingListStatus.REGISTERED
@@ -93,7 +94,8 @@ archive.
 Any time before the mailing list is approved, the application can be
 cancelled (and then re-requested afterwards).
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.open(
+    ...     'http://launchpad.dev/~landscape-developers/+mailinglist')
     >>> browser.getControl('Cancel Application').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
@@ -104,7 +106,7 @@ cancelled (and then re-requested afterwards).
     None
     >>> transaction.commit()
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> browser.getControl('Apply for Mailing List').click()
     >>> browser.title
     'Landscape Developers in Launchpad'
@@ -127,13 +129,13 @@ Even after the list has been approved, it still cannot be used as the contact
 address until Mailman has acknowledged successful creation.
 
     >>> browser.reload()
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink(url='+contactaddress').click()
     >>> browser.getControl('The Launchpad mailing list')
     Traceback (most recent call last):
     ...
     LookupError: ...
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> browser.getControl('Apply for Mailing List')
     Traceback (most recent call last):
     ...
@@ -163,8 +165,8 @@ the archiver will display an informative message to that effect).
 The archive link is clickable, though we won't click it because Mailman isn't
 running.
 
-    >>> browser.getLink('Mailing list archive')
-    <Link text='Mailing list archive'
+    >>> browser.getLink('View archive')
+    <Link text='View archive'
           url='http://lists.launchpad.dev/landscape-developers'>
 
 The team's overview page also displays the posting address.
@@ -178,7 +180,7 @@ address.
 
     >>> from canonical.launchpad.testing.pages import strip_label
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> browser.getControl('Apply for Mailing List')
     Traceback (most recent call last):
     ...
@@ -189,25 +191,25 @@ address.
     The mailing list is not set as the team contact address. You can
     set it.
 
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink(url='+contactaddress').click()
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()
 
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink(url='+contactaddress').click()
     >>> control = browser.getControl(name='field.contact_method')
     >>> [strip_label(label) for label in control.displayValue]
     ['The Launchpad mailing list for this team...]
 
 The mailing list's configuration screen is also now available.
 
-    >>> browser.getLink('Configure mailing list').url
+    >>> browser.getLink(url='+mailinglist').url
     'http://launchpad.dev/~landscape-developers/+mailinglist'
 
 Although of course, it's not available to someone with no permission to
 manipulate the list.
 
     >>> user_browser.open('http://launchpad.dev/~landscape-developers')
-    >>> user_browser.getLink('Configure mailing list')
+    >>> user_browser.getLink(url='+mailinglist')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -218,7 +220,7 @@ list configuration screen displays a message to this effect.
     >>> browser.getControl('Each member individually').selected = True
     >>> browser.getControl('Change').click()
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> print extract_text(find_tag_by_id(browser.contents,
     ...                                   'mailing_list_not_contact_address'))
     The mailing list is not set as the team contact address. You can
@@ -235,14 +237,15 @@ The message contains a link to the contact address screen.
 When the mailing list is the team's contact address, the message does
 not show up.
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> find_tag_by_id(browser.contents,
     ...                'mailing_list_not_contact_address') is None
     True
 
 The contact address is now set to the mailing list address.
 
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.goBack()
+    >>> browser.getLink(url='+contactaddress').click()
     >>> control = browser.getControl(name='field.contact_method')
     >>> [strip_label(label) for label in control.displayValue]
     ['The Launchpad mailing list for this team -
@@ -258,7 +261,7 @@ to 'each user individually'.
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+mailinglist')
     >>> browser.getControl('Deactivate this Mailing List').click()
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink(url='+contactaddress').click()
     >>> control = browser.getControl(name='field.contact_method')
     >>> [strip_label(label) for label in control.displayValue]
     ['Each member individually']
@@ -278,7 +281,7 @@ are never deleted.
 
 An inactive mailing list can be reactivated.
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> browser.getControl('Reactivate this Mailing List').click()
     >>> mailing_list_status_message(browser.contents)
     ''
@@ -288,13 +291,13 @@ An inactive mailing list can be reactivated.
     >>> act()
     >>> transaction.commit()
 
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> mailing_list_status_message(browser.contents)
     ''
 
 This does not restore the mailing list as the team's contact method:
 
-    >>> browser.getLink('Change contact address').click()
+    >>> browser.getLink(url='+contactaddress').click()
     >>> control = browser.getControl(name='field.contact_method')
     >>> [strip_label(label) for label in control.displayValue]
     ['Each member individually']
@@ -401,7 +404,7 @@ The team owner cannot purge a mailing list.
     ...         return None
     ...     return tag.p.contents[0].strip()
 
-    >>> user_browser.getLink('Configure mailing list').click()
+    >>> user_browser.getLink(url='+mailinglist').click()
     >>> print purge_text(user_browser)
     None
 
@@ -580,9 +583,9 @@ of it appears.
     >>> admin_browser.getControl(name='field.aardvarks').value = ['approve']
     >>> admin_browser.getControl('Submit').click()
     >>> act()
-    >>> browser.reload()
-    >>> browser.getLink('Mailing list archive')
-    <Link text='Mailing list archive'
+    >>> browser.open(browser.url) # A `reload` would resubmit.
+    >>> browser.getLink('View archive')
+    <Link text='View archive'
           url='http://lists.launchpad.dev/aardvarks'>
 
 A team with an active mailing list cannot be renamed.
@@ -618,22 +621,21 @@ And of course, a mailing list for the newly renamed team can be created.
     >>> admin_browser.getControl(name='field.antelopes').value = ['approve']
     >>> admin_browser.getControl('Submit').click()
     >>> act()
-    >>> user_browser.reload()
-    >>> user_browser.getLink('Mailing list archive')
-    <Link text='Mailing list archive'
+    >>> user_browser.open(user_browser.url) # A `reload` would resubmit.
+    >>> user_browser.getLink('View archive')
+    <Link text='View archive'
           url='http://lists.launchpad.dev/antelopes'>
 
 A team with an active mailing list cannot be merged with another team.
 
     >>> admin_browser.open('http://launchpad.dev/people/+adminteammerge')
     >>> admin_browser.getControl('Duplicated Team').value = 'antelopes'
-    >>> admin_browser.getControl('Target Team').value = 'bassists'
+    >>> admin_browser.getControl('Target Team').value = 'guadamen'
     >>> admin_browser.getControl('Merge').click()
     >>> for message in get_feedback_messages(admin_browser.contents):
     ...     print message
-    There are 2 errors.
+    There is 1 error.
     antelopes is associated with a Launchpad mailing list; we can't merge it.
-    Constraint not satisfied
 
 But if the mailing list for the team being merge has been purged, then the
 merge is allowed.

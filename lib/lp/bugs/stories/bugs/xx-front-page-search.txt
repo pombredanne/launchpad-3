@@ -25,8 +25,8 @@ bug listing.
     >>> anon_browser.getControl('All projects').selected = True
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
-    >>> anon_browser.title
-    'Search all bug reports'
+    >>> print anon_browser.title
+    Search
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
       mozilla-firefox (Debian) Unknown New
@@ -52,7 +52,7 @@ will be searched.
     >>> anon_browser.getControl(name='field.scope.target').value = 'evolution'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.title
-    'Search all bug reports'
+    'Search'
 
 The same is of course true if the target widget contains a non-existant
 project name.
@@ -63,7 +63,7 @@ project name.
     >>> anon_browser.getControl(name='field.scope.target').value = 'invalid'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.title
-    'Search all bug reports'
+    'Search'
 
 It's also possible to go to the search page directly, without submitting
 the form at the front page.
@@ -71,7 +71,7 @@ the form at the front page.
     >>> search_url, query = anon_browser.url.split('?', 1)
     >>> anon_browser.open(search_url)
     >>> anon_browser.title
-    'Search all bug reports'
+    'Search'
 
 == Searching one project ==
 
@@ -110,21 +110,12 @@ in the Launchpad.
     There is no project named 'invalid' registered in Launchpad
 
 If the user doesn't know what name to write, he can use the 'Choose'
-link that will present him with a search box.
+link if the browser supports javascript. The test browser does not
+support javascript, so a 'Find' link pointing to /people is displayed.
 
-    >>> choose_link = anon_browser.getLink('Choose')
-    >>> choose_link.url
-    "javascript:popup_window('@@popup-window?..."
-
-Since the link is a javascript popup, we can't follow the link directly,
-so let's extract the real URL and open it manually.
-
-    >>> import re
-    >>> search_url = re.search(
-    ...     "popup_window\('([^']*)'", choose_link.url).group(1)
-    >>> user_browser.open('http://bugs.launchpad.dev/' + search_url)
-    >>> user_browser.title
-    'Select a project'
+    >>> find_link = anon_browser.getLink('Find')
+    >>> find_link.url
+    'http://bugs.launchpad.dev/people/'
 
 'Project' in this context means either a product, distribution or a
 project.
@@ -136,8 +127,8 @@ project.
     >>> anon_browser.getControl(name='field.scope.target').value = 'evolution'
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
-    >>> anon_browser.title
-    'Bugs in The Evolution Groupware Application'
+    >>> print anon_browser.title
+    Bugs in The Evolution Groupware...
     >>> anon_browser.url
     'http://bugs.launchpad.dev/evolution/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
@@ -166,8 +157,8 @@ project.
     >>> anon_browser.getControl(name='field.scope.target').value = 'ubuntu'
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
-    >>> anon_browser.title
-    'Bugs in Ubuntu Linux'
+    >>> print anon_browser.title
+    Bugs in Ubuntu Linux...
     >>> anon_browser.url
     'http://bugs.launchpad.dev/ubuntu/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)

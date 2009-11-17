@@ -13,9 +13,10 @@ of Source/BinaryPackageName instances published within this
 distribution:
 
     >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from canonical.launchpad.interfaces import (
     ...     ISourcePackageName, IBinaryPackageName,
-    ...     PackagePublishingPocket, PackagePublishingStatus)
+    ...     PackagePublishingStatus)
 
     >>> distroset = getUtility(IDistributionSet)
     >>> gentoo = distroset.getByName("gentoo")
@@ -56,7 +57,7 @@ Raises NotFoundError for following conditions:
     NotFoundError: 'Unknown package: 1234'
 
 Packages only published in PPAs will not be found in the Ubuntu archive.
-Here, 'at' is published in sabdfl's PPA only:
+Here, 'at' is published in mark's PPA only:
 
     >>> from lp.soyuz.tests.ppa import publishToPPA
     >>> ubuntutest = distroset.getByName("ubuntutest")
@@ -87,9 +88,9 @@ team.
     ...                  '2.0', None, gentoo.owner)
     Traceback (most recent call last):
     ...
-    Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Edit')
+    Unauthorized: (<Distribution...>, 'newSeries', 'launchpad.Append')
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> from canonical.launchpad.interfaces import IDistroSeriesSet
     >>> distroseriesset = getUtility(IDistroSeriesSet)
     >>> gentoo_two = gentoo.newSeries('gentoo-two', 'Gentoo Two',
@@ -186,7 +187,7 @@ Handling Personal Package Archives
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
 
 
 Iteration over all PPAs
@@ -196,7 +197,7 @@ getAllPPAs method provides all returns, as the suggests, all PPAs for
 the distribution in question:
 
     >>> [archive.owner.name for archive in ubuntu.getAllPPAs()]
-    [u'cprov', u'sabdfl', u'no-priv']
+    [u'cprov', u'mark', u'no-priv']
 
     >>> [archive.owner.name for archive in debian.getAllPPAs()]
     []
@@ -218,7 +219,7 @@ There is only one 'active' PPA:
     >>> cprov.archive.getPublishedSources().count()
     4
 
-    >>> sabdfl.archive.getPublishedSources().count()
+    >>> mark.archive.getPublishedSources().count()
     1
 
     >>> no_priv.archive.getPublishedSources().count()
@@ -226,15 +227,15 @@ There is only one 'active' PPA:
 
     >>> result = ubuntu.searchPPAs()
     >>> [archive.owner.name for archive in result]
-    [u'cprov', u'sabdfl']
+    [u'cprov', u'mark']
 
 PPAs can be reached passing a filter matching (via fti) its description
 and its  'contents description' (see package-cache.txt).
 
-    >>> for owner in [cprov, sabdfl, no_priv]:
+    >>> for owner in [cprov, mark, no_priv]:
     ...     print "%s: %s" % (owner.name, owner.archive.description)
     cprov: packages to help my friends.
-    sabdfl: packages to help the humanity (you know, ubuntu)
+    mark: packages to help the humanity (you know, ubuntu)
     no-priv: I am not allowed to say, I have no privs.
 
     >>> result = ubuntu.searchPPAs(text='friend')
@@ -247,17 +248,17 @@ and its  'contents description' (see package-cache.txt).
 
     >>> result = ubuntu.searchPPAs(text='packages')
     >>> [archive.owner.name for archive in result]
-    [u'cprov', u'sabdfl']
+    [u'cprov', u'mark']
 
     >>> result = ubuntu.searchPPAs(text='help')
     >>> [archive.owner.name for archive in result]
-    [u'cprov', u'sabdfl']
+    [u'cprov', u'mark']
 
 Including 'inactive' PPAs:
 
     >>> result = ubuntu.searchPPAs(show_inactive=True)
     >>> [archive.owner.name for archive in result]
-    [u'cprov', u'no-priv', u'sabdfl']
+    [u'cprov', u'mark', u'no-priv']
 
     >>> result = ubuntu.searchPPAs(text='priv', show_inactive=True)
     >>> [archive.owner.name for archive in result]
@@ -265,7 +266,7 @@ Including 'inactive' PPAs:
 
     >>> result = ubuntu.searchPPAs(text='ubuntu', show_inactive=True)
     >>> [archive.owner.name for archive in result]
-    [u'sabdfl']
+    [u'mark']
 
 
 Retrieving only pending-acceptance PPAs
@@ -283,7 +284,7 @@ Nothing is pending-acceptance in sampledata:
 Create a NEW PackageUpload record for cprov PPA:
 
     >>> hoary = ubuntu['hoary']
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> queue = hoary.createQueueEntry(
     ...      pocket=PackagePublishingPocket.RELEASE, archive=cprov.archive,
     ...      changesfilename='foo', changesfilecontent='bar')
@@ -464,4 +465,3 @@ their packages in the correct archive.
     >>> contrib_archive = ubuntutest.getArchiveByComponent('contrib')
     >>> print contrib_archive.displayname
     Primary Archive for Ubuntu Test
-

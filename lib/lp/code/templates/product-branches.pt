@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
@@ -27,9 +24,8 @@
          tal:content="structure link/render" />
   </div>
 
-  <h1>Bazaar branches of <tal:project-name replace="context/displayname"/></h1>
-
-  <div id="private-policy" tal:condition="view/new_branches_are_private" class="informational message">
+  <div id="private-policy" tal:condition="view/new_branches_are_private"
+       class="informational message">
     New branches you create for <tal:name replace="context/displayname"/>
     are <strong>private</strong> initially.
   </div>
@@ -40,7 +36,6 @@
                     define="branches view/branches">
     <tal:branchlisting content="structure branches/@@+branch-listing" />
   </tal:has-branches>
-
 </div>
 
 </body>

@@ -44,26 +44,24 @@ if the user is not logged in, they will be asked to log in.
     No bug branch links
 
     >>> browser.getLink('Link to a bug report').click()
-    >>> browser.title
-    'Link branch \xe2\x80\x9clp://dev/~name12/gnome-terminal/klingon\xe2\x80\x9d to a bug report'
+    >>> print browser.title
+    Link branch...
 
 When linking from a branch to a bug, the bug widget is used.  This
 requires the user to enter a bug number.
 
-    >>> browser.getControl('The bug that is linked to.').value = "9"
+    >>> browser.getControl('Bug #').value = "9"
     >>> browser.getControl('Continue').click()
     >>> printBugBranchLinks(browser)
     Bug #9: Thunderbird crashes (Unknown &ndash; Unknown)
 
-Attempting to link to the same bug again gives an error.
+Attempting to link to the same bug again gives no error.
 
     >>> browser.getLink('Link to another bug report').click()
-    >>> browser.getControl('The bug that is linked to.').value = "9"
+    >>> browser.getControl('Bug #').value = "9"
     >>> browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(browser.contents):
     ...     print message
-    There is 1 error.
-    Bug #9 is already linked to this branch
 
 The bug-branch link is also shown on the bug page.
 

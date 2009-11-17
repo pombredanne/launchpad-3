@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Components related to IBugTarget."""
@@ -48,7 +50,14 @@ class HasBugsBase:
                     omit_duplicates=True, omit_targeted=None,
                     status_upstream=None, milestone_assignment=None,
                     milestone=None, component=None, nominated_for=None,
-                    sourcepackagename=None, has_no_package=None):
+                    sourcepackagename=None, has_no_package=None,
+                    hardware_bus=None, hardware_vendor_id=None,
+                    hardware_product_id=None, hardware_driver_name=None,
+                    hardware_driver_package_name=None,
+                    hardware_owner_is_bug_reporter=None,
+                    hardware_owner_is_affected_by_bug=False,
+                    hardware_owner_is_subscribed_to_bug=False,
+                    hardware_is_linked_to_bug=False):
         """See `IHasBugs`."""
         if status is None:
             # If no statuses are supplied, default to the
@@ -153,7 +162,6 @@ class HasBugsBase:
             statuses = BugTaskStatus.items
         statuses = list(statuses)
 
-        from_tables = ['BugTask', 'Bug']
         count_column = """
             COUNT (CASE WHEN BugTask.status = %s
                         THEN BugTask.id ELSE NULL END)"""
@@ -181,37 +189,6 @@ class BugTargetBase(HasBugsBase):
 
     All IBugTargets should inherit from this class.
     """
-    def getMostCommonBugs(self, user, limit=10):
-        """See canonical.launchpad.interfaces.IBugTarget."""
-        constraints = []
-        bug_privacy_clause = get_bug_privacy_filter(user)
-        if bug_privacy_clause:
-            constraints.append(bug_privacy_clause)
-        constraints.append(self._getBugTaskContextWhereClause())
-        c = cursor()
-        c.execute("""
-        SELECT duplicateof, COUNT(duplicateof)
-        FROM Bug
-        WHERE duplicateof IN (
-            SELECT DISTINCT(Bug.id)
-            FROM Bug, BugTask
-            WHERE BugTask.bug = Bug.id AND
-            %s)
-        GROUP BY duplicateof
-        ORDER BY COUNT(duplicateof) DESC
-        LIMIT %d
-        """ % ("AND\n".join(constraints), limit))
-
-        common_bug_ids = [
-            str(bug_id) for (bug_id, dupe_count) in c.fetchall()]
-
-        if not common_bug_ids:
-            return []
-        # import this database class here, in order to avoid
-        # circular dependencies.
-        from lp.bugs.model.bug import Bug
-        return list(
-            Bug.select("Bug.id IN (%s)" % ", ".join(common_bug_ids)))
 
 
 class OfficialBugTagTargetMixin:

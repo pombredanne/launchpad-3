@@ -1,4 +1,6 @@
-# Copyright Canonical Limited 2004-2009
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Builder Group model.
 
 Implement methods to deal with builder and their results.
@@ -22,11 +24,12 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
+from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.builder import (
     BuildDaemonError, BuildJobMismatch, IBuilderSet)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from canonical.launchpad.interfaces import NotFoundError, pocketsuffix
+from canonical.launchpad.interfaces import NotFoundError
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache, cursor)

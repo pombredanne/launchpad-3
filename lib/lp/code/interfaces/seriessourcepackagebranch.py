@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213
 
 """Interface for linking source packages in distroseries to branches."""
@@ -15,7 +17,7 @@ from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 
 class ISeriesSourcePackageBranch(Interface):
@@ -30,6 +32,8 @@ class ISeriesSourcePackageBranch(Interface):
         title=_("Pocket"), required=True, vocabulary=PackagePublishingPocket)
 
     sourcepackage = Attribute('The source package')
+
+    suite_sourcepackage = Attribute('The suite source package')
 
     sourcepackagename = Choice(
         title=_("Package"), required=True, vocabulary='SourcePackageName')
@@ -58,6 +62,13 @@ class IFindOfficialBranchLinks(Interface):
         """Get the links to branches from a source package.
 
         :param sourcepackage: An `ISourcePackage`.
+        :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
+        """
+
+    def findForDistributionSourcePackage(distrosourcepackage):
+        """Get the links to branches for a distribution source package.
+
+        :param distrosourcepackage: An `IDistributionSourcePackage`.
         :return: An `IResultSet` of `ISeriesSourcePackageBranch` objects.
         """
 

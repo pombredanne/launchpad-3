@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
   xmlns="http://namespaces.zope.org/zope"
   xmlns:browser="http://namespaces.zope.org/browser"
@@ -72,7 +76,7 @@
     for="lp.answers.interfaces.questiontarget.IQuestionTarget"
     name="+answer-contact"
     permission="launchpad.AnyPerson"
-    class="canonical.launchpad.browser.ManageAnswerContactView"
+    class="lp.answers.browser.questiontarget.ManageAnswerContactView"
     template="../templates/questiontarget-manage-answercontacts.pt"
     />
   <browser:renamed-page
@@ -110,9 +114,15 @@
     classes="QuestionCollectionAnswersMenu QuestionTargetAnswersMenu"
     />
   <browser:menus
-    module=".question"
-    classes="QuestionContextMenu QuestionSetContextMenu"
+    module="canonical.launchpad.browser"
+    classes="FAQNavigationMenu"
     />
+  <browser:menus
+    module="lp.answers.browser.question"
+    classes="
+        QuestionEditMenu
+        QuestionExtrasMenu
+        QuestionSetContextMenu" />
 
   <browser:defaultView
     for="lp.answers.interfaces.question.IQuestion"
@@ -126,14 +136,16 @@
     rootsite="answers"
     />
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+    for="lp.answers.interfaces.question.IQuestion"
+    factory="lp.answers.browser.question.QuestionBreadcrumb"
+    permission="zope.Public"/>
+
   <browser:pages
     for="lp.answers.interfaces.question.IQuestion"
     permission="zope.Public"
     >
-    <browser:page
-      name="+history"
-      template="../templates/question-history.pt"
-      />
     <browser:page
       name="+portlet-reopenings"
       template="../templates/question-portlet-reopenings.pt"
@@ -168,6 +180,14 @@
     />
 
   <browser:page
+    name="+history"
+    for="lp.answers.interfaces.question.IQuestion"
+    class=".question.QuestionHistoryView"
+    permission="zope.Public"
+    template="../templates/question-history.pt"
+    />
+
+  <browser:page
     name="+confirm"
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionConfirmAnswerView"
@@ -196,7 +216,7 @@
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionEditView"
     permission="launchpad.AnyPerson"
-    template="../templates/question-edit.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:page
@@ -220,7 +240,7 @@
     for="lp.answers.interfaces.question.IQuestion"
     class=".question.QuestionCreateFAQView"
     permission="launchpad.Moderate"
-    template="../templates/question-createfaq.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:page
@@ -277,13 +297,19 @@
     permission="zope.Public"
     template="../templates/faq-listing.pt"
     />
-
+  <browser:page
+    for="lp.answers.interfaces.faqcollection.IFAQCollection"
+    class=".faqcollection.SearchFAQsView"
+    name="+portlet-listfaqs"
+    permission="zope.Public"
+    template="../templates/faqcollection-portlet-faqs.pt"
+    />
   <browser:page
     name="+createfaq"
     for="lp.answers.interfaces.faqtarget.IFAQTarget"
     class=".faqtarget.FAQCreateView"
     permission="launchpad.Moderate"
-    template="../templates/questiontarget-createfaq.pt"
+    template="../../app/templates/generic-edit.pt"
     />
 
   <browser:url
@@ -299,6 +325,7 @@
   <browser:page
     name="+index"
     for="lp.answers.interfaces.faq.IFAQ"
+    class=".faq.FAQView"
     permission="zope.Public"
     template="../templates/faq-index.pt"
     />
@@ -320,12 +347,13 @@
     for="lp.answers.interfaces.faq.IFAQ"
     class=".faq.FAQEditView"
     permission="launchpad.Edit"
-    template="../templates/faq-edit.pt"
+    template="../../app/templates/generic-edit.pt"
     />
-  <browser:menus
-    module="canonical.launchpad.browser"
-    classes="FAQContextMenu"
-    />
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+    for="lp.answers.interfaces.faq.IFAQ"
+    factory="lp.answers.browser.faq.FAQBreadcrumb"
+    permission="zope.Public"/>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"

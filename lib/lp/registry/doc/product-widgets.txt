@@ -301,7 +301,7 @@ One license, the GNU GPL v2, is selected.
     ...             print
 
     >>> license_widget.getInputValue()
-    Set([<DBItem License.GNU_GPL_V2, (130) ...>])
+    set([<DBItem License.GNU_GPL_V2, (130) ...>])
 
     >>> print_checked_items(license_widget())
     [ ] Apache License ...

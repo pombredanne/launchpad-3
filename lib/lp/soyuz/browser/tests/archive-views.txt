@@ -46,6 +46,24 @@ the string 'PPA' or 'Archive' depending on whether the archive is a PPA
     >>> print copy_archive_view.archive_label
     Archive
 
+There is also the 'ppa_reference' property, which mimics the syntax
+supported by `dput` and `software-properties` Ubuntu tools.
+
+    >>> print ppa_archive_view.ppa_reference
+    ppa:cprov/ppa
+
+    >>> print copy_archive_view.ppa_reference
+    Traceback (most recent call last):
+    ...
+    AssertionError: PPA reference should not be used for non-PPA
+    archives.
+
+The ArchiveView is provides the html for the inline description
+editing widget.
+
+    >>> print ppa_archive_view.archive_description_html.title
+    PPA description
+
 For convenience the ArchiveView also includes a build_counters property
 that returns a dict of the build count summary for the archive:
 
@@ -55,28 +73,29 @@ that returns a dict of the build count summary for the archive:
 An ArchiveView also includes an easy way to get any
 IPackageCopyRequest's associated with an archive:
 
-    >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
-    ...     copy_location, copy_archive.owner)
-    >>> copy_archive_view.package_copy_requests.count()
-    1
-    >>> ppa_archive_view.package_copy_requests.count()
+    >>> len(ppa_archive_view.package_copy_requests)
     0
 
-An ArchiveView provides a helper method returning a simplified status
-vocabulary for selecting a status filter:
+    # Create a copy-request to Celso's PPA.
+    >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
+    ...     copy_location, copy_archive.owner)
 
-    >>> for term in ppa_archive_view.simplified_status_vocabulary:
+    >>> len(copy_archive_view.package_copy_requests)
+    1
+
+An ArchiveView inherits the status-filter widget for filtering
+packages by status.
+
+    >>> for term in ppa_archive_view.widgets['status_filter'].vocabulary:
     ...     print term.title
     Published
     Superseded
-    Any Status
 
-An ArchiveView provides a helper method returning a distribution series
-vocabulary for selecting a series filter:
+An ArchiveView inherits the series-filter widget for filtering packages
+by series.
 
-    >>> for term in ppa_archive_view.series_vocabulary:
+    >>> for term in ppa_archive_view.widgets['series_filter'].vocabulary:
     ...     print term.title
-    Any Series
     Breezy Badger Autotest
     Warty
 
@@ -144,11 +163,11 @@ The COPY archive has no packages.
 Mark's PPA has a single source, thus the package labels are adjusted
 for their singular form.
 
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> sabdfl_archive_view = create_initialized_view(
-    ...     sabdfl.archive, name="+index")
-    >>> sabdfl_repository_usage = sabdfl_archive_view.repository_usage
-    >>> print_repository_usage(sabdfl_repository_usage)
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> mark_archive_view = create_initialized_view(
+    ...     mark.archive, name="+index")
+    >>> mark_repository_usage = mark_archive_view.repository_usage
+    >>> print_repository_usage(mark_repository_usage)
     binaries_size:   0
     binary_label:    1 binary package
     quota:           1073741824
@@ -179,6 +198,292 @@ appropriate:
     ...     print publishing.source_package_name
     iceweasel
     pmount
+
+The context archive dependencies access is also encapsulated in
+`ArchiveView` with the following aspects:
+
+ * 'dependencies': cached `list` of `self.context.dependencies`.
+
+ * 'show_dependencies': whether or not the dependencies section in the
+   UI should be presented.
+
+ * 'has_disabled_dependencies': whether or not the context archive
+   uses disabled archives as dependencies.
+
+    >>> view = create_initialized_view(cprov.archive, name="+index")
+
+    >>> print view.dependencies
+    []
+
+    >>> print view.show_dependencies
+    False
+
+    >>> print view.has_disabled_dependencies
+    False
+
+'show_dependencies' is True for the PPA users, since the link for
+adding new dependencies is part of the section controlled by this
+flag.
+
+    >>> login('celso.providelo@canonical.com')
+
+    >>> view = create_initialized_view(cprov.archive, name="+index")
+
+    >>> print view.dependencies
+    []
+
+    >>> print view.show_dependencies
+    True
+
+    >>> print view.has_disabled_dependencies
+    False
+
+When there are any dependencies, 'show_dependencies' becomes True also
+for anonymous requests, since the dependencies are relevant to any
+user.
+
+    # Create a new PPA and add it as dependency of Celso's PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> testing_person = factory.makePerson(name='zoing')
+    >>> testing_ppa = factory.makeArchive(
+    ...     distribution=ubuntu, name='ppa', owner=testing_person)
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> unused = cprov.archive.addArchiveDependency(
+    ...     testing_ppa, PackagePublishingPocket.RELEASE)
+    >>> login(ANONYMOUS)
+
+    >>> view = create_initialized_view(cprov.archive, name="+index")
+
+    >>> for archive_dependency in view.dependencies:
+    ...     print archive_dependency.dependency.displayname
+    PPA for Zoing
+
+    >>> print view.show_dependencies
+    True
+
+    >>> print view.has_disabled_dependencies
+    False
+
+When a dependency is disabled, the 'has_disabled_dependencies' flag
+becomes True, but only if the viewer has permission to edit the PPA.
+
+    # Disable the just created testing PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> testing_ppa.enabled = False
+    >>> login(ANONYMOUS)
+
+    >>> view = create_initialized_view(cprov.archive, name="+index")
+
+    >>> for archive_dependency in view.dependencies:
+    ...     print archive_dependency.dependency.displayname
+    PPA for Zoing
+
+    >>> print view.show_dependencies
+    True
+
+    >>> print view.has_disabled_dependencies
+    False
+
+    >>> login('celso.providelo@canonical.com')
+    >>> view = create_initialized_view(cprov.archive, name="+index")
+
+    >>> for archive_dependency in view.dependencies:
+    ...     print archive_dependency.dependency.displayname
+    PPA for Zoing
+
+    >>> print view.show_dependencies
+    True
+
+    >>> print view.has_disabled_dependencies
+    True
+
+Remove the testing PPA dependency to not influence subsequent tests.
+
+    >>> login('foo.bar@canonical.com')
+    >>> cprov.archive.removeArchiveDependency(testing_ppa)
+    >>> login(ANONYMOUS)
+
+The ArchiveView also provides the latest updates ordered by the date
+they were published. We include any relevant builds for failures.
+
+    >>> def print_latest_updates(latest_updates):
+    ...     for update in latest_updates:
+    ...         arch_tags = [build.arch_tag for build in update['builds']]
+    ...         print "%s - %s %s" % (
+    ...             update['title'],
+    ...             update['status'],
+    ...             " ".join(arch_tags),
+    ...             )
+    >>> print_latest_updates(view.latest_updates)
+    cdrkit - Failed to build: i386
+    pmount - Successfully built
+    iceweasel - Successfully built
+
+Let's now update the datepublished for iceweasel to show that the ordering
+is from most recent.
+
+    >>> from canonical.database.constants import UTC_NOW
+    >>> login('foo.bar@canonical.com')
+    >>> view.filtered_sources[1].secure_record.datepublished = UTC_NOW
+    >>> login(ANONYMOUS)
+    >>> print_latest_updates(view.latest_updates)
+    iceweasel - Successfully built
+    cdrkit - Failed to build: i386
+    pmount - Successfully built
+
+The ArchiveView also includes a helper method to return the number of
+updates over the past month (by default).
+
+    >>> view.num_updates_over_last_days()
+    0
+
+If we update the datecreated for some of the publishing records, those
+created within the last 30 days will be included in the count, but
+others will not.
+
+    >>> from datetime import datetime, timedelta
+    >>> import pytz
+    >>> thirtyone_days_ago = datetime.now(tz=pytz.UTC) - timedelta(31)
+    >>> login('foo.bar@canonical.com')
+    >>> view.filtered_sources[0].secure_record.datecreated = UTC_NOW
+    >>> view.filtered_sources[1].secure_record.datecreated = UTC_NOW
+    >>> view.filtered_sources[2].secure_record.datecreated = thirtyone_days_ago
+    >>> login(ANONYMOUS)
+
+    >>> view.num_updates_over_last_days()
+    2
+
+We can optionally pass the number of days.
+
+    >>> view.num_updates_over_last_days(33)
+    3
+
+
+The ArchiveView includes a helper to return the number of packages that
+are building as well as the number of packages waiting to build.
+
+    >>> print view.num_pkgs_building
+    {'building': 0, 'waiting': 0, 'total': 0}
+
+Let's set some builds appropriately to see the results.
+
+    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+    >>> warty_hppa = getUtility(IDistributionSet)['ubuntu']['warty']['hppa']
+    >>> source = view.filtered_sources[0]
+    >>> ignore = source.sourcepackagerelease.createBuild(
+    ...     distroarchseries=warty_hppa, archive=view.context,
+    ...     pocket=source.pocket)
+    >>> builds = getUtility(IBuildSet).getBuildsForArchive(view.context)
+    >>> for build in builds:
+    ...     print build.title
+    hppa build of cdrkit 1.0 in ubuntu warty RELEASE
+    hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    i386 build of pmount 0.1-1 in ubuntu warty RELEASE
+    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+    i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
+
+    >>> login('foo.bar@canonical.com')
+    >>> builds[0].buildstate = BuildStatus.NEEDSBUILD
+    >>> builds[1].buildstate = BuildStatus.BUILDING
+    >>> builds[2].buildstate = BuildStatus.BUILDING
+    >>> login(ANONYMOUS)
+
+    >>> view.num_pkgs_building
+    {'building': 2, 'waiting': 1, 'total': 3}
+
+Adding a second waiting build for the cdrkit does not add to the number
+of packages that are currently building.
+
+    >>> login('foo.bar@canonical.com')
+    >>> builds[4].buildstate = BuildStatus.NEEDSBUILD
+    >>> login(ANONYMOUS)
+    >>> view.num_pkgs_building
+    {'building': 2, 'waiting': 1, 'total': 3}
+
+But as soon as one of cdrkit's builds start, the package is considered
+to be building:
+
+    >>> login('foo.bar@canonical.com')
+    >>> builds[4].buildstate = BuildStatus.BUILDING
+    >>> login(ANONYMOUS)
+    >>> view.num_pkgs_building
+    {'building': 3, 'waiting': 0, 'total': 3}
+
+The archive index view overrides the default series filter to use the
+distroseries from the browser's user-agent, when applicable.
+
+    >>> print view.default_series_filter
+    None
+
+    >>> view_warty = create_view(
+    ...     cprov.archive, name="+index",
+    ...     HTTP_USER_AGENT='Mozilla/5.0 '
+    ...                     '(X11; U; Linux i686; en-US; rv:1.9.0.10) '
+    ...                     'Gecko/2009042523 Ubuntu/4.10 (whatever) '
+    ...                     'Firefox/3.0.10')
+    >>> view_warty.initialize()
+    >>> print view_warty.default_series_filter.name
+    warty
+
+The archive index view also inherits the getSelectedFilterValue() method
+which can be used to find the currently selected value for both filters.
+
+    >>> print view_warty.getSelectedFilterValue('series_filter').name
+    warty
+
+    >>> for status in view_warty.getSelectedFilterValue('status_filter'):
+    ...     print status.name
+    PENDING
+    PUBLISHED
+
+To enable the inline editing of the archive displayname, ArchiveView
+also provides a custom widget, displayname_edit_widget.
+
+    >>> print view.displayname_edit_widget.title
+    Edit the displayname
+
+
+== ArchivePackageView ==
+
+This view displays detailed information about the archive packages that
+is not so relevant for the PPA index page, such as a summary of build
+statuses, repository usage, full publishing details and access to
+copy/delete packages where appropriate.
+
+And let's create two views to compare:
+
+    >>> ppa_archive_view = create_initialized_view(
+    ...     cprov.archive, name="+packages")
+    >>> copy_archive_view = create_initialized_view(
+    ...     copy_archive, name="+packages")
+
+    >>> print ppa_archive_view.page_title
+    Packages in ...PPA for Celso Providelo...
+
+    >>> print copy_archive_view.page_title
+    Packages in ...Copy archive intrepid-security-rebuild... 
+
+This view inherits from ArchiveViewBase and has all the
+corresponding properties such as archive_url, build_counters etc.
+(see ArchiveView above).
+
+Additionally, ArchivePackageView can display a string representation
+of the series supported by this archive.
+
+    >>> print ppa_archive_view.series_list_string
+    Breezy Badger Autotest and Warty
+
+    >>> copy_archive_view.series_list_string
+    ''
+
+The view also has a page_title property and can indicate whether the context
+is a copy archive.
+
+    >>> print copy_archive_view.page_title
+    Packages in ...Copy archive intrepid-security-rebuild...
+
+    >>> copy_archive_view.is_copy
+    True
 
 
 == ArchivePackageDeletionView ==
@@ -235,6 +540,17 @@ filtered results.
     ...     print pub.displayname
     pmount 0.1-1 in warty
 
+The 'name_filter' is decoded as UTF-8 before futher processing. If it
+did not, the storm query compiler would raise an error, because it can
+only deal with unicode variables.
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+delete-packages",
+    ...     query_string="field.name_filter=%C3%A7")
+
+    >>> len(list(view.batched_sources))
+    0
+
 Similarly, the sources can be filtered by series:
 
     >>> view = create_initialized_view(
@@ -265,7 +581,6 @@ which the available options already exclude the deleted items.
     ...     form={
     ...         'field.actions.delete': 'Delete Packages',
     ...         'field.name_filter': '',
-    ...         'field.status_filter': 'any',
     ...         'field.deletion_comment': 'Go away',
     ...         'field.selected_sources': ['27', '28', '29'],
     ...         'field.selected_sources-empty-marker': 1,
@@ -281,7 +596,15 @@ If by any chance, the form containing already deleted items, is
 re-POSTed to the page, the code is able to identify such invalid
 situation and ignore it. See bug #185922 for reference.
 
-    >>> view.initialize()
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+delete-packages",
+    ...     form={
+    ...         'field.actions.delete': 'Delete Packages',
+    ...         'field.name_filter': '',
+    ...         'field.deletion_comment': 'Go away',
+    ...         'field.selected_sources': ['27', '28', '29'],
+    ...         'field.selected_sources-empty-marker': 1,
+    ...         })
 
     >>> view.has_sources_for_display
     False
@@ -310,6 +633,14 @@ build the page.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies")
+
+The view's h1 heading and leaf breadcrumb are equivalent.
+
+    >>> print view.label
+    Edit PPA dependencies
+
+    >>> print view.page_title
+    Edit PPA dependencies
 
 There is a property indicating whether or not the context PPA has
 recorded dependencies.
@@ -341,7 +672,7 @@ pagetests/ppa/xx-edit-dependencies.txt.
     ...     cprov.archive, name="+edit-dependencies",
     ...     form={
     ...         'field.selected_dependencies': [],
-    ...         'field.dependency_candidate': 'sabdfl/ppa',
+    ...         'field.dependency_candidate': 'mark/ppa',
     ...         'field.primary_dependencies': 'UPDATES',
     ...         'field.primary_components': 'ALL_COMPONENTS',
     ...         'field.actions.save': 'Save',
@@ -379,10 +710,10 @@ dependency. Each element has:
     PPA for Mark Shuttleworth
 
     >>> print dependency.token
-    sabdfl/ppa
+    mark/ppa
 
     >>> print dependency.title
-    <a href="http://launchpad.dev/~sabdfl/+archive/ppa">PPA for Mark Shuttleworth</a>
+    <a href="http://launchpad.dev/~mark/+archive/ppa">PPA for Mark Shuttleworth</a>
 
 The form focus, now that we have a recorded dependencies, is set to the
 first listed dependency.
@@ -392,13 +723,36 @@ first listed dependency.
     setFocusByName('field.selected_dependencies');
     // -->
 
+The PPA dependency element 'title' is only linkified if the viewer can
+view the target PPA. If Mark's PPA gets disabled, Celso can't view it
+anymore, so it's not rendered as a link.
+
+    # Disable Mark's PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> mark.archive.enabled = False
+    >>> login('celso.providelo@canonical.com')
+
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+edit-dependencies")
+
+    >>> [dependency] = view.widgets.get('selected_dependencies').vocabulary
+
+    >>> print dependency.value.displayname
+    PPA for Mark Shuttleworth
+
+    >>> print dependency.token
+    mark/ppa
+
+    >>> print dependency.title
+    PPA for Mark Shuttleworth
+
 If we remove the just-added dependency, the view gets back to its
 initial/empty state.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+edit-dependencies",
     ...     form={
-    ...         'field.selected_dependencies': ['sabdfl/ppa'],
+    ...         'field.selected_dependencies': ['mark/ppa'],
     ...         'field.dependency_candidate': '',
     ...         'field.primary_dependencies': 'UPDATES',
     ...         'field.primary_components': 'ALL_COMPONENTS',
@@ -570,10 +924,9 @@ Before testing we will create a new team owned by Mark Shutteworth,
 with a private PPA attached to it.
 
     >>> login('foo.bar@canonical.com')
-    >>> a_team = factory.makeTeam(sabdfl, name="pirulito-team")
-    >>> from lp.soyuz.interfaces.archive import (
-    ...     IArchiveSet, ArchivePurpose)
-    >>> team_ppa = getUtility(IArchiveSet).new(ArchivePurpose.PPA, a_team)
+    >>> a_team = factory.makeTeam(mark, name="pirulito-team")
+    >>> team_ppa = factory.makeArchive(
+    ...     distribution=ubuntu, name='ppa', owner=a_team)
     >>> team_ppa.buildd_secret = 'boing'
     >>> team_ppa.private = True
     >>> transaction.commit()
@@ -604,7 +957,7 @@ still denied since Celso's PPA still public and thus the dependencies
 buildd_secret would leak through the public buildlogs.
 
     >>> login('foo.bar@canonical.com')
-    >>> a_team.addMember(cprov, sabdfl)
+    >>> a_team.addMember(cprov, mark)
     >>> login('celso.providelo@canonical.com')
 
     >>> view = create_initialized_view(
@@ -685,7 +1038,7 @@ All sources in Celso's PPA were just-deleted, so we have to tweak the
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages",
-    ...     query_string="field.status_filter=any")
+    ...     query_string="field.status_filter=")
 
     >>> [pub.status.name for pub in view.batched_sources]
     ['DELETED', 'DELETED', 'DELETED']
@@ -694,8 +1047,9 @@ This view contains three properties. The first is a list of the PPAs
 in which the current user has upload/copy rights (see
 `IArchiveSet.getPPAsForUser`).
 
-    >>> [ppa.owner.name for ppa in view.ppas_for_user]
-    [u'cprov']
+    >>> for ppa in view.ppas_for_user:
+    ...     print ppa.displayname
+    PPA for Celso Providelo
 
 The second shows whether or not the current user is allowed to perform
 copies. They must participate in at least one PPA for this to be True.
@@ -716,8 +1070,9 @@ PPA, thus he can copy to it, but not to Celso's PPA.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages")
 
-    >>> [ppa.owner.name for ppa in view.ppas_for_user]
-    [u'no-priv']
+    >>> for ppa in view.ppas_for_user:
+    ...     print ppa.displayname
+    PPA for No Privileges Person
 
     >>> view.can_copy
     True
@@ -725,14 +1080,55 @@ PPA, thus he can copy to it, but not to Celso's PPA.
     >>> view.can_copy_to_context_ppa
     False
 
-'Foo Bar' user has no PPA, so he cannot perform copies at all.
+When 'No Privileges Person' gets upload right to Celso's PPA ...
 
     >>> login('foo.bar@canonical.com')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> cprov.archive.newComponentUploader(no_priv, "main")
+    <ArchivePermission ...>
+
+He becomes able to copy to the context PPA.
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+copy-packages")
+
+    >>> for ppa in view.ppas_for_user:
+    ...     print ppa.displayname
+    PPA for Celso Providelo
+    PPA for No Privileges Person
+
+    >>> view.can_copy
+    True
+
+    >>> view.can_copy_to_context_ppa
+    True
+
+When the No-Priv's PPA is disabled it's not available as a
+'Destination Archive' option anymore.
+
+    # Disable No-Priv's PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> no_priv.archive.enabled = False
+
+    >>> login('no-priv@canonical.com')
+    >>> view = create_initialized_view(
+    ...     cprov.archive, name="+copy-packages")
+
+    >>> for ppa in view.ppas_for_user:
+    ...     print ppa.displayname
+    PPA for Celso Providelo
+
+    # Re-enable No-Priv's PPA.
+    >>> login('foo.bar@canonical.com')
+    >>> no_priv.archive.enabled = True
+
+'Foo Bar' user has no PPA, so he cannot perform copies at all.
 
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages")
 
-    >>> [ppa.owner.name for ppa in view.ppas_for_user]
+    >>> print view.ppas_for_user
     []
 
     >>> view.can_copy
@@ -757,14 +1153,47 @@ team he is member of.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages")
 
-    >>> [ppa.owner.name for ppa in view.ppas_for_user]
-    [u'cprov', u'ubuntu-team']
+    >>> for ppa in view.ppas_for_user:
+    ...     print ppa.displayname
+    PPA for Celso Providelo
+    PPA for Ubuntu Team
 
     >>> view.can_copy
     True
 
     >>> view.can_copy_to_context_ppa
     True
+
+The 'Copy' interface is also available for non-ppa archives, so users
+can copy packages from them directly to their PPAs, making it useful
+for backporting packages, for instance.
+
+    >>> view = create_initialized_view(
+    ...     ubuntu.main_archive, name="+copy-packages")
+
+    >>> for ppa in view.ppas_for_user:
+    ...     print ppa.displayname
+    PPA for Celso Providelo
+    PPA for Ubuntu Team
+
+    >>> view.can_copy
+    True
+
+    >>> view.can_copy_to_context_ppa
+    False
+
+Even when Celso is an owner of the non-PPA archive, copies to it will
+continue to be denied in the UI.
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu.main_archive.owner.addMember(cprov, cprov)
+    >>> login('celso.providelo@canonical.com')
+
+    >>> view = create_initialized_view(
+    ...     ubuntu.main_archive, name="+copy-packages")
+
+    >>> view.can_copy_to_context_ppa
+    False
 
 We will prepare a empty POST and inspect the default form values.
 
@@ -820,14 +1249,14 @@ The 'destination_archive' widget behaves differently depending on
 whether or not the user has permission to perform copies to the
 context PPA.
 
-No Privileges user can't copy package to the Celso's PPA, thus
+No Privileges user can't copy package to the Ubuntu Team PPA, thus
 'destination' widget will become required and will fail if an empty
 value is submitted.
 
     >>> login('no-priv@canonical.com')
 
     >>> view = create_initialized_view(
-    ...     cprov.archive, name="+copy-packages",
+    ...     ubuntu_team.archive, name="+copy-packages",
     ...     form={
     ...         'field.destination_archive': '',
     ...         'field.destination_series': '',
@@ -839,19 +1268,22 @@ value is submitted.
 
     >>> for item in archive_widget.vocabulary:
     ...     print item.title
+    PPA for Celso Providelo
     PPA for No Privileges Person
 
     >>> print archive_widget.getInputValue()
     Traceback (most recent call last):
     ...
-    WidgetInputError: ('destination_archive', u'Destination PPA', )
+    WidgetInputError: ('destination_archive',
+                       u'Destination PPA',
+                       RequiredMissing())
 
 
-=== Copy privacy mismatch ===
+=== Copy private files to public archives ===
 
-Users are only allowed to copy private sources into private PPAs,
-otherwise builders won't be able to retrieve the files for
-building. See `testCopyFromPrivateToPublicPPAs` for more information.
+Users are allowed to copy private sources into private PPAs, however
+it happens via 'delayed-copies' not the usual direct copying method.
+See more information in scripts/packagecopier.py
 
 First we will make Celso's PPA private.
 
@@ -868,16 +1300,15 @@ Then we will create a testing publication, that will be restricted.
     >>> hoary = ubuntu.getSeries('hoary')
     >>> test_publisher.addFakeChroots(hoary)
     >>> unused = test_publisher.setUpDefaultDistroSeries(hoary)
-    >>> private_source = test_publisher.getPubSource(
-    ...     sourcename="private", version="1.0", archive=cprov.archive)
-
+    >>> private_source = test_publisher.createSource(
+    ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
     >>> transaction.commit()
 
 Now, as Celso we will try to copy the just created 'private' source to
 the public Ubuntu-team PPA, which is empty.
 
     >>> print private_source.displayname
-    private 1.0 in hoary
+    foocomm 2.0-1 in hoary
 
     >>> ubuntu_team_ppa.getPublishedSources().count()
     0
@@ -886,7 +1317,6 @@ the public Ubuntu-team PPA, which is empty.
     >>> view = create_initialized_view(
     ...     cprov.archive, name="+copy-packages",
     ...     form={
-    ...         'field.status_filter': 'any',
     ...         'field.selected_sources': [str(private_source.id)],
     ...         'field.destination_archive': 'ubuntu-team/ppa',
     ...         'field.destination_series': '',
@@ -894,14 +1324,71 @@ the public Ubuntu-team PPA, which is empty.
     ...         'field.actions.copy': 'Copy',
     ...         })
 
-The action cannot be performed due to the 'private mismatch'
-error. Nothing was copied to Ubuntu-team PPA.
+    >>> len(view.errors)
+    0
+
+The action is performed as a delayed-copy, and the user is informed of
+it via a page notification.
 
     >>> from canonical.launchpad.testing.pages import extract_text
-    >>> for error in view.errors:
-    ...     print extract_text(error)
-    The following source cannot be copied:
-    private 1.0 in hoary (cannot copy private files into public archives)
+    >>> for notification in view.request.response.notifications:
+    ...     print extract_text(notification.message)
+    Packages copied to PPA for Ubuntu Team:
+    Delayed copy of foocomm - 2.0-1 (source)
 
-    >>> ubuntu_team_ppa.getPublishedSources().count()
-    0
+The delayed-copy request is waiting to be processed in the ACCEPTED
+upload queue.
+
+    >>> from lp.soyuz.interfaces.queue import IPackageUploadSet
+    >>> copy = getUtility(IPackageUploadSet).findSourceUpload(
+    ...     'foocomm', '2.0-1', ubuntu_team_ppa, ubuntu)
+
+    >>> print copy.status.name
+    ACCEPTED
+
+
+== External dependencies validation ==
+
+The ArchiveAdminView checks the external_dependencies form data to see if
+it's a valid sources.list entry.
+
+    >>> ppa_archive_view = create_initialized_view(
+    ...     cprov.archive, name="+admin")
+
+The validate_external_dependencies() method is called when validating and will
+return a list of errors if the data dis not validate.  A valid entry is of the
+form:
+    deb scheme://domain/ suite component[s]
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic main")
+    []
+
+Multiple entries are valid, separated by newlines:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic main\n"
+    ...     "deb http://example.com/ karmic restricted")
+    []
+
+If the line does not start with the word "deb" it fails:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic universe\n"
+    ...     "dab http://example.com/ karmic main")
+    ["dab http://example.com/ karmic main: Must start with 'deb'"]
+
+If the line has too few parts it fails.  Here we're missing a suite:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic universe\n"
+    ...     "deb http://example.com/ main")
+    ["'deb http://example.com/ main'
+        is not a complete and valid sources.list entry"]
+
+If the URL looks invalid, it fails:
+
+    >>> print ppa_archive_view.validate_external_dependencies(
+    ...     "deb http://example.com/ karmic universe\n"
+    ...     "deb example.com/ karmic main")
+    ['deb example.com/ karmic main: Invalid URL']

@@ -1,7 +1,5 @@
-= DistroSeries view classes =
-
-    >>> from zope.component import getMultiAdapter
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+DistroSeries view classes
+=========================
 
 Let's use ubuntu/hoary for these tests.
 
@@ -9,14 +7,28 @@ Let's use ubuntu/hoary for these tests.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 
+
+Administering distroseries
+--------------------------
+
+The +admin view allows administrators to change a series. It provides a
+label, page_title, and cancel_url
+
+    >>> view = create_initialized_view(hoary, name='+admin')
+    >>> print view.label
+    Administer The Hoary Hedgehog Release
+
+    >>> print view.page_title
+    Administer The Hoary Hedgehog Release
+
+    >>> print view.cancel_url
+    http://launchpad.dev/ubuntu/hoary
+
 We will use a function to print the details related with the
 distroseries being tested.
 
     >>> def administrate_distroseries(distroseries, form):
-    ...     request = LaunchpadTestRequest(form=form)
-    ...     request.method = 'POST'
-    ...     view = getMultiAdapter((hoary, request), name="+admin")
-    ...     view.initialize()
+    ...     view = create_initialized_view(hoary, name='+admin', form=form)
     ...     print '%d errors' % len(view.errors)
     ...     for error in view.errors:
     ...         try:
@@ -137,15 +149,56 @@ initial value remains.
     True
 
 
-== Creating distroseries ==
+Editing distro series
+---------------------
 
-The distroseries name is unique and it cannot contain spaces
+The distroseries edit view allows the editor to change series. The form
+uses the displayname, title, and description fields.
+
+    >>> view = create_initialized_view(hoary, '+edit')
+    >>> print view.label
+    Edit The Hoary Hedgehog Release details
+
+    >>> print view.page_title
+    Edit The Hoary Hedgehog Release details
+
+    >>> print view.cancel_url
+    http://launchpad.dev/ubuntu/hoary
+
+    >>> [field.__name__ for field in view.form_fields]
+    ['displayname', 'title', 'summary', 'description']
+
+Series that belong to derivative distributions also contain the status field.
+
+    >>> youbuntu = factory.makeDistribution(name='youbuntu')
+    >>> yo_series = factory.makeDistroRelease(name='melon')
+    >>> yo_series.title = 'Melon'
+    >>> youbuntu.full_functionality
+    False
+
+    >>> yo_driver = factory.makePerson(name='yo-driver')
+    >>> youbuntu.driver = yo_driver
+    >>> login_person(yo_driver)
+    >>> view = create_initialized_view(yo_series, '+edit')
+    >>> print view.label
+    Edit Melon details
+
+    >>> [field.__name__ for field in view.form_fields]
+    ['displayname', 'title', 'summary', 'description', 'status']
+
+
+Creating distro series
+----------------------
+
+A distroseries is created using the distroseries view.
+
+    >>> login('foo.bar@canonical.com')
 
     >>> view = create_view(ubuntu, '+addseries')
     >>> print view.page_title
-    Register a series in Ubuntu
+    Register a series
     >>> print view.label
-    Register a new series
+    Register a series
 
     >>> print view.cancel_url
     http://launchpad.dev/ubuntu
@@ -175,8 +228,108 @@ A distroseries is created whent the required field are submitted.
     >>> print sane_distroseries.name
     sane
 
+    # Save this series to test name and version constraints.
+    >>> transaction.commit()
+
+Administrators can create series, but normal users cannot.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> check_permission('launchpad.Driver', view)
+    True
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Driver', view)
+    False
+
+
+Drivers can create distro series
+--------------------------------
+
+Users who are appointed as drivers of a distribution can create a series.
+Most distributions are an `IDerivativeDistribution`.
+
+    >>> login_person(yo_driver)
+    >>> view = create_view(youbuntu, name='+addseries')
+    >>> check_permission('launchpad.Driver', view)
+    True
+
+    >>> yo_form = dict(form)
+    >>> yo_form['field.name'] = 'island'
+    >>> yo_form['field.displayname'] = 'Island'
+    >>> yo_form['field.title'] = 'YouBuntu Island'
+    >>> view = create_initialized_view(
+    ...     youbuntu, name='+addseries', form=yo_form, principal=yo_driver)
+    >>> view.errors
+    []
+
+    >>> yo_series = youbuntu.getSeries('island')
+    >>> print yo_series.displayname
+    Island
+
+Ubuntu is an exception. It's drivers cannot create series because Ubuntu
+is an `IBaseDistribution`.
+
+    >>> ubuntu.full_functionality
+    True
+
+    >>> login_person(ubuntu.owner.teamowner)
+    >>> ubuntu.driver = yo_driver
+    >>> login_person(yo_driver)
+    >>> view = create_view(youbuntu, name='+addseries')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
+Drivers editing distro series
+.............................
+
+The series driver (release manager) can edit a series if the series belongs
+to a `IDerivativeDistribution`.
+
+    >>> print yo_series.driver.name
+    yo-driver
+
+    >>> login_person(yo_driver)
+    >>> view = create_view(yo_series, name='+edit')
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+    >>> yo_form = dict(form)
+    >>> del yo_form['field.actions.create']
+    >>> yo_form['field.displayname'] = 'Mountain'
+    >>> yo_form['field.title'] = 'YouBuntu Mountain'
+    >>> yo_form['field.summary'] = 'Mountain summary'
+    >>> yo_form['field.description'] = 'Mountain description'
+    >>> yo_form['field.actions.change'] = 'Change'
+    >>> view = create_initialized_view(
+    ...     yo_series, name='+edit', form=yo_form, principal=yo_driver)
+    >>> view.errors
+    []
+
+    >>> print yo_series.displayname
+    Mountain
+
+Drivers of an `IBaseDistribution` such as Ubuntu cannot edit a series.
+
+    >>> login_person(ubuntu.owner.teamowner)
+    >>> hoary.driver = yo_driver
+    >>> login_person(yo_driver)
+
+    >>> view = create_view(hoary, name='+edit')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
+Distroseries name
+-----------------
+
 The distroseries name is unique.
 
+    >>> login('foo.bar@canonical.com')
+
+    >>> form['field.name'] = 'sane'
+    >>> form['field.version'] = '2009.07'
     >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
     >>> for error in view.errors:
     ...     print error[2]
@@ -191,89 +344,46 @@ The distroseries name cannot contain spaces.
     Invalid name 'insane name'...
 
 
-== Hiding translations ==
+Distroseries version
+--------------------
 
-Each distroseries has a switch that allows administrators to either
-reveal its translations to the public or hide them from the public.
+Versions cannot contain spaces.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.registry.browser.distroseries import (
-    ...     DistroSeriesView)
-    >>> from canonical.launchpad.interfaces import (
-    ...     ILaunchpadCelebrities, ITeamMembershipSet, TeamMembershipStatus)
-    >>> from canonical.launchpad.webapp.interfaces import (
-    ...     TranslationUnavailable)
+    >>> form['field.name'] = '6-06-series'
+    >>> form['field.version'] = '6.06 LTS'
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> for error in view.errors:
+    ...     print error[2]
+    6.06 LTS is not a valid version
 
-    >>> def check_translations_access(distroseries):
-    ...     """Return any objections to current user accessing
-    ...     `distroseries` translations.'
-    ...     """
-    ...     request = LaunchpadTestRequest()
-    ...     view = DistroSeriesView(distroseries, request)
-    ...     view.initialize()
-    ...
-    ...     try:
-    ...         view.checkTranslationsViewable()
-    ...     except TranslationUnavailable, message:
-    ...         return unicode(message)
-    ...     return None
+The distroseries version must be a valid debversion.
 
-    >>> def check_effect_of_hiding(distroseries):
-    ...     """Describe how hiding translations for `distroseries`
-    ...     affects current user's access to them.
-    ...     """
-    ...     original_hide_flag = distroseries.hide_all_translations
-    ...     distroseries = removeSecurityProxy(distroseries)
-    ...
-    ...     distroseries.hide_all_translations = False
-    ...     objection = check_translations_access(distroseries)
-    ...     if objection is None:
-    ...         print "User can access revealed translations."
-    ...     else:
-    ...         print "No access to revealed translations!", objection
-    ...
-    ...     distroseries.hide_all_translations = True
-    ...     objection = check_translations_access(distroseries)
-    ...     if objection is None:
-    ...         print "User can access hidden translations."
-    ...     else:
-    ...         print "User can not access hidden translations:", objection
-    ...
-    ...     distroseries.hide_all_translations = original_hide_flag
+    >>> form['field.version'] = 'Hardy-6.06-LTS'
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> for error in view.errors:
+    ...     print error[2]
+    'Hardy-6.06-LTS': Bad upstream version format
 
-An administrator will be able to access the translations no matter what
-happens.
+The distroseries version is unique to a distribution. Version '2009.06'
+cannot be reused by another Ubuntu series.
 
-    >>> login('foo.bar@canonical.com')
-    >>> check_effect_of_hiding(hoary)
-    User can access revealed translations.
-    User can access hidden translations.
+    >>> print sane_distroseries.version
+    2009.06
 
-A Translations admin ("translations expert") can also still access the
-translations even when they're hidden.
+    >>> form['field.name'] = 'experimental'
+    >>> form['field.version'] = '2009.06'
+    >>> view = create_initialized_view(ubuntu, '+addseries', form=form)
+    >>> for error in view.errors:
+    ...     print error[2]
+    2009.06 is already in use by another version in this distribution.
 
-    >>> expert = factory.makePerson('expert@example.com')
-    >>> expert_team = getUtility(ILaunchpadCelebrities).rosetta_experts
-    >>> membership = getUtility(ITeamMembershipSet).new(
-    ...     expert, expert_team, TeamMembershipStatus.APPROVED,
-    ...     expert_team)
-    >>> login_person(expert)
-    >>> check_effect_of_hiding(hoary)
-    User can access revealed translations.
-    User can access hidden translations.
+But version '2009.06' can be used by another distribution.
 
-A regular user can no longer see the translations once they're hidden.
+    >>> other_distro = factory.makeDistribution(name='other-distro')
+    >>> view = create_initialized_view(other_distro, '+addseries', form=form)
+    >>> view.errors
+    []
 
-    >>> login('no-priv@canonical.com')
-    >>> check_effect_of_hiding(hoary)
-    User can access revealed translations.
-    User can not access hidden translations: Translations for this
-    release series are not currently available.  Please come back soon.
-
-The same goes for anonymous users.
-
-    >>> login(ANONYMOUS)
-    >>> check_effect_of_hiding(hoary)
-    User can access revealed translations.
-    User can not access hidden translations: Translations for this
-    release series are not currently available.  Please come back soon.
+    >>> experimental_distroseries = other_distro.getSeries('experimental')
+    >>> print experimental_distroseries.version
+    2009.06

@@ -1,11 +1,14 @@
-= Product Branches Overview =
+================
+Product Branches
+================
 
     >>> from lp.code.tests.branch_helper import (
     ...     reset_all_branch_last_modified)
     >>> reset_all_branch_last_modified()
 
 
-= Product branch summaries =
+Product branch summaries
+========================
 
 Branch listings for products now have a summary shown at the top of
 the page before the listing table itself.
@@ -16,7 +19,8 @@ Launchpad code, whether or not there is a development focus branch,
 whether or not there are any download files specified for the product.
 
 
-= No branches =
+No branches
+===========
 
 If there are no branches a message offering options is shown.
 
@@ -25,7 +29,7 @@ overview page.
 
     >>> browser.open('http://code.launchpad.dev/applets')
     >>> print browser.title
-    Bazaar branches of Gnome Applets
+    Branches : Gnome Applets
 
 If there are not any branches, a helpful message is shown.
 
@@ -51,7 +55,8 @@ The 'Read more' links go to the help wiki.
     https://help.launchpad.net/VcsImports
 
 
-= Link to the product downloads =
+Link to the product downloads
+=============================
 
 It is possible that a new person coming to the code tab would be interested
 in downloads that may have been added for the product.
@@ -63,24 +68,8 @@ in downloads that may have been added for the product.
     There are download files available for NetApplet.
 
 
-= Development focus branches =
-
-If the product has branches, but no branch has been set as the current
-development focus, then if the user is able to set the development focus
-branch, they are shown an option.
-
-    >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
-    >>> sample_browser.open('http://code.launchpad.dev/gnome-terminal')
-    >>> print extract_text(get_summary(sample_browser))
-    10 branches ... commits in the last month
-    0 pending proposals, 0 unmerged proposals
-
-This text is not shown if the user cannot set the branch.
-
-    >>> browser.open('http://code.launchpad.dev/gnome-terminal')
-    >>> print extract_text(get_summary(browser))
-    10 branches ... commits in the last month
-    0 pending proposals, 0 unmerged proposals
+Development focus branches
+==========================
 
 If a development focus branch is set and browseable, the user is shown
 a link to browse the code and a simple command line to get the branch.
@@ -91,8 +80,8 @@ shown.
     >>> browser.open('http://code.launchpad.dev/evolution')
     >>> summary = get_summary(browser)
     >>> print extract_text(get_summary(browser))
-    3 branches ...
-    0 pending proposals, 0 unmerged proposals
+    3 active branches ...
+    0 active reviews or unmerged proposals
     You can get a copy of the development focus branch using the
     command:
        bzr branch lp://dev/evolution
@@ -103,7 +92,8 @@ Both active reviews and approved merges are links allowing the user to
 go to listing views.
 
 
-== Initial branch listing ==
+Initial branch listing
+======================
 
 The initial branch listing has the following branches in order:
  * The current development focus branch
@@ -126,12 +116,12 @@ once, but both series are shown in the listing.
     ...     print extract_text(row)
     lp://dev/firefox
       Series: trunk, 1.0                     Development ...
-    lp://dev/~sabdfl/firefox/release--0.9.1  Development ...
+    lp://dev/~mark/firefox/release--0.9.1  Development ...
 
 Firstly lets associate release--0.9.1 with the 1.0 series.
 
     >>> admin_browser.open('http://launchpad.dev/firefox/1.0/+linkbranch')
-    >>> admin_browser.getControl('Branch').value = '~sabdfl/firefox/release--0.9.1'
+    >>> admin_browser.getControl('Branch').value = '~mark/firefox/release--0.9.1'
     >>> admin_browser.getControl('Update').click()
 
     >>> browser.open('http://code.launchpad.dev/firefox')
@@ -151,7 +141,7 @@ default listings.
     >>> admin_browser.getControl('Abandoned').click()
     >>> admin_browser.getControl('Change Branch').click()
     >>> admin_browser.open(
-    ...     'http://code.launchpad.dev/~sabdfl/firefox/release--0.9.1/+edit')
+    ...     'http://code.launchpad.dev/~mark/firefox/release--0.9.1/+edit')
     >>> admin_browser.getControl('Abandoned').click()
     >>> admin_browser.getControl('Change Branch').click()
 
@@ -159,10 +149,11 @@ default listings.
     >>> table = find_tag_by_id(browser.contents, 'branchtable')
     >>> for row in table.tbody.fetch('tr')[0:2]:
     ...     print extract_text(row)
-    lp://dev/~sabdfl/firefox/release-0.8     Development ...
+    lp://dev/~mark/firefox/release-0.8     Development ...
 
 
-== Floating buttons ==
+Floating buttons
+================
 
 There are two buttons that show on the right hand side of the screen
 for project branch listings.  'Register a branch' and 'Import your project'.
@@ -178,19 +169,20 @@ for project branch listings.  'Register a branch' and 'Import your project'.
 If the product specifies that it officially uses Launchpad code, then
 the 'Import your project' button is not shown.
 
-    >>> sample_browser.open('http://launchpad.dev/gnome-terminal')
-    >>> sample_browser.getLink('Change details').click()
-    >>> sample_browser.getControl(
+    >>> admin_browser.open('http://launchpad.dev/gnome-terminal')
+    >>> admin_browser.getLink('Change details').click()
+    >>> admin_browser.getControl(
     ...     'Code for this project is published in Bazaar branches '
     ...     'on Launchpad').click()
-    >>> sample_browser.getControl('Change').click()
+    >>> admin_browser.getControl('Change').click()
 
     >>> browser.open('http://code.launchpad.dev/gnome-terminal')
     >>> print_links(browser)
     Register a branch
 
 
-== Nice wording of summary numbers ==
+Nice wording of summary numbers
+===============================
 
 The text that is shown giving a summary of the number of branches
 shows correct singular and plural forms.
@@ -200,24 +192,27 @@ shows correct singular and plural forms.
     ...     print extract_text(get_summary(browser))
 
     >>> print_summary('gnome-terminal')
-    10 branches owned by 1 person and 2 teams, 0 commits in the last month
+    8 active branches owned by 1 person and 2 teams, 0 commits in the last month
     ...
-    >>> print_summary('firefox')
-    5 branches owned by 2 people, 0 commits in the last month
+    >>> from lp.testing import ANONYMOUS, login, logout
+    >>> login(ANONYMOUS)
+    >>> fooix = factory.makeProduct('fooix')
+    >>> ignored = factory.makeProductBranch(fooix)
+    >>> ignored = factory.makeProductBranch(fooix)
+    >>> logout()
+    >>> print_summary('fooix')
+    2 active branches owned by 2 people, 0 commits in the last month
     ...
     >>> print_summary('evolution')
-    3 branches owned by 1 person and 1 team, 0 commits in the last month
+    3 active branches owned by 1 person and 1 team, 0 commits in the last month
     ...
     >>> print_summary('iso-codes')
-    1 branch owned by 1 person, 0 commits in the last month
+    1 active branch owned by 1 person, 0 commits in the last month
     ...
 
-# XXX: thumper 2008-04-24
-# There is no easy way to change the database user in the pagetests
-# in order to add revisions to the branches to show commits by users.
 
-
-== Product has Branches, but none initially visible ==
+Product has Branches, but none initially visible
+================================================
 
 It is a bit of an edge case, but if there are branches for a product but all
 of them are either merged or abandoned and there is no development focus
@@ -230,8 +225,8 @@ branch, then they will not appear on the initial branch listing.
 
     >>> browser.open('http://code.launchpad.dev/iso-codes')
     >>> print extract_text(get_summary(browser))
-    1 branch owned by 1 person, 0 commits in the last month
-    0 pending proposals, 0 unmerged proposals
+    0 active branches, 0 commits in the last month
+    0 active reviews or unmerged proposals
 
     >>> message = find_tag_by_id(browser.contents, 'no-branch-message')
     >>> print extract_text(message)
@@ -239,7 +234,8 @@ branch, then they will not appear on the initial branch listing.
     current filter criteria for this page. Try filtering on "Any Status".
 
 
-== Getting to the branch listing for a product ==
+Getting to the branch listing for a product
+===========================================
 
 If there are branches, but they do not fit with the appropriate filter
 we are given a different message.

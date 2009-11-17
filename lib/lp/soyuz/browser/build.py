@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for builds."""
 
@@ -20,6 +21,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.browser.librarian import (
     FileNavigationMixin, ProxiedLibraryFileAlias)
+from canonical.lazr.utils import safe_hasattr
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild, IBuildRescoreForm)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
@@ -104,21 +106,104 @@ class BuildContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def retry(self):
         """Only enabled for build records that are active."""
-        text = 'Retry build'
-        return Link('+retry', text, icon='edit',
-                    enabled=self.context.can_be_retried)
+        text = 'Retry this build'
+        return Link(
+            '+retry', text, icon='retry',
+            enabled=self.context.can_be_retried)
 
     @enabled_with_permission('launchpad.Admin')
     def rescore(self):
         """Only enabled for pending build records."""
         text = 'Rescore build'
-        return Link('+rescore', text, icon='edit',
-                    enabled=self.context.can_be_rescored)
+        return Link(
+            '+rescore', text, icon='edit',
+            enabled=self.context.can_be_rescored)
 
 
 class BuildView(LaunchpadView):
     """Auxiliary view class for IBuild"""
     __used_for__ = IBuild
+
+    @property
+    def label(self):
+        return self.context.title
+
+    @property
+    def user_can_retry_build(self):
+        """Return True if the user is permitted to Retry Build.
+
+        The build must be re-tryable.
+        """
+        return (check_permission('launchpad.Edit', self.context)
+            and self.context.can_be_retried)
+
+    @cachedproperty
+    def package_upload(self):
+        """Return the corresponding package upload for this build."""
+        return self.context.package_upload
+
+    @cachedproperty
+    def has_published_binaries(self):
+        """Whether or not binaries were already published for this build."""
+        # Binaries imported by gina (missing `PackageUpload` record)
+        # are always published.
+        imported_binaries = (
+            self.package_upload is None and
+            self.context.binarypackages.count() > 0)
+        # Binaries uploaded from the buildds are published when the
+        # corresponding `PackageUpload` status is DONE.
+        uploaded_binaries = (
+            self.package_upload is not None and
+            self.package_upload.status == PackageUploadStatus.DONE)
+
+        if imported_binaries or uploaded_binaries:
+            return True
+
+        return False
+
+    @property
+    def changesfile(self):
+        """Return a `ProxiedLibraryFileAlias` for the Build changesfile."""
+        changesfile = self.context.upload_changesfile
+        if changesfile is None:
+            return None
+
+        return ProxiedLibraryFileAlias(changesfile, self.context)
+
+    @cachedproperty
+    def is_ppa(self):
+        return self.context.archive.is_ppa
+
+    @cachedproperty
+    def buildqueue(self):
+        return self.context.buildqueue_record
+
+    @cachedproperty
+    def component(self):
+        return self.context.current_component
+
+    @cachedproperty
+    def files(self):
+        """Return `LibraryFileAlias`es for files produced by this build."""
+        if not self.context.was_built:
+            return None
+
+        files = []
+        for package in self.context.binarypackages:
+            for file in package.files:
+                files.append(
+                    ProxiedLibraryFileAlias(file.libraryfile, self.context))
+
+        return files
+
+class BuildRetryView(BuildView):
+    """View class for retrying `IBuild`s"""
+
+    __used_for__ = IBuild
+
+    @property
+    def label(self):
+        return 'Retry %s' % self.context.title
 
     def retry_build(self):
         """Check user confirmation and perform the build record retry."""
@@ -137,56 +222,15 @@ class BuildView(LaunchpadView):
 
         self.request.response.redirect(canonical_url(self.context))
 
-    @property
-    def user_can_retry_build(self):
-        """Return True if the user is permitted to Retry Build.
-
-        The build must be re-tryable.
-        """
-        return (check_permission('launchpad.Edit', self.context)
-            and self.context.can_be_retried)
-
-    @property
-    def has_done_upload(self):
-        """Return True if this build's package upload is done."""
-        package_upload = self.context.package_upload
-
-        if package_upload is None:
-            return False
-
-        if package_upload.status == PackageUploadStatus.DONE:
-            return True
-
-        return False
-
-    @property
-    def changesfile(self):
-        """Return a `ProxiedLibraryFileAlias` for the Build changesfile."""
-        changesfile = self.context.upload_changesfile
-        if changesfile is None:
-            return None
-
-        return ProxiedLibraryFileAlias(changesfile, self.context)
-
-    @cachedproperty
-    def files(self):
-        """Return `LibraryFileAlias`es for files produced by this build."""
-        if not self.context.was_built:
-            return None
-
-        files = []
-        for package in self.context.binarypackages:
-            for file in package.files:
-                files.append(
-                    ProxiedLibraryFileAlias(file.libraryfile, self.context))
-
-        return files
-
 
 class BuildRescoringView(LaunchpadFormView):
     """View class for build rescoring."""
 
     schema = IBuildRescoreForm
+
+    @property
+    def label(self):
+        return 'Rescore %s' % self.context.title
 
     def initialize(self):
         """See `ILaunchpadFormView`.
@@ -275,11 +319,9 @@ class BuildRecordsView(LaunchpadView):
         """
         # recover selected build state
         state_tag = self.request.get('build_state', '')
-        text_filter = self.request.get('build_text', '')
+        self.text = self.request.get('build_text', None)
 
-        if text_filter:
-            self.text = text_filter
-        else:
+        if self.text == '':
             self.text = None
 
         # build self.state & self.available_states structures
@@ -287,7 +329,8 @@ class BuildRecordsView(LaunchpadView):
 
         # request context build records according the selected state
         builds = self.context.getBuildRecords(
-            build_state=self.state, name=self.text, user=self.user)
+            build_state=self.state, name=self.text, arch_tag=self.arch_tag,
+            user=self.user)
         self.batchnav = BatchNavigator(builds, self.request)
         # We perform this extra step because we don't what to issue one
         # extra query to retrieve the BuildQueue for each Build (batch item)
@@ -296,6 +339,52 @@ class BuildRecordsView(LaunchpadView):
         # simpler and shorter, producing the same result. cprov 20060810
         self.complete_builds = setupCompleteBuilds(
             self.batchnav.currentBatch())
+
+    @property
+    def arch_tag(self):
+        """Return the architecture tag from the request."""
+        arch_tag = self.request.get('arch_tag', None)
+        if arch_tag == '' or arch_tag == 'all':
+            return None
+        else:
+            return arch_tag
+
+    @cachedproperty
+    def architecture_options(self):
+        """Return the architecture options for the context."""
+        # Guard against contexts that cannot tell us the available
+        # distroarchseries.
+        if safe_hasattr(self.context, 'architectures') is False:
+            return []
+
+        # Grab all the architecture tags for the context.
+        arch_tags = [
+            arch.architecturetag for arch in self.context.architectures]
+
+        # We cannot assume that the arch_tags will be distinct, so
+        # create a distinct and sorted list:
+        arch_tags = sorted(set(arch_tags))
+
+        # Create the initial 'all architectures' option.
+        if self.arch_tag is None:
+            selected = 'selected'
+        else:
+            selected = None
+        options = [
+            dict(name='All architectures', value='all', selected=selected)]
+
+        # Create the options for the select box, ensuring to mark
+        # the currently selected one.
+        for arch_tag in arch_tags:
+            if arch_tag == self.arch_tag:
+                selected = 'selected'
+            else:
+                selected = None
+
+            options.append(
+                dict(name=arch_tag, value=arch_tag, selected=selected))
+
+        return options
 
     def _setupMappedStates(self, tag):
         """Build self.state and self.availableStates structures.
@@ -374,6 +463,15 @@ class BuildRecordsView(LaunchpadView):
         in its result table or not. It's only omitted in builder-index page.
         """
         return True
+
+    @property
+    def show_arch_selector(self):
+        """Control whether the architecture selector is presented.
+
+        This allows the callsite to control if they want the architecture
+        selector presented in the UI.
+        """
+        return False
 
     @property
     def search_name(self):

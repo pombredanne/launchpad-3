@@ -1,4 +1,6 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # We like global!
 # pylint: disable-msg=W0603,W0702
 
@@ -23,6 +25,7 @@ __metaclass__ = type
 __all__ = [
     'AppServerLayer',
     'BaseLayer',
+    'BaseWindmillLayer',
     'DatabaseFunctionalLayer',
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
@@ -56,6 +59,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 
@@ -67,8 +71,14 @@ from urllib import urlopen
 import psycopg2
 from storm.zope.interfaces import IZStorm
 import transaction
+import wsgi_intercept
 
+from windmill.bin.admin_lib import (
+    start_windmill, teardown as windmill_teardown)
+
+from zope.app.publication.httpfactory import chooseClasses
 import zope.app.testing.functional
+import zope.publisher.publish
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, provideUtility
 from zope.component.interfaces import ComponentLookupError
@@ -750,6 +760,45 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
             "DELETE FROM SessionData")
 
 
+def wsgi_application(environ, start_response):
+    """This is a wsgi application for Zope functional testing.
+
+    We use it with wsgi_intercept, which is itself mostly interesting
+    for our webservice (lazr.restful) tests.
+    """
+    # Committing work done up to now is a convenience that the Zope
+    # zope.app.testing.functional.HTTPCaller does.  We're replacing that bit,
+    # so it is easiest to follow that lead, even if it feels a little loose.
+    transaction.commit()
+    # Let's support post-mortem debugging.
+    if environ.pop('HTTP_X_ZOPE_HANDLE_ERRORS', 'True') == 'False':
+        environ['wsgi.handleErrors'] = False
+    handle_errors = environ.get('wsgi.handleErrors', True)
+    # Now we do the proper dance to get the desired request.  This is an
+    # almalgam of code from zope.app.testing.functional.HTTPCaller and
+    # zope.publisher.paste.Application.
+    request_cls, publication_cls = chooseClasses(
+        environ['REQUEST_METHOD'], environ)
+    publication = publication_cls(FunctionalTestSetup().db)
+    request = request_cls(environ['wsgi.input'], environ)
+    request.setPublication(publication)
+    # The rest of this function is an amalgam of
+    # zope.publisher.paste.Application.__call__ and van.testing.layers.
+    request = zope.publisher.publish.publish(
+        request, handle_errors=handle_errors)
+    response = request.response
+    # We sort these, and then put the status first, because
+    # zope.testbrowser.testing does--and because it makes it easier to write
+    # reliable tests.
+    headers = sorted(response.getHeaders())
+    status = response.getStatusString()
+    headers.insert(0, ('Status', status))
+    # Start the WSGI server response.
+    start_response(status, headers)
+    # Return the result body iterable.
+    return response.consumeBodyIter()
+
+
 class FunctionalLayer(BaseLayer):
     """Loads the Zope3 component architecture in appserver mode."""
 
@@ -771,11 +820,14 @@ class FunctionalLayer(BaseLayer):
         # they're defined by Python code, we need to call that code
         # here.
         register_launchpad_request_publication_factories()
+        wsgi_intercept.add_wsgi_intercept(
+            'localhost', 80, lambda: wsgi_application)
 
     @classmethod
     @profiled
     def tearDown(cls):
         FunctionalLayer.isSetUp = False
+        wsgi_intercept.remove_wsgi_intercept('localhost', 80)
         # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
@@ -903,6 +955,13 @@ class TwistedLayer(BaseLayer):
         TwistedLayer._original_sigint = signal.getsignal(signal.SIGINT)
         TwistedLayer._original_sigterm = signal.getsignal(signal.SIGTERM)
         TwistedLayer._original_sigchld = signal.getsignal(signal.SIGCHLD)
+        # XXX MichaelHudson, 2009-07-14, bug=399118: If a test case in this
+        # layer launches a process with spawnProcess, there should really be a
+        # SIGCHLD handler installed to avoid PotentialZombieWarnings.  But
+        # some tests in this layer use tachandler and it is fragile when a
+        # SIGCHLD handler is installed.  tachandler needs to be fixed.
+        # from twisted.internet import reactor
+        # signal.signal(signal.SIGCHLD, reactor._handleSigchld)
 
     @classmethod
     def _restore_signals(cls):
@@ -1629,3 +1688,53 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     @profiled
     def testTearDown(cls):
         LayerProcessController.postTestInvariants()
+
+
+class BaseWindmillLayer(AppServerLayer):
+    """Layer for Windmill tests.
+
+    This layer shouldn't be used directly. A subclass needs to be
+    created specifying which base URL to use (e.g.
+    http://bugs.launchpad.dev:8085/).
+    """
+
+    base_url = None
+    shell_objects = None
+    config_file = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        if cls.base_url is None:
+            # Only do the setup if we're in a subclass that defines
+            # base_url. With no base_url, we can't create the config
+            # file windmill needs.
+            return
+        # Windmill needs a config file on disk.
+        config_text = dedent("""\
+            START_FIREFOX = True
+            TEST_URL = '%s'
+            """ % cls.base_url)
+        cls.config_file = tempfile.NamedTemporaryFile(suffix='.py')
+        cls.config_file.write(config_text)
+        # Flush the file so that windmill can read it.
+        cls.config_file.flush()
+        os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
+        cls.shell_objects = start_windmill()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        if cls.shell_objects is not None:
+            windmill_teardown(cls.shell_objects)
+        if cls.config_file is not None:
+            # Close the file so that it gets deleted.
+            cls.config_file.close()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        # Left-over threads should be harmless, since they should all
+        # belong to Windmill, which will be cleaned up on layer
+        # tear down.
+        BaseLayer.disable_thread_check = True

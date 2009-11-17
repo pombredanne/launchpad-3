@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """ArchiveSubscriber interface."""
@@ -182,4 +184,7 @@ class IPersonalArchiveSubscription(Interface):
         description=_("The archive for this subscription."))
 
     displayname = TextLine(title=_("Subscription displayname"),
+        required=False)
+
+    title = TextLine(title=_("Subscription title"),
         required=False)

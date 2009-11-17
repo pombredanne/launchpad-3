@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """Script to print disk locations of modified branches.
@@ -14,5 +17,6 @@ from lp.codehosting.scripts.modifiedbranches import (
 
 
 if __name__ == '__main__':
-    script = ModifiedBranchesScript('modified-branches')
+    script = ModifiedBranchesScript(
+        'modified-branches', dbuser='modified-branches')
     script.run()

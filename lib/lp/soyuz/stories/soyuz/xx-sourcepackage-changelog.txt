@@ -4,23 +4,33 @@ Browse the changelog of a sourcepackage..
 
   >>> user_browser.open(
   ...     "http://launchpad.dev/ubuntu/hoary/+source/pmount/+changelog")
-  >>> print extract_text(find_main_content(user_browser.contents))
-  pmount in Ubuntu Hoary change logs
-  Change logs for this package:
+  >>> print_location(user_browser.contents)
+  Hierarchy: Ubuntu > Hoary (5.04) > ...pmount... source package > Change log
+  Tabs:
+  * Overview (selected) - http://launchpad.dev/ubuntu/hoary/+source/pmount
+  * Branches - http://code.launchpad.dev/ubuntu/hoary/+source/pmount
+  * Bugs - http://bugs.launchpad.dev/ubuntu/hoary/+source/pmount
+  * Blueprints - not linked
+  * Translations - http://translations.launchpad.dev/ubuntu/hoary/+source/pmount
+  * Answers - http://answers.launchpad.dev/ubuntu/hoary/+source/pmount
+  Main heading: Change logs for ...pmount... in Hoary
+
+
+  >>> print extract_text(
+  ...     find_tag_by_id(user_browser.contents, 'changelogs'))
   This is a placeholder changelog for pmount 0.1-2
   pmount (0.1-1) hoary; urgency=low
   * Fix description (Malone #1)
-  * Fix debian (Debian #2000)...
-  * Fix warty (Warty Ubuntu #1)...
+  * Fix debian (Debian #2000)
+  * Fix warty (Warty Ubuntu #1)
   -- Sample Person &lt;test@canonical.com&gt; Tue, 7 Feb 2006 12:10:08 +0300
 
 .. and another one:
 
   >>> user_browser.open(
   ...     "http://launchpad.dev/ubuntu/hoary/+source/alsa-utils/+changelog")
-  >>> print extract_text(find_main_content(user_browser.contents))
-  alsa-utils in Ubuntu Hoary change logs
-  Change logs for this package:
+  >>> print extract_text(
+  ...     find_tag_by_id(user_browser.contents, 'changelogs'))
   alsa-utils (1.0.9a-4ubuntu1) hoary; urgency=low
   * Placeholder
   LP: #10
@@ -62,7 +72,7 @@ bots from picking them up):
   >>> anon_browser.open(
   ...     "http://launchpad.dev/ubuntu/hoary/+source/alsa-utils/+changelog")
   >>> print extract_text(find_main_content(anon_browser.contents))
-  alsa-utils in Ubuntu Hoary change logs
+  Change logs for ...alsa-utils... in Hoary
   ...
   -- Sample Person &lt;email address hidden&gt; Tue, 7 Feb 2006 12:10:08 +0300
   alsa-utils (1.0.9a-4) warty; urgency=low
@@ -103,5 +113,5 @@ We should see some changelog information on the main package page.
 
   >>> user_browser.open("http://launchpad.dev/ubuntu/+source/pmount/")
   >>> user_browser.title
-  '...pmount... package in Ubuntu'
+  '\xe2\x80\x9cpmount\xe2\x80\x9d package : Ubuntu'
 

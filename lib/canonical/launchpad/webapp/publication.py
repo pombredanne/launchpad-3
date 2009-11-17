@@ -1,4 +1,5 @@
-# (c) Canonical Ltd. 2004-2006, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -9,6 +10,7 @@ __all__ = [
 
 import gc
 import os
+import re
 import thread
 import threading
 import traceback
@@ -60,7 +62,6 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from lazr.uri import URI, InvalidURIError
 from canonical.launchpad.webapp.vhosts import allvhosts
-from canonical.signon.layers import IdLayer, OpenIDLayer
 
 
 METHOD_WRAPPER_TYPE = type({}.__setitem__)
@@ -181,11 +182,11 @@ class LaunchpadBrowserPublication(
         request.setPrincipal(principal)
         self.maybeRestrictToTeam(request)
         self.maybeBlockOffsiteFormPost(request)
+        self.maybeNotifyReadOnlyMode(request)
 
-        # If we are running in read-only mode, notify the user
-        # provided they aren't using the SSO server.
-        if config.launchpad.read_only and not (
-            OpenIDLayer.providedBy(request) or IdLayer.providedBy(request)):
+    def maybeNotifyReadOnlyMode(self, request):
+        """Hook to notify about read-only mode."""
+        if config.launchpad.read_only:
             try:
                 INotificationResponse(request).addWarningNotification(
                     structured("""
@@ -197,7 +198,6 @@ class LaunchpadBrowserPublication(
                         """))
             except ComponentLookupError:
                 pass
-
 
     def getPrincipal(self, request):
         """Return the authenticated principal for this request.
@@ -428,6 +428,11 @@ class LaunchpadBrowserPublication(
     def callTraversalHooks(self, request, ob):
         """ We don't want to call _maybePlacefullyAuthenticate as does
         zopepublication """
+        # In some cases we seem to be called more than once for a given
+        # traversed object, so we need to be careful here and only append an
+        # object the first time we see it.
+        if ob not in request.traversed_objects:
+            request.traversed_objects.append(ob)
         notify(BeforeTraverseEvent(ob, request))
 
     def afterTraversal(self, request, ob):
@@ -476,6 +481,11 @@ class LaunchpadBrowserPublication(
             # the publication, so there's nothing we need to do here.
             pass
 
+        # Log a soft OOPS for DisconnectionErrors as per Bug #373837.
+        # We need to do this before we re-raise the exception as a Retry.
+        if isinstance(exc_info[1], DisconnectionError):
+            getUtility(IErrorReportingUtility).handling(exc_info, request)
+
         def should_retry(exc_info):
             if not retry_allowed:
                 return False
@@ -510,7 +520,7 @@ class LaunchpadBrowserPublication(
 
             return False
 
-        # Reraise Retry exceptions ourselves rather than invoke
+        # Re-raise Retry exceptions ourselves rather than invoke
         # our superclass handleException method, as it will log OOPS
         # reports etc. This would be incorrect, as transaction retry
         # is a normal part of operation.
@@ -592,7 +602,12 @@ class LaunchpadBrowserPublication(
                     OpStats.stats['503s'] += 1
 
                 # Increment counters for status code groups.
-                OpStats.stats[str(status)[0] + 'XXs'] += 1
+                status_group = str(status)[0] + 'XXs'
+                OpStats.stats[status_group] += 1
+
+                # Increment counter for 5XXs_b.
+                if is_browser(request) and status_group == '5XXs':
+                    OpStats.stats['5XXs_b'] += 1
 
         # Reset all Storm stores when not running the test suite. We could
         # reset them when running the test suite but that'd make writing tests
@@ -761,3 +776,30 @@ class DefaultPrimaryContext:
 
     def __init__(self, context):
         self.context = context
+
+
+_browser_re = re.compile(r"""(?x)^(
+    Mozilla |
+    Opera |
+    Lynx |
+    Links |
+    w3m
+    )""")
+
+def is_browser(request):
+    """Return True if we believe the request was from a browser.
+
+    There will be false positives and false negatives, as we can
+    only tell this from the User-Agent: header and this cannot be
+    trusted.
+
+    Almost all web browsers provide a User-Agent: header starting
+    with 'Mozilla'. This is good enough for our uses. We also
+    add a few other common matches as well for good measure.
+    We could massage one of the user-agent databases that are
+    available into a usable, but we would gain little.
+    """
+    user_agent = request.getHeader('User-Agent')
+    return (
+        user_agent is not None
+        and _browser_re.search(user_agent) is not None)

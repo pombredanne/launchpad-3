@@ -1,4 +1,5 @@
-= Product Launchpad usage =
+Product Launchpad usage
+=======================
 
 The launchpad usage flags (whether the product uses Bugs, Answers or
 Translations officially) are found on the +edit page.
@@ -7,13 +8,13 @@ Translations officially) are found on the +edit page.
     >>> print anon_browser.title
     Mozilla Firefox in Launchpad
 
-    >>> content = find_main_content(anon_browser.contents)
-    >>> uses = content.find('p', id='uses')
+    >>> uses = find_tag_by_id(anon_browser.contents, id='uses')
     >>> print extract_text(uses)
     Uses Launchpad for: Answers and Bug Tracking.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'bugtracker'))
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'bugtracker'))
     Bug tracker: Launchpad
 
 Only the product registrant and the admins have access to this page.
@@ -64,10 +65,9 @@ We'll also set it as officially using codehosting.
 On the product page, we can see that the product doesn't use any bug
 tracker, not even Launchpad.
 
-    >>> content = find_main_content(registrant_browser.contents)
-    >>> uses = content.find('p', id='uses')
+    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
-    Uses Launchpad for: Answers and Code.
+    Uses Launchpad for: Answers and Branches.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> print extract_text(
@@ -85,10 +85,9 @@ Now let's go back and choose to use a specific bug tracker.
     ...     name='field.bugtracker.bugtracker').displayValue = [
     ...         'GnomeGBug GTracker']
     >>> registrant_browser.getControl('Change').click()
-    >>> content = find_main_content(registrant_browser.contents)
-    >>> uses = content.find('p', id='uses')
+    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
-    Uses Launchpad for: Answers and Code.
+    Uses Launchpad for: Answers and Branches.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
     >>> print extract_text(
@@ -108,13 +107,13 @@ Let's reset it to the way it was before.
     ...     'Expire Incomplete bug reports when they '
     ...     'become inactive').selected = False
     >>> registrant_browser.getControl('Change').click()
-    >>> content = find_main_content(registrant_browser.contents)
-    >>> uses = content.find('p', id='uses')
+    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
-    Uses Launchpad for: Answers, Bug Tracking, and Code.
+    Uses Launchpad for: Answers, Bug Tracking, and Branches.
 
 
-== Tracking bugs by email ==
+Tracking bugs by email
+----------------------
 
 Instead if using a web-based bug tracker, projects can specify an
 email address where bug reports should be sent.
@@ -153,7 +152,8 @@ An error message is shown if the email address is not filled in.
     Please enter an email address.
 
 
-== enable_bug_expiration and JavaScript ==
+enable_bug_expiration and JavaScript
+------------------------------------
 
 JavaScript is used to constrain enable_bug_expiration to projects that
 use Launchpad to track bugs. If the form is submitted before the page
@@ -185,8 +185,7 @@ support JavaScript so this behaviour is easy to simulate.)
 
 The Status of Launchpad uses shows the bug tracker was changed.
 
-    >>> content = find_main_content(registrant_browser.contents)
-    >>> uses = content.find('p', id='uses')
+    >>> uses = find_tag_by_id(registrant_browser.contents, id='uses')
     >>> print extract_text(uses)
     Does not use Launchpad for development.
 

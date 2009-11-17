@@ -125,10 +125,11 @@ are done here.
 
 == Ubuntu sources ==
 
-All diffs are visible in the 'biscuit source in ubuntu' page, right
-below the changelog text for each uploaded version.
+All diffs are visible in the 'biscuit source in ubuntu' change log page, right
+below the text for each uploaded version.
 
-    >>> anon_browser.open('http://launchpad.dev/ubuntu/+source/biscuit')
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/biscuit/+changelog')
     >>> changes = find_tags_by_class(anon_browser.contents, 'boardComment')
     >>> for change in changes:
     ...     print 30 * '='
@@ -138,7 +139,7 @@ below the changelog text for each uploaded version.
     Pending in hoary-release
     ...
     Available diffs
-    1.0-2 to 1.0-3
+    1.0-2 to 1.0-3 (pending)
     ==============================
     1.0-2
     Pending in hoary-release
@@ -155,7 +156,9 @@ Diffs already performed are rendered as link to the librarian file.
     >>> print anon_browser.getLink('1.0-1 to 1.0-2').url
     http://.../biscuit_1.0-1_1.0-2.diff.gz
 
-On the other hand, diffs not yet performed are rendered as plain text.
+On the other hand, diffs not yet performed are rendered as plain text,
+and "(pending)" is appended to the text as a further hint that it's not
+ready yet.
 
     >>> anon_browser.getLink('1.0-2 to 1.0-3')
     Traceback (most recent call last):
@@ -197,11 +200,16 @@ PPA `PackageDiff` are exposed exactly in the same way ubuntu ones
 are. They are presented in the expandable area right below the
 corresponding source row in the PPA overview page.
 
-    >>> anon_browser.open('http://launchpad.dev/~name16/+archive')
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/~name16/+archive/ppa/+packages')
     >>> login('foo.bar@canonical.com')
     >>> biscuit_ppa = name16.archive.getPublishedSources()[0]
     >>> biscuit_ppa_id = biscuit_ppa.id
+    >>> diff_three.date_fulfilled = None
+    >>> diff_three.status = PackageDiffStatus.PENDING
     >>> logout()
+
+The diff starts out as pending:
 
     >>> expander_url = anon_browser.getLink(
     ...     id='pub%s-expander' % biscuit_ppa_id).url
@@ -210,10 +218,25 @@ corresponding source row in the PPA overview page.
     Publishing details
     ...
     Available diffs
+      1.0-3 (in Ubuntu) to 1.0-4 (pending)
+    ...
+
+If we complete the diff, the text changes.
+
+    >>> login('foo.bar@canonical.com')
+    >>> perform_fake_diff(diff_three, 'biscuit_1.0-3_1.0-4.diff.gz')
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> anon_browser.open(expander_url)
+    >>> print extract_text(anon_browser.contents)
+    Publishing details
+    ...
+    Available diffs
       1.0-3 (in Ubuntu) to 1.0-4 (3 bytes)
     ...
 
-The text also link to the librarian file containing the diff.
+The text also links to the librarian file containing the diff.
 
     >>> print anon_browser.getLink(
     ...     '1.0-3 (in Ubuntu) to 1.0-4').url

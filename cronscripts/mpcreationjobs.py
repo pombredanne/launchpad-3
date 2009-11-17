@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """Handle new BranchMergeProposals.
@@ -28,7 +31,7 @@ class RunMergeProposalCreatedJobs(LaunchpadCronScript):
     def main(self):
         globalErrorUtility.configure('mpcreationjobs')
         job_source = getUtility(IMergeProposalCreatedJobSource)
-        runner = JobRunner.fromReady(job_source)
+        runner = JobRunner.fromReady(job_source, self.logger)
         server = get_scanner_server()
         server.setUp()
         try:

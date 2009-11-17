@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Person interfaces."""
@@ -69,12 +71,13 @@ from canonical.launchpad.fields import (
     is_valid_public_person)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.irc import IIrcID
 from lp.registry.interfaces.jabber import IJabberID
 from lp.services.worlddata.interfaces.language import ILanguage
 from canonical.launchpad.interfaces.launchpad import (
-    IHasIcon, IHasLogo, IHasMugshot)
+    IHasIcon, IHasLogo, IHasMugshot, IPrivacy)
 from lp.registry.interfaces.location import (
     IHasLocation, ILocationRecord, IObjectWithLocation, ISetLocation)
 from lp.registry.interfaces.mailinglistsubscription import (
@@ -472,7 +475,7 @@ class IHasStanding(Interface):
 
 class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
                     IHasMergeProposals, IHasLogo, IHasMugshot, IHasIcon,
-                    IHasLocation, IObjectWithLocation):
+                    IHasLocation, IObjectWithLocation, IPrivacy):
     """Public attributes for a Person."""
 
     id = Int(title=_('ID'), required=True, readonly=True)
@@ -589,12 +592,6 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     # which contains valid people but not teams, and we don't really need one
     # apart from here.
     registrant = Attribute('The user who created this profile.')
-    # bounty relations
-    ownedBounties = Attribute('Bounties issued by this person.')
-    reviewerBounties = Attribute('Bounties reviewed by this person.')
-    claimedBounties = Attribute('Bounties claimed by this person.')
-    subscribedBounties = Attribute(
-        'Bounties to which this person subscribes.')
 
     oauth_access_tokens = Attribute(_("Non-expired access tokens"))
 
@@ -620,7 +617,9 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
     is_valid_person_or_team = exported(
         Bool(title=_("This is an active user or a team."), readonly=True),
         exported_as='is_valid')
-    is_ubuntero = Bool(title=_("Ubuntero Flag"), readonly=True)
+    is_ubuntu_coc_signer = Bool(
+        title=_("Signed Ubuntu Code of Conduct"),
+        readonly=True)
     activesignatures = Attribute("Retrieve own Active CoC Signatures.")
     inactivesignatures = Attribute("Retrieve own Inactive CoC Signatures.")
     signedcocs = Attribute("List of Signed Code Of Conduct")
@@ -826,6 +825,8 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
             readonly=True, required=False,
             value_type=Reference(schema=Interface))) # HWSubmission
 
+    # This is redefined from IPrivacy.private because the attribute is
+    # read-only. It is a summary of the team's visibility.
     private = exported(Bool(
             title=_("This team is private"),
             readonly=True, required=False,
@@ -1493,7 +1494,7 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
-              IHasStanding, ISetLocation):
+              IHasStanding, ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 
@@ -1701,6 +1702,10 @@ class IPersonSet(Interface):
         The comment must be of the following form: "when %(action_details)s"
         (e.g. "when the foo package was imported into Ubuntu Breezy").
 
+        If the email address is already registered and bound to an
+        `IAccount`, the created `IPerson` will have 'hide_email_addresses'
+        flag set to True.
+
         XXX sabdfl 2005-06-14: this should be extended to be similar or
         identical to the other person creation argument lists, so we can
         call it and create a full person if needed. Email would remain the
@@ -1895,7 +1900,7 @@ class IPersonSet(Interface):
 class IRequestPeopleMerge(Interface):
     """This schema is used only because we want a very specific vocabulary."""
 
-    dupeaccount = Choice(
+    dupe_person = Choice(
         title=_('Duplicated Account'), required=True,
         vocabulary='PersonAccountToMerge',
         description=_(
@@ -1908,12 +1913,12 @@ class IAdminPeopleMergeSchema(Interface):
 
     dupe_person = Choice(
         title=_('Duplicated Person'), required=True,
-        vocabulary='PersonAccountToMerge',
+        vocabulary='AdminMergeablePerson',
         description=_("The duplicated person found in Launchpad."))
 
     target_person = Choice(
         title=_('Target Person'), required=True,
-        vocabulary='PersonAccountToMerge',
+        vocabulary='AdminMergeablePerson',
         description=_("The person to be merged on."))
 
 
@@ -1932,7 +1937,7 @@ class IAdminTeamMergeSchema(Interface):
 class IObjectReassignment(Interface):
     """The schema used by the object reassignment page."""
 
-    owner = PublicPersonChoice(title=_('Owner'), vocabulary='ValidOwner',
+    owner = PublicPersonChoice(title=_('New'), vocabulary='ValidOwner',
                                required=True)
 
 
@@ -1940,7 +1945,7 @@ class ITeamReassignment(Interface):
     """The schema used by the team reassignment page."""
 
     owner = PublicPersonChoice(
-        title=_('Owner'), vocabulary='ValidTeamOwner', required=True)
+        title=_('New'), vocabulary='ValidTeamOwner', required=True)
 
 
 class ITeamCreation(ITeam):

@@ -1,27 +1,30 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0702
 
 """Error logging facilities."""
 
 __metaclass__ = type
 
-import threading
-import os
-import errno
-import re
 import datetime
-import pytz
-import rfc822
+import errno
 import logging
+import os
+import re
+import rfc822
+import threading
 import types
 import urllib
 
-from zope.interface import implements
-from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
-
+import pytz
 from zope.error.interfaces import IErrorReportingUtility
 from zope.exceptions.exceptionformatter import format_exception
+from zope.interface import implements
+from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.traversing.namespace import view
 
+from lazr.restful.utils import get_current_browser_request
 from canonical.lazr.utils import safe_hasattr
 from canonical.config import config
 from canonical.launchpad import versioninfo
@@ -34,6 +37,8 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.opstats import OpStats
 
 UTC = pytz.utc
+
+LAZR_OOPS_USER_REQUESTED_KEY = 'lazr.oops.user_requested'
 
 # the section of the OOPS ID before the instance identifier is the
 # days since the epoch, which is defined as the start of 2006.
@@ -127,7 +132,7 @@ class ErrorReport:
     implements(IErrorReport)
 
     def __init__(self, id, type, value, time, pageid, tb_text, username,
-                 url, duration, req_vars, db_statements):
+                 url, duration, req_vars, db_statements, informational):
         self.id = id
         self.type = type
         self.value = value
@@ -141,9 +146,10 @@ class ErrorReport:
         self.db_statements = db_statements
         self.branch_nick = versioninfo.branch_nick
         self.revno  = versioninfo.revno
+        self.informational = informational
 
     def __repr__(self):
-        return '<ErrorReport %s>' % self.id
+        return '<ErrorReport %s %s: %s>' % (self.id, self.type, self.value)
 
     def write(self, fp):
         fp.write('Oops-Id: %s\n' % _normalise_whitespace(self.id))
@@ -156,15 +162,16 @@ class ErrorReport:
         fp.write('User: %s\n' % _normalise_whitespace(self.username))
         fp.write('URL: %s\n' % _normalise_whitespace(self.url))
         fp.write('Duration: %s\n' % self.duration)
+        fp.write('Informational: %s\n' % self.informational)
         fp.write('\n')
         safe_chars = ';/\\?:@&+$, ()*!'
         for key, value in self.req_vars:
             fp.write('%s=%s\n' % (urllib.quote(key, safe_chars),
                                   urllib.quote(value, safe_chars)))
         fp.write('\n')
-        for (start, end, statement) in self.db_statements:
-            fp.write('%05d-%05d %s\n' % (start, end,
-                                         _normalise_whitespace(statement)))
+        for (start, end, database_id, statement) in self.db_statements:
+            fp.write('%05d-%05d@%s %s\n' % (
+                start, end, database_id, _normalise_whitespace(statement)))
         fp.write('\n')
         fp.write(self.tb_text)
 
@@ -179,6 +186,7 @@ class ErrorReport:
         username = msg.getheader('user')
         url = msg.getheader('url')
         duration = int(float(msg.getheader('duration', '-1')))
+        informational = msg.getheader('informational')
 
         # Explicitely use an iterator so we can process the file
         # sequentially. In most instances the iterator will actually
@@ -201,15 +209,19 @@ class ErrorReport:
             line = line.strip()
             if line == '':
                 break
-            startend, statement = line.split(' ', 1)
-            start, end = startend.split('-')
-            statements.append((int(start), int(end), statement))
+            start, end, db_id, statement = re.match(
+                r'^(\d+)-(\d+)(?:@([\w-]+))?\s+(.*)', line).groups()
+            if db_id is not None:
+                db_id = intern(db_id) # This string is repeated lots.
+            statements.append(
+                (int(start), int(end), db_id, statement))
 
         # The rest is traceback.
         tb_text = ''.join(lines)
 
         return cls(id, exc_type, exc_value, date, pageid, tb_text,
-                   username, url, duration, req_vars, statements)
+                   username, url, duration, req_vars, statements,
+                   informational)
 
 
 class ErrorReportingUtility:
@@ -370,10 +382,10 @@ class ErrorReportingUtility:
             now = now.astimezone(UTC)
         else:
             now = datetime.datetime.now(UTC)
-        # we look up the error directory before allocating a new ID,
+        # We look up the error directory before allocating a new ID,
         # because if the day has changed, errordir() will reset the ID
-        # counter to zero
-        errordir = self.errordir(now)
+        # counter to zero.
+        self.errordir(now)
         self.lastid_lock.acquire()
         try:
             self.lastid += 1
@@ -388,6 +400,10 @@ class ErrorReportingUtility:
 
     def raising(self, info, request=None, now=None):
         """See IErrorReportingUtility.raising()"""
+        self._raising(info, request=request, now=now, informational=False)
+
+    def _raising(self, info, request=None, now=None, informational=False):
+        """Private method used by raising() and handling()."""
         if now is not None:
             now = now.astimezone(UTC)
         else:
@@ -466,15 +482,17 @@ class ErrorReportingUtility:
 
             duration = get_request_duration()
 
-            statements = sorted((start, end, _safestr(statement))
-                                for (start, end, statement)
-                                    in get_request_statements())
+            statements = sorted(
+                (start, end, _safestr(database_id), _safestr(statement))
+                for (start, end, database_id, statement)
+                    in get_request_statements())
 
             oopsid, filename = self.newOopsId(now)
 
             entry = ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
                                 username, strurl, duration,
-                                req_vars, statements)
+                                req_vars, statements,
+                                informational)
             entry.write(open(filename, 'wb'))
 
             if request:
@@ -485,6 +503,10 @@ class ErrorReportingUtility:
                 self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
         finally:
             info = None
+
+    def handling(self, info, request=None, now=None):
+        """Flag ErrorReport as informational only."""
+        self._raising(info, request=request, now=now, informational=True)
 
     def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
         distant_past = datetime.datetime(1970, 1, 1, 0, 0, 0, tzinfo=UTC)
@@ -555,6 +577,30 @@ class ScriptRequest(ErrorReportRequest):
         return dict(self.items())
 
 
+class OopsLoggingHandler(logging.Handler):
+    """Python logging handler that records OOPSes on exception."""
+
+    def __init__(self, error_utility=None, request=None):
+        """Construct an `OopsLoggingHandler`.
+
+        :param error_utility: The error utility to use to log oopses. If not
+            provided, defaults to `globalErrorUtility`.
+        :param request: The `IErrorReportRequest` these errors are associated
+            with.
+        """
+        logging.Handler.__init__(self, logging.ERROR)
+        if error_utility is None:
+            error_utility = globalErrorUtility
+        self._error_utility = error_utility
+        self._request = request
+
+    def emit(self, record):
+        """See `logging.Handler.emit`."""
+        info = record.exc_info
+        if info is not None:
+            self._error_utility.raising(info, self._request)
+
+
 class SoftRequestTimeout(Exception):
     """Soft request timeout expired"""
 
@@ -567,3 +613,34 @@ def end_request(event):
         globalErrorUtility.raising(
             (SoftRequestTimeout, SoftRequestTimeout(event.object), None),
             event.request)
+
+
+class UserRequestOops(Exception):
+    """A user requested OOPS to log statements."""
+
+
+def maybe_record_user_requested_oops():
+    """If an OOPS has been requested, report one.
+
+    :return: The oopsid of the requested oops.  Returns None if an oops was
+        not requested, or if there is already an OOPS.
+    """
+    request = get_current_browser_request()
+    # If there is no request, or there is an oops already, then return.
+    if (request is None or
+        request.oopsid is not None or
+        not request.annotations.get(LAZR_OOPS_USER_REQUESTED_KEY, False)):
+        return None
+    globalErrorUtility.handling(
+        (UserRequestOops, UserRequestOops(), None), request)
+    return request.oopsid
+
+
+class OopsNamespace(view):
+    """A namespace handle traversals with ++oops++."""
+
+    def traverse(self, name, ignored):
+        """Record that an oops has been requested and return the context."""
+        # Store the oops request in the request annotations.
+        self.request.annotations[LAZR_OOPS_USER_REQUESTED_KEY] = True
+        return self.context

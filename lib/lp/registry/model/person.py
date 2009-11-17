@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # vars() causes W0612
 # pylint: disable-msg=E0611,W0212,W0612,C0322
 
@@ -38,7 +40,7 @@ from zope.event import notify
 from zope.security.proxy import ProxyFactory, removeSecurityProxy
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
-    SQLRelatedJoin, StringCol)
+    StringCol)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 from storm.store import EmptyResultSet, Store
 from storm.expr import And, In, Join, Lower, Not, Or, SQL
@@ -56,7 +58,7 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.lazr.utils import get_current_browser_request, safe_hasattr
 
-from canonical.launchpad.database.account import Account
+from canonical.launchpad.database.account import Account, AccountPassword
 from lp.bugs.model.bugtarget import HasBugsBase
 from canonical.launchpad.database.stormsugar import StartsWith
 from lp.registry.model.karma import KarmaCategory
@@ -75,7 +77,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
-from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -138,7 +140,7 @@ from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from lp.registry.model.teammembership import (
     TeamMembership, TeamMembershipSet, TeamParticipation)
@@ -296,7 +298,6 @@ class Person(
         # We have to remove the security proxy because the password is
         # needed before we are authenticated. I'm not overly worried because
         # this method is scheduled for demolition -- StuartBishop 20080514
-        from canonical.launchpad.database.account import AccountPassword
         password = IStore(AccountPassword).find(
             AccountPassword, accountID=self.accountID).one()
         if password is None:
@@ -382,18 +383,6 @@ class Person(
     hide_email_addresses = BoolCol(notNull=True, default=False)
     verbose_bugnotifications = BoolCol(notNull=True, default=True)
 
-    ownedBounties = SQLMultipleJoin('Bounty', joinColumn='owner',
-        orderBy='id')
-    reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
-        orderBy='id')
-    # XXX: matsubara 2006-03-06 bug=33935:
-    # Is this really needed? There's no attribute 'claimant' in the Bounty
-    # database class or interface, but the column exists in the database.
-    claimedBounties = SQLMultipleJoin('Bounty', joinColumn='claimant',
-        orderBy='id')
-    subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
-        otherColumn='bounty', intermediateTable='BountySubscription',
-        orderBy='id')
     signedcocs = SQLMultipleJoin('SignedCodeOfConduct', joinColumn='owner')
     ircnicknames = SQLMultipleJoin('IrcID', joinColumn='person')
     jabberids = SQLMultipleJoin('JabberID', joinColumn='person')
@@ -489,18 +478,20 @@ class Person(
     @property
     def oauth_access_tokens(self):
         """See `IPerson`."""
-        return OAuthAccessToken.select("""
-            person = %s
-            AND (date_expires IS NULL OR date_expires > %s)
-            """ % sqlvalues(self, UTC_NOW))
+        return Store.of(self).find(
+            OAuthAccessToken,
+            OAuthAccessToken.person == self,
+            Or(OAuthAccessToken.date_expires == None,
+               OAuthAccessToken.date_expires > UTC_NOW))
 
     @property
     def oauth_request_tokens(self):
         """See `IPerson`."""
-        return OAuthRequestToken.select("""
-            person = %s
-            AND (date_expires IS NULL OR date_expires > %s)
-            """ % sqlvalues(self, UTC_NOW))
+        return Store.of(self).find(
+            OAuthRequestToken,
+            OAuthRequestToken.person == self,
+            Or(OAuthRequestToken.date_expires == None,
+               OAuthRequestToken.date_expires > UTC_NOW))
 
     @cachedproperty('_location')
     def location(self):
@@ -559,20 +550,6 @@ class Person(
             self._location = PersonLocation(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
-
-        # Make a note that we need to tell this person that their
-        # information was updated by the user. We can only do this if we
-        # have a validated email address for this person.
-        if user != self and self.preferredemail is not None:
-            mail_text = get_email_template('person-location-modified.txt')
-            mail_text = mail_text % {
-                'actor': user.name,
-                'actor_browsername': user.displayname,
-                'person': self.name}
-            subject = '%s updated your location and time zone' % (
-                user.displayname)
-            getUtility(IPersonNotificationSet).addNotification(
-                self, subject, mail_text)
 
     # specification-related joins
     @property
@@ -950,7 +927,7 @@ class Person(
     def getOwnedProjects(self, match_name=None):
         """See `IPerson`."""
         # Import here to work around a circular import problem.
-        from canonical.launchpad.database import Product
+        from lp.registry.model.product import Product
 
         clauses = ["""
             SELECT DISTINCT Product.id
@@ -1332,13 +1309,57 @@ class Person(
         tm.sendSelfRenewalNotification()
 
     def deactivateAllMembers(self, comment, reviewer):
-        """Deactivate all members of this team."""
+        """Deactivate all members of this team.
+
+        This method circuments the TeamMembership.setStatus() method
+        to improve performance; therefore, it does not send out any
+        status change noticiations to the team admins.
+
+        :param comment: Explanation of the change.
+        :param reviewer: Person who made the change.
+        """
         assert self.is_team, "This method is only available for teams."
         assert reviewer.inTeam(getUtility(ILaunchpadCelebrities).admin), (
             "Only Launchpad admins can deactivate all members of a team")
-        for membership in self.member_memberships:
-            membership.setStatus(
-                TeamMembershipStatus.DEACTIVATED, reviewer, comment)
+        now = datetime.now(pytz.timezone('UTC'))
+        store = Store.of(self)
+        cur = cursor()
+
+        # Deactivate the approved/admin team members.
+        # XXX: EdwinGrubbs 2009-07-08 bug=397072
+        # There are problems using storm to write an update
+        # statement using DBITems in the comparison.
+        cur.execute("""
+            UPDATE TeamMembership
+            SET status=%(status)s,
+                last_changed_by=%(last_changed_by)s,
+                last_change_comment=%(comment)s,
+                date_last_changed=%(date_last_changed)s
+            WHERE
+                TeamMembership.team = %(team)s
+                AND TeamMembership.status IN %(original_statuses)s
+            """,
+            dict(
+                status=TeamMembershipStatus.DEACTIVATED,
+                last_changed_by=reviewer.id,
+                comment=comment,
+                date_last_changed=now,
+                team=self.id,
+                original_statuses=(
+                    TeamMembershipStatus.ADMIN.value,
+                    TeamMembershipStatus.APPROVED.value)))
+
+        # Since we've updated the database behind Storm's back,
+        # flush its caches.
+        store.invalidate()
+
+        # Remove all members from the TeamParticipation table
+        # except for the team, itself.
+        participants = store.find(
+            TeamParticipation,
+            TeamParticipation.teamID == self.id,
+            TeamParticipation.personID != self.id)
+        participants.remove()
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
@@ -1580,13 +1601,13 @@ class Person(
         """See `IPersonViewRestricted`."""
         return self._getMappedParticipantsLocations().count()
 
-    def getMappedParticipantsBounds(self):
+    def getMappedParticipantsBounds(self, limit=None):
         """See `IPersonViewRestricted`."""
         max_lat = -90.0
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
-        locations = self._getMappedParticipantsLocations()
+        locations = self._getMappedParticipantsLocations(limit)
         if self.mapped_participants_count == 0:
             raise AssertionError, (
                 'This method cannot be called when '
@@ -1691,7 +1712,6 @@ class Person(
 
         # Nuke all subscriptions of this person.
         removals = [
-            ('BountySubscription', 'person'),
             ('BranchSubscription', 'person'),
             ('BugSubscription', 'person'),
             ('QuestionSubscription', 'person'),
@@ -2226,7 +2246,7 @@ class Person(
         return permissions.count() > 0
 
     @cachedproperty
-    def is_ubuntero(self):
+    def is_ubuntu_coc_signer(self):
         """See `IPerson`."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
@@ -2252,8 +2272,7 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
-        return Archive.selectOneBy(
-            owner=self, purpose=ArchivePurpose.PPA, name='ppa')
+        return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
 
     @property
     def ppas(self):
@@ -2263,11 +2282,7 @@ class Person(
 
     def getPPAByName(self, name):
         """See `IPerson`."""
-        ppa = Archive.selectOneBy(
-            owner=self, purpose=ArchivePurpose.PPA, name=name)
-        if ppa is None:
-            raise NoSuchPPA(name)
-        return ppa
+        return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -2403,8 +2418,8 @@ class PersonSet:
         account_rationale = getattr(AccountCreationRationale, rationale.name)
 
         account = getUtility(IAccountSet).new(
-                account_rationale, displayname, openid_mnemonic=name,
-                password=password, password_is_encrypted=passwordEncrypted)
+                account_rationale, displayname, password=password,
+                password_is_encrypted=passwordEncrypted)
 
         person = self._newPerson(
             name, displayname, hide_email_addresses, rationale=rationale,
@@ -2457,13 +2472,55 @@ class PersonSet:
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
         """See `IPersonSet`."""
-        person = self.getByEmail(email)
-        if person:
+        # Start by checking if there is an `EmailAddress` for the given
+        # text address.  There are many cases where an email address can be
+        # created without an associated `Person`. For instance, we created
+        # an account linked to the address through an external system such
+        # SSO or ShipIt.
+        email_address = getUtility(IEmailAddressSet).getByEmail(email)
+
+        # There is no `EmailAddress` for this text address, so we need to
+        # create both the `Person` and `EmailAddress` here and we are done.
+        if email_address is None:
+            person, email_address = self.createPersonAndEmail(
+                email, rationale, comment=comment, displayname=displayname,
+                registrant=registrant, hide_email_addresses=True)
             return person
-        person, dummy = self.createPersonAndEmail(
-            email, rationale, comment=comment, displayname=displayname,
-            registrant=registrant)
-        return person
+
+        # There is an `EmailAddress` for this text address, but no
+        # associated `Person`.
+        if email_address.person is None:
+            assert email_address.accountID is not None, (
+                '%s is not associated to a person or account'
+                % email_address.email)
+            account = IMasterStore(Account).get(
+                Account, email_address.accountID)
+            account_person = self.getByAccount(account)
+            # There is a `Person` linked to the `Account`, link the
+            # `EmailAddress` to this `Person` and return it.
+            if account_person is not None:
+                master_email = IMasterStore(EmailAddress).get(
+                    EmailAddress, email_address.id)
+                master_email.personID = account_person.id
+                # Populate the previously empty 'preferredemail' cached
+                # property, so the Person record is up-to-date.
+                if master_email.status == EmailAddressStatus.PREFERRED:
+                    account_person._preferredemail_cached = master_email
+                return account_person
+            # There is no associated `Person` to the email `Account`.
+            # This is probably because the account was created externally
+            # to Launchpad. Create just the `Person`, associate it with
+            # the `EmailAddress` and return it.
+            name = generate_nick(email)
+            person = self._newPerson(
+                name, displayname, hide_email_addresses=True,
+                rationale=rationale, comment=comment, registrant=registrant,
+                account=email_address.account)
+            return person
+
+        # Easy, return the `Person` associated with the existing
+        # `EmailAddress`.
+        return IMasterStore(Person).get(Person, email_address.personID)
 
     def getByName(self, name, ignore_merged=True):
         """See `IPersonSet`."""
@@ -2764,101 +2821,7 @@ class PersonSet:
         skip.append(
             (decorator_table.lower(), person_pointer_column.lower()))
 
-    def merge(self, from_person, to_person):
-        """See `IPersonSet`."""
-        # Sanity checks
-        if not IPerson.providedBy(from_person):
-            raise TypeError('from_person is not a person.')
-        if not IPerson.providedBy(to_person):
-            raise TypeError('to_person is not a person.')
-        # If the team has a mailing list, the mailing list better be in the
-        # purged state, otherwise the team can't be merged.
-        mailing_list = getUtility(IMailingListSet).get(from_person.name)
-        assert (mailing_list is None or
-                mailing_list.status == MailingListStatus.PURGED), (
-            "Can't merge teams which have mailing lists into other teams.")
-
-        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
-            raise AssertionError('from_person still has email addresses.')
-
-        if from_person.is_team and from_person.allmembers.count() > 0:
-            raise AssertionError(
-                "Only teams without active members can be merged")
-
-        # since we are doing direct SQL manipulation, make sure all
-        # changes have been flushed to the database
-        store = Store.of(from_person)
-
-        # Get a database cursor.
-        cur = cursor()
-
-        references = list(postgresql.listReferences(cur, 'person', 'id'))
-
-        # These table.columns will be skipped by the 'catch all'
-        # update performed later
-        skip = [
-            ('teammembership', 'person'),
-            ('teammembership', 'team'),
-            ('teamparticipation', 'person'),
-            ('teamparticipation', 'team'),
-            ('personlanguage', 'person'),
-            ('person', 'merged'),
-            ('emailaddress', 'person'),
-            ('karmacache', 'person'),
-            ('karmatotalcache', 'person'),
-            # Polls are not carried over when merging teams.
-            ('poll', 'team'),
-            # We can safely ignore the mailinglist table as there's a sanity
-            # check above which prevents teams with associated mailing lists
-            # from being merged.
-            ('mailinglist', 'team'),
-            # I don't think we need to worry about the votecast and vote
-            # tables, because a real human should never have two accounts
-            # in Launchpad that are active members of a given team and voted
-            # in a given poll. -- GuilhermeSalgado 2005-07-07
-            # We also can't afford to change poll results after they are
-            # closed -- StuartBishop 20060602
-            ('votecast', 'person'),
-            ('vote', 'person'),
-            ('translationrelicensingagreement', 'person'),
-            ]
-
-        # Sanity check. If we have an indirect reference, it must
-        # be ON DELETE CASCADE. We only have one case of this at the moment,
-        # but this code ensures we catch any new ones added incorrectly.
-        for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
-            # If the ref_tab and ref_col is not Person.id, then we have
-            # an indirect reference. Ensure the update action is 'CASCADE'
-            if ref_tab != 'person' and ref_col != 'id':
-                if updact != 'c':
-                    raise RuntimeError(
-                        '%s.%s reference to %s.%s must be ON UPDATE CASCADE'
-                        % (src_tab, src_col, ref_tab, ref_col)
-                        )
-
-        # These rows are in a UNIQUE index, and we can only move them
-        # to the new Person if there is not already an entry. eg. if
-        # the destination and source persons are both subscribed to a bounty,
-        # we cannot change the source persons subscription. We just leave them
-        # as noise for the time being.
-
-        to_id = to_person.id
-        from_id = from_person.id
-
-        # Update PersonLocation, which is a Person-decorator table.
-        self._merge_person_decoration(
-            to_person, from_person, skip, 'PersonLocation', 'person',
-            ['last_modified_by', ])
-
-        # Update GPGKey. It won't conflict, but our sanity checks don't
-        # know that.
-        cur.execute(
-            'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
-            % vars())
-        skip.append(('gpgkey','owner'))
-
-        # Update the Branches that will not conflict, and fudge the names of
-        # ones that *do* conflict.
+    def _mergeBranches(self, cur, from_id, to_id):
         cur.execute('''
             SELECT product, name FROM Branch WHERE owner = %(to_id)d
             ''' % vars())
@@ -2882,28 +2845,16 @@ class PersonSet:
                     AND (%(product)s IS NULL OR product = %(product)s)
                 ''', dict(to_id=to_id, from_id=from_id,
                           name=name, new_name=new_name, product=product))
-        skip.append(('branch','owner'))
 
-        # Update MailingListSubscription. Note that no remaining records
-        # will have email_address set, as we assert earlier that the
-        # from_person has no email addresses.
-        # Update records that don't conflict.
-        cur.execute('''
-            UPDATE MailingListSubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
-                AND mailing_list NOT IN (
-                    SELECT mailing_list
-                    FROM MailingListSubscription
-                    WHERE person=%(to_id)d
-                    )
-            ''' % vars())
-        # Then trash the remainders.
+    def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
+        # Update MailingListSubscription. Note that since all the from_id
+        # email addresses are set to NEW, all the subscriptions must be
+        # removed because the user must confirm them.
         cur.execute('''
             DELETE FROM MailingListSubscription WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('mailinglistsubscription', 'person'))
 
+    def _mergeBranchSubscription(self, cur, from_id, to_id):
         # Update only the BranchSubscription that will not conflict.
         cur.execute('''
             UPDATE BranchSubscription
@@ -2919,8 +2870,13 @@ class PersonSet:
         cur.execute('''
             DELETE FROM BranchSubscription WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('branchsubscription', 'person'))
 
+    def _mergeBountySubscriptions(self, cur, from_id, to_id):
+        # XXX: JonathanLange 2009-08-31: Even though all of the other bounty
+        # code has been removed from Launchpad, the merging code has to stay
+        # until the tables themselves are removed. Otherwise, the person
+        # merging code raises consistency errors (and rightly so).
+        #
         # Update only the BountySubscriptions that will not conflict.
         cur.execute('''
             UPDATE BountySubscription
@@ -2936,8 +2892,8 @@ class PersonSet:
         cur.execute('''
             DELETE FROM BountySubscription WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('bountysubscription', 'person'))
 
+    def _mergeBugAffectsPerson(self, cur, from_id, to_id):
         # Update only the BugAffectsPerson that will not conflict
         cur.execute('''
             UPDATE BugAffectsPerson
@@ -2953,8 +2909,8 @@ class PersonSet:
         cur.execute('''
             DELETE FROM BugAffectsPerson WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('bugaffectsperson', 'person'))
 
+    def _mergeAnswerContact(self, cur, from_id, to_id):
         # Update only the AnswerContacts that will not conflict.
         cur.execute('''
             UPDATE AnswerContact
@@ -2982,8 +2938,8 @@ class PersonSet:
         cur.execute('''
             DELETE FROM AnswerContact WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('answercontact', 'person'))
 
+    def _mergeQuestionSubscription(self, cur, from_id, to_id):
         # Update only the QuestionSubscriptions that will not conflict.
         cur.execute('''
             UPDATE QuestionSubscription
@@ -2999,8 +2955,8 @@ class PersonSet:
         cur.execute('''
             DELETE FROM QuestionSubscription WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('questionsubscription', 'person'))
 
+    def _mergeMentoringOffer(self, cur, from_id, to_id):
         # Update only the MentoringOffers that will not conflict.
         cur.execute('''
             UPDATE MentoringOffer
@@ -3033,9 +2989,8 @@ class PersonSet:
             DELETE FROM MentoringOffer
             WHERE owner=%(from_id)d OR team=%(from_id)d
             ''' % vars())
-        skip.append(('mentoringoffer', 'owner'))
-        skip.append(('mentoringoffer', 'team'))
 
+    def _mergeBugNotificationRecipient(self, cur, from_id, to_id):
         # Update BugNotificationRecipient entries that will not conflict.
         cur.execute('''
             UPDATE BugNotificationRecipient
@@ -3050,15 +3005,15 @@ class PersonSet:
             DELETE FROM BugNotificationRecipient
             WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('bugnotificationrecipient', 'person'))
 
+    def _mergePackageBugSupervisor(self, cur, from_id, to_id):
         # Update PackageBugSupervisor entries.
         cur.execute('''
             UPDATE PackageBugSupervisor SET bug_supervisor=%(to_id)d
             WHERE bug_supervisor=%(from_id)d
             ''' % vars())
-        skip.append(('packagebugsupervisor', 'bug_supervisor'))
 
+    def _mergeSpecificationFeedback(self, cur, from_id, to_id):
         # Update the SpecificationFeedback entries that will not conflict
         # and trash the rest.
 
@@ -3076,7 +3031,6 @@ class PersonSet:
         cur.execute('''
             DELETE FROM SpecificationFeedback WHERE reviewer=%(from_id)d
             ''' % vars())
-        skip.append(('specificationfeedback', 'reviewer'))
 
         # And now we handle the requester.
         cur.execute('''
@@ -3092,8 +3046,8 @@ class PersonSet:
         cur.execute('''
             DELETE FROM SpecificationFeedback WHERE requester=%(from_id)d
             ''' % vars())
-        skip.append(('specificationfeedback', 'requester'))
 
+    def _mergeSpecificationSubscription(self, cur, from_id, to_id):
         # Update the SpecificationSubscription entries that will not conflict
         # and trash the rest
         cur.execute('''
@@ -3109,8 +3063,8 @@ class PersonSet:
         cur.execute('''
             DELETE FROM SpecificationSubscription WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('specificationsubscription', 'person'))
 
+    def _mergeSprintAttendance(self, cur, from_id, to_id):
         # Update only the SprintAttendances that will not conflict
         cur.execute('''
             UPDATE SprintAttendance
@@ -3126,8 +3080,8 @@ class PersonSet:
         cur.execute('''
             DELETE FROM SprintAttendance WHERE attendee=%(from_id)d
             ''' % vars())
-        skip.append(('sprintattendance', 'attendee'))
 
+    def _mergePOSubscription(self, cur, from_id, to_id):
         # Update only the POSubscriptions that will not conflict
         cur.execute('''
             UPDATE POSubscription
@@ -3140,8 +3094,8 @@ class PersonSet:
                     AND a.potemplate = b.potemplate
                     )
             ''' % vars())
-        skip.append(('posubscription', 'person'))
 
+    def _mergePOExportRequest(self, cur, from_id, to_id):
         # Update only the POExportRequests that will not conflict
         # and trash the rest
         cur.execute('''
@@ -3157,8 +3111,8 @@ class PersonSet:
         cur.execute('''
             DELETE FROM POExportRequest WHERE person=%(from_id)d
             ''' % vars())
-        skip.append(('poexportrequest', 'person'))
 
+    def _mergeTranslationMessage(self, cur, from_id, to_id):
         # Update the TranslationMessage. They should not conflict since each
         # of them are independent
         cur.execute('''
@@ -3166,19 +3120,13 @@ class PersonSet:
             SET submitter=%(to_id)d
             WHERE submitter=%(from_id)d
             ''' % vars())
-        skip.append(('translationmessage', 'submitter'))
         cur.execute('''
             UPDATE TranslationMessage
             SET reviewer=%(to_id)d
             WHERE reviewer=%(from_id)d
             ''' % vars())
-        skip.append(('translationmessage', 'reviewer'))
 
-        # Handle the POFileTranslator cache by doing nothing. As it is
-        # maintained by triggers, the data migration has already been done
-        # for us when we updated the source tables.
-        skip.append(('pofiletranslator', 'person'))
-
+    def _mergeTranslationImportQueueEntry(self, cur, from_id, to_id):
         # Update only the TranslationImportQueueEntry that will not conflict
         # and trash the rest
         cur.execute('''
@@ -3198,17 +3146,10 @@ class PersonSet:
         cur.execute('''
             DELETE FROM TranslationImportQueueEntry WHERE importer=%(from_id)d
             ''' % vars())
-        skip.append(('translationimportqueueentry', 'importer'))
 
-        # XXX cprov 2007-02-22 bug=87098:
-        # Since we only allow one PPA for each user,
-        # we can't reassign the old user archive to the new user.
-        # It need to be done manually, probably by reasinning all publications
-        # to the old PPA to the new one, performing a careful_publishing on it
-        # and removing the old one from disk.
-        skip.append(('archive', 'owner'))
-
-        # Update only the CodeReviewVote that will not conflict
+    def _mergeCodeReviewVote(self, cur, from_id, to_id):
+        # Update only the CodeReviewVote that will not conflict,
+        # and leave conflicts as noise
         cur.execute('''
             UPDATE CodeReviewVote
             SET reviewer=%(to_id)d
@@ -3218,9 +3159,8 @@ class PersonSet:
                 AND a.branch_merge_proposal = b.branch_merge_proposal
                 )
             ''' % vars())
-        # And leave conflicts as noise
-        skip.append(('codereviewvote', 'reviewer'))
 
+    def _mergeWebServiceBan(self, cur, from_id, to_id):
         # Update only the WebServiceBan that will not conflict
         cur.execute('''
             UPDATE WebServiceBan
@@ -3235,6 +3175,231 @@ class PersonSet:
         cur.execute('''
             DELETE FROM WebServiceBan WHERE person=%(from_id)d
             ''' % vars())
+
+    def _mergeTeamMembership(self, cur, from_id, to_id):
+        # Transfer active team memberships
+        approved = TeamMembershipStatus.APPROVED
+        admin = TeamMembershipStatus.ADMIN
+        cur.execute(
+            'SELECT team, status FROM TeamMembership WHERE person = %s '
+            'AND status IN (%s,%s)'
+            % sqlvalues(from_id, approved, admin))
+        for team_id, status in cur.fetchall():
+            cur.execute('SELECT status FROM TeamMembership WHERE person = %s '
+                        'AND team = %s'
+                        % sqlvalues(to_id, team_id))
+            result = cur.fetchone()
+            if result:
+                current_status = result[0]
+                # Now we can safely delete from_person's membership record,
+                # because we know to_person has a membership entry for this
+                # team, so may only need to change its status.
+                cur.execute(
+                    'DELETE FROM TeamMembership WHERE person = %s '
+                    'AND team = %s' % sqlvalues(from_id, team_id))
+
+                if current_status == admin.value:
+                    # to_person is already an administrator of this team, no
+                    # need to do anything else.
+                    continue
+                # to_person is either an approved or an inactive member,
+                # while from_person is either admin or approved. That means we
+                # can safely set from_person's membership status on
+                # to_person's membership.
+                assert status in (approved.value, admin.value)
+                cur.execute(
+                    'UPDATE TeamMembership SET status = %s WHERE person = %s '
+                    'AND team = %s' % sqlvalues(status, to_id, team_id))
+            else:
+                # to_person is not a member of this team. just change
+                # from_person with to_person in the membership record.
+                cur.execute(
+                    'UPDATE TeamMembership SET person = %s WHERE person = %s '
+                    'AND team = %s'
+                    % sqlvalues(to_id, from_id, team_id))
+
+        cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
+                    'AND person != team' % sqlvalues(from_id))
+        for team_id in cur.fetchall():
+            cur.execute(
+                'SELECT team FROM TeamParticipation WHERE person = %s '
+                'AND team = %s' % sqlvalues(to_id, team_id))
+            if not cur.fetchone():
+                cur.execute(
+                    'UPDATE TeamParticipation SET person = %s WHERE '
+                    'person = %s AND team = %s'
+                    % sqlvalues(to_id, from_id, team_id))
+            else:
+                cur.execute(
+                    'DELETE FROM TeamParticipation WHERE person = %s AND '
+                    'team = %s' % sqlvalues(from_id, team_id))
+
+    def merge(self, from_person, to_person):
+        """See `IPersonSet`."""
+        # Sanity checks
+        if not IPerson.providedBy(from_person):
+            raise TypeError('from_person is not a person.')
+        if not IPerson.providedBy(to_person):
+            raise TypeError('to_person is not a person.')
+        # If the team has a mailing list, the mailing list better be in the
+        # purged state, otherwise the team can't be merged.
+        mailing_list = getUtility(IMailingListSet).get(from_person.name)
+        assert (mailing_list is None or
+                mailing_list.status == MailingListStatus.PURGED), (
+            "Can't merge teams which have mailing lists into other teams.")
+
+        if getUtility(IEmailAddressSet).getByPerson(from_person).count() > 0:
+            raise AssertionError('from_person still has email addresses.')
+
+        if from_person.is_team and from_person.allmembers.count() > 0:
+            raise AssertionError(
+                "Only teams without active members can be merged")
+
+        # since we are doing direct SQL manipulation, make sure all
+        # changes have been flushed to the database
+        store = Store.of(from_person)
+
+        # Get a database cursor.
+        cur = cursor()
+
+        # These table.columns will be skipped by the 'catch all'
+        # update performed later
+        skip = [
+            ('teammembership', 'person'),
+            ('teammembership', 'team'),
+            ('teamparticipation', 'person'),
+            ('teamparticipation', 'team'),
+            ('personlanguage', 'person'),
+            ('person', 'merged'),
+            ('emailaddress', 'person'),
+            ('karmacache', 'person'),
+            ('karmatotalcache', 'person'),
+            # Polls are not carried over when merging teams.
+            ('poll', 'team'),
+            # We can safely ignore the mailinglist table as there's a sanity
+            # check above which prevents teams with associated mailing lists
+            # from being merged.
+            ('mailinglist', 'team'),
+            # I don't think we need to worry about the votecast and vote
+            # tables, because a real human should never have two accounts
+            # in Launchpad that are active members of a given team and voted
+            # in a given poll. -- GuilhermeSalgado 2005-07-07
+            # We also can't afford to change poll results after they are
+            # closed -- StuartBishop 20060602
+            ('votecast', 'person'),
+            ('vote', 'person'),
+            ('translationrelicensingagreement', 'person'),
+            ]
+
+        references = list(postgresql.listReferences(cur, 'person', 'id'))
+
+        # Sanity check. If we have an indirect reference, it must
+        # be ON DELETE CASCADE. We only have one case of this at the moment,
+        # but this code ensures we catch any new ones added incorrectly.
+        for src_tab, src_col, ref_tab, ref_col, updact, delact in references:
+            # If the ref_tab and ref_col is not Person.id, then we have
+            # an indirect reference. Ensure the update action is 'CASCADE'
+            if ref_tab != 'person' and ref_col != 'id':
+                if updact != 'c':
+                    raise RuntimeError(
+                        '%s.%s reference to %s.%s must be ON UPDATE CASCADE'
+                        % (src_tab, src_col, ref_tab, ref_col)
+                        )
+
+        # These rows are in a UNIQUE index, and we can only move them
+        # to the new Person if there is not already an entry. eg. if
+        # the destination and source persons are both subscribed to a bug,
+        # we cannot change the source persons subscription. We just leave them
+        # as noise for the time being.
+
+        to_id = to_person.id
+        from_id = from_person.id
+
+        # Update PersonLocation, which is a Person-decorator table.
+        self._merge_person_decoration(
+            to_person, from_person, skip, 'PersonLocation', 'person',
+            ['last_modified_by', ])
+
+        # Update GPGKey. It won't conflict, but our sanity checks don't
+        # know that.
+        cur.execute(
+            'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
+            % vars())
+        skip.append(('gpgkey','owner'))
+
+        # Update the Branches that will not conflict, and fudge the names of
+        # ones that *do* conflict.
+        self._mergeBranches(cur, from_id, to_id)
+        skip.append(('branch','owner'))
+
+        self._mergeMailingListSubscriptions(cur, from_id, to_id)
+        skip.append(('mailinglistsubscription', 'person'))
+
+        self._mergeBranchSubscription(cur, from_id, to_id)
+        skip.append(('branchsubscription', 'person'))
+
+        self._mergeBugAffectsPerson(cur, from_id, to_id)
+        skip.append(('bugaffectsperson', 'person'))
+
+        self._mergeBountySubscriptions(cur, from_id, to_id)
+        skip.append(('bountysubscription', 'person'))
+
+        self._mergeAnswerContact(cur, from_id, to_id)
+        skip.append(('answercontact', 'person'))
+
+        self._mergeQuestionSubscription(cur, from_id, to_id)
+        skip.append(('questionsubscription', 'person'))
+
+        self._mergeMentoringOffer(cur, from_id, to_id)
+        skip.append(('mentoringoffer', 'owner'))
+        skip.append(('mentoringoffer', 'team'))
+
+        self._mergeBugNotificationRecipient(cur, from_id, to_id)
+        skip.append(('bugnotificationrecipient', 'person'))
+
+        self._mergePackageBugSupervisor(cur, from_id, to_id)
+        skip.append(('packagebugsupervisor', 'bug_supervisor'))
+
+        self._mergeSpecificationFeedback(cur, from_id, to_id)
+        skip.append(('specificationfeedback', 'reviewer'))
+        skip.append(('specificationfeedback', 'requester'))
+
+        self._mergeSpecificationSubscription(cur, from_id, to_id)
+        skip.append(('specificationsubscription', 'person'))
+
+        self._mergeSprintAttendance(cur, from_id, to_id)
+        skip.append(('sprintattendance', 'attendee'))
+
+        self._mergePOSubscription(cur, from_id, to_id)
+        skip.append(('posubscription', 'person'))
+
+        self._mergePOExportRequest(cur, from_id, to_id)
+        skip.append(('poexportrequest', 'person'))
+
+        self._mergeTranslationMessage(cur, from_id, to_id)
+        skip.append(('translationmessage', 'submitter'))
+        skip.append(('translationmessage', 'reviewer'))
+
+        # Handle the POFileTranslator cache by doing nothing. As it is
+        # maintained by triggers, the data migration has already been done
+        # for us when we updated the source tables.
+        skip.append(('pofiletranslator', 'person'))
+
+        self._mergeTranslationImportQueueEntry(cur, from_id, to_id)
+        skip.append(('translationimportqueueentry', 'importer'))
+
+        # XXX cprov 2007-02-22 bug=87098:
+        # Since we only allow one PPA for each user,
+        # we can't reassign the old user archive to the new user.
+        # It need to be done manually, probably by reasinning all publications
+        # to the old PPA to the new one, performing a careful_publishing on it
+        # and removing the old one from disk.
+        skip.append(('archive', 'owner'))
+
+        self._mergeCodeReviewVote(cur, from_id, to_id)
+        skip.append(('codereviewvote', 'reviewer'))
+
+        self._mergeWebServiceBan(cur, from_id, to_id)
         skip.append(('webserviceban', 'person'))
 
         # Sanity check. If we have a reference that participates in a
@@ -3258,62 +3423,7 @@ class PersonSet:
                 src_tab, src_col, to_person.id, src_col, from_person.id
                 ))
 
-        # Transfer active team memberships
-        approved = TeamMembershipStatus.APPROVED
-        admin = TeamMembershipStatus.ADMIN
-        cur.execute(
-            'SELECT team, status FROM TeamMembership WHERE person = %s '
-            'AND status IN (%s,%s)'
-            % sqlvalues(from_person, approved, admin))
-        for team_id, status in cur.fetchall():
-            cur.execute('SELECT status FROM TeamMembership WHERE person = %s '
-                        'AND team = %s'
-                        % sqlvalues(to_person, team_id))
-            result = cur.fetchone()
-            if result:
-                current_status = result[0]
-                # Now we can safely delete from_person's membership record,
-                # because we know to_person has a membership entry for this
-                # team, so may only need to change its status.
-                cur.execute(
-                    'DELETE FROM TeamMembership WHERE person = %s '
-                    'AND team = %s' % sqlvalues(from_person, team_id))
-
-                if current_status == admin.value:
-                    # to_person is already an administrator of this team, no
-                    # need to do anything else.
-                    continue
-                # to_person is either an approved or an inactive member,
-                # while from_person is either admin or approved. That means we
-                # can safely set from_person's membership status on
-                # to_person's membership.
-                assert status in (approved.value, admin.value)
-                cur.execute(
-                    'UPDATE TeamMembership SET status = %s WHERE person = %s '
-                    'AND team = %s' % sqlvalues(status, to_person, team_id))
-            else:
-                # to_person is not a member of this team. just change
-                # from_person with to_person in the membership record.
-                cur.execute(
-                    'UPDATE TeamMembership SET person = %s WHERE person = %s '
-                    'AND team = %s'
-                    % sqlvalues(to_person, from_person, team_id))
-
-        cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
-                    'AND person != team' % sqlvalues(from_person))
-        for team_id in cur.fetchall():
-            cur.execute(
-                'SELECT team FROM TeamParticipation WHERE person = %s '
-                'AND team = %s' % sqlvalues(to_person, team_id))
-            if not cur.fetchone():
-                cur.execute(
-                    'UPDATE TeamParticipation SET person = %s WHERE '
-                    'person = %s AND team = %s'
-                    % sqlvalues(to_person, from_person, team_id))
-            else:
-                cur.execute(
-                    'DELETE FROM TeamParticipation WHERE person = %s AND '
-                    'team = %s' % sqlvalues(from_person, team_id))
+        self._mergeTeamMembership(cur, from_id, to_id)
 
         # Flag the person as merged
         cur.execute('''
@@ -3335,6 +3445,17 @@ class PersonSet:
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
+
+        # Inform the user of the merge changes.
+        if not to_person.isTeam():
+            mail_text = get_email_template('person-merged.txt')
+            mail_text = mail_text % {
+                'dupename': from_person.name,
+                'person': to_person.name,
+                }
+            subject = 'Launchpad accounts merged'
+            getUtility(IPersonNotificationSet).addNotification(
+                to_person, subject, mail_text)
 
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""

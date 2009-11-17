@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -7,7 +8,7 @@ import weakref
 
 from zope.interface import classProvides
 from zope.component import getUtility, queryAdapter
-from zope.component.interfaces import IView
+from zope.browser.interfaces import IView
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.security.interfaces import ISecurityPolicy

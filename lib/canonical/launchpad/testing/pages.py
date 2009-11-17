@@ -1,4 +1,5 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing infrastructure for page tests."""
 
@@ -10,18 +11,14 @@ __metaclass__ = type
 
 import os
 import pdb
+import pprint
 import re
 import transaction
 import sys
 import unittest
 
-# pprint25 is a copy of pprint.py from Python 2.5, which is almost
-# identical to that in 2.4 except that it resolves an ordering issue
-# which makes the 2.4 version unsuitable for use in a doctest.
-import pprint25
-
 from BeautifulSoup import (
-    BeautifulSoup, Comment, Declaration, NavigableString, PageElement,
+    BeautifulSoup, CData, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
 from urlparse import urljoin
@@ -57,13 +54,13 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
             del kw['debug']
         else:
             self._debug = False
-        super(UnstickyCookieHTTPCaller, self).__init__(*args, **kw)
+        HTTPCaller.__init__(self, *args, **kw)
 
     def __call__(self, *args, **kw):
         if self._debug:
             pdb.set_trace()
         try:
-            return super(UnstickyCookieHTTPCaller, self).__call__(*args, **kw)
+            return HTTPCaller.__call__(self, *args, **kw)
         finally:
             self.resetCookies()
 
@@ -76,8 +73,7 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
         if 'PATH_INFO' not in environment:
             environment = dict(environment)
             environment['PATH_INFO'] = path
-        return super(UnstickyCookieHTTPCaller, self).chooseRequestClass(
-            method, path, environment)
+        return HTTPCaller.chooseRequestClass(self, method, path, environment)
 
     def resetCookies(self):
         self.cookies = SimpleCookie()
@@ -86,10 +82,9 @@ class UnstickyCookieHTTPCaller(HTTPCaller):
 class LaunchpadWebServiceCaller(WebServiceCaller):
     """A class for making calls to Launchpad web services."""
 
-    base_url = 'http://api.launchpad.dev'
-
     def __init__(self, oauth_consumer_key=None, oauth_access_key=None,
-                 handle_errors=True, *args, **kwargs):
+                 handle_errors=True, domain='api.launchpad.dev',
+                 protocol='http'):
         """Create a LaunchpadWebServiceCaller.
         :param oauth_consumer_key: The OAuth consumer key to use.
         :param oauth_access_key: The OAuth access key to use for the request.
@@ -110,9 +105,7 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
             self.access_token = None
 
         self.handle_errors = handle_errors
-
-        # Set up a delegate to make the actual HTTP calls.
-        self.http_caller = UnstickyCookieHTTPCaller(*args, **kwargs)
+        WebServiceCaller.__init__(self, handle_errors, domain, protocol)
 
     def addHeadersTo(self, full_url, full_headers):
         if (self.consumer is not None and self.access_token is not None):
@@ -122,6 +115,8 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
             request.sign_request(OAuthSignatureMethod_PLAINTEXT(),
                                  self.consumer, self.access_token)
             full_headers.update(request.to_header(OAUTH_REALM))
+        if not self.handle_errors:
+            full_headers['X_Zope_handle_errors'] = 'False'
 
 
 def extract_url_parameter(url, parameter):
@@ -259,7 +254,8 @@ def print_table(content, columns=None, skip_rows=None, sep="\t"):
         for col_num, item in enumerate(row.findAll('td')):
             if columns is None or col_num in columns:
                 row_content.append(extract_text(item))
-        print sep.join(row_content)
+        if len(row_content) > 0:
+            print sep.join(row_content)
 
 def print_radio_button_field(content, name):
     """Find the input called field.name, and print a friendly representation.
@@ -341,6 +337,23 @@ def extract_text(content, extract_image_text=False, skip_tags=None):
         node = nodes.pop(0)
         if type(node) in IGNORED_ELEMENTS:
             continue
+        elif isinstance(node, CData):
+            # CData inherits from NavigableString which inherits from unicode,
+            # but contains a __unicode__() method that calls __str__() that
+            # wraps the contents in <![CDATA[...]]>.  In Python 2.4, calling
+            # unicode(cdata_instance) copies the data directly so the wrapping
+            # does not happen.  Python 2.5 changed the unicode() function (C
+            # function PyObject_Unicode) to call its operand's __unicode__()
+            # method, which ends up calling CData.__str__() and the wrapping
+            # happens.  We don't want our test output to have to deal with the
+            # <![CDATA[...]]> wrapper.
+            #
+            # The CData class does not override slicing though, so by slicing
+            # node first, we're effectively turning it into a concrete unicode
+            # instance, which does not wrap the contents when its __unicode__()
+            # is called of course.  We could remove the unicode() call
+            # here, but we keep it for consistency and clarity purposes.
+            result.append(unicode(node[:]))
         elif isinstance(node, NavigableString):
             result.append(unicode(node))
         else:
@@ -511,22 +524,23 @@ def print_location(contents):
     """Print the hierarchy, application tabs, and main heading of the page.
 
     The hierarchy shows your position in the Launchpad structure:
-    for example, Launchpad > Ubuntu > 8.04.
+    for example, Ubuntu > 8.04.
     The application tabs represent the major facets of an object:
     for example, Overview, Bugs, and Translations.
     The main heading is the first <h1> element in the page.
     """
     doc = find_tag_by_id(contents, 'document')
-    hierarchy = doc.find(attrs={'id': 'lp-hierarchy'}).findAll(
+    hierarchy = doc.find(attrs={'class': 'breadcrumbs'}).findAll(
         recursive=False)
     segments = [extract_text(step).encode('us-ascii', 'replace')
-                for step in hierarchy
-                if step.name != 'small']
-    # The first segment is spurious (used for styling), and the second
-    # contains only <img alt="Launchpad"> that extract_text() doesn't
-    # pick up. So we replace the first two elements with 'Launchpad':
-    segments = ['Launchpad'] + segments[2:]
-    print 'Hierarchy:', ' > '.join(segments)
+                for step in hierarchy]
+
+    if len(segments) == 0:
+        breadcrumbs = 'None displayed'
+    else:
+        breadcrumbs = ' > '.join(segments)
+
+    print 'Hierarchy:', breadcrumbs
     print 'Tabs:'
     print_location_apps(contents)
     main_heading = doc.h1
@@ -541,15 +555,26 @@ def print_location(contents):
 def print_location_apps(contents):
     """Print the application tabs' text and URL."""
     location_apps = find_tag_by_id(contents, 'lp-apps')
-    for tab in location_apps.findAll('span'):
-        tab_text = extract_text(tab)
-        if tab['class'].find('active') != -1:
-            tab_text += ' (selected)'
-        if tab.a:
-            link = tab.a['href']
-        else:
-            link = 'not linked'
-        print "* %s - %s" % (tab_text, link)
+    if location_apps is None:
+        location_apps = first_tag_by_class(contents, 'watermark-apps-portlet')
+        if location_apps is not None:
+            location_apps = location_apps.ul.findAll('li')
+    else:
+        location_apps = location_apps.findAll('span')
+    if location_apps is None:
+        print "(Application tabs omitted)"
+    elif len(location_apps) == 0:
+        print "(No application tabs)"
+    else:
+        for tab in location_apps:
+            tab_text = extract_text(tab)
+            if tab['class'].find('active') != -1:
+                tab_text += ' (selected)'
+            if tab.a:
+                link = tab.a['href']
+            else:
+                link = 'not linked'
+            print "* %s - %s" % (tab_text, link)
 
 
 def print_tag_with_id(contents, id):
@@ -606,8 +631,7 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     request_token.review(person, permission, context)
     access_token = request_token.createAccessToken()
     logout()
-    return LaunchpadWebServiceCaller(
-        consumer_key, access_token.key, port=9000)
+    return LaunchpadWebServiceCaller(consumer_key, access_token.key)
 
 
 def stop():
@@ -658,7 +682,7 @@ def setUpGlobs(test):
     test.globs['login_person'] = login_person
     test.globs['logout'] = logout
     test.globs['parse_relationship_section'] = parse_relationship_section
-    test.globs['pretty'] = pprint25.PrettyPrinter(width=1).pformat
+    test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
     test.globs['print_action_links'] = print_action_links
     test.globs['print_errors'] = print_errors
     test.globs['print_location'] = print_location

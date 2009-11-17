@@ -74,9 +74,9 @@ Create a helper function to print subscriptions:
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have subscribed Joe Smith to PPA for Celso Providelo.
-    If not already subscribed, Joe Smith will be notified of the
-    subscription via email.
+    You have granted access for Joe Smith to install software from
+    PPA for Celso Providelo. Joe Smith will be notified of the
+    access via email.
 
 
 === Scenario 2: A team is added as a subscriber ===
@@ -107,9 +107,9 @@ new subscriber.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have subscribed Launchpad Developers to PPA for Celso
-    Providelo. If not already subscribed, members of Launchpad Developers
-    will be notified of the subscription via email.
+    You have granted access for Launchpad Developers to install software
+    from PPA for Celso Providelo. Members of Launchpad Developers
+    will be notified of the access via email.
 
 == Story 2: An owner edits a subscription for his private archive ==
 
@@ -146,7 +146,7 @@ about the update.
     ...
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    The subscription for Launchpad Developers has been updated.
+    The access for Launchpad Developers has been updated.
 
 === Scenario 2: Canceling a subscription ===
 
@@ -176,7 +176,7 @@ cancellation is displayed.
 
     >>> for msg in get_feedback_messages(cprov_browser.contents):
     ...     print msg
-    You have cancelled Launchpad Developers's subscription to PPA
+    You have revoked Launchpad Developers's access to PPA
     for Celso Providelo.
 
 
@@ -210,12 +210,11 @@ access details.
     Custom sources.list entries
     ...
     deb http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to PPA
-        for Celso Providelo
+        YOUR_UBUNTU_VERSION_HERE main #Personal access of Joe Smith
+        to PPA for Celso Providelo
     deb-src http://joesmith:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to PPA
-        for Celso Providelo
-    ...
+        YOUR_UBUNTU_VERSION_HERE main #Personal access of Joe Smith
+        to PPA for Celso Providelo
 
 When Joe navigates back to his current archive subscriptions then the list of
 subscriptions reflects the confirmed subscription, providing a normal
@@ -228,7 +227,7 @@ link to view the details.
     PPA for Celso Providelo     View
     >>> joe_browser.getLink('View').click()
     >>> print(extract_text(joe_browser.contents))
-    Joe Smith's subscription to PPA for Celso Providelo...
+    Access to PPA for Celso Providelo...
 
 === Scenario 2: A user re-generates the token for a subscription ===
 
@@ -243,10 +242,10 @@ subscription is displayed.
     >>> regeneration_info = find_tag_by_id(
     ...     joe_browser.contents, 'regenerate_token')
     >>> print(extract_text(regeneration_info))
-    Password security
+    Reset password
     If you believe...
+    Reset password
     Note: after ...
-    Generate new password
 
 When Joe clicks on the 'Generate new personal subscription' link then
 the page is redisplayed with new sources.list entries and a notification.
@@ -255,7 +254,7 @@ the page is redisplayed with new sources.list entries and a notification.
     >>> for msg in get_feedback_messages(joe_browser.contents):
     ...     print msg
     Launchpad has generated the new password you requested for your
-    subscription to the archive PPA for Celso Providelo. Please
+    access to the archive PPA for Celso Providelo. Please
     follow the instructions below to update your custom "sources.list".
 
 
@@ -273,8 +272,8 @@ a user Mark who is a member of the Launchpad team,
     >>> logout()
     >>> login('foo.bar@canonical.com')
     >>> foobar = getUtility(IPersonSet).getByName('name16')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
-    >>> launchpad.addMember(sabdfl, foobar)
+    >>> mark = getUtility(IPersonSet).getByName('mark')
+    >>> launchpad.addMember(mark, foobar)
     >>> import transaction
     >>> transaction.commit()
     >>> logout()
@@ -283,9 +282,9 @@ When Mark, a member of the Launchpad team, visits his profile and clicks
 'View your private PPA subscriptions', then he'll see a list of his current
 subscriptions.
 
-    >>> mark_browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> mark_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> mark_browser.open(
-    ...     "http://launchpad.dev/~sabdfl")
+    ...     "http://launchpad.dev/~mark")
 
     >>> mark_browser.getLink('View your private PPA subscriptions').click()
     >>> print_subscriptions_for_person(mark_browser.contents)
@@ -301,27 +300,26 @@ access details are displayed.
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    deb http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Mark Shuttleworth
-        to PPA for Celso Providelo
-    deb-src http://sabdfl:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Mark Shuttleworth
-        to PPA for Celso Providelo
-    ...
+    deb http://mark:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
+        YOUR_UBUNTU_VERSION_HERE main #Personal access of
+        Mark Shuttleworth to PPA for Celso Providelo
+    deb-src http://mark:...@private-ppa.launchpad.dev/cprov/ppa/ubuntu
+        YOUR_UBUNTU_VERSION_HERE main #Personal access of
+        Mark Shuttleworth to PPA for Celso Providelo
 
 When Mark navigates back to his current archive subscriptions then the list of
 subscriptions reflects the confirmed subscription, providing a normal
 link to view the details.
 
     >>> mark_browser.open(
-    ...     "http://launchpad.dev/~sabdfl/+archivesubscriptions")
+    ...     "http://launchpad.dev/~mark/+archivesubscriptions")
     >>> print_subscriptions_for_person(mark_browser.contents)
     Archive
     PPA for Celso Providelo     View
 
     >>> mark_browser.getLink('View').click()
     >>> print(extract_text(mark_browser.contents))
-    Mark Shuttleworth's subscription to PPA for Celso Providelo...
+    Access to PPA for Celso Providelo...
 
 
 == Story 4: A user's subscription expires or is cancelled ==

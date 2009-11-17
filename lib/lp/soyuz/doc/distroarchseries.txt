@@ -145,7 +145,8 @@ publishing records with different (status, pocket, archive) in
 ubuntu/breezy-autotest/i386, which is empty:
 
     >>> from canonical.launchpad.interfaces import (
-    ...    IDistributionSet, IPersonSet, PackagePublishingPocket)
+    ...    IDistributionSet, IPersonSet)
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> from lp.soyuz.model.publishing import (
     ...     SecureBinaryPackagePublishingHistory)
 
@@ -352,3 +353,34 @@ alphabetically by 'architecturetag'.
     >>> print_architectures(hoary.enabled_architectures)
     The Hoary Hedgehog Release for hppa (hppa) (ppa)
     The Hoary Hedgehog Release for i386 (x86) (official, ppa)
+
+
+===========================
+DistroArchSeriesSet Methods
+===========================
+
+The `DistroArchSeriesSet` class provides a helper method
+getIdsForArchitectures() - not exposed through the `IDistroArchSeriesSet` 
+interface - which will filter an iterable of DistroArchSeries
+using an optional arch_tag and return a list of their IDs.
+
+    >>> architectures = [
+    ...     factory.makeDistroArchSeries(architecturetag='i986'),
+    ...     factory.makeDistroArchSeries(architecturetag='i986'),
+    ...     factory.makeDistroArchSeries(architecturetag='powerpc'),
+    ... ]
+    >>> from lp.soyuz.model.distroarchseries import DistroArchSeriesSet
+    >>> distroarchseries_set = DistroArchSeriesSet()
+
+    >>> arch_ids = distroarchseries_set.getIdsForArchitectures(architectures)
+    >>> len(arch_ids)
+    3
+    >>> isinstance(arch_ids[0], int)
+    True
+    >>> len(distroarchseries_set.getIdsForArchitectures(architectures,
+    ...                                                 arch_tag='i986'))
+    2
+    >>> len(distroarchseries_set.getIdsForArchitectures(architectures,
+    ...                                                 arch_tag='powerpc'))
+    1
+

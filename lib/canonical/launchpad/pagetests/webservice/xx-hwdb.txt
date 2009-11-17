@@ -37,6 +37,7 @@ A device entry provides the attributes bus_product_id, name and variant.
     ...     pprint_entry(entry)
     bus: u'System'
     bus_product_id: u'MS-7369'
+    classes_collection_link: u'.../+hwdb/+device/1/classes'
     drivers_collection_link: u'.../+hwdb/+device/1/drivers'
     id: 1
     name: u'MS-7369'
@@ -78,6 +79,7 @@ devices matching the given value are returned.
     ...     pprint_entry(entry)
     bus: u'System'
     bus_product_id: u'MS-7369'
+    classes_collection_link: u'.../+hwdb/+device/1/classes'
     drivers_collection_link: u'.../+hwdb/+device/1/drivers'
     id: 1
     name: u'MS-7369'
@@ -115,6 +117,7 @@ Single device records can be accessed too.
     >>> pprint_entry(device)
     bus: u'PCI'
     bus_product_id: u'0x0455'
+    classes_collection_link: u'.../+hwdb/+device/2/classes'
     drivers_collection_link: u'.../+hwdb/+device/2/drivers'
     id: 2
     name: u'MCP65 USB Controller'
@@ -163,6 +166,50 @@ HWDevice.drivers returns the list of drivers associtaed with this device.
     package_name: u'linux-image-2.6.24-19-generic'
     resource_type_link: u'http://api.launchpad.dev/beta/#h_w_driver'
     self_link: u'http://api.launchpad.dev/beta/+hwdb/+driver/2'
+
+We can add and retrieve class data, i.e., the type of a device (printer,
+scanner, sound device) for a device. Device 2 is a PCI USB controller,
+having the main PCI class 12 and sub-class 3. Let's add a new device
+class record for this device by calling device.getOrCreateDevice(). This
+call returns a reference to a HWDeviceClass record.
+
+    >>> class_info = webservice.named_post(
+    ...     '/+hwdb/+device/2', 'getOrCreateDeviceClass', {}, main_class=12,
+    ...     sub_class=3).jsonBody()
+    >>> pprint_entry(class_info)
+    main_class: 12
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device_class'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/1'
+    sub_class: 3
+
+A second call of this method returns the same record.
+
+    >>> class_info = webservice.named_post(
+    ...     '/+hwdb/+device/2', 'getOrCreateDeviceClass', {}, main_class=12,
+    ...     sub_class=3).jsonBody()
+    >>> print class_info['self_link']
+    http://api.launchpad.dev/beta/+hwdb/+deviceclass/1
+
+The property device.classes returns the collection of all classes
+assigned to the device.
+
+    >>> class_info = webservice.get('/+hwdb/+device/2/classes').jsonBody()
+    >>> for entry in class_info['entries']:
+    ...     pprint_entry(entry)
+    main_class: 12
+    resource_type_link: u'http://api.launchpad.dev/beta/#h_w_device_class'
+    self_link: u'http://api.launchpad.dev/beta/+hwdb/+deviceclass/1'
+    sub_class: 3
+
+We can delete existing class data by calling deviceclass.delete().
+
+    >>> print webservice.delete(class_info['entries'][0]['self_link'])
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> class_info = webservice.get('/+hwdb/+device/2/classes').jsonBody()
+    >>> print class_info['total_size']
+    0
 
 
 === Drivers and Driver Queries ===
@@ -490,7 +537,7 @@ for the contents of devices_collection_link.)
 Accessing the raw submission data yields a redirect to a Librarian URL.
 
     >>> print webservice.get(submission['raw_submission_link'])
-    HTTP/1.1 303 See Other
+    HTTP/1.1 303 See Other...
     Content-Length: 0
     Content-Type: text/plain
     Location: http://localhost:58000/92/sample-submission-2.xml
@@ -722,7 +769,7 @@ are stored in HWSubmission.devices.
 
 A vendor ID can be accessed by via its database ID.
 
-    >>> vendor_id = webservice.get('+hwdb/+hwvendorid/1').jsonBody()
+    >>> vendor_id = webservice.get('/+hwdb/+hwvendorid/1').jsonBody()
     >>> pprint_entry(vendor_id)
     bus: u'System'
     id: 1

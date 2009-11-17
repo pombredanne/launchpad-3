@@ -11,19 +11,22 @@ according the selected buildstate, by default All.
     ...
     ...     Check the presence of "build_state" selection widget via assertion.
     ...
-    ...     Check the presence of "Update" submit button via assertion.
+    ...     Check the presence of "Filter" submit button via assertion.
     ...
     ...     Return "State and Name present" if the page provide both parameters,
     ...     "State present, Name not present" if the page only permits browse
     ...     by state and "mismatch" if the page, erroneously,  provide only
     ...     part of the required arguments to enable filter by name.
     ...     """
-    ...     assert '<input type="submit" value="Update" />' in contents
+    ...     assert '<input type="submit" value="Filter" />' in contents
     ...
     ...     field_state = find_tag_by_id(contents, 'build_state') is not None
     ...     field_name = find_tag_by_id(contents, 'build_text') is not None
+    ...     field_arch = find_tag_by_id(contents, 'arch_tag') is not None
     ...
-    ...     if field_state and field_name:
+    ...     if field_state and field_name and field_arch:
+    ...         return "State, Arch and Name present"
+    ...     elif field_state and field_name:
     ...         return "State and Name present"
     ...     elif field_state and not field_name :
     ...         return "State present, Name not present"
@@ -37,34 +40,50 @@ For Distribution, it's possible to filter build results by state and name:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu")
     >>> anon_browser.getLink("Builds").click()
+    >>> print anon_browser.title
+    Ubuntu Linux builds...
+
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
 
-For Distrorelease, same as Distribution:
+For DistroSeries, an architecture filter is also presented:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary")
     >>> anon_browser.getLink("Show builds").click()
+    >>> print anon_browser.title
+    The Hoary Hedgehog Release builds...
+
     >>> print check_builds_options(anon_browser.contents)
-    State and Name present
+    State, Arch and Name present
 
 For DistroArchSeries, same as Distribution:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/hoary/i386")
     >>> anon_browser.getLink("Show builds").click()
+    >>> print anon_browser.title
+    The Hoary Hedgehog Release for i386 (x86) builds...
+
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
 
 For Builder, same as Distribution:
 
     >>> anon_browser.open("http://launchpad.dev/+builds/bob")
-    >>> anon_browser.getLink("Show build history").click()
+    >>> anon_browser.getLink("View full history").click()
+    >>> print anon_browser.title
+    Build history for “Bob...
+
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
 
 For Archive (PPA), same as Distribution:
 
-    >>> anon_browser.open("http://launchpad.dev/~cprov/+archive")
-    >>> anon_browser.getLink("View build records").click()
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/~cprov/+archive/+packages")
+    >>> anon_browser.getLink("View all builds").click()
+    >>> print anon_browser.title
+    Builds for PPA for Celso Providelo...
+
     >>> print check_builds_options(anon_browser.contents)
     State and Name present
 
@@ -73,6 +92,9 @@ For SourcePackage, it's only possible to filter by state.
     >>> anon_browser.open(
     ...   "http://launchpad.dev/ubuntu/hoary/+source/pmount")
     >>> anon_browser.getLink("Show builds").click()
+    >>> print anon_browser.title
+    Builds for ...pmount... in Hoary :...
+
     >>> print check_builds_options(anon_browser.contents)
     State present, Name not present
 
@@ -101,7 +123,7 @@ initialised' one (fix bug #52704).
    contain dependencies-line.
 
     >>> anon_browser.getControl(name="build_state").value = ['all']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
 
     >>> def print_build_rows(contents):
     ...     rule = 30 * '-'
@@ -168,7 +190,7 @@ initialised' one (fix bug #52704).
 Then anonymous user checks the results of some searches on build state.
 
     >>> anon_browser.getControl(name="build_state").value = ['built']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
     >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Successfully built
@@ -198,7 +220,7 @@ Then anonymous user checks the results of some searches on build state.
     ------------------------------
 
     >>> anon_browser.getControl(name="build_state").value = ['depwait']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
     >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Dependency wait
@@ -210,7 +232,7 @@ Then anonymous user checks the results of some searches on build state.
     ------------------------------
 
     >>> anon_browser.getControl(name="build_state").value = ['failed']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
     >>> print_build_rows(anon_browser.contents)
     ------------------------------
     Failed to build
@@ -272,7 +294,7 @@ job processed by this builder. The main difference for the other
 each record, since they were obviously built by the context builder.
 
     >>> anon_browser.open("http://launchpad.dev/+builds/bob")
-    >>> anon_browser.getLink("Show build history").click()
+    >>> anon_browser.getLink("View full history").click()
 
 In the first batch anonymous user can see successfully-built and
 failed-to-build builds.
@@ -370,7 +392,7 @@ from searches, helping the anonymous user to figure out exactly what
 was done before.
 
     >>> anon_browser.getControl(name="build_state").value = ['all']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
 
     >>> find_tag_by_id(
     ...     anon_browser.contents, 'no-default-result') is None
@@ -414,7 +436,7 @@ When he updates the page, the message for empty results changes to 'No
 matching builds'.
 
     >>> anon_browser.getControl(name="build_state").value = ['all']
-    >>> anon_browser.getControl("Update").click()
+    >>> anon_browser.getControl("Filter").click()
 
     >>> find_tag_by_id(anon_browser.contents, 'no-default-result') is None
     True
@@ -459,8 +481,9 @@ And also on the distro series builds page:
 == Upload status ==
 
 A (distro) source package release page shows any builds for that source and
-the status of the build.  If the build has been uploaded, then an upload
-status is shown in parentheses after the build status.
+the status of the build.  If the build has been uploaded but not yet
+processed, the upload 'status' is shown in parentheses after the build
+link.
 
     # Create testing source publications.
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
@@ -484,19 +507,9 @@ Such feature is visible when anonymous user access the
 
     >>> anon_browser.open(
     ...     "http://launchpad.dev/ubuntu/+source/testing/1.0")
-
-    >>> print_tag_with_id(anon_browser.contents, 'portlet-builds')
+    >>> print extract_text(find_portlet(anon_browser.contents, 'Builds'))
     Builds
-    warty    i386  Successfully built  (DONE)
-    warty    hppa  Successfully built  (DONE)
-
-More important than seeing '(DONE)' for builds with published
-binaries, the build upload status is useful to spot buildd which have
-binaries waiting for manual approval in the distroseries queue.
-
-We can simulate this scenario for the current build, so when the page
-is reloaded the user can see that the 'i386' build marked as
-'UNAPPROVED'.
+    Warty: hppa i386
 
     # Update the upload record for the i386 build so it looks like
     # it is pending approval.
@@ -507,7 +520,6 @@ is reloaded the user can see that the 'i386' build marked as
     >>> logout()
 
     >>> anon_browser.reload()
-    >>> print_tag_with_id(anon_browser.contents, 'portlet-builds')
+    >>> print extract_text(find_portlet(anon_browser.contents, 'Builds'))
     Builds
-    warty    i386  Successfully built  (UNAPPROVED)
-    warty    hppa  Successfully built  (DONE)
+    Warty: hppa i386 (Unapproved)

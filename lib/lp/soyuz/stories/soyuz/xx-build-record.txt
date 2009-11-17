@@ -1,592 +1,533 @@
-= Build Record UI =
+Build pages
+===========
 
+We start by creating a brand new build record and adjusting the
+sampledata builder.
 
-Relevant build details are listed in the page body.
+    >>> login('foo.bar@canonical.com')
 
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/9")
-    >>> build_details = extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
-
-The print_text function is required to present the contents
-of the build 9 page after it is filtered by 'extract_text', a simple
-'print' results in a UnicodeDecodeError. Note that the usual procedure
-works fine for build 10 (see below in 'Builds created by Gina' section).
-See further information about this issue in bug #69988.
-
-    >>> def print_text(text):
-    ...     print str(text)
-
-    >>> print_text(build_details)
-    Changes file: not available
-    Archive: ubuntu archive
-    Component: main
-    Status: Failed to build
-    Queued: 2005-10-01
-    Started: 2005-10-01
-    Builder: Bob The Builder
-    Build log: netapplet-1.0.0.tar.gz
-    Finished: 2005-10-02 (took 3 minutes, 20.0 seconds)
-
-The build page also has a section that gives librarian links to the
-files that were produced from the build.  For failed builds, there are
-no files:
-
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, "files"))
-    Files produced from build
-    No files produced
-
-For successful builds, files are listed and linked to the librarian:
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/29")
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, "files"))
-    Files produced from build
-    commercialpackage_1.0-1_i386.deb  (652 bytes)
-
-File links are `ProxiedLibrarianFile`s (via +files on the context build)
-so that if coming from the restricted librarian, they will be streamed via
-the appserver.
-
-    >>> print anon_browser.getLink("commercialpackage_1.0-1_i386.deb").url
-    http://.../+files/commercialpackage_1.0-1_i386.deb
-
-'Upload log' is only mentioned when it contains a reference to a
-library file and it only happens for FAILEDTOUPLOAD builds.
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/22")
-    >>> build_details = extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
-
-    >>> print_text(build_details)
-    Changes file: not available
-    Archive: ubuntu archive
-    Component: main
-    Status: Failed to upload
-    Queued: 2007-04-20
-    Started: 2007-04-19
-    Builder: Bob The Builder
-    Build log: netapplet-1.0.0.tar.gz
-    Upload log: upload_22_log.txt
-    Finished: 2007-04-20 (took 1 minute, 20.0 seconds)
-
-    >>> print anon_browser.getLink("upload_22_log.txt").url
-    http://.../upload_22_log.txt
-
-Let's also check a successfully built record.
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/30")
-    >>> build_details = extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
-    >>> print_text(build_details)
-    Changes file: not available
-    Archive: ubuntu archive
-    Component: main
-    Status: Successfully built
-    Queued: 2007-08-10
-    Started: 2007-08-10
-    Builder: Bob The Builder
-    Build log: netapplet-1.0.0.tar.gz
-    Finished: 2007-08-10 (took 13.0 seconds)
-
-Build records contain a portlet listing the resulting binaries. If the
-binaries have not yet been accepted then there will be an additional
-notice to that effect:
-
-    >>> binary_portlet = find_portlet(anon_browser.contents,
-    ...     'Resulting binaries')
-    >>> print extract_text(binary_portlet)
-    Resulting binaries
-    Binaries awaiting acceptance:
-    mozilla-firefox 0.9
-
-When the binaries have not yet been accepted, the binaries listed will
-not be links:
-
-    >>> anon_browser.getLink("mozilla-firefox 0.9").url
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-Next, we'll manually create a package upload record for our build that
-has been accepted:
-XXX: noodles 2009-01-16 bug 317863: move this into the STP.
-
-    >>> from lp.soyuz.model.queue import PackageUploadBuild
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> from lp.soyuz.interfaces.publishing import (
-    ...     PackagePublishingPocket)
+    >>> import datetime
     >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.soyuz.interfaces.builder import IBuilderSet
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
-    >>> login('foo.bar@canonical.com')
-    >>> build = getUtility(IBuildSet).getByBuildID(30)
-    >>> package_upload = build.distroseries.createQueueEntry(
-    ...     PackagePublishingPocket.UPDATES, 'changes.txt', 'my changes',
-    ...     build.archive)
-    >>> package_upload_build = PackageUploadBuild(
-    ...     packageupload =package_upload,
-    ...     build=build)
-    >>> package_upload.setDone()
+    # Create a new build record.
+    >>> stp = SoyuzTestPublisher()
+    >>> stp.prepareBreezyAutotest()
+    >>> source = stp.getPubSource(sourcename='testing', version='1.0')
+    >>> [build] = source.createMissingBuilds()
+
+    # Enable the sampledata builder.
+    >>> bob_builder = getUtility(IBuilderSet)['bob']
+    >>> bob_builder.builderok = True
+
+    # Set a known duration for the current job.
+    >>> in_progress_build = removeSecurityProxy(
+    ...     bob_builder.currentjob.build)
+    >>> one_minute = datetime.timedelta(seconds=60)
+    >>> in_progress_build.estimated_build_duration = one_minute
+
     >>> logout()
 
-After reloading the page:
+A `Build` record represents an attempt to build a specific source
+package in a `DistroArchSeries`. There is an individual page for each
+individual `Build`, and they can be accessed via the build-farm URL
+shortcut.
 
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/30")
+    >>> build_url = "http://launchpad.dev/builders/+build/%d" % build.id
 
-The binary portlet will now include the resulting binaries:
+Using the short-cut URL any user can promptly access the build
+page. It's title briefly describes the build.
 
-    >>> binary_portlet = find_portlet(anon_browser.contents,
-    ...     'Resulting binaries')
-    >>> print extract_text(binary_portlet)
-    Resulting binaries
-    mozilla-firefox 0.9
+    >>> anon_browser.open(build_url)
 
-And the binary name will be a link to the publishing record, which can
-be opened:
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> print backslashreplace(anon_browser.title)
+    \u201ctesting\u201d package : ubuntutest
 
-    >>> binary_link = anon_browser.getLink("mozilla-firefox 0.9")
-    >>> print binary_link.url
-    http://launchpad.dev/ubuntu/warty/hppa/mozilla-firefox/0.9
-    >>> binary_link.click()
-    >>> print anon_browser.url
-    http://launchpad.dev/ubuntu/warty/hppa/mozilla-firefox/0.9
+In the page body readers can see 2 sections, 'Build status' and 'Build
+details'.
 
-The user can see the estimated build start time field for each job
-still in the build queue.
+Since builds respect a fixed workflow (pending -> buiding ->
+built|failed), readers are mostly interested in their
+status. That's why this section comes first.
 
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/11")
-    >>> build_details = extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
-    >>> print_text(build_details)
-    Changes file: not available
-    Archive: ubuntu archive
+Besides 'status' readers can see, at a glance, the context and links
+to the build context, source package, archive, series, pocket and
+component.
+
+    >>> print extract_text(find_main_content(anon_browser.contents))
+    i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
+    ...
+    Build status
+    Needs building
+    Start in ... (2505) What's this?
+    Build details
+    Source: testing - 1.0
+    Archive: Primary Archive for Ubuntu Test
+    Series: Breezy Badger Autotest
+    Architecture: i386
+    Pocket: Release
     Component: main
-    Status: Needs building
-    Queued: 2006-02-14
-    Estimated build start: not available
-    Build score: 10 (What's this?)
-    Build log: not available
-    Finished: not available
 
-Users puzzled by the magic 'Build score' value can access a help page
-describing how it is calculated.
- 
-     >>> print anon_browser.getLink("What's this?").url
-     https://help.launchpad.net/Packaging/BuildScores
-    
+The 'Build details' section exists for all status and contains links
+to all the relevant entities involed in this build.
 
-== Build Retrying ==
+    >>> print anon_browser.getLink('testing - 1.0').url
+    http://launchpad.dev/ubuntutest/+source/testing/1.0
 
-In order to test build retrying action we have to make ubuntu/warty
-active for development.
+    >>> print anon_browser.getLink('Primary Archive for Ubuntu Test').url
+    http://launchpad.dev/ubuntutest/+archive/primary
 
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, DistroSeriesStatus)
-    >>> login('foo.bar@canonical.com')
-    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-    >>> warty = ubuntu['warty']
-    >>> warty.status = DistroSeriesStatus.DEVELOPMENT
-    >>> logout()
-    >>> import transaction
-    >>> transaction.commit()
+    >>> print anon_browser.getLink('Breezy Badger Autotest').url
+    http://launchpad.dev/ubuntutest/breezy-autotest
 
-With anonymous access, Retry Build link should not be there.
+    >>> print anon_browser.getLink('i386').url
+    http://launchpad.dev/ubuntutest/breezy-autotest/i386
 
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/9")
-    >>> anon_browser.getLink("Retry build")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
+Pending build records can be 'rescored', which will directly affect
+the time they will get started. A link to the corresponding help text
+about 'Build scores' is available.
 
-Even if accessed with a manually typed URL it will result in a error.
+    >>> print anon_browser.getLink("What's this").url
+    https://help.launchpad.net/Packaging/BuildScores
 
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/9/+retry")
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ...
+Adminstrators can rescore pending builds in a separate form.
 
-Users who have upload permissions for the respective distribution
-(but are not a member of an admin team) are allowed to retry the build.
-
-    >>> uploader_browser = setupBrowser(
-    ...     auth='Basic jeff.waugh@ubuntulinux.com:jdub')
-    >>> uploader_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/9")
-    >>> uploader_browser.getLink("Retry build").click()
-
-An unprivileged user (not a member of any team) has no access to the
-rebuild link however.
-
-    >>> noteam_browser = setupBrowser(
-    ...     auth="Basic no-team-memberships@test.com:test")
-    >>> noteam_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/9")
-    >>> noteam_browser.getLink("Retry build")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-If we grant the unprivileged user upload permissions for the specific
-source package, however, the build retry link becomes avaialable.
-
-Let's grant the package specific upload permissions first.
-
-    >>> from lp.soyuz.interfaces.archivepermission import (
-    ...     ArchivePermissionType)
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ISourcePackageNameSet)
-    >>> from lp.soyuz.model.archivepermission import ArchivePermission
-    >>> login('foo.bar@canonical.com')
-    >>> noteam_person = getUtility(IPersonSet).getByEmail(
-    ...     'no-team-memberships@test.com')
-    >>> pmount_name = getUtility(ISourcePackageNameSet)['pmount']
-    >>> discard = ArchivePermission(
-    ...     archive=ubuntu.main_archive, person=noteam_person,
-    ...     permission=ArchivePermissionType.UPLOAD,
-    ...     sourcepackagename=pmount_name, component=None)
-    >>> logout()
-    >>> transaction.commit()
-
-Now even the unprivileged user (not a member of any team) will have
-access to the rebuild link.
-
-    >>> noteam_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/9")
-    >>> noteam_browser.getLink("Retry build").click()
-
-When the user has permission (buildd-admin, admin or the source
-uploader) the link to 'retry' the build is presented in the Action
-menu.
-
-    >>> admin_browser.open(
-    ...     "http://launchpad.dev/+builds/+build/9")
-    >>> admin_browser.getLink("Retry build").click()
-
-The 'Retry Build' page contains a message explaining the consequences
-of this procedure.
-
-    >>> print_text(
-    ...     extract_text(find_main_content(admin_browser.contents)))
-    Retry i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-    The status of i386 build of pmount 0.1-1 in ubuntu warty RELEASE
-    is Failed to build.
-    Retrying this build will destroy its history and logs.
-    By default, this build will be retried only after other pending builds;
-    please contact a build daemon administrator if you need special
-    treatment.
-    Are you sure ?
-    or Cancel
-
-There is also the option to cancel the retry operation by clicking a
-link to take you back to the build page.
-
-    >>> print admin_browser.getLink("Cancel").url
-    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
-
-We'll also set up a second browser pointing at this page, for later.
-XXX: waiting for bug #68655's cloneBrowser function.
-
-    >>> admin_browser_2 = setupBrowser(auth="Basic foo.bar@canonical.com:test")
-    >>> admin_browser_2.open("http://launchpad.dev/+builds/+build/9")
-    >>> admin_browser_2.getLink("Retry build").click()
-
-Performing "Retry Build" with the first browser
-
-    >>> admin_browser.getControl("Retry Build").click()
-
-After submitting, the page is redirected back to the build page.
-
-    >>> print admin_browser.url
-    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
-
-    >>> get_feedback_messages(admin_browser.contents)
-    [u'Build record active']
-
-Now it's active again, the retry button and the link to the retry page
-are gone.
-
-    >>> admin_browser.getLink("Retry build")
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-The second browser has old content, so still has a retry build button.
-Clicking this should give a warning.
-
-    >>> admin_browser_2.getControl("Retry Build").click()
-    >>> get_feedback_messages(admin_browser_2.contents)
-    [u'Build can not be retried']
-
-
-== Build Rescoring ==
-
-Build rescoring feature (fixed bug #44227, we create build records
-when retrying a build, so there is no life-cycle for a pending build
-without buildqueue record anymore.)
-
-    >>> admin_browser.getLink("Rescore build").click()
-    >>> admin_browser.getControl("Priority").value = '100'
-    >>> admin_browser.getControl("Rescore").click()
-
-Once submitted, the 'rescore' form sends the user back the build page
-and renders a notification message indicating the operation was done.
-
-    >>> print admin_browser.url
-    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
-
-    >>> for text in get_feedback_messages(admin_browser.contents):
-    ...     print text
-    Build rescored to 100.
-
-Highest and lowest priorities.
-
-    >>> limit = 2 ** 31
-
-    >>> admin_browser.getLink("Rescore build").click()
-    >>> admin_browser.getControl("Priority").value = str(limit - 1)
-    >>> admin_browser.getControl("Rescore").click()
-    >>> for text in get_feedback_messages(admin_browser.contents):
-    ...     print text
-    Build rescored to 2147483647.
-
-    >>> admin_browser.getLink("Rescore build").click()
-    >>> admin_browser.getControl("Priority").value = str(0 - (limit - 1))
-    >>> admin_browser.getControl("Rescore").click()
-    >>> for text in get_feedback_messages(admin_browser.contents):
-    ...     print text
-    Build rescored to -2147483647.
-
-The user can 'cancel' the operation anytime and will be sent to the
-build context page.
-
-    >>> admin_browser.getLink("Rescore build").click()
-    >>> admin_browser.getLink("Cancel").click()
-    >>> print admin_browser.url
-    http://launchpad.dev/ubuntu/+source/pmount/0.1-1/+build/9
-
-The 'rescore' form checks the consistent of the new value given by the
-user.
-
-    >>> admin_browser.getLink("Rescore build").click()
-
-The given value must be a not empty 32-bits signed integer (bug #44240,
-#250490).
-
-    >>> admin_browser.getControl("Priority").value = 'foo'
-    >>> admin_browser.getControl("Rescore").click()
-    >>> for text in get_feedback_messages(admin_browser.contents):
-    ...     print text
-    There is 1 error.
-    Invalid integer data
-
-    >>> admin_browser.getControl("Priority").value = ''
-    >>> admin_browser.getControl("Rescore").click()
-    >>> for text in get_feedback_messages(admin_browser.contents):
-    ...     print text
-    There is 1 error.
-    Required input is missing.
-
-    >>> admin_browser.getControl("Priority").value = str(limit)
-    >>> admin_browser.getControl("Rescore").click()
-    >>> for text in get_feedback_messages(admin_browser.contents):
-    ...     print text
-    There is 1 error.
-    Value is too big
-
-And this form also handles direct attempts to rescore a build in the
-wrong state. The request is simply redirected to the build (context)
-page.
-
-    >>> admin_browser.open(
-    ...    "http://launchpad.dev/ubuntu/+source/netapplet/0.99.6-1/"
-    ...    "+build/13/+rescore")
-
-    >>> print admin_browser.url
-    http://launchpad.dev/ubuntu/+source/netapplet/0.99.6-1/+build/13
-
-
-== Builds created by Gina ==
-
-Gina, when importing packages from debian, is allowed to create build
-records to satisfy our DB model, however we don't populate most of the
-fields because they would not be accurate.
-
-    >>> anon_browser.open("http://launchpad.dev/+builds/+build/10")
-    >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'build-details'))
-    Changes file: not available
-    Archive: ubuntu archive
-    Component: main
-    Status: Successfully built
-    Queued: 2006-01-27
-    Started: not available
-    Builder: not available
-    Build log: not available
-    Finished: not available
-
-
-== Buildd Admins ==
-
-Check if buildd-celebrity is working as expected, try to access protected
-pages as cprov (launchpad-buildd-admins member). Not using the better login
-method here, as don't know the password.
-
-    >>> cprov_browser = setupBrowser(
-    ...       auth='Basic celso.providelo@canonical.com:cprov')
-    >>> cprov_browser.open("http://launchpad.dev/+builds/+build/12")
-    >>> cprov_browser.getLink("Retry build").click()
-    >>> cprov_browser.getControl("Retry Build").click()
-    >>> print extract_text(find_main_content(cprov_browser.contents))
-    Build record active
-    ...
-
-Allow Re-score:
-
-    >>> cprov_browser.getLink("Rescore build").click()
-    >>> cprov_browser.getControl("Priority").value = '100'
-    >>> cprov_browser.getControl("Rescore").click()
-    >>> for text in get_feedback_messages(cprov_browser.contents):
-    ...     print text
-    Build rescored to 100.
-
-
-=== Dealing with Builders ===
-
-Only buildd-celebrities are allowed to add/modify builders
-
-Adding new builder:
-
-    >>> cprov_browser.open("http://launchpad.dev/+builds/+new")
-
-Administration of a builder:
-
-    >>> cprov_browser.open("http://launchpad.dev/+builds/bob/+admin")
-
-Adding new builder still denied for non-members (Edgar, no membership):
-
-    >>> one_browser = setupBrowser(auth="Basic one-membership@test.com:test")
-    >>> one_browser.open("http://launchpad.dev/+builds/+new")
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
-Adding a new builder is also denied for anonymous:
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/+builds/+new")
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ...
-
-
-== PPA Builds ==
-
-While keeping the same permission scheme we have for ubuntu builds,
-i.e. that admins and lp-buildd-admins can modify them, PPA builds
-also grant those rights to the PPA owner.
-
-'anonymous' and 'normal users' (i.e. authenticated users not related to
-the archive) are not allowed to modify the build record.
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
-    >>> anon_browser.getLink('Retry build')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-    >>> one_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
-    >>> one_browser.getLink('Retry build')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-    >>> one_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24/+retry")
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24/+retry")
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ..., 'browserDefault', 'launchpad.Edit')
-
-Ensure 'admins' and 'lp-buildd-admins' (foo.bar is a member of
-lp-buildd-admins) have access for retrying PPA build.
-
-    >>> admin_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
-    >>> print_action_links(admin_browser.contents)
-    View PPA: http://launchpad.dev/~no-priv/+archive/ppa
-    View build records: http://launchpad.dev/~no-priv/+archive/ppa/+builds
-    Retry build: http://launchpad.dev/~no-priv/+archive/ppa/+build/24/+retry
-    Rescore build (disabled)
-
-    >>> user_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
-    >>> print_action_links(user_browser.contents)
-    View PPA: http://launchpad.dev/~no-priv/+archive/ppa
-    View build records: http://launchpad.dev/~no-priv/+archive/ppa/+builds
-    Retry build: http://launchpad.dev/~no-priv/+archive/ppa/+build/24/+retry
-    Rescore build (disabled)
-
-PPA build pages also have some text telling the viewer that they can retry
-the build if that action is possible:
-
-    >>> print extract_text(find_main_content(admin_browser.contents))
-    i386 build of cdrkit 1.0 in ubuntu warty RELEASE
-    You can retry this build if you think
-    the failure was transient. Be aware that the previous
-    build log and timestamps will be purged.
-    ...
-
-PPA owner can 'retry' a build.
-
-    >>> no_priv_browser = setupBrowser(auth="Basic no-priv@canonical.com:test")
-    >>> no_priv_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
-    >>> no_priv_browser.getLink('Retry build').click()
-    >>> no_priv_browser.getControl("Retry Build").click()
-    >>> print extract_text(find_main_content(no_priv_browser.contents))
-    Build record active
-    ...
-
-PPA owner may not re-score the build record. They could heavily mess
-with the PPA build ordering by having the ability to assign *any*
-enormous score value.
-
-    >>> no_priv_browser.getLink("Rescore build").click()
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-'admins' and 'lp-build-admins' are the only entities able to
-re-score PPA jobs:
-
-    >>> admin_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
+    >>> admin_browser.open(build_url)
     >>> admin_browser.getLink('Rescore build').click()
-    >>> admin_browser.getControl("Priority").value = '100'
+    >>> admin_browser.getControl("Priority").value = '0'
     >>> admin_browser.getControl("Rescore").click()
+
+Once submitted they are redirected to the build index page where the
+new 'score' value is presented.
+
     >>> for text in get_feedback_messages(admin_browser.contents):
     ...     print text
-    Build rescored to 100.
+    Build rescored to 0.
 
-    >>> cprov_browser.open(
-    ...    "http://launchpad.dev/ubuntu/+source/cdrkit/1.0/+build/24")
-    >>> cprov_browser.getLink('Rescore build').click()
-    >>> cprov_browser.getControl("Priority").value = '200'
-    >>> cprov_browser.getControl("Rescore").click()
-    >>> for text in get_feedback_messages(cprov_browser.contents):
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
+    Build status
+    Needs building
+    Start in ... (0) Rescore build What's this?
+
+Eventually a pending build record will get started, and while it's
+building the page will also contain a link to the builder where the
+source is being built and the last few lines of the build log
+messages.
+
+    # Reset the sampledata in-progress job and start the testing
+    # build with an known buildlog 'tail'.
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.database.constants import UTC_NOW
+    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> in_progress_build.buildstate = BuildStatus.NEEDSBUILD
+    >>> in_progress_build.buildqueue_record.buildstart = None
+    >>> in_progress_build.buildqueue_record.builder = None
+    >>> build.buildstate = BuildStatus.BUILDING
+    >>> build.buildqueue_record.buildstart = UTC_NOW
+    >>> build.buildqueue_record.builder = bob_builder
+    >>> build.buildqueue_record.logtail = 'one line\nanother line'
+    >>> logout()
+
+    >>> anon_browser.reload()
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'status'))
+    Build status
+    Currently building on Bob The Builder
+    Started ... ago
+
+    >>> print anon_browser.getLink('Bob The Builder').url
+    http://launchpad.dev/builders/bob
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'buildlog'))
+    Buildlog
+    one line
+    another line
+
+When accessed by logged in users, the build page renders the
+'buildlog' section with a timestamp at the bottom on the user
+timezone. This way they can easily find out if they are reading
+outdated information.
+
+    >>> user_browser.open(anon_browser.url)
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'buildlog'))
+    Buildlog
+    one line
+    another line
+    Updated on ...
+
+If the build procedure fails, the 'Build Status' section is augmented
+with links to the full 'buildlog' and optionally the failed
+'uploadlog' additionally to the instant when the process finished and
+how long it took.
+
+    # Mark the testing build as failed.
+    >>> login('foo.bar@canonical.com')
+    >>> build.buildqueue_record.destroySelf()
+    >>> build.buildstate = BuildStatus.FAILEDTOUPLOAD
+    >>> build.builder = bob_builder
+    >>> build.datebuilt = UTC_NOW
+    >>> build.buildduration = datetime.timedelta(minutes=1)
+    >>> build.buildlog = stp.addMockFile('fake-buildlog')
+    >>> build.upload_log = stp.addMockFile('fake-uploadlog')
+    >>> logout()
+
+    >>> anon_browser.reload()
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'status'))
+    Build status
+    Failed to upload on Bob The Builder
+    Started ... ago
+    Finished ... (took 1 minute, 0.0 seconds)
+    buildlog (7 bytes)
+    uploadlog (7 bytes)
+
+    >>> print anon_browser.getLink('Bob The Builder').url
+    http://launchpad.dev/builders/bob
+
+    >>> print anon_browser.getLink('buildlog').url
+    http://.../+build/31/+files/fake-buildlog
+
+    >>> print anon_browser.getLink('uploadlog').url
+    http://.../+build/31/+files/fake-uploadlog
+
+Note that the links to the logs points to their `ProxiedLibrarianFile`
+entry points, so users with permission can reach the files even if
+they are private.
+
+Administrators can retry failed builds using the 'retry' icon in the
+'Build Status' section.
+
+    >>> admin_browser.open(admin_browser.url)
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'status'))
+    Build status
+    Failed to upload on Bob The Builder Retry this build
+    Started ... ago
+    Finished ... (took 1 minute, 0.0 seconds)
+    buildlog (7 bytes)
+    uploadlog (7 bytes)
+
+    >>> print admin_browser.getLink('Retry this build').url
+    http://launchpad.dev/ubuntutest/+source/testing/1.0/+build/31/+retry
+
+By clicking on the 'Retry this build' link, administrators are informed of
+the consequences of this action.
+
+    >>> admin_browser.getLink('Retry this build').click()
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Retry i386 build of testing 1.0 in ubuntutest breezy-autotest RELEASE
+    ...
+    The status of i386 build of testing 1.0 in ubuntutest
+    breezy-autotest RELEASE is Failed to upload.
+    Retrying this build will destroy its history and logs.
+    By default, this build will be retried only after other pending
+    builds; please contact a build daemon administrator if you need
+    special treatment.
+    Are you sure ? or Cancel
+
+If cancelled, the form sends the user back to the build page, nothing
+is changed.
+
+    >>> admin_browser.getLink("Cancel").click()
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'status'))
+    Build status
+    Failed to upload on Bob The Builder Retry this build
+    Started ... ago
+    Finished ... (took 1 minute, 0.0 seconds)
+    buildlog (7 bytes)
+    uploadlog (7 bytes)
+
+The user is also sent back to the build page if the 'Retry' is
+performed, but then the failed build will be pending again and
+retrying the build is not a possibility anymore.
+
+    >>> admin_browser.getLink("Retry this build").click()
+    >>> admin_browser.getControl("Retry Build").click()
+    >>> for text in get_feedback_messages(admin_browser.contents):
     ...     print text
-    Build rescored to 200.
+    Build record active
+
+    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'status'))
+    Build status
+    Needs building
+    Start in ... (0) Rescore build What's this?
+
+    >>> admin_browser.getLink("Retry this build").click()
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+In the case of successfully built build records, additionally to the
+appropriate 'Build status' section the user will see 2 new sections,
+'Binary packages' and 'Built files'.
+
+    # Mark the testing build as FULLYBUILT and upload a corresponding
+    # binary package for it which will be awaiting for acceptance.
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> build.buildqueue_record.destroySelf()
+    >>> build.buildstate = BuildStatus.FULLYBUILT
+    >>> build.builder = bob_builder
+    >>> build.datebuilt = UTC_NOW
+    >>> build.buildduration = datetime.timedelta(minutes=1)
+    >>> build.buildlog = stp.addMockFile('fake-buildlog')
+    >>> build.upload_log = None
+    >>> binaries = stp.uploadBinaryForBuild(build, 'testing-bin')
+    >>> upload = stp.distroseries.createQueueEntry(
+    ...     PackagePublishingPocket.RELEASE,
+    ...     'testing_1.0_all.changes',
+    ...     'nothing-special',
+    ...     stp.distroseries.main_archive)
+    >>> unused = upload.addBuild(build)
+    >>> logout()
+
+    >>> anon_browser.reload()
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'status'))
+    Build status
+    Successfully built on Bob The Builder
+    Started on 2008-01-01
+    Finished on 2008-01-01 (took 5 minutes, 0.0 seconds)
+    buildlog (6 bytes)
+    testing_1.0_all.changes (15 bytes)
+
+    >>> print anon_browser.getLink('testing_1.0_all.changes').url
+    http://.../+build/31/+files/testing_1.0_all.changes
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    Binary packages
+    Binary packages awaiting approval in NEW queue:
+    testing-bin-1.0
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'files'))
+    Built files
+    Files resulting from this build:
+    testing-bin_1.0_all.deb (8 bytes)
+
+Since the binary is still 'awaiting approval', it is not
+linkified. That's because its `DistroArchSeriesBinaryPackageRelease`
+page does not exist yet.
+
+    >>> print anon_browser.getLink('testing-bin-1.0')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+On the other hand, users interested in testing the resulting binaries
+already have access to them.
+
+    >>> print anon_browser.getLink('testing-bin_1.0_all.deb').url
+    http://.../+build/31/+files/testing-bin_1.0_all.deb
+
+Again, note that the files are `ProxiedLibrarianFile` objects as well.
+
+Binary upload can also be awaiting approval in UNAPPROVED queue
+
+    # Accept the binary upload for the testing build.
+    >>> login('foo.bar@canonical.com')
+    >>> upload.setUnapproved()
+    >>> logout()
+
+    >>> anon_browser.open(anon_browser.url)
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    Binary packages
+    Binary packages awaiting approval in UNAPPROVED queue:
+    testing-bin-1.0
+
+    >>> print anon_browser.getLink('testing-bin-1.0')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> print anon_browser.getLink('testing-bin_1.0_all.deb').url
+    http://.../+build/31/+files/testing-bin_1.0_all.deb
+
+When new binaries are accepted by an archive administrator (See
+xx-queue-pages.txt) this condition is presented in the build page.
+
+    # Accept the binary upload for the testing build.
+    >>> login('foo.bar@canonical.com')
+    >>> upload.setAccepted()
+    >>> logout()
+
+    >>> anon_browser.open(anon_browser.url)
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    Binary packages
+    Binary packages awaiting publication:
+    testing-bin-1.0
+
+    >>> print anon_browser.getLink('testing-bin-1.0')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> print anon_browser.getLink('testing-bin_1.0_all.deb').url
+    http://.../+build/31/+files/testing-bin_1.0_all.deb
+
+Once the accepted binary upload is processed by the backend, the
+binary reference finally becomes a link to its corresponding page.
+
+    # Publish the binary upload for the testing build.
+    >>> login('foo.bar@canonical.com')
+    >>> unused = upload.realiseUpload()
+    >>> logout()
+
+    >>> anon_browser.open(anon_browser.url)
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    Binary packages
+    Binary packages produced by this build:
+    testing-bin 1.0
+
+    >>> print anon_browser.getLink('testing-bin 1.0').url
+    http://launchpad.dev/ubuntutest/breezy-autotest/i386/testing-bin/1.0
+
+
+PPA builds
+==========
+
+Build records for PPAs contain all the features and aspects decribed
+above. The only difference is that source and binary package
+references are not linkified, since PPAs do not allow users to
+navigate to packages.
+
+    # Create a PPA build.
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> ppa_source = stp.getPubSource(
+    ...     sourcename='ppa-test', version='1.0', archive=cprov.archive)
+    >>> ppa_binaries = stp.getPubBinaries(
+    ...     binaryname='ppa-test-bin', archive=cprov.archive,
+    ...     pub_source=ppa_source)
+    >>> [ppa_build] = ppa_source.getBuilds()
+    >>> ppa_build.builder = bob_builder
+    >>> ppa_build_url = (
+    ...     "http://launchpad.dev/builders/+build/%d" % ppa_build.id)
+    >>> logout()
+
+    >>> anon_browser.open(ppa_build_url)
+
+    >>> print anon_browser.title
+    PPA for Celso Providelo : Celso Providelo
+
+The 'Build status' section is identical for PPAs.
+
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'status'))
+    Build status
+    Successfully built on Bob The Builder
+    Started on ...
+    Finished on ... (took 5 minutes, 0.0 seconds)
+    buildlog (6 bytes)
+    ppa-test-bin_1.0_i386.changes (23 bytes)
+
+    >>> print anon_browser.getLink('Bob The Builder').url
+    http://launchpad.dev/builders/bob
+
+    >>> print anon_browser.getLink('buildlog').url
+    http://launchpad.dev/~cprov/+archive/ppa/+build/.../+files/buildlog_...
+
+    >>> print anon_browser.getLink('ppa-test-bin_1.0_i386.changes').url
+    http://.../+build/.../+files/ppa-test-bin_1.0_i386.changes
+
+'Build details', as mentioned above, doesn't link to the PPA source
+packages, since they do not exist.
+
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'details'))
+    Build details
+    Source: ppa-test - 1.0
+    Archive: PPA for Celso Providelo
+    Series: Breezy Badger Autotest
+    Architecture: i386
+    Pocket: Release
+    Component: main
+
+    >>> print anon_browser.getLink('ppa-test - 1.0').url
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+    >>> print anon_browser.getLink('PPA for Celso Providelo').url
+    http://launchpad.dev/~cprov/+archive/ppa
+
+    >>> print anon_browser.getLink('Breezy Badger Autotest').url
+    http://launchpad.dev/ubuntutest/breezy-autotest
+
+    >>> print anon_browser.getLink('i386', index=1).url
+    http://launchpad.dev/ubuntutest/breezy-autotest/i386
+
+Similarly, binary packages are not linkified in 'Binary packages'
+section for PPA builds.
+
+    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'binaries'))
+    Binary packages
+    Binary packages produced by this build:
+    ppa-test-bin-1.0
+
+    >>> print anon_browser.getLink('ppa-test-bin-1.0').url
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Finally, the 'Build files' section is identical for PPA builds.
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'files'))
+    Built files
+    Files resulting from this build:
+    ppa-test-bin_1.0_all.deb (18 bytes)
+
+    >>> print anon_browser.getLink('ppa-test-bin_1.0_all.deb').url
+    http://.../+build/.../+files/ppa-test-bin_1.0_all.deb
+
+
+Imported binaries builds
+========================
+
+Build for imported binaries despite of having no `PackageUpload`
+record always link to its binaries.
+
+    # Create a build for an imported binary.
+    >>> login('foo.bar@canonical.com')
+    >>> imported_source = stp.getPubSource(sourcename='imported')
+    >>> [imported_build] = imported_source.createMissingBuilds()
+    >>> unused_binaries = stp.uploadBinaryForBuild(
+    ...     imported_build, 'imported-bin')
+
+    >>> print imported_build.package_upload
+    None
+
+    >>> imported_build_url = (
+    ...     "http://launchpad.dev/builders/+build/%d" % imported_build.id)
+
+    >>> logout()
+
+    >>> anon_browser.open(imported_build_url)
+
+    >>> print backslashreplace(anon_browser.title)
+    \u201cimported\u201d package : ubuntutest
+
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'binaries'))
+    Binary packages
+    Binary packages produced by this build:
+    imported-bin 666
+
+    >>> print anon_browser.getLink('imported-bin 666').url
+    http://launchpad.dev/ubuntutest/breezy-autotest/i386/imported-bin/666

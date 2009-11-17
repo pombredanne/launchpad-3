@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213
 
 """Interface for objects that have a linked branch.
@@ -17,12 +19,25 @@ __all__ = [
     ]
 
 from zope.interface import Attribute, Interface
+from zope.security.proxy import isinstance as zope_isinstance
 
 
 class ICanHasLinkedBranch(Interface):
     """Something that has a linked branch."""
 
     branch = Attribute("The linked branch.")
+    bzr_path = Attribute(
+        'The Bazaar branch path for the linked branch. '
+        'Note that this will be set even if there is no linked branch.')
+
+    def setBranch(branch, registrant=None):
+        """Set the linked branch.
+
+        :param branch: An `IBranch`. After calling this,
+            `ICanHasLinkedBranch.branch` will be 'branch'.
+        :param registrant: The `IPerson` linking the branch. Not used by all
+            implementations.
+        """
 
 
 class CannotHaveLinkedBranch(Exception):
@@ -53,6 +68,10 @@ def get_linked_branch(provided):
     """
     has_linked_branch = ICanHasLinkedBranch(provided, None)
     if has_linked_branch is None:
+        if zope_isinstance(provided, tuple):
+            # Distroseries are returned as tuples containing distroseries and
+            # pocket.
+            provided = provided[0]
         raise CannotHaveLinkedBranch(provided)
     branch = has_linked_branch.branch
     if branch is None:

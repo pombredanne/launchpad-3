@@ -1,11 +1,20 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    xmlns:lp="http://namespaces.canonical.com/lp"
     i18n_domain="launchpad">
     <include
         package=".browser"/>
+
+    <lp:help-folder
+        folder="help" type="canonical.launchpad.layers.BugsLayer" />
+
     <class
         class="canonical.launchpad.database.BugActivity">
         <allow
@@ -19,9 +28,9 @@
     </securedutility>
     <facet
         facet="bugs"/>
-    
+
     <!-- Macros -->
-    
+
     <facet
         facet="bugs">
         <class
@@ -108,24 +117,24 @@
         <allow
             interface="lp.bugs.interfaces.malone.IMaloneApplication"/>
     </securedutility>
-    
+
     <!-- pages for the malone application -->
-    
+
     <xmlrpc:view
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         methods="filebug"
         class="canonical.launchpad.xmlrpc.FileBugAPI"
         permission="launchpad.AnyPerson"/>
-    
+
     <!-- Global Malone portlets -->
-    
-    
+
+
     <!-- Preserve the /bugs/assigned link to prevent linkrot. This will now
                                  redirect into the FOAF +assignedbugs. -->
 
-    
+
     <!-- BugTrackerPerson -->
-    
+
     <class
         class="lp.bugs.model.bugtrackerperson.BugTrackerPerson">
         <allow
@@ -140,9 +149,9 @@
                 sourcepackagename
                 bug_supervisor"/>
     </class>
-    
+
     <!-- CveReference -->
-    
+
     <class
         class="canonical.launchpad.database.CveReference">
         <allow
@@ -153,9 +162,9 @@
     </class>
     <facet
         facet="bugs">
-        
+
         <!-- IBugTask -->
-        
+
         <class
             class="canonical.launchpad.database.BugTask">
             <allow
@@ -225,10 +234,11 @@
                     transitionToImportance
                     transitionToStatus
                     transitionToAssignee
+                    transitionToMilestone
                     transitionToTarget"/>
-            
+
             <!-- XXX Brad Bollenbach 2006-09-29
-                             
+
     bug=63000:
                                 The permission checking for milestone and importance is further
                                 restricted in the browser view code (BugTaskEditView). -->
@@ -259,9 +269,17 @@
         <adapter
             factory="lp.bugs.browser.bugtask.assignee_renderer"
             name="assignee"/>
-        
+        <adapter
+            factory="lp.bugs.browser.bugtask.bugtarget_renderer"
+            name="target"/>
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.bugs.interfaces.bugtask.IBugTask"
+            factory="lp.bugs.browser.bugtask.BugTaskBreadcrumb"
+            permission="zope.Public"/>
+
         <!-- NullBugTask -->
-        
+
         <class
             class="lp.bugs.model.bugtask.NullBugTask">
             <require
@@ -271,9 +289,9 @@
                 permission="launchpad.Edit"
                 set_schema="lp.bugs.interfaces.bugtask.IBugTask"/>
         </class>
-        
+
         <!-- BugTaskSet -->
-        
+
         <class
             class="canonical.launchpad.database.BugTaskSet">
             <allow
@@ -287,9 +305,9 @@
             <allow
                 interface="lp.bugs.interfaces.bugtask.IBugTaskSet"/>
         </securedutility>
-        
+
         <!-- BugTaskDelta -->
-        
+
         <class
             class="lp.bugs.model.bugtask.BugTaskDelta">
             <allow
@@ -305,9 +323,9 @@
             permission="launchpad.Edit"
             set_schema="lp.bugs.interfaces.bugattachment.IBugAttachment"/>
     </class>
-    
+
     <!-- BugAttachmentSet -->
-    
+
     <class
         class="canonical.launchpad.database.BugAttachmentSet">
         <allow
@@ -321,9 +339,9 @@
     </securedutility>
     <facet
         facet="bugs">
-        
+
         <!-- BugTracker -->
-        
+
         <class
             class="canonical.launchpad.database.BugTracker">
             <implements
@@ -361,16 +379,17 @@
                 set_attributes="aliases baseurl bugtrackertype contactdetails                                                                                                         name owner summary title has_lp_plugin"/>
             <require
                 permission="launchpad.Admin"
+                attributes="resetWatches"
                 set_attributes="active"/>
         </class>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.bugs.interfaces.bugtracker.IBugTracker"
-            factory="lp.bugs.browser.bugtracker.BugTrackerBreadcrumbBuilder"
+            factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
             permission="zope.Public"/>
-        
+
         <!-- BugTrackerSet -->
-        
+
         <class
             class="canonical.launchpad.database.BugTrackerSet">
             <allow
@@ -382,9 +401,14 @@
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerSet"/>
         </securedutility>
-        
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.bugs.interfaces.bugtracker.IBugTrackerSet"
+            factory="lp.bugs.browser.bugtracker.BugTrackerSetBreadcrumb"
+            permission="zope.Public"/>
+
         <!-- BugTrackerAlias -->
-        
+
         <class
             class="canonical.launchpad.database.BugTrackerAlias">
             <allow
@@ -393,9 +417,9 @@
                 permission="zope.Public"
                 set_schema="lp.bugs.interfaces.bugtracker.IBugTrackerAlias"/>
         </class>
-        
+
         <!-- BugTrackerAliasSet -->
-        
+
         <class
             class="canonical.launchpad.database.BugTrackerAliasSet">
             <allow
@@ -407,18 +431,18 @@
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IBugTrackerAliasSet"/>
         </securedutility>
-        
+
         <!-- RemoteBug -->
-        
+
         <class
             class="lp.bugs.browser.bugtracker.RemoteBug">
             <allow
                 interface="lp.bugs.interfaces.bugtracker.IRemoteBug"/>
         </class>
     </facet>
-    
+
     <!-- IBugBranch -->
-    
+
     <class
         class="canonical.launchpad.database.BugBranch">
         <allow
@@ -433,15 +457,15 @@
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
         provides="canonical.launchpad.webapp.interfaces.IPrimaryContext"
         factory="lp.bugs.browser.bugbranch.BugBranchPrimaryContext"/>
-    
+
     <!-- hierarchy -->
-    
+
     <subscriber
         for="lp.bugs.interfaces.bugbranch.IBugBranch                                                lazr.lifecycle.interfaces.IObjectCreatedEvent"
         handler="canonical.launchpad.subscribers.karma.bug_branch_created"/>
-    
+
     <!-- BugBranchSet -->
-    
+
     <class
         class="canonical.launchpad.database.BugBranchSet">
         <allow
@@ -453,9 +477,9 @@
         <allow
             interface="lp.bugs.interfaces.bugbranch.IBugBranchSet"/>
     </securedutility>
-    
+
     <!-- BugCve -->
-    
+
     <class
         class="canonical.launchpad.database.BugCve">
         <allow
@@ -463,9 +487,9 @@
     </class>
     <facet
         facet="bugs">
-        
+
         <!-- CVE -->
-        
+
         <class
             class="canonical.launchpad.database.Cve">
             <allow
@@ -473,9 +497,9 @@
             <require
                 permission="launchpad.AnyPerson"
                 set_schema="lp.bugs.interfaces.cve.ICve"/>
-            
+
             <!-- IBugLinkTarget -->
-            
+
             <allow
                 attributes="
                     bugs
@@ -486,9 +510,9 @@
                     linkBug
                     unlinkBug"/>
         </class>
-        
+
         <!-- CveSet -->
-        
+
         <class
             class="canonical.launchpad.database.CveSet">
             <allow
@@ -501,9 +525,9 @@
                 interface="lp.bugs.interfaces.cve.ICveSet"/>
         </securedutility>
     </facet>
-    
+
     <!-- BugSubscription -->
-    
+
     <class
         class="canonical.launchpad.database.BugSubscription">
         <allow
@@ -513,36 +537,10 @@
             set_schema="lp.bugs.interfaces.bugsubscription.IBugSubscription"/>
     </class>
     <facet
-        facet="overview">
-        
-        <!-- MentoringOffer -->
-        
-        <class
-            class="canonical.launchpad.database.MentoringOffer">
-            <allow
-                interface="canonical.launchpad.interfaces.IMentoringOffer"/>
-        </class>
-        
-        <!-- IHasMentoringOffers -->
-        
-        
-        <!-- ICanBeMentored -->
-        
-        
-        <!-- MentoringOfferSet -->
-        
-        <securedutility
-            class="canonical.launchpad.database.MentoringOfferSet"
-            provides="canonical.launchpad.interfaces.IMentoringOfferSet">
-            <allow
-                interface="canonical.launchpad.interfaces.IMentoringOfferSet"/>
-        </securedutility>
-    </facet>
-    <facet
         facet="bugs">
-        
+
         <!-- Bug -->
-        
+
         <class
             class="canonical.launchpad.database.Bug">
             <implements
@@ -559,9 +557,12 @@
                     subscriptions
                     syncUpdate
                     date_last_updated
+                    getBugTask
                     getDirectSubscribers
                     getDirectSubscriptions
                     getIndirectSubscribers
+                    linkBranch
+                    unlinkBranch
                     mentoring_offers
                     canMentor
                     isMentor
@@ -589,7 +590,7 @@
                     displayname
                     activity
                     initial_message
-                    bug_branches
+                    linked_branches
                     watches
                     cves
                     cve_links
@@ -611,7 +612,6 @@
                     indexed_messages
                     getAlsoNotifiedSubscribers
                     getBugWatch
-                    getBugTask
                     canBeNominatedFor
                     getNominationFor
                     getNominations
@@ -642,8 +642,6 @@
                     findCvesInText
                     newMessage
                     linkMessage
-                    addBranch
-                    removeBranch
                     addAttachment
                     unsubscribeFromDupes
                     subscribe
@@ -677,9 +675,9 @@
         <adapter
             factory="lp.bugs.browser.bug.bug_description_xhtml_representation"
             name="description"/>
-        
+
         <!-- BugSet -->
-        
+
         <class
             class="canonical.launchpad.database.BugSet">
             <allow
@@ -691,18 +689,18 @@
             <allow
                 interface="lp.bugs.interfaces.bug.IBugSet"/>
         </securedutility>
-        
+
         <!-- BugDelta -->
-        
+
         <class
             class="lp.bugs.adapters.bugdelta.BugDelta">
             <allow
                 interface="lp.bugs.interfaces.bug.IBugDelta"/>
         </class>
     </facet>
-    
+
     <!-- BugMessage -->
-    
+
     <class
         class="canonical.launchpad.database.BugMessage">
         <allow
@@ -711,9 +709,9 @@
             permission="launchpad.Admin"
             set_attributes="remote_comment_id bugwatch visible"/>
     </class>
-    
+
     <!-- BugMessageSet -->
-    
+
     <class
         class="canonical.launchpad.database.BugMessageSet">
         <allow
@@ -783,9 +781,9 @@
         handler="lp.bugs.subscribers.bugactivity.record_bugsubscription_edited"/>
     <facet
         facet="bugs">
-        
+
         <!-- BugWatch -->
-        
+
         <class
             class="canonical.launchpad.database.BugWatch">
             <implements
@@ -825,12 +823,12 @@
                     updateStatus"
                 set_attributes="last_error_type lastchanged lastchecked needscheck                                                                                                 remote_importance remotestatus"/>
         </class>
-        
+
         <!-- https://launchpad.net/bugs/98639 -->
-        
-        
+
+
         <!--BugWatchSet -->
-        
+
         <class
             class="canonical.launchpad.database.BugWatchSet">
             <allow
@@ -887,4 +885,10 @@
         <allow
             interface="lp.bugs.interfaces.bugnotification.IBugNotificationSet"/>
     </securedutility>
+    <adapter
+        name="bugs"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.bugs.interfaces.bugtarget.IBugTarget"
+        factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
+        permission="zope.Public"/>
 </configure>

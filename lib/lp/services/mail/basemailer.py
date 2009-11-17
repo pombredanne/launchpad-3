@@ -1,4 +1,5 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Base class for sending out emails."""
 
@@ -6,12 +7,15 @@ __metaclass__ = type
 
 __all__ = ['BaseMailer']
 
+import logging
+from smtplib import SMTPException
 
 from canonical.launchpad.helpers import get_email_template
-from canonical.launchpad.mail import format_address, MailController
 from canonical.launchpad.mailout import text_delta
+
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
+from lp.services.mail.sendmail import format_address, MailController
 
 
 class BaseMailer:
@@ -25,7 +29,8 @@ class BaseMailer:
     """
 
     def __init__(self, subject, template_name, recipients, from_address,
-                 delta=None, message_id=None, notification_type=None):
+                 delta=None, message_id=None, notification_type=None,
+                 mail_controller_class=None):
         """Constructor.
 
         :param subject: A Python dict-replacement template for the subject
@@ -37,6 +42,8 @@ class BaseMailer:
             and "new_values", such as BranchMergeProposalDelta.
         :param message_id: The Message-Id to use for generated emails.  If
             not supplied, random message-ids will be used.
+        :param mail_controller_class: The class of the mail controller to
+            use to send the mails.  Defaults to `MailController`.
         """
         self._subject_template = subject
         self._template_name = template_name
@@ -47,19 +54,34 @@ class BaseMailer:
         self.delta = delta
         self.message_id = message_id
         self.notification_type = notification_type
+        self.logger = logging.getLogger('lp.services.mail.basemailer')
+        if mail_controller_class is None:
+            mail_controller_class = MailController
+        self._mail_controller_class = mail_controller_class
 
-    def generateEmail(self, email, recipient):
+    def _getToAddresses(self, recipient, email):
+        return [format_address(recipient.displayname, email)]
+
+    def generateEmail(self, email, recipient, force_no_attachments=False):
         """Generate the email for this recipient.
 
+        :param email: Email address of the recipient to send to.
+        :param recipient: The Person to send to.
         :return: (headers, subject, body) of the email.
         """
-        to_address = format_address(recipient.displayname, email)
+        to_addresses = self._getToAddresses(recipient, email)
         headers = self._getHeaders(email)
         subject = self._getSubject(email)
         body = self._getBody(email)
-        ctrl = MailController(
-            self.from_address, to_address, subject, body, headers)
-        self._addAttachments(ctrl)
+        ctrl = self._mail_controller_class(
+            self.from_address, to_addresses, subject, body, headers,
+            envelope_to=[email])
+        if force_no_attachments:
+            ctrl.addAttachment(
+                'Excessively large attachments removed.',
+                content_type='text/plain', inline=True)
+        else:
+            self._addAttachments(ctrl, email)
         return ctrl
 
     def _getSubject(self, email):
@@ -83,10 +105,12 @@ class BaseMailer:
             headers['Message-Id'] = self.message_id
         return headers
 
-    def _addAttachments(self, ctrl):
+    def _addAttachments(self, ctrl, email):
         """Add any appropriate attachments to a MailController.
 
         Default implementation does nothing.
+        :param ctrl: The MailController to add attachments to.
+        :param email: The email address of the recipient.
         """
         pass
 
@@ -110,6 +134,19 @@ class BaseMailer:
 
     def sendAll(self):
         """Send notifications to all recipients."""
+        # We never want SMTP errors to propagate from this function.
         for email, recipient in self._recipients.getRecipientPersons():
-            ctrl = self.generateEmail(email, recipient)
-            ctrl.send()
+            try:
+                ctrl = self.generateEmail(email, recipient)
+                ctrl.send()
+            except SMTPException, e:
+                # If the initial sending failed, try again without
+                # attachments.
+                try:
+                    ctrl = self.generateEmail(
+                        email, recipient, force_no_attachments=True)
+                    ctrl.send()
+                except SMTPException, e:
+                    # Don't want an entire stack trace, just some details.
+                    self.logger.warning(
+                        'send failed for %s, %s' % (email, e))

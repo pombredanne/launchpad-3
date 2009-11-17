@@ -12,15 +12,14 @@ Let's start by viewing the list of sprints registered.
   >>> user_browser.title
   'Meetings and sprints registered in Launchpad'
 
-  >>> soup = find_main_content(user_browser.contents)
-  >>> print soup('p')[0].string
-  <BLANKLINE>
-      Launchpad can help you organise your developer sprints, summits and
+  >>> print find_tag_by_id(user_browser.contents, 'application-summary')
+  <p ...
+      Launchpad can help you organize your developer sprints, summits and
       gatherings. Register the meeting here, then you can invite people to
       nominate blueprints for discussion at the event. The meeting drivers
       control the agenda, but everyone can see what's proposed and what's
       been accepted.
-  <BLANKLINE>
+  </p>
 
 Now lets have a look at one sprint in particular. We expect to have a sprint
 called "paris" in the sample data. Note that this list only shows meetings

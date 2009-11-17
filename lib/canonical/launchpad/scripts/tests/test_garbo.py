@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the database garbage collector."""
 
@@ -10,13 +11,16 @@ import time
 import unittest
 
 from pytz import UTC
-from storm.expr import Min
+from storm.expr import Min, SQL
 from storm.store import Store
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
-from lp.code.model.codeimportresult import CodeImportResult
 from canonical.config import config
+from canonical.database.constants import THIRTY_DAYS_AGO, UTC_NOW
+from canonical.launchpad.database.emailaddress import EmailAddress
+from canonical.launchpad.database.message import Message
 from canonical.launchpad.database.oauth import OAuthNonce
 from canonical.launchpad.database.openidconsumer import OpenIDConsumerNonce
 from canonical.launchpad.interfaces import IMasterStore
@@ -32,7 +36,11 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MASTER_FLAVOR)
 from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
-from lp.registry.interfaces.person import PersonCreationRationale
+from lp.bugs.model.bugnotification import (
+    BugNotification, BugNotificationRecipient)
+from lp.code.model.codeimportresult import CodeImportResult
+from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
+from lp.registry.model.person import Person
 
 
 class TestGarboScript(TestCase):
@@ -64,19 +72,21 @@ class TestGarbo(TestCaseWithFactory):
         self.runDaily()
         self.runHourly()
 
-    def runDaily(self, maximum_chunk_size=2):
+    def runDaily(self, maximum_chunk_size=2, test_args=()):
         LaunchpadZopelessLayer.switchDbUser('garbo_daily')
-        collector = DailyDatabaseGarbageCollector(test_args=[])
+        collector = DailyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
+        return collector
 
-    def runHourly(self, maximum_chunk_size=2):
+    def runHourly(self, maximum_chunk_size=2, test_args=()):
         LaunchpadZopelessLayer.switchDbUser('garbo_hourly')
-        collector = HourlyDatabaseGarbageCollector(test_args=[])
+        collector = HourlyDatabaseGarbageCollector(test_args=list(test_args))
         collector._maximum_chunk_size = maximum_chunk_size
         collector.logger = QuietFakeLogger()
         collector.main()
+        return collector
 
     def test_OAuthNoncePruner(self):
         now = datetime.utcnow().replace(tzinfo=UTC)
@@ -364,6 +374,141 @@ class TestGarbo(TestCaseWithFactory):
         transaction.commit()
         self.runDaily()
         self.assertEqual(mailing_list.getSubscription(person), None)
+
+    def test_PersonPruner(self):
+        personset = getUtility(IPersonSet)
+        # Switch the DB user because the garbo_daily user isn't allowed to
+        # create person entries.
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        # Create two new person entries, both not linked to anything. One of
+        # them will have the present day as its date created, and so will not
+        # be deleted, whereas the other will have a creation date far in the
+        # past, so it will be deleted.
+        person = self.factory.makePerson(name='test-unlinked-person-new')
+        person_old = self.factory.makePerson(name='test-unlinked-person-old')
+        removeSecurityProxy(person_old).datecreated = datetime(
+            2008, 01, 01, tzinfo=UTC)
+        transaction.commit()
+
+        # Normally, the garbage collector will do nothing because the
+        # PersonPruner is experimental
+        self.runDaily()
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-new'), None)
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-old'), None)
+
+        # When we run the garbage collector with experimental jobs turned
+        # on, the old unlinked Person is removed.
+        self.runDaily(test_args=['--experimental'])
+        self.assertIsNot(
+            personset.getByName('test-unlinked-person-new'), None)
+        self.assertIs(personset.getByName('test-unlinked-person-old'), None)
+
+    def test_BugNotificationPruner(self):
+        # Create some sample data
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        notification = BugNotification(
+            messageID=1,
+            bugID=1,
+            is_comment=True,
+            date_emailed=None)
+        recipient = BugNotificationRecipient(
+            bug_notification=notification,
+            personID=1,
+            reason_header='Whatever',
+            reason_body='Whatever')
+        # We don't create an entry exactly 30 days old to avoid
+        # races in the test.
+        for delta in range(-45, -14, 2):
+            message = Message(rfc822msgid=str(delta))
+            notification = BugNotification(
+                message=message,
+                bugID=1,
+                is_comment=True,
+                date_emailed=UTC_NOW + SQL("interval '%d days'" % delta))
+            recipient = BugNotificationRecipient(
+                bug_notification=notification,
+                personID=1,
+                reason_header='Whatever',
+                reason_body='Whatever')
+
+        store = IMasterStore(BugNotification)
+
+        # Ensure we are at a known starting point.
+        num_unsent = store.find(
+            BugNotification,
+            BugNotification.date_emailed == None).count()
+        num_old = store.find(
+            BugNotification,
+            BugNotification.date_emailed < THIRTY_DAYS_AGO).count()
+        num_new = store.find(
+            BugNotification,
+            BugNotification.date_emailed > THIRTY_DAYS_AGO).count()
+
+        self.assertEqual(num_unsent, 1)
+        self.assertEqual(num_old, 8)
+        self.assertEqual(num_new, 8)
+
+        # Run the garbage collector.
+        transaction.commit()
+        self.runDaily()
+
+        # We should have 9 BugNotifications left.
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed == None).count(),
+            num_unsent)
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed > THIRTY_DAYS_AGO).count(),
+            num_new)
+        self.assertEqual(
+            store.find(
+                BugNotification,
+                BugNotification.date_emailed < THIRTY_DAYS_AGO).count(),
+            0)
+
+    def test_PersonEmailAddressLinkChecker(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+        # Make an EmailAddress record reference a non-existant Person.
+        emailaddress = IMasterStore(EmailAddress).get(EmailAddress, 16)
+        emailaddress.personID = -1
+
+        # Make a Person record reference a different Account to its
+        # EmailAddress records.
+        person = IMasterStore(Person).get(Person, 1)
+        person_email = Store.of(person).find(
+            EmailAddress, person=person).any()
+        person.accountID = -1
+
+        transaction.commit()
+
+        # Run the garbage collector. We should get two ERROR reports
+        # about the corrupt data.
+        collector = self.runDaily()
+
+        # The PersonEmailAddressLinkChecker is not intelligent enough
+        # to repair corruption. It is only there to alert us to the
+        # issue so data can be manually repaired and the cause
+        # tracked down and fixed.
+        self.assertEqual(emailaddress.personID, -1)
+        self.assertNotEqual(person.accountID, person_email.accountID)
+
+        # The corruption has been reported though as a ERROR messages.
+        log_output = collector.logger.output_file.getvalue()
+        error_message_1 = (
+            "ERROR Corruption - "
+            "'test@canonical.com' is linked to a non-existant Person.")
+        self.assertNotEqual(log_output.find(error_message_1), -1)
+        error_message_2 = (
+            "ERROR Corruption - "
+            "'mark@example.com' and 'mark' reference different Accounts")
+        self.assertNotEqual(log_output.find(error_message_2), -1)
 
 
 def test_suite():

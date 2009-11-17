@@ -1,10 +1,12 @@
-#!/usr/bin/python2.4
-# Copyright 2006 Canonical Ltd.  All rights reserved.
-
-import logging
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0403
 import _pythonpath
+
+import logging
 
 from zope.component import getUtility
 from canonical.config import config

@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Script to save list of country mirrors for in text files.
 
@@ -8,11 +10,11 @@ named like cc.txt (where cc is the two letter country code),
 containing the archive mirrors for that country.
 """
 
-import os
-import tempfile
-
 # pylint: disable-msg=W0403
 import _pythonpath
+
+import os
+import tempfile
 
 from zope.component import getUtility
 

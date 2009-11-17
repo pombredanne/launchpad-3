@@ -18,8 +18,8 @@ let's use 'pmount' sources.
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> pmount = ubuntu.getSourcePackage('pmount')
 
-    >>> pmount_from = pmount['0.1-1'].sourcepackagerelease
-    >>> pmount_to = pmount['0.1-2'].sourcepackagerelease
+    >>> pmount_from = pmount.getVersion('0.1-1').sourcepackagerelease
+    >>> pmount_to = pmount.getVersion('0.1-2').sourcepackagerelease
 
 A packageDiff can be created from the two packages by calling
 requestDiffTo(). It takes two arguments: the user requesting the
@@ -670,6 +670,32 @@ FAILED request (empty 'diff_content' and 'date_fullfilled').
 
     >>> print broken_diff.diff_content
     None
+
+
+== Problematic packages ==
+
+XXX 2009-11-23 Julian bug=314436
+Because of bug 314436, diffs of udev can generate huge output which fills the
+disk very quickly.  For that reason, diffs of udev are created FAILED by
+default, which will stop the diff script from attempting to create the diff.
+
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> stp = SoyuzTestPublisher()
+    >>> discard = stp.setUpDefaultDistroSeries(hoary)
+    >>> udev_orig = stp.getPubSource(
+    ...     sourcename="udev", version="1.0",
+    ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> udev_new = stp.getPubSource(
+    ...     sourcename="udev", version="1.1",
+    ...     status=PackagePublishingStatus.PENDING)
+
+    >>> udev_diff = udev_orig.sourcepackagerelease.requestDiffTo(
+    ...     requester=cprov,
+    ...     to_sourcepackagerelease=udev_new.sourcepackagerelease)
+
+    >>> print udev_diff.status.name
+    FAILED
 
 
 == PackageDiff privacy ==

@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0702
 
 """Logging setup for scripts.
@@ -61,10 +63,21 @@ logging.addLevelName(DEBUG9, 'DEBUG9')
 
 
 class FakeLogger:
-    """Emulates a proper logger, just printing everything out to stdout.
-    Used exclusively in doc tests."""
-    def message(self, prefix, *stuff, **kw):
-        print prefix, ' '.join(stuff)
+    """Emulates a proper logger, just printing everything out the given file.
+    """
+    def __init__(self, output_file=None):
+        """The default output_file is sys.stdout."""
+        self.output_file = output_file
+
+    def message(self, prefix, msg, *stuff, **kw):
+        # We handle the default output file here because sys.stdout
+        # might have been reassigned. Between now and when this object
+        # was instantiated.
+        if self.output_file is None:
+            output_file = sys.stdout
+        else:
+            output_file = self.output_file
+        print >> output_file, prefix, msg % stuff
 
         if 'exc_info' in kw:
             exception = traceback.format_exception(*sys.exc_info())
@@ -100,10 +113,11 @@ class FakeLogger:
 class QuietFakeLogger(FakeLogger):
     """Extra quiet FakeLogger.
 
-    Does not print any message.
+    Does not print any message. Messages can be retrieved from
+    logger.output_file, which is a StringIO instance.
     """
-    def message(self, prefix, *stuff, **kw):
-        pass
+    def __init__(self):
+        self.output_file = StringIO()
 
 
 class BufferLogger(FakeLogger):
@@ -111,8 +125,8 @@ class BufferLogger(FakeLogger):
     def __init__(self):
         self.buffer = StringIO()
 
-    def message(self, prefix, *stuff, **kw):
-        self.buffer.write('%s: %s\n' % (prefix, ' '.join(stuff)))
+    def message(self, prefix, msg, *stuff, **kw):
+        self.buffer.write('%s: %s\n' % (prefix, msg % stuff))
 
         if 'exc_info' in kw:
             exception = traceback.format_exception(*sys.exc_info())
@@ -149,7 +163,7 @@ class LibrarianFormatter(logging.Formatter):
         except:
             pass
         if not exception_string:
-            exception_string = str(ei[0]).split('.')[-1]
+            exception_string = ei[0].__name__
 
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:

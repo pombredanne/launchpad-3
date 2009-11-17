@@ -5,8 +5,9 @@ in which you think the bug occurrs, or say "I don't know".
 The default on the distribution +filebug page is "I don't know". We
 will use the advanced filebug form to skip searching for dupes.
 
-    >>> user_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+filebug-advanced")
+    >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
+    >>> user_browser.getControl('Summary').value = 'Bug Summary'
+    >>> user_browser.getControl('Continue').click()
 
     >>> print user_browser.getControl(name="packagename_option").value
     ['none']
@@ -17,12 +18,11 @@ the bug summary and description are required.
     >>> user_browser.getControl("Submit Bug Report").click()
 
     >>> print user_browser.url
-    http://launchpad.dev/ubuntu/+filebug-advanced
+    http://launchpad.dev/ubuntu/+filebug
 
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
-    There are 2 errors.
-    Required input is missing.
+    There is 1 error.
     Required input is missing.
 
 ("I don't know" remains selected.)
@@ -37,7 +37,7 @@ you're returned to the page, with the "choose" radio button selected.
     >>> user_browser.getControl("Submit Bug Report").click()
 
     >>> user_browser.url
-    'http://launchpad.dev/ubuntu/+filebug-advanced'
+    'http://launchpad.dev/ubuntu/+filebug'
 
     >>> print user_browser.getControl(name="packagename_option").value
     ['choose']
@@ -45,8 +45,9 @@ you're returned to the page, with the "choose" radio button selected.
 On the package +filebug page, the package name is populated by default.
 
     >>> user_browser.open(
-    ...     "http://launchpad.dev/ubuntu/+source/mozilla-firefox/"
-    ...     "+filebug-advanced")
+    ...     "http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug")
+    >>> user_browser.getControl('Summary').value = 'Bug Summary'
+    >>> user_browser.getControl('Continue').click()
 
     >>> print user_browser.getControl(name="packagename_option").value
     ['choose']

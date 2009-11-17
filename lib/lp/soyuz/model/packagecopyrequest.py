@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = ['PackageCopyRequest', 'PackageCopyRequestSet']
@@ -11,7 +12,7 @@ from zope.interface import implements
 from canonical.database.constants import UTC_NOW
 from lp.soyuz.interfaces.packagecopyrequest import (
     PackageCopyStatus, IPackageCopyRequest, IPackageCopyRequestSet)
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)

@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions/classes for Soyuz tests."""
 
@@ -16,8 +17,10 @@ from lp.soyuz.model.publishing import (
 from canonical.launchpad.ftests import syncUpdate
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+
+
 class SoyuzTestHelper:
     """Helper class to support easier tests in Soyuz component."""
 

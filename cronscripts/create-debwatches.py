@@ -1,6 +1,8 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
-# Copyright 2005-2009 Canonical Ltd.  All rights reserved.
 # pylint: disable-msg=C0103,W0403
 
 # This script aims to ensure that there is a Malone watch on Debian bugs
@@ -9,9 +11,9 @@
 
 __metaclass__ = type
 
+import _pythonpath
 import os
 import logging
-import _pythonpath
 
 # zope bits
 from zope.component import getUtility

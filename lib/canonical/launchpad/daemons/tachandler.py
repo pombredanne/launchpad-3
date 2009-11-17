@@ -1,6 +1,8 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test harness for TAC (Twisted Application Configuration) files.
 """
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -58,11 +60,11 @@ class TacTestSetup:
             raise TacException('Error %d running %s' % (rv, args))
 
         # Wait for the daemon to fully start (as determined by watching the
-        # log file). If it takes more than 10 seconds, we assume it's gone
+        # log file). If it takes more than 20 seconds, we assume it's gone
         # wrong, and raise TacException.
         start = time.time()
         while True:
-            if time.time() > start + 10:
+            if time.time() > start + 20:
                 raise TacException(
                     'Unable to start %s. Check %s.'
                     % (self.tacfile, self.logfile))

@@ -2,8 +2,10 @@ When filing a private security bug upstream, with no upstream bug
 contact, the maintainer will be subscribed to the bug instead.
 
     >>> browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
-    >>> browser.open(
-    ...     "http://localhost:9000/firefox/+filebug-advanced")
+    >>> browser.open("http://localhost:9000/firefox/+filebug")
+    >>> browser.getControl('Summary').value = (
+    ...     "this is a newly created private bug")
+    >>> browser.getControl("Continue").click()
 
     >>> print browser.contents
     <!DOCTYPE...
@@ -68,19 +70,19 @@ subscribed instead.
 
     >>> browser.open("http://launchpad.dev/firefox/+securitycontact")
 
-    >>> browser.getControl("Security Contact").value = "sabdfl"
+    >>> browser.getControl("Security Contact").value = "mark"
     >>> browser.getControl("Change").click()
 
-    >>> browser.open(
-    ...     "http://localhost:9000/firefox/+filebug-advanced")
+    >>> browser.open("http://localhost:9000/firefox/+filebug")
+    >>> browser.getControl('Summary').value = (
+    ...     "this is a newly created private bug")
+    >>> browser.getControl("Continue").click()
 
     >>> print browser.contents
     <!DOCTYPE...
     ...The security contact for...Mozilla Firefox...Mark Shuttleworth...will be notified...
     ...
 
-    >>> browser.getControl(name="field.title").value = (
-    ...     "this is a newly created private bug")
     >>> browser.getControl(name="field.comment").value = (
     ...     "very secret info here")
     >>> browser.getControl(
@@ -97,7 +99,7 @@ subscribed instead.
     >>> bug = getUtility(IBugSet).get(other_bug_id)
 
     >>> sorted(subscriber.name for subscriber in bug.getDirectSubscribers())
-    [u'name16', u'sabdfl']
+    [u'mark', u'name16']
 
     >>> logout()
 

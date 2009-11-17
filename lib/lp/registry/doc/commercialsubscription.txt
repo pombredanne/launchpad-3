@@ -38,7 +38,7 @@ testing consistency, let's force the start and expiry dates to a known
 date and use a known time as the current time.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import date, datetime, timedelta
     >>> from pytz import UTC
     >>> now = datetime(2008, 1, 10, tzinfo=UTC)
     >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
@@ -437,18 +437,19 @@ was created.
 
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
-    ...     created_after=bzr.datecreated, created_before=bzr.datecreated):
+    ...     created_after=bzr.datecreated,
+    ...     created_before=bzr.datecreated):
     ...     print product.name
     bzr
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     created_before=bzr.datecreated-timedelta(seconds=1)):
     ...     print product.name
-    >>> date_expires = bzr.commercial_subscription.date_expires
 
 You can search for products based on the expiration date of
 its commercial subscription.
 
+    >>> date_expires = bzr.commercial_subscription.date_expires
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     subscription_expires_after=date_expires,
@@ -459,12 +460,39 @@ its commercial subscription.
     ...     search_text='bzr',
     ...     subscription_expires_after=date_expires+timedelta(seconds=1)):
     ...     print product.name
-    >>> date_last_modified = bzr.commercial_subscription.date_last_modified
+
+You can also search using a datetime.date object, since that is what
+the web form delivers.
+
+    >>> one_day = timedelta(days=1)
+    >>> date_expires = date_expires.date()
+    >>> early_date = date(1980, 1, 1)
+    >>> late_date = date_expires + timedelta(days=365 * 100)
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=date_expires,
+    ...     subscription_expires_before=date_expires + one_day,
+    ...     created_after=early_date,
+    ...     created_before=late_date,
+    ...     subscription_modified_after=early_date,
+    ...     subscription_modified_before=late_date):
+    ...     print product.name
+    bzr
+
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=bzr.datecreated.date(),
+    ...     created_before=bzr.datecreated.date() + one_day):
+    ...     print product.name
+    bzr
+
+
 
 You can search for products based on the date of that
 its commercial subscription was modified, which only
 happens when a voucher is redeemed.
 
+    >>> date_last_modified = bzr.commercial_subscription.date_last_modified
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     subscription_modified_after=date_last_modified,
@@ -479,7 +507,7 @@ happens when a voucher is redeemed.
 
 All the products are returned when no parameters are passed in.
 
-    >>> from canonical.launchpad.database import Product
+    >>> from lp.registry.model.product import Product
     >>> product_set.forReview().count() == Product.select().count()
     True
 
@@ -501,23 +529,32 @@ Anonymous users cannot access 'forReview'.
     >>> gnome = product_set.forReview(search_text='gnome')
     Traceback (most recent call last):
     ...
-    Unauthorized:... 'forReview', 'launchpad.Commercial'...
+    Unauthorized:... 'forReview', 'launchpad.ProjectReview'...
 
 No Privileges Person cannot access 'forReview'.
 
     >>> login('no-priv@canonical.com')
-    >>> check_permission('launchpad.Commercial', product_set)
+    >>> check_permission('launchpad.ProjectReview', product_set)
     False
     >>> gnome =  product_set.forReview(search_text='gnome')
     Traceback (most recent call last):
     ...
-    Unauthorized:... 'forReview', 'launchpad.Commercial'...
+    Unauthorized:... 'forReview', 'launchpad.ProjectReview'...
 
-The commercial-member, a member of the Commercial admins team, can
-access 'forReview'.
+But if we add No Privileges Person to the Registry Experts team he can
+access it.
 
-    >>> login('commercial-member@canonical.com')
-    >>> check_permission('launchpad.Commercial', product_set)
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> registry_member = factory.makePerson()
+    >>> celebs = getUtility(ILaunchpadCelebrities)
+    >>> registry = celebs.registry_experts
+    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> logout()
+
+    >>> login_person(registry_member)
+    >>> check_permission('launchpad.ProjectReview', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
     >>> for product in gnome:
@@ -531,7 +568,7 @@ access 'forReview'.
 An admin can access 'forReview'.
 
     >>> login('foo.bar@canonical.com')
-    >>> check_permission('launchpad.Commercial', product_set)
+    >>> check_permission('launchpad.ProjectReview', product_set)
     True
     >>> gnome =  product_set.forReview(search_text='gnome')
     >>> for product in gnome:
@@ -541,3 +578,20 @@ An admin can access 'forReview'.
     applets
     gnomebaker
     python-gnome2-dev
+
+Members of the registry experts celebrity have permission to review
+IProduct and IProject objects and access an IProjectSet.
+
+    >>> from lp.registry.interfaces.project import IProjectSet
+
+    >>> project_set = getUtility(IProjectSet)
+    >>> product = factory.makeProduct(name='dog')
+    >>> project = factory.makeProject(name='cat')
+
+    >>> login_person(registry_member)
+    >>> check_permission('launchpad.ProjectReview', project_set)
+    True
+    >>> check_permission('launchpad.ProjectReview', project)
+    True
+    >>> check_permission('launchpad.ProjectReview', product)
+    True

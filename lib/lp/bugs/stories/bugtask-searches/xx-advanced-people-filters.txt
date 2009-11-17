@@ -35,7 +35,7 @@ results when we use a valid assignee.
     2 Blackhole Trash folder mozilla-firefox Low Confirmed
 
     >>> anon_browser.open('http://bugs.launchpad.dev/~name12/+reportedbugs?advanced=1')
-    >>> anon_browser.getControl(name='field.assignee').value = 'sabdfl'
+    >>> anon_browser.getControl(name='field.assignee').value = 'mark'
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG Mozilla Firefox Low New
@@ -172,7 +172,7 @@ subscribed to any bugs. In this case, no bugs are found:
     >>> anon_browser.getControl('Bug subscriber').value = subscriber
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print extract_text(find_main_content(anon_browser.contents))
-    Bugs ...
+    Mozilla Firefox ...
     No results for search
 
 We'll continue by subscribing the same user to a couple of bugs. However,
@@ -181,12 +181,13 @@ first we'll register a couple of bugs for the Mozilla Firefox product:
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> browser.open('http://bugs.launchpad.dev/firefox/')
     >>> browser.getLink('Report a bug').click()
-    >>> browser.getLink('Advanced reporting options').click()
     >>> print extract_text(find_main_content(browser.contents))
     Report a bug...
     >>> report_bug_url = browser.url
 
     >>> browser.getControl('Summary').value = 'Test Bug 1'
+    >>> browser.getControl('Continue').click()
+
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
     >>> print extract_text(find_main_content(browser.contents))
@@ -195,6 +196,7 @@ first we'll register a couple of bugs for the Mozilla Firefox product:
 
     >>> browser.open(report_bug_url)
     >>> browser.getControl('Summary').value = 'Test Bug 2'
+    >>> browser.getControl('Continue').click()
     >>> browser.getControl('Further information').value = 'Test Bug 2'
     >>> browser.getControl('Submit').click()
     >>> print extract_text(find_main_content(browser.contents))
@@ -206,10 +208,10 @@ Next we'll subscribe our user to the first bug we've just registered:
     >>> browser.open(bug_1_url)
     >>> browser.getLink('Subscribe someone else').click()
     >>> print extract_text(find_main_content(browser.contents))
-    Bug...Subscribe someone else to bug #...
+    Subscribe someone else to bug #...
 
     >>> browser.getControl('Person').value = subscriber
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Subscribe user').click()
     >>> print extract_text(find_main_content(browser.contents))
     No Privileges Person has been subscribed to this bug...
 
@@ -229,10 +231,10 @@ Next we'll subscribe our user to the second bug we've just registered:
     >>> browser.open(bug_2_url)
     >>> browser.getLink('Subscribe someone else').click()
     >>> print extract_text(find_main_content(browser.contents))
-    Bug...Subscribe someone else to bug #...
+    Subscribe someone else to bug #...
 
     >>> browser.getControl('Person').value = subscriber
-    >>> browser.getControl('Add').click()
+    >>> browser.getControl('Subscribe user').click()
     >>> print extract_text(find_main_content(browser.contents))
     No Privileges Person has been subscribed to this bug...
 
@@ -246,4 +248,3 @@ we'll find both of our bugs within the results:
     ...     print 'Task:' + bugtask
     Task:...Test Bug 1...Undecided...New
     Task:...Test Bug 2...Undecided...New
-

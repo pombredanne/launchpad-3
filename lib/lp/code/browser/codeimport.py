@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for CodeImports."""
 
@@ -8,7 +9,7 @@ __all__ = [
     'CodeImportEditView',
     'CodeImportMachineView',
     'CodeImportNewView',
-    'CodeImportSetBreadcrumbBuilder',
+    'CodeImportSetBreadcrumb',
     'CodeImportSetNavigation',
     'CodeImportSetView',
     'CodeImportView',
@@ -43,7 +44,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
     Navigation, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import structured
 from lazr.restful.interface import copy_field, use_template
@@ -61,7 +62,7 @@ class CodeImportSetNavigation(Navigation):
         return getUtility(ICodeImportMachineSet)
 
 
-class CodeImportSetBreadcrumbBuilder(BreadcrumbBuilder):
+class CodeImportSetBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ICodeImportSet`."""
     text = u'Code Import System'
 
@@ -342,7 +343,7 @@ class CodeImportNewView(CodeImportBaseView):
         # Make sure that the user is able to create branches for the specified
         # namespace.
         celebs = getUtility(ILaunchpadCelebrities)
-        product = data['product']
+        product = data.get('product')
         if product is not None:
             namespace = get_branch_namespace(celebs.vcs_imports, product)
             policy = IBranchNamespacePolicy(namespace)
@@ -428,6 +429,8 @@ class CodeImportEditView(CodeImportBaseView):
     # Need this to render the context to prepopulate the form fields.
     # Added here as the base class isn't LaunchpadEditFormView.
     render_context = True
+    page_title = 'Edit import details'
+    label = page_title
 
     @property
     def initial_values(self):

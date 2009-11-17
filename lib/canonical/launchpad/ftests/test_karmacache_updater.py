@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -11,7 +12,7 @@ from zope.component import getUtility
 import transaction
 
 from canonical.database.sqlbase import flush_database_caches
-from canonical.launchpad.database import KarmaCache
+from lp.registry.model.karma import KarmaCache
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.interfaces import IPersonSet, IProductSet
 from canonical.testing import LaunchpadFunctionalLayer

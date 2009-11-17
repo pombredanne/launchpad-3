@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An SFTP server that backs on to a special kind of Bazaar Transport.
 
@@ -428,6 +429,7 @@ class TransportSFTPServer:
             bzr_errors.NoSuchFile: filetransfer.FX_NO_SUCH_FILE,
             bzr_errors.FileExists: filetransfer.FX_FILE_ALREADY_EXISTS,
             bzr_errors.DirectoryNotEmpty: filetransfer.FX_FAILURE,
+            bzr_errors.TransportError: filetransfer.FX_FAILURE,
             FileIsADirectory: filetransfer.FX_FILE_IS_A_DIRECTORY,
             }
         # Bazaar expects makeDirectory to fail with exactly the string "mkdir

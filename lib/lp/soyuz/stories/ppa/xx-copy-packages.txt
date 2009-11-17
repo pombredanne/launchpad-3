@@ -28,7 +28,8 @@ information.
 Copying is only permitted for valid users, so Anonymous user can't
 access 'Copy package' page from any PPA.
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> anon_browser.getLink('Copy packages').click()
     Traceback (most recent call last):
     ...
@@ -51,20 +52,23 @@ PPA in order to be able to copy packages.
     >>> jblack_extra_browser = setupBrowser(
     ...     auth="Basic james.blackwell@ubuntulinux.com:jblack")
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> jblack_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
     Copy packages from PPA for Celso Providelo
+    ...
     To be able to copy packages you have to participate in at least one
     PPA. Activate your own PPA or join a team with an active PPA.
+    Create a new PPA or &laquo;back
 
 James will follow the advice and activate his PPA by clicking in the
 provided link.
 
-    >>> jblack_browser.getLink('Activate your own PPA').click()
+    >>> jblack_browser.getLink('Create a new PPA').click()
     >>> print jblack_browser.title
-    Activate Personal Package Archive
+    Personal Package Archive Activation : James Blackwell
 
     >>> jblack_browser.getControl(
     ...     name="field.displayname").value = 'PPA for James Blackwell'
@@ -74,12 +78,13 @@ provided link.
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
-    PPA for James Blackwell
+    PPA for James Blackwell : James Blackwell
 
 Now, that James has his own PPA, he navigates back to Celso's PPA
 copy package interface can see packages to be copied.
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive/ppa')
+    >>> jblack_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
@@ -242,7 +247,7 @@ also marked as pending build for i386.
 
     >>> jblack_browser.getLink('PPA for James Blackwell').click()
     >>> print jblack_browser.title
-    PPA for James Blackwell
+    Packages in “PPA for James Blackwell”...
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -286,19 +291,21 @@ build created during the copy is ready to be dispatched.
 
     >>> jblack_browser.getLink('i386').click()
     >>> print jblack_browser.title
-    i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
+    PPA for James Blackwell : James Blackwell
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
     i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
-    Changes file: not available
-    Archive: James Blackwell PPA
+    James Blackwell
+    PPA for James Blackwell
+    Build status Needs building
+    Start (2505) What's this?
+    Build details
+    Source: pmount - 0.1-1
+    Archive: PPA for James Blackwell
+    Series: Hoary
+    Architecture: i386
+    Pocket: Release
     Component: main
-    Status: Needs building
-    Queued: ... ago
-    Estimated build start: not available
-    Build score: 2505 (What's this?)
-    Build log: not available
-    Finished: not available
 
 Very nice, but now James gets really excited about the possibilities ...
 
@@ -318,13 +325,14 @@ James, thinks for a minute and realises that he could copy the
 
 James goes straight to the copy interface of his PPA.
 
-    >>> jblack_browser.getLink('View PPA').click()
+    >>> jblack_browser.getLink('PPA for James Blackwell').click()
+    >>> jblack_browser.getLink('View package details').click()
     >>> print jblack_browser.title
-    PPA for James Blackwell
+    Packages in “PPA for James Blackwell”...
 
     >>> jblack_browser.getLink('Copy packages').click()
     >>> print jblack_browser.title
-    Copy packages from PPA for James Blackwell
+    Copy packages from PPA for James Blackwell...
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -547,11 +555,11 @@ James uses the 'delete-packages' interface in his PPA to delete the
     ...    "Deletion comment").value = "Deleted packages can be copied."
     >>> jblack_browser.getControl("Request Deletion").click()
 
-James return to his PPA overview page and checks that the package is
+James return to his PPA packages page and checks that the package is
 really deleted.
 
-    >>> jblack_browser.getLink('PPA').click()
-    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getLink('Cancel').click()
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['']
     >>> jblack_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -579,7 +587,7 @@ By default the copy view presents only PUBLISHED or PENDING packages.
 Packages in other status can be browsed by adjusting the status
 filter dropdown box.
 
-    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['']
     >>> jblack_browser.getControl("Filter").click()
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -666,12 +674,13 @@ together.
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
-    PPA for James Blackwell Friends
+    PPA for James Blackwell Friends : “James Blackwell Friends” team
 
 PPA created, now James want to populate it with the finest packages he
 have ever seen. He goes to Celso's PPA copy interface.
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> jblack_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> jblack_browser.getLink('Copy packages').click()
 
 James would like to re-distribute Celso's 'pmount' and 'iceweasel'
@@ -729,7 +738,7 @@ sources and binaries are copied to their PPA.
 
     >>> jblack_browser.getLink('PPA for James Blackwell Friends').click()
     >>> print jblack_browser.title
-    PPA for James Blackwell Friends
+    Packages in “PPA for James Blackwell Friends”...
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source            Uploader    Published   Status   Series  Section  Build
@@ -812,15 +821,16 @@ tests.
     >>> jblack_browser.getControl("Activate").click()
 
     >>> print jblack_browser.title
-    PPA for James Blackwell Sandbox
+    PPA for James Blackwell Sandbox : “James Blackwell Sandbox” team
 
 James now goes to his PPA and copy all sources to his Sandbox PPA
 for a mass rebuild, including the deleted source. James is going
 insane because PPA-copy-ui is so cool.
 
-    >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
+    >>> jblack_browser.open(
+    ...     'http://launchpad.dev/~jblack/+archive/ppa/+packages')
     >>> jblack_browser.getLink('Copy packages').click()
-    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['']
     >>> jblack_browser.getControl("Filter").click()
 
     >>> print_ppa_packages(jblack_browser.contents)
@@ -865,16 +875,17 @@ even the 'warty' source, which was not denied.
 
     >>> jblack_browser.open('http://launchpad.dev/~jblack-sandbox/+archive')
     >>> print jblack_browser.title
-    PPA for James Blackwell Sandbox
+    PPA for James Blackwell Sandbox : “James Blackwell Sandbox” team
 
     >>> print_ppa_packages(jblack_browser.contents)
 
 Not yet happy, James goes back to his PPA to check if the copy-package
 interface can be used to resurrect deleted packages.
 
-    >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
+    >>> jblack_browser.open(
+    ...     'http://launchpad.dev/~jblack/+archive/ppa/+packages')
     >>> jblack_browser.getLink('Copy packages').click()
-    >>> jblack_browser.getControl(name='field.status_filter').value = ['any']
+    >>> jblack_browser.getControl(name='field.status_filter').value = ['']
     >>> jblack_browser.getControl("Filter").click()
 
     >>> deleted_pub_id = getPPAPubIDsFor(
@@ -913,7 +924,7 @@ deleted files will be re-published in his archive.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    pmount - 0.1-1              Pending    Hoary            Editors  i386
+    pmount - 0.1-1              Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
     pmount - 0.1-1              Deleted    Hoary            Editors
@@ -930,12 +941,12 @@ in No Privileges' PPA.
     >>> name16 = person_set.getByName('name16')
     >>> test_publisher.person = name16
 
-    >>> sabdfl = person_set.getByName('sabdfl')
-    >>> sabdfl_foo_src = test_publisher.getPubSource(
-    ...     version="1.1", distroseries=hoary, archive=sabdfl.archive,
+    >>> mark = person_set.getByName('mark')
+    >>> mark_foo_src = test_publisher.getPubSource(
+    ...     version="1.1", distroseries=hoary, archive=mark.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> unused = test_publisher.getPubBinaries(
-    ...     distroseries=hoary, pub_source=sabdfl_foo_src,
+    ...     distroseries=hoary, pub_source=mark_foo_src,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> cprov = person_set.getByName('cprov')
@@ -969,13 +980,14 @@ in No Privileges' PPA.
 Good, now James goes straight to No Privileges' PPA and copies the
 foo_2.0 version to his PPA.
 
-    >>> jblack_browser.open('http://launchpad.dev/~no-priv/+archive')
+    >>> jblack_browser.open(
+    ...     'http://launchpad.dev/~no-priv/+archive/ppa/+packages')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    foo - 2.0 (changesfile)     Published  Hoary            Base
+    foo - 2.0 (changesfile) ... Published  Hoary            Base
 
     >>> foo_pub_id = getPPAPubIDsFor('no-priv', 'foo')[0]
     >>> jblack_browser.getControl(
@@ -997,14 +1009,15 @@ James tries to copy some of Celso's packages that are older than
 the ones in his own PPA. He is not allowed to copy these older
 packages since they would not be published in the destination anyway.
 
-    >>> jblack_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> jblack_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source            Published   Status     Series           Section  Build
         Status
     cdrkit - 1.0      2007-07-09  Published  Breezy-autotest  Editors  i386
-    foo - 1.1   (...)             Published  Hoary            Base
+    foo - 1.1   (...) ...         Published  Hoary            Base
     iceweasel...(...) 2007-07-09  Published  Warty            Editors  i386
     pmount - 0.1-1    2007-07-09  Published  Warty            Editors
 
@@ -1044,13 +1057,14 @@ do not enforce coherent version ordering across suites.
     foo-bin 1.1 in warty hppa
     foo-bin 1.1 in warty i386
 
-    >>> jblack_browser.open('http://launchpad.dev/~jblack/+archive')
+    >>> jblack_browser.open(
+    ...     'http://launchpad.dev/~jblack/+archive/ppa/+packages')
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
     foo - 2.0  (changesfile)    Pending    Hoary            Base
     foo - 1.1  (changesfile)    Pending    Warty            Base
-    pmount - 0.1-1              Pending    Hoary            Editors  i386
+    pmount - 0.1-1              Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
 
@@ -1058,16 +1072,17 @@ James have heard that Mark's foo version is really rock'n roll and
 since he discovered that PPA allows copying old versions, he decides
 to copy the *same* version with different contents to grumpy in his PPA.
 
-    >>> jblack_browser.open('http://launchpad.dev/~sabdfl/+archive')
+    >>> jblack_browser.open(
+    ...     'http://launchpad.dev/~mark/+archive/ppa/+packages')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source            Published   Status     Series           Section  Build
         Status
-    foo - 1.1 (changesfile)       Published  Hoary            Base
+    foo - 1.1 (changesfile) ...   Published  Hoary            Base
     iceweasel...(...) 2007-07-09  Published  Breezy-autotest  Editors
 
-    >>> foo_pub_id = getPPAPubIDsFor('sabdfl', 'foo')[0]
+    >>> foo_pub_id = getPPAPubIDsFor('mark', 'foo')[0]
     >>> jblack_browser.getControl(
     ...     name='field.selected_sources').value = [foo_pub_id]
     >>> jblack_browser.getControl(
@@ -1089,7 +1104,8 @@ to copy the *same* version with different contents to grumpy in his PPA.
 James thinks that his last chance will be copying the just-uploaded
 foo-9.9 source from 'James-Friend's PPA.
 
-    >>> jblack_browser.open('http://launchpad.dev/~jblack-friends/+archive')
+    >>> jblack_browser.open(
+    ...     'http://launchpad.dev/~jblack-friends/+archive/ppa/+packages')
     >>> jblack_browser.getLink('Copy packages').click()
 
     >>> jblack_browser.getControl(name='field.name_filter').value = 'foo'
@@ -1097,7 +1113,7 @@ foo-9.9 source from 'James-Friend's PPA.
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Uploader  Published  Status     Series  Section Build Status
-    foo - 9.9 (...) name16               Published  Hoary   Base    i386
+    foo - 9.9 (...) name16    ...        Published  Hoary   Base    i386
 
 But James doesn't think straight, he sees that foo-9.9 failed to build
 in i386, but even though, he tries to copy it including binaries. He

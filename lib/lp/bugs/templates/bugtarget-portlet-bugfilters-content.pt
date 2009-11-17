@@ -1,5 +1,5 @@
-<div class="portletBody portletContent">
-
+<div xmlns:tal="http://xml.zope.org/namespaces/tal"
+     xmlns:metal="http://xml.zope.org/namespaces/metal">
 <table width="100%">
   <tr>
     <td><a tal:attributes="href view/getOpenBugsURL">Open</a></td>
@@ -38,5 +38,4 @@
     <td tal:content="context/all_bugtasks/count">42</td>
   </tr>
 </table>
-
 </div>

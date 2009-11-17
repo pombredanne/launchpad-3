@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
 
 """Send branch mail.
@@ -28,7 +31,7 @@ class RunRevisionMailJobs(LaunchpadCronScript):
         globalErrorUtility.configure('sendbranchmail')
         jobs = list(getUtility(IRevisionMailJobSource).iterReady())
         jobs.extend(getUtility(IRevisionsAddedJobSource).iterReady())
-        runner = JobRunner(jobs)
+        runner = JobRunner(jobs, self.logger)
         server = get_scanner_server()
         server.setUp()
         try:

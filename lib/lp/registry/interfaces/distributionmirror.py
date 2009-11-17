@@ -1,4 +1,6 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 __metaclass__ = type
@@ -184,7 +186,7 @@ class MirrorFreshness(DBEnumeratedType):
         """)
 
     UNKNOWN = DBItem(8, """
-        Unknown freshness
+        Last update unknown
 
         We couldn't determine when this mirror's content was last updated.
         """)
@@ -335,11 +337,11 @@ class IDistributionMirror(Interface):
         vocabulary=MirrorStatus)
 
     title = Attribute('The title of this mirror')
-    cdimage_serieses = Attribute(
-        'All MirrorCDImageDistroSerieses of this mirror')
-    source_serieses = Attribute(
+    cdimage_series = Attribute(
+        'All MirrorCDImageDistroSeries of this mirror')
+    source_series = Attribute(
         'All MirrorDistroSeriesSources of this mirror')
-    arch_serieses = Attribute('All MirrorDistroArchSerieses of this mirror')
+    arch_series = Attribute('All MirrorDistroArchSeries of this mirror')
     last_probe_record = Attribute(
         'The last MirrorProbeRecord for this mirror.')
     all_probe_records = Attribute('All MirrorProbeRecords for this mirror.')
@@ -360,7 +362,7 @@ class IDistributionMirror(Interface):
         if not (mirror.http_base_url or mirror.ftp_base_url):
             raise Invalid('A mirror must have at least an HTTP or FTP URL.')
 
-    def getSummarizedMirroredSourceSerieses():
+    def getSummarizedMirroredSourceSeries():
         """Return a summarized list of this distribution_mirror's
         MirrorDistroSeriesSource objects.
 
@@ -369,7 +371,7 @@ class IDistributionMirror(Interface):
         each distroseries of this distribution mirror.
         """
 
-    def getSummarizedMirroredArchSerieses():
+    def getSummarizedMirroredArchSeries():
         """Return a summarized list of this distribution_mirror's
         MirrorDistroArchSeries objects.
 
@@ -397,7 +399,7 @@ class IDistributionMirror(Interface):
         """Should this mirror be marked disabled?
 
         If this is a RELEASE mirror then expected_file_count must not be None,
-        and it should be disabled if the number of cdimage_serieses it
+        and it should be disabled if the number of cdimage_series it
         contains is smaller than the given expected_file_count.
 
         If this is an ARCHIVE mirror, then it should be disabled only if it
@@ -468,7 +470,7 @@ class IDistributionMirror(Interface):
         series and flavour, in case it exists.
         """
 
-    def deleteAllMirrorCDImageSerieses():
+    def deleteAllMirrorCDImageSeries():
         """Delete all MirrorCDImageDistroSeriess of this mirror."""
 
     def getExpectedPackagesPaths():
@@ -608,4 +610,3 @@ class IMirrorProbeRecord(Interface):
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
     log_file = Attribute(_("The log of this probing."))
-

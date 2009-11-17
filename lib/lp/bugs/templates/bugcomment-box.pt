@@ -14,10 +14,6 @@
     <table>
       <tbody>
         <tr>
-          <td class="bug-comment-index">
-            <a tal:attributes="href comment/fmt:url"
-               tal:content="string: #${comment/index}" />
-          </td>
           <td tal:condition="not: comment/bugwatch">
             <tal:comment_owner
                 replace="structure comment/owner/fmt:link" />
@@ -48,6 +44,10 @@
                         tal:content="comment/title" />
               </a>
           </td>
+          <td class="bug-comment-index">
+            <a tal:attributes="href comment/fmt:url"
+               tal:content="string: #${comment/index}" />
+          </td>
         </tr>
       </tbody>
     </table>
@@ -55,7 +55,7 @@
 
   <div class="boardCommentBody">
     <ul tal:condition="comment/bugattachments" style="margin-bottom: 1em">
-      <li tal:repeat="attachment comment/bugattachments" class="download">
+      <li tal:repeat="attachment comment/bugattachments" class="download-attachment">
         <a tal:attributes="href attachment/libraryfile/http_url"
            tal:content="attachment/title" class="sprite download-icon">foo.txt</a>
         (<span

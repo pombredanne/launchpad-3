@@ -201,7 +201,7 @@ Now, let's check that we've covered all of Launchpad's bug-related karma
 actions, except for updating the obsolete "summary", "priority", and "Web
 links":
 
-    >>> from canonical.launchpad.database import KarmaCategory
+    >>> from lp.registry.model.karma import KarmaCategory
     >>> bugs_category = KarmaCategory.byName('bugs')
     >>> bugs_karma_actions = bugs_category.karmaactions
     >>> summary_change = getUtility(

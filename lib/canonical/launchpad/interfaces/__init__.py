@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0401,C0301
 
 __metaclass__ = type
@@ -25,9 +27,6 @@ from canonical.launchpad.interfaces.authserver import *
 from canonical.launchpad.interfaces.authtoken import *
 from lp.soyuz.interfaces.binarypackagerelease import *
 from lp.soyuz.interfaces.binarypackagename import *
-from canonical.launchpad.interfaces.bounty import *
-from canonical.launchpad.interfaces.bountymessage import *
-from canonical.launchpad.interfaces.bountysubscription import *
 from lp.bugs.interfaces.bugactivity import *
 from lp.bugs.interfaces.bugattachment import *
 from lp.bugs.interfaces.bug import *
@@ -51,11 +50,9 @@ from lp.registry.interfaces.codeofconduct import *
 from lp.registry.interfaces.commercialsubscription import *
 from lp.soyuz.interfaces.component import *
 from lp.services.worlddata.interfaces.country import *
-from canonical.launchpad.interfaces.customlanguagecode import *
 from lp.bugs.interfaces.cve import *
 from lp.bugs.interfaces.cvereference import *
 from lp.registry.interfaces.distribution import *
-from canonical.launchpad.interfaces.distributionbounty import *
 from lp.registry.interfaces.distributionmirror import *
 from lp.registry.interfaces.distributionsourcepackage import *
 from lp.soyuz.interfaces.distributionsourcepackagecache import *
@@ -66,7 +63,6 @@ from lp.soyuz.interfaces.distroarchseriesbinarypackagerelease\
     import *
 from lp.registry.interfaces.distroseries import *
 from lp.soyuz.interfaces.distroseriesbinarypackage import *
-from canonical.launchpad.interfaces.distroserieslanguage import *
 from lp.soyuz.interfaces.distroseriespackagecache import *
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import *
 from canonical.launchpad.interfaces.emailaddress import *
@@ -82,7 +78,6 @@ from lp.registry.interfaces.irc import *
 from lp.registry.interfaces.jabber import *
 from lp.registry.interfaces.karma import *
 from lp.services.worlddata.interfaces.language import *
-from canonical.launchpad.interfaces.languagepack import *
 from canonical.launchpad.interfaces.launchpad import *
 from canonical.launchpad.interfaces.launchpadstatistic import *
 from canonical.launchpad.interfaces.librarian import *
@@ -99,28 +94,17 @@ from lp.registry.interfaces.milestone import *
 from canonical.launchpad.interfaces.oauth import *
 from canonical.launchpad.interfaces.openidconsumer import *
 from canonical.launchpad.interfaces.packagerelationship import *
-from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
-from canonical.launchpad.interfaces.pofile import *
-from canonical.launchpad.interfaces.pofiletranslator import *
 from lp.registry.interfaces.poll import *
-from canonical.launchpad.interfaces.pomsgid import *
-from canonical.launchpad.interfaces.potemplate import *
-from canonical.launchpad.interfaces.potmsgset import *
-from canonical.launchpad.interfaces.potranslation import *
 from lp.soyuz.interfaces.processor import *
 from lp.registry.interfaces.product import *
-from canonical.launchpad.interfaces.productbounty import *
 from lp.registry.interfaces.productlicense import *
 from lp.registry.interfaces.productrelease import *
 from lp.registry.interfaces.productseries import *
 from lp.registry.interfaces.project import *
-from canonical.launchpad.interfaces.productserieslanguage import *
-from canonical.launchpad.interfaces.projectbounty import *
 from lp.soyuz.interfaces.publishedpackage import *
 from lp.soyuz.interfaces.publishing import *
 from lp.soyuz.interfaces.queue import *
-from canonical.launchpad.interfaces.rosettastats import *
 from lp.registry.interfaces.salesforce import *
 from canonical.launchpad.interfaces.schema import *
 from lp.services.scripts.interfaces.scriptactivity import *
@@ -143,23 +127,7 @@ from lp.registry.interfaces.ssh import *
 from canonical.launchpad.interfaces.structuralsubscription import *
 from lp.registry.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
-from canonical.launchpad.interfaces.translationcommonformat import *
-from canonical.launchpad.interfaces.translationexporter import *
-from canonical.launchpad.interfaces.translationfileformat import *
-from canonical.launchpad.interfaces.translationimporter import *
-from canonical.launchpad.interfaces.translationmessage import *
-from canonical.launchpad.interfaces.translations import *
-from canonical.launchpad.interfaces.translationsoverview import *
-from canonical.launchpad.interfaces.translationsperson import *
-from canonical.launchpad.interfaces.translationtemplateitem import *
-from canonical.launchpad.interfaces.translationcommonformat import *
-from canonical.launchpad.interfaces.translationgroup import *
-from canonical.launchpad.interfaces.translationimportqueue import *
-from canonical.launchpad.interfaces.translator import *
-from canonical.launchpad.interfaces.vpoexport import *
-from canonical.launchpad.interfaces.vpotexport import *
 from lp.registry.interfaces.wikiname import *
-from canonical.launchpad.interfaces.poexportrequest import *
 from lp.soyuz.interfaces.packagediff import *
 from lp.soyuz.interfaces.packageset import *
 

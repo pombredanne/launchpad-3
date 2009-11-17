@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test buildd uploads use-cases."""
 
@@ -9,10 +10,11 @@ import unittest
 from lp.archiveuploader.tests.test_securityuploads import (
     TestStagedBinaryUploadBase)
 from lp.archiveuploader.uploadprocessor import UploadProcessor
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.interfaces import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from canonical.launchpad.interfaces import PackagePublishingStatus
 from canonical.launchpad.ftests import import_public_test_keys
+
 
 class TestBuilddUploads(TestStagedBinaryUploadBase):
     """Test how buildd uploads behave inside Soyuz.

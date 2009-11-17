@@ -1,9 +1,11 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Testing the CodeHandler."""
 
 __metaclass__ = type
 
+from difflib import unified_diff
 from textwrap import dedent
 import transaction
 import unittest
@@ -29,6 +31,7 @@ from lp.code.interfaces.branchlookup import IBranchLookup
 from canonical.launchpad.database import MessageSet
 from lp.code.model.branchmergeproposaljob import (
     CreateMergeProposalJob, MergeProposalCreatedJob)
+from lp.code.model.diff import PreviewDiff
 from canonical.launchpad.interfaces.mail import (
     EmailProcessingError, IWeaklyAuthenticatedPrincipal)
 from lp.code.mail.codehandler import (
@@ -150,6 +153,19 @@ class TestCodeHandler(TestCaseWithFactory):
             mail, email_addr, None), "Succeeded, but didn't return True")
         # if the message has not been created, this raises SQLObjectNotFound
         message = MessageSet().get('<my-id>')
+
+    def test_process_packagebranch(self):
+        """Processing an email related to a package branch works.."""
+        mail = self.factory.makeSignedMessage('<my-id>')
+        target_branch = self.factory.makePackageBranch()
+        bmp = self.factory.makeBranchMergeProposal(
+            target_branch=target_branch)
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process( mail, email_addr, None)
+        self.assertIn(
+            '<my-id>', [comment.message.rfc822msgid
+                        for comment in bmp.all_comments])
 
     def test_processBadAddress(self):
         """When a bad address is supplied, it returns False."""
@@ -292,7 +308,9 @@ class TestCodeHandler(TestCaseWithFactory):
         email_addr = bmp.address
         self.switchDbUser(config.processmail.dbuser)
         self.code_handler.process(mail, email_addr, None)
-        notification = pop_notifications()[0]
+        notification = [
+            msg for msg in pop_notifications() if
+            msg['X-Launchpad-message-rationale'] == 'Owner'][0]
         self.assertEqual('subject', notification['Subject'])
         expected_body = ('Review: Abstain ebailiwick\n'
                          ' vote Abstain EBAILIWICK\n'
@@ -450,7 +468,7 @@ class TestCodeHandler(TestCaseWithFactory):
         bmp, comment = code_handler.processMergeProposal(message)
         self.assertEqual(source, bmp.source_branch)
         self.assertEqual(target, bmp.target_branch)
-        self.assertEqual('booga', bmp.review_diff.diff.text)
+        self.assertIs(None, bmp.review_diff)
         self.assertEqual('Hi!\n', comment.message.text_contents)
         self.assertEqual('My subject', comment.message.subject)
         # No emails are sent.
@@ -574,6 +592,25 @@ class TestCodeHandler(TestCaseWithFactory):
         # Ensure the DB operations violate no constraints.
         transaction.commit()
 
+    def test_reviewer_with_diff(self):
+        """Requesting a review with a diff works."""
+        diff_text = ''.join(unified_diff('', 'Fake diff'))
+        preview_diff = PreviewDiff.create(
+            diff_text,
+            unicode(self.factory.getUniqueString('revid')),
+            unicode(self.factory.getUniqueString('revid')),
+            None, None)
+        # To record the diff in the librarian.
+        transaction.commit()
+        bmp = self.factory.makeBranchMergeProposal(preview_diff=preview_diff)
+        eric = self.factory.makePerson(name="eric", email="eric@example.com")
+        mail = self.factory.makeSignedMessage(body=' reviewer eric')
+        email_addr = bmp.address
+        self.switchDbUser(config.processmail.dbuser)
+        self.code_handler.process(mail, email_addr, None)
+        [vote] = bmp.votes
+        self.assertEqual(eric, vote.reviewer)
+
     def test_processMergeProposalDefaultReviewer(self):
         # If no reviewer was requested in the comment body, then the default
         # reviewer of the target branch is used.
@@ -668,6 +705,16 @@ class TestCodeHandler(TestCaseWithFactory):
         self.assertEqual('~merge-submitter/target-product', namespace.name)
         self.assertEqual('bar', base)
 
+    def test_getNewBranchInfoRemoteURLTrailingSlash(self):
+        """Trailing slashes are ignored when determining base."""
+        submitter = self.factory.makePerson(name='merge-submitter')
+        target = self.makeTargetBranch()
+        code_handler = CodeHandler()
+        namespace, base = code_handler._getNewBranchInfo(
+                'http://foo/bar/', target, submitter)
+        self.assertEqual('~merge-submitter/target-product', namespace.name)
+        self.assertEqual('bar', base)
+
     def test_getNewBranchInfoLPURL(self):
         """If an LP URL is provided, we attempt to reproduce it exactly."""
         submitter = self.factory.makePerson(name='merge-submitter')
@@ -677,6 +724,19 @@ class TestCodeHandler(TestCaseWithFactory):
         code_handler = CodeHandler()
         namespace, base = code_handler._getNewBranchInfo(
             config.codehosting.supermirror_root + '~uuser/uproduct/bar',
+            target, submitter)
+        self.assertEqual('~uuser/uproduct', namespace.name)
+        self.assertEqual('bar', base)
+
+    def test_getNewBranchInfoLPURLTrailingSlash(self):
+        """Trailing slashes are permitted in LP URLs."""
+        submitter = self.factory.makePerson(name='merge-submitter')
+        target = self.makeTargetBranch()
+        url_product = self.factory.makeProduct('uproduct')
+        url_person = self.factory.makePerson(name='uuser')
+        code_handler = CodeHandler()
+        namespace, base = code_handler._getNewBranchInfo(
+            config.codehosting.supermirror_root + '~uuser/uproduct/bar/',
             target, submitter)
         self.assertEqual('~uuser/uproduct', namespace.name)
         self.assertEqual('bar', base)
@@ -730,6 +790,7 @@ class TestCodeHandler(TestCaseWithFactory):
             )
         self.assertEqual(notification['to'],
             mail['from'])
+        self.assertEqual(0, bmp.all_comments.count())
 
 
 class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):

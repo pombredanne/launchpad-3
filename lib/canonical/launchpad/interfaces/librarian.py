@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Librarian interfaces."""
@@ -10,7 +12,6 @@ __all__ = [
     'ILibraryFileAliasSet',
     'ILibraryFileContent',
     'ILibraryFileDownloadCount',
-    'IParsedApacheLog',
     'NEVER_EXPIRES',
     ]
 
@@ -177,18 +178,3 @@ class ILibraryFileDownloadCount(Interface):
         title=_('The number of downloads'), required=True, readonly=False)
     country = Choice(
         title=_('Country'), required=False, vocabulary='CountryName')
-
-
-class IParsedApacheLog(Interface):
-    """An apache log file parsed to extract download counts of files.
-
-    This is used so that we don't parse log files more than once.
-    """
-
-    first_line = TextLine(
-        title=_("The log file's first line"), required=True,
-        readonly=True)
-    bytes_read = Int(
-        title=_('Number of bytes read'), required=True, readonly=False)
-    date_last_parsed = Datetime(
-        title=_('Date last parsed'), required=False, readonly=False)

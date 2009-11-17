@@ -135,15 +135,15 @@ image:
   >>> anon_browser.getControl(name="queue_text").value = ''
   >>> anon_browser.getControl("Update").click()
 
-  >>> print find_tag_by_id(anon_browser.contents, 'queue-alsa-utils-4-arrow')
+  >>> print find_tag_by_id(anon_browser.contents, 'queue-4-arrow')
   <img width="14" height="14" src="/@@/treeCollapsed" alt="view files"
-       id="queue-alsa-utils-4-arrow" />
+       id="queue-4-arrow" />
 
 The 'filelist' is expanded as one or more table rows, right below the
 clicked item:
 
   >>> filelist = find_tags_by_class(
-  ...     anon_browser.contents, 'queue-alsa-utils-4')
+  ...     anon_browser.contents, 'queue-4')
 
 It contains a list of files related to the queue item clicked, followed
 by its size, one file per line:
@@ -164,7 +164,7 @@ published in the archive (it helps archive admins when reviewing
 candidates).  The binary items will also individually show their
 version, component, section and priority.
 
-  >>> [filelist] = find_tags_by_class(anon_browser.contents, 'queue-pmount-2')
+  >>> [filelist] = find_tags_by_class(anon_browser.contents, 'queue-2')
   >>> print extract_text(filelist)
   pmount_1.0-1_all.deb (18 bytes) NEW 0.1-1 main base important
 
@@ -409,7 +409,7 @@ The user can drill down into the file list to see the overridden binary
 values:
 
   >>> filelist = find_tags_by_class(
-  ...     anon_browser.contents, 'queue-pmount-2')
+  ...     anon_browser.contents, 'queue-2')
   >>> for row in filelist:
   ...     print extract_text(row)
   pmount_1.0-1_all.deb (18 bytes) NEW 0.1-1 restricted admin extra

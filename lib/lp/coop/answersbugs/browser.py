@@ -1,4 +1,5 @@
-# Copyright 2006-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for linking bugs and questions."""
 
@@ -36,6 +37,14 @@ class QuestionMakeBugView(LaunchpadFormView):
             self.request.response.redirect(canonical_url(question))
             return
         LaunchpadFormView.initialize(self)
+
+    @property
+    def page_title(self):
+        return 'Create bug report based on question #%s' % self.context.id
+
+    @property
+    def label(self):
+        return 'Create a bug based on a question'
 
     @property
     def initial_values(self):

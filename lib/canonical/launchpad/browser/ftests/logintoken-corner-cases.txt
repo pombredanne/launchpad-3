@@ -13,7 +13,7 @@ user tried to re-post the form after registering his or her account.
 
     >>> from canonical.launchpad.interfaces import (
     ...     ILoginTokenSet, LoginTokenType)
-    >>> from canonical.launchpad.browser import NewAccountView
+    >>> from canonical.launchpad.browser import NewUserAccountView
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> token = getUtility(ILoginTokenSet).new(
@@ -25,7 +25,7 @@ user tried to re-post the form after registering his or her account.
     ...         'field.hide_email_addresses': 'off',
     ...         'field.password': '23-is-the-answer',
     ...         'field.password_dupe': '23-is-the-answer'}
-    >>> view = NewAccountView(token, LaunchpadTestRequest(form=form))
+    >>> view = NewUserAccountView(token, LaunchpadTestRequest(form=form))
     >>> view.initialize()
     
     >>> response = view.request.response

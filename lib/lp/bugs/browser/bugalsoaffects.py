@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -37,7 +38,7 @@ from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from lp.registry.interfaces.product import IProductSet
+from lp.registry.interfaces.product import (IProductSet, License)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.email import email_validator
 from canonical.launchpad.webapp import (
@@ -47,16 +48,21 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.bugtask import (
     BugTaskAlsoAffectsSourcePackageNameWidget)
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
-from canonical.widgets import SearchForUpstreamPopupWidget, StrippedTextWidget
+from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.widgets.popup import SearchForUpstreamPopupWidget
 
 
 class BugAlsoAffectsProductMetaView(MultiStepView):
+    page_title = 'Record as affecting another project'
+
     @property
     def first_step(self):
         return ChooseProductStep
 
 
 class BugAlsoAffectsDistroMetaView(MultiStepView):
+    page_title = 'Record as affecting another distribution/package'
+
     @property
     def first_step(self):
         return DistroBugTaskCreationStep
@@ -165,15 +171,18 @@ class ChooseProductStep(AlsoAffectsStep):
         # Tell the user to search for it using the popup widget as it'll allow
         # the user to register a new product if the one he is looking for is
         # not yet registered.
-        search_url = self.widgets['product'].popupHref()
+        widget_link_id = self.widgets['product'].show_widget_id
         self.setFieldError(
             'product',
-            structured(
-                'There is no project in Launchpad named "%s". Please '
-                '<a href="%s">search for it</a> as it may be registered with '
-                'a different name.',
-                entered_product,
-                search_url))
+            structured("""
+                There is no project in Launchpad named "%s". Please 
+                <a href="/projects"
+                onclick="YUI().use('event').Event.simulate(
+                         document.getElementById('%s'), 'click');
+                         return false;"
+                >search for it</a> as it may be
+                registered with a different name.""",
+                entered_product, widget_link_id))
 
     def main_action(self, data):
         """Perform the 'Continue' action."""
@@ -694,6 +703,7 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
     field_names = ['bug_url', 'displayname', 'name', 'summary']
     existing_products = None
     MAX_PRODUCTS_TO_DISPLAY = 10
+    licenses = [License.DONT_KNOW]
 
     def _loadProductsUsingBugTracker(self):
         """Find products using the bugtracker wich runs on the given URL.
@@ -795,12 +805,19 @@ class BugAlsoAffectsProductWithProductCreationView(LaunchpadFormView):
             # projects using that bugtracker then show only the ones that
             # match the text entered as the project's name
             return
-
+        # Products created through this view have DONT_KNOW licensing.
         product = getUtility(IProductSet).createProduct(
-            self.user, data['name'], data['displayname'], data['displayname'],
-            data['summary'])
+            owner=self.user,
+            name=data['name'],
+            displayname=data['displayname'], title=data['displayname'],
+            summary=data['summary'], licenses=self.licenses,
+            registrant=self.user
+            )
         data['product'] = product
         self._createBugTaskAndWatch(data, set_bugtracker=True)
+        # Now that the product is configured set the owner to be the registry
+        # experts team.
+        product.owner = getUtility(ILaunchpadCelebrities).registry_experts
 
     def _createBugTaskAndWatch(self, data, set_bugtracker=False):
         """Create a bugtask and bugwatch on the chosen product.

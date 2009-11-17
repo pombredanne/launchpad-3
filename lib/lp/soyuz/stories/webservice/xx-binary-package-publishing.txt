@@ -110,7 +110,7 @@ access to the PPA publications.
 
     >>> cprov_bins_response = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedBinaries')
-    >>> print cprov_bins_response.getOutput()
+    >>> print cprov_bins_response
     HTTP/1.1 200 Ok
     ...
 
@@ -118,7 +118,7 @@ Any other user attempt would result in a 401 error.
 
     >>> response = user_webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedBinaries')
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 401 Unauthorized
     ...
 
@@ -127,7 +127,6 @@ also fail in their quest.
 
     >>> private_publication_url = pubs['entries'][0]['self_link']
     >>> response = user_webservice.get(private_publication_url)
-    >>> print response.getOutput()
+    >>> print response
     HTTP/1.1 401 Unauthorized
     ...
-

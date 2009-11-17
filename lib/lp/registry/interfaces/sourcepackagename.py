@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Source package name interfaces."""
@@ -17,6 +19,7 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
+from lazr.restful.declarations import webservice_error
 
 
 class ISourcePackageName(Interface):
@@ -25,9 +28,6 @@ class ISourcePackageName(Interface):
     This is a tiny table that allows multiple SourcePackage entities to share
     a single name.
     """
-
-    """Name of a SourcePackage"""
-
     id = Int(title=_("ID"), required=True)
     name = TextLine(title=_("Valid Source package name"),
                     required=True, constraint=name_validator)
@@ -72,5 +72,5 @@ class ISourcePackageNameSet(Interface):
 
 class NoSuchSourcePackageName(NameLookupFailed):
     """Raised when we can't find a particular sourcepackagename."""
-
+    webservice_error(400)
     _message_prefix = "No such source package"

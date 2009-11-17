@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Announcement views."""
 
@@ -11,39 +12,36 @@ __all__ = [
     'AnnouncementRetractView',
     'AnnouncementDeleteView',
     'AnnouncementEditView',
-    'AnnouncementContextMenu',
     'AnnouncementSetView',
     'HasAnnouncementsView',
+    'AnnouncementView',
     ]
 
-from zope.interface import Interface
-
+from zope.interface import implements, Interface
 from zope.schema import Choice, TextLine
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 
 from lp.registry.interfaces.announcement import IAnnouncement
-from canonical.launchpad import _
-from canonical.launchpad.fields import AnnouncementDate, Summary, Title
-from canonical.launchpad.interfaces.validation import valid_webref
 
-from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, custom_widget,
-    enabled_with_permission, LaunchpadView, LaunchpadFormView, Link
-    )
+from canonical.config import config
+from canonical.launchpad import _
 from canonical.launchpad.browser.feeds import (
     AnnouncementsFeedLink, FeedsMixin, RootAnnouncementsFeedLink)
+from canonical.launchpad.fields import AnnouncementDate, Summary, Title
+from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-
+from canonical.launchpad.webapp.launchpadform import (
+    action, custom_widget, LaunchpadFormView)
+from canonical.launchpad.webapp.menu import (
+    Link, NavigationMenu, enabled_with_permission)
+from canonical.launchpad.webapp.publisher import canonical_url, LaunchpadView
 from canonical.widgets import AnnouncementDateWidget
 
 
-class AnnouncementContextMenu(ContextMenu):
-
-    usedfor = IAnnouncement
-    links = ['edit', 'retarget', 'retract']
+class AnnouncementMenuMixin:
+    """A mixin of links common to many menus."""
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -52,17 +50,61 @@ class AnnouncementContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def retarget(self):
-        text = 'Move to another project'
+        text = 'Move announcement'
         return Link('+retarget', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def publish(self):
+        text = 'Publish announcement'
+        enabled = not self.context.published
+        return Link('+publish', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def retract(self):
         text = 'Retract announcement'
-        return Link('+retract', text, icon='edit')
+        enabled = self.context.published
+        return Link('+retract', text, icon='remove', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete announcement'
+        return Link('+delete', text, icon='trash-icon')
+
+    @enabled_with_permission('launchpad.Edit')
+    def announce(self):
+        text = 'Make announcement'
+        summary = 'Create an item of news for this project'
+        return Link('+announce', text, summary, icon='add')
+
+
+class AnnouncementEditNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
+    """A sub-menu for different aspects of modifying an announcement."""
+
+    usedfor = IAnnouncement
+    facet = 'overview'
+    title = 'Change announcement'
+    links = ['edit', 'retarget', 'publish', 'retract', 'delete']
+
+
+class IAnnouncementCreateMenu(Interface):
+    """A marker interface for creation announcement navigation menu."""
+
+
+class AnnouncementCreateNavigationMenu(NavigationMenu, AnnouncementMenuMixin):
+    """A sub-menu for different aspects of modifying an announcement."""
+
+    usedfor = IAnnouncementCreateMenu
+    facet = 'overview'
+    title = 'Create announcement'
+    links = ['announce']
 
 
 class AnnouncementFormMixin:
     """A mixin to provide the common form features."""
+
+    @property
+    def label(self):
+        return self.context.title
 
     @property
     def cancel_url(self):
@@ -85,13 +127,14 @@ class AnnouncementAddView(LaunchpadFormView):
 
     schema = AddAnnouncementForm
     label = "Make an announcement"
+    page_title = label
 
     custom_widget('publication_date', AnnouncementDateWidget)
 
     @action(_('Make announcement'), name='announce')
     def announce_action(self, action, data):
         """Registers a new announcement."""
-        announcement = self.context.announce(
+        self.context.announce(
             user = self.user,
             title = data.get('title'),
             summary = data.get('summary'),
@@ -115,7 +158,7 @@ class AnnouncementEditView(AnnouncementFormMixin, LaunchpadFormView):
 
     schema = AddAnnouncementForm
     field_names = ['title', 'summary', 'url', ]
-    label = _('Modify this announcement')
+    page_title = 'Modify announcement'
 
     @property
     def initial_values(self):
@@ -143,10 +186,11 @@ class AnnouncementRetargetForm(Interface):
 
 
 class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
+    """A view to move an annoucement to another project."""
 
     schema = AnnouncementRetargetForm
     field_names = ['target']
-    label = _('Move this announcement to a different project')
+    page_title = 'Move announcement'
 
     def validate(self, data):
         """Ensure that the person can publish announcement at the new
@@ -177,24 +221,26 @@ class AnnouncementRetargetView(AnnouncementFormMixin, LaunchpadFormView):
 
 
 class AnnouncementPublishView(AnnouncementFormMixin, LaunchpadFormView):
+    """A view to publish an annoucement."""
 
     schema = AddAnnouncementForm
     field_names = ['publication_date']
-    label = _('Publish this announcement')
+    page_title = 'Publish announcement'
 
     custom_widget('publication_date', AnnouncementDateWidget)
 
     @action(_('Publish'), name='publish')
     def publish_action(self, action, data):
         publication_date = data['publication_date']
-        self.context.set_publication_date(publication_date)
+        self.context.setPublicationDate(publication_date)
         self.next_url = canonical_url(self.context.target)+'/+announcements'
 
 
 class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
+    """A view to unpublish an announcement."""
 
     schema = IAnnouncement
-    label = _('Retract this announcement')
+    page_title = 'Retract announcement'
 
     @action(_('Retract'), name='retract')
     def retract_action(self, action, data):
@@ -203,9 +249,10 @@ class AnnouncementRetractView(AnnouncementFormMixin, LaunchpadFormView):
 
 
 class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
+    """A view to delete an annoucement."""
 
     schema = IAnnouncement
-    label = _('Delete this announcement')
+    page_title = 'Delete announcement'
 
     @action(_("Delete"), name="delete", validator='validate_cancel')
     def action_delete(self, action, data):
@@ -215,6 +262,9 @@ class AnnouncementDeleteView(AnnouncementFormMixin, LaunchpadFormView):
 
 class HasAnnouncementsView(LaunchpadView, FeedsMixin):
     """A view class for pillars which have announcements."""
+    implements(IAnnouncementCreateMenu)
+
+    batch_size = config.launchpad.announcement_batch_size
 
     @cachedproperty
     def feed_url(self):
@@ -228,20 +278,25 @@ class HasAnnouncementsView(LaunchpadView, FeedsMixin):
     @cachedproperty
     def announcements(self):
         published_only = not check_permission('launchpad.Edit', self.context)
-        return self.context.announcements(
+        return self.context.getAnnouncements(
                     limit=None, published_only=published_only)
 
     @cachedproperty
     def latest_announcements(self):
         published_only = not check_permission('launchpad.Edit', self.context)
-        return self.context.announcements(
+        return self.context.getAnnouncements(
                     limit=5, published_only=published_only)
+
+    @cachedproperty
+    def show_announcements(self):
+        return (self.latest_announcements.count() > 0
+            or check_permission('launchpad.Edit', self.context))
 
     @cachedproperty
     def announcement_nav(self):
         return BatchNavigator(
             self.announcements, self.request,
-            size=config.launchpad.default_batch_size)
+            size=self.batch_size)
 
 
 class AnnouncementSetView(HasAnnouncementsView):
@@ -254,3 +309,14 @@ class AnnouncementSetView(HasAnnouncementsView):
         AnnouncementsFeedLink,
         RootAnnouncementsFeedLink,
         )
+
+    page_title = 'Announcements from all projects hosted in Launchpad'
+    label = page_title
+
+
+class AnnouncementView(LaunchpadView):
+    """A view class for a single announcement."""
+
+    @property
+    def label(self):
+        return self.context.title

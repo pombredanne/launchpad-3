@@ -5,7 +5,6 @@ been accepted as targeting a specific series of a distribution:
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
-  sid   0
   sarge 1
   woody 2
 
@@ -13,7 +12,6 @@ been accepted as targeting a specific series of a distribution:
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
-  sid   0
   sarge 1
   woody 2
 
@@ -21,13 +19,11 @@ been accepted as targeting a specific series of a distribution:
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
-  breezy-autotest 0
-  grumpy          0
   hoary           1
   warty           1
 
-  >>> print anon_browser.getLink("breezy-autotest").url
-  http://bugs.launchpad.dev/ubuntu/breezy-autotest/+bugs
+  >>> print anon_browser.getLink("hoary").url
+  http://bugs.launchpad.dev/ubuntu/hoary/+bugs
 
 The same portlet is available on the bugs homepage for the distro:
 
@@ -35,7 +31,6 @@ The same portlet is available on the bugs homepage for the distro:
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
-  sid   0
   sarge 1
   woody 2
 
@@ -43,7 +38,6 @@ The same portlet is available on the bugs homepage for the distro:
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
-  sid   0
   sarge 1
   woody 2
 
@@ -55,26 +49,22 @@ homepages:
   >>> print extract_text(portlet)
   Series-targeted bugs
   1.0   1
-  trunk 0
 
   >>> anon_browser.open("http://bugs.launchpad.dev/firefox/1.0/+bugs")
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
   1.0   1
-  trunk 0
 
   >>> anon_browser.open("http://bugs.launchpad.dev/firefox/+bugs-index")
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
   1.0   1
-  trunk 0
 
   >>> anon_browser.open("http://bugs.launchpad.dev/firefox/1.0/+bugs-index")
   >>> portlet = find_portlet(anon_browser.contents, "Series-targeted bugs")
   >>> print extract_text(portlet)
   Series-targeted bugs
   1.0   1
-  trunk 0
 

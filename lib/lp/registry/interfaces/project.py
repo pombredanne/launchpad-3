@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Project-related interfaces for Launchpad."""
@@ -7,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IProject',
+    'IProjectPublic',
     'IProjectSeries',
     'IProjectSet',
     ]
@@ -17,6 +20,7 @@ from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
+from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
@@ -33,8 +37,10 @@ from lp.registry.interfaces.pillar import IPillar
 from lp.blueprints.interfaces.specificationtarget import (
     IHasSpecifications)
 from lp.blueprints.interfaces.sprint import IHasSprints
-from canonical.launchpad.interfaces.translationgroup import (
+from lp.translations.interfaces.translationgroup import (
     IHasTranslationGroup)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload, PillarNameField)
@@ -53,14 +59,13 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
-               IHasBugs, IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon,
-               IHasLogo, IHasMentoringOffers, IHasMergeProposals,
-               IHasMilestones, IHasMugshot, IHasOwner, IHasSpecifications,
-               IHasSprints, IHasTranslationGroup, IMakesAnnouncements,
-               IKarmaContext, IPillar):
-    """A Project."""
-    export_as_webservice_entry('project_group')
+class IProjectPublic(
+    ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
+    IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
+    IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
+    IHasOwner, IHasSpecifications, IHasSprints, IHasTranslationGroup,
+    IMakesAnnouncements, IKarmaContext, IPillar, IRootContext):
+    """Public IProject properties."""
 
     id = Int(title=_('ID'), readonly=True)
 
@@ -231,9 +236,6 @@ class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
             description=_("Whether or not this project group has been "
                           "reviewed.")))
 
-    bounties = Attribute(
-        _("The bounties that are related to this project group."))
-
     bugtracker = exported(
         Choice(title=_('Bug Tracker'), required=False,
                vocabulary='BugTracker',
@@ -262,12 +264,6 @@ class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
     def getProduct(name):
         """Get a product with name `name`."""
 
-    def ensureRelatedBounty(bounty):
-        """Ensure that the bounty is linked to this project group.
-
-        Return None.
-        """
-
     def translatables():
         """Return an iterator over products that have resources translatables.
 
@@ -281,6 +277,12 @@ class IProject(ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches,
 
     def getSeries(series_name):
         """Return a ProjectSeries object with name `series_name`."""
+
+
+class IProject(IProjectPublic, IStructuralSubscriptionTarget):
+    """A Project."""
+
+    export_as_webservice_entry('project_group')
 
 
 # Interfaces for set
@@ -326,9 +328,9 @@ class IProjectSet(Interface):
     @operation_returns_collection_of(IProject)
     @export_read_operation()
     def search(text=None, soyuz=None,
-                     rosetta=None, malone=None,
-                     bazaar=None,
-                     search_products=True):
+               rosetta=None, malone=None,
+               bazaar=None,
+               search_products=False):
         """Search through the Registry database for projects that match the
         query terms. text is a piece of text in the title / summary /
         description fields of project (and possibly product). soyuz,
@@ -363,4 +365,3 @@ class IProjectSeries(IHasSpecifications, IHasAppointedDriver, IHasIcon,
     project = Object(schema=IProject,
                      title=u"The project this series belongs to",
                      required=True, readonly=True)
-

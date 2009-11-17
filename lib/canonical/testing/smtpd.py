@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """SMTP test helper."""
 
@@ -8,6 +9,8 @@ __all__ = [
     'SMTPController',
     ]
 
+
+import fcntl
 
 import logging
 import Queue as queue
@@ -71,3 +74,8 @@ class SMTPController(QueueController):
     def _make_server(self, host, port):
         """See `QueueController`."""
         self.server = SMTPServer(host, port, self.queue)
+        # Set FD_CLOEXEC on the port's file descriptor, so that forked
+        # processes like uuidd won't steal the port.
+        flags = fcntl.fcntl(self.server._fileno, fcntl.F_GETFD)
+        flags |= fcntl.FD_CLOEXEC
+        fcntl.fcntl(self.server._fileno, fcntl.F_SETFD, flags)

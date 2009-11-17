@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to CodeImport."""
@@ -31,7 +33,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.enums import (
     BranchType, CodeImportResultStatus, CodeImportReviewStatus,
@@ -230,13 +231,16 @@ class CodeImportSet:
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
         if review_status is None:
-            review_status = CodeImportReviewStatus.NEW
+            # Auto approve git imports.
+            if rcs_type == RevisionControlSystems.GIT:
+                review_status = CodeImportReviewStatus.REVIEWED
+            else:
+                review_status = CodeImportReviewStatus.NEW
         # Create the branch for the CodeImport.
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        namespace = get_branch_namespace(vcs_imports, product)
+        namespace = get_branch_namespace(registrant, product)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
-            registrant=vcs_imports)
+            registrant=registrant)
 
         code_import = CodeImport(
             registrant=registrant, owner=registrant, branch=import_branch,

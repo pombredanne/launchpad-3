@@ -635,7 +635,7 @@ simplicity and claim 'build from ACCEPTED' feature.
 
 Build creation is done based on the SourcePackageRelease object, step 5:
 
-  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> multibar_build = multibar_spr.createBuild(
   ...     hoary['i386'], PackagePublishingPocket.RELEASE,
   ...     multibar_src_queue.archive)
@@ -856,12 +856,12 @@ Both, DSC and changesfile are signed with Name16's second key.
   340CA3BB270E2716C9EE0B768E7EB7086C64A8C5
 
 Let's modify the current ACL rules for ubuntu, moving the upload
-rights to all components from 'ubuntu-team' to 'sabdfl':
+rights to all components from 'ubuntu-team' to 'mark':
 
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> from canonical.launchpad.database import ArchivePermission
-  >>> new_uploader = getUtility(IPersonSet).getByName('sabdfl')
+  >>> new_uploader = getUtility(IPersonSet).getByName('mark')
   >>> for permission in ArchivePermission.select():
   ...     permission.person = new_uploader
   ...     permission.syncUpdate()

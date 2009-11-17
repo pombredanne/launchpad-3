@@ -1,6 +1,17 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+__all__ = [
+    'InvalidBatchSizeView',
+    'NotFoundView',
+    'ProtocolErrorView',
+    'ReadOnlyErrorView',
+    'RequestExpiredView',
+    'SystemErrorView',
+    'TranslationUnavailableView',
+    ]
+
 
 import sys
 import traceback
@@ -26,6 +37,9 @@ class SystemErrorView:
     Also, sets a 500 response code.
     """
     implements(ISystemErrorView)
+
+    page_title = 'Error: Launchpad system error'
+    override_title_breadcrumbs = True
 
     plain_oops_template = ViewPageTemplateFile(
         '../templates/oops-veryplain.pt')
@@ -177,6 +191,9 @@ class ProtocolErrorView(SystemErrorView):
 
 class NotFoundView(SystemErrorView):
 
+    page_title = 'Error: Page not found'
+    override_title_breadcrumbs = True
+
     response_code = 404
 
     def __call__(self):
@@ -197,6 +214,9 @@ class NotFoundView(SystemErrorView):
 
 class RequestExpiredView(SystemErrorView):
 
+    page_title = 'Error: Timeout'
+    override_title_breadcrumbs = True
+
     response_code = 503
 
     def __init__(self, context, request):
@@ -214,6 +234,9 @@ class RequestExpiredView(SystemErrorView):
 class InvalidBatchSizeView(SystemErrorView):
     """View rendered when an InvalidBatchSizeError is raised."""
 
+    page_title = "Error: Invalid Batch Size"
+    override_title_breadcrumbs = True
+
     response_code = 400
 
     def isSystemError(self):
@@ -221,12 +244,17 @@ class InvalidBatchSizeView(SystemErrorView):
         return False
 
     @property
-    def max_batch_size(self):
-        """Return the maximum configured batch size."""
-        return config.launchpad.max_batch_size
+    def error_message(self):
+        """Return the error message from the exception."""
+        if len(self.context.args) > 0:
+            return self.context.args[0]
+        return ""
 
 
 class TranslationUnavailableView(SystemErrorView):
+
+    page_title = 'Error: Translation page is not available'
+    override_title_breadcrumbs = True
 
     response_code = 503
 
@@ -236,6 +264,9 @@ class TranslationUnavailableView(SystemErrorView):
 
 class ReadOnlyErrorView(SystemErrorView):
     """View rendered when an InvalidBatchSizeError is raised."""
+
+    page_title = "Error: you can't do this right now"
+    override_title_breadcrumbs = True
 
     response_code = 503
 

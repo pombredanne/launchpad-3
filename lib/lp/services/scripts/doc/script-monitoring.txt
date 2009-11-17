@@ -19,7 +19,6 @@ IScriptActivitySet.recordSuccess():
   >>> import os
   >>> import socket
   >>> import subprocess
-  >>> import sys
   >>> import tempfile
   >>> import pytz
   >>> import transaction
@@ -94,13 +93,21 @@ and others where it is useful to monitor the result.
   ...     script.run()
   ... """)
   >>> script_file.flush()
+  >>> transaction.commit()
+
+Prepare an environment to run the testing script.
+
+  >>> env = dict(os.environ)
+  >>> env['LPCONFIG'] = 'testrunner'
+
+  >>> import canonical
+  >>> lp_tree = os.path.join(
+  ...     os.path.dirname(canonical.__file__), os.pardir, os.pardir)
+  >>> lp_py = os.path.join(lp_tree, 'bin/py')
 
 We'll now run this script, telling it to fail:
 
-  >>> transaction.commit()
-  >>> env = dict(os.environ)
-  >>> env['LPCONFIG'] = 'testrunner'
-  >>> proc = subprocess.Popen([sys.executable, script_file.name, 'fail'],
+  >>> proc = subprocess.Popen([lp_py, script_file.name, 'fail'],
   ...                         env=env, stdin=subprocess.PIPE,
   ...                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   >>> (out, err) = proc.communicate()
@@ -118,7 +125,7 @@ And no activity got recorded:
 
 If we run it such that it succeeds, we will get an activity record:
 
-  >>> proc = subprocess.Popen([sys.executable, script_file.name, 'pass'],
+  >>> proc = subprocess.Popen([lp_py, script_file.name, 'pass'],
   ...                         env=env, stdin=subprocess.PIPE,
   ...                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
   >>> (out, err) = proc.communicate()

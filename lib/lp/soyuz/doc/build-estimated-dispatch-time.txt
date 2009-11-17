@@ -33,7 +33,7 @@ distroseries).
     >>> hoary.main_archive.require_virtualized
     False
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.registry.interfaces.pocket import (
     ...     PackagePublishingPocket)
     >>> alsa_hoary = hoary.getSourcePackage('alsa-utils')
     >>> alsa_spr = alsa_hoary['1.0.9a-4'].sourcepackagerelease
@@ -125,9 +125,9 @@ We first add a build for the 'pmount' source package to cprov's PPA.
     >>> naked_build.estimated_build_duration = timedelta(minutes=12)
 
 Followed by another build for the 'iceweasel' source package that is added
-to sabdfl's PPA.
+to mark's PPA.
 
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> [iceweasel_source] = cprov.archive.getPublishedSources(
     ...     name='iceweasel', version='1.0')
     >>> iceweasel_spr = iceweasel_source.sourcepackagerelease
@@ -135,7 +135,7 @@ to sabdfl's PPA.
     iceweasel - 1.0
 
     >>> iceweasel_build = iceweasel_spr.createBuild(
-    ...     hoary['i386'], PackagePublishingPocket.RELEASE, sabdfl.archive)
+    ...     hoary['i386'], PackagePublishingPocket.RELEASE, mark.archive)
     >>> iceweasel_bqueue = iceweasel_build.createBuildQueueEntry()
     >>> iceweasel_bqueue.lastscore = 666
     >>> iceweasel_build.buildstate = BuildStatus.NEEDSBUILD
@@ -162,13 +162,13 @@ seconds (48 minutes * 60).
     >>> estimate - now
     datetime.timedelta(0, 2880, ...)
 
-Now sabdfl's PPA will be disabled. This has the effect that all builds
+Now mark's PPA will be disabled. This has the effect that all builds
 associated with it (i.e. the 'iceweasel' build) are ignored while
 calculating the estimated dispatch time and the latter becomes effectively
 "now" for the 'pmount' build.
 
-    >>> sabdfl.archive.enabled = False
-    >>> syncUpdate(sabdfl.archive)
+    >>> mark.archive.enabled = False
+    >>> syncUpdate(mark.archive)
     >>> estimate = pmount_build.getEstimatedBuildStartTime()
     >>> estimate > now
     True

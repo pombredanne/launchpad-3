@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Archive dependencies helper function.
 
@@ -35,11 +36,10 @@ __all__ = [
     'pocket_dependencies',
     ]
 
-
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, ALLOW_RELEASE_BUILDS)
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
+from lp.soyuz.interfaces.archive import ArchivePurpose, ALLOW_RELEASE_BUILDS
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lazr.uri import URI
 
 
@@ -155,8 +155,19 @@ def get_sources_list_for_building(build):
              get_components_for_building(build))
             )
 
-    return _get_sources_list_for_dependencies(deps, build.distroarchseries)
+    sources_list_lines = _get_sources_list_for_dependencies(
+        deps, build.distroarchseries)
 
+    # Append external sources_list lines for this archive if it's
+    # specified in the configuration.
+    dependencies = build.archive.external_dependencies
+    if dependencies is not None:
+        for archive_dep in dependencies.splitlines():
+            line = archive_dep % (
+                {'series': build.distroarchseries.distroseries.name})
+            sources_list_lines.append(line)
+
+    return sources_list_lines
 
 def _has_published_binaries(archive, distroarchseries, pocket):
     """Whether or not the archive dependency has published binaries."""

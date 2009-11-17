@@ -3,8 +3,7 @@
 The tag cloud of projects is one way in which the number and scope of available
 bazaar branches is shown to the user.
 
-    >>> anon_browser.open("http://code.launchpad.dev/")
-    >>> anon_browser.getLink(url='/+project-cloud').click()
+    >>> anon_browser.open("http://code.launchpad.dev/projects")
     >>> print anon_browser.title
     Projects with active branches
 
@@ -32,8 +31,7 @@ Update firefox to officially use codehosting:
 The class for firefox in the project tag cloud will now show 'highlight' rather
 than shade.
 
-    >>> anon_browser.open("http://code.launchpad.dev/")
-    >>> anon_browser.getLink(url='/+project-cloud').click()
+    >>> anon_browser.open("http://code.launchpad.dev/projects")
     >>> tags = find_tag_by_id(anon_browser.contents, 'project-tags')
     >>> for anchor in tags.fetch('a'):
     ...     if anchor.renderContents() == 'firefox':

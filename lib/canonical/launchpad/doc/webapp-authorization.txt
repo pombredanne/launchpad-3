@@ -15,8 +15,8 @@ something/required:permission.Name.
     >>> login('test@canonical.com')
     >>> check_permission('launchpad.Edit', sample_person)
     True
-    >>> sabdfl = personset.getByEmail('mark@hbd.com')
-    >>> check_permission('launchpad.Edit', sabdfl)
+    >>> mark = personset.getByEmail('mark@example.com')
+    >>> check_permission('launchpad.Edit', mark)
     False
 
 If the permission doesn't exist, it raises an error:

@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Code import interfaces."""
@@ -29,6 +31,8 @@ def validate_cvs_root(cvsroot):
         raise LaunchpadValidationError(e)
     if root.method == 'local':
         raise LaunchpadValidationError('Local CVS roots are not allowed.')
+    if not root.hostname:
+        raise LaunchpadValidationError('CVS root is invalid.')
     if root.hostname.count('.') == 0:
         raise LaunchpadValidationError(
             'Please use a fully qualified host name.')

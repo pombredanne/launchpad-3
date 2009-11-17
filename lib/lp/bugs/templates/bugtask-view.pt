@@ -5,7 +5,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
 >
   <body>
     <metal:heading fill-slot="pageheading">
@@ -66,7 +66,7 @@
           <div class="field">
             <table>
             <tr>
-              <td>
+              <td style="padding-right: 1em">
                 <label tal:attributes="for view/status_widget/name"
                        tal:content="view/status_widget/label">
                   Status

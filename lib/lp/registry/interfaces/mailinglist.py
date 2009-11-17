@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Mailing list interfaces."""
@@ -649,12 +651,12 @@ class IMailingListAPIView(Interface):
             team.
         """
 
-    def holdMessage(team_name, text):
+    def holdMessage(team_name, bytes):
         """Hold the message for approval though the Launchpad u/i.
 
         :param team_name: The name of the team/mailing list that this message
             was posted to.
-        :param text: The original text of the message.
+        :param bytes: The original text of the message as bytes.
         :return: True
         """
 

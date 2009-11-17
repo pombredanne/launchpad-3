@@ -11,14 +11,13 @@ team.
     Ubuntu Linux
     Ubuntu Test
     Tomcat
-    &raquo; Show related projects
 
 The +related-software page displays a table with links to open bugs,
 unimplemented specs and open questions.
 
     >>> anon_browser.getLink('Show related projects').click()
-    >>> print anon_browser.title
-    Software related to Ubuntu Team
+    >>> anon_browser.title
+    'Software related to Ubuntu Team...
 
     >>> related_projects = find_tag_by_id(
     ...     anon_browser.contents, 'related-projects')
@@ -37,15 +36,15 @@ unimplemented specs and open questions.
     >>> print anon_browser.getLink('8').url
     http://launchpad.dev/ubuntu/+questions
 
-A person's projects are listed on the 'Related Software' page,
+A person's projects are listed on the 'Related software' page,
 accessible through the main navigation menu.
 
-    >>> anon_browser.open('http://launchpad.dev/~sabdfl')
-    >>> anon_browser.getLink('Related Software').click()
+    >>> anon_browser.open('http://launchpad.dev/~mark')
+    >>> anon_browser.getLink('Related software').click()
     >>> print anon_browser.url
-    http://launchpad.dev/~sabdfl/+related-software
+    http://launchpad.dev/~mark/+related-software
     >>> print anon_browser.title
-    Software related to Mark Shuttleworth
+    Software related to Mark Shuttleworth...
 
 In the case of a person that owns/drives more than
 config.launchpad.default_batch_size, a message is displayed and the

@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Debbugs ExternalBugTracker utility."""
 
@@ -55,6 +56,11 @@ class DebBugs(ExternalBugTracker):
     version = None
     debbugs_pl = os.path.join(
         os.path.dirname(debbugs.__file__), 'debbugs-log.pl')
+
+    # Because we keep a local copy of debbugs, we remove the batch_size
+    # limit so that all debbugs watches that need checking will be
+    # checked each time checkwatches runs.
+    batch_size = None
 
     def __init__(self, baseurl, db_location=None):
         super(DebBugs, self).__init__(baseurl)

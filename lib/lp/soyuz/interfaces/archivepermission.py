@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0213
 
 """ArchivePermission interface."""
@@ -121,6 +123,13 @@ class IArchivePermission(Interface):
             title=_("Package set name"),
             required=True))
 
+    distro_series_name = exported(
+        TextLine(
+            title=_(
+                "The name of the distro series associated with the "
+                "package set."),
+            required=True))
+
 
 class IArchiveUploader(IArchivePermission):
     """Marker interface for URL traversal of uploader permissions."""
@@ -202,9 +211,10 @@ class IArchivePermissionSet(Interface):
             authorised to upload the named source package.
         """
 
-    def packagesetsForUploader(person):
+    def packagesetsForUploader(archive, person):
         """The `ArchivePermission` records for the person's package sets.
 
+        :param archive: The archive the permission applies to.
         :param person: An `IPerson` for whom you want to find out which
             package sets he has access to.
 
@@ -212,13 +222,16 @@ class IArchivePermissionSet(Interface):
             'person' is allowed to upload to.
         """
 
-    def packagesetsForSourceUploader(sourcepackagename, person):
+    def packagesetsForSourceUploader(archive, sourcepackagename, person):
         """The package set based permissions for a given source and uploader.
 
-        Return the `IArchivePermission` records for all package sets
-            * that include the given source package name
-            * the given person is authorized to upload to
+        Return the `IArchivePermission` records that
+            * apply to the given `archive`
+            * relate to
+                - package sets that include the given source package name
+                - the given `person`
 
+        :param archive: The archive the permission applies to.
         :param sourcepackagename: the source package name; can be
             either a string or a `ISourcePackageName`.
         :param person: An `IPerson` for whom you want to find out which
@@ -231,10 +244,33 @@ class IArchivePermissionSet(Interface):
             person may upload.
         """
 
-    def isSourceUploadAllowed(sourcepackagename, person):
+    def packagesetsForSource(
+        archive, sourcepackagename, direct_permissions=True):
+        """All package set based permissions for the given archive and source.
+
+        This method is meant to aid the process of "debugging" package set
+        based archive permission since It allows the listing of permissions
+        for the given source package irrespective of a person.
+
+        :param archive: The archive the permission applies to.
+        :param sourcepackagename: the source package name; can be
+            either a string or a `ISourcePackageName`.
+        :param direct_permissions: If set, only package sets that directly
+            include the given source will be considered.
+
+        :raises SourceNotFound: if a source package with the given
+            name could not be found.
+        :return: `ArchivePermission` records for the package sets that
+            include the given source package name and apply to the
+            archive in question.
+        """
+
+    def isSourceUploadAllowed(
+        archive, sourcepackagename, person, distroseries=None):
         """True if the person is allowed to upload the given source package.
 
         Return True if there exists a permission that combines
+            * the given `archive`
             * a package set that includes the given source package name
             * the given person or a team he is a member of
 
@@ -242,19 +278,27 @@ class IArchivePermissionSet(Interface):
         an explicit permission then only such explicit permissions will
         be considered.
 
+        :param archive: The archive the permission applies to.
         :param sourcepackagename: the source package name; can be
             either a string or a `ISourcePackageName`.
         :param person: An `IPerson` for whom you want to find out which
             package sets he has access to.
+        :param distroseries: The `IDistroSeries` for which to check
+            permissions. If none is supplied then `currentseries` in
+            Ubuntu is assumed.
 
         :raises SourceNotFound: if a source package with the given
             name could not be found.
         :return: True if the person is allowed to upload the source package.
         """
 
-    def uploadersForPackageset(packageset, direct_permissions=True):
+    def uploadersForPackageset(archive, packageset, direct_permissions=True):
         """The `ArchivePermission` records for uploaders to the package set.
 
+        Please note: if a package set *name* is passed the respective
+                     package set in the current distro series will be used.
+
+        :param archive: The archive the permission applies to.
         :param packageset: An `IPackageset` or a string package set name.
         :param direct_permissions: If True only consider permissions granted
             directly for the package set at hand. Otherwise, include any
@@ -299,13 +343,17 @@ class IArchivePermissionSet(Interface):
             already exists.
         """
 
-    def newPackagesetUploader(person, packageset, explicit=False):
+    def newPackagesetUploader(archive, person, packageset, explicit=False):
         """Create and return a new `ArchivePermission` for an uploader.
 
+        Please note: if a package set *name* is passed the respective
+                     package set in the current distro series will be used.
+
+        :param archive: The archive the permission applies to.
         :param person: An `IPerson` for whom you want to add permission.
         :param packageset: An `IPackageset` or a string package set name.
-        :param explicit: True if the package set in question requires
-            specialist skills for proper handling.
+        :param explicit: True if the permissions granted by this package set
+            exclude permissions granted by non-explicit package sets.
         :raises ValueError: if an `ArchivePermission` record for this
             person and packageset already exists *but* with a different
             'explicit' flag value.
@@ -345,9 +393,13 @@ class IArchivePermissionSet(Interface):
             package name.
         """
 
-    def deletePackagesetUploader(person, packageset, explicit=False):
+    def deletePackagesetUploader(archive, person, packageset, explicit=False):
         """Revoke upload permissions for a person.
 
+        Please note: if a package set *name* is passed the respective
+                     package set in the current distro series will be used.
+
+        :param archive: The archive the permission applies to.
         :param person: An `IPerson` for whom you want to revoke permission.
         :param packageset: An `IPackageset` or a string package set name.
         :param explicit: The value of the 'explicit' flag for the permission

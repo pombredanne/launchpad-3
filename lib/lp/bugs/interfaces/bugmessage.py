@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Bug message interfaces."""
@@ -19,8 +21,8 @@ from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugwatch import IBugWatch
 from canonical.launchpad.interfaces.launchpad import IHasBug
 from canonical.launchpad.interfaces.message import IMessage
-from canonical.launchpad.validators.bugattachment import (
-    bug_attachment_size_constraint)
+from canonical.launchpad.validators.attachment import (
+    attachment_size_constraint)
 
 
 class IBugMessage(IHasBug):
@@ -78,7 +80,7 @@ class IBugMessageAddForm(Interface):
     comment = Text(title=u"Comment", required=False)
     filecontent = Bytes(
         title=u"Attachment", required=False,
-        constraint=bug_attachment_size_constraint)
+        constraint=attachment_size_constraint)
     patch = Bool(title=u"This attachment is a patch", required=False,
         default=False)
     attachment_description = Title(title=u'Description', required=False)

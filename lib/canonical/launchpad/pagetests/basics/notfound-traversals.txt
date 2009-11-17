@@ -67,8 +67,6 @@ status is returned.
 >>> check_redirect("/+index", host='feeds.launchpad.dev', status=301)
 >>> check("/+graphics")
 
->>> check("/translations/+about")
-
 >>> check("/+imports", host='translations.launchpad.dev')
 >>> check("/+imports/1/+index", auth=True, host='translations.launchpad.dev')
 >>> check_not_found("/+imports/foo", host='translations.launchpad.dev')
@@ -96,8 +94,6 @@ status is returned.
 >>> check_not_found("/+groups/foos",
 ...                 host='translations.launchpad.dev')
 
->>> check("/bounties")
->>> check("/bounties/foomatic-widgets")
 
 >>> check("/codeofconduct")
 >>> check("/codeofconduct/1.0")
@@ -105,7 +101,6 @@ status is returned.
 
 >>> check("/projectgroups", auth=True)
 >>> check("/projectgroups/+all", auth=True)
->>> check("/projectgroups/+review", auth=True)
 >>> check("/mozilla")
 >>> check("/mozilla/firefox")
 >>> check("/mozilla/+branches")
@@ -147,7 +142,6 @@ status is returned.
 >>> check("/distros/+add", auth=True)
 
 >>> check("/ubuntu")
->>> check("/ubuntu/+bounties")
 >>> check("/ubuntu/+bugs")
 >>> check("/ubuntu/+specs")
 >>> check("/ubuntu/+cve")
@@ -159,8 +153,6 @@ status is returned.
 >>> check("/ubuntu/+settings", host='translations.launchpad.dev',
 ...       auth=True)
 >>> check("/ubuntu/hoary/+addmilestone", auth=True)
->>> check("/ubuntu/+linkbounty", auth=True)
->>> check("/ubuntu/+addbounty", auth=True)
 >>> check("/ubuntu/+addspec", auth=True)
 >>> check("/ubuntu/+imports", host='translations.launchpad.dev')
 >>> check("/debian/+milestone/3.1")
@@ -208,10 +200,6 @@ translations site. This way, we don't break existing links to it. Before
 removing this, you must be completely sure that no supported Ubuntu release
 is still pointing to this old URL (see bug #138090).
 
->>> check_redirect("/ubuntu/hoary/+source/evolution/+translate",
-...     host="launchpad.dev", status=301)
->>> check("/ubuntu/hoary/+source/evolution/+translate",
-...       host='translations.launchpad.dev' )
 >>> check_redirect("/ubuntu/hoary/+source/evolution/+translations", status=301)
 >>> check("/ubuntu/hoary/+source/evolution/+translations",
 ...       host='translations.launchpad.dev')
@@ -243,7 +231,6 @@ is still pointing to this old URL (see bug #138090).
 >>> check("/ubuntu/hoary/+bugs")
 
 >>> check("/ubuntu/hoary/i386")
->>> check("/ubuntu/hoary/i386/+search")
 
 >>> check("/bugs")
 >>> check_redirect("/bugs/assigned")
@@ -340,10 +327,6 @@ The bug filing pages.
 >>> check("/ubuntu/+filebug", auth=True)
 >>> check("/ubuntu/+source/mozilla-firefox/+filebug", auth=True)
 
->>> check("/firefox/+filebug-advanced", auth=True)
->>> check("/ubuntu/+filebug-advanced", auth=True)
->>> check("/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True)
-
 Note that you should not be able to directly file a bug on a
 distroseries or sourcepackage; an IBugTask reported against a
 distroseries or sourcepackage is *targeted* to be fixed in that
@@ -353,6 +336,14 @@ or distrosourcepackage filebug page.
 >>> check_redirect("/ubuntu/warty/+filebug", auth=True)
 >>> check_redirect(
 ...     "/ubuntu/warty/+source/mozilla-firefox/+filebug", auth=True)
+
+The old +filebug-advanced form now redirects to the +filebug form.
+
+>>> check_redirect("/firefox/+filebug-advanced", auth=True, status=301)
+>>> check_redirect("/ubuntu/+filebug-advanced", auth=True, status=301)
+>>> check_redirect(
+...     "/ubuntu/+source/mozilla-firefox/+filebug-advanced", auth=True,
+...     status=301)
 
 Approving/declining a bug nomination.
 
@@ -364,7 +355,6 @@ Test /people traversals.
 >>> check("/people/")
 >>> check("/people/+requestmerge", auth=True)
 >>> check_redirect("/people/+mergerequest-sent", auth=True)
->>> check("/people/+portlet-about")
 
 This is for a team:
 
@@ -378,7 +368,6 @@ This is for a team:
 >>> check("/~name18/+reassign", auth=True)
 >>> check("/~name18/+review", auth=True)
 >>> check("/~name18/+specs")
->>> check("/~name18/+bounties")
 >>> check_redirect("/~name18/+translations", status=301)
 >>> check("/~name18/+translations", host='translations.launchpad.dev')
 >>> check("/~name18/+imports", host='translations.launchpad.dev')
@@ -413,15 +402,14 @@ And this is for a person:
 >>> check("/~name16/+edithomepage", auth=True)
 >>> check("/~name16/+review", auth=True)
 >>> check("/~name16/+portlet-emails")
->>> check("/~name16/+portlet-details")
 >>> check("/~name16/+portlet-team-assignedbugs")
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')
 
-sabdfl owns many packages, so he's a better test for some pages:
+mark owns many packages, so he's a better test for some pages:
 
->>> check("/~sabdfl/+packagebugs")
->>> check("/~sabdfl/+related-software")
+>>> check("/~mark/+packagebugs")
+>>> check("/~mark/+related-software")
 
 >>> check("/+code")
 
@@ -429,7 +417,6 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/builders/bob/")
 >>> check_redirect("/+builds", status=301)
 >>> check("/ubuntu/+source/pmount/0.1-1/+build/7/")
->>> check("/ubuntu/+source/pmount/0.1-1/+build/7/pmount/")
 
 >>> check_redirect("/support/", status=301)
 

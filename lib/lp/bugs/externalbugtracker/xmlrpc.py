@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """An XMLRPC transport which uses urllib2."""
 
@@ -11,8 +12,8 @@ __all__ = [
 
 from cookielib import Cookie
 from urllib2 import (
-    build_opener, HTTPCookieProcessor, HTTPError, HTTPRedirectHandler,
-    Request)
+    HTTPCookieProcessor, HTTPError, HTTPRedirectHandler, Request,
+    build_opener)
 from urlparse import urlparse, urlunparse
 from xmlrpclib import ProtocolError, Transport
 
@@ -49,14 +50,13 @@ class XMLRPCRedirectHandler(HTTPRedirectHandler):
 class UrlLib2Transport(Transport):
     """An XMLRPC transport which uses urllib2.
 
-    This XMLRPC transport uses the Python urllib2 module to make the
-    request, and connects via the HTTP proxy specified in the
-    environment variable `http_proxy`, i present. It also handles
-    cookies correctly, and in addition allows specifying the cookie
-    explicitly by setting `self.auth_cookie`.
+    This XMLRPC transport uses the Python urllib2 module to make the request,
+    with proxying handled by that module's semantics (though underdocumented).
+    It also handles cookies correctly, and in addition allows specifying the
+    cookie explicitly by setting `self.auth_cookie`.
 
-    Note: this transport isn't fit for general XML-RPC use. It is just
-    good enough for some of our extrnal bug tracker implementations.
+    Note: this transport isn't fit for general XMLRPC use. It is just good
+    enough for some of our external bug tracker implementations.
 
     :param endpoint: The URL of the XMLRPC server.
     """
@@ -64,10 +64,11 @@ class UrlLib2Transport(Transport):
     verbose = False
 
     def __init__(self, endpoint, cookie_jar=None):
+        Transport.__init__(self)
         self.scheme, self.host = urlparse(endpoint)[:2]
         assert (
             self.scheme in ('http', 'https'),
-            "Unsupported URL schene: %s" % self.scheme)
+            "Unsupported URL scheme: %s" % self.scheme)
         self.cookie_processor = HTTPCookieProcessor(cookie_jar)
         self.redirect_handler = XMLRPCRedirectHandler()
         self.opener = build_opener(

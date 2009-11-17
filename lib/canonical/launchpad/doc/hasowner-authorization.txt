@@ -23,11 +23,11 @@ Salgado is the owner of any FooObject we create, so he can edit it.
 
 So can a member of the Launchpad admins team.
 
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> admins = getUtility(IPersonSet).getByName('admins')
-    >>> sabdfl.inTeam(admins)
+    >>> mark.inTeam(admins)
     True
-    >>> authorization.checkAuthenticated(sabdfl)
+    >>> authorization.checkAuthenticated(mark)
     True
 
 But someone who's not salgado nor a member of the admins team won't be

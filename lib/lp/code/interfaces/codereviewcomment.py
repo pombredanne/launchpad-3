@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211
 
 """CodeReviewComment interfaces."""
@@ -63,6 +65,11 @@ class ICodeReviewComment(Interface):
             (being plain text or diffs), and a second list being any other
             attachments.
         """
+
+    as_quoted_email = exported(
+        TextLine(
+            title=_('The message as quoted in email.'),
+            readonly=True))
 
 
 class ICodeReviewCommentDeletion(Interface):

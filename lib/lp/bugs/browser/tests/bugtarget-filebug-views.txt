@@ -442,7 +442,7 @@ certain people and teams to bugs when they are filed.
     >>> debug_data = """MIME-Version: 1.0
     ... Content-type: multipart/mixed; boundary=boundary
     ... Private: yes
-    ... Subscribers: sabdfl
+    ... Subscribers: mark
     ...
     ... --boundary
     ... Content-disposition: inline
@@ -468,7 +468,7 @@ certain people and teams to bugs when they are filed.
 
     >>> for subscriber in filebug_view.extra_data.subscribers:
     ...     print subscriber
-    sabdfl
+    mark
 
     >>> filebug_view.validate(bug_data) is None
     True

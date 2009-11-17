@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Library functions for use in all scripts.
 
 """
@@ -23,6 +25,7 @@ import threading
 
 import zope.app.appsetup
 import zope.sendmail.delivery
+import zope.site.hooks
 from zope.configuration.config import ConfigurationMachine
 from zope.configuration.config import GroupingContextDecorator
 from zope.security.management import setSecurityPolicy
@@ -111,7 +114,7 @@ def execute_zcml_for_scripts(use_web_security=False):
     from zope.configuration import xmlconfig
 
     # Hook up custom component architecture calls
-    zope.app.component.hooks.setHooks()
+    zope.site.hooks.setHooks()
 
     # Load server-independent site config
     context = CustomMachine()

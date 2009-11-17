@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Source package interfaces."""
@@ -9,7 +11,7 @@ __all__ = [
     'ISourcePackage',
     'ISourcePackageFactory',
     'SourcePackageFileType',
-    'SourcePackageFormat',
+    'SourcePackageType',
     'SourcePackageRelationships',
     'SourcePackageUrgency',
     ]
@@ -20,15 +22,16 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from lp.bugs.interfaces.bugtarget import IBugTarget
+from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.soyuz.interfaces.component import IComponent
-from lazr.restful.fields import Reference
+from lazr.restful.fields import Reference, ReferenceChoice
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_read_operation,
     export_write_operation, exported, operation_parameters,
     operation_returns_entry, REQUEST_USER)
 
 
-class ISourcePackage(IBugTarget):
+class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
     """A SourcePackage. See the MagicSourcePackage specification. This
     interface preserves as much as possible of the old SourcePackage
     interface from the SourcePackage table, with the new table-less
@@ -84,14 +87,16 @@ class ISourcePackage(IBugTarget):
         "The best guess we have as to the Launchpad Project associated with "
         "this SourcePackage.")
 
+    # This is really a reference to an IProductSeries.
     productseries = exported(
-        Reference(
-            Interface, title=_("Product Series"), required=False,
+        ReferenceChoice(
+            title=_("Project series"), required=False,
+            vocabulary="ProductSeries",
+            schema=Interface,
             description=_(
-                "The best guess we have as to the Launchpad ProductSeries "
-                "for this Source Package. Try find packaging information for "
-                "this specific distroseries then try parent series and "
-                "previous Ubuntu series.")))
+                "The registered project series that this source package."
+                "is based on. This series may be the same as the one that "
+                "earlier versions of this source packages were based on.")))
 
     releases = Attribute("The full set of source package releases that "
         "have been published in this distroseries under this source "
@@ -124,6 +129,9 @@ class ISourcePackage(IBugTarget):
 
     development_version = Attribute(
         "This package on the distro's current series.")
+
+    distribution_sourcepackage = Attribute(
+        "The IDistributionSourcePackage for this source package.")
 
     def __getitem__(version):
         """Return the source package release with the given version in this
@@ -216,6 +224,22 @@ class ISourcePackage(IBugTarget):
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
 
+    def getLatestTranslationsUploads():
+        """Find latest Translations tarballs as produced by Soyuz.
+
+        :return: A list of `ILibraryFileAlias`es, usually of size zero
+            or one.  If not, they are sorted from oldest to newest.
+        """
+
+    @export_read_operation()
+    def linkedBranches():
+        """Get the official branches for this package.
+
+        This operation returns a {`Pocket`-name : `IBranch`} dict.
+
+        :return: A {`Pocket`-name : `IBranch`} dict.
+        """
+
 
 class ISourcePackageFactory(Interface):
     """A creator of source packages."""
@@ -281,7 +305,7 @@ class SourcePackageFileType(DBEnumeratedType):
         used in the build process for this source package.  """)
 
 
-class SourcePackageFormat(DBEnumeratedType):
+class SourcePackageType(DBEnumeratedType):
     """Source Package Format
 
     Launchpad supports distributions that use source packages in a variety

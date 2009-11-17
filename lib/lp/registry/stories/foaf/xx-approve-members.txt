@@ -3,7 +3,7 @@
 We have one page in which a team admin can review (approve/decline/hold) all
 proposed members at once.
 
-    >>> browser = setupBrowser(auth='Basic mark@hbd.com:test')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/~ubuntu-team/+members')
     >>> browser.getLink('Approve or decline members').click()
     >>> browser.url
@@ -36,8 +36,8 @@ Person's. A comment is also sent to the applying users and the team admins.
     ['jeff.waugh@ubuntulinux.com']
     ['limi@plone.org']
     ['limi@plone.org']
-    ['mark@hbd.com']
-    ['mark@hbd.com']
+    ['mark@example.com']
+    ['mark@example.com']
     ['test@canonical.com']
     >>> print raw_msg
     Content-Type: text/plain; charset="utf-8"
@@ -58,7 +58,8 @@ as an inactive one.
 
     # Need to do this check manually because the declined members are not
     # listed anywhere.
-    >>> from canonical.launchpad.database import Person, TeamMembershipSet
+    >>> from lp.registry.model.person import Person
+    >>> from lp.registry.model.teammembership import TeamMembershipSet
     >>> membership = TeamMembershipSet().getByPersonAndTeam(
     ...     Person.byName('name12'), Person.byName('ubuntu-team'))
     >>> membership.status.title

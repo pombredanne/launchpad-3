@@ -201,15 +201,15 @@ updated field in all of the entries.
 A single branch can have an Atom feed with each revision being a
 different entry.
 
-    >>> url = 'http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom'
+    >>> url = 'http://feeds.launchpad.dev/~mark/firefox/release--0.9.1/branch.atom'
     >>> browser.open(url)
     >>> validate_feed(browser.contents,
     ...              browser.headers['content-type'], browser.url)
     No Errors
     >>> BSS(browser.contents).title.contents
-    [u'Latest Revisions for Branch lp://dev/~sabdfl/firefox/release--0.9.1']
+    [u'Latest Revisions for Branch lp://dev/~mark/firefox/release--0.9.1']
     >>> print browser.url
-    http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom
+    http://feeds.launchpad.dev/~mark/firefox/release--0.9.1/branch.atom
 
 The first <id> in a feed identifies the feed.  Each entry then has its
 own <id>, which in the case of a single branch feed will be identical.
@@ -218,10 +218,10 @@ own <id>, which in the case of a single branch feed will be identical.
     >>> ids = parse_ids(browser.contents)
     >>> for id_ in ids:
     ...     print id_
-    <id>tag:launchpad.net,2006-10-16:/code/~sabdfl/firefox/release--0.9.1</id>
-    <id>tag:launchpad.net,2005-03-09:/code/~sabdfl/firefox/release--0.9.1/revision/1</id>
+    <id>tag:launchpad.net,2006-10-16:/code/~mark/firefox/release--0.9.1</id>
+    <id>tag:launchpad.net,2005-03-09:/code/~mark/firefox/release--0.9.1/revision/1</id>
     >>> print_parse_links(browser)
-    <link rel="self" href="http://feeds.launchpad.dev/~sabdfl/firefox/release--0.9.1/branch.atom" />
+    <link rel="self" href="http://feeds.launchpad.dev/~mark/firefox/release--0.9.1/branch.atom" />
     >>> strainer = SoupStrainer('updated')
     >>> updated_dates = [extract_text(tag) for tag in BSS(browser.contents,
     ...                  parseOnlyThese=strainer)]

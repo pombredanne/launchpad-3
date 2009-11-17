@@ -14,14 +14,24 @@ Get a "mock" request:
 Let's instantiate the view for +index:
 
     >>> builder_view = getMultiAdapter((builder, request), name="+index")
-    >>> builder_view.now()
-    '...'
+
+    >>> print builder_view.page_title
+    Builder ...Bob The Builder...
+
+The BuilderView provides a helper for the text to use on the toggle
+mode button.
+
+    >>> print builder_view.toggle_mode_text
+    Switch to manual-mode
+
 
 == Builder history ==
 
 Let's instantiate a view for +history:
 
     >>> builder_view = getMultiAdapter((builder, request), name="+history")
+    >>> print builder_view.page_title
+    Build history for ...Bob The Builder...
 
     setupBuildList, build a batched list of build records and store it
     in view.batch, also store the batch navigator in view.batchnav. it
@@ -36,21 +46,10 @@ mock_form:
     5
 
 
-== Builder cancel ==
+== Builder edit ==
 
-Let's instantiate the view for +cancel:
-
-    >>> request = LaunchpadTestRequest(form={'BUILDERID': 1})
-
-    >>> builder_view = getMultiAdapter((builder, request), name="+cancel")
-
-    >>> builder_view.cancelBuildJob()
-    '<p>Cancel (1). Not implemented yet.</p>'
-
-
-== Builder mode ==
-
-Let's instantiate the view for +mode:
+Let's instantiate the view for +edit and check that the correct title,
+fields and actions are displayed:
 
 This page requires launchpad.Edit permission and the builder is owned
 by mark. we nee to log in as mark or any other member of admin team
@@ -58,63 +57,63 @@ by mark. we nee to log in as mark or any other member of admin team
     >>> from canonical.launchpad.ftests import login
     >>> login("foo.bar@canonical.com")
 
-Build an special request containing the fields we want to change:
+    >>> builder_view = create_initialized_view(builder, name="+edit")
+    >>> print builder_view.page_title
+    Change details for builder ...Bob The Builder...
 
-    >>> request = LaunchpadTestRequest(form={
-    ...     'field.manual': 'on',
-    ...     'UPDATE_SUBMIT': 'Change'})
+    >>> for field_name in builder_view.field_names:
+    ...     print field_name
+    name
+    title
+    description
+    processor
+    url
+    manual
+    owner
+    virtualized
+    builderok
+    failnotes
+    vm_host
+    active
 
-Instantiate the correspondent view:
+    >>> for action in builder_view.actions:
+    ...     print action.label
+    Change
 
-    >>> builder_view = getMultiAdapter((builder, request), name="+mode")
+The BuilderEditView also has a next_url property for redirecting after
+a successful form submission.
 
-Ensure the previous mode was AUTOMATIC
+    >>> print builder_view.next_url
+    http://launchpad.dev/builders/bob
 
-    >>> builder.manual
-    False
+The BuilderEditView can be used to update the relevant fields on the
+builder.
 
-Call the update() method of the zope.app.form.EditView class
+    >>> def print_builder_info(builder):
+    ...     print "%s: manual=%s, vm_host=%s." % (
+    ...         builder.name,
+    ...         builder.manual,
+    ...         builder.vm_host,
+    ...         )
+    >>> print_builder_info(builder)
+    bob: manual=False, vm_host=None.
 
-    >>> builder_view.update()
-    u'Updated on ${date_time}'
+    >>> builder_view = create_initialized_view(
+    ...     builder, name="+edit", method="POST", form={
+    ...         'field.name': u'biscoito',
+    ...         'field.manual': 'on',
+    ...         'field.vm_host': 'foobar-host.ppa',
+    ...         'field.actions.update': 'Change',
+    ...         })
 
-We've changed the builder mode to MANUAL
+    >>> print_builder_info(builder)
+    biscoito: manual=True, vm_host=foobar-host.ppa.
 
-    >>> builder.manual
-    True
+After editing a builder, a relevant notification is added to the view.
 
-== Builder edit ==
-
-Let's instantiate the view for +edit:
-
-Build an special request containing the fields we want to change:
-
-    >>> request = LaunchpadTestRequest(form={
-    ...     'field.processor': builder.processor.name,
-    ...     'field.url': builder.url,
-    ...     'field.name': u'biscoito',
-    ...     'field.title': builder.title,
-    ...     'field.description': builder.description,
-    ...     'UPDATE_SUBMIT': 'Change'})
-
-Instantiate the correspondent view:
-
-    >>> builder_view = getMultiAdapter((builder, request), name="+edit")
-
-Ensure the previous name
-
-    >>> builder.id, builder.name
-    (1, u'bob')
-
-Call the update() method of the zope.app.form.EditView class
-
-    >>> builder_view.update()
-    u'Updated on ${date_time}'
-
-We've modified the buildername
-
-    >>> builder.id, builder.name
-    (1, u'biscoito')
+    >>> for notification in builder_view.request.notifications:
+    ...     print notification.message
+    The builder "Bob The Builder" was updated successfully.
 
 
 == Builders building private jobs ==
@@ -197,9 +196,6 @@ all the 'private' information is exposed.
     >>> empty_request = LaunchpadTestRequest(form={})
     >>> admin_view = getMultiAdapter((frog, empty_request), name="+index")
 
-    >>> print admin_view.context
-    <security proxied lp.soyuz.model.builder.Builder ...>
-
     >>> print admin_view.context.builderok
     True
 
@@ -219,36 +215,6 @@ all the 'private' information is exposed.
     ...     datetime.datetime.now(pytz.UTC) - datetime.timedelta(10))
     >>> print admin_view.current_build_duration
     10 days...
-
-When accessing the same view as a unprivileged user, No-Priv, the
-sensitive information is hidden (the context class is 'cloaked', see
-browser/builder.py for futher information on this) and the builder
-shows up as 'Building private build'.
-
-    >>> login('no-priv@canonical.com')
-    >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
-
-    >>> print nopriv_view.context
-    <lp.soyuz.browser.builder.HiddenBuilder ...>
-
-    >>> print nopriv_view.context.builderok
-    False
-
-    >>> print nopriv_view.context.currentjob
-    None
-
-    >>> print nopriv_view.context.failnotes
-    None
-
-    >>> print nopriv_view.context.status
-    Building private build
-
-    >>> print nopriv_view.current_build_duration
-    None
-
-XXX cprov 20080214: this is clearly a counterintuitive way to identify
-builders building private jobs. We will certainly have to fine-tune it
-before public release.
 
 Once the private job is gone, Frog 'real' details are exposed publicly
 again.
@@ -351,7 +317,7 @@ contains the following attributes:
     <...BuilderCategory ...>
 
     >>> print builder_category.title
-    Official distribution build machines
+    Official distributions build status
 
     >>> print builder_category.virtualized
     False
@@ -364,40 +330,42 @@ grouped builders within a category in a easy manner.
 
     >>> def print_category(category):
     ...     for group in category.groups:
-    ...         print group.processor_name, group.queue_size
-    ...         for builder in group.builders:
-    ...             print builder.title
+    ...         print group.processor_name, \
+    ...               group.number_of_available_builders, \
+    ...               group.queue_size, \
+    ...               group.duration
 
     >>> print_category(builder_category)
-    386 1
-    Bob The Builder
-    The Egg Builder
-    amd64 0
-    The Prosciuto Builder
-    hppa 0
-    The Ham Builder
+    386    2  1  0:00:30
+    amd64  1  0  None
+    hppa   1  0  None
 
 Each `BuilderGroup` contains the following attributes:
 
  * processor_name: the `Processor` name of all builders in this group;
 
+ * number_of_available_builders: the number of builders available for
+       this processor.
+
  * queue_size: the number of jobs wainting to be processed for one of
    the builders in this group
 
- * builders: a list of `Builder`s in this group.
+ * duration: estimated time that will be used to build all jobs in
+       queue (sum(job_duration)/number_of_available_builders)
 
     >>> [i386_group, amd64_group, hppa_group] = builder_category.groups
 
     >>> print i386_group.processor_name
     386
 
+    >>> print i386_group.number_of_available_builders
+    2
+
     >>> print i386_group.queue_size
     1
 
-    >>> for builder in i386_group.builders:
-    ...     print builder.title
-    Bob The Builder
-    The Egg Builder
+    >>> print i386_group.duration
+    0:00:30
 
 The 'PPA' builder category is also available in BuilderSetView as a
 `BuilderCategory`.
@@ -405,38 +373,34 @@ The 'PPA' builder category is also available in BuilderSetView as a
     >>> builder_category = builderset_view.ppa_builders
 
     >>> print builder_category.title
-    PPA build machines
+    PPA build status
 
     >>> print builder_category.virtualized
     True
 
     >>> print_category(builder_category)
-    386 1
-    The Hamburger Builder
-    The frog builder
-    amd64 0
-    The Bacon Builder
-    hppa 0
-    The Cheese Builder
+    386    2  1  0:00:30
+    amd64  1  0  None
+    hppa   1  0  None
 
 We change the sampledata to create a pending build in for the 386
 processor queue in the PPA category.
 
+    >>> import datetime
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> login('foo.bar@canonical.com')
-
     >>> any_failed_build = cprov.archive.getBuildRecords(
     ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
+    >>> one_minute = datetime.timedelta(seconds=60)
+    >>> removeSecurityProxy(
+    ...     any_failed_build).estimated_build_duration = one_minute
     >>> any_failed_build.retry()
+    >>> login(ANONYMOUS)
 
 Now the pending build is included in the right category and group.
 
-    >>> login(ANONYMOUS)
     >>> builder_category = builderset_view.ppa_builders
     >>> print_category(builder_category)
-    386 2
-    The Hamburger Builder
-    The frog builder
-    amd64 0
-    The Bacon Builder
-    hppa 0
-    The Cheese Builder
+    386    2  2  0:01:00
+    amd64  1  0  None
+    hppa   1  0  None

@@ -28,14 +28,14 @@ redirect back to the PPA page with a feedback message:
     ...     print msg
     Only private archives can have subscribers.
 
-Setup both cprov's and sabdfl's PPAs as a private one:
+Setup both cprov's and mark's PPAs as a private one:
 
     >>> admin_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
     >>> admin_browser.getControl("Save").click()
-    >>> admin_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa")
+    >>> admin_browser.open("http://launchpad.dev/~mark/+archive/ppa")
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = "secret"
@@ -44,15 +44,17 @@ Setup both cprov's and sabdfl's PPAs as a private one:
 The PPA page includes a link to manage subscriptions:
 
     >>> cprov_browser.open("http://launchpad.dev/~cprov/+archive/ppa")
-    >>> cprov_browser.getLink("Manage subscriptions").click()
+    >>> cprov_browser.getLink("Manage access").click()
 
 The page includes the required dependencies for the yui2-based date
 picker:
 
     >>> print extract_all_script_and_style_links(cprov_browser.contents)
+    /...
     ...
     http://launchpad.dev/+icing/.../build/lp/calendar.js
     http://launchpad.dev/+icing/.../yui_2.7.0b/build/calendar/assets/skins/sam/calendar.css
+    ...
 
 Initially there are no subscriptions for a newly privatized PPA (although,
 this may need to change, to add the owner/team). A heading is displayed
@@ -60,11 +62,11 @@ with a message:
 
     >>> main_content = find_main_content(cprov_browser.contents)
     >>> print extract_text(main_content.find('h1'))
-    Manage subscriptions for...PPA for Celso Providelo
+    Manage access to PPA for Celso Providelo
 
     >>> print extract_text(find_tag_by_id(cprov_browser.contents,
     ...     'no-subscribers'))
-    This PPA does not yet have any subscribers.
+    No one has access to install software from this PPA.
 
 Create two new users that can be subscribed to archives:
 
@@ -105,9 +107,9 @@ The title of a persons archive subscriptions is displayed as the main
 heading:
 
     >>> cprov_browser.open("/~cprov/+archivesubscriptions")
-    >>> h1_heading = find_main_content(cprov_browser.contents).find('h1')
-    >>> print extract_text(h1_heading)
-    Private PPA subscriptions
+    >>> print find_main_content(cprov_browser.contents)
+    <div...
+    <h1>Private PPA access</h1>...
 
 A person who is not subscribed to any archives will see an appropriate
 explanation if they try to view their archive subscriptions:
@@ -116,16 +118,16 @@ explanation if they try to view their archive subscriptions:
     >>> print extract_text(explanation)
     You do not have any current subscriptions to private archives...
 
-First, create a subscription for Joe Smith to sabdfl's archive also, so that
+First, create a subscription for Joe Smith to mark's archive also, so that
 Joe has multiple subscriptions:
 
-    >>> sabdfl_browser = setupBrowser(
-    ...     auth="Basic mark@hbd.com:test")
-    >>> sabdfl_browser.open("http://launchpad.dev/~sabdfl/+archive/ppa/+subscriptions")
-    >>> sabdfl_browser.getControl(name='field.subscriber').value = 'joesmith'
-    >>> sabdfl_browser.getControl(
+    >>> mark_browser = setupBrowser(
+    ...     auth="Basic mark@example.com:test")
+    >>> mark_browser.open("http://launchpad.dev/~mark/+archive/ppa/+subscriptions")
+    >>> mark_browser.getControl(name='field.subscriber').value = 'joesmith'
+    >>> mark_browser.getControl(
     ...     name='field.description').value = "Joe is also my friend"
-    >>> sabdfl_browser.getControl(name="field.actions.add").click()
+    >>> mark_browser.getControl(name="field.actions.add").click()
 
 A person who is subscribed to multiple archives will see all the archives
 listed in the current subscriptions area:
@@ -151,13 +153,12 @@ displaying their subscription.
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to...PPA
-        for Mark Shuttleworth
-    deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to...PPA
-        for Mark Shuttleworth
-    Next you need to ...
+    deb http://joesmith:...@private-ppa.launchpad.dev/mark/ppa/ubuntu
+        breezy-autotest main #Personal access of Joe Smith
+        to PPA for Mark Shuttleworth
+    deb-src http://joesmith:...@private-ppa.launchpad.dev/mark/ppa/ubuntu
+        breezy-autotest main #Personal access of Joe Smith
+        to PPA for Mark Shuttleworth
 
 This page will include information about the signing key, if the archive
 has a signing key:
@@ -166,9 +167,9 @@ has a signing key:
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> from zope.component import getUtility
     >>> login('foo.bar@canonical.com')
-    >>> sabdfl = getUtility(IPersonSet).getByName('sabdfl')
+    >>> mark = getUtility(IPersonSet).getByName('mark')
     >>> a_key = getUtility(IGPGKeySet).get(1)
-    >>> sabdfl.archive.signing_key = a_key
+    >>> mark.archive.signing_key = a_key
     >>> logout()
 
     >>> joe_browser.reload()
@@ -176,12 +177,11 @@ has a signing key:
     >>> print(extract_text(sources_list))
     Custom sources.list entries
     ...
-    deb http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to...PPA
-        for Mark Shuttleworth
-    deb-src http://joesmith:...@private-ppa.launchpad.dev/sabdfl/ppa/ubuntu
-        breezy-autotest main #Personal subscription of Joe Smith to...PPA
-        for Mark Shuttleworth
+    deb http://joesmith:...@private-ppa.launchpad.dev/mark/ppa/ubuntu
+        breezy-autotest main #Personal access of Joe Smith
+        to PPA for Mark Shuttleworth
+    deb-src http://joesmith:...@private-ppa.launchpad.dev/mark/ppa/ubuntu
+        breezy-autotest main #Personal access of Joe Smith
+        to PPA for Mark Shuttleworth
     This repository is signed ...
-    Next you need to ...
 

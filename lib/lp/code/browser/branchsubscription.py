@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -16,13 +17,15 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from lp.code.enums import BranchSubscriptionNotificationLevel
-from lp.code.interfaces.branchsubscription import IBranchSubscription
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import structured
+from canonical.lazr.utils import smartquote
+
+from lp.code.enums import BranchSubscriptionNotificationLevel
+from lp.code.interfaces.branchsubscription import IBranchSubscription
 
 
 class BranchSubscriptionPrimaryContext:
@@ -122,6 +125,8 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
 
     subscribing_self = True
 
+    page_title = label = "Subscribe to branch"
+
     @action("Subscribe")
     def subscribe(self, action, data):
         # To catch the stale post problem, check that the user is not
@@ -144,6 +149,15 @@ class BranchSubscriptionAddView(_BranchSubscriptionView):
 
 
 class BranchSubscriptionEditOwnView(_BranchSubscriptionView):
+
+    @property
+    def label(self):
+        return "Edit subscription to branch"
+
+    @property
+    def page_title(self):
+        return smartquote(
+            'Edit subscription to branch "%s"' % self.context.displayname)
 
     @property
     def initial_values(self):
@@ -199,6 +213,8 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
     # is never considered subscribed.
     user_is_subscribed = False
     subscribing_self = False
+
+    page_title = label = "Subscribe to branch"
 
     @action("Subscribe", name="subscribe_action")
     def subscribe_action(self, action, data):
@@ -257,6 +273,15 @@ class BranchSubscriptionEditView(LaunchpadEditFormView):
     """
     schema = IBranchSubscription
     field_names = ['notification_level', 'max_diff_lines', 'review_level']
+
+    @property
+    def page_title(self):
+        return smartquote(
+            'Edit subscription to branch "%s"' % self.branch.displayname)
+
+    @property
+    def label(self):
+        return "Edit subscription to branch for %s" % self.person.displayname
 
     def initialize(self):
         self.branch = self.context.branch

@@ -1,5 +1,7 @@
-#!/usr/bin/python2.4
-# Copyright 2005-2008 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Internal helpers for cronscripts/branches-scanner.py"""
 
@@ -19,7 +21,7 @@ from lp.code.interfaces.branchscanner import IBranchScanner
 from lp.codehosting.vfs import get_scanner_server
 from lp.codehosting.scanner import buglinks, email, mergedetection
 from lp.codehosting.scanner.bzrsync import (
-    BzrSync, schedule_translation_upload)
+    BzrSync, schedule_diff_updates, schedule_translation_upload)
 from lp.codehosting.scanner.fixture import (
     Fixtures, make_zope_event_fixture, run_with_fixture)
 from canonical.launchpad.webapp import canonical_url, errorlog
@@ -95,6 +97,7 @@ class BranchScanner:
             buglinks.got_new_revision,
             mergedetection.auto_merge_branches,
             mergedetection.auto_merge_proposals,
+            schedule_diff_updates,
             schedule_translation_upload,
             ]
         server = get_scanner_server()

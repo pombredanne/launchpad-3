@@ -1,10 +1,14 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 __all__ = [
+    'TeamMembershipBreadcrumb',
+    'TeamInvitationsView',
     'TeamMembershipEditView',
     ]
+
 
 import pytz
 from datetime import datetime
@@ -16,13 +20,22 @@ from zope.formlib import form
 from zope.schema import Date
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp import canonical_url
-
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.webapp import LaunchpadView, canonical_url
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, UnexpectedFormData)
-from lp.registry.interfaces.teammembership import TeamMembershipStatus
 from canonical.widgets import DateWidget
+
+from lp.registry.interfaces.teammembership import TeamMembershipStatus
+
+
+class TeamMembershipBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `ITeamMembership`."""
+
+    @property
+    def text(self):
+        return "%s's membership" % self.context.person.displayname
 
 
 class TeamMembershipEditView:
@@ -66,6 +79,23 @@ class TeamMembershipEditView:
         if not expires:
             self.expiration_widget.disabled = True
 
+    @property
+    def label(self):
+        # This reproduces the logic of the old H1's in the pre-3.0 UI view.
+        if self.isActive():
+            prefix = 'Active'
+        elif self.isInactive():
+            prefix = 'Inactive'
+        elif self.isProposed():
+            prefix = 'Proposed'
+        elif self.isDeclined():
+            prefix = 'Declined'
+        elif self.isInvited() or self.isInvitationDeclined():
+            prefix = 'Invited'
+        else:
+            raise AssertionError('status unknown')
+        return '%s member %s' % (prefix, self.context.person.displayname)
+
     # Boolean helpers
     def userIsTeamOwnerOrLPAdmin(self):
         return (self.user.inTeam(self.context.team.teamowner) or
@@ -96,6 +126,12 @@ class TeamMembershipEditView:
 
     def isDeactivated(self):
         return self.context.status == TeamMembershipStatus.DEACTIVATED
+
+    def isInvited(self):
+        return self.context.status == TeamMembershipStatus.INVITED
+
+    def isInvitationDeclined(self):
+        return self.context.status == TeamMembershipStatus.INVITATION_DECLINED
 
     def adminIsSelected(self):
         """Whether the admin radiobutton should be selected."""
@@ -298,3 +334,10 @@ class TeamMembershipEditView:
                            tzinfo=UTC)
         return expires
 
+
+class TeamInvitationsView(LaunchpadView):
+    """View for ~team/+invitations."""
+
+    @property
+    def label(self):
+        return 'Invitations for ' + self.context.displayname

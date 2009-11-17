@@ -18,7 +18,7 @@ candidates.
 Branch merge proposals are created by calling the `addLandingTarget`
 method on a branch.  Junk branches cannot have landing targets.
 
-  * The target branch and dependent branch (if it has one) must both
+  * The target branch and prerequisite branch (if it has one) must both
     have the same product as the source branch.
 
   * There must not already exist a branch merge proposal for the source
@@ -31,7 +31,6 @@ All merge proposals have to be registered by a Person.
 
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import IPersonSet
-    >>> from lp.code.interfaces.branch import IBranchSet
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
     >>> person_set = getUtility(IPersonSet)
     >>> login('test@canonical.com')
@@ -51,7 +50,7 @@ and a target branch.
     ...     '~name12/gnome-terminal/scanned')
 
     >>> merge_proposal = source_branch.addLandingTarget(
-    ...     sample_person, target_branch, dependent_branch=scanned_branch,
+    ...     sample_person, target_branch, prerequisite_branch=scanned_branch,
     ...     date_created=now.next())
 
 This merge proposal is now listing against both the source and target
@@ -82,18 +81,18 @@ The landing_candidates only returns unmerged proposals, with the most
 recent branch merge proposals first.
 
     >>> proposal = factory.makeBranchMergeProposal(
-    ...     target_branch=target_branch, dependent_branch=scanned_branch)
+    ...     target_branch=target_branch, prerequisite_branch=scanned_branch)
     >>> proposal = proposal.resubmit(proposal.registrant)
     >>> proposal.rejectBranch(sample_person, 'some-revision')
     >>> from lp.code.enums import BranchMergeProposalStatus
     >>> proposal = factory.makeBranchMergeProposal(
-    ...     target_branch=target_branch, dependent_branch=scanned_branch,
+    ...     target_branch=target_branch, prerequisite_branch=scanned_branch,
     ...     set_state=BranchMergeProposalStatus.MERGED)
 
     >>> branch = branch_lookup.getByUniqueName(
     ...     '~launchpad/gnome-terminal/launchpad')
     >>> proposal = branch.addLandingTarget(
-    ...     sample_person, target_branch, dependent_branch=scanned_branch,
+    ...     sample_person, target_branch, prerequisite_branch=scanned_branch,
     ...     date_created=now.next())
 
     >>> flush_database_updates()
@@ -117,7 +116,7 @@ recent branch merge proposals first.
     Work in progress
 
     >>> for proposal in BranchMergeProposal.selectBy(
-    ...     dependent_branch=scanned_branch, orderBy=['id']):
+    ...     prerequisite_branch=scanned_branch, orderBy=['id']):
     ...     print proposal.queue_status.title
     Work in progress
     Superseded
@@ -265,21 +264,16 @@ revision id.
     >>> proposal.reviewed_revision_id == tip.revision_id
     True
 
-If the target branch has specified a specific reviewer, then only
-a user in the reviewer team can approve or reject the branch.
+If the target branch has specified a specific reviewer, then either the owner
+of the target branch or the reviewer is able to approve or reject the
+proposal.
 
     >>> eric_the_reviewer = factory.makePerson(name="eric-reviewer")
     >>> target_branch = proposal.target_branch
     >>> target_branch.reviewer = eric_the_reviewer
     >>> proposal.rejectBranch(sample_person, tip.revision_id)
-    Traceback (most recent call last):
-    ...
-    UserNotBranchReviewer
-    >>> proposal.approveBranch(sample_person, tip.revision_id)
-    Traceback (most recent call last):
-    ...
-    UserNotBranchReviewer
-
+    >>> print proposal.queue_status.title
+    Rejected
     >>> proposal.approveBranch(eric_the_reviewer, tip.revision_id)
     >>> print proposal.queue_status.title
     Approved
@@ -336,7 +330,8 @@ queueing the branch is not a reviewer, an exception is raised.
     >>> print proposal.queue_status.title
     Needs review
 
-    >>> proposal.enqueue(sample_person, tip.revision_id)
+    >>> random_user = factory.makePerson()
+    >>> proposal.enqueue(random_user, tip.revision_id)
     Traceback (most recent call last):
     UserNotBranchReviewer
 
@@ -396,7 +391,7 @@ The user that marked the branch as merged can also be recorded.
     >>> branch = branch_lookup.getByUniqueName(
     ...     '~launchpad/gnome-terminal/launchpad')
     >>> merge_proposal = branch.landing_targets[0]
-    >>> reporter = person_set.getByName('sabdfl')
+    >>> reporter = person_set.getByName('mark')
     >>> merge_proposal.markAsMerged(1234, now.next(), reporter)
     >>> merge_proposal.merged_revno
     1234
@@ -424,9 +419,9 @@ The firefox branches are the branches that are attached to a product
 and have revisions (well, a revision).
 
     >>> source_branch = branch_lookup.getByUniqueName(
-    ...     '~sabdfl/firefox/release-0.9')
+    ...     '~mark/firefox/release-0.9')
     >>> target_branch = branch_lookup.getByUniqueName(
-    ...     '~sabdfl/firefox/release-0.9.2')
+    ...     '~mark/firefox/release-0.9.2')
     >>> merge_proposal = source_branch.addLandingTarget(
     ...     sample_person, target_branch, date_created=now.next())
 
@@ -471,7 +466,7 @@ proposal is used.
     >>> url[url.rfind('/')+1:] == str(merge_proposal.id)
     True
     >>> print url
-    http://code.launchpad.dev/~sabdfl/firefox/release-0.9/+merge/...
+    http://code.launchpad.dev/~mark/firefox/release-0.9/+merge/...
 
 
 == Deleting merge proposals ==

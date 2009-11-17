@@ -1,14 +1,16 @@
-#!/usr/bin/python2.4
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0403
+import _pythonpath
 
 import sys
 import re
 from optparse import OptionParser
 
-import _pythonpath
 from canonical.lp import initZopeless
-from canonical.launchpad.database import SourcePackageName
 from canonical.launchpad.database import BinaryPackageName
 
 
@@ -95,6 +97,7 @@ class ProcessNames:
 
 
     def processSource(self):
+        from lp.registry.model.sourcepackagename import SourcePackageName
         if not self.source_list:
             return
 

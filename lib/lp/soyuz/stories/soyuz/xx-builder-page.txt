@@ -4,34 +4,51 @@ An anonymous user visits the +builds page. He can see a summary of the
 builder state. In the sampledata, the builder 'bob' is building
 'mozilla-firefox'.
 
-    >>> anon_browser.open("http://launchpad.dev/+builds")
+    >>> anon_browser.open("http://launchpad.dev/builders")
     >>> anon_browser.getLink("bob").click()
 
     >>> print extract_text(find_main_content(anon_browser.contents))
     Bob The Builder
-    Current status
-    i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
-    Started ... ago
+    ...
+    Bob The Builder builds Intel 386 binaries and is owned by
+    Launchpad Buildd Admins.
+    ...
+
+    >>> print extract_text(find_portlet(
+    ...     anon_browser.contents, 'View full history Current status'))
+    View full history Current status
+    Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
+    Started ... ago.
+    Buildlog
     Dummy sampledata entry, not processing
-    Last updated ...
+
+When accessed by logged in users, the builder page renders the
+'current-status' section with a timestamp at the bottom on the user
+timezone. This way they can easily find out if they are reading
+outdated information.
+
+    >>> user_browser.open(anon_browser.url)
+    >>> print extract_text(find_portlet(
+    ...     user_browser.contents, 'View full history Current status'))
+    View full history Current status
+    Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
+    Started ... ago.
+    Buildlog
+    Dummy sampledata entry, not processing
+    Updated on ...
 
 The anonymous user can see the builder details portlet and it contains
 information about the builder itself, like name, architecture,
 location and description.
 
     >>> print extract_text(
-    ...     find_portlet(anon_browser.contents, 'Bob The Builder details'))
-    Bob The Builder details
-    Name: Bob The Builder
+    ...     find_portlet(anon_browser.contents, 'Builder information'))
+    Builder information
     Architecture: Intel 386
     Location: http://localhost:8221/
-    Virtual: False
-    Description
-      The default build-slave
-    Status
-      Disabled
-    Owner
-      Launchpad Buildd Admins
+    Owner: Launchpad Buildd Admins
+    Mode: This builder is in auto-mode and accepting jobs from the
+    auto-build system.
 
 The builder status is now displayed as normal text and not as as a
 notification alert.
@@ -52,19 +69,12 @@ the builder actions.
     >>> cprov_browser = setupBrowser(
     ...     auth='Basic celso.providelo@canonical.com:cprov')
 
-    >>> cprov_browser.open('http://launchpad.dev/+builds')
+    >>> cprov_browser.open('http://launchpad.dev/builders')
     >>> cprov_browser.getLink('bob').click()
 
-Celso sees the available actions in the 'Actions' portlet.
-
-    >>> print extract_text(find_tag_by_id(cprov_browser.contents, 'actions'))
-    Show build history
-    Change details
-    Change mode
-    Cancel current job
-    Administer builder
-
-See 'xx-builds-pages.txt' for documentation about 'Show build history'.'
+Celso sees both the Change details and Toggle mode actions, which are
+displayed in context as shown below. See 'xx-builds-pages.txt' for
+documentation about 'Show build history'.'
 
 Celso can modify the location and the visible details of the builder.
 
@@ -80,51 +90,41 @@ Celso can modify the location and the visible details of the builder.
     >>> cprov_browser.getControl(name="field.owner").value
     'launchpad-buildd-admins'
 
-The 'manual' field isn't available in +edit, because it can be
-modified separately via its own form, 'Change mode' (see below).
+Other administration fields are available on the 'Change details' form
+as currently administrators are the only users with permission to use the
+Edit page:
 
-    >>> cprov_browser.getControl(name="field.manual")
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.manual'
+    >>> cprov_browser.getControl(name="field.manual").value
+    False
 
-The same happens to the fields 'vm_host', 'builderok', 'failnotes' and
-'active' which are only available via 'Administer builder' form (see
-below).
+    >>> cprov_browser.getControl(name="field.vm_host").value
+    ''
 
-    >>> cprov_browser.getControl(name="field.vm_host")
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.vm_host'
+    >>> cprov_browser.getControl(name="field.builderok").value
+    True
 
-    >>> cprov_browser.getControl(name="field.builderok")
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.builderok'
+    >>> cprov_browser.getControl(name="field.failnotes").value
+    ''
 
-    >>> cprov_browser.getControl(name="field.failnotes")
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.failnotes'
-
-    >>> cprov_browser.getControl(name="field.active")
-    Traceback (most recent call last):
-    ...
-    LookupError: name 'field.active'
+    >>> cprov_browser.getControl(name="field.active").value
+    True
 
 Celso changes the builder title and the change takes effect immediately.
 
-    >>> print str(cprov_browser.title)
-    Edit build machine Bob The Builder
+    # We use backslashreplace because the page title includes smart quotes.
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> print backslashreplace(cprov_browser.title)
+    Change details for...
 
     >>> title = cprov_browser.getControl(name="field.title")
     >>> original_title = title.value
     >>> title.value = 'Donkey builder'
     >>> cprov_browser.getControl("Change").click()
 
-    >>> cprov_browser.getLink("Bob The Builder").click()
-    >>> print cprov_browser.title
-    Build machine Donkey builder
+    # Submitting the change details form redirects to the index page
+    # for the builder.
+    >>> print backslashreplace(cprov_browser.title)
+    Donkey builder : Build Farm
 
 Then restores it once he realises his mistake.
 
@@ -132,51 +132,41 @@ Then restores it once he realises his mistake.
     >>> cprov_browser.getControl(
     ...     name="field.title").value = original_title
     >>> cprov_browser.getControl("Change").click()
-    >>> cprov_browser.getLink("Donkey builder").click()
 
 By looking at 'details' portlet, Celso realises the builder is in
 automatic (AUTO) mode.
 
     >>> details_portlet = find_portlet(
-    ...     cprov_browser.contents, "Bob The Builder details")
+    ...     cprov_browser.contents, "Builder information")
     >>> print str(extract_text(details_portlet))
-    Bob The Builder details
-    Name: Bob The Builder
+    Builder information
     Architecture: Intel 386
     Location: http://localhost:8221/
-    Virtual: False
-    Description
-      The default build-slave
-    Status
-      Disabled
-    Owner
-      Launchpad Buildd Admins
+    Owner: Launchpad Buildd Admins
+    Mode: This builder is in auto-mode and accepting jobs from the
+    auto-build system. Switch to manual-mode
 
-He goes to the 'Change Mode' action page and change it to manual mode.
+He clicks on the Toggle mode button to put the builder into manual mode.
 
-    >>> cprov_browser.getLink("Change mode").click()
-    >>> cprov_browser.getControl(name="field.manual").value = True
-    >>> cprov_browser.getControl("Change").click()
+    >>> cprov_browser.getControl(name="field.actions.update").click()
 
-He can see now, in the details portlet that it say 'MANUAL' now.
+He can see now, in the details portlet that the builder is in manual-mode.
 
     >>> details_portlet = find_portlet(
-    ...     cprov_browser.contents, "Bob The Builder details")
+    ...     cprov_browser.contents, "Builder information")
     >>> print str(extract_text(details_portlet))
-    Bob The Builder details
-    Name: Bob The Builder
-    Architecture: Intel 386
-    Location: http://localhost:8221/
-    Virtual: False
-    Description
-      The default build-slave
-    Status
-      Disabled
-    Owner
-      Launchpad Buildd Admins
+    Builder information
+    ...
+    Mode: This builder is in manual-mode and not accepting jobs from the
+    auto-build system. Switch to auto-mode
 
-Via the 'administration' form Celso not only has access to all fields
-available in the 'edit' form but can also modify the 'builderok',
+And a relevant notification is displayed after the mode toggle.
+
+    >>> messages = get_feedback_messages(cprov_browser.contents)
+    >>> print messages
+    [u'The builder "Bob The Builder" was updated successfully.']
+
+Via the 'edit' form Celso can also modify the 'builderok',
 'failure_notes', 'virtualized' and 'virtual machine' fields. All the
 consequences of those modifications are covered in the buildd-admin
 documentation.
@@ -184,42 +174,17 @@ documentation.
 The simplest and most effective thing a administrator can do in this
 case is to bring the builder back to work.
 
-    >>> cprov_browser.getLink("Administer builder").click()
+    >>> cprov_browser.getLink("Change details").click()
     >>> cprov_browser.getControl(name="field.builderok").value = True
     >>> cprov_browser.getControl(name="field.manual").value = False
     >>> cprov_browser.getControl("Change").click()
 
-    >>> details_portlet = find_portlet(
-    ...     cprov_browser.contents, "Bob The Builder details")
-    >>> print str(extract_text(details_portlet))
-    Bob The Builder details
-    Name: Bob The Builder
-    Architecture: Intel 386
-    Location: http://localhost:8221/
-    Virtual: False
-    Description
-      The default build-slave
-    Status
-      Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
-    Owner
-      Launchpad Buildd Admins
+Changing the details via the Change details page also generates a
+notification.
 
-Celso can access the page. When he tries to cancel a job, the page
-informs him the Cancel is not implemented.
-
-    >>> cprov_browser.getLink("Cancel current job").click()
-    >>> print extract_text(find_main_content(cprov_browser.contents))
-    Cancel job
-    Bob The Builder is processing:
-    Build of                         Queued     Started    Time spent so far
-    i386 build of mozilla-firefox... 2005-09-30 2005-06-15 ... weeks
-    Are you sure ?
-
-    >>> cprov_browser.getControl("Cancel job").click()
     >>> messages = get_feedback_messages(cprov_browser.contents)
-    >>> for msg in messages:
-    ...     print str(msg)
-    Cancel (1). Not implemented yet.
+    >>> print messages
+    [u'The builder "Bob The Builder" was updated successfully.']
 
 
 == Marking a builder as inactive ==
@@ -230,12 +195,12 @@ transient failures or is used for another purpose.
 
     >>> cprov_browser.open('http://launchpad.dev/+builds')
     >>> cprov_browser.getLink('bob').click()
-    >>> print cprov_browser.title
-    Build machine Bob The Builder
+    >>> print backslashreplace(cprov_browser.title)
+    Bob The Builder : Build Farm
 
-Celso can toggle the active bit using the Administrator form.
+Celso can toggle the active bit using the Change details form.
 
-    >>> cprov_browser.getLink('Administer builder').click()
+    >>> cprov_browser.getLink('Change details').click()
     >>> active = cprov_browser.getControl(name="field.active")
     >>> active.value
     True
@@ -249,13 +214,19 @@ Farm list. Celso cannot see the link to it.
     >>> cprov_browser.getLink("Build Farm").click()
 
     >>> print extract_text(find_main_content(cprov_browser.contents))
-    Launchpad build machines
+    The Launchpad build farm
     Register a new build machine
-    PPA build machines
-    386    0 builds waiting in queue
-    frog   AUTO   Disabled
-    Official distribution build machines
-    Generated at ...
+    0 available build machines, 1 disabled and 0 building of a total
+    of 1 registered.
+    Builders
+    Name  Processor Status
+    frog  386       Disabled
+    Updated on ...
+    Official distributions build status
+    Processor Builders Queue
+    PPA build status
+    Processor Builders Queue
+    386       0        empty
 
     >>> cprov_browser.getLink('bob').click()
     Traceback (most recent call last):
@@ -265,39 +236,29 @@ Farm list. Celso cannot see the link to it.
 But Celso can access the deactivated builder via its URL.
 
     >>> cprov_browser.open('http://launchpad.dev/+builds/bob')
-    >>> print cprov_browser.title
-    Build machine Bob The Builder
+    >>> print backslashreplace(cprov_browser.title)
+    Bob The Builder : Build Farm
 
 
 == Actions permissions ==
 
-Normal users, such as No Privileges Person are not shown links, nor
-can he access the pages by directly via URL.
+Normal users, such as No Privileges Person are not shown the
+Change details link.
 
     >>> user_browser.open("http://localhost/+builds/bob")
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'actions'))
-    Show build history
-    Change details (disabled)
-    Change mode (disabled)
-    Cancel current job (disabled)
-    Administer builder (disabled)
+    >>> user_browser.getLink('Change details')
+    Traceback (most recent call last):
+    LinkNotFoundError
+
+Nor is the toggle mode control included on the index page.
+
+    >>> user_browser.getControl(name="field.actions.update")
+    Traceback (most recent call last):
+    LookupError: name 'field.actions.update'
+
+Nor can they access the edit page directly via URL.
 
     >>> user_browser.open("http://localhost/+builds/bob/+edit")
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
-    >>> user_browser.open("http://localhost/+builds/bob/+mode")
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
-    >>> user_browser.open("http://localhost/+builds/bob/+cancel")
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
-    >>> user_browser.open("http://localhost/+builds/bob/+admin")
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -305,29 +266,17 @@ can he access the pages by directly via URL.
 The same is true for the anonymous user:
 
     >>> anon_browser.open("http://localhost/+builds/bob")
-    >>> print extract_text(find_tag_by_id(anon_browser.contents, 'actions'))
-    Show build history
-    Change details (disabled)
-    Change mode (disabled)
-    Cancel current job (disabled)
-    Administer builder (disabled)
+    >>> anon_browser.getLink('Change details')
+    Traceback (most recent call last):
+    LinkNotFoundError
+
+    >>> anon_browser.getControl(name="field.actions.update")
+    Traceback (most recent call last):
+    LookupError: name 'field.actions.update'
 
     >>> anon_browser.open("http://localhost/+builds/bob/+edit")
     Traceback (most recent call last):
     ...
     Unauthorized: ...
 
-    >>> anon_browser.open("http://localhost/+builds/bob/+mode")
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ...
 
-    >>> anon_browser.open("http://localhost/+builds/bob/+cancel")
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ...
-
-    >>> anon_browser.open("http://localhost/+builds/bob/+admin")
-    Traceback (most recent call last):
-    ...
-    Unauthorized: ...

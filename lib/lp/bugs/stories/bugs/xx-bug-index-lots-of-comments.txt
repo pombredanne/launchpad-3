@@ -55,7 +55,7 @@ comments and the add comment box.
     6
 
     >>> print find_tag_by_id(user_browser.contents, 'add-comment-form').name
-    fieldset
+    div
 
 Anonymous users have a slightly different experience. If the comment
 list is truncated, the usual "to post a comment you must log in" note

@@ -6,9 +6,19 @@
   tal:define="coming_sprints context/coming_sprints"
   tal:condition="coming_sprints"
 >
-  <h2>Coming events</h2>
-  <tal:sprints
-    repeat="sprint coming_sprints"
-    replace="structure sprint/@@+listing-simple"
-  />
+  <h2><span class="see-all"><a
+      tal:attributes="href string:/sprints">All events</a></span>
+    Coming events</h2>
+
+  <ul>
+    <li tal:repeat="sprint coming_sprints">
+      <a class="sprite meeting"
+        tal:attributes="href sprint/fmt:url"
+        tal:content="sprint/title" />
+      on <tal:when replace="sprint/time_starts/fmt:date" />
+      <br/><span class="registered">
+        Registered <tal:when replace="sprint/datecreated/fmt:displaydate" />
+      </span>
+    </li>
+  </ul>
 </div>

@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Bug tracker interfaces."""
@@ -311,6 +313,9 @@ class IBugTracker(Interface):
 
     def destroySelf():
         """Delete this bug tracker."""
+
+    def resetWatches():
+        """Reset the lastchecked times of this BugTracker's `BugWatch`es."""
 
 
 class IBugTrackerSet(Interface):

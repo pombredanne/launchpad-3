@@ -1,20 +1,25 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchMergeProposal listing views."""
 
 __metaclass__ = type
 
+from datetime import datetime
 from unittest import TestLoader
 
+import pytz
 import transaction
+from zope.publisher.interfaces import NotFound
+from zope.security.proxy import removeSecurityProxy
 
-from lp.code.browser.branchmergeproposallisting import (
-    ActiveReviewsView, BranchMergeProposalListingView, PersonActiveReviewsView,
-    ProductActiveReviewsView)
-from lp.code.enums import CodeReviewVote
-from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
+from lp.code.browser.branchmergeproposallisting import (
+    ActiveReviewsView, BranchMergeProposalListingView)
+from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
+from lp.testing.views import create_initialized_view
 
 _default = object()
 
@@ -27,7 +32,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
     def setUp(self):
         # Use an admin so we don't have to worry about launchpad.Edit
         # permissions on the merge proposals for adding comments.
-        TestCaseWithFactory.setUp(self, user="foo.bar@canonical.com")
+        TestCaseWithFactory.setUp(self, user="admin@canonical.com")
 
     def _createComment(self, proposal, reviewer=None, vote=None,
                        comment=_default):
@@ -47,6 +52,7 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         view_context = proposal.source_branch.owner
         view = BranchMergeProposalListingView(
             view_context, LaunchpadTestRequest())
+        view.initialize()
         batch_navigator = view.proposals
         # There will only be one item in the list of proposals.
         [listing_item] = batch_navigator.proposals
@@ -162,61 +168,72 @@ class TestProposalVoteSummary(TestCaseWithFactory):
         self.assertEqual(4, comment_count)
 
 
-class _ActiveReviewGroupsTest:
+class ActiveReviewGroupsTest(TestCaseWithFactory):
     """Tests for groupings used in for active reviews."""
 
     layer = DatabaseFunctionalLayer
-    _view = None
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
-        self.bmp = self.factory.makeBranchMergeProposal()
+        super(ActiveReviewGroupsTest, self).setUp()
+        self.bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
 
-    def assertReviewGroupForUser(self, user, group):
-        # Assert that the group for the user is correct.
-        if user is None:
-            login(ANONYMOUS)
-        else:
-            login_person(user)
-        view = self._view(
-            self.bmp.target_branch.product, LaunchpadTestRequest())
+    def assertReviewGroupForReviewer(self, reviewer, group):
+        # Assert that the group for the reviewer is correct.
+        login(ANONYMOUS)
+        # The actual context of the view doesn't matter here as all the
+        # parameters are passed in.
+        view = ActiveReviewsView(
+            self.factory.makeProduct(), LaunchpadTestRequest())
         self.assertEqual(
-            group, view._getReviewGroup(self.bmp, self.bmp.votes))
+            group, view._getReviewGroup(self.bmp, self.bmp.votes, reviewer))
 
-    def test_not_logged_in(self):
-        # If there is no logged in user, then the group is other.
-        self.assertReviewGroupForUser(None, ActiveReviewsView.OTHER)
+    def test_unrelated_reviewer(self):
+        # If the reviewer is not otherwise related to the proposal, the group
+        # is other.
+        reviewer = self.factory.makePerson()
+        self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.OTHER)
+
+    def test_approved(self):
+        # If the proposal is approved, then the group is approved.
+        self.bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.CODE_APPROVED)
+        self.assertReviewGroupForReviewer(None, ActiveReviewsView.APPROVED)
+
+    def test_work_in_progress(self):
+        # If the proposal is in progress, then the group is wip.
+        self.bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+        self.assertReviewGroupForReviewer(None, ActiveReviewsView.WIP)
 
     def test_source_branch_owner(self):
-        # If the logged in user is the owner of the source branch,
-        # then the review is MINE.
-        self.assertReviewGroupForUser(
-            self.bmp.source_branch.owner, ActiveReviewsView.MINE)
+        # If the reviewer is the owner of the source branch, then the review
+        # is MINE.  This occurs whether or not the user is the logged in or
+        # not.
+        reviewer = self.bmp.source_branch.owner
+        self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.MINE)
 
     def test_proposal_registrant(self):
-        # If the logged in user it the registrant of the proposal, then it is
-        # MINE only if the registrant is a member of the team that owns the
-        # branch.
-        self.assertReviewGroupForUser(
-            self.bmp.registrant, self._view.OTHER)
+        # If the reviewer is the registrant of the proposal, then it is MINE
+        # only if the registrant is a member of the team that owns the branch.
+        reviewer = self.bmp.registrant
+        self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.OTHER)
+
         team = self.factory.makeTeam(self.bmp.registrant)
-        login_person(self.bmp.source_branch.owner)
-        self.bmp.source_branch.owner = team
-        self.assertReviewGroupForUser(
-            self.bmp.registrant, ActiveReviewsView.MINE)
+        removeSecurityProxy(self.bmp.source_branch).owner = team
+        self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.MINE)
 
     def test_target_branch_owner(self):
         # For other people, even the target branch owner, it is other.
-        self.assertReviewGroupForUser(
-            self.bmp.target_branch.owner, ActiveReviewsView.OTHER)
+        reviewer = self.bmp.target_branch.owner
+        self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.OTHER)
 
     def test_group_pending_review(self):
-        # If the logged in user has a pending review request, it is a TO_DO.
+        # If the reviewer in user has a pending review request, it is a TO_DO.
         reviewer = self.factory.makePerson()
         login_person(self.bmp.registrant)
         self.bmp.nominateReviewer(reviewer, self.bmp.registrant)
-        self.assertReviewGroupForUser(
-            reviewer, ActiveReviewsView.TO_DO)
+        self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.TO_DO)
 
     def test_group_pending_team_review(self):
         # If the logged in user of a team that has a pending review request,
@@ -225,8 +242,7 @@ class _ActiveReviewGroupsTest:
         login_person(self.bmp.registrant)
         team = self.factory.makeTeam(reviewer)
         self.bmp.nominateReviewer(team, self.bmp.registrant)
-        self.assertReviewGroupForUser(
-            reviewer, ActiveReviewsView.CAN_DO)
+        self.assertReviewGroupForReviewer(reviewer, ActiveReviewsView.CAN_DO)
 
     def test_review_done(self):
         # If the logged in user has a completed review, then the review is
@@ -235,22 +251,46 @@ class _ActiveReviewGroupsTest:
         login_person(reviewer)
         self.bmp.createComment(
             reviewer, 'subject', vote=CodeReviewVote.APPROVE)
-        self.assertReviewGroupForUser(
+        self.assertReviewGroupForReviewer(
             reviewer, ActiveReviewsView.ARE_DOING)
 
 
-class TestPersonActiveReviewGroups(_ActiveReviewGroupsTest,
-        TestCaseWithFactory):
-    """Tests for groupings used in for active reviews for an `IPerson`."""
+class ActiveReviewSortingTest(TestCaseWithFactory):
+    """Test the sorting of the active review groups."""
 
-    _view = PersonActiveReviewsView
+    layer = DatabaseFunctionalLayer
+
+    def test_oldest_first(self):
+        # The oldest requested reviews should be first.
+        product = self.factory.makeProduct()
+        bmp1 = self.factory.makeBranchMergeProposal(product=product)
+        login_person(bmp1.source_branch.owner)
+        bmp1.requestReview(datetime(2009,6,1,tzinfo=pytz.UTC))
+        bmp2 = self.factory.makeBranchMergeProposal(product=product)
+        login_person(bmp2.source_branch.owner)
+        bmp2.requestReview(datetime(2009,3,1,tzinfo=pytz.UTC))
+        bmp3 = self.factory.makeBranchMergeProposal(product=product)
+        login_person(bmp3.source_branch.owner)
+        bmp3.requestReview(datetime(2009,1,1,tzinfo=pytz.UTC))
+        login(ANONYMOUS)
+        view = create_initialized_view(product, name='+activereviews')
+        self.assertEqual(
+            [bmp3, bmp2, bmp1],
+            [item.context for item in view.review_groups[view.OTHER]])
 
 
-class TestProductActiveReviewGroups(_ActiveReviewGroupsTest,
-    TestCaseWithFactory):
-    """Tests for groupings used in for active reviews for an `IProduct`."""
+class NoActiveReviewsForBranchTest(TestCaseWithFactory):
+    """A branch should not have +activereviews."""
 
-    _view = ProductActiveReviewsView
+    layer = DatabaseFunctionalLayer
+
+    def test_no_active_reviews(self):
+        # 404 is more apt than an oops.
+        branch = self.factory.makeProductBranch()
+        self.assertRaises(
+            NotFound,
+            create_initialized_view,
+            branch, name='+activereviews')
 
 
 def test_suite():

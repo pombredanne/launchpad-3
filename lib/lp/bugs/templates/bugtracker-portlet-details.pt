@@ -1,31 +1,32 @@
 <div
-  xmlns:tal="http://xml.zope.org/namespaces/tal"
-  xmlns:metal="http://xml.zope.org/namespaces/metal"
-  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  class="portlet" id="portlet-details">
-    <h2 tal:content="context/title">bugtracker title</h2>
-
-    <div class="portletBody">
-        <div class="portletContent">
-
-        <b>Location:</b><br />
-        <img alt="" src="/@@/link" />
-        <a tal:replace="structure context/fmt:external-link" /><br />
-
-        <b>Tracker Type:</b>
-        <span tal:replace="context/bugtrackertype/title">BugZilla</span>
-        <br />
-
-        <b>Number of watches:</b>
-        <span tal:replace="context/watches/count" /><br />
-
-        <b>Contact Details:</b><br />
-        <span tal:replace="context/contactdetails">contact details go here
-        in a long mess</span><br />
-
-        <b>Creator:</b>
-        <a tal:replace="structure context/owner/fmt:link">ownername</a><br />
-
-        </div>
-    </div>
+    xmlns:tal="http://xml.zope.org/namespaces/tal"
+    xmlns:metal="http://xml.zope.org/namespaces/metal"
+    xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+    class="portlet" id="portlet-details">
+  <h2>Details</h2>
+  <dl>
+    <dt>Location:</dt>
+    <dd>
+      <ul id="bugtracker-urls">
+        <li>
+          <strong>
+            <a tal:replace="structure context/fmt:external-link">
+              http://bugs.example.com/
+            </a>
+          </strong>
+        </li>
+        <li tal:repeat="alias context/fmt:aliases">
+          <strong tal:content="alias" /> (Alias)
+        </li>
+      </ul>
+    </dd>
+    <dt>Tracker type:</dt>
+    <dd tal:content="context/bugtrackertype/title" />
+    <tal:contact-details condition="context/contactdetails">
+      <dt>Contact details:</dt>
+      <dd tal:content="context/contactdetails" />
+    </tal:contact-details>
+    <dt>Created by:</dt>
+    <dd tal:content="structure context/owner/fmt:link" />
+  </dl>
 </div>

@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
@@ -19,10 +21,11 @@ import tempfile
 from email.MIMEMultipart import MIMEMultipart
 from email.MIMEText import MIMEText
 
+from storm.locals import Desc, In, Join
+from storm.store import Store
+from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
-
-from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 
 # XXX 2009-05-10 julian
 # This should not import from archivepublisher, but to avoid
@@ -30,6 +33,7 @@ from sqlobject import ForeignKey, SQLMultipleJoin, SQLObjectNotFound
 from lp.archivepublisher.config import getPubConfig
 from lp.archivepublisher.customupload import CustomUploadError
 from lp.archivepublisher.utils import get_ppa_reference
+from lp.archiveuploader.changesfile import ChangesFile
 from lp.archiveuploader.tagfiles import parse_tagfile_lines
 from lp.archiveuploader.utils import safe_fix_maintainer
 from lp.buildmaster.pas import BuildDaemonPackagesArchSpecific
@@ -40,21 +44,17 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.encoding import guess as guess_encoding, ascii_smash
-from lp.soyuz.model.publishing import (
-    BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory,
-    SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.helpers import get_email_template
-from lp.soyuz.interfaces.archive import (
-    ArchivePurpose, IArchiveSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
     BinaryPackageFormat)
-from lp.soyuz.interfaces.component import IComponentSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.soyuz.interfaces.queue import (
     PackageUploadStatus, PackageUploadCustomFormat)
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+    IPublishingSet, ISourcePackagePublishingHistory)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadCustom,
     IPackageUploadQueue, IPackageUploadSource, IPackageUploadSet,
@@ -71,6 +71,8 @@ from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import NotFoundError
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -173,6 +175,11 @@ class PackageUpload(SQLBase):
     customfiles = SQLMultipleJoin('PackageUploadCustom',
                                   joinColumn='packageupload')
 
+    @property
+    def custom_file_urls(self):
+        """See `IPackageUpload`."""
+        return tuple(
+            file.libraryfilealias.getURL() for file in self.customfiles)
 
     def setNew(self):
         """See `IPackageUpload`."""
@@ -358,20 +365,7 @@ class PackageUpload(SQLBase):
         assert self.is_delayed_copy, 'Can only process delayed-copies.'
         assert self.sources.count() == 1, (
             'Source is mandatory for delayed copies.')
-
         self.setAccepted()
-
-        # XXX cprov 2009-06-22 bug=390851: self.sourcepackagerelease
-        # is cached, we cannot rely on it.
-        sourcepackagerelease = self.sources[0].sourcepackagerelease
-
-        # Close bugs if possible, skip imported sources.
-        original_changesfile = sourcepackagerelease.upload_changesfile
-        if original_changesfile is not None:
-            changesfile_object = StringIO.StringIO(
-                original_changesfile.read())
-            close_bugs_for_queue_item(
-                self, changesfile_object=changesfile_object)
 
     def rejectFromQueue(self, logger=None, dry_run=False):
         """See `IPackageUpload`."""
@@ -467,7 +461,7 @@ class PackageUpload(SQLBase):
             archs.append(queue_build.build.distroarchseries.architecturetag)
         for queue_custom in self.customfiles:
             archs.append(queue_custom.customformat.title)
-        return ",".join(archs)
+        return ", ".join(archs)
 
     @cachedproperty
     def displayversion(self):
@@ -488,6 +482,26 @@ class PackageUpload(SQLBase):
         if self.sources:
             return self.sources[0].sourcepackagerelease
         elif self.builds:
+            return self.builds[0].build.sourcepackagerelease
+        else:
+            return None
+
+    @property
+    def my_source_package_release(self):
+        """The source package release related to this queue item.
+
+        al-maisan, Wed, 30 Sep 2009 17:58:31 +0200:
+        The cached property version above behaves very finicky in
+        tests and I've had a *hell* of a time revising these and
+        making them pass.
+
+        In any case, Celso's advice was to stay away from it
+        and I am hence introducing this non-cached variant for
+        usage inside the content class.
+        """
+        if self.sources is not None and self.sources.count() > 0:
+            return self.sources[0].sourcepackagerelease
+        elif self.builds is not None and self.builds.count() > 0:
             return self.builds[0].build.sourcepackagerelease
         else:
             return None
@@ -525,9 +539,32 @@ class PackageUpload(SQLBase):
         if self.is_delayed_copy:
             for pub_record in publishing_records:
                 pub_record.overrideFromAncestry()
+
+                # Grab the .changes file of the original source package while
+                # it's available.
+                changes_file = None
+                if ISourcePackagePublishingHistory.providedBy(pub_record):
+                    changes_file = pub_record.sourcepackagerelease.package_upload.changesfile
+
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
                           "Re-uploaded %s to librarian" % new_file.filename)
+                if ISourcePackagePublishingHistory.providedBy(pub_record):
+                    pas_verify = BuildDaemonPackagesArchSpecific(
+                        config.builddmaster.root, self.distroseries)
+                    pub_record.createMissingBuilds(
+                        pas_verify=pas_verify, logger=logger)
+
+                if changes_file is not None:
+                    debug(
+                        logger,
+                        "sending email to %s" % self.distroseries.changeslist)
+                    changes_file_object = StringIO.StringIO(changes_file.read())
+                    self.notify(
+                        announce_list=self.distroseries.changeslist,
+                        changes_file_object=changes_file_object,
+                        allow_unsigned=True, logger=logger)
+                    self.syncUpdate()
 
         self.setDone()
 
@@ -563,9 +600,13 @@ class PackageUpload(SQLBase):
         """Strip any PGP signature from the supplied changes lines."""
         text = "".join(changes_lines)
         signed_message = signed_message_from_string(text)
-        return signed_message.signedContent.splitlines(True)
+        # For unsigned '.changes' files we'll get a None `signedContent`.
+        if signed_message.signedContent is not None:
+            return signed_message.signedContent.splitlines(True)
+        else:
+            return changes_lines
 
-    def _getChangesDict(self, changes_file_object=None):
+    def _getChangesDict(self, changes_file_object=None, allow_unsigned=None):
         """Return a dictionary with changes file tags in it."""
         changes_lines = None
         if changes_file_object is None:
@@ -579,7 +620,14 @@ class PackageUpload(SQLBase):
         if hasattr(changes_file_object, "seek"):
             changes_file_object.seek(0)
 
-        unsigned = not self.signing_key
+        # When the 'changesfile' content comes from a different
+        # `PackageUpload` instance (e.g. when dealing with delayed copies)
+        # we need to be able to specify the "allow unsigned" flag explicitly.
+        # In that case the presence of the signing key is immaterial.
+        if allow_unsigned is None:
+            unsigned = not self.signing_key
+        else:
+            unsigned = allow_unsigned
         changes = parse_tagfile_lines(changes_lines, allow_unsigned=unsigned)
 
         if self.isPPA():
@@ -687,7 +735,7 @@ class PackageUpload(SQLBase):
             message.ORIGIN = '\nOrigin: %s' % changes['origin']
 
         if self.sources or self.builds:
-            message.SPR_URL = canonical_url(self.sourcepackagerelease)
+            message.SPR_URL = canonical_url(self.my_source_package_release)
 
     def _sendRejectionNotification(
         self, recipients, changes_lines, changes, summary_text, dry_run,
@@ -697,15 +745,17 @@ class PackageUpload(SQLBase):
         class PPARejectedMessage:
             """PPA rejected message."""
             template = get_email_template('ppa-upload-rejection.txt')
-            SUMMARY = summary_text
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            SUMMARY = sanitize_string(summary_text)
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment("".join(changes_lines)))
             USERS_ADDRESS = config.launchpad.users_address
 
         class RejectedMessage:
             """Rejected message."""
             template = get_email_template('upload-rejection.txt')
-            SUMMARY = summary_text
-            CHANGESFILE = sanitize_string(changes['changes'])
+            SUMMARY = sanitize_string(summary_text)
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -728,7 +778,7 @@ class PackageUpload(SQLBase):
             attach_changes = True
 
         self._handleCommonBodyContent(message, changes)
-        if message.SUMMARY is None:
+        if summary_text is None:
             message.SUMMARY = 'Rejected by archive administrator.'
 
         body = message.template % message.__dict__
@@ -782,7 +832,8 @@ class PackageUpload(SQLBase):
 
             STATUS = "New"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -796,7 +847,8 @@ class PackageUpload(SQLBase):
             STATUS = "Waiting for approval"
             SUMMARY = summarystring + (
                     "\nThis upload awaits approval by a distro manager\n")
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -814,7 +866,8 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             DISTRO = self.distroseries.distribution.title
             if announce_list:
                 ANNOUNCE = 'Announcing to %s' % announce_list
@@ -832,14 +885,16 @@ class PackageUpload(SQLBase):
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = guess_encoding("".join(changes_lines))
+            CHANGESFILE = guess_encoding(
+                ChangesFile.formatChangesComment("".join(changes_lines)))
 
         class AnnouncementMessage:
             template = get_email_template('upload-announcement.txt')
 
             STATUS = "Accepted"
             SUMMARY = summarystring
-            CHANGESFILE = sanitize_string(changes['changes'])
+            CHANGESFILE = sanitize_string(
+                ChangesFile.formatChangesComment(changes['changes']))
             CHANGEDBY = ''
             ORIGIN = ''
             SIGNER = ''
@@ -907,7 +962,8 @@ class PackageUpload(SQLBase):
                     self.displayname)
 
     def notify(self, announce_list=None, summary_text=None,
-               changes_file_object=None, logger=None, dry_run=False):
+               changes_file_object=None, logger=None, dry_run=False,
+               allow_unsigned=None):
         """See `IPackageUpload`."""
 
         self.logger = logger
@@ -920,11 +976,6 @@ class PackageUpload(SQLBase):
             debug(self.logger, "Not sending email, upload contains binaries.")
             return
 
-        # Get the changes file from the librarian and parse the tags to
-        # a dictionary.  This can throw exceptions but since the tag file
-        # already will have parsed elsewhere we don't need to worry about that
-        # here.  Any exceptions from the librarian can be left to the caller.
-
         # XXX julian 2007-05-11:
         # Requiring an open changesfile object is a bit ugly but it is
         # required because of several problems:
@@ -934,7 +985,8 @@ class PackageUpload(SQLBase):
         #    the email's summary section.
         # For now, it's just easier to re-read the original file if the caller
         # requires us to do that instead of using the librarian's copy.
-        changes, changes_lines = self._getChangesDict(changes_file_object)
+        changes, changes_lines = self._getChangesDict(
+            changes_file_object, allow_unsigned=allow_unsigned)
 
         # "files" will contain a list of tuples of filename,component,section.
         # If files is empty, we don't need to send an email if this is not
@@ -994,8 +1046,16 @@ class PackageUpload(SQLBase):
                 "Changes file is unsigned, adding changer as recipient")
             candidate_recipients.append(changer)
 
-        # PPA uploads only email the uploader but for everything else
-        # we consider maintainer and changed-by also.
+        if self.isPPA():
+            # For PPAs, any person or team mentioned explicitly in the
+            # ArchivePermissions as uploaders for the archive will also
+            # get emailed.
+            uploaders = [
+                permission.person for permission in
+                    self.archive.getUploadersForComponent()]
+            candidate_recipients.extend(uploaders)
+
+        # If this is not a PPA, we also consider maintainer and changed-by.
         if self.signing_key and not self.isPPA():
             maintainer = self._emailToPerson(changes['maintainer'])
             if (maintainer and maintainer != signer and
@@ -1079,7 +1139,7 @@ class PackageUpload(SQLBase):
         # the section of the source package uploaded in order to facilitate
         # filtering on the part of the email recipients.
         if self.sources:
-            spr = self.sourcepackagerelease
+            spr = self.my_source_package_release
             xlp_component_header = 'component=%s, section=%s' % (
                 spr.component.name, spr.section.name)
             extra_headers['X-Launchpad-Component'] = xlp_component_header
@@ -1293,7 +1353,6 @@ class PackageUploadBuild(SQLBase):
         other_dars = other_dars - set([target_dar])
         # First up, publish everything in this build into that dar.
         published_binaries = []
-        main_component = getUtility(IComponentSet)['main']
         for binary in self.build.binarypackages:
             target_dars = set([target_dar])
             if not binary.architecturespecific:
@@ -1310,38 +1369,24 @@ class PackageUploadBuild(SQLBase):
             archive = self.packageupload.archive
             # DDEBs targeted to the PRIMARY archive are published in the
             # corresponding DEBUG archive.
-            if (archive.purpose == ArchivePurpose.PRIMARY and
-                binary.binpackageformat == BinaryPackageFormat.DDEB):
-                distribution = self.packageupload.distroseries.distribution
-                archive = getUtility(IArchiveSet).getByDistroPurpose(
-                    distribution, ArchivePurpose.DEBUG)
-                if archive is None:
+            if binary.binpackageformat == BinaryPackageFormat.DDEB:
+                debug_archive = archive.debug_archive
+                if debug_archive is None:
                     raise QueueInconsistentStateError(
                         "Could not find the corresponding DEBUG archive "
-                        "for %s" % (distribution.title))
-
-            # We override PPA to always publish in the main component.
-            if self.packageupload.archive.is_ppa:
-                component = main_component
-            else:
-                component = binary.component
+                        "for %s" % (archive.displayname))
+                archive = debug_archive
 
             for each_target_dar in target_dars:
-                # XXX: dsilvers 2005-10-20 bug=3408:
-                # What do we do about embargoed binaries here?
-                sbpph = SecureBinaryPackagePublishingHistory(
+                bpph = getUtility(IPublishingSet).newBinaryPublication(
+                    archive=archive,
                     binarypackagerelease=binary,
                     distroarchseries=each_target_dar,
+                    component=binary.component,
                     section=binary.section,
                     priority=binary.priority,
-                    status=PackagePublishingStatus.PENDING,
-                    datecreated=UTC_NOW,
-                    pocket=self.packageupload.pocket,
-                    embargo=False,
-                    component=component,
-                    archive=archive,
+                    pocket=self.packageupload.pocket
                     )
-                bpph = BinaryPackagePublishingHistory.get(sbpph.id)
                 published_binaries.append(bpph)
         return published_binaries
 
@@ -1386,55 +1431,24 @@ class PackageUploadSource(SQLBase):
             break
         return ancestry
 
-    def _conflictWith(self, upload_source):
-        """Whether a given PackageUploadSource conflicts with the context.
-
-        :param upload_source: a `PackageUploadSource` to be checked
-            against this context for source 'name' and 'version' conflict.
-        :return: True if the checked `PackageUploadSource` contains a
-            `SourcePackageRelease` with the same name and version.
-             Otherwise, False is returned.
-        """
-        conflict_release = upload_source.sourcepackagerelease
-        proposed_name = self.sourcepackagerelease.name
-        proposed_version = self.sourcepackagerelease.version
-
-        if (conflict_release.name == proposed_name and
-            conflict_release.version == proposed_version):
-            return True
-
-        return False
-
     def verifyBeforeAccept(self):
         """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
-        for distroseries in self.packageupload.distroseries.distribution:
-            uploads = distroseries.getQueueItems(
-                status=[PackageUploadStatus.ACCEPTED,
-                        PackageUploadStatus.DONE],
-                name=self.sourcepackagerelease.name,
-                version=self.sourcepackagerelease.version,
-                archive=self.packageupload.archive,
-                exact_match=True)
-            # Isolate conflicting PackageUploadSources.
-            conflict_candidates = [
-                upload.sources[0] for upload in uploads
-                if len(list(upload.sources)) > 0]
-            # Isolate only conflicting SourcePackageRelease.
-            conflicts = [
-                upload_source for upload_source in conflict_candidates
-                if self._conflictWith(upload_source)]
-            # If there are any conflicting SourcePackageRelease the
-            # upload cannot be accepted.
-            if len(conflicts) > 0:
-                raise QueueInconsistentStateError(
-                    "The source %s is already accepted in %s/%s and you "
-                    "cannot upload the same version within the same "
-                    "distribution. You have to modify the source version "
-                    "and re-upload." % (
-                        self.sourcepackagerelease.title,
-                        distroseries.distribution.name,
-                        distroseries.name))
+        conflict = getUtility(IPackageUploadSet).findSourceUpload(
+            self.sourcepackagerelease.name,
+            self.sourcepackagerelease.version,
+            self.packageupload.archive,
+            self.packageupload.distroseries.distribution)
+
+        if conflict is not None:
+            raise QueueInconsistentStateError(
+                "The source %s is already accepted in %s/%s and you "
+                "cannot upload the same version within the same "
+                "distribution. You have to modify the source version "
+                "and re-upload." % (
+                    self.sourcepackagerelease.title,
+                    conflict.distroseries.distribution.name,
+                    conflict.distroseries.name))
 
     def verifyBeforePublish(self):
         """See `IPackageUploadSource`."""
@@ -1489,31 +1503,20 @@ class PackageUploadSource(SQLBase):
     def publish(self, logger=None):
         """See `IPackageUploadSource`."""
         # Publish myself in the distroseries pointed at by my queue item.
-        # XXX: dsilvers: 2005-10-20 bug=3408:
-        # What do we do here to support embargoed sources?
         debug(logger, "Publishing source %s/%s to %s/%s" % (
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
             self.packageupload.distroseries.distribution.name,
             self.packageupload.distroseries.name))
 
-        if self.packageupload.archive.is_ppa:
-            # We override PPA to always publish in the main component.
-            component = getUtility(IComponentSet)['main']
-        else:
-            component = self.sourcepackagerelease.component
-
-        sspph = SecureSourcePackagePublishingHistory(
-            distroseries=self.packageupload.distroseries,
+        return getUtility(IPublishingSet).newSourcePublication(
+            archive=self.packageupload.archive,
             sourcepackagerelease=self.sourcepackagerelease,
-            component=component,
+            distroseries=self.packageupload.distroseries,
+            component=self.sourcepackagerelease.component,
             section=self.sourcepackagerelease.section,
-            status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            pocket=self.packageupload.pocket,
-            embargo=False,
-            archive=self.packageupload.archive)
-        return SourcePackagePublishingHistory.get(sspph.id)
+            pocket=self.packageupload.pocket
+            )
 
 
 class PackageUploadCustom(SQLBase):
@@ -1679,9 +1682,46 @@ class PackageUploadSet:
 
     def createDelayedCopy(self, archive, distroseries, pocket,
                           signing_key):
+        """See `IPackageUploadSet`."""
         return PackageUpload(
             archive=archive, distroseries=distroseries, pocket=pocket,
             status=PackageUploadStatus.NEW, signing_key=signing_key)
+
+    def findSourceUpload(self, name, version, archive, distribution):
+        """See `IPackageUploadSet`."""
+        # Avoiding circular imports.
+        from lp.registry.model.distroseries import DistroSeries
+        from lp.registry.model.sourcepackagename import SourcePackageName
+        from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+
+        store = IMasterStore(PackageUpload)
+        origin = (
+            PackageUpload,
+            Join(DistroSeries,
+                 DistroSeries.id == PackageUpload.distroseriesID),
+            Join(PackageUploadSource,
+                 PackageUploadSource.packageuploadID == PackageUpload.id),
+            Join(SourcePackageRelease,
+                 SourcePackageRelease.id ==
+                     PackageUploadSource.sourcepackagereleaseID),
+            Join(SourcePackageName,
+                 SourcePackageName.id ==
+                     SourcePackageRelease.sourcepackagenameID),
+            )
+
+        approved_status = (
+            PackageUploadStatus.ACCEPTED,
+            PackageUploadStatus.DONE,
+            )
+        conflicts = store.using(*origin).find(
+            PackageUpload,
+            PackageUpload.status.is_in(approved_status),
+            PackageUpload.archive == archive,
+            DistroSeries.distribution == distribution,
+            SourcePackageRelease.version == version,
+            SourcePackageName.name == name)
+
+        return conflicts.one()
 
     def count(self, status=None, distroseries=None, pocket=None):
         """See `IPackageUploadSet`."""
@@ -1697,6 +1737,59 @@ class PackageUploadSet:
 
         query = " AND ".join(clauses)
         return PackageUpload.select(query).count()
+
+    def getAll(self, distroseries, created_since_date=None, status=None,
+               archive=None, pocket=None, custom_type=None):
+        """See `IPackageUploadSet`."""
+        # XXX Julian 2009-07-02 bug=394645
+        # This method is an incremental deprecation of
+        # IDistroSeries.getQueueItems(). It's basically re-writing it
+        # using Storm queries instead of SQLObject, but not everything
+        # is implemented yet.  When it is, this comment and the old
+        # method can be removed and call sites updated to use this one.
+        store = Store.of(distroseries)
+
+        def dbitem_values_tuple(item_or_list):
+            if not isinstance(item_or_list, list):
+                return (item_or_list.value,)
+            else:
+                return tuple(item.value for item in item_or_list)
+
+        timestamp_query_clause = ()
+        if created_since_date is not None:
+            timestamp_query_clause = (
+                PackageUpload.date_created > created_since_date,)
+
+        status_query_clause = ()
+        if status is not None:
+            status = dbitem_values_tuple(status)
+            status_query_clause = (
+                In(PackageUpload.status, status),)
+
+        archives = distroseries.distribution.getArchiveIDList(archive)
+        archive_query_clause = (
+            In(PackageUpload.archiveID, archives),)
+
+        pocket_query_clause = ()
+        if pocket is not None:
+            pocket = dbitem_values_tuple(pocket)
+            pocket_query_clause = (
+                In(PackageUpload.pocket, pocket),)
+
+        custom_type_query_clause = ()
+        if custom_type is not None:
+            custom_type = dbitem_values_tuple(custom_type)
+            custom_type_query_clause = (
+                PackageUpload.id == PackageUploadCustom.packageuploadID,
+                In(PackageUploadCustom.customformat, custom_type))
+
+        return store.find(
+            PackageUpload,
+            PackageUpload.distroseries == distroseries,
+            *(status_query_clause + archive_query_clause +
+              pocket_query_clause + timestamp_query_clause +
+              custom_type_query_clause)
+            ).order_by(Desc(PackageUpload.id)).config(distinct=True)
 
     def getBuildByBuildIDs(self, build_ids):
         """See `IPackageUploadSet`."""

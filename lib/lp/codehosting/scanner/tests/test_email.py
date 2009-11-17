@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for the scanner's email generation."""
 
@@ -124,7 +125,6 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             'branch nick: %s'  % self.bzr_branch.nick,
             'message:\n  second',
             'added:\n  hello.txt',
-            "=3D=3D=3D added file 'hello.txt'",
             ]
         for bit in body_bits:
             self.assertTextIn(bit, recommit_email_body)

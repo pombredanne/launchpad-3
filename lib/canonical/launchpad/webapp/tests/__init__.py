@@ -1,13 +1,14 @@
-# Copyright Canonical Limited, 2009, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
 from lazr.restful.interfaces import IWebServiceConfiguration
 from zope.component import getGlobalSiteManager, provideUtility
 from zope.interface import implements
-import unittest
 
 from lp.testing import TestCase
+
 
 class DummyWebServiceConfiguration:
     """A totally vanilla web service configuration."""

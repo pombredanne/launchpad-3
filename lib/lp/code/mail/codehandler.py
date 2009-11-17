@@ -1,4 +1,5 @@
-# Copyright 2008-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -20,7 +21,6 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.codehosting.bzrutils import is_branch_stackable
 from lp.codehosting.vfs import get_lp_server
-from lp.code.interfaces.diff import IStaticDiffSource
 from canonical.launchpad.interfaces.mail import (
     IMailHandler, EmailProcessingError)
 from canonical.launchpad.interfaces.message import IMessageSet
@@ -404,6 +404,7 @@ class CodeHandler:
         :param submitter: The person submitting the merge proposal.
         """
         if url is not None:
+            url = url.rstrip('/')
             branches = getUtility(IBranchLookup)
             unique_name = branches.uriToUniqueName(URI(url))
             if unique_name is not None:
@@ -581,25 +582,10 @@ class CodeHandler:
                 'Error Creating Merge Proposal', body)
             return
 
-        if md.patch is not None:
-            diff_source = getUtility(IStaticDiffSource)
-            # XXX: Tim Penhey, 2009-02-12, bug 328271
-            # If the branch is private we should probably use the restricted
-            # librarian.
-            # Using the .txt suffix to allow users to view the file in
-            # firefox without firefox trying to get them to download it.
-            filename = '%s.diff.txt' % source.name
-            review_diff = diff_source.acquireFromText(
-                md.base_revision_id, md.revision_id, md.patch,
-                filename=filename)
-            transaction.commit()
-        else:
-            review_diff = None
 
         try:
             bmp = source.addLandingTarget(submitter, target,
-                                          needs_review=True,
-                                          review_diff=review_diff)
+                                          needs_review=True)
 
             context = CodeReviewEmailCommandExecutionContext(
                 bmp, submitter, notify_event_listeners=False)

@@ -1,4 +1,5 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 #
 # This is the python package that defines the
 # 'lp.archivepublisher.config' package. This package is related
@@ -53,8 +54,8 @@ def getPubConfig(archive):
         # Reset the list of components to partner only.  This prevents
         # any publisher runs from generating components not related to
         # the partner archive.
-        for distroseries in pubconf._distroserieses.keys():
-            pubconf._distroserieses[
+        for distroseries in pubconf._distroseries.keys():
+            pubconf._distroseries[
                 distroseries]['components'] = ['partner']
         pubconf.distroroot = config.archivepublisher.root
         pubconf.archiveroot = os.path.join(
@@ -86,7 +87,7 @@ class Config(object):
     def __init__(self, distribution):
         """Initialise the configuration"""
         self.distroName = distribution.name.encode('utf-8')
-        self._distroserieses = {}
+        self._distroseries = {}
         if not distribution.lucilleconfig:
             raise LucilleConfigError(
                 'No Lucille config section for %s' % distribution.name)
@@ -112,7 +113,7 @@ class Config(object):
             config_segment["components"] = config_segment["config"].get(
                 "publishing", "components").split(" ")
 
-            self._distroserieses[distroseries_name] = config_segment
+            self._distroseries[distroseries_name] = config_segment
 
         strio = StringIO(distribution.lucilleconfig.encode('utf-8'))
         self._distroconfig = ConfigParser()
@@ -123,13 +124,13 @@ class Config(object):
 
     def distroSeriesNames(self):
         # Because dicts iterate for keys only; this works to get dr names
-        return self._distroserieses.keys()
+        return self._distroseries.keys()
 
     def archTagsForSeries(self, dr):
-        return self._distroserieses[dr]["archtags"]
+        return self._distroseries[dr]["archtags"]
 
     def componentsForSeries(self, dr):
-        return self._distroserieses[dr]["components"]
+        return self._distroseries[dr]["components"]
 
     def _extractConfigInfo(self):
         """Extract configuration information into the attributes we use"""

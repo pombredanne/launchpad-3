@@ -1,4 +1,6 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """PackageCopier utilities."""
 
 __metaclass__ = type
@@ -20,7 +22,6 @@ import tempfile
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lazr.delegates import delegates
@@ -28,11 +29,13 @@ from lp.soyuz.adapters.packagelocation import (
     build_package_location)
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, CannotCopy)
-from lp.soyuz.interfaces.build import BuildSetStatus
+from lp.soyuz.interfaces.build import (
+    BuildStatus, BuildSetStatus)
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    active_publishing_status)
-from lp.soyuz.interfaces.queue import IPackageUploadSet
+    IBinaryPackagePublishingHistory, IPublishingSet,
+    ISourcePackagePublishingHistory, active_publishing_status)
+from lp.soyuz.interfaces.queue import (
+    IPackageUpload, IPackageUploadSet)
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 from lp.soyuz.scripts.processaccepted import (
@@ -56,7 +59,7 @@ def re_upload_file(libraryfile, restricted=False):
     # having to download to a temp file but there are no guarantees
     # how large the files are, so using StringIO would be dangerous.
     fd, filepath = tempfile.mkstemp()
-    temp_file = open(filepath, "w")
+    temp_file = os.fdopen(fd, 'wb')
 
     # Read the old library file into the temp file.
     copy_and_close(libraryfile, temp_file)
@@ -72,8 +75,8 @@ def re_upload_file(libraryfile, restricted=False):
 
     return new_lfa
 
-# XXX cprov 2009-06-12: These two functions could be incorporated in
-# ISPPH and BPPH. I just don't see a clear benefit in doing that right now.
+# XXX cprov 2009-06-12: this function should be incorporated in
+# IPublishing.
 def update_files_privacy(pub_record):
     """Update file privacy according the publishing detination
 
@@ -131,23 +134,43 @@ def update_files_privacy(pub_record):
     return re_uploaded_files
 
 
+# XXX cprov 2009-07-01: should be part of `ISourcePackagePublishingHistory`.
+def has_restricted_files(source):
+    """Whether or not a given source files has restricted files."""
+    for source_file in source.sourcepackagerelease.files:
+        if source_file.libraryfile.restricted:
+            return True
+
+    for binary in source.getBuiltBinaries():
+        for binary_file in binary.binarypackagerelease.files:
+            if binary_file.libraryfile.restricted:
+                return True
+
+    return False
+
+
 class CheckedCopy:
     """Representation of a copy that was checked and approved.
 
     Decorates `ISourcePackagePublishingHistory`, tweaking
     `getStatusSummaryForBuilds` to return `BuildSetStatus.NEEDSBUILD`
     for source-only copies.
+
+    It also store the 'delayed' boolean, which controls the way this source
+    should be copied to the destionation archive (see `_do_delayed_copy` and
+    `_do_direct_copy`)
     """
     delegates(ISourcePackagePublishingHistory)
 
-    def __init__(self, context, include_binaries):
+    def __init__(self, context, include_binaries, delayed):
         self.context = context
         self.include_binaries = include_binaries
+        self.delayed = delayed
 
     def getStatusSummaryForBuilds(self):
         """Always `BuildSetStatus.NEEDSBUILD` for source-only copies."""
         if self.include_binaries:
-            self.context.getStatusSummaryForBuilds()
+            return self.context.getStatusSummaryForBuilds()
         else:
             return {'status': BuildSetStatus.NEEDSBUILD}
 
@@ -158,9 +181,10 @@ class CopyChecker:
     Allows the checker function to identify conflicting copy candidates
     within the copying batch.
     """
-    def __init__(self, archive, include_binaries):
+    def __init__(self, archive, include_binaries, allow_delayed_copies=True):
         self.archive = archive
         self.include_binaries = include_binaries
+        self.allow_delayed_copies = allow_delayed_copies
         self._inventory = {}
 
     def _getInventoryKey(self, candidate):
@@ -172,11 +196,18 @@ class CopyChecker:
         return (
             candidate.source_package_name, candidate.source_package_version)
 
-    def addCopy(self, source):
+    def addCopy(self, source, delayed):
         """Story a copy in the inventory as a `CheckedCopy` instance."""
         inventory_key = self._getInventoryKey(source)
+        checked_copy = CheckedCopy(source, self.include_binaries, delayed)
         candidates = self._inventory.setdefault(inventory_key, [])
-        candidates.append(CheckedCopy(source, self.include_binaries))
+        candidates.append(checked_copy)
+
+    def getCheckedCopies(self):
+        """Return a list of copies allowed to be performed."""
+        for copies in self._inventory.values():
+            for copy in copies:
+                yield copy
 
     def getConflicts(self, candidate):
         """Conflicting `CheckedCopy` objects in the inventory.
@@ -354,34 +385,27 @@ class CopyChecker:
                     "version older than the %s published in %s" %
                     (ancestry.displayname, ancestry.distroseries.name))
 
+        delayed = (
+            self.allow_delayed_copies and
+            not self.archive.private and
+            has_restricted_files(source))
 
-def check_privacy_mismatch(source, archive):
-    """Whether or not source files match the archive privacy.
+        if delayed:
+            upload_conflict = getUtility(IPackageUploadSet).findSourceUpload(
+                name=source.sourcepackagerelease.name,
+                version=source.sourcepackagerelease.version,
+                archive=self.archive, distribution=series.distribution)
+            if upload_conflict is not None:
+                raise CannotCopy(
+                    'same version already uploaded and waiting in '
+                    'ACCEPTED queue')
 
-    Public source files can be copied to any archive, it does not
-    represent a 'privacy mismatch'.
-
-    On the other hand, private source files can be copied to private
-    archives where builders will fetch it directly from the repository
-    and not from the restricted librarian.
-    """
-    if archive.private:
-        return False
-
-    for source_file in source.sourcepackagerelease.files:
-        if source_file.libraryfile.restricted:
-            return True
-
-    for binary in source.getBuiltBinaries():
-        for binary_file in binary.binarypackagerelease.files:
-            if binary_file.libraryfile.restricted:
-                return True
-
-    return False
+        # Copy is approved, update the copy inventory.
+        self.addCopy(source, delayed)
 
 
 def do_copy(sources, archive, series, pocket, include_binaries=False,
-            deny_privacy_mismatch=True):
+            allow_delayed_copies=True):
     """Perform the complete copy of the given sources incrementally.
 
     Verifies if each copy can be performed using `CopyChecker` and
@@ -400,9 +424,9 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     :param: include_binaries: optional boolean, controls whether or
         not the published binaries for each given source should be also
         copied along with the source.
-    :param deny_privacy_mismatch: boolean indicating whether or not private
-        sources can be copied to public archives. Defaults to True, only
-        set as False in the UnembargoPackage context.
+    :param allow_delayed_copies: boolean indicating whether or not private
+        sources can be copied to public archives using delayed_copies.
+        Defaults to True, only set as False in the UnembargoPackage context.
 
     :raise CannotCopy when one or more copies were not allowed. The error
         will contain the reason why each copy was denied.
@@ -413,42 +437,35 @@ def do_copy(sources, archive, series, pocket, include_binaries=False,
     """
     copies = []
     errors = []
-    copy_checker = CopyChecker(archive, include_binaries)
+    copy_checker = CopyChecker(
+        archive, include_binaries, allow_delayed_copies)
 
     for source in sources:
         if series is None:
             destination_series = source.distroseries
         else:
             destination_series = series
-
         try:
             copy_checker.checkCopy(source, destination_series, pocket)
         except CannotCopy, reason:
             errors.append("%s (%s)" % (source.displayname, reason))
             continue
 
-        # For now, deny copies implying in file privacy mismatch.
-        if (deny_privacy_mismatch and
-            check_privacy_mismatch(source, archive)):
-            errors.append(
-                "%s (cannot copy private files into public archives)" %
-                source.displayname)
-            continue
-
-        # Update the copy inventory.
-        copy_checker.addCopy(source)
-
     if len(errors) != 0:
         raise CannotCopy("\n".join(errors))
 
-    for source in sources:
+    for source in copy_checker.getCheckedCopies():
         if series is None:
             destination_series = source.distroseries
         else:
             destination_series = series
-
-        sub_copies = _do_direct_copy(
-            source, archive, destination_series, pocket, include_binaries)
+        if source.delayed:
+            delayed_copy = _do_delayed_copy(
+                source, archive, destination_series, pocket, include_binaries)
+            sub_copies = [delayed_copy]
+        else:
+            sub_copies = _do_direct_copy(
+                source, archive, destination_series, pocket, include_binaries)
 
         copies.extend(sub_copies)
 
@@ -502,34 +519,31 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     # unique publication per binary package releases (i.e. excludes
     # irrelevant arch-indep publications) and IBPPH.copy is prepared
     # to expand arch-indep publications.
-    # For safety, we use the architecture the binary was built, and
-    # not the one it is published, coping with single arch-indep
-    # publications for architectures that do not exist in the
-    # destination series. See #387589 for more information.
-    for binary in source.getBuiltBinaries():
-        binarypackagerelease = binary.binarypackagerelease
-        try:
-            target_distroarchseries = series[
-                binarypackagerelease.build.arch_tag]
-        except NotFoundError:
-            # It is not an error if the destination series doesn't
-            # support all the architectures originally built. We
-            # simply do not copy the binary and life goes on.
-            continue
-        binary_in_destination = archive.getAllPublishedBinaries(
-            name=binarypackagerelease.name, exact_match=True,
-            version=binarypackagerelease.version,
-            status=active_publishing_status, pocket=pocket,
-            distroarchseries=target_distroarchseries)
-        if binary_in_destination.count() == 0:
-            binary_copy = binary.copyTo(series, pocket, archive)
-            copies.extend(binary_copy)
+    binary_copies = getUtility(IPublishingSet).copyBinariesTo(
+        source.getBuiltBinaries(), series, pocket, archive)
+
+    copies.extend(binary_copies)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.
     source_copy.createMissingBuilds()
 
     return copies
+
+
+class DelayedCopy:
+    """Decorates `IPackageUpload` with a more descriptive 'displayname'."""
+
+    delegates(IPackageUpload)
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def displayname(self):
+        return 'Delayed copy of %s (%s)' % (
+            self.context.sourcepackagerelease.title,
+            self.context.displayarchs)
 
 
 def _do_delayed_copy(source, archive, series, pocket, include_binaries):
@@ -569,6 +583,8 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     # If binaries are included in the copy we include binary custom files.
     if include_binaries:
         for build in source.getBuilds():
+            if build.buildstate != BuildStatus.FULLYBUILT:
+                continue
             delayed_copy.addBuild(build)
             original_build_upload = build.package_upload
             for custom in original_build_upload.customfiles:
@@ -584,11 +600,7 @@ def _do_delayed_copy(source, archive, series, pocket, include_binaries):
     # the destination context.
     delayed_copy.acceptFromCopy()
 
-    # XXX cprov 2009-06-22 bug=390845: `IPackageUpload.displayname`
-    # implementation is very poor, if we can't fix in place we should
-    # build a decorated object implemented a more complete 'displayname'
-    # property.
-    return delayed_copy
+    return DelayedCopy(delayed_copy)
 
 
 class PackageCopier(SoyuzScript):
@@ -607,7 +619,7 @@ class PackageCopier(SoyuzScript):
 
     usage = '%prog -s warty mozilla-firefox --to-suite hoary'
     description = 'MOVE or COPY a published package to another suite.'
-    deny_privacy_mismatch = True
+    allow_delayed_copies = True
 
     def add_my_options(self):
 
@@ -705,10 +717,14 @@ class PackageCopier(SoyuzScript):
             copies = do_copy(
                 sources, self.destination.archive,
                 self.destination.distroseries, self.destination.pocket,
-                self.options.include_binaries, self.deny_privacy_mismatch)
+                self.options.include_binaries, self.allow_delayed_copies)
         except CannotCopy, error:
             self.logger.error(str(error))
             return []
+
+        self.logger.info("Copied:")
+        for copy in copies:
+            self.logger.info('\t%s' % copy.displayname)
 
         if len(copies) == 1:
             self.logger.info(
@@ -770,7 +786,7 @@ class UnembargoSecurityPackage(PackageCopier):
     description = ("Unembargo packages in a private PPA by copying to the "
                    "specified location and re-uploading any files to the "
                    "unrestricted librarian.")
-    deny_privacy_mismatch = False
+    allow_delayed_copies = False
 
     def add_my_options(self):
         """Add -d, -s, dry-run and confirmation options."""

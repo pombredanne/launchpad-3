@@ -19,11 +19,11 @@ To create a new Specification, use ISpecificationSet.new:
     ...     SpecificationImplementationStatus, SpecificationPriority)
     >>> productset = getUtility(IProductSet)
     >>> upstream_firefox = productset.get(4)
-    >>> from canonical.launchpad.database import Person
-    >>> sabdfl = Person.byName('sabdfl')
+    >>> from lp.registry.model.person import Person
+    >>> mark = Person.byName('mark')
     >>> newspec = specset.new('mng', 'Support MNG Format',
     ...     'http://www.silly.me/SpecName', 'we really need this',
-    ...     SpecificationDefinitionStatus.APPROVED, sabdfl,
+    ...     SpecificationDefinitionStatus.APPROVED, mark,
     ...     product=upstream_firefox)
     >>> print newspec.name
     mng
@@ -59,13 +59,13 @@ We attach now a spec to a distribution.
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> sabdfl = Person.byName('sabdfl')
+    >>> mark = Person.byName('mark')
     >>> ubuspec = specset.new('fix-spec-permissions',
     ...                       'Fix Specification Permissions',
     ...                       'http://www.ubuntu.com/FixBrokenSpecPerms',
     ...                       'we really need this',
     ...                       SpecificationDefinitionStatus.APPROVED,
-    ...                       sabdfl,
+    ...                       mark,
     ...                       distribution=ubuntu)
     >>> print ubuspec.name
     fix-spec-permissions
@@ -121,7 +121,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
     >>> ubuspec.priority = SpecificationPriority.LOW
     >>> ubuspec.definition_status = SpecificationDefinitionStatus.DRAFT
     >>> ubuspec.whiteboard = 'New whiteboard comments.'
-    >>> ubuspec.approver = sabdfl
+    >>> ubuspec.approver = mark
     >>> ubuspec.assignee = jdub
     >>> ubuspec.drafter = jdub
     >>> ubuspec.linkBug(getUtility(IBugSet).get(2))
@@ -137,8 +137,6 @@ Now, let's do a bunch of changes, and see what the result looks like:
     New Title
     >>> print delta.summary
     New summary.
-    >>> print delta.whiteboard
-    New whiteboard comments.
     >>> print delta.specurl
     http://www.ubuntu.com/NewSpec
     >>> print delta.distroseries.name
@@ -161,7 +159,7 @@ Now, let's do a bunch of changes, and see what the result looks like:
 
     >>> print delta.approver['old'] is None
     True
-    >>> print delta.approver['new'] == sabdfl
+    >>> print delta.approver['new'] == mark
     True
 
     >>> print delta.assignee['old'] is None
@@ -173,6 +171,11 @@ Now, let's do a bunch of changes, and see what the result looks like:
     True
     >>> print delta.drafter['new'] == jdub
     True
+
+    >>> print delta.whiteboard['old'] is None
+    True
+    >>> print delta.whiteboard['new']
+    New whiteboard comments.
 
     >>> [linked_bug.id for linked_bug in delta.bugs_linked]
     [2]
@@ -203,7 +206,7 @@ specifications:
 Specs from inactive products are filtered out.
 
  >>> from canonical.database.sqlbase import flush_database_updates
- >>> login('mark@hbd.com')
+ >>> login('mark@example.com')
  >>> upstream_firefox.active = False
  >>> flush_database_updates()
  >>> for spec in specset.specifications(filter=['install']):
@@ -254,22 +257,22 @@ from a sequence of specifications to their dependencies.
     >>> spec_a = specset.new(
     ...     'spec-a', 'Spec A',
     ...     'http://www.example.com/SpecA', 'Specification A',
-    ...     SpecificationDefinitionStatus.APPROVED, sabdfl,
+    ...     SpecificationDefinitionStatus.APPROVED, mark,
     ...     distribution=ubuntu)
     >>> spec_b = specset.new(
     ...     'spec-b', 'Spec B',
     ...     'http://www.example.com/SpecB', 'Specification B',
-    ...     SpecificationDefinitionStatus.APPROVED, sabdfl,
+    ...     SpecificationDefinitionStatus.APPROVED, mark,
     ...     distribution=ubuntu)
     >>> spec_c = specset.new(
     ...     'spec-c', 'Spec C',
     ...     'http://www.example.com/SpecC', 'Specification C',
-    ...     SpecificationDefinitionStatus.APPROVED, sabdfl,
+    ...     SpecificationDefinitionStatus.APPROVED, mark,
     ...     distribution=ubuntu)
     >>> spec_d = specset.new(
     ...     'spec-d', 'Spec D',
     ...     'http://www.example.com/SpecD', 'Specification D',
-    ...     SpecificationDefinitionStatus.APPROVED, sabdfl,
+    ...     SpecificationDefinitionStatus.APPROVED, mark,
     ...     distribution=ubuntu)
 
 When the specs provided have no dependencies, an empty dict is returned.
@@ -363,17 +366,17 @@ At this stage, the feature goal is not approved.
 
 We can then accept the goal.
 
- >>> e4x.acceptBy(sabdfl)
+ >>> e4x.acceptBy(mark)
  >>> e4x.goalstatus.title
  'Accepted'
  >>> e4x.goal_decider.name
- u'sabdfl'
+ u'mark'
  >>> e4x.date_goal_decided is not None
  True
 
 We can change our mind, and decline the goal now.
 
- >>> e4x.declineBy(sabdfl)
+ >>> e4x.declineBy(mark)
  >>> e4x.goalstatus.title
  'Declined'
 
@@ -381,7 +384,7 @@ And finally, if we propose a new goal, then the decision status is
 invalidated.
 
  >>> trunk = upstream_firefox.getSeries('trunk')
- >>> e4x.proposeGoal(trunk, sabdfl)
+ >>> e4x.proposeGoal(trunk, mark)
  >>> e4x.goalstatus.title
  'Proposed'
  >>> e4x.goal_decider is not None

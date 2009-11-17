@@ -3,20 +3,17 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   omit-tag="">
-
 <div class="portlet" id="portlet-releases">
-
-  <h2>Releases of <span tal:replace="context/displayname">
-                        evolution</span></h2>
+  <h2>Releases of <span tal:replace="context/displayname" /></h2>
 
   <div class="portletBody portletContent">
-
     <ul tal:condition="context/releases">
       <li class="product" tal:repeat="release context/releases">
         <a tal:content="release/version"
            tal:attributes="href release/fmt:url">2.1.6</a>
       </li>
     </ul>
+
     <p tal:condition="not: context/releases">
       <i>No releases registered yet.</i>
     </p>

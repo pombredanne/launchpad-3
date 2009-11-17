@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test Build features."""
 
 import os
@@ -10,25 +12,28 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.scripts import BufferLogger
 from canonical.testing import LaunchpadZopelessLayer
+from email import message_from_string
 from lp.archiveuploader.tests import datadir
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.mail import stub
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import (
     IPackageUploadSet, PackageUploadCustomFormat, PackageUploadStatus)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
-class TestPackageUpload(TestCaseWithFactory):
+class PackageUploadTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
     dbuser = config.uploadqueue.dbuser
 
     def setUp(self):
-        super(TestPackageUpload, self).setUp()
+        super(PackageUploadTestCase, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
 
     def createEmptyDelayedCopy(self):
@@ -63,11 +68,15 @@ class TestPackageUpload(TestCaseWithFactory):
             'Source is mandatory for delayed copies.',
             delayed_copy.acceptFromCopy)
 
-    def createDelayedCopy(self):
+    def createDelayedCopy(self, source_only=False):
         """Return a delayed-copy targeted to ubuntutest/breezy-autotest.
 
-        The delayed-copy is target to the SECURITY pocket with:
+        The delayed-copy is targeted to the SECURITY pocket with:
+
           * source foo - 1.1
+
+        And if 'source_only' is False, the default behavior, also attach:
+
           * binaries foo - 1.1 in i386 and hppa
           * a DIST_UPGRADER custom file
 
@@ -80,17 +89,20 @@ class TestPackageUpload(TestCaseWithFactory):
         ppa.buildd_secret = 'x'
         ppa.private = True
 
-        source = self.test_publisher.getPubSource(archive=ppa, version='1.1')
-        self.test_publisher.getPubBinaries(pub_source=source)
-        custom_path = datadir(
-            'dist-upgrader/dist-upgrader_20060302.0120_all.tar.gz')
-        custom_file = self.factory.makeLibraryFileAlias(
-            filename='dist-upgrader_20060302.0120_all.tar.gz',
-            content=open(custom_path).read(), restricted=True)
-        [build] = source.getBuilds()
-        build.package_upload.addCustom(
-            custom_file, PackageUploadCustomFormat.DIST_UPGRADER)
+        changesfile_path = (
+            'lib/lp/archiveuploader/tests/data/suite/'
+            'foocomm_1.0-2_binary/foocomm_1.0-2_i386.changes')
 
+        changesfile_content = ''
+        handle = open(changesfile_path, 'r')
+        try:
+            changesfile_content = handle.read()
+        finally:
+            handle.close()
+
+        source = self.test_publisher.getPubSource(
+            sourcename='foocomm', archive=ppa, version='1.0-2',
+            changes_file_content=changesfile_content)
         delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
             self.test_publisher.ubuntutest.main_archive,
             self.test_publisher.breezy_autotest,
@@ -98,11 +110,28 @@ class TestPackageUpload(TestCaseWithFactory):
             self.test_publisher.person.gpgkeys[0])
 
         delayed_copy.addSource(source.sourcepackagerelease)
-        for build in source.getBuilds():
-            delayed_copy.addBuild(build)
-            for custom in build.package_upload.customfiles:
-                delayed_copy.addCustom(
-                    custom.libraryfilealias, custom.customformat)
+
+        announce_list = delayed_copy.distroseries.changeslist
+        if announce_list is None or len(announce_list.strip()) == 0:
+            announce_list = ('%s-changes@lists.ubuntu.com' %
+                             delayed_copy.distroseries.name)
+            delayed_copy.distroseries.changeslist = announce_list
+
+        if not source_only:
+            self.test_publisher.getPubBinaries(pub_source=source)
+            custom_path = datadir(
+                'dist-upgrader/dist-upgrader_20060302.0120_all.tar.gz')
+            custom_file = self.factory.makeLibraryFileAlias(
+                filename='dist-upgrader_20060302.0120_all.tar.gz',
+                content=open(custom_path).read(), restricted=True)
+            [build] = source.getBuilds()
+            build.package_upload.addCustom(
+                custom_file, PackageUploadCustomFormat.DIST_UPGRADER)
+            for build in source.getBuilds():
+                delayed_copy.addBuild(build)
+                for custom in build.package_upload.customfiles:
+                    delayed_copy.addCustom(
+                        custom.libraryfilealias, custom.customformat)
 
         # Commit for using just-created library files.
         self.layer.txn.commit()
@@ -134,6 +163,10 @@ class TestPackageUpload(TestCaseWithFactory):
         # and has their files privacy adjusted according test destination
         # context.
 
+        # Add a cleanup for removing the repository where the custom upload
+        # was published.
+        self.addCleanup(self.removeRepository)
+
         # Create the default delayed-copy context.
         delayed_copy = self.createDelayedCopy()
 
@@ -151,44 +184,86 @@ class TestPackageUpload(TestCaseWithFactory):
 
         # Create an ancestry publication in 'multiverse'.
         ancestry_source = self.test_publisher.getPubSource(
-            version='1.0', component='multiverse',
+            sourcename='foocomm', version='1.0', component='multiverse',
             status=PackagePublishingStatus.PUBLISHED)
         self.test_publisher.getPubBinaries(
             pub_source=ancestry_source,
             status=PackagePublishingStatus.PUBLISHED)
+        package_diff = ancestry_source.sourcepackagerelease.requestDiffTo(
+            requester=self.test_publisher.person,
+            to_sourcepackagerelease=delayed_copy.sourcepackagerelease)
+        package_diff.diff_content = self.factory.makeLibraryFileAlias(
+            restricted=True)
 
         # Accept and publish the delayed-copy.
         delayed_copy.acceptFromCopy()
         self.assertEquals(
             PackageUploadStatus.ACCEPTED, delayed_copy.status)
 
+        # Make sure no announcement email was sent at this point.
+        self.assertEquals(len(stub.test_emails), 0)
+
+        self.layer.txn.commit()
+        self.layer.switchDbUser(self.dbuser)
+
         logger = BufferLogger()
-        pub_records = delayed_copy.realiseUpload(logger=logger)
+        # realiseUpload() assumes a umask of 022, which is normally true in
+        # production.  The user's environment might have a different umask, so
+        # just force it to what the test expects.
+        old_umask = os.umask(022)
+        try:
+            pub_records = delayed_copy.realiseUpload(logger=logger)
+        finally:
+            os.umask(old_umask)
         self.assertEquals(
             PackageUploadStatus.DONE, delayed_copy.status)
 
-        # Commit for comparing objects correctly.
         self.layer.txn.commit()
 
-        # Add a cleanup for removing the repository where the custom upload
-        # was published.
-        self.addCleanup(self.removeRepository)
+        # Check the announcement email.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
+
+        self.assertEquals(
+            str(to_addrs), "['breezy-autotest-changes@lists.ubuntu.com']")
+
+        expected_subject = (
+            '[ubuntutest/breezy-autotest-security]\n\t'
+            'dist-upgrader_20060302.0120_all.tar.gz, '
+            'foocomm 1.0-2 (Accepted)')
+        self.assertEquals(msg['Subject'], expected_subject)
+
+        self.assertEquals(body,
+            'foocomm (1.0-2) breezy; urgency=low\n\n'
+            '  * Initial version\n\n'
+            'Date: Thu, 16 Feb 2006 15:34:09 +0000\n'
+            'Changed-By: Foo Bar <foo.bar@canonical.com>\n'
+            'Maintainer: Launchpad team <launchpad@lists.canonical.com>\n'
+            'http://launchpad.dev/ubuntutest/breezy-autotest/+source/'
+            'foocomm/1.0-2\n')
+
+        self.layer.switchDbUser('launchpad')
 
         # One source and 2 binaries are pending publication. They all were
         # overridden to multiverse and had their files moved to the public
         # librarian.
         self.assertEquals(3, len(pub_records))
         self.assertEquals(
-            set(['foo 1.1 in breezy-autotest',
-                 'foo-bin 1.1 in breezy-autotest hppa',
-                 'foo-bin 1.1 in breezy-autotest i386',
-                 ]),
+            set([
+                u'foocomm 1.0-2 in breezy-autotest',
+                u'foo-bin 1.0-2 in breezy-autotest hppa',
+                u'foo-bin 1.0-2 in breezy-autotest i386']),
             set([pub.displayname for pub in pub_records]))
 
         for pub_record in pub_records:
             self.checkDelayedCopyPubRecord(
                 pub_record, delayed_copy.archive, delayed_copy.pocket,
                 ancestry_source.component, False)
+
+        # The package diff file is now public.
+        self.assertFalse(package_diff.diff_content.restricted)
 
         # The custom file was also published.
         custom_path = os.path.join(
@@ -197,6 +272,30 @@ class TestPackageUpload(TestCaseWithFactory):
             'main/dist-upgrader-all')
         self.assertEquals(
             ['20060302.0120', 'current'], sorted(os.listdir(custom_path)))
+
+    def test_realiseUpload_for_source_only_delayed_copies(self):
+        # Source-only delayed-copies results in the source published
+        # in the destination archive and its corresponding build
+        # recors ready to be dispatched.
+
+        # Create the default delayed-copy context.
+        delayed_copy = self.createDelayedCopy(source_only=True)
+        self.test_publisher.breezy_autotest.status = (
+            DistroSeriesStatus.CURRENT)
+        self.layer.txn.commit()
+
+        # Accept and publish the delayed-copy.
+        delayed_copy.acceptFromCopy()
+        logger = BufferLogger()
+        pub_records = delayed_copy.realiseUpload(logger=logger)
+
+        # Only the source is published and the needed builds are created
+        # in the destination archive.
+        self.assertEquals(1, len(pub_records))
+        [pub_record] = pub_records
+        [build] = pub_record.getBuilds()
+        self.assertEquals(
+            BuildStatus.NEEDSBUILD, build.buildstate)
 
 
 def test_suite():

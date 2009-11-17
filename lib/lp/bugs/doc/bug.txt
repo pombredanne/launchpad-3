@@ -37,6 +37,37 @@ raised:
       ...
     NotFoundError: 'Unable to locate bug with nickname +bugs.'
 
+It is also possible to retrieve a number of bugs by specifying the bug numbers
+of interest.
+
+The method ignores bug numbers not found in the database. That's why the
+result set below has only one element.
+
+    >>> result_set = bugset.getByNumbers([6, 1234])
+    >>> print result_set.count()
+    1
+
+    >>> [the_bug_found] = result_set
+    >>> print the_bug_found.title
+    Firefox crashes when Save As dialog for a nonexistent window is closed
+
+    >>> result_set = bugset.getByNumbers([6, 1])
+    >>> print result_set.count()
+    2
+
+    >>> print [(bug.id, bug.title[:40]) for bug in result_set]
+    [(1, u'Firefox does not support SVG'),
+     (6, u'Firefox crashes when Save As dialog for ')]
+
+If no bug numbers are specified an empty result set is returned.
+
+    >>> result_set = bugset.getByNumbers(None)
+    >>> print result_set.count()
+    0
+    >>> result_set = bugset.getByNumbers([])
+    >>> print result_set.count()
+    0
+
 == Bug creation events ==
 
 IObjectCreatedEvent events are fired off when a bug is created. First
@@ -794,15 +825,15 @@ Editing an attachment.
 Adding a branch.
 
     >>> from lp.code.interfaces.branchlookup import IBranchLookup
-    >>> firefox_bug.bug_branches.count()
+    >>> firefox_bug.linked_branches.count()
     0
 
     >>> branch_one = getUtility(IBranchLookup).get(1)
     >>> current_date_last_updated = firefox_bug.date_last_updated
 
-    >>> bug_branch = firefox_bug.addBranch(branch_one, foobar)
+    >>> bug_branch = firefox_bug.linkBranch(branch_one, foobar)
 
-    >>> firefox_bug.bug_branches.count()
+    >>> firefox_bug.linked_branches.count()
     1
     >>> firefox_bug.date_last_updated > current_date_last_updated
     True

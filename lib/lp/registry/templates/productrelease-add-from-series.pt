@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 <body>
@@ -51,7 +48,7 @@
             var select_menu = get_by_id('field.milestone_for_release');
             var create_milestone_link = Y.Node.create(
                 '<a href="+addmilestone" id="create-milestone-link" ' +
-                'class="add js-action">Create milestone</a>');
+                'class="add js-action sprite">Create milestone</a>');
             select_menu.ancestor().appendChild(create_milestone_link);
             var config = {
                 milestone_form_uri: milestone_form_uri,
@@ -86,4 +83,3 @@
 
 </body>
 </html>
-

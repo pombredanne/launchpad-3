@@ -70,7 +70,7 @@ If we supply a valid product, it will move on to the next step.
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+choose-affected-product', form)
     >>> add_task_view.step_name
-    'specify_remote_bug_url' 
+    'specify_remote_bug_url'
 
 The URL widget is focused, to make it easier to paste the URL directly.
 
@@ -454,7 +454,7 @@ If we request a fix in a source package, the distribution's display
 name is returned.
 
     >>> form = {
-    ...     'field.distribution': u'debian', 
+    ...     'field.distribution': u'debian',
     ...     'field.sourcepackagename': u'evolution'}
     >>> add_task_view = get_and_setup_view(
     ...     firefox_task, '+distrotask', form)
@@ -506,6 +506,22 @@ nothing to present to the user.
 
     >>> print add_task_view.existing_products
     None
+
+Since the user is just creating the product in Launchpad to link to an
+upstream she probably isn't interested in maintaining the product for
+the long-term.  In recognition of that we set the maintainer to be the
+Registry Admins team while keeping the user as the registrant.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> foo_product = getUtility(IProductSet).getByName('foo-product')
+    >>> print foo_product.owner.displayname
+    Registry Administrators
+    >>> print foo_product.registrant.displayname
+    Sample Person
+
+The license is set to DONT_KNOW for now.
+    >>> [license.name for license in foo_product.licenses]
+    ['DONT_KNOW']
 
 If the user tries to register another product using a bug URL under
 bugs.foo.org, we'll present 'The Foo Product' as a candidate.

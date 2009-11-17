@@ -1,3 +1,7 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
@@ -105,9 +109,9 @@
         <allow
             interface="canonical.launchpad.interfaces.IHasQueueItems"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
+            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
         <allow
             interface="canonical.launchpad.interfaces.ICanPublishPackages"/>
         <require
@@ -145,7 +149,8 @@
                 getSubscription
                 getSubscriptions
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -165,15 +170,10 @@
         factory="lp.registry.adapters.distroseries_to_launchpadusage"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distroseries.IDistroSeries"
-        factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumbBuilder"
+        factory="lp.registry.browser.distroseries.DistroSeriesBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- NB DO NOT CHANGE WITHOUT THINKING
-                         Do not allow people to change the details of the distro series that
-                         will affect the way Soyuz publishes the distroseries. Check with
-                         SABDFL before modifying this page. -->
 
     <facet
         facet="overview">
@@ -268,14 +268,14 @@
     <class
         class="lp.registry.model.project.Project">
         <allow
-            interface="lp.registry.interfaces.project.IProject"/>
+            interface="lp.registry.interfaces.project.IProjectPublic"/>
         <allow
             interface="canonical.launchpad.interfaces.IFAQCollection"/>
         <allow
             interface="canonical.launchpad.interfaces.IQuestionCollection"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.registry.interfaces.project.IProject"/>
+            set_schema="lp.registry.interfaces.project.IProjectPublic"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
@@ -286,7 +286,8 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -312,18 +313,15 @@
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.project.IProject"
-        factory="lp.registry.browser.project.ProjectBreadcrumbBuilder"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.project.IProjectSet"
-        factory="lp.registry.browser.project.ProjectSetBreadcrumbBuilder"
+        factory="lp.registry.browser.project.ProjectSetBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- The bounty system is kept maintained but not available for users.
-                This is achieved by putting it on the PageTestLayer. -->
 
     <facet
         facet="answers"/>
@@ -357,6 +355,7 @@
         <allow
             attributes="
                 distribution
+                development_version
                 sourcepackagename
                 name
                 displayname
@@ -387,19 +386,20 @@
                 getUsedBugTagsWithOpenCounts
                 bugtargetdisplayname
                 bugtargetname
-                getMostCommonBugs
                 getBugCounts
                 bug_subscriptions
                 getSubscriptions
                 getSubscription
                 parent_subscription_target
                 getBugNotificationsRecipients
+                getPersonsByEmail
                 getReleasesAndPublishingHistory
                 upstream_product
                 target_type_display
                 official_bug_tags
                 findRelatedArchives
-                findRelatedArchivePublications"/>
+                findRelatedArchivePublications
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -437,9 +437,9 @@
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadDistributionSourcePackageContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumbBuilder"
+        factory="lp.registry.browser.distributionsourcepackage.DistributionSourcePackageBreadcrumb"
         permission="zope.Public"/>
 
     <!-- CommercialSubscription -->
@@ -541,10 +541,6 @@
         <allow
             interface="lp.registry.interfaces.sourcepackagename.ISourcePackageNameSet"/>
     </class>
-    <utility
-        name="SourcePackageName"
-        component="lp.registry.model.sourcepackagename.SourcePackageNameVocabulary"
-        provides="zope.schema.interfaces.IVocabularyFactory"/>
     <facet
         facet="overview">
 
@@ -745,7 +741,7 @@
                 modify
                 retarget
                 retract
-                set_publication_date
+                setPublicationDate
                 destroySelf"/>
     </class>
 
@@ -773,14 +769,14 @@
             factory="canonical.launchpad.browser.TeamBadges"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.IPerson"
-            factory="lp.registry.browser.person.PersonBreadcrumbBuilder"
+            factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
             permission="zope.Public"/>
         <adapter
-            provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
             for="lp.registry.interfaces.person.ITeam"
-            factory="lp.registry.browser.person.TeamBreadcrumbBuilder"
+            factory="lp.registry.browser.person.TeamBreadcrumb"
             permission="zope.Public"/>
 
         <!-- Using
@@ -800,7 +796,7 @@
             <allow
                 interface="lp.registry.interfaces.person.ITeamPublic"/>
             <allow
-                interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+                interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
             <allow
                 interface="lp.registry.interfaces.person.IHasStanding"/>
             <allow
@@ -809,7 +805,7 @@
                 permission="launchpad.View"
                 interface="lp.registry.interfaces.person.IPersonViewRestricted"/>
             <require
-                permission="launchpad.EditLocation"
+                permission="launchpad.Edit"
                 interface="lp.registry.interfaces.location.ISetLocation"/>
             <require
                 permission="launchpad.Edit"
@@ -828,10 +824,6 @@
                 permission="launchpad.Edit"
                 set_schema="lp.registry.interfaces.person.IHasStanding"/>
         </class>
-
-        <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
-
 
         <!-- Adding SSH keys is the only possibly harmful thing that can be done
         without the user's password, so we use a special permission here to make
@@ -915,7 +907,8 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -941,7 +934,7 @@
             interface="lp.registry.interfaces.milestone.IProjectMilestone"/>
     </class>
     <subscriber
-        for="canonical.launchpad.interfaces.IProduct                 zope.lifecycleevent.interfaces.IObjectModifiedEvent"
+        for="canonical.launchpad.interfaces.IProduct zope.lifecycleevent.interfaces.IObjectModifiedEvent"
         handler="lp.registry.subscribers.product_modified"/>
     <class
         class="lp.registry.model.mailinglist.MailingList">
@@ -1051,7 +1044,7 @@
         <allow
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Driver"
             interface="lp.registry.interfaces.product.IProductDriverRestricted"/>
@@ -1076,7 +1069,7 @@
                             summary title translationgroup
                             translationpermission wikiurl"/>
 
-        <!-- sabdfl 2006-04-10 I put "name" in the admin group because
+        <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
                         data published at product name-based locations (personal
                         branches) and these URL's will all be b0rked if the product
@@ -1095,13 +1088,13 @@
             attributes="
                 qualifies_for_free_hosting"/>
         <require
-            permission="launchpad.Commercial"
+            permission="launchpad.ProjectReview"
             attributes="
                 reviewer_whiteboard
                 is_permitted
                 license_reviewed
                 license_approved"
-            set_schema="lp.registry.interfaces.product.IProductCommercialRestricted"
+            set_schema="lp.registry.interfaces.product.IProductProjectReviewRestricted"
             set_attributes="active private_bugs "/>
 
         <!-- Changes to official_rosetta must be available to Launchpad
@@ -1162,13 +1155,15 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
@@ -1196,22 +1191,18 @@
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.components.launchpadcontainer.LaunchpadProductContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProduct"
-        factory="lp.registry.browser.product.ProductBreadcrumbBuilder"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.product.IProductSet"
-        factory="lp.registry.browser.product.ProductSetBreadcrumbBuilder"
+        factory="lp.registry.browser.product.ProductSetBreadcrumb"
         permission="zope.Public"/>
 
     <!-- XXX: Steve Alexander 2005-09-21:
                                                 ProductBugsMenu undeclared until layout bug is fixed -->
-
-
-    <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
 
 
     <!-- ProductSet-->
@@ -1233,7 +1224,6 @@
                 featuredTranslatables
                 count_all
                 count_translatables
-                count_bounties
                 count_buggy
                 count_featureful
                 count_reviewed
@@ -1246,7 +1236,7 @@
         <allow
             interface="lp.registry.interfaces.product.IProductSet"/>
         <require
-            permission="launchpad.Commercial"
+            permission="launchpad.ProjectReview"
             attributes="
                 forReview"/>
     </securedutility>
@@ -1292,15 +1282,18 @@
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.productseries.IProductSeriesEditRestricted"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
+            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="product name owner driver summary branch                                                                                                                 status releasefileglob                                                                                                                        translations_autoimport_mode"/>
+            set_attributes="product name owner driver summary branch
+                            translations_branch status releasefileglob
+                            translations_autoimport_mode"/>
         <require
             permission="launchpad.AnyPerson"
-            set_attributes="importstatus rcstype cvsroot cvsmodule                                                                 cvstarfileurl cvsbranch svnrepository"/>
+            set_attributes="importstatus rcstype cvsroot cvsmodule
+                            cvstarfileurl cvsbranch svnrepository"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
@@ -1311,7 +1304,8 @@
                 getSubscription
                 getSubscriptions
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1330,9 +1324,9 @@
         factory="lp.registry.adapters.productseries_to_product"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.productseries.IProductSeries"
-        factory="lp.registry.browser.productseries.ProductSeriesBreadcrumbBuilder"
+        factory="lp.registry.browser.productseries.ProductSeriesBreadcrumb"
         permission="zope.Public"/>
 
     <!-- ProductSeriesSet -->
@@ -1356,10 +1350,13 @@
         <allow
             interface="lp.registry.interfaces.distribution.IDistributionPublic"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <require
             permission="launchpad.Edit"
             interface="lp.registry.interfaces.distribution.IDistributionEditRestricted"/>
+        <require
+            permission="launchpad.Append"
+            interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
         <require
             permission="launchpad.Edit"
             set_attributes="displayname title summary description                                                                                         translation_focus translationgroup translationpermission                                                                                         driver members owner security_contact mirror_admin                                                                                         homepage_content icon logo mugshot enable_bug_expiration                                                                                         bug_reporting_guidelines official_blueprints                                                                                         official_malone official_rosetta official_answers                                                                                         official_bug_tags"/>
@@ -1418,13 +1415,15 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
@@ -1441,19 +1440,15 @@
         provides="canonical.launchpad.webapp.interfaces.ILaunchpadContainer"
         factory="canonical.launchpad.webapp.publisher.LaunchpadContainer"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistribution"
-        factory="lp.registry.browser.distribution.DistributionBreadcrumbBuilder"
+        factory="canonical.launchpad.webapp.breadcrumb.DisplaynameBreadcrumb"
         permission="zope.Public"/>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.distribution.IDistributionSet"
-        factory="lp.registry.browser.distribution.DistributionSetBreadcrumbBuilder"
+        factory="lp.registry.browser.distribution.DistributionSetBreadcrumb"
         permission="zope.Public"/>
-
-    <!-- The bounty system is kept maintained but not available for users.
-        This is achieved by putting it on the PageTestLayer. -->
-
 
     <!-- DistributionSet -->
 
@@ -1478,9 +1473,9 @@
         <allow
             interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationImports"/>
+            interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
         <allow
-            interface="canonical.launchpad.interfaces.IHasTranslationTemplates"/>
+            interface="lp.translations.interfaces.potemplate.IHasTranslationTemplates"/>
 
         <!-- IQuestionTarget -->
 
@@ -1510,20 +1505,10 @@
             interface="lp.registry.interfaces.sourcepackage.ISourcePackageFactory"/>
     </securedutility>
     <adapter
-        provides="canonical.launchpad.webapp.interfaces.IBreadcrumbBuilder"
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumbBuilder"
+        factory="lp.registry.browser.sourcepackage.SourcePackageBreadcrumb"
         permission="zope.Public"/>
-
-    <!--
-                XXX CarlosPerelloMarin 2007-08-12: This redirect is only useful until all
-                supported Ubuntu distro series stop pointing to
-                https://launchpad.net/ubuntu/.../+translate URLs and instead, use the
-                translations.launchpad.net domain for the 'Translate this application'
-                menu entry available in most graphical applications. See bug #138090 for
-                more details.
-                -->
-
 
     <!-- This is class ProductReleaseSet -->
 
@@ -1597,7 +1582,7 @@
          interface="lp.registry.interfaces.suitesourcepackage.ISuiteSourcePackage"/>
     </class>
 
-    <lp:help-folder 
+    <lp:help-folder
         folder="help" type="canonical.launchpad.layers.LaunchpadLayer" />
 
     <!-- DistributionMirror -->
@@ -1655,4 +1640,38 @@
             permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.distributionmirror.IMirrorProbeRecord" />
     </class>
+    <class
+        class="lp.registry.model.mentoringoffer.MentoringOffer">
+        <allow
+            interface="lp.registry.interfaces.mentoringoffer.IMentoringOffer"/>
+    </class>
+    <securedutility
+        class="lp.registry.model.mentoringoffer.MentoringOfferSet"
+        provides="lp.registry.interfaces.mentoringoffer.IMentoringOfferSet">
+        <allow
+            interface="lp.registry.interfaces.mentoringoffer.IMentoringOfferSet"/>
+    </securedutility>
+
+    <!-- Packaging -->
+    <class
+        class="lp.registry.model.packaging.Packaging">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackaging"/>
+        <require
+            permission="zope.Public"
+            set_schema="lp.registry.interfaces.packaging.IPackaging"/>
+    </class>
+    
+    <!-- PackagingUtil -->
+    <class
+        class="lp.registry.model.packaging.PackagingUtil">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
+    </class>
+    <securedutility
+        class="lp.registry.model.packaging.PackagingUtil"
+        provides="lp.registry.interfaces.packaging.IPackagingUtil">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
+    </securedutility>
 </configure>

@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 __metaclass__ = type
 
 __all__ = [
@@ -6,56 +9,47 @@ __all__ = [
     'CodeReviewCommentPrimaryContext',
     'CodeReviewCommentSummary',
     'CodeReviewCommentView',
+    'CodeReviewDisplayComment',
     ]
-from textwrap import TextWrapper
 
 from zope.app.form.browser import TextAreaWidget, DropdownWidget
 from zope.interface import Interface, implements
 from zope.schema import Text
 
-from canonical.cachedproperty import cachedproperty
+from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
 
+from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad import _
-from lp.code.interfaces.codereviewcomment import ICodeReviewComment
-from lp.code.interfaces.codereviewvote import (
-    ICodeReviewVoteReference)
+from canonical.launchpad.interfaces import ILibraryFileAlias
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget, LaunchpadFormView,
     LaunchpadView, Link)
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
+from lp.code.interfaces.codereviewcomment import ICodeReviewComment
+from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
+from lp.services.comments.interfaces.conversation import IComment
 
 
-def quote_text_as_email(text, width=80):
-    """Quote the text as if it is an email response.
+class CodeReviewDisplayComment:
+    """A code review comment or activity or both.
 
-    Uses '> ' as a line prefix, and breaks long lines.
-
-    Trailing whitespace is stripped.
+    The CodeReviewComment itself does not implement the IComment interface as
+    this is purely a display interface, and doesn't make sense to have display
+    only code in the model itself.
     """
-    # Empty text begets empty text.
-    if text is None:
-        return ''
-    text = text.rstrip()
-    if not text:
-        return ''
-    prefix = '> '
-    # The TextWrapper's handling of code is somewhat suspect.
-    wrapper = TextWrapper(
-        initial_indent=prefix,
-        subsequent_indent=prefix,
-        width=width,
-        replace_whitespace=False)
-    result = []
-    # Break the string into lines, and use the TextWrapper to wrap the
-    # individual lines.
-    for line in text.rstrip().split('\n'):
-        # TextWrapper won't do an indent of an empty string.
-        if line.strip() == '':
-            result.append(prefix)
-        else:
-            result.extend(wrapper.wrap(line))
-    return '\n'.join(result)
+
+    implements(IComment)
+
+    delegates(ICodeReviewComment, 'comment')
+
+    def __init__(self, comment):
+        self.comment = comment
+        self.has_body = bool(self.comment.message_body)
+        self.has_footer = self.comment.vote is not None
+        # The date attribute is used to sort the comments in the conversation.
+        self.date = self.comment.message.datecreated
 
 
 class CodeReviewCommentPrimaryContext:
@@ -79,10 +73,46 @@ class CodeReviewCommentContextMenu(ContextMenu):
         return Link('+reply', 'Reply', icon='add', enabled=enabled)
 
 
+class DiffAttachment:
+    """An attachment that we are going to display."""
+
+    implements(ILibraryFileAlias)
+
+    delegates(ILibraryFileAlias, 'alias')
+
+    def __init__(self, alias):
+        self.alias = alias
+
+    @cachedproperty
+    def text(self):
+        """Read the text out of the librarin."""
+        self.alias.open()
+        try:
+            return self.alias.read(config.diff.max_read_size)
+        finally:
+            self.alias.close()
+
+    @cachedproperty
+    def diff_text(self):
+        """Get the text and attempt to decode it."""
+        try:
+            diff = self.text.decode('utf-8')
+        except UnicodeDecodeError:
+            diff = self.text.decode('windows-1252', 'replace')
+        # Strip off the trailing carriage returns.
+        return diff.rstrip('\n')
+
+
 class CodeReviewCommentView(LaunchpadView):
     """Standard view of a CodeReviewComment"""
     __used_for__ = ICodeReviewComment
 
+    page_title = "Code review comment"
+
+    @cachedproperty
+    def comment(self):
+        """The decorated code review comment."""
+        return CodeReviewDisplayComment(self.context)
 
     @cachedproperty
     def comment_author(self):
@@ -116,7 +146,7 @@ class CodeReviewCommentView(LaunchpadView):
     @cachedproperty
     def display_attachments(self):
         # Attachments to show.
-        return self.all_attachments[0]
+        return [DiffAttachment(alias) for alias in self.all_attachments[0]]
 
     @cachedproperty
     def other_attachments(self):
@@ -161,7 +191,10 @@ class IEditCodeReviewComment(Interface):
 
     vote = copy_field(ICodeReviewComment['vote'], required=False)
 
-    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+    review_type = copy_field(
+        ICodeReviewVoteReference['review_type'],
+        description=u'Lowercase keywords describing the type of review you '
+                     'are performing.')
 
     comment = Text(title=_('Comment'), required=False)
 
@@ -178,6 +211,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
     custom_widget('comment', TextAreaWidget, cssClass='codereviewcomment')
     custom_widget('vote', MyDropWidget)
 
+    page_title = 'Reply to code review comment'
 
     @property
     def initial_values(self):
@@ -187,7 +221,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         quoted comment being replied to.
         """
         if self.is_reply:
-            comment = quote_text_as_email(self.reply_to.message_body)
+            comment = self.reply_to.as_quoted_email
         else:
             comment = ''
         return {'comment': comment}
@@ -206,11 +240,11 @@ class CodeReviewCommentAddView(LaunchpadFormView):
         else:
             return self.context
 
-    @property
+    @cachedproperty
     def reply_to(self):
         """The comment being replied to, or None."""
         if self.is_reply:
-            return self.context
+            return CodeReviewDisplayComment(self.context)
         else:
             return None
 

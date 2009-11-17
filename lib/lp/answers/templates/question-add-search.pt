@@ -6,15 +6,11 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
-
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-latestquestions" />
-</metal:leftportlets>
 
 <metal:main fill-slot="main">
   <metal:form use-macro="context/@@launchpad_form/form">
@@ -44,16 +40,6 @@
   </metal:form>
 </metal:main>
 
-<metal:help fill-slot="help">
-  <p>For best results use a short but complete sentence that describes the
-    problem. Be as specific as you can. Try to name the precise part of the
-    application with which you're having a problem. Grammatical words like
-    articles or prepositions, as well as other common words will be ignored.
-  </p>
-  <p>You can consult the
-    <a href="https://help.launchpad.net/GettingSupportInLaunchpad">Getting
-    Support in Launchpad</a> document for more information.</p>
-</metal:help>
 </body>
 </html>
 

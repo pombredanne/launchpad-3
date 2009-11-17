@@ -97,7 +97,7 @@ All the distributions that use Malone as their main bug tracker.
 
 === BugNominatableSeriesVocabulary ===
 
-All the serieses that can be nominated for fixing.
+All the series that can be nominated for fixing.
 
 This vocabulary needs either a product or distribution in the launchbag
 to get the available series. It also needs a bug, since it list only
@@ -111,7 +111,7 @@ Let's start with putting a product in the launchbag.
 
 Firefox has the following series:
 
-    >>> for series in firefox.serieses:
+    >>> for series in firefox.series:
     ...     print series.name
     1.0
     trunk
@@ -141,7 +141,7 @@ the trunk will be nominatable:
     >>> firefox_bug_one.target.name
     u'firefox'
     >>> series_vocabulary = vocabulary_registry.get(
-    ...     firefox_bug_one, 'BugNominatableSerieses')
+    ...     firefox_bug_one, 'BugNominatableSeries')
     >>> for term in series_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     trunk: Trunk
@@ -156,13 +156,13 @@ No series is targeted or nominated on bug 4:
     >>> for nomination in bug_four.getNominations(firefox):
     ...     print nomination.target.name
 
-So if we give bug four to the vocabulary, all serieses will be returned:
+So if we give bug four to the vocabulary, all series will be returned:
 
     >>> firefox_bug_four = bug_four.bugtasks[0]
     >>> firefox_bug_four.target.name
     u'firefox'
     >>> series_vocabulary = vocabulary_registry.get(
-    ...     firefox_bug_four, 'BugNominatableSerieses')
+    ...     firefox_bug_four, 'BugNominatableSeries')
     >>> for term in series_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     1.0: 1.0
@@ -191,9 +191,9 @@ So Hoary isn't included in the vocabulary:
     >>> ubuntu_bug_one = bug_one.bugtasks[1]
     >>> ubuntu_bug_one.distribution.name
     u'ubuntu'
-    >>> serieses_vocabulary = vocabulary_registry.get(
-    ...     ubuntu_bug_one, 'BugNominatableSerieses')
-    >>> for term in serieses_vocabulary:
+    >>> series_vocabulary = vocabulary_registry.get(
+    ...     ubuntu_bug_one, 'BugNominatableSeries')
+    >>> for term in series_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     breezy-autotest: Breezy-autotest
     grumpy: Grumpy
@@ -217,9 +217,9 @@ The same is true for bug two, where the bug is targeted to Hoary.
     >>> ubuntu_bug_two = bug_two.bugtasks[1]
     >>> ubuntu_bug_two.distribution.name
     u'ubuntu'
-    >>> serieses_vocabulary = vocabulary_registry.get(
-    ...     ubuntu_bug_two, 'BugNominatableSerieses')
-    >>> for term in serieses_vocabulary:
+    >>> series_vocabulary = vocabulary_registry.get(
+    ...     ubuntu_bug_two, 'BugNominatableSeries')
+    >>> for term in series_vocabulary:
     ...     print "%s: %s" % (term.token, term.title)
     breezy-autotest: Breezy-autotest
     grumpy: Grumpy
@@ -227,16 +227,17 @@ The same is true for bug two, where the bug is targeted to Hoary.
 
 We can get a specific term by using the release name:
 
-    >>> term = serieses_vocabulary.getTermByToken('warty')
+    >>> term = series_vocabulary.getTermByToken('warty')
     >>> term.value == ubuntu.getSeries('warty')
     True
 
-Trying to get a non-existant release will result in a LookupError:
+Trying to get a non-existent release will result in a
+NoSuchDistroSeries error.
 
     >>> series_vocabulary.getTermByToken('non-such-release')
     Traceback (most recent call last):
     ...
-    LookupError...
+    NoSuchDistroSeries...
 
 
 === ProjectProductsVocabularyUsingMalone ===
@@ -338,14 +339,13 @@ All the source packages in Launchpad.
     >>> len(spn_terms)
     2
     >>> [(term.token, term.title) for term in spn_terms]
-    [('mozilla', 'Not yet built'),
-     ('mozilla-firefox', u'Source of: mozilla-firefox, mozilla-firefox-data')]
+    [('mozilla', u'mozilla'), ('mozilla-firefox', u'mozilla-firefox')]
 
     >>> spn_terms = spn_vocabulary.searchForTerms("pmount")
     >>> len(spn_terms)
     1
     >>> [(term.token, term.title) for term in spn_terms]
-    [('pmount', u'Source of: pmount')]
+    [('pmount', u'pmount')]
 
 
 === BranchVocabulary ===
@@ -457,13 +457,38 @@ The BranchRestrictedOnProduct behaves the same way as the more generic
 BranchVocabulary with respect to the tokens and privacy awareness.
 
 
+=== HostedBranchRestrictedOnOwner ===
+
+Here's a vocabulary for all hosted branches owned by the current user.
+
+    >>> from lp.code.enums import BranchType
+
+    >>> a_user = factory.makePerson(name='a-branching-user')
+    >>> product1 = factory.makeProduct(name='product-one')
+    >>> mirrored_branch = factory.makeBranch(
+    ...     owner=a_user, product=product1, name='mirrored',
+    ...     branch_type=BranchType.MIRRORED)
+    >>> product2 = factory.makeProduct(name='product-two')
+    >>> hosted_branch = factory.makeBranch(
+    ...     owner=a_user, product=product2, name='hosted')
+    >>> foreign_branch = factory.makeBranch()
+
+It returns branches owned by the user, but not ones owned by others, nor
+ones that aren't hosted on Launchpad.
+
+    >>> branch_vocabulary = vocabulary_registry.get(
+    ...     a_user, "HostedBranchRestrictedOnOwner")
+    >>> print_vocab_branches(branch_vocabulary, None)
+    ~a-branching-user/product-two/hosted
+
+
 === Processor ===
 
 All processors type available in Launchpad.
 
     >>> vocab = vocabulary_registry.get(None, "Processor")
     >>> vocab.displayname
-    'Select a Processor'
+    'Select a processor'
 
     >>> [term.token for term in vocab.searchForTerms('386')]
     ['386']
@@ -649,7 +674,7 @@ collection. It provides the IHugeVocabulary interface.
 Iterations over the PPA vocabulary will return on PPA archives.
 
     >>> sorted([term.value.owner.name for term in vocabulary])
-    [u'cprov', u'no-priv', u'sabdfl']
+    [u'cprov', u'mark', u'no-priv']
 
 PPA vocabulary terms contain:
 

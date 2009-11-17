@@ -1,4 +1,6 @@
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """BranchJob interfaces."""
@@ -12,6 +14,7 @@ __all__ = [
     'IBranchDiffJob',
     'IBranchDiffJobSource',
     'IBranchUpgradeJob',
+    'IBranchUpgradeJobSource',
     'IRevisionMailJob',
     'IRevisionMailJobSource',
     'IRevisionsAddedJobSource',
@@ -25,7 +28,7 @@ from zope.schema import Bytes, Int, Object, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
-from lp.services.job.interfaces.job import IJob
+from lp.services.job.interfaces.job import IJob, IRunnableJob
 
 
 
@@ -69,7 +72,7 @@ class IBranchDiffJobSource(Interface):
         """
 
 
-class IBranchUpgradeJob(Interface):
+class IBranchUpgradeJob(IRunnableJob):
     """A job to upgrade branches with out-of-date formats."""
 
     def run():
@@ -84,8 +87,11 @@ class IBranchUpgradeJobSource(Interface):
         :param branch: The database branch to upgrade.
         """
 
+    def iterReady():
+        """Iterate through all IBranchUpgradeJobs."""
 
-class IRevisionMailJob(Interface):
+
+class IRevisionMailJob(IRunnableJob):
     """A Job to send email a revision change in a branch."""
 
     revno = Int(title=u'The revno to send mail about.')
@@ -98,9 +104,6 @@ class IRevisionMailJob(Interface):
 
     subject = Text(title=u'The subject of the email to send.')
 
-    def run():
-        """Send the mail as specified by this job."""
-
 
 class IRevisionMailJobSource(Interface):
     """A utility to create and retrieve RevisionMailJobs."""
@@ -112,11 +115,8 @@ class IRevisionMailJobSource(Interface):
         """Iterate through ready IRevisionMailJobs."""
 
 
-class IRevisionsAddedJob(Interface):
+class IRevisionsAddedJob(IRunnableJob):
     """A Job to send emails about revisions added to a branch."""
-
-    def run():
-        """Send the mails as specified by this job."""
 
 
 class IRevisionsAddedJobSource(Interface):
@@ -129,7 +129,7 @@ class IRevisionsAddedJobSource(Interface):
         """Iterate through ready IRevisionsAddedJobSource."""
 
 
-class IRosettaUploadJob(Interface):
+class IRosettaUploadJob(IRunnableJob):
     """A job to upload translation files to Rosetta."""
 
     from_revision_id = TextLine(
@@ -162,23 +162,22 @@ class IRosettaUploadJobSource(Interface):
         """Iterate through ready IRosettaUploadJobs."""
 
 
-    def findUnfinishedJobs(branch):
+    def findUnfinishedJobs(branch, since=None):
         """Find any `IRosettaUploadJob`s for `branch` that haven't run yet.
 
-        Returns ready jobs, but also ones in any other state except
-        "complete" or "failed."
+        :param branch: Branch to find unfinished jobs for.
+        :param since: Optional cutoff date: ignore jobs older than this.
+        :return: Any jobs for `branch` (and newer than `since`, if
+            given) whose status is neither "complete" nor "failed."
         """
 
 
-class IReclaimBranchSpaceJob(Interface):
+class IReclaimBranchSpaceJob(IRunnableJob):
     """A job to delete a branch from disk after its been deleted from the db.
     """
 
     branch_id = Int(
         title=_('The id of the now-deleted branch.'))
-
-    def run():
-        """Delete the branch from the filesystem."""
 
 
 class IReclaimBranchSpaceJobSource(Interface):

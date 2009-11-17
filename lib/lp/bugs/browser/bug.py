@@ -1,4 +1,5 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBug related view classes."""
 
@@ -29,6 +30,7 @@ from email.MIMEText import MIMEText
 import re
 
 import pytz
+from simplejson import dumps
 
 from zope.app.form.browser import TextWidget
 from zope.component import adapter, getUtility
@@ -52,10 +54,11 @@ from canonical.launchpad.interfaces._schema_circular_imports import IBug
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskSearchParams, BugTaskStatus, IFrontPageBugTaskSearch)
+    BugTaskSearchParams, BugTaskStatus, IBugTask, IFrontPageBugTaskSearch)
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from lp.bugs.interfaces.cve import ICveSet
 from lp.bugs.interfaces.bugattachment import IBugAttachmentSet
+from lp.bugs.interfaces.bugnomination import IBugNominationSet
 
 from canonical.launchpad.mailnotification import (
     MailWrapper, format_rfc2822_date)
@@ -123,6 +126,15 @@ class BugNavigation(Navigation):
             attachment = getUtility(IBugAttachmentSet)[name]
             if attachment is not None and attachment.bug == self.context:
                 return attachment
+
+    @stepthrough('nominations')
+    def traverse_nominations(self, nomination_id):
+        """Traverse to a nomination by id."""
+        if nomination_id.isdigit():
+            try:
+                return getUtility(IBugNominationSet).get(nomination_id)
+            except NotFoundError:
+                return None
 
 
 class BugFacets(StandardLaunchpadFacets):
@@ -222,15 +234,12 @@ class BugContextMenu(ContextMenu):
 
     def addcomment(self):
         """Return the 'Comment or attach file' Link."""
-        text = 'Comment or attach file'
+        text = 'Add an attachment'
         return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        if self.context.bug.bug_branches.count() > 0:
-            text = 'Link another branch'
-        else:
-            text = 'Link a related branch'
+        text = 'Link a related branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
@@ -271,17 +280,17 @@ class BugContextMenu(ContextMenu):
         """Create a question from this bug."""
         text = 'Convert to a question'
         enabled = self.context.bug.getQuestionCreatedFromBug() is None
-        return Link('+create-question', text, enabled=enabled)
+        return Link('+create-question', text, enabled=enabled, icon='add')
 
     def removequestion(self):
         """Remove the created question from this bug."""
         text = 'Convert back to a bug'
         enabled = self.context.bug.getQuestionCreatedFromBug() is not None
-        return Link('+remove-question', text, enabled=enabled)
+        return Link('+remove-question', text, enabled=enabled, icon='remove')
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'Activity log'
+        text = 'See full activity log'
         return Link('+activity', text)
 
     def affectsmetoo(self):
@@ -379,16 +388,58 @@ class BugViewMixin:
 
     @cachedproperty
     def direct_subscribers(self):
-        """Caches the list of direct subscribers."""
-        return frozenset(self.context.getDirectSubscribers())
+        """Return the list of direct subscribers."""
+        if IBug.providedBy(self.context):
+            return set(self.context.getDirectSubscribers())
+        elif IBugTask.providedBy(self.context):
+            return set(self.context.bug.getDirectSubscribers())
+        else:
+            raise NotImplementedError(
+                'direct_subscribers is not provided by %s' % self)
 
     @cachedproperty
     def duplicate_subscribers(self):
-        """Caches the list of subscribers from duplicates."""
-        return frozenset(self.context.getSubscribersFromDuplicates())
+        """Return the list of subscribers from duplicates.
+
+        Don't use getSubscribersFromDuplicates here because that method
+        omits a user if the user is also a direct or indirect subscriber.
+        getSubscriptionsFromDuplicates doesn't, so find person objects via
+        this method.
+        """
+        if IBug.providedBy(self.context):
+            dupe_subs = self.context.getSubscriptionsFromDuplicates()
+            return set([sub.person for sub in dupe_subs])
+        elif IBugTask.providedBy(self.context):
+            dupe_subs = self.context.bug.getSubscriptionsFromDuplicates()
+            return set([sub.person for sub in dupe_subs])
+        else:
+            raise NotImplementedError(
+                'duplicate_subscribers is not implemented for %s' % self)
+
+    @cachedproperty
+    def subscriber_ids(self):
+        """Return a dictionary mapping a css_name to user name."""
+        subscribers = self.direct_subscribers.union(
+            self.duplicate_subscribers)
+
+        # The current user has to be in subscribers_id so
+        # in case the id is needed for a new subscription.
+        user = getUtility(ILaunchBag).user
+        if user is not None:
+            subscribers.add(user)
+
+        ids = {}
+        for sub in subscribers:
+            ids[sub.name] = 'subscriber-%s' % sub.id
+        return ids
+
+    @property
+    def subscriber_ids_js(self):
+        """Return subscriber_ids in a form suitable for JavaScript use."""
+        return dumps(self.subscriber_ids)
 
     def subscription_class(self, subscribed_person):
-        """Returns a set of CSS class names based on subscription status.
+        """Return a set of CSS class names based on subscription status.
 
         For example, "subscribed-false dup-subscribed-true".
         """
@@ -509,8 +560,24 @@ class BugEditView(BugEditViewBase):
     _confirm_new_tags = False
 
     def __init__(self, context, request):
+        """context is always an IBugTask."""
         BugEditViewBase.__init__(self, context, request)
         self.notifications = []
+
+    @property
+    def label(self):
+        """The form label."""
+        return 'Edit details for bug #%d' % self.context.bug.id
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
     def validate(self, data):
         """Make sure new tags are confirmed."""
@@ -572,7 +639,12 @@ class BugSecrecyEditView(BugEditViewBase):
     """Page for marking a bug as a private/public."""
 
     field_names = ['private', 'security_related']
-    label = "Bug visibility and security"
+
+    @property
+    def label(self):
+        return 'Bug #%i - Set visiblity and security' % self.context.bug.id
+
+    page_title = label
 
     def setUpFields(self):
         """Make the read-only version of `private` writable."""
@@ -862,5 +934,5 @@ def bug_description_xhtml_representation(context, field, request):
     def renderer(value):
         nomail  = formatter(value).obfuscate_email()
         html    = formatter(nomail).text_to_html()
-        return html
+        return html.encode('utf-8')
     return renderer

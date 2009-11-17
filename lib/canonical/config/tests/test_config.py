@@ -1,4 +1,6 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # We know we are not using root and handlers.
 # pylint: disable-msg=W0612
 
@@ -9,6 +11,7 @@ __metaclass__ = type
 
 import ZConfig
 import os
+import pkg_resources
 import unittest
 
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
@@ -18,11 +21,10 @@ from lazr.config.interfaces import ConfigErrors
 
 # Calculate some landmark paths.
 import canonical.config
-here = os.path.dirname(canonical.config.__file__)
-schema_file = os.path.join(
-    here, os.pardir, os.pardir, 'zope/app/server/schema.xml')
+schema_file = pkg_resources.resource_filename('zope.app.server', 'schema.xml')
 schema = ZConfig.loadSchema(schema_file)
 
+here = os.path.dirname(canonical.config.__file__)
 lazr_schema_file = os.path.join(here, 'schema-lazr.conf')
 
 

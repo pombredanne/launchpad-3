@@ -1,4 +1,6 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213
 
 """Packageset interfaces."""
@@ -6,24 +8,42 @@
 __metaclass__ = type
 
 __all__ = [
+    'DuplicatePackagesetName',
     'IPackageset',
     'IPackagesetSet',
+    'NoSuchPackageSet',
     ]
 
 from zope.interface import Interface
 from zope.schema import Bool, Datetime, Int, List, TextLine
 
 from canonical.launchpad import _
-from lp.registry.interfaces.role import IHasOwner
 from canonical.launchpad.validators.name import name_validator
-from lp.registry.interfaces.person import IPerson
+from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from lazr.restful.declarations import (
     collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_factory_operation,
     export_read_operation, export_write_operation, exported,
     operation_parameters, operation_returns_collection_of,
-    operation_returns_entry)
+    operation_returns_entry, webservice_error)
 from lazr.restful.fields import Reference
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IHasOwner
+from lp.soyuz.interfaces.packagesetgroup import IPackagesetGroup
+
+
+class NoSuchPackageSet(NameLookupFailed):
+    """Raised when we try to look up an PackageSet that doesn't exist."""
+    # Bad request.
+    webservice_error(400)
+    _message_prefix = "No such package set (in the specified distro series)"
+
+
+class DuplicatePackagesetName(Exception):
+    """Raised for packagesets with the same name and distroseries."""
+    # Bad request.
+    webservice_error(400)
 
 
 class IPackagesetViewOnly(IHasOwner):
@@ -38,7 +58,7 @@ class IPackagesetViewOnly(IHasOwner):
 
     owner = exported(Reference(
         IPerson, title=_("Person"), required=True, readonly=True,
-        description=_("The person who owns the package set at hand.")))
+        description=_("The person who owns this package set.")))
 
     name = exported(TextLine(
         title=_('Valid package set name'),
@@ -47,6 +67,18 @@ class IPackagesetViewOnly(IHasOwner):
     description = exported(TextLine(
         title=_("Description"), required=True, readonly=True,
         description=_("The description for the package set at hand.")))
+
+    distroseries = exported(Reference(
+        IDistroSeries, title=_("Distribution series"), required=True,
+        readonly=True,
+        description=_(
+            "The distroseries to which this package set is related.")))
+
+    packagesetgroup = Reference(
+        IPackagesetGroup, title=_('Package set group'), required=True,
+        readonly=True,
+        description=_(
+            'Used internally to link package sets across distro series.'))
 
     def sourcesIncluded(direct_inclusion=False):
         """Get all source names associated with this package set.
@@ -185,6 +217,16 @@ class IPackagesetViewOnly(IHasOwner):
             names.
         """
 
+    @operation_returns_collection_of(Interface)
+    @export_read_operation()
+    def relatedSets():
+        """Get all package sets related to this one.
+
+        Return all package sets that are related to this one.
+
+        :return: A (potentially empty) sequence of `IPackageset` instances.
+        """
+
 
 class IPackagesetEdit(Interface):
     """A writeable interface for package sets."""
@@ -229,7 +271,8 @@ class IPackagesetEdit(Interface):
 
         This method facilitates the addition of source package names to
         package sets via the LP web services API. It takes string names
-        as opposed to `ISourcePackageName` instances.
+        as opposed to `ISourcePackageName` instances. Non-existing source
+        package names will be ignored.
 
         :param names: an iterable with string source package names
         """
@@ -305,26 +348,49 @@ class IPackagesetSet(Interface):
             title=_('Package set description'), required=True),
         owner=Reference(
             IPerson, title=_("Person"), required=True, readonly=True,
-            description=_("The person who owns the package set at hand.")))
+            description=_("The person who owns this package set.")),
+        distroseries=Reference(
+            IDistroSeries, title=_("Distroseries"), required=False,
+            readonly=True, description=_(
+                "The distribution series to which the packageset "
+                "is related.")),
+        related_set=Reference(
+            IPackageset, title=_("Related package set"), required=False,
+            readonly=True, description=_(
+                "The new package set will share the package set group "
+                "with this one.")))
     @export_factory_operation(IPackageset, [])
-    def new(name, description, owner):
+    def new(name, description, owner, distroseries=None, related_set=None):
         """Create a new package set.
 
         :param name: the name of the package set to be created.
         :param description: the description for the package set to be created.
         :param owner: the owner of the package set to be created.
+        :param distroseries: the distroseries to which the new packageset
+            is related. Defaults to the current Ubuntu series.
+        :param related_set: the newly created package set is to be related to
+            `related_set` (by being placed in the same package group).
 
+        :raises DuplicatePackagesetName: if a package set with the same `name`
+            exists in `distroseries` already.
         :return: a newly created `IPackageset`.
         """
 
     @operation_parameters(
-        name=TextLine(title=_('Package set name'), required=True))
+        name=TextLine(title=_('Package set name'), required=True),
+        distroseries=Reference(
+            IDistroSeries, title=_("Distroseries"), required=False,
+            readonly=True, description=_(
+                "The distribution series to which the packageset "
+                "is related.")))
     @operation_returns_entry(IPackageset)
     @export_read_operation()
-    def getByName(name):
+    def getByName(name, distroseries=None):
         """Return the single package set with the given name (if any).
 
         :param name: the name of the package set sought.
+        :param distroseries: the distroseries to which the new packageset
+            is related. Defaults to the current Ubuntu series.
 
         :return: An `IPackageset` instance or None.
         """

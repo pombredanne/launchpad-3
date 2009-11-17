@@ -1,5 +1,5 @@
-# (c) Canonical Software Ltd. 2004, all rights reserved.
-#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 # Lucille's primary interface to the upload mechanism
 
@@ -9,8 +9,6 @@ import os
 import stat
 import time
 
-from canonical.launchpad.scripts import execute_zcml_for_scripts
-from canonical.lp import initZopeless
 from contrib.glock import GlobalLock
 
 class PoppyInterfaceFailure(Exception):
@@ -22,8 +20,6 @@ class PoppyInterface:
 
     def __init__(self, targetpath, logger, allow_user, cmd=None,
                  targetstart=0, perms=None):
-        execute_zcml_for_scripts()
-        self.tm = initZopeless(dbuser='ro')
         self.targetpath = targetpath
         self.logger = logging.getLogger("%s.PoppyInterface" % logger.name)
         self.cmd = cmd

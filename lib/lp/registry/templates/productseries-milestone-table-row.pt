@@ -2,13 +2,27 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  define="milestone_menu view/milestone/menu:context;
+  define="milestone_menu view/milestone/menu:navigation;
           milestone view/milestone">
   <tr>
     <td>
       <img src="/@@/milestone" alt="" />
       <a tal:content="milestone/title"
          tal:attributes="href milestone/fmt:url">version</a>
+    </td>
+    <td tal:condition="view/show_series_context">
+      <a
+        tal:condition="milestone/series_target"
+        tal:attributes="href milestone/series_target/fmt:url"
+        tal:content="milestone/series_target/displayname">trunk</a>
+        <tal:can-edit condition="context/required:launchpad.Edit">
+          <tal:missing-series tal:condition="not: milestone/series_target">
+            <a title="Set the series"
+              tal:attributes="href milestone_menu/edit/fmt:url">Set</a>
+            <a
+              tal:replace="structure milestone_menu/edit/fmt:icon" />
+          </tal:missing-series>
+        </tal:can-edit>
     </td>
     <td>
       <span
@@ -22,12 +36,12 @@
         </tal:cannot-edit>
         <tal:can-edit condition="context/required:launchpad.Edit">
           <a title="Set the expected date the milestone will be complete"
-            tal:attributes="href milestone_menu/edit/fmt:url">Set</a>
+            tal:attributes="href milestone_menu/edit/fmt:url">Set date</a>
           <a tal:replace="structure milestone_menu/edit/fmt:icon" />
         </tal:can-edit>
       </tal:empty-date>
     </td>
-    <td>
+    <td tal:condition="not: view/is_distroseries_milestone">
       <span
         tal:define="release milestone/product_release"
         tal:condition="release"
@@ -43,19 +57,25 @@
         <tal:cannot-edit condition="not: context/required:launchpad.Edit">
           not yet released
         </tal:cannot-edit>
-        <tal:can-edit condition="milestone_menu/create_release/enabled">
-          <a tal:replace="structure milestone_menu/create_release/fmt:icon" />
-          <a
-            tal:attributes="href milestone_menu/create_release/fmt:url;
-                            title  milestone_menu/create_release/summary"
-            >Release now</a>
+        <tal:can-edit
+          define="link view/milestone/menu:overview/create_release"
+          condition="link/enabled">
+          <a style="white-space: nowrap"
+            tal:attributes="href link/fmt:url;
+                            title link/summary;
+                            class string:sprite ${link/icon}">Release now</a>
         </tal:can-edit>
         </tal:not-yet>
       </tal:no-release>
     </td>
-    <td>
+    <td tal:condition="view/is_distroseries_milestone"
+        tal:content="structure milestone/summary/fmt:shorten/80"
+        />
+    <td tal:condition="not: view/is_distroseries_milestone">
       <tal:summary
         content="structure milestone/summary/fmt:shorten/80" />
+      <tal:bug-blueprint-details
+          condition="view/should_show_bugs_and_blueprints">
       <tal:bugtasks condition="view/bugtasks">
         <br tal:omit-tag="not: view/milestone/summary" />
         Bugs targeted:
@@ -78,6 +98,7 @@
           </span>
         </tal:statuses>
       </tal:blueprints>
+      </tal:bug-blueprint-details>
     </td>
   </tr>
 </tal:root>

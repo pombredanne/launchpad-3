@@ -103,12 +103,12 @@ Mark is a Launchpad administrator, and Launchpad administrators are
 special.  Launchpad administrators often have a need to see private
 Launchpad things in order to fix up fubars by users.
 
-    >>> sabdfl = person_set.getByName('sabdfl')
+    >>> mark = person_set.getByName('mark')
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> lp_admins = getUtility(ILaunchpadCelebrities).admin
-    >>> sabdfl.inTeam(lp_admins)
+    >>> mark.inTeam(lp_admins)
     True
-    >>> access.checkAuthenticated(sabdfl)
+    >>> access.checkAuthenticated(mark)
     True
 
 
@@ -183,7 +183,7 @@ Anonymous users see just the public branches.
 
     >>> for branch in branch_set.getRecentlyRegisteredBranches(3):
     ...     print branch.unique_name, branch.private
-    ~sabdfl/+junk/testdoc False
+    ~mark/+junk/testdoc False
     ~name12/gnome-terminal/scanned False
     ~name12/gnome-terminal/mirrored False
 
@@ -192,7 +192,7 @@ David is not in eligible to see any of the private branches.
     >>> for branch in branch_set.getRecentlyRegisteredBranches(
     ...     3, visible_by_user=ddaa):
     ...     print branch.unique_name, branch.private
-    ~sabdfl/+junk/testdoc False
+    ~mark/+junk/testdoc False
     ~name12/gnome-terminal/scanned False
     ~name12/gnome-terminal/mirrored False
 
@@ -202,13 +202,13 @@ No Privileges Person sees his new private junk branch and other public branches.
     ...     3, visible_by_user=no_priv_person):
     ...     print branch.unique_name, branch.private
     ~no-priv/+junk/test-branch True
-    ~sabdfl/+junk/testdoc False
+    ~mark/+junk/testdoc False
     ~name12/gnome-terminal/scanned False
 
 Mark as a Launchpad admin can see all the private branches.
 
     >>> for branch in branch_set.getRecentlyRegisteredBranches(
-    ...     3, visible_by_user=sabdfl):
+    ...     3, visible_by_user=mark):
     ...     print branch.unique_name, branch.private
     ~no-priv/+junk/test-branch True
     ~name12/landscape/feature-x True
@@ -223,4 +223,4 @@ but not the private branch owned by No Privileges Person.
     ...     print branch.unique_name, branch.private
     ~name12/landscape/feature-x True
     ~landscape-developers/landscape/trunk True
-    ~sabdfl/+junk/testdoc False
+    ~mark/+junk/testdoc False

@@ -1,4 +1,6 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Test top-level publication API in Soyuz."""
 
 from unittest import TestLoader
@@ -6,8 +8,10 @@ from unittest import TestLoader
 from lp.soyuz.tests.test_publishing import TestNativePublishingBase
 
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+
+
 class TestICanPublishPackagesAPI(TestNativePublishingBase):
 
     def _createLinkedPublication(self, name, pocket):

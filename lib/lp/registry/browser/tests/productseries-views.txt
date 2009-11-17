@@ -1,163 +1,17 @@
-= Set Up =
-
-We will have to check for a BranchJob being created for a branch, so
-let's put this check in a convenient function.
-
-    >>> from zope.component import getUtility
-    >>> from lp.code.interfaces.branchjob import (
-    ...     IRosettaUploadJobSource)
-    >>> job_counter = 0
-    >>> def isUploadJobCreatedForBranch(productseries,
-    ...                                 force_translations_upload=None):
-    ...     global job_counter
-    ...     ready_jobs = list(getUtility(IRosettaUploadJobSource).iterReady())
-    ...     if len(ready_jobs) <= job_counter:
-    ...         return False
-    ...     job = ready_jobs[job_counter]
-    ...     job_counter += 1
-    ...     if force_translations_upload is None:
-    ...         return productseries.branch == job.branch
-    ...     return (productseries.branch == job.branch and
-    ...            force_translations_upload == job.force_translations_upload)
-
-Also, we need to set-up a branch for the product of this productseries. The
-last_mirrored_id and the last_scanned_id is set to the same value to pretend
-that the branch has been mirrored and scanned.
-
-    >>> def makeScannedProductBranch(productseries):
-    ...     branch = factory.makeProductBranch(productseries.product)
-    ...     branch.last_mirrored_id = "some_rev_id"
-    ...     branch.last_scanned_id = "some_rev_id"
-    ...     return branch
-
-For these tasks we need to log in.
-
-    >>> login('foo.bar@canonical.com')
+ProductSeries Views
+===================
 
 
-= ProductSeriesLinkBranchView =
-
-The ProductSeries is setup to sync translations from a branch but no branch
-has been linked to the ProductSeries yet.
-
-    >>> from canonical.launchpad.interfaces.translations import (
-    ...     TranslationsBranchImportMode)
-    >>> productseries = factory.makeProductSeries()
-    >>> productseries.translations_autoimport_mode = (
-    ...     TranslationsBranchImportMode.IMPORT_TEMPLATES)
-
-When a branch is linked to the ProductSeries using this view, a new
-BranchJob to upload translation files to rosetta is created.
-
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from lp.registry.browser.productseries import (
-    ...     ProductSeriesLinkBranchView)
-    >>> branch = makeScannedProductBranch(productseries)
-    >>> request = LaunchpadTestRequest(
-    ...     method='POST',
-    ...     form={'field.branch': branch.unique_name,
-    ...           'field.actions.update': 'Update'})
-    >>> view = ProductSeriesLinkBranchView(
-    ...     productseries, request)
-    >>> view.initialize()
-    >>> print isUploadJobCreatedForBranch(productseries)
-    True
-
-When a branch is removed from the ProductSeries using this view, no new
-BranchJob is created.
-
-    >>> branch = makeScannedProductBranch(productseries)
-    >>> request = LaunchpadTestRequest(
-    ...     method='POST',
-    ...     form={'field.branch': '',
-    ...           'field.actions.update': 'Update'})
-    >>> view = ProductSeriesLinkBranchView(
-    ...     productseries, request)
-    >>> view.initialize()
-    >>> print isUploadJobCreatedForBranch(productseries)
-    False
-
-
-= ProductSeriesTranslationsSettingsView =
-
-Special settings for translations of a ProductSeries are set through
-this view.
-
-The ProductSeries instance has a branch set that contains the source
-code.
-
-    >>> productseries = factory.makeProductSeries()
-    >>> productseries.branch = makeScannedProductBranch(productseries)
-
-    >>> from lp.registry.browser.productseries import (
-    ...     ProductSeriesTranslationsSettingsView)
-
-The only setting currently available is for the import of translation
-templates from bazaar branches hosted on Launchpad.
-
-    >>> request = LaunchpadTestRequest()
-    >>> view = ProductSeriesTranslationsSettingsView(
-    ...     productseries, request)
-    >>> view.setUpFields()
-    >>> [field.__name__ for field in view.form_fields]
-    ['translations_autoimport_mode']
-
-This setting is represented by a SettingsRadioWidget which is derived
-from LaunchpadRadioWidgetWithDescription.
-
-    >>> view.setUpWidgets()
-    >>> view.widgets['translations_autoimport_mode']
-    <...SettingsRadioWidget object at...>
-
-Submitting the form via "Change settings" will update the corresponding
-attribute of the ProductSeries.
-
-    >>> request = LaunchpadTestRequest(
-    ...     method='POST',
-    ...     form={'field.translations_autoimport_mode': 'IMPORT_TEMPLATES',
-    ...           'field.actions.save_settings': 'Save Settings'})
-    >>> view = ProductSeriesTranslationsSettingsView(
-    ...     productseries, request)
-    >>> print productseries.translations_autoimport_mode.title
-    None
-    >>> view.initialize()
-    >>> print productseries.translations_autoimport_mode.title
-    Import template files
-
-Also, a branch job to upload the full set of translation files has been
-created to create the initial database entries from the files in the branch.
-
-    >>> print isUploadJobCreatedForBranch(productseries)
-    True
-
-
-= ProductSeriesTranslationsBzrImportView =
-
-When requesting a one-time import of translation files, an Upload job
-is created that has force_translations_upload set to true.
-
-    >>> productseries = factory.makeProductSeries()
-    >>> productseries.branch = makeScannedProductBranch(productseries)
-    >>> from lp.registry.browser.productseries import (
-    ...     ProductSeriesTranslationsBzrImportView)
-    >>> request = LaunchpadTestRequest(
-    ...     method='POST',
-    ...     form={'field.actions.request_import':
-    ...               'Request one-time import'})
-    >>> view = ProductSeriesTranslationsBzrImportView(
-    ...     productseries, request)
-    >>> view.initialize()
-    >>> print isUploadJobCreatedForBranch(productseries, True)
-    True
-
-
-== ProductSeries view ==
+ProductSeries view
+------------------
 
 The default view for the productseries includes a script that augments the
 'Create milestone' link to show a formoverlay to create a milestone and
 update the milestones and releases table.
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> login('foo.bar@canonical.com')
 
     >>> product = factory.makeProduct(name='app')
     >>> series = factory.makeSeries(name='simple', product=product)
@@ -168,11 +22,12 @@ update the milestones and releases table.
         YUI().use(... 'lp.milestoneoverlay', 'lp.milestonetable'...
             var series_uri = '/app/simple';
             var milestone_form_uri = '.../app/simple/+addmilestone/++form++';
-            var milestone_row_uri_template =
+            var milestone_row_uri =
                 '/app/+milestone/{name}/+productseries-table-row';
             var milestone_rows_id = '#milestone-rows';...
             Y.on('domready', function () {
-                var create_milestone_link = Y.get('.menu-link-create_milestone');
+                var create_milestone_link = Y.get(
+                    '.menu-link-create_milestone');
                 create_milestone_link.addClass('js-action');...
                 Y.lp.milestoneoverlay.attach_widget(config);...
                 Y.lp.milestonetable.setup(table_config);...
@@ -202,8 +57,116 @@ When the product series has milestones, the class is just 'listing'.
     >>> print view.milestone_table_class
     listing
 
+Obsolete series are less interesting that other series. The ProductSeriesView
+has an is_obsolete property that templates can check when choosing the content
+to display.
 
-== Delete ProductSeries ==
+    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
+
+    >>> print series.status
+    Active Development
+    >>> view.is_obsolete
+    False
+
+    >>> series.status = DistroSeriesStatus.OBSOLETE
+    >>> view = create_view(series, '+index')
+    >>> view.is_obsolete
+    True
+
+The view provides access to the latest release if it has one.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+
+    >>> print view.latest_release_with_download_files
+    None
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> #login_person(firefox.owner)
+    >>> series_with_downloads = firefox.getSeries('trunk')
+    >>> view = create_initialized_view(series_with_downloads, name='+index')
+    >>> print view.latest_release_with_download_files.version
+    0.9.2
+
+
+Edit ProductSeries
+------------------
+
+The productseries +edit view provides a label and page_title for the page.
+
+    >>> view = create_initialized_view(series, '+edit')
+    >>> print view.label
+    Edit App simple series
+
+    >>> print view.page_title
+    Edit App simple series
+
+The view provides a cancel_url and a next_url.
+
+    >>> print view.cancel_url
+    http://launchpad.dev/app/simple
+
+    >>> print view.next_url
+    http://launchpad.dev/app/simple
+
+
+Administer Productseries
+------------------------
+
+The productseries +review view allows an admin to administer the name and
+parent project.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> login('admin@canonical.com')
+    >>> view = create_initialized_view(series, '+review')
+    >>> check_permission('launchpad.Admin', view)
+    True
+
+    >>> view.field_names
+    ['product', 'name']
+
+The view provides a label and page_title.
+
+    >>> print view.label
+    Administer App simple series
+
+    >>> print view.page_title
+    Administer App simple series
+
+The view provides a cancel_url and a next_url.
+
+    >>> print view.cancel_url
+    http://launchpad.dev/app/simple
+
+Users without edit permission cannot access the view.
+
+    >>> login_person(a_user)
+    >>> view = create_view(series, name='+review')
+    >>> check_permission('launchpad.Admin', view)
+    False
+
+
+Link branch
+-----------
+
+The +linkbranch view allows a user to associate a series with a branch. It
+provides a label and a page_title.
+
+    >>> view = create_initialized_view(series, '+linkbranch')
+    >>> print view.label
+    Link an existing branch to App simple series
+
+    >>> print view.page_title
+    Link an existing branch to App simple series
+
+There is a cancel_url property too.
+
+    >>> print view.cancel_url
+    http://launchpad.dev/app/simple
+
+
+Delete ProductSeries
+--------------------
 
 Users with edit permission may delete a project's series. This person is
 often the project's owner or series driver who has setup the series by
@@ -236,10 +199,13 @@ The project owner can access the view.
     >>> check_permission('launchpad.Edit', view)
     True
 
-The delete view has a label to explain what it does.
+The delete view has a label and page_title to explain what it does.
 
     >>> print view.label
-    Delete Field series rabbit
+    Delete Field rabbit series
+
+    >>> print view.page_title
+    Delete Field rabbit series
 
 The view has a a next_url to the product used when the delete is successful,
 though it is None by default. There is a cancel_url that links to the series.
@@ -263,6 +229,8 @@ deleted are available.
     []
     >>> view.product_release_files
     []
+    >>> view.has_linked_branch
+    False
 
 Most series that are deleted do not have any related objects, but a small
 portion do.
@@ -278,18 +246,38 @@ portion do.
     >>> bugtask = bug.bugtasks[0]
     >>> bugtask.milestone = milestone_two
 
+    >>> owner = product.owner
+    >>> series_specification = factory.makeSpecification(product=product)
+    >>> series_specification.proposeGoal(productseries, owner)
+    >>> series_bugtask = factory.makeBugTask(bug=bug, target=productseries)
+    >>> subscription = productseries.addSubscription(owner, owner)
+    >>> productseries.branch = factory.makeBranch()
+
     >>> view = create_view(productseries, name='+delete')
     >>> [milestone.name for milestone in view.milestones]
     [u'0.2', u'0.1']
     >>> view.has_bugtasks_and_specifications
     True
-    >>> [bugtask.milestone.name for bugtask in view.bugtasks]
-    [u'0.2']
-    >>> [spec.milestone.name for spec in view.specifications]
-    [u'0.1']
+    >>> for bugtask in view.bugtasks:
+    ...     if bugtask.milestone is not None:
+    ...         print bugtask.milestone.name
+    ...     else:
+    ...         print bugtask.target.name
+    rabbit
+    0.2
+    >>> for spec in view.specifications:
+    ...     if spec.milestone is not None:
+    ...         print spec.milestone.name
+    ...     else:
+    ...         print spec.goal.name
+    rabbit
+    0.1
 
-    # Listing and deleting product release files is done in the story
-    # because they require the Librarian to be running.
+    >>> view.has_linked_branch
+    True
+
+    # Listing and deleting product release files is done in
+    # product-release-views because they require the Librarian to be running.
 
 Series that are the active focus of development cannot be deleted. The
 view's can_delete property checks this rule.
@@ -325,7 +313,8 @@ development.
 Calling the view's delete action on a series that can be deleted will
 untarget the bugtasks and specifications that are targeted to the
 series' milestones. The milestones, releases, and release files are
-deleted.
+deleted. Bugs and blueprints targeted to the series are unassigned.
+Series structural subscriptions are removed. Branch links are removed.
 
     >>> view = create_initialized_view(productseries, '+delete', form=form)
     >>> for notification in view.request.response.notifications:
@@ -342,12 +331,19 @@ deleted.
     None
     >>> print bugtask.milestone
     None
+    >>> bugtask.related_tasks
+    []
+    >>> print series_specification.milestone
+    None
+    >>> [subscription for subscription in owner.structural_subscriptions]
+    []
 
 The series was not actually deleted because there are problematic objects
 like translations. The series are assigned to the Obsolete Junk project.
 The series name is changed to 'product_name-series_name-date_created' to
-avoid conflicts.
+avoid conflicts. The linked branch is removed.
 
+    >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
 
@@ -356,60 +352,3 @@ avoid conflicts.
     True
     >>> print productseries.name
     field-rabbit-20090501-193424
-
-
-Linking packages
-----------------
-
-Distrobution sourcepackages can be linked to product series using the
-+addpackage named view.
-
-    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> hoary = ubuntu.getSeries('hoary')
-    >>> sourcepackagename = factory.makeSourcePackageName('hot')
-    >>> sourcepackage = factory.makeSourcePackage(
-    ...     sourcepackagename=sourcepackagename, distroseries=hoary)
-    >>> product = factory.makeProduct(name="hot", displayname='Hot')
-    >>> productseries = factory.makeProductSeries(
-    ...     product=product, name='hotter')
-    >>> productseries.sourcepackages
-    []
-
-The view has a label and requires a distro series, source package name,
-and a packaging contents.
-
-    >>> view = create_view(productseries, '+addpackage')
-    >>> print view.label
-    Add distribution packaging record
-
-    >>> print view.field_names
-    ['distroseries', 'sourcepackagename', 'packaging']
-
-    >>> form = {
-    ...     'field.distroseries': 'ubuntu/hoary',
-    ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Product',
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     productseries, '+addpackage', form=form)
-    >>> view.errors
-    []
-    >>> for package in productseries.sourcepackages:
-    ...     print package.name
-    hot
-
-It is an error to link a series to the same package twice.
-
-    >>> form = {
-    ...     'field.distroseries': 'ubuntu/hoary',
-    ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Product',
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     productseries, '+addpackage', form=form)
-    >>> for error in view.errors:
-    ...     print error
-    This series is already packaged in Hoary
-

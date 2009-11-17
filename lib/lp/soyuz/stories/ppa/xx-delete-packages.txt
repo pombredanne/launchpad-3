@@ -7,7 +7,8 @@ administrators may access this page.
 Anonymous and an ordinary user cannot access Celso's PPA package
 console, even if they try the URL directly.
 
-    >>> anon_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> anon_browser.getLink('Delete packages').click()
     Traceback (most recent call last):
     ...
@@ -19,7 +20,8 @@ console, even if they try the URL directly.
     ...
     Unauthorized: ..., 'launchpad.Edit')
 
-    >>> user_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> user_browser.getLink('Delete packages').click()
     Traceback (most recent call last):
     ...
@@ -36,15 +38,17 @@ Celso's PPA.
 
     >>> cprov_browser = setupBrowser(
     ...     auth="Basic celso.providelo@canonical.com:cprov")
-    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> cprov_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> cprov_browser.getLink('Delete packages').click()
-    >>> cprov_browser.title
-    'Delete packages from PPA for Celso Providelo'
+    >>> print cprov_browser.title
+    Delete packages from PPA for Celso Providelo...
 
-    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> admin_browser.getLink('Delete packages').click()
-    >>> admin_browser.title
-    'Delete packages from PPA for Celso Providelo'
+    >>> print admin_browser.title
+    Delete packages from PPA for Celso Providelo...
 
 Once accessed the page provides a way to search for published package
 sources and optionally delete one or more matching packages via POST
@@ -84,9 +88,10 @@ matching the given text.
     pmount - 0.1-1   2007-07-09  Published  Warty           Editors
 
 The user may delete packages from a PPA without providing a reason
-(deletion comment). Let's try it on sabdfl's archive.
+(deletion comment). Let's try it on mark's archive.
 
-    >>> admin_browser.open('http://launchpad.dev/~sabdfl/+archive')
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~mark/+archive/ppa/+packages')
     >>> admin_browser.getLink('Delete packages').click()
     >>> print_ppa_packages(admin_browser.contents)
     Source            Published   Status     Series          Section  Build
@@ -110,13 +115,14 @@ Please note that the 'deletion_comment' field (which is optional) is empty.
     iceweasel 1.0 in breezy-autotest
     Deletion comment: None
 
-The single package in sabdfl's archive was deleted successfully.
+The single package in mark's archive was deleted successfully.
 
     >>> print_ppa_packages(admin_browser.contents)
 
 Now back to cprov's archive for the remaining tests.
 
-    >>> admin_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> admin_browser.getLink('Delete packages').click()
 
 Deletion requires, at least, one selected a source, otherwise an error
@@ -188,7 +194,8 @@ An invalid value.
 The deleted record is now presented accordingly in the +index page. We
 will use another browser to inspect the results of our deletions.
 
-    >>> cprov_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> cprov_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> print_ppa_packages(cprov_browser.contents)
     Source            Published   Status     Series          Section  Build
         Status
@@ -204,7 +211,7 @@ will use another browser to inspect the results of our deletions.
     cdrkit - 1.0     2007-07-09  Deleted    Breezy-autotest Editors  i386
 
     >>> cprov_browser.getControl(
-    ...    name='field.status_filter').value = ['any']
+    ...    name='field.status_filter').value = ['']
     >>> cprov_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
     Source            Published   Status     Series          Section  Build
@@ -218,7 +225,8 @@ the form re-submission tests.
 
     >>> re_post_browser = setupBrowser(
     ...     auth="Basic foo.bar@canonical.com:test")
-    >>> re_post_browser.open('http://launchpad.dev/~cprov/+archive')
+    >>> re_post_browser.open(
+    ...     'http://launchpad.dev/~cprov/+archive/ppa/+packages')
     >>> re_post_browser.getLink('Delete packages').click()
 
 Multiple packages can be deleted in one single batch.
@@ -242,12 +250,9 @@ Multiple packages can be deleted in one single batch.
 The page doesn't present the form anymore, since there are no sources
 available for deletion.
 
-    >>> print extract_text(find_main_content(admin_browser.contents))
-    Source and binaries deleted by Foo Bar request:
-    iceweasel 1.0 in warty
-    pmount 0.1-1 in warty
-    Deletion comment: DO IT AGAIN !
-    Delete packages from PPA for Celso Providelo
+    >>> main_content = find_main_content(admin_browser.contents)
+    >>> print extract_text(
+    ...   find_tags_by_class(str(main_content), 'top-portlet')[0])
     This PPA does not contain any source packages published.
 
 All the packages were deleted via the admin_browser, now we will
@@ -262,13 +267,14 @@ previous state to check if the bug 185922 is really fixed.
 
     >>> print extract_text(find_main_content(re_post_browser.contents))
     Delete packages from PPA for Celso Providelo
+    ...
     This PPA does not contain any source packages published.
     There is 1 error.
 
 Any user can see that all packages present in Celso's PPA are deleted.
 
     >>> cprov_browser.getControl(
-    ...    name='field.status_filter').value = ['any']
+    ...    name='field.status_filter').value = ['']
     >>> cprov_browser.getControl('Filter', index=0).click()
     >>> print_ppa_packages(cprov_browser.contents)
     Source            Published   Status     Series          Section  Build
@@ -280,7 +286,8 @@ Any user can see that all packages present in Celso's PPA are deleted.
 PPAs that don't contain any published source packages, do not present
 the 'Delete packages' link.
 
-    >>> admin_browser.open('http://launchpad.dev/~no-priv/+archive')
+    >>> admin_browser.open(
+    ...     'http://launchpad.dev/~no-priv/+archive/ppa/+packages')
     >>> admin_browser.getLink('Delete packages').click()
     Traceback (most recent call last):
     ...
@@ -292,11 +299,12 @@ message is presented.
 
     >>> admin_browser.open(
     ...    'http://launchpad.dev/~no-priv/+archive/ppa/+delete-packages')
-    >>> admin_browser.title
-    'Delete packages from PPA for No Privileges Person'
+    >>> print admin_browser.title
+    Delete packages from PPA for No Privileges Person...
 
     >>> print extract_text(find_main_content(admin_browser.contents))
     Delete packages from PPA for No Privileges Person
+    ...
     This PPA does not contain any source packages published.
 
 == Removing source partially deleted ==
@@ -355,7 +363,8 @@ SUPERSEDED source with a PUBLISHED binary in No Privileged Person's PPA.
 The SUPERSEDED source we have just added is listed in the PPA
 overview page.
 
-    >>> user_browser.open('http://launchpad.dev/~no-priv/+archive')
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/~no-priv/+archive/ppa/+packages')
     >>> user_browser.getControl(
     ...    name='field.status_filter').value = ['superseded']
     >>> user_browser.getControl('Filter', index=0).click()
@@ -386,8 +395,8 @@ Even if the source added is recorded as SUPERSEDED, it is still
 available for deletion because it contains a PUBLISHED binary.
 
     >>> user_browser.getLink('Delete packages').click()
-    >>> user_browser.title
-    'Delete packages from PPA for No Privileges Person'
+    >>> print user_browser.title
+    Delete packages from PPA for No Privileges Person...
 
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
@@ -412,7 +421,7 @@ The list of 'deletable' sources can be filtered by status. The default
 filter is 'Any Status', but the user can choose another.
 
     >>> print user_browser.getControl(name='field.status_filter').value
-    ['any']
+    ['']
 
 When the user selects 'Published' filter and update the results, no
 records are presented.
@@ -462,7 +471,8 @@ downloaded from librarian.
 Please note also how the deletion comment is diplayed in its entirety as
 opposed to being truncated after the fisrt 20 characters.
 
-    >>> user_browser.open('http://launchpad.dev/~no-priv/+archive')
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/~no-priv/+archive/ppa/+packages')
     >>> user_browser.getControl(
     ...    name='field.status_filter').value = ['superseded']
     >>> user_browser.getControl('Filter', index=0).click()
@@ -531,14 +541,14 @@ The message for the file links does not appear for non-PPA publishings
 as it would refer to non-existent links.
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/foobar/1.0")
-    >>> history_section = find_tag_by_id(
-    ...     user_browser.contents, "publishing_history")
-    >>> print extract_text(history_section)
-    1.0 DELETED:
-    Warty pocket Release in component main and section editors
+    >>> user_browser.getLink('See full publishing history').click()
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Publishing history of “foobar” 1.0 source package in Ubuntu
+    ...
+    1.0
     Removed from disk on 2006-12-02.
     Deleted by Celso Providelo
     I do not like it.
     Published on 2006-12-01
     Copied from ubuntu breezy-autotest in Primary Archive for Ubuntu Linux
-
+    &laquo;back

@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/locationless"
   i18n:domain="launchpad"
 >
   <body>
@@ -14,10 +11,6 @@
   <div metal:fill-slot="main">
 
     <div metal:use-macro="context/@@launchpad_form/form">
-
-      <metal:heading fill-slot="heading">
-        <h1>Confirm your OpenPGP key</h1>
-      </metal:heading>
 
       <p metal:fill-slot="extra_info">
         Thanks for adding your OpenPGP key to Launchpad. So we can confirm that the key is yours, we need you to use the key to sign some text.

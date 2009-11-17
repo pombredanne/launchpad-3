@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Components related to branches."""
 
@@ -66,7 +67,7 @@ class BranchMergeProposalDelta:
     """Represent changes made to a BranchMergeProposal."""
 
     delta_values = (
-        'registrant', 'source_branch', 'target_branch', 'dependent_branch',
+        'registrant', 'source_branch', 'target_branch', 'prerequisite_branch',
         'queue_status', 'queue_position',)
     new_values = ('commit_message', 'whiteboard',)
     interface = IBranchMergeProposal

@@ -296,8 +296,8 @@ no_privs can actually approve the nomination.)
     thunderbird (Ubuntu Grumpy)
     thunderbird (Ubuntu)
 
-If the one nominating a goal is a driver of the series, the
-nomination will be automatically approved.
+Let's now nominate for Warty. no_privs is the driver, so will have
+no problems.
 
     >>> ubuntu_warty = ubuntu.getSeries("warty")
     >>> login("foo.bar@canonical.com")
@@ -306,6 +306,7 @@ nomination will be automatically approved.
 
     >>> warty_nomination = bug_one.addNomination(
     ...     target=ubuntu_warty, owner=no_privs)
+    >>> warty_nomination.approve(no_privs)
 
     >>> print warty_nomination.status.title
     Approved
@@ -492,7 +493,7 @@ created.
 == Automatic targeting of new source packages ==
 
 If a another distribution task is added, and nomination for that
-distribution's serieses already exists, the nominations will be valid
+distribution's series already exists, the nominations will be valid
 for the new task as well, and bugtasks will be created for all accepted
 ones.
 
@@ -539,7 +540,7 @@ source package on an accepted nomination. For example, if we would
 change the thunderbird package on the Grumpy task, it won't have a
 corresponding generic distribution task.
 
-The way we tie nominations to distribution serieses, and not to source
+The way we tie nominations to distribution series, and not to source
 packages, makes it hard to solve source package changes in a nice way.
 So what happens when a source package is changed is that we simply
 rename all other bugtasks which points to the same distribution and
@@ -636,18 +637,18 @@ or targeted raises a NominationError.
     NominationError: ...
 
 Nominating a bug for an obsolete distroseries raises a
-NominationSeriesObsoleteError. Let's mark warty obsolete to
-demonstrate.
+NominationSeriesObsoleteError. Let's make a new obsolete distroseries
+to demonstrate.
 
     >>> from canonical.launchpad.interfaces import DistroSeriesStatus
 
-(Temporarily log in as an admin user to change the series status.)
-
     >>> login("foo.bar@canonical.com")
-    >>> ubuntu_warty.status = DistroSeriesStatus.OBSOLETE
+    >>> ubuntu_edgy = factory.makeDistroRelease(
+    ...     distribution=ubuntu, version='6.10',
+    ...     status=DistroSeriesStatus.OBSOLETE)
     >>> login("no-priv@canonical.com")
 
-    >>> bug_one.addNomination(target=ubuntu_warty, owner=no_privs)
+    >>> bug_one.addNomination(target=ubuntu_edgy, owner=no_privs)
     Traceback (most recent call last):
       ..
     NominationSeriesObsoleteError: ...

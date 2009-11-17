@@ -1,4 +1,5 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Helper functions for bug-related doctests and pagetests."""
 
@@ -32,12 +33,16 @@ def print_direct_subscribers(bug_page):
     print_subscribers(bug_page, 'subscribers-direct')
 
 
-def print_indirect_subscribers(bug_page):
-    """Print the indirect subscribers listed in a portlet."""
-    print 'From duplicates:'
-    print_subscribers(bug_page, 'subscribers-from-duplicates')
+def print_also_notified(bug_page):
+    """Print the structural subscribers listed in a portlet."""
     print 'Also notified:'
     print_subscribers(bug_page, 'subscribers-indirect')
+
+
+def print_subscribers_from_duplicates(bug_page):
+    """Print the subscribers from duplicates listed in a portlet."""
+    print 'From duplicates:'
+    print_subscribers(bug_page, 'subscribers-from-duplicates')
 
 
 def print_subscribers(bug_page, subscriber_list_id):
@@ -87,21 +92,6 @@ def print_remote_bugtasks(content):
             if 'bug-remote' in value:
                 target = extract_text(span.findAllPrevious('td')[-2])
                 print target, extract_text(span.findNext('a'))
-
-
-def print_bugs_table(content, table_id):
-    """Print the bugs table with the given ID.
-
-    The table is assumed to consist of rows of bugs whose first column
-    is a bug ID, and whose second column is a bug title.
-    """
-    bugs_table = find_tag_by_id(content, table_id)
-
-    for tr in bugs_table("tr"):
-        if not tr.td:
-            continue
-        bug_id, bug_title = tr("td", limit=2)
-        print bug_id.string, bug_title.a.string
 
 
 def print_bugs_list(content, list_id):

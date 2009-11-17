@@ -1,4 +1,5 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Tests for how the scanner processes Bazaar formats."""
 
@@ -11,8 +12,26 @@ from lp.code.interfaces.branch import (
     BranchFormat, ControlFormat, RepositoryFormat)
 
 
+class TestScanFormat2a(BzrSyncTestCase):
+    """Test scanning of 2a repositories."""
+
+    def testRecognize2a(self):
+        """Ensure scanner records correct formats for pack branches."""
+        self.makeBzrSync(self.db_branch).syncBranchAndClose()
+        self.assertEqual(self.db_branch.branch_format,
+                         BranchFormat.BZR_BRANCH_7)
+        self.assertEqual(self.db_branch.repository_format,
+                         RepositoryFormat.BZR_CHK_2A)
+        self.assertEqual(self.db_branch.control_format,
+                         ControlFormat.BZR_METADIR_1)
+
+
 class TestScanFormatPack(BzrSyncTestCase):
     """Test scanning of pack-format repositories."""
+
+    def makeBzrBranchAndTree(self, db_branch):
+        return BzrSyncTestCase.makeBzrBranchAndTree(
+            self, db_branch, 'pack-0.92')
 
     def testRecognizePack(self):
         """Ensure scanner records correct formats for pack branches."""

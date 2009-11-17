@@ -1,0 +1,25 @@
+#!/bin/bash
+# Shows the unmerged revisions in trunk branches.
+#
+# Assumes the names devel, stable, db-devel, db-stable and assumes that the
+# script is being run from the top-level of a sibling directory.
+
+cd ..
+
+# Show missing
+echo "Untested revisions in devel"
+echo "---------------------------"
+cd stable
+bzr missing --theirs-only --short ../devel/
+echo
+
+echo "Unmerged revisions from stable"
+echo "------------------------------"
+cd ../db-devel
+bzr missing --theirs-only --short ../stable
+echo
+
+echo "Untested revisions in db-devel"
+echo "------------------------------"
+cd ../db-stable
+bzr missing --theirs-only --short ../db-devel

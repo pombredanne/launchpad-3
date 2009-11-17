@@ -3,38 +3,13 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/onecolumn"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
 <div metal:fill-slot="main">
-
-  <h1>Members' location</h1>
-
-  <tal:unmapped condition="view/unmapped_participants_count">
-    <div style="margin: 4px;">
-      <h2>Complete the map!</h2>
-      Do you know the current location for these team members? Set their
-      locations!
-    </div>
-
-    <div style="margin-bottom: 2em;">
-      <span style="float: left; width: 15em"
-            tal:repeat="person view/unmapped_participants">
-        <a tal:condition="person/name|nothing"
-           tal:attributes="
-            href string:${person/fmt:url}/+editlocation?for_team=${context/name}"
-           title="Set this person's location"
-          ><img src="/@@/edit" />
-          <tal:person replace="person/displayname" /></a>
-      </span>
-    </div>
-  </tal:unmapped>
 
   <div style="height:420px;">
     <div tal:condition="not: view/has_mapped_participants">

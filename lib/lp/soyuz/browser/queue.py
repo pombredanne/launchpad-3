@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for package queue."""
 
@@ -185,7 +186,12 @@ class QueueItemsView(LaunchpadView):
         if len(uploads) == 0:
             return None
 
-        upload_ids = [upload.id for upload in uploads]
+        # Operate only on upload and/or processed delayed-copies.
+        upload_ids = [
+            upload.id
+            for upload in uploads
+            if not (upload.is_delayed_copy and
+                    upload.status != PackageUploadStatus.DONE)]
         binary_file_set = getUtility(IBinaryPackageFileSet)
         binary_files = binary_file_set.getByPackageUploadIDs(upload_ids)
         source_file_set = getUtility(ISourcePackageReleaseFileSet)
@@ -455,3 +461,22 @@ class CompletePackageUpload:
             self.sourcepackagerelease = self.sources[0].sourcepackagerelease
         else:
             self.sourcepackagerelease = None
+
+    @property
+    def pending_delayed_copy(self):
+        """Whether the context is a delayed-copy pending processing."""
+        return (
+            self.is_delayed_copy and self.status != PackageUploadStatus.DONE)
+
+    @property
+    def changesfile(self):
+        """Return the upload changesfile object, even for delayed-copies.
+
+        If the context `PackageUpload` is a delayed-copy, which doesn't
+        have '.changesfile' by design, return the changesfile originally
+        used to upload the contained source.
+        """
+        if self.is_delayed_copy:
+            return self.sources[0].sourcepackagerelease.upload_changesfile
+        return self.context.changesfile
+

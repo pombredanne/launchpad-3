@@ -1,4 +1,5 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for BranchView."""
 
@@ -19,6 +20,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 
+from lp.app.interfaces.headings import IRootContext
 from lp.code.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
     BranchSparkView, BranchView)
@@ -207,6 +209,27 @@ class TestBranchView(TestCaseWithFactory):
         view.initialize()
         self.assertFalse(view.show_merge_links)
 
+    def testNoProductSeriesPushingTranslations(self):
+        # By default, a branch view shows no product series pushing
+        # translations to the branch.
+        branch = self.factory.makeBranch()
+
+        view = BranchView(branch, self.request)
+        view.initialize()
+        self.assertEqual(list(view.translations_sources()), [])
+
+    def testProductSeriesPushingTranslations(self):
+        # If a product series exports its translations to the branch,
+        # the view shows it.
+        product = self.factory.makeProduct()
+        trunk = product.getSeries('trunk')
+        branch = self.factory.makeBranch(owner=product.owner)
+        removeSecurityProxy(trunk).translations_branch = branch
+
+        view = BranchView(branch, self.request)
+        view.initialize()
+        self.assertEqual(list(view.translations_sources()), [trunk])
+
 
 class TestBranchReviewerEditView(TestCaseWithFactory):
     """Test the BranchReviewerEditView view."""
@@ -239,7 +262,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         reviewer = self.factory.makePerson()
         login_person(branch.owner)
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': reviewer})
+        view.initialize()
+        view.change_action.success({'reviewer': reviewer})
         self.assertEqual(reviewer, branch.reviewer)
         # Last modified has been updated.
         self.assertSqlAttributeEqualsDate(
@@ -252,7 +276,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         login_person(branch.owner)
         branch.reviewer = self.factory.makePerson()
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': branch.owner})
+        view.initialize()
+        view.change_action.success({'reviewer': branch.owner})
         self.assertIs(None, branch.reviewer)
         # Last modified has been updated.
         self.assertSqlAttributeEqualsDate(
@@ -265,7 +290,8 @@ class TestBranchReviewerEditView(TestCaseWithFactory):
         modified_date = datetime(2007, 1, 1, tzinfo=pytz.UTC)
         branch = self.factory.makeAnyBranch(date_created=modified_date)
         view = BranchReviewerEditView(branch, LaunchpadTestRequest())
-        view.save_action.success({'reviewer': branch.owner})
+        view.initialize()
+        view.change_action.success({'reviewer': branch.owner})
         self.assertIs(None, branch.reviewer)
         # Last modified has not been updated.
         self.assertEqual(modified_date, branch.date_last_modified)
@@ -288,7 +314,7 @@ class TestBranchBzrIdentity(TestCaseWithFactory):
         view = PersonOwnedBranchesView(branch.owner, LaunchpadTestRequest())
         view.initialize()
         navigator = view.branches()
-        [decorated_branch] = navigator.branches()
+        [decorated_branch] = navigator.branches
         self.assertEqual("lp://dev/fooix", decorated_branch.bzr_identity)
 
 
@@ -419,25 +445,49 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.landing_candidates)
 
-    def test_dependent_public(self):
-        # If the branch is a dependent branch for a public proposals, then
+    def test_prerequisite_public(self):
+        # If the branch is a prerequisite branch for a public proposals, then
         # there are merges.
         branch = self.factory.makeProductBranch()
-        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
+        bmp = self.factory.makeBranchMergeProposal(prerequisite_branch=branch)
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertFalse(view.no_merges)
         [proposal] = view.dependent_branches
         self.assertEqual(bmp, proposal)
 
-    def test_dependent_private(self):
-        # If the branch is a dependent branch where either the source or the
-        # target is private, then the dependent_branches are not shown.
+    def test_prerequisite_private(self):
+        # If the branch is a prerequisite branch where either the source or
+        # the target is private, then the dependent_branches are not shown.
         branch = self.factory.makeProductBranch()
-        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
+        bmp = self.factory.makeBranchMergeProposal(prerequisite_branch=branch)
         removeSecurityProxy(bmp.source_branch).private = True
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.dependent_branches)
+
+
+class TestBranchRootContext(TestCaseWithFactory):
+    """Test the adaptation of IBranch to IRootContext."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_personal_branch(self):
+        # The root context of a personal branch is the person.
+        branch = self.factory.makePersonalBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.owner, root_context)
+
+    def test_package_branch(self):
+        # The root context of a package branch is the distribution.
+        branch = self.factory.makePackageBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.distroseries.distribution, root_context)
+
+    def test_product_branch(self):
+        # The root context of a product branch is the product.
+        branch = self.factory.makeProductBranch()
+        root_context = IRootContext(branch)
+        self.assertEqual(branch.product, root_context)
 
 
 def test_suite():

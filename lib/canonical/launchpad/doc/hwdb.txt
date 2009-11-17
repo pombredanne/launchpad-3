@@ -96,10 +96,15 @@ together with the following data:
   * devices: The set set of HWSubmissionDevice records which belong to
     this submission.
 
+    Access to all data except submissions is restricted to members of
+    the Canonical team.
+
+    >>> login('foo.bar@canonical.com')
     >>> for submission_device in sample_submission.devices[:2]:
     ...     print submission_device.device.name
     MCP65 USB Controller
     MCP65 SATA Controller
+    >>> login(ANONYMOUS)
 
 Limitations:
   * "No name" products like mainboards from companies like ASRock

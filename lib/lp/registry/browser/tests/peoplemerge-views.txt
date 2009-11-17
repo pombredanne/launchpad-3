@@ -1,0 +1,101 @@
+People Merge Pages
+==================
+
+There are a number of views for merging people and teams.
+
+Team Merges
+-----------
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> person_set = getUtility(IPersonSet)
+    >>> login("foo.bar@canonical.com")
+
+A team (name21) can be merged into another (ubuntu-team).
+
+    >>> print person_set.getByName('name21').displayname
+    Hoary Gnome Team
+    >>> print person_set.getByName('ubuntu-team').displayname
+    Ubuntu Team
+
+    >>> form = {'field.dupe_person': 'name21',
+    ...         'field.target_person': 'ubuntu-team',
+    ...         'field.actions.merge': 'Merge'}
+    >>> view = create_initialized_view(
+    ...     person_set, '+adminteammerge', form=form)
+    >>> len(view.errors)
+    0
+
+The old team is now renamed but the target team remains.
+
+    >>> print person_set.getByName('name21')
+    None
+    >>> print person_set.getByName('ubuntu-team').displayname
+    Ubuntu Team
+
+Teams which have superteams cannot be merged into other teams. This
+restriction was added as a fix to https://bugs.launchpad.net/bugs/290681.
+
+    >>> parent_team = factory.makeTeam()
+    >>> child_team = factory.makeTeam(name='child-team')
+    >>> random_team = factory.makeTeam()
+    >>> parent_team.addMember(
+    ...     child_team, reviewer=parent_team.teamowner, force_team_add=True)
+    >>> form = {'field.dupe_person': child_team.name,
+    ...         'field.target_person': random_team.name,
+    ...         'field.actions.deactivate_members_and_merge': 'Merge'}
+    >>> view = create_initialized_view(
+    ...     person_set, '+adminteammerge', form=form)
+    >>> view.errors
+    [u"child-team has super teams, so it can't be merged."]
+
+Attempting to merge a non-existent team results in an error.
+
+    >>> form = {'field.dupe_person': 'not-a-real-team',
+    ...         'field.target_person': 'another-fake-team',
+    ...         'field.actions.merge': 'Merge'}
+    >>> view = create_initialized_view(
+    ...     person_set, '+adminteammerge', form=form)
+    >>> len(view.errors)
+    2
+    >>> for error in view.errors:
+    ...     print error[0]
+    Invalid value
+    Invalid value
+
+
+== People merge ==
+
+For regular users to merge Launchpad profiles, we require that they confirm
+ownership of the merged profile's email addresses, so it's not possible for
+them to merge a profile which has no email address.
+
+    # First we need to forge a person without a single email address.
+    >>> from lp.registry.interfaces.person import PersonCreationRationale
+    >>> person = person_set.createPersonWithoutEmail(
+    ...     'email-less-person', PersonCreationRationale.UNKNOWN)
+    >>> transaction.commit()
+
+    >>> form = {'field.dupe_person': person.name,
+    ...        'field.actions.continue': 'Continue'}
+    >>> view = create_initialized_view(
+    ...     person_set, '+requestmerge', form=form)
+    >>> len(view.errors)
+    1
+
+    # XXX Salgado, 2009-07-08, bug=396410: There should be a meaningful
+    # error message here instead of this one.
+    >>> print view.getFieldError('dupe_person')
+    Constraint not satisfied
+
+Admins, on the other hand, are allowed to merge people without a single email
+address.
+
+    >>> form = {'field.dupe_person': person.name,
+    ...         'field.target_person': 'name16',
+    ...         'field.actions.merge': 'Merge'}
+    >>> view = create_initialized_view(
+    ...     person_set, '+adminpeoplemerge', form=form)
+    >>> view.errors
+    []
+    >>> print view.request.response.getHeader('location')
+    http://launchpad.dev/~name16

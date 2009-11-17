@@ -1,4 +1,6 @@
-# Copyright 2006-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=W0703
 
 """distributionmirror-prober tests."""
@@ -21,10 +23,11 @@ from sqlobject import SQLObjectNotFound
 
 import canonical
 from canonical.config import config
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lazr.uri import URI
 from canonical.launchpad.daemons.tachandler import TacTestSetup
-from canonical.launchpad.database import DistributionMirror, DistroSeries
+from lp.registry.model.distributionmirror import DistributionMirror
+from lp.registry.model.distroseries import DistroSeries
 from lp.registry.scripts import distributionmirror_prober
 from lp.registry.scripts.distributionmirror_prober import (
     ProberFactory, ArchiveMirrorProberCallbacks, BadResponseCode,
@@ -709,11 +712,11 @@ class TestProbeFunctionSemaphores(unittest.TestCase):
 
     def test_MirrorCDImageSeries_records_are_deleted_before_probing(self):
         mirror = DistributionMirror.byName('releases-mirror2')
-        self.failUnless(mirror.cdimage_serieses.count() > 0)
+        self.failUnless(mirror.cdimage_series.count() > 0)
         # Note that calling this function won't actually probe any mirrors; we
         # need to call reactor.run() to actually start the probing.
         probe_cdimage_mirror(mirror, StringIO(), [], logging)
-        self.failUnlessEqual(mirror.cdimage_serieses.count(), 0)
+        self.failUnlessEqual(mirror.cdimage_series.count(), 0)
 
     def test_archive_mirror_probe_function(self):
         mirror1 = DistributionMirror.byName('archive-mirror')

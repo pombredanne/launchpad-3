@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Widgets related to IProduct."""
 
@@ -361,7 +362,9 @@ class LicenseWidget(CheckBoxMatrixWidget):
         return self.template()
 
     def _renderTable(self, category, column_count=1):
-        html = ['<table id="%s">' % category]
+        # The tables are wrapped in divs, since IE8 does not respond
+        # to setting the table's height to zero.
+        html = ['<div id="%s"><table>' % category]
         rendered_items = self.items_by_category[category]
         row_count = int(math.ceil(len(rendered_items) / float(column_count)))
         for i in range(0, row_count):
@@ -372,7 +375,7 @@ class LicenseWidget(CheckBoxMatrixWidget):
                     break
                 html.append('<td>%s</td>' % rendered_items[index])
             html.append('</tr>')
-        html.append('</table>')
+        html.append('</table></div>')
         return '\n'.join(html)
 
 

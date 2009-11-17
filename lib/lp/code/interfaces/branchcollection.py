@@ -1,4 +1,6 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211, E0213
 
 """A collection of branches.
@@ -48,6 +50,13 @@ class IBranchCollection(Interface):
     def count():
         """The number of branches in this collection."""
 
+    def ownerCounts():
+        """Return the number of different branch owners.
+
+        :return:  a tuple (individual_count, team_count) containing the number
+            of individuals and teams that own branches in this collection.
+        """
+
     def getBranches():
         """Return a result set of all branches in this collection.
 
@@ -57,15 +66,25 @@ class IBranchCollection(Interface):
         Branch table itself.
         """
 
-    def getMergeProposals(statuses=None, for_branches=None):
+    def getMergeProposals(statuses=None, for_branches=None,
+                          target_branch=None):
         """Return a result set of merge proposals for the branches in this
         collection.
 
         :param statuses: If specified, only return merge proposals with these
             statuses. If not, return all merge proposals.
         :param for_branches: An iterable of branches what will restrict the
-            resulting set of merge proposals to be only those for the
-            branches specified.
+            resulting set of merge proposals to be only those where the source
+            branch is one of the branches specified.
+        :param target_branch: If specified, only return merge proposals
+            that target the specified branch.
+        """
+
+    def getMergeProposalsForPerson(person, status=None):
+        """Proposals for `person`.
+
+        Return the proposals for branches owned by `person` or where `person`
+        is reviewing or been asked to review.
         """
 
     def getMergeProposalsForReviewer(reviewer, status=None):
@@ -80,6 +99,9 @@ class IBranchCollection(Interface):
             are returned.
         """
 
+    def getTeamsWithBranches(person):
+        """Return the teams that person is a member of that have branches."""
+
     def inProduct(product):
         """Restrict the collection to branches in 'product'."""
 
@@ -87,10 +109,23 @@ class IBranchCollection(Interface):
         """Restrict the collection to branches in 'project'."""
 
     def inSourcePackage(package):
-        """Restrict the collection to branches in 'package'."""
+        """Restrict the collection to branches in 'package'.
+
+        A source package is effectively a sourcepackagename in a distro
+        series.
+        """
+
+    def inDistribution(distribution):
+        """Restrict the collection to branches in 'distribution'."""
+
+    def inDistroSeries(distro_series):
+        """Restrict the collection to branches in 'distro_series'."""
 
     def inDistributionSourcePackage(distro_source_package):
         """Restrict to branches in a 'package' for a 'distribution'."""
+
+    def officialBranches(pocket=None):
+        """Restrict to branches that are official for some source package."""
 
     def isJunk():
         """Restrict the collection to junk branches.

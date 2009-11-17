@@ -5,18 +5,18 @@
   omit-tag="">
 
 <table class="listing"
-  tal:attributes="id string:series_${context/name};
+  tal:attributes="id context/name/fmt:css-id/series-;
                   class view/milestone_table_class">
   <thead>
     <tr>
-      <th>Version "Codename"</th>
+      <th>Version</th>
       <th>Expected</th>
-      <th>Released</th>
+      <th tal:condition="view/milestone_can_release">Released</th>
       <th>Summary</th>
     </tr>
   </thead>
   <tbody id="milestone-rows">
-    <tal:row repeat="milestone view/released_and_active_milestones">
+    <tal:row repeat="milestone context/all_milestones">
       <tal:milestone replace="structure milestone/@@+productseries-table-row" />
     </tal:row>
   </tbody>

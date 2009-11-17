@@ -95,8 +95,7 @@ start time makes no sense. Hence an exception is raised.
     AssertionError: The start time is only estimated for pending builds.
 
 On a build job in state `NEEDSBUILD` we can ask for its estimated
-build start time. In this context the result will be undefined because
-the corresponding build pool is empty.
+build start time.
 
     # Create a brand new pending build.
     >>> login('foo.bar@canonical.com')
@@ -104,8 +103,8 @@ the corresponding build pool is empty.
     >>> [pending_build] = source.createMissingBuilds()
     >>> login(ANONYMOUS)
 
-    >>> print pending_build.getEstimatedBuildStartTime()
-    None
+    >>> pending_build.getEstimatedBuildStartTime()
+    datetime.datetime(...)
 
 The currently published component is provided via the 'current_component'
 property.  It looks over the publishing records and finds the current
@@ -497,7 +496,7 @@ Using optional 'name' filter (matching with SQL LIKE %||filter||%)
 
 Checking optional 'pocket' restriction:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> bs.getBuildsByArchIds(arch_ids,
     ...     pocket=PackagePublishingPocket.UPDATES).count()
     0
@@ -572,12 +571,12 @@ data from the database for a given set of builds:
 
 == IHadBuildRecords.getBuildRecords() Implementations ==
 
-We can find recent and pending builds for a given distroseries.
+XXX: Michael Nelson 20090701 bug=394276
+The documentation for IHasBuildRecords is now in
+lp/soyuz/doc/hasbuildrecords.txt. The following implementation tests should
+be converted to unit-tests in lib/soyuz/tests/test_hasbuildrecords.py.
 
-    >>> hoary.getBuildRecords().count()
-    5
-
-Or for a given distroarchseries.
+We can find recent and pending builds for a given distrarchoseries.
 
     >>> hoaryi386 = hoary['i386']
     >>> hoaryi386.title
@@ -599,26 +598,6 @@ Exercises IHasBuildRecords abilities for distroarchseriess
     4
 
     >>> hoaryi386.getBuildRecords(
-    ...     pocket=PackagePublishingPocket.UPDATES).count()
-    0
-
-
-Same for distroseries:
-
-    >>> hoary.getBuildRecords().count()
-    5
-
-    >>> hoary.getBuildRecords(build_state=BuildStatus.FULLYBUILT).count()
-    2
-
-    >>> hoary.getBuildRecords(name='pm').count()
-    2
-
-    >>> hoary.getBuildRecords(
-    ...     pocket=PackagePublishingPocket.RELEASE).count()
-    5
-
-    >>> hoary.getBuildRecords(
     ...     pocket=PackagePublishingPocket.UPDATES).count()
     0
 
@@ -767,7 +746,7 @@ Using the optional name argument to filter build results:
 
 or using optional pocket argument:
 
-    >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     >>> ubuntu.getBuildRecords(
     ...    build_state=BuildStatus.NEEDSBUILD,
@@ -1031,6 +1010,7 @@ dependency available in the sample data but published in an unreachable
 component, we will see that the dependency is considered to be unsatisfied.
 See also bug 177827.
 
+    >>> login('foo.bar@canonical.com')
     >>> depwait_build.dependencies = 'pmount'
     >>> flush_database_updates()
 
@@ -1066,11 +1046,11 @@ list.
     >>> from lp.soyuz.interfaces.component import IComponentSet
     >>> main_component = getUtility(IComponentSet)['main']
     >>> pmount_pub.secure_record.component = main_component
+    >>> depwait_build.dependencies = 'mozilla-firefox, pmount'
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
     >>> login(ANONYMOUS)
 
-    >>> depwait_build.dependencies = 'mozilla-firefox, pmount'
     >>> flush_database_updates()
 
 Note that only the satisfied dependencies are removed the build
@@ -1085,9 +1065,9 @@ even when it is published in a component not allowed in its current
 component domain ('ogre_components'). That's because PPAs implicitly
 depend on all components of its distribution PRIMARY archive.
 
-    >>> depwait_build.dependencies = 'biscuit, pmount'
 
     >>> login('foo.bar@canonical.com')
+    >>> depwait_build.dependencies = 'biscuit, pmount'
     >>> universe_component = getUtility(IComponentSet)['universe']
     >>> pmount_pub.secure_record.component = universe_component
     >>> removeSecurityProxy(depwait_build).archive = cprov.archive
@@ -1127,7 +1107,9 @@ in IBuildSet called retryDepWaiting().
 In order to allow depwait_build to be retried we will forge a
 'fully-satisfiable' dependencies field.
 
+    >>> login('foo.bar@canonical.com')
     >>> depwait_build.dependencies = 'pmount'
+    >>> login(ANONYMOUS)
     >>> flush_database_updates()
 
 Then we can run the utility method for the target distroarchseries and
@@ -1251,6 +1233,44 @@ when accessing the builds:
     >>> bob_builds = bob.getBuildRecords(user=admin)
     >>> print_builds_with_exception(bob_builds)
     Generated Unauthorized exception as expected
+
+There are other settable attributes declared in the zcml that require
+launchpad.Edit.
+
+    >>> def check_setting_property(build_rec, property, value, should_fail):
+    ...     try:
+    ...         setattr(build_rec, property, value)
+    ...         if should_fail:
+    ...             print "Should have failed setting %s" % property
+    ...     except Unauthorized:
+    ...         if not should_fail:
+    ...             print "Did not fail when expected setting %s" % property
+    >>> from canonical.database.constants import UTC_NOW
+    >>> properties = {
+    ...     'buildlog': 1,
+    ...     'datebuilt': UTC_NOW,
+    ...     'buildduration': None,
+    ...     'builder': bob,
+    ...     'buildstate': BuildStatus.FAILEDTOUPLOAD,
+    ...     'dependencies': 'whatever',
+    ...     'upload_log': 1,
+    ...     }
+
+Login as a non-privileged user and set the properties.  It will fail.
+
+    >>> login('no-priv@canonical.com')
+    >>> for property in properties:
+    ...     check_setting_property(
+    ...         depwait_build, property, properties[property],
+    ...         should_fail=True)
+
+As a buildd-admin it will work:
+
+    >>> login('celso.providelo@canonical.com')
+    >>> for property in properties:
+    ...     check_setting_property(
+    ...         depwait_build, property, properties[property],
+    ...         should_fail=False)
 
 == Estimated Build Duration ==
 

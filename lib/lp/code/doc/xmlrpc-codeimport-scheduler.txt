@@ -17,14 +17,14 @@ codeimportscheduler attribute of our private XMLRPC instance.
 The CodeImportSchedulerAPI view provides the ICodeImportScheduler
 XML-RPC API:
 
-    >>> from zope.publisher.xmlrpc import TestRequest
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.code.interfaces.codeimportscheduler import (
     ...     ICodeImportScheduler)
     >>> from lp.code.xmlrpc.codeimportscheduler import (
     ...     CodeImportSchedulerAPI)
 
     >>> codeimportscheduler_api = CodeImportSchedulerAPI(
-    ...     private_root.codeimportscheduler, TestRequest())
+    ...     private_root.codeimportscheduler, LaunchpadTestRequest())
     >>> verifyObject(ICodeImportScheduler, codeimportscheduler_api)
     True
 

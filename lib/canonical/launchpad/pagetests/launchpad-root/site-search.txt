@@ -209,10 +209,10 @@ The user searches for the rosetta admins team and it is listed.
 Search for a user's launchpad name, a user will find the user in the
 "Exact matches" section.
 
-    >>> search_for('sabdfl')
+    >>> search_for('mark')
     >>> print_search_results()
     Exact matches
-    Mark Shuttleworth (sabdfl)
+    Mark Shuttleworth (mark)
     joined on 2005-06-06, with 130 karma
 
 The exact matches section will contain information about Shipit when the
@@ -237,7 +237,8 @@ the user. The text field is focused so that the user can try another
 search.
 
     >>> search_for('fnord')
-    >>> print extract_text(find_main_content(anon_browser.contents), skip_tags=[])
+    >>> print extract_text(
+    ...     find_main_content(anon_browser.contents), skip_tags=[])
     Pages matching "fnord" in Launchpad
     <!-- setFocusByName('field.text'); // -->
     Your search for &ldquo;fnord&rdquo; did not return any results.

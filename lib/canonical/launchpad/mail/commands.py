@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -603,15 +604,19 @@ class AffectsEmailCommand(EmailCommand):
             # A series task has to have a corresponding
             # distribution/product task.
             general_task = bug.addTask(user, general_target)
+
+        # We know the target is of the right type, and we just created
+        # a pillar task, so if canBeNominatedFor == False then a task or
+        # nomination must already exist.
         if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
             nomination = bug.getNominationFor(series)
-            # Automatically approve an existing nomination if a series
-            # manager targets it.
-            if not nomination.isApproved() and nomination.canApprove(user):
-                nomination.approve(user)
         else:
             nomination = bug.addNomination(target=series, owner=user)
+
+        # Automatically approve an existing or new nomination if possible.
+        if not nomination.isApproved() and nomination.canApprove(user):
+            nomination.approve(user)
 
         if nomination.isApproved():
             if sourcepackagename:

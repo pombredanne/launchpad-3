@@ -1,4 +1,6 @@
-# Copyright 2007-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Browser code for the Launchpad root page."""
 
 __metaclass__ = type
@@ -10,17 +12,21 @@ __all__ = [
 
 import re
 import sys
+import time
 
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
+
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
+from canonical.launchpad.utilities.celebrities import ILaunchpadCelebrities
+from canonical.launchpad.webapp.publisher import canonical_url
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.bugs.interfaces.bug import IBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadSearch
@@ -50,11 +56,34 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
 
     # The homepage has two columns to hold featured projects. This
     # determines the number of projects we display in each column.
-    FEATURED_PROJECT_ROWS = 10
+    FEATURED_PROJECT_ROWS = 11
+    FEATURED_PROJECT_COLS = 2
 
-    def isRedirectInhibited(self):
-        """Returns True if redirection has been inhibited."""
-        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
+    featured_projects = []
+    featured_projects_top = None
+
+    @staticmethod
+    def _get_day_of_year():
+        """Calculate the number of the current day.
+
+        This method gets overridden in tests to make the selection of the
+        top featured project deterministic.
+        """
+        return time.gmtime()[7]
+
+    def initialize(self):
+        """Set up featured projects list and the top featured project."""
+        super(LaunchpadRootIndexView, self).initialize()
+        # The maximum number of projects to be displayed as defined by the
+        # number and size of the columns plus one top featured project.
+        max_projects = (
+            self.FEATURED_PROJECT_ROWS * self.FEATURED_PROJECT_COLS + 1)
+        self.featured_projects = list(
+            getUtility(IPillarNameSet).featured_projects)[:max_projects]
+        # Select and get the top featured project (project of the day) and
+        # remove it from the list.
+        top_project = self._get_day_of_year() % len(self.featured_projects)
+        self.featured_projects_top = self.featured_projects.pop(top_project)
 
     def canRedirect(self):
         """Return True if the beta server is available to the user."""
@@ -63,9 +92,17 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
             self.isBetaUser)
 
     @cachedproperty
-    def featured_projects(self):
-        """Return a list of featured projects."""
-        return getUtility(IPillarNameSet).featured_projects
+    def apphomes(self):
+        return {
+            'answers': canonical_url(self.context, rootsite='answers'),
+            'blueprints': canonical_url(self.context, rootsite='blueprints'),
+            'bugs': canonical_url(self.context, rootsite='bugs'),
+            'code': canonical_url(self.context, rootsite='code'),
+            'translations': canonical_url(self.context,
+                                          rootsite='translations'),
+            'ubuntu': canonical_url(
+                getUtility(ILaunchpadCelebrities).ubuntu),
+            }
 
     @property
     def featured_projects_col_a(self):
@@ -75,7 +112,9 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     @property
     def featured_projects_col_b(self):
         """The list of featured projects."""
-        return self.featured_projects[self.FEATURED_PROJECT_ROWS:]
+        index_from = self.FEATURED_PROJECT_ROWS
+        index_to = self.FEATURED_PROJECT_ROWS * 2
+        return self.featured_projects[index_from:index_to]
 
     @property
     def branch_count(self):

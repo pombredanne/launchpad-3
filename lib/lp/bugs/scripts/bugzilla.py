@@ -1,4 +1,5 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Bugzilla to Launchpad import logic"""
 
@@ -420,7 +421,7 @@ class Bugzilla:
         srcpkgname, binpkgname = self._getPackageNames(bug)
         # find a product series
         series = None
-        for series in self.ubuntu.serieses:
+        for series in self.ubuntu.series:
             srcpkg = series.getSourcePackage(srcpkgname)
             if srcpkg:
                 series = srcpkg.productseries

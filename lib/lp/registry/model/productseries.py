@@ -1,4 +1,6 @@
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0611,W0212
 """Models for `IProductSeries`."""
 
@@ -13,13 +15,12 @@ import datetime
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import In, Sum
+from storm.expr import Sum, Max
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc
 from storm.store import Store
 
-from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -32,41 +33,40 @@ from lp.bugs.model.bugtask import BugTask
 from lp.services.worlddata.model.language import Language
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
-from canonical.launchpad.database.packaging import Packaging
-from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.database.pofile import POFile
-from canonical.launchpad.database.potemplate import (
+from lp.registry.model.packaging import Packaging
+from lp.registry.interfaces.person import (
+    validate_person_not_private_membership)
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import (
     HasTranslationTemplatesMixin,
     POTemplate)
 from lp.registry.model.productrelease import ProductRelease
-from canonical.launchpad.database.productserieslanguage import (
+from lp.translations.model.productserieslanguage import (
     ProductSeriesLanguage)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
-from canonical.launchpad.database.translationimportqueue import (
+from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.packaging import PackagingType
-from canonical.launchpad.interfaces.potemplate import IHasTranslationTemplates
+from lp.registry.interfaces.packaging import PackagingType
+from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationImplementationStatus,
     SpecificationSort)
-from canonical.launchpad.interfaces.structuralsubscription import (
-    IStructuralSubscriptionTarget)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.productseries import (
     IProductSeries, IProductSeriesSet)
-from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
-from canonical.launchpad.interfaces.translations import (
+from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.launchpad.webapp.sorting import sorted_dotted_numbers
+
 
 def landmark_key(landmark):
     """Sorts landmarks by date and name."""
@@ -81,11 +81,9 @@ def landmark_key(landmark):
 class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                     HasSpecificationsMixin, HasTranslationImportsMixin,
                     HasTranslationTemplatesMixin,
-                    StructuralSubscriptionTargetMixin):
+                    StructuralSubscriptionTargetMixin, SeriesMixin):
     """A series of product releases."""
-    implements(
-        IProductSeries, IHasTranslationTemplates,
-        IStructuralSubscriptionTarget)
+    implements(IProductSeries, IHasTranslationTemplates)
 
     _table = 'ProductSeries'
 
@@ -98,10 +96,12 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
     owner = ForeignKey(
         dbName="owner", foreignKey="Person",
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership,
+        notNull=True)
     driver = ForeignKey(
         dbName="driver", foreignKey="Person",
-        storm_validator=validate_public_person, notNull=False, default=None)
+        storm_validator=validate_person_not_private_membership,
+        notNull=False, default=None)
     branch = ForeignKey(foreignKey='Branch', dbName='branch',
                              default=None)
     translations_autoimport_mode = EnumCol(
@@ -197,7 +197,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
     def sourcepackages(self):
         """See IProductSeries"""
         from lp.registry.model.sourcepackage import SourcePackage
-        ret = Packaging.selectBy(productseries=self)
+        ret = self.packagings
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
                              distroseries=r.distroseries)
                     for r in ret]
@@ -437,22 +437,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     def getCurrentTranslationTemplates(self, just_ids=False):
         """See `IHasTranslationTemplates`."""
-        # Avoid circular imports.
-        from lp.registry.model.product import Product
-
         store = Store.of(self)
         if just_ids:
             looking_for = POTemplate.id
         else:
             looking_for = POTemplate
 
-        result = store.find(
-            looking_for,
+        # Select all current templates for this series, if the Product
+        # actually uses Launchpad Translations.  Otherwise, return an
+        # empty result.
+        result = store.find(looking_for, And(
+            self.product.official_rosetta == True,
             POTemplate.iscurrent == True,
-            POTemplate.productseries == self,
-            ProductSeries.id == self.id,
-            ProductSeries.product == Product.id,
-            Product.official_rosetta == True)
+            POTemplate.productseries == self))
         return result.order_by(['-POTemplate.priority', 'POTemplate.name'])
 
     @property
@@ -496,13 +493,16 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True,
                 Language.id!=english.id)
 
-            for language, pofile in query.order_by(['Language.englishname']):
+            ordered_results = query.order_by(['Language.englishname'])
+
+            for language, pofile in ordered_results:
                 psl = ProductSeriesLanguage(self, language, pofile=pofile)
                 psl.setCounts(pofile.potemplate.messageCount(),
                               pofile.currentCount(),
                               pofile.updatesCount(),
                               pofile.rosettaCount(),
-                              pofile.unreviewedCount())
+                              pofile.unreviewedCount(),
+                              pofile.date_changed)
                 results.append(psl)
         else:
             # If there is more than one template, do a single
@@ -520,7 +520,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                  Sum(POFile.currentcount),
                  Sum(POFile.updatescount),
                  Sum(POFile.rosettacount),
-                 Sum(POFile.unreviewed_count)),
+                 Sum(POFile.unreviewed_count),
+                 Max(POFile.date_changed)),
                 POFile.language==Language.id,
                 POFile.variant==None,
                 Language.visible==True,
@@ -529,10 +530,22 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True,
                 Language.id!=english.id).group_by(Language)
 
-            for (language, imported, changed, new, unreviewed) in (
-                query.order_by(['Language.englishname'])):
+            # XXX: Ursinha 2009-11-02: The Max(POFile.date_changed) result
+            # here is a naive datetime. My guess is that it happens
+            # because UTC awareness is attibuted to the field in the POFile
+            # model class, and in this case the Max function deals directly
+            # with the value returned from the database without
+            # instantiating it.
+            # This seems to be irrelevant to what we're trying to achieve
+            # here, but making a note either way.
+
+            ordered_results = query.order_by(['Language.englishname'])
+
+            for (language, imported, changed, new, unreviewed,
+                last_changed) in ordered_results:
                 psl = ProductSeriesLanguage(self, language)
-                psl.setCounts(total, imported, changed, new, unreviewed)
+                psl.setCounts(
+                    total, imported, changed, new, unreviewed, last_changed)
                 results.append(psl)
 
         return results
@@ -572,6 +585,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
+            status=self.status.title,
             uri=canonical_url(self, path_only_if_possible=True),
             landmarks=landmarks)
 
@@ -594,52 +608,3 @@ class ProductSeriesSet:
             return ProductSeries.get(series_id)
         except SQLObjectNotFound:
             return default
-
-    def composeQueryString(self, text=None, importstatus=None):
-        """Build SQL "where" clause for `ProductSeries` search.
-
-        :param text: Text to search for in the product and project titles and
-            descriptions.
-        :param importstatus: If specified, limit the list to series which have
-            the given import status; if not specified or None, limit to series
-            with non-NULL import status.
-        """
-        conditions = ["ProductSeries.product = Product.id"]
-        if text == u'':
-            text = None
-
-        # First filter on text, if supplied.
-        if text is not None:
-            conditions.append("""
-                ((Project.fti @@ ftq(%s) AND Product.project IS NOT NULL) OR
-                Product.fti @@ ftq(%s))""" % (quote(text), quote(text)))
-
-        # Exclude deactivated products.
-        conditions.append('Product.active IS TRUE')
-
-        # Exclude deactivated projects, too.
-        conditions.append(
-            "((Product.project = Project.id AND Project.active) OR"
-            " Product.project IS NULL)")
-
-        # Now just add the filter on import status.
-        if importstatus is None:
-            conditions.append('ProductSeries.importstatus IS NOT NULL')
-        else:
-            conditions.append('ProductSeries.importstatus = %s'
-                              % sqlvalues(importstatus))
-
-        # And build the query.
-        query = " AND ".join(conditions)
-        return """productseries.id IN
-            (SELECT productseries.id FROM productseries, product, project
-             WHERE %s) AND productseries.product = product.id""" % query
-
-    def getSeriesForBranches(self, branches):
-        """See `IProductSeriesSet`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        branch_ids = [branch.id for branch in branches]
-        return store.find(
-            ProductSeries,
-            In(ProductSeries.branchID, branch_ids)).order_by(
-            ProductSeries.name)

@@ -32,7 +32,7 @@ Setup a suitable chroot for Hoary i386:
 
     >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
     >>> from lp.registry.interfaces.distribution import IDistributionSet
-    >>> from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
 
     >>> hoary = getUtility(IDistributionSet)['ubuntu']['hoary']
     >>> hoary_i386 = hoary['i386']
@@ -202,7 +202,7 @@ buildqueue record, so the build was eliminated:
 
 == PPA build dispatching ==
 
-Create new Build record of the same source targeted for a PPA archive:
+Create a new Build record of the same source targeted for a PPA archive:
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -260,6 +260,9 @@ do this by copying the existing publication in Ubuntu.
     >>> job = bob_builder.findBuildCandidate()
     >>> ppa_job.id == job.id
     True
+
+For further details regarding IBuilder.findBuildCandidate() please see
+lib/lp/soyuz/tests/test_builder.py.
 
 Start buildd-slave to be able to dispatch jobs.
 

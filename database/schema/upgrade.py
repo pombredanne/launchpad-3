@@ -1,5 +1,8 @@
-#!/usr/bin/python2.4
-# Copyright 2004-2009 Canonical Ltd.  All rights reserved.
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """
 Apply all outstanding schema patches to an existing launchpad database
 """
@@ -248,7 +251,7 @@ def apply_patches_replicated():
                 echo 'Waiting for sync';
                 sync (id=1);
                 wait for event (
-                    origin=ALL, confirmed=ALL, wait on=@master_node
+                    origin=ALL, confirmed=ALL, wait on=@master_node, timeout=0
                     );
                 """ % (slave_node.node_id, slave_node.node_id))
 

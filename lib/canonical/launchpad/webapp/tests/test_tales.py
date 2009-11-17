@@ -1,6 +1,9 @@
-# Copyright 2004, 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """tales.py doctests."""
 
+from difflib import unified_diff
 from textwrap import dedent
 import unittest
 
@@ -9,11 +12,11 @@ from zope.security.proxy import removeSecurityProxy
 from zope.testing.doctestunit import DocTestSuite
 
 from canonical.launchpad.ftests import test_tales
-from lp.testing import login, TestCase, TestCaseWithFactory
 from canonical.launchpad.testing.pages import find_tags_by_class
 from canonical.launchpad.webapp.tales import FormattersAPI
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+from lp.testing import login, TestCase, TestCaseWithFactory
 
 
 def test_requestapi():
@@ -96,12 +99,12 @@ def test_dbschemaapi():
     ...
     KeyError: 99
 
-    Using a dbschema name that doesn't exist should give a TraversalError
+    Using a dbschema name that doesn't exist should give a LocationError
 
     >>> DBSchemaAPI(99).traverse('NotADBSchema', [])
     Traceback (most recent call last):
     ...
-    TraversalError: 'NotADBSchema'
+    LocationError: 'NotADBSchema'
 
     """
 
@@ -207,6 +210,13 @@ class TestDiffFormatter(TestCase):
             '<td class="text"> </td></tr></table>',
             FormattersAPI(' ').format_diff())
 
+    def test_format_unicode(self):
+        # Sometimes the strings contain unicode, those should work too.
+        self.assertEqual(
+            u'<table class="diff"><tr><td class="line-no">1</td>'
+            u'<td class="text">Unicode \u1010</td></tr></table>',
+            FormattersAPI(u'Unicode \u1010').format_diff())
+
     def test_cssClasses(self):
         # Different parts of the diff have different css classes.
         diff = dedent('''\
@@ -238,6 +248,25 @@ class TestDiffFormatter(TestCase):
              'diff-comment text'],
             [str(tag['class']) for tag in text])
 
+    def test_config_value_limits_line_count(self):
+        # The config.diff.max_line_format contains the maximum number of lines
+        # to format.
+        diff = dedent('''\
+            === modified file 'tales.py'
+            --- tales.py
+            +++ tales.py
+            @@ -2435,6 +2435,8 @@
+                 def format_diff(self):
+            -        removed this line
+            +        added this line
+            ########
+            # A merge directive comment.
+            ''')
+        self.pushConfig("diff", max_format_lines=3)
+        html = FormattersAPI(diff).format_diff()
+        line_count = html.count('<td class="line-no">')
+        self.assertEqual(3, line_count)
+
 
 class TestPreviewDiffFormatter(TestCaseWithFactory):
     """Test the PreviewDiffFormatterAPI class."""
@@ -252,11 +281,11 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # correct last scanned ids to ensure that the new diff is not stale.
         bmp = self.factory.makeBranchMergeProposal()
         if line_count:
-            content = 'random content'
+            content = ''.join(unified_diff('', 'random content'))
         else:
-            content = None
+            content = ''
         preview = bmp.updatePreviewDiff(
-            content, u'diff stat', u'rev-a', u'rev-b', conflicts=conflicts)
+            content, u'rev-a', u'rev-b', conflicts=conflicts)
         bmp.source_branch.last_scanned_id = preview.source_revision_id
         bmp.target_branch.last_scanned_id = preview.target_revision_id
         # Update the values directly sidestepping the security.
@@ -264,7 +293,8 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         naked_diff.diff_lines_count = line_count
         naked_diff.added_lines_count = added
         naked_diff.removed_lines_count = removed
-        # In order to get the canonical url of the librarian file, we need to commit.
+        # In order to get the canonical url of the librarian file, we need to
+        # commit.
         # transaction.commit()
         # Make sure that the preview diff is in the db for the test.
         # Storm bug: 324724

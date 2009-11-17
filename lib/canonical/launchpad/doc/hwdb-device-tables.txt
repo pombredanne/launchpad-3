@@ -1110,26 +1110,6 @@ We can also search for submissions from a particular user.
     >>> sata_controller.getSubmissions(owner=not_owner).count()
     0
 
-=== Counting unique results ===
-
-The results of getSubmissions are unique, so the underlying implementation
-uses an SQL DISTINCT directive. The count() call issued by Storm is usually
-incorrect for distinct queries, but we decorate the returning result set
-with a special count implementation which corrects count.
-
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> submissions = sata_controller.getSubmissions()
-
-The original result set returns an incorrect result for count()
-
-    >>> print removeSecurityProxy(submissions).result_set.count()
-    2
-
-But the wrapper issues the modified query and returns the correct result.
-
-    >>> print submissions.count()
-    1
-
     >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 HWDevice.drivers is the set of drivers that are associated via
@@ -1503,8 +1483,12 @@ names used in the table HWDriver.
 
 Similary, the same package names appear more than once in HWDriver.
 HWDriverSet.all_package_names() returns a list of distinct package
-names.
+names. Note that the package name value None (used in older submissions)
+is not included.
 
+    >>> from canonical.launchpad.database.hwdb import HWDriver
+    >>> store.add(HWDriver(name='foo', package_name=None))
+    <HWDriver at...
     >>> for package_name in driver_set.all_package_names():
     ...     print package_name.package_name
     <BLANKLINE>
@@ -1664,48 +1648,63 @@ a device, enumerated by HWMainClass, as well as a sub-class, enumerated
 by HWSubClass. The required main class specifies the generic type of
 a device, the optional sub-class a more detailed type.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     HWMainClass, HWSubClass, IHWDeviceClassSet)
-    >>> device_class_set = getUtility(IHWDeviceClassSet)
-    >>> device_class_optic_pro_ut12 = device_class_set.create(
-    ...     device=optic_pro_ut12, main_class=HWMainClass.SCANNER,
-    ...     sub_class=HWSubClass.SCANNER_FLATBED)
-    >>> print device_class_optic_pro_ut12.device.name
+Note that this information is not very reliable for some devices.
+For example, the USB bus has no specification at all for scanners;
+many vendors use the "generic" class/sub-class 0/0 for their scanners,
+while other vendors use 0x10/0, at least for some of their scanners.
+
+We have also hardware reports with obviously broken devices. For example
+some USB/WLAN adapters with vendor/product IDs 0x050d/0x705a and
+0x050d/0x905b claim that they implement the USB class 6, imaging.
+Similary, a number of PCI devices return clearly invalid class/subclass
+data.
+
+Let's pretend that Plustek uses the inofficial class/subclass 0x10/0
+for their Optic Pro 12 scanner.
+
+    >>> device_class_optic_pro_ut12 = optic_pro_ut12.getOrCreateDeviceClass(
+    ...     main_class=0x10, sub_class=0)
+    >>> device_class_optic_pro_ut12.main_class
+    16
+    >>> device_class_optic_pro_ut12.sub_class
+    0
+
+We can assign more than one class to devices. This should only be
+done for USB devices, which may have different classes for each
+of their interfaces. Let's add a second device class, "USB printer",
+for the scanner.
+
+    >>> device_class_printer = optic_pro_ut12.getOrCreateDeviceClass(
+    ...     main_class=0x07, sub_class=0x01)
+    >>> print device_class_printer.device.name
     OpticPro UT12
-    >>> print device_class_optic_pro_ut12.main_class.title
-    Scanner
-    >>> print device_class_optic_pro_ut12.sub_class.title
-    Flatbed Scanner
+    >>> print device_class_printer.main_class
+    7
+    >>> print device_class_printer.sub_class
+    1
 
-A device may be associated with more than one HWDeviceClass record.
-This allows, for example, the ability to describe a combined
-printer/scanner device as both a printer and a scanner. We (wrongly)
-assume that the Optic Pro UT12 is an MFP device. Let us also assume
-that we do not know if the printer component of this device uses
-inkjet or laser technology, hence we do not specify a sub-class.
+IHWDdevice.classes contains the set of classes defined for this device.
 
-    >>> device_class_printer_ut12 = device_class_set.create(
-    ...     device=optic_pro_ut12, main_class=HWMainClass.PRINTER)
-    >>> print device_class_printer_ut12.device.name
-    OpticPro UT12
-    >>> print device_class_printer_ut12.main_class.title
-    Printer
-    >>> print device_class_printer_ut12.sub_class
-    None
+    >>> for device_class in optic_pro_ut12.classes:
+    ...     print device_class.main_class, device_class.sub_class
+    7 1
+    16 0
 
-If a sub-class is specified, it must match the main class. The attempt
-to create a HWDeviceClass record with non-matching records results in
-a TypeError. The check for matching main class sub-class values ensures
-that the main class name is a prefix of the sub-class name.
+We get the device class data from HWDB submissiions. Some submissions
+contain devices with obviously broken device class information, like
+a PCI SCSI controller claiming to be a graphics card, or a USB WLAN
+adapter claiming to be an imaging device. If we notice such kind of
+broken device class data, we can remove it by calling
+IHWDevice.removeDeviceClass().
 
-    >>> device_class_set.create(device=optic_pro_ut12,
-    ...     main_class=HWMainClass.NETWORK,
-    ...     sub_class=HWSubClass.STORAGE_HARDDISK)
-    Traceback (most recent call last):
-    ...
-    TypeError: HWDeviceClass() did not get matching argument values for
-    main_class: <DBItem HWMainClass.NETWORK, (10000) Network> and
-    sub_class: <DBItem HWSubClass.STORAGE_HARDDISK, (11001) Hard Disk>.
+    >>> LaunchpadZopelessLayer.txn.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> optic_pro_ut12.removeDeviceClass(main_class=0x07, sub_class=0x01)
+    >>> for device_class in optic_pro_ut12.classes:
+    ...     print device_class.main_class, device_class.sub_class
+    16 0
+
+    >>> LaunchpadZopelessLayer.switchDbUser('hwdb-submission-processor')
 
 
 == HWSubmissionDevice ==

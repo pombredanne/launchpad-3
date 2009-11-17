@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """IBugMessage-related browser view classes."""
 
@@ -24,6 +25,14 @@ class BugMessageAddFormView(LaunchpadFormView):
     initial_focus_widget = None
 
     @property
+    def label(self):
+        return 'Add a comment or attachment to bug #%d' % self.context.bug.id
+
+    @property
+    def page_title(self):
+        return self.label
+
+    @property
     def initial_values(self):
         return dict(subject=self.context.bug.followup_subject())
 
@@ -45,7 +54,7 @@ class BugMessageAddFormView(LaunchpadFormView):
                 self.addError("Either a comment or attachment "
                               "must be provided.")
 
-    @action(u"Save Changes", name='save')
+    @action(u"Post Comment", name='save')
     def save_action(self, action, data):
         """Add the comment and/or attachment."""
 

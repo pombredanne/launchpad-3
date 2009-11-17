@@ -1,10 +1,11 @@
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views, menus and traversal related to PersonProducts."""
 
 __metaclass__ = type
 __all__ = [
-    'PersonProductBreadcrumbBuilder',
+    'PersonProductBreadcrumb',
     'PersonProductFacets',
     'PersonProductNavigation',
     ]
@@ -16,7 +17,7 @@ from zope.traversing.interfaces import IPathAdapter
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
 from canonical.launchpad.interfaces.personproduct import IPersonProduct
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp import (
     Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -37,8 +38,8 @@ class PersonProductNavigation(Navigation):
             return branch
 
 
-class PersonProductBreadcrumbBuilder(BreadcrumbBuilder):
-    """Builds a breadcrumb for an `IPersonProduct`."""
+class PersonProductBreadcrumb(Breadcrumb):
+    """Breadcrumb for an `IPersonProduct`."""
 
     @property
     def text(self):
@@ -58,7 +59,7 @@ class PersonProductFacets(StandardLaunchpadFacets):
     enable_only = ['branches']
 
     def branches(self):
-        text = 'Code'
+        text = 'Branches'
         summary = ('Bazaar Branches of %s owned by %s' %
                    (self.context.product.displayname,
                     self.context.person.displayname))

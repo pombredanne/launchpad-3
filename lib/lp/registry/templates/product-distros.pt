@@ -3,32 +3,20 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
 <body>
 
-    <metal:portlets fill-slot="portlets">
-      <div tal:replace="structure context/@@+portlet-series" />
-    </metal:portlets>
-
-<metal:heading fill-slot="pageheading">
-  <h1>Packages by distribution</h1>
-</metal:heading>
-
 <div metal:fill-slot="main">
-
   <p class="documentDescription">
     This page shows the way
     <span tal:replace="context/displayname">Foomatic</span>
     is packaged in different distributions.
   </p>
 
-  <p class="informational message" tal:condition="not: context/serieses">
+  <p class="informational message" tal:condition="not: context/series">
     No project branches registered for 
     <span tal:replace="context/displayname">Foomatic</span>. Please
     <a href="+addseries">register a branch</a> and then you will be able to
@@ -39,7 +27,7 @@
     
     <h2 tal:content="distro/title">Ubuntu Linux</h2>
 
-    <table class="listing">
+    <table id="distribution-series" class="listing">
       <thead>
         <tr>
           <th>Distribution Series</th>
@@ -51,9 +39,9 @@
       <tbody>
         <tr tal:repeat="pkging distro/packagings">
           <td>
-            <span tal:replace="pkging/distroseries/version">3.04</span>
-            (<span tal:replace="pkging/distroseries/displayname">
-            Hoary</span>)</td>
+            <a tal:attributes="href pkging/distroseries/fmt:url"
+                tal:replace="pkging/distroseries/named_version" />
+          </td>
             
           <td>
             <a
@@ -62,7 +50,8 @@
               >Apache</a>
           </td>
             
-          <td tal:content="pkging/productseries/name">2.0</td>
+          <td><a tal:replace="structure pkging/productseries/fmt:link" /></td>
+
           <td><span tal:condition="pkging/sourcepackage/currentrelease"
                     tal:replace="pkging/sourcepackage/currentrelease/version"
                     >2.3.4-1</span></td>
@@ -72,10 +61,21 @@
 
   </tal:distribution>
 
-  <p class="lesser discreet">
+  <p>
     To add a Packaging Record, visit the page for the specific 
     series that has been packaged, and select "Link to Any Package".
   </p>
+
+    <ul class="horizontal">
+      <li>
+        <a tal:replace="structure context/menu:overview/packages/fmt:link" />
+      </li>
+      <li>
+        <a class="sprite info"
+          tal:attributes="href context/menu:overview/series/fmt:url">Show
+          all series</a>
+      </li>
+    </ul>
 
 </div> 
 </body>

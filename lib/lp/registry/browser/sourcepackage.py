@@ -1,41 +1,45 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for sourcepackages."""
 
 __metaclass__ = type
 
 __all__ = [
-    'SourcePackageBreadcrumbBuilder',
+    'SourcePackageBreadcrumb',
+    'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
+    'SourcePackageHelpView',
     'SourcePackageNavigation',
-    'SourcePackageTranslationsExportView',
+    'SourcePackagePackaging',
     'SourcePackageView',
     ]
 
 from apt_pkg import ParseSrcDepends
 from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
+from zope.formlib.form import FormFields
+
+from lazr.restful.interface import copy_field
 
 from canonical.launchpad import helpers
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
-from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
-from canonical.launchpad.browser.poexportrequest import BaseExportView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from canonical.launchpad.browser.translations import TranslationsMixin
 from lp.services.worlddata.interfaces.country import ICountry
-from canonical.launchpad.interfaces.packaging import IPackaging
-from canonical.launchpad.interfaces.potemplate import IPOTemplateSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
+from lp.registry.interfaces.packaging import IPackaging
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.translations.interfaces.potemplate import IPOTemplateSet
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    ApplicationMenu, enabled_with_permission, GetitemNavigation, Link,
-    NavigationMenu, redirection, StandardLaunchpadFacets, stepto)
+    action, ApplicationMenu, GetitemNavigation, LaunchpadEditFormView, Link,
+    redirection, StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import structured
 
 from canonical.lazr.utils import smartquote
@@ -64,14 +68,18 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         distro_sourcepackage = sourcepackage.distribution.getSourcePackage(
             sourcepackage.name)
 
-        return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
+        redirection_url = canonical_url(
+            distro_sourcepackage, view_name='+filebug')
+        if self.request.form.get('no-redirect') is not None:
+            redirection_url += '?no-redirect'
+        return redirection(redirection_url)
 
 
-class SourcePackageBreadcrumbBuilder(BreadcrumbBuilder):
+class SourcePackageBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ISourcePackage`."""
     @property
     def text(self):
-        return smartquote('"%s" package') % (self.context.name)
+        return smartquote('"%s" source package') % (self.context.name)
 
 
 class SourcePackageFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
@@ -84,7 +92,16 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = ISourcePackage
     facet = 'overview'
-    links = ['packaging', 'edit_packaging', 'changelog', 'builds']
+    links = [
+        'distribution_source_package', 'packaging', 'edit_packaging',
+        'changelog', 'builds', 'set_upstream',
+        ]
+
+    def distribution_source_package(self):
+        target = canonical_url(self.context.distribution_sourcepackage)
+        text = 'All versions of %s source in %s' % (
+            self.context.name, self.context.distribution.displayname)
+        return Link(target, text, icon='package-source')
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
@@ -94,6 +111,9 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')
+
+    def set_upstream(self):
+        return Link("+edit-packaging", "Set upstream link", icon="add")
 
     def builds(self):
         text = 'Show builds'
@@ -111,54 +131,57 @@ class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
         return Link('+gethelp', 'Help and support options', icon='info')
 
 
-class SourcePackageTranslationsMenu(NavigationMenu):
+class SourcePackageChangeUpstreamView(LaunchpadEditFormView):
+    """A view to set the `IProductSeries` of a sourcepackage."""
+    schema = ISourcePackage
+    field_names = ['productseries']
 
-    usedfor = ISourcePackage
-    facet = 'translations'
-    links = ('overview', 'translationdownload', 'imports')
+    label = 'Link to an upstream project'
+    page_title = label
 
-    def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
 
-    @enabled_with_permission('launchpad.ExpensiveRequest')
-    def translationdownload(self):
-        text = 'Download'
-        enabled = bool(self.context.getCurrentTranslationTemplates().any())
-        return Link('+export', text, icon='download', enabled=enabled)
+    def setUpFields(self):
+        """ See `LaunchpadFormView`.
 
-    def overview(self):
-        return Link('', 'Overview', icon='info')
+        The productseries field is required by the view.
+        """
+        super(SourcePackageChangeUpstreamView, self).setUpFields()
+        field = copy_field(ISourcePackage['productseries'], required=True)
+        self.form_fields = self.form_fields.omit('productseries')
+        self.form_fields = self.form_fields + FormFields(field)
+
+    def setUpWidgets(self):
+        """See `LaunchpadFormView`.
+
+        Set the current `IProductSeries` as the default value.
+        """
+        super(SourcePackageChangeUpstreamView, self).setUpWidgets()
+        if self.context.productseries is not None:
+            widget = self.widgets.get('productseries')
+            widget.setRenderedValue(self.context.productseries)
+
+    def validate(self, data):
+        productseries = data.get('productseries', None)
+        if productseries is None:
+            message = "You must choose a project series."
+            self.setFieldError('productseries', message)
+
+    @action(_("Change"), name="change")
+    def change(self, action, data):
+        productseries = data['productseries']
+        if self.context.productseries == productseries:
+            # There is nothing to do.
+            return
+        self.context.setPackaging(productseries, self.user)
+        self.request.response.addNotification('Upstream link updated.')
+        self.next_url = canonical_url(self.context)
 
 
-class SourcePackageTranslationsExportView(BaseExportView):
-    """Request tarball export of all translations for source package.
-    """
-
-    def processForm(self):
-        """Process form submission requesting translations export."""
-        templates = list(
-            self.context.getCurrentTranslationTemplates(just_ids=True))
-        pofiles = list(self.context.getCurrentTranslationFiles(just_ids=True))
-        if len(pofiles) > 0:
-            pofiles = None
-        return (templates, pofiles)
-
-    def getDefaultFormat(self):
-        templates = self.context.getCurrentTranslationTemplates()
-        if not bool(templates.any()):
-            return None
-        format = templates[0].source_file_format
-        for template in templates:
-            if template.source_file_format != format:
-                self.request.response.addInfoNotification(
-                    "This package has templates with different native "
-                    "file formats.  If you proceed, all translations will be "
-                    "exported in the single format you specify.")
-        return format
-
-
-class SourcePackageView(BuildRecordsView, TranslationsMixin):
+class SourcePackageView:
+    """A view for (distro series) source packages."""
 
     def initialize(self):
         # lets add a widget for the product series to which this package is
@@ -174,6 +197,14 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
         self.error_message = None
         self.processForm()
 
+    @property
+    def label(self):
+        return self.context.title
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
     def processForm(self):
         # look for an update to any of the things we track
         form = self.request.form
@@ -183,7 +214,9 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
                 # we need to create or update the packaging
                 self.context.setPackaging(new_ps, self.user)
                 self.productseries_widget.setRenderedValue(new_ps)
-                self.status_message = 'Upstream link updated, thank you!'
+                self.request.response.addInfoNotification(
+                    'Upstream link updated, thank you!')
+                self.request.response.redirect(canonical_url(self.context))
             else:
                 self.error_message = structured('Invalid series given.')
 
@@ -258,16 +291,18 @@ class SourcePackageView(BuildRecordsView, TranslationsMixin):
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
 
-    @property
-    def search_name(self):
-        return False
+
+class SourcePackagePackaging(SourcePackageView):
+    """A View to show where the package is packged."""
+
+    page_title = 'Upstream links'
 
     @property
-    def default_build_state(self):
-        """Default build state for sourcepackage builds.
+    def label(self):
+        return "Upstream links for %s" % self.context.title
 
-        This overrides the default that is set on BuildRecordsView."""
-        # None maps to "all states". The reason we display all states on
-        # this page is because it's unlikely that there will be so
-        # many builds that the listing will be overwhelming.
-        return None
+
+class SourcePackageHelpView:
+    """A View to show Answers help."""
+
+    page_title = 'Help and support options'

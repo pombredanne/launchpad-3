@@ -23,57 +23,42 @@ The overview page for project groups is accessible to all users.
     >>> anon_browser.title
     'The GNOME Project in Launchpad'
 
-The page lists the member projects.
+The page lists the member projects, together with the releases/milestones of
+its development focus.
 
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'products'))
     Projects
     Gnome Applets ...
     Evolution ...
-      Releases: 2.1.6
     GNOME Terminal ...
-      Milestones: 2.30.0
     gnomebaker ...
-      Releases: 2.1.7
-      Milestones: 2.30.1, 2.1.7
     NetApplet ...
-      Releases: 1.0
+    ...
 
-And the projects, milestone, and releases are linked.
+The projects are linked.
 
     >>> print anon_browser.getLink('gnomebaker').url
     http://launchpad.dev/gnomebaker
-
-    >>> print anon_browser.getLink('2.30.1').url
-    http://launchpad.dev/gnomebaker/+milestone/2.30.1
-
-    >>> print anon_browser.getLink('2.1.7').url
-    http://launchpad.dev/gnomebaker/trunk/2.1.7
 
 The project overview page contains a link to register new products with the
 project. It is only available to users which have 'Admin' privileges on the
 project.
 
     >>> browser.open('http://launchpad.dev/mozilla')
-    >>> browser.getLink('Register another project')
+    >>> browser.getLink('Register a project in the Mozilla Project')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
     >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
-    >>> browser.getLink('Register another project')
+    >>> browser.getLink('Register a project in the Mozilla Project')
     Traceback (most recent call last):
       ...
     LinkNotFoundError...
 
     >>> admin_browser.open('http://launchpad.dev/mozilla')
-    >>> admin_browser.getLink('Register another project').url
+    >>> admin_browser.getLink('Register a project in the Mozilla Project').url
     'http://launchpad.dev/mozilla/+newproduct'
-
-Also, it has a link to help translate it.
-
-    >>> admin_browser.getLink('Help translate').click()
-    >>> print admin_browser.title
-    Translatable projects for The Mozilla Project
 
 
 == Empty Project Groups ==
@@ -104,10 +89,6 @@ question' or 'Help translate' buttons.
       ..
     LinkNotFoundError...
     >>> user_browser.getLink('Help translate')
-    Traceback (most recent call last):
-      ..
-    LinkNotFoundError...
-    >>> user_browser.getLink(url='+mentoring')
     Traceback (most recent call last):
       ..
     LinkNotFoundError...
@@ -149,8 +130,8 @@ the new product form for the project group.
 
     >>> admin_browser.getLink(
     ...     'register another project that is part of Test Group').click()
-    >>> admin_browser.title
-    'Register a project in your project group'
+    >>> print admin_browser.title
+    Register a project in Launchpad...
 
 == Products of a project ==
 
@@ -167,7 +148,7 @@ Inactive products are not included in that list, though.
 
     # Use the DB classes directly to avoid having to setup a zope interaction
     # (i.e. login()) and bypass the security proxy.
-    >>> from canonical.launchpad.database import Product
+    >>> from lp.registry.model.product import Product
     >>> firefox = Product.byName('firefox')
     >>> firefox.active = False
     >>> firefox.syncUpdate()
@@ -181,20 +162,6 @@ Inactive products are not included in that list, though.
     >>> firefox.active = True
     >>> firefox.syncUpdate()
 
-== URL Shortut to Access the Project's Products ==
-
-It is possible to access the project's product through the project URL.
-
-# XXX flacoste 2007-02-14:
-# Explain where this is used and why it is needed.
-
-  >>> browser.open('http://launchpad.dev/mozilla/firefox')
-  >>> browser.title
-  'Mozilla Firefox in Launchpad'
-  >>> print extract_text(find_main_content(browser.contents))
-  Details
-  ...Mozilla Firefox
-  ...Part of: the Mozilla Project...
 
 == Project bug subscriptions ==
 
@@ -206,4 +173,4 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/mozilla/+subscribe
     >>> print user_browser.title
-    Bug subscriptions for The Mozilla Project
+    Subscribe to Bugs in The Mozilla Project

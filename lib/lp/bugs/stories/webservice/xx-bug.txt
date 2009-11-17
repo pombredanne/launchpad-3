@@ -1,10 +1,12 @@
-= Introduction =
+Introduction
+============
 
 Bugs are some of the more complex objects in Launchpad. They have a
 lot of state and many relationships to other objects.
 
 
-== Bugs themselves ==
+Bugs themselves
+---------------
 
 At the top level we provide a collection of bugs.
 
@@ -211,7 +213,8 @@ the web UI. It is impossible, for example, to create circular relationships.
   HTTP/1.1 209 Content Returned...
 
 
-== Bugs as message targets ==
+Bugs as message targets
+-----------------------
 
 Each bug has a collection of messages.
 
@@ -242,7 +245,7 @@ different from /firefox/+bug/1/comments/0.
 There is no top-level collection of messages; they only exist in
 relation to some bug.
 
-  >>> webservice.get("/messages").getStatus()
+  >>> webservice.get("/messages").status
   404
 
 We can add a new message to a bug by calling the newMessage method.
@@ -251,7 +254,7 @@ We can add a new message to a bug by calling the newMessage method.
   ...     "/bugs/5", 'newMessage',
   ...     subject='A new message',
   ...     content='This is a new message added through the webservice API.')
-  HTTP/1.1 201 Created
+  HTTP/1.1 201 Created...
   Content-Length: 0
   Content-Type: text/plain
   Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/1
@@ -265,8 +268,27 @@ We can add a new message to a bug by calling the newMessage method.
   self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/1'
   subject: u'A new message'
 
+We don't have to submit a subject when we add a new message.
 
-== Bug tasks ==
+  >>> print webservice.named_post(
+  ...     "/bugs/5", 'newMessage',
+  ...     content='This is a new message with no subject.')
+  HTTP/1.1 201 Created...
+  Content-Length: 0
+  Content-Type: text/plain
+  Location: http://api.launchpad.dev/beta/firefox/+bug/5/comments/2
+  ...
+
+  >>> pprint_entry(webservice.get("/firefox/+bug/5/comments/2").jsonBody())
+  bug_attachments_collection_link: ...
+  content: u'This is a new message with no subject.'
+  ...
+  self_link: u'http://api.launchpad.dev/beta/firefox/+bug/5/comments/2'
+  subject: u'Re: Firefox install instructions should be complete'
+
+
+Bug tasks
+---------
 
 Each bug may be associated with one or more bug tasks. Much of the
 data in a bug task is derived from the bug.
@@ -312,7 +334,7 @@ data in a bug task is derived from the bug.
 
 The collection of bug tasks is not exposed as a resource:
 
-  >>> webservice.get("/bug_tasks").getStatus()
+  >>> webservice.get("/bug_tasks").status
   404
 
 It's possible to change the task's assignee.
@@ -403,13 +425,54 @@ If an error occurs during a request that sets both 'status' and
   >>> print task['importance']
   Low
 
+Like the importance, the milestone can be set either directly or via a
+named operation, and only by appropriately privileged users.
+
+  >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
+  None
+
+  >>> patch = {u'milestone_link': webservice.getAbsoluteUrl(
+  ...                                 '/debian/+milestone/3.1')}
+  >>> print webservice.patch(bugtask_path, 'application/json', dumps(patch))
+  HTTP/1.1 209 Content Returned...
+
+  >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
+  http://.../debian/+milestone/3.1
+
+  >>> print webservice.named_post(
+  ...     bugtask_path, 'transitionToMilestone',
+  ...     milestone=webservice.getAbsoluteUrl('/debian/+milestone/3.1-rc1'))
+  HTTP/1.1 200 Ok...
+
+  >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
+  http://.../debian/+milestone/3.1-rc1
+
+  >>> print user_webservice.patch(
+  ...     bugtask_path, 'application/json', dumps(patch))
+  HTTP/1.1 401 Unauthorized...
+
+  >>> print webservice.get(bugtask_path).jsonBody()['milestone_link']
+  http://.../debian/+milestone/3.1-rc1
+
 We can change the task's target. Here we change the task's target from
 the mozilla-firefox package to alsa-utils.
 
   >>> print webservice.named_post(
   ...     task['self_link'], 'transitionToTarget',
-  ...     target=webservice.getAbsoluteUrl('/debian/+source/alsa-utils'))
+  ...     target=webservice.getAbsoluteUrl('/debian/+source/evolution'))
   HTTP/1.1 200 Ok
+  ...
+
+We can also PATCH the target attribute to accomplish the same thing.
+
+  >>> print webservice.patch(
+  ...     task['self_link'].replace('mozilla-firefox', 'evolution'),
+  ...     'application/json',
+  ...     dumps({'target_link': webservice.getAbsoluteUrl(
+  ...         '/debian/+source/alsa-utils')}))
+  HTTP/1.1 301 Moved Permanently
+  ...
+  Location: http://api.launchpad.dev/beta/debian/+source/alsa-utils/+bug/1
   ...
 
 After the operation completed successfully, the task is
@@ -502,6 +565,24 @@ target, we reset it in order to avoid data inconsistencies.
   HTTP/1.1 200 Ok
   ...
 
+We can change a distribution task to a task with a package from the same
+distribution.
+
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> login('foo.bar@canonical.com')
+  >>> distro_bugtask = factory.makeBugTask(
+  ...     target=getUtility(IDistributionSet).getByName('ubuntu'))
+  >>> distro_bugtask_path = webservice.getAbsoluteUrl(
+  ...     canonical_url(distro_bugtask).replace(
+  ...         'http://bugs.launchpad.dev', ''))
+  >>> logout()
+
+  >>> distro_bugtask = webservice.get(distro_bugtask_path)
+  >>> print webservice.named_post(
+  ...     distro_bugtask_path, 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+  HTTP/1.1 200 Ok ...
+
 It's possible to get a list of similar bugs for a bug task by calling
 its findSimilarBugs() method. As it happens, there aren't any bugs
 similar to bug 1 for Firefox.
@@ -540,7 +621,211 @@ will return something more useful.
     "id": ...  "title": "Test bug"...
 
 
-== Bug subscriptions ==
+Bug nominations
+---------------
+
+A bug may be nominated for any number of distro or product series.
+Nominations can be inspected, created, approved and declined through
+the webservice.
+
+Eric creates Fooix 0.1 and 0.2.
+
+    >>> login('foo.bar@canonical.com')
+    >>> eric = factory.makePerson(name='eric')
+    >>> fooix = factory.makeProduct(name='fooix', owner=eric)
+    >>> fx01 = fooix.newSeries(eric, '0.1', 'The 0.1.x series')
+    >>> fx02 = fooix.newSeries(eric, '0.2', 'The 0.2.x series')
+    >>> debuntu = factory.makeDistribution(name='debuntu', owner=eric)
+    >>> debuntu50 = debuntu.newSeries(
+    ...     '5.0', '5.0', '5.0', '5.0', '5.0', '5.0', None, eric)
+    >>> bug = factory.makeBug(product=fooix)
+    >>> logout()
+
+Initially there are no nominations.
+
+    >>> pprint_collection(webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody())
+    start: None
+    total_size: 0
+    ---
+
+    >>> login('foo.bar@canonical.com')
+    >>> john = factory.makePerson(name='john')
+    >>> logout()
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+
+    >>> john_webservice = webservice_for_person(
+    ...     john, permission=OAuthPermission.WRITE_PRIVATE)
+
+But John, an unprivileged user, wants it fixed in Fooix 0.1.1.
+
+    >>> print john_webservice.named_post(
+    ...     '/bugs/%d' % bug.id, 'addNomination',
+    ...     target=john_webservice.getAbsoluteUrl('/fooix/0.1'))
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../bugs/.../nominations/...
+    ...
+  
+    >>> nominations = webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
+    >>> pprint_collection(nominations)
+    start: 0
+    total_size: 1
+    ---
+    bug_link: u'http://.../bugs/...'
+    date_created: u'...'
+    date_decided: None
+    decider_link: None
+    distroseries_link: None
+    owner_link: u'http://.../~john'
+    productseries_link: u'http://.../fooix/0.1'
+    resource_type_link: u'http://.../#bug_nomination'
+    self_link: u'http://.../bugs/.../nominations/...'
+    status: u'Nominated'
+    target_link: u'http://.../fooix/0.1'
+    ---
+
+John cannot approve or decline the nomination.
+
+    >>> nom_url = nominations['entries'][0]['self_link']
+    
+    >>> print john_webservice.named_get(nom_url, 'canApprove').jsonBody()
+    False
+
+    >>> print john_webservice.named_post(nom_url, 'approve')
+    HTTP/1.1 401 Unauthorized...
+
+    >>> print john_webservice.named_post(nom_url, 'decline')
+    HTTP/1.1 401 Unauthorized...
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    1
+    >>> logout()
+
+Eric, however, can and does decline the nomination.
+    
+    >>> eric_webservice = webservice_for_person(
+    ...     eric, permission=OAuthPermission.WRITE_PRIVATE)    
+    >>> print eric_webservice.named_post(nom_url, 'decline')
+    HTTP/1.1 200 Ok...
+
+    >>> print eric_webservice.named_get(nom_url, 'canApprove').jsonBody()
+    True
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    1
+    >>> logout()
+
+John is disappointed to see that the nomination was declined.
+
+    >>> nominations = john_webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
+    >>> pprint_collection(nominations)
+    start: 0
+    total_size: 1
+    ---
+    bug_link: u'http://.../bugs/...'
+    date_created: u'...'
+    date_decided: u'...'
+    decider_link: u'http://.../~eric'
+    distroseries_link: None
+    owner_link: u'http://.../~john'
+    productseries_link: u'http://.../fooix/0.1'
+    resource_type_link: u'http://.../#bug_nomination'
+    self_link: u'http://.../bugs/.../nominations/...'
+    status: u'Declined'
+    target_link: u'http://.../fooix/0.1'
+    ---
+
+Eric changes his mind, and approves the nomination.
+
+    >>> print eric_webservice.named_post(nom_url, 'approve')
+    HTTP/1.1 200 Ok...
+
+This marks the nomination as Approved, and creates a new task.
+
+    >>> nominations = webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'getNominations').jsonBody()
+    >>> pprint_collection(nominations)
+    start: 0
+    total_size: 1
+    ---
+    bug_link: u'http://.../bugs/...'
+    date_created: u'...'
+    date_decided: u'...'
+    decider_link: u'http://.../~eric'
+    distroseries_link: None
+    owner_link: u'http://.../~john'
+    productseries_link: u'http://.../fooix/0.1'
+    resource_type_link: u'http://.../#bug_nomination'
+    self_link: u'http://.../bugs/.../nominations/...'
+    status: u'Approved'
+    target_link: u'http://.../fooix/0.1'
+    ---
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    2
+    >>> logout()
+
+Eric cannot change his mind and decline the approved task.
+
+    >>> print eric_webservice.named_post(nom_url, 'decline')
+    HTTP/1.1 400 Bad Request
+    ...
+    Cannot decline an approved nomination.
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    2
+    >>> logout()
+
+While he can approve it again, it's a no-op.
+
+    >>> print eric_webservice.named_post(nom_url, 'approve')
+    HTTP/1.1 200 Ok...
+
+    >>> login('foo.bar@canonical.com')
+    >>> len(bug.bugtasks)
+    2
+    >>> logout()
+
+A bug cannot be nominated for a non-series.
+
+    >>> print john_webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'canBeNominatedFor',
+    ...     target=john_webservice.getAbsoluteUrl('/fooix')).jsonBody()
+    False
+
+    >>> print john_webservice.named_post(
+    ...     '/bugs/%d' % bug.id, 'addNomination',
+    ...     target=john_webservice.getAbsoluteUrl('/fooix'))
+    HTTP/1.1 400 Bad Request
+    ...
+    NominationError: This bug cannot be nominated for Fooix.
+
+The bug also can't be nominated for Debuntu 5.0, as it has no
+Debuntu tasks.
+
+    >>> print john_webservice.named_get(
+    ...     '/bugs/%d' % bug.id, 'canBeNominatedFor',
+    ...     target=john_webservice.getAbsoluteUrl('/debuntu/5.0')).jsonBody()
+    False
+
+    >>> print john_webservice.named_post(
+    ...     '/bugs/%d' % bug.id, 'addNomination',
+    ...     target=john_webservice.getAbsoluteUrl('/debuntu/5.0'))
+    HTTP/1.1 400 Bad Request
+    ...
+    NominationError: This bug cannot be nominated for Debuntu 5.0.
+
+Bug subscriptions
+-----------------
 
 We can get the collection of subscriptions to a bug.
 
@@ -597,7 +882,7 @@ service will return an unauthorized error.
 
     >>> print user_webservice.named_post(
     ...     bug_one['self_link'], 'unsubscribe',
-    ...     person=webservice.getAbsoluteUrl('/~sabdfl'))
+    ...     person=webservice.getAbsoluteUrl('/~mark'))
     HTTP/1.1 401 Unauthorized...
 
 An individual can, however, unsubscribe a team to which
@@ -615,9 +900,6 @@ any member will do.
 
 Once we have a member, a web service must be created for that user.
 Then, the user can unsubsribe the group from the bug.
-
-    >>> from canonical.launchpad.testing.pages import webservice_for_person
-    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
 
     >>> member_webservice = webservice_for_person(
     ...     ubuntu_team_member, permission=OAuthPermission.WRITE_PRIVATE)
@@ -658,7 +940,8 @@ Salgado is the webservice user and cannot unsubscribe SteveA.
     False
 
 
-=== Unsubscribing From Duplicates ===
+Unsubscribing From Duplicates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If a user is subscribed via a duplicate, the user can unsubscribe from the
 main bug and be unsubscribed from the duplicate as well.
@@ -730,7 +1013,8 @@ Now again, bug_six has no subscibers.
     0
 
 
-== Bug Watches ==
+Bug Watches
+-----------
 
 Bugs can have bug watches associated with them. Each bugwatch can also
 be optionally associated with one of the bugtasks in a bug, in which
@@ -754,7 +1038,7 @@ report described by the bugwatch.
   date_last_changed: u'2004-10-04T01:00:00+00:00'
   date_last_checked: u'2004-10-04T01:00:00+00:00'
   last_error_type: None
-  owner_link: u'http://.../~sabdfl'
+  owner_link: u'http://.../~mark'
   remote_bug: u'2000'
   remote_importance: None
   remote_status: u''
@@ -769,7 +1053,7 @@ report described by the bugwatch.
 
 The collection of bug watches is not exposed as a resource:
 
-  >>> webservice.get("/bug_watches").getStatus()
+  >>> webservice.get("/bug_watches").status
   404
 
 We can modify the remote bug.
@@ -790,8 +1074,8 @@ But we can't change other things, like the URL.
   >>> patch = {u'url': u'http://www.example.com/'}
   >>> response = webservice.patch(
   ...     bug_watch_2000['self_link'], 'application/json', dumps(patch))
-  >>> print response.getOutput()
-  HTTP/1.1 400 Bad Request
+  >>> print response
+  HTTP/1.1 400 Bad Request...
   Content-Length: 47
   Content-Type: text/plain
   ...
@@ -806,8 +1090,8 @@ associated with a bug.
   ...     bug_tracker=webservice.getAbsoluteUrl(
   ...                      '/bugs/bugtrackers/mozilla.org'),
   ...     remote_bug='9876')
-  >>> print response.getOutput()
-  HTTP/1.1 201 Created
+  >>> print response
+  HTTP/1.1 201 Created...
   Content-Length: 0
   Content-Type: text/plain
   Location: http://.../bugs/1/+watch/13
@@ -835,7 +1119,8 @@ Following the redirect, we can see the new bug watch:
   url: u'https://bugzilla.mozilla.org/show_bug.cgi?id=9876'
 
 
-== Bug Trackers ==
+Bug Trackers
+------------
 
   >>> bug_tracker = webservice.get(bug_watch['bug_tracker_link']).jsonBody()
 
@@ -867,8 +1152,8 @@ We can change various aspects of bug trackers.
   ...     }
   >>> response = webservice.patch(
   ...     bug_tracker['self_link'], 'application/json', dumps(patch))
-  >>> print response.getOutput()
-  HTTP/1.1 301 Moved Permanently
+  >>> print response
+  HTTP/1.1 301 Moved Permanently...
   Content-Length: 0
   Content-Type: text/plain
   Location: http://.../bugs/bugtrackers/bob
@@ -877,8 +1162,8 @@ We can change various aspects of bug trackers.
 Note the 301 response. We changed the name, so the API URL at which
 the bug tracker can be found has changed.
 
-  >>> print webservice.get(bug_tracker['self_link']).getOutput()
-  HTTP/1.1 404 Not Found
+  >>> print webservice.get(bug_tracker['self_link'])
+  HTTP/1.1 404 Not Found...
   Content-Length: ...
   Content-Type: text/plain
   X-Lazr-Oopsid: OOPS-...
@@ -914,10 +1199,13 @@ Non-admins can't disable a bugtracker through the API.
 
     >>> print public_webservice.patch(
     ...     bug_tracker_path, 'application/json',
-    ...     dumps(dict(active=False))).jsonBody()
+    ...     dumps(dict(active=False)))
+    HTTP/1.1 401 Unauthorized
+    ...
     Traceback (most recent call last):
-      ...
-    ValueError: HTTP/1.1 401 Unauthorized...
+    ...
+    Unauthorized: (<BugTracker at ...>, 'active', 'launchpad.Admin')
+    <BLANKLINE>
 
 Admins can, however.
 
@@ -928,7 +1216,8 @@ Admins can, however.
     active: False...
 
 
-== Bug attachments ==
+Bug attachments
+---------------
 
 Bug 1 has no attachments:
 
@@ -946,8 +1235,8 @@ An attachment can be added to the bug:
   ...     bug_one['self_link'], 'addAttachment',
   ...     data="12345", filename="numbers.txt", content_type='foo/bar',
   ...     comment="The numbers you asked for.")
-  >>> print response.getOutput()
-  HTTP/1.1 201 Created
+  >>> print response
+  HTTP/1.1 201 Created...
   Content-Length: 0
   Content-Type: text/plain
   Location: http://.../bugs/1/+attachment/1
@@ -987,8 +1276,8 @@ Fetching the data actually yields a redirect to the Librarian, which
 we must follow to download the data.
 
   >>> data_response = webservice.get(attachment['data_link'])
-  >>> print data_response.getOutput()
-  HTTP/1.1 303 See Other
+  >>> print data_response
+  HTTP/1.1 303 See Other...
   Content-Length: 0
   Content-Type: text/plain
   Location: http://localhost:58000/.../numbers.txt
@@ -1024,7 +1313,7 @@ attachment. This is where our comment is recorded.
   parent_link: None
   resource_type_link: u'http://.../#message'
   self_link: u'http://.../firefox/+bug/1/comments/2'
-  subject: None
+  subject: u'Re: Firefox does not support SVG'
 
 The message also links back to the attachments that were uploaded at
 the same time.
@@ -1042,7 +1331,7 @@ Once an attachment is uploaded, it is not possible to change it.
 
   >>> response = webservice.put(
   ...     attachment['data_link'], 'text/text', 'abcdefg')
-  >>> print response.getOutput()
+  >>> print response
   HTTP/1.1 405 Method Not Allowed
   ...
 
@@ -1060,7 +1349,7 @@ But we can remove the attachment altogether.
 
   >>> response = webservice.named_post(
   ...     attachment['self_link'], 'removeFromBug')
-  >>> print response.getOutput()
+  >>> print response
   HTTP/1.1 200 Ok
   ...
 
@@ -1073,7 +1362,8 @@ But we can remove the attachment altogether.
   ---
 
 
-== Searching for bugs ==
+Searching for bugs
+------------------
 
 Bug targets expose the searchTasks method, which provides a search interface
 for bug tasks, similar to the advanced search form on the web interface.
@@ -1198,14 +1488,151 @@ the advanced search interface.
     ...     order_by='-datecreated').jsonBody()['entries']
     >>> for ordered_bugtask in ordered_bugtasks:
     ...     print ordered_bugtask['self_link']
+    http://.../ubuntu/+source/alsa-utils/+bug/19
     http://.../ubuntu/+source/evolution/+bug/18
     http://.../ubuntu/+bug/17
     http://.../ubuntu/+bug/2
     http://.../ubuntu/+source/linux-source-2.6.15/+bug/10
-    http://.../ubuntu/+source/thunderbird/+bug/9
 
 
-== Affected users ==
+Hardware related bug tasks
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We can search for bugs related to a given hardware device. We must
+specify a device by its bus, vendor and product IDs and the kind
+of link between a bug and a HWDB submission.
+
+We can search for bugs reported by owners of the PCI device (0x10de,
+0x045d).
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+We can further limit the search to devices controlled by a given driver.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_bug_reporter=True,
+    ...     hardware_driver_name='ahci').jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_driver_name='nonsense',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+We can search for bugs related to any hardware device controlled by a
+given driver.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_driver_name='ahci',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+We can limit the search to devices controlled by a driver from a given
+package.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_driver_name='ahci',
+    ...     hardware_driver_package_name='linux-image-2.6.24-19-generic',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_driver_name='ahci',
+    ...     hardware_driver_package_name='nonsense',
+    ...     hardware_owner_is_bug_reporter=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+Instead of searching for bugs reported by the owner of a given device,
+we can look for bugs where a device owner is affected by a bug...
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_affected_by_bug=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+    >>> login(ANONYMOUS)
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> logout()
+    >>> sample_person_webservice = webservice_for_person(
+    ...     sample_person, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> sample_person_webservice.named_post(
+    ...     'http://api.launchpad.dev/beta/bugs/2', 'markUserAffected',
+    ...     affected=True).jsonBody()
+
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_affected_by_bug=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+bug/2
+
+...or for bugs to which owners of a given device are subscribed...
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_owner_is_subscribed_to_bug=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/mozilla-firefox/+bug/1
+    http://api.launchpad.dev/beta/ubuntu/+source/thunderbird/+bug/9
+
+...or for bugs which are directly linked to a HWDB submission containing
+a given device.
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_is_linked_to_bug=True).jsonBody()['entries']
+    >>> print len(bugtasks)
+    0
+
+    >>> bug_ten = webservice.get('/bugs/10').jsonBody()
+    >>> sample_submission = webservice.get(
+    ...     '/+hwdb/+submission/sample-submission').jsonBody()
+    >>> print webservice.named_post(
+    ...     bug_ten['self_link'], 'linkHWSubmission',
+    ...     submission=sample_submission['self_link'])
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> bugtasks = webservice.named_get(
+    ...     '/ubuntu', 'searchTasks', hardware_bus='PCI',
+    ...     hardware_vendor_id='0x10de', hardware_product_id='0x045d',
+    ...     hardware_is_linked_to_bug=True).jsonBody()['entries']
+    >>> for bugtask in bugtasks:
+    ...     print bugtask['self_link']
+    http://api.launchpad.dev/beta/ubuntu/+source/linux-source-2.6.15/+bug/10
+
+
+Affected users
+--------------
 
 It is possible to mark a bug as affecting the user using the web service.
 
@@ -1236,7 +1663,8 @@ It is possible to mark a bug as affecting the user using the web service.
     False
 
 
-== CVEs ==
+CVEs
+----
 
 CVEs and how they relate to Launchpad bugs can be accessed using the API.
 
@@ -1346,7 +1774,8 @@ Add a new task to the bug.
     ...
 
 
-== HWDB submissions ==
+HWDB submissions
+----------------
 
 We can create a link between a HWDB submission and a bug by calling
 bug.linkHWSubmission().

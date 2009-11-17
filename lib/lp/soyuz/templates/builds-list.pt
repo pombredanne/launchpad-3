@@ -6,7 +6,6 @@
 
   <tal:batch define="batch view/complete_builds">
 
-    <div style="padding: 0em 1em 2em 0em">
      <form name="build_records_state" action="" method="GET">
           <tal:searchname condition="view/search_name">
             Package:
@@ -21,9 +20,19 @@
                                   value option/value"
                   tal:content="option/name" />
           </select>
-          <input type="submit" value="Update" />
+          <tal:arch_selector condition="view/show_arch_selector">
+          for
+          <select id="arch_tag" name="arch_tag" size="1">
+            <option tal:repeat="option view/architecture_options"
+                    tal:attributes="selected option/selected;
+                                    value option/value"
+                    tal:content="option/name">
+              i386
+            </option>
+          </select>
+          </tal:arch_selector>
+          <input type="submit" value="Filter" />
      </form>
-    </div>
 
   <tal:navigation_top
      replace="structure view/batchnav/@@+navigation-links-upper" />

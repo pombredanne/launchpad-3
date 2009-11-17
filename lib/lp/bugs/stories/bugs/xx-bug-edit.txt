@@ -2,7 +2,7 @@ Sample person tries to change the bug's nickname to a existing one and gets a ni
 
   >>> user_browser.open(
   ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
-  >>> user_browser.getLink(text="Update description").click()
+  >>> user_browser.getLink(url="+edit").click()
   >>> user_browser.url
   'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit'
   >>> user_browser.getControl('Nickname').value = 'blackhole'
@@ -13,12 +13,23 @@ Sample person tries to change the bug's nickname to a existing one and gets a ni
   ...
   ...blackhole is already in use by another bug...
 
+The user should be able to look at the page title or heading and
+see the bug number being edited.
+
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/jokosher/+bug/11/+edit')
+  >>> print user_browser.title
+  Edit details for bug #11 ...
+  >>> main = find_main_content(user_browser.contents)
+  >>> print extract_text(main.h1)
+  Edit details for bug #11
+
 And now we show that any logged-in user can edit public bugs. 
 
   >>> browser = setupBrowser(auth='Basic no-priv@canonical.com:test')
   >>> browser.open(
   ...     'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3')
-  >>> browser.getLink(text="Update description").click()
+  >>> browser.getLink(url="+edit").click()
   >>> browser.url
   'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/3/+edit'
   >>> browser.getControl('Summary').value = 'New Summary'
@@ -39,17 +50,17 @@ If a bug's description has not been changed since it was reported,
 there is no link to the original description.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/4')
-    >>> user_browser.getLink('riginal description')
+    >>> user_browser.getLink('original description')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
 But if the description is edited, the link appears.
 
-    >>> user_browser.getLink('Update description').click()
+    >>> user_browser.getLink(url='+edit').click()
     >>> user_browser.getControl('Description').value = 'New description.'
     >>> user_browser.getControl('Change').click()
-    >>> user_browser.getLink('riginal description').click()
+    >>> user_browser.getLink('original description').click()
     >>> user_browser.url
     'http://.../+bug/4/comments/0'
 
@@ -63,7 +74,7 @@ current context before, you have to confirm that you indeed want to add
 the tag.
 
   >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
-  >>> user_browser.getLink(text="Update description").click()
+  >>> user_browser.getLink(url="+edit").click()
   >>> user_browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
 
@@ -99,7 +110,7 @@ Now we are back at the bug page, and the tag has been added.
 
 Now, let's add 'new-tag' again, and confirm it this time.
 
-  >>> user_browser.getLink(text="Update description").click()
+  >>> user_browser.getLink(url="+edit").click()
   >>> user_browser.getControl('Tags').value = 'new-tag'
   >>> user_browser.getControl('Change').click()
 

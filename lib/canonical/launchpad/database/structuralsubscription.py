@@ -1,9 +1,11 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = ['StructuralSubscription',
            'StructuralSubscriptionTargetMixin']
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey
@@ -15,9 +17,10 @@ from canonical.database.sqlbase import quote, SQLBase
 
 from canonical.launchpad.interfaces import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
-    IDistribution, IDistributionSourcePackage, IDistroSeries, IMilestone,
-    IProduct, IProductSeries, IProject, IStructuralSubscription,
-    IStructuralSubscriptionTarget)
+    IDistribution, IDistributionSourcePackage, IDistroSeries,
+    ILaunchpadCelebrities, IMilestone, IProduct, IProductSeries, IProject,
+    IStructuralSubscription, IStructuralSubscriptionTarget,
+    UserCannotSubscribePerson)
 from lp.registry.interfaces.person import (
     validate_public_person, validate_person_not_private_membership)
 
@@ -85,7 +88,7 @@ class StructuralSubscription(SQLBase):
                 #   here because importing it from the top
                 #   doesn't play well with the loading
                 #   sequence.
-                from canonical.launchpad.database import (
+                from lp.registry.model.distributionsourcepackage import (
                     DistributionSourcePackage)
                 return DistributionSourcePackage(
                     self.distribution, self.sourcepackagename)
@@ -128,8 +131,35 @@ class StructuralSubscriptionTargetMixin:
                 '%s is not a valid structural subscription target.')
         return args
 
+    def userCanAlterSubscription(self, subscriber, subscribed_by):
+        """See `IStructuralSubscriptionTarget`."""
+        # A Launchpad administrator or the user can subscribe a user.
+        # A Launchpad or team admin can subscribe a team.
+
+        # Nobody else can, unless the context is a IDistributionSourcePackage,
+        # in which case the drivers or owner can.
+        if IDistributionSourcePackage.providedBy(self):
+            for driver in self.distribution.drivers:
+                if subscribed_by.inTeam(driver):
+                    return True
+            if subscribed_by.inTeam(self.distribution.owner):
+                return True
+
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (subscriber == subscribed_by or
+                subscriber in subscribed_by.getAdministratedTeams() or
+                subscribed_by.inTeam(admins))
+
     def addSubscription(self, subscriber, subscribed_by):
         """See `IStructuralSubscriptionTarget`."""
+        if subscriber is None:
+            subscriber = subscribed_by
+
+        if not self.userCanAlterSubscription(subscriber, subscribed_by):
+            raise UserCannotSubscribePerson(
+                '%s does not have permission to subscribe %s.' % (
+                    subscribed_by.name, subscriber.name))
+
         existing_subscription = self.getSubscription(subscriber)
 
         if existing_subscription is not None:
@@ -150,20 +180,28 @@ class StructuralSubscriptionTargetMixin:
         sub.bug_notification_level = BugNotificationLevel.COMMENTS
         return sub
 
-    def removeBugSubscription(self, person):
+    def removeBugSubscription(self, subscriber, unsubscribed_by):
         """See `IStructuralSubscriptionTarget`."""
+        if subscriber is None:
+            subscriber = unsubscribed_by
+
+        if not self.userCanAlterSubscription(subscriber, unsubscribed_by):
+            raise UserCannotSubscribePerson(
+                '%s does not have permission to unsubscribe %s.' % (
+                    unsubscribed_by.name, subscriber.name))
+
         subscription_to_remove = None
         for subscription in self.getSubscriptions(
             min_bug_notification_level=BugNotificationLevel.METADATA):
             # Only search for bug subscriptions
-            if subscription.subscriber == person:
+            if subscription.subscriber == subscriber:
                 subscription_to_remove = subscription
                 break
 
         if subscription_to_remove is None:
             raise DeleteSubscriptionError(
                 "%s is not subscribed to %s." % (
-                person.name, self.displayname))
+                subscriber.name, self.displayname))
         else:
             if (subscription_to_remove.blueprint_notification_level >
                 BlueprintNotificationLevel.NOTHING):
@@ -288,3 +326,15 @@ class StructuralSubscriptionTargetMixin:
         else:
             raise AssertionError(
                 '%s is not a valid structural subscription target.', self)
+
+    def userHasBugSubscriptions(self, user):
+        """See `IStructuralSubscriptionTarget`."""
+        bug_subscriptions = self.getSubscriptions(
+            min_bug_notification_level=BugNotificationLevel.METADATA)
+        if user is not None:
+            for subscription in bug_subscriptions:
+                if (subscription.subscriber == user or
+                    user.inTeam(subscription.subscriber)):
+                    # The user has a bug subscription
+                    return True
+        return False

@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Email notifications related to code imports."""
 
@@ -7,6 +8,7 @@ __metaclass__ = type
 import textwrap
 
 from zope.component import getUtility
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.config import config
 from canonical.launchpad.helpers import (
@@ -22,11 +24,11 @@ from canonical.launchpad.webapp import canonical_url
 
 def new_import(code_import, event):
     """Email the vcs-imports team about a new code import."""
-    if event.user is None:
+    if (event.user is None
+        or IUnauthenticatedPrincipal.providedBy(event.user)):
         # If there is no logged in user, then we are most likely in a
         # test.
         return
-
     user = IPerson(event.user)
     subject = 'New code import: %s/%s' % (
         code_import.product.name, code_import.branch.name)

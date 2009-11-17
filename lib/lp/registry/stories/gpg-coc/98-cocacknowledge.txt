@@ -11,9 +11,9 @@ Perform Acknowledge process as Foo bar person:
 
   >>> admin_browser.open('http://localhost:9000/codeofconduct/console/+new')
   >>> admin_browser.title
-  'Acknowledge code of conduct signature'
+  'Register a code of conduct signature'
 
-  >>> admin_browser.getControl(name='field.owner').value = "mark@hbd.com"
+  >>> admin_browser.getControl(name='field.owner').value = "mark@example.com"
   >>> admin_browser.getControl(name='UPDATE_SUBMIT').click()
   >>> admin_browser.url
   'http://localhost:9000/codeofconduct/console/'
@@ -24,12 +24,8 @@ Ensure the CoC was acknowledge by searching in the CoC Admin Console:
   >>> admin_browser.getControl(name='searchfor').value = ["all"]
   >>> admin_browser.getControl(name='name').value = "mark"
   >>> admin_browser.getControl(name='search').click()
-  >>> 'paper submission accepted by Foo Bar' in admin_browser.contents
-  True
-  >>> '<a href="http://launchpad.dev/~sabdfl"' in admin_browser.contents
-  True
-  >>> '[ACTIVE]' in admin_browser.contents
-  True
+  >>> print extract_text(find_tag_by_id(admin_browser.contents, 'matches'))
+  Mark ... paper submission accepted by Foo Bar [ACTIVE]
 
 Test if the advertisement email was sent:
 

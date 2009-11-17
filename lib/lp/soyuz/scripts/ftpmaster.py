@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """FTPMaster utilities."""
 
 __metaclass__ = type
@@ -37,10 +39,11 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import (
+    PackagePublishingPocket, pocketsuffix)
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.binarypackagerelease import IBinaryPackageReleaseSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingPocket, PackagePublishingStatus, pocketsuffix)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.services.scripts.base import (
     LaunchpadScript, LaunchpadScriptFailure)
 from lp.soyuz.scripts.ftpmasterbase import (
@@ -145,20 +148,20 @@ class ArchiveCruftChecker:
         if not os.path.exists(filename):
             raise TagFileNotFound("File does not exist: %s" % filename)
 
-        unused_fd, temp_filename = tempfile.mkstemp()
+        temp_fd, temp_filename = tempfile.mkstemp()
         (result, output) = commands.getstatusoutput(
             "gunzip -c %s > %s" % (filename, temp_filename))
         if result != 0:
             raise ArchiveCruftCheckerError(
                 "Gunzip invocation failed!\n%s" % output)
 
-        temp_fd = open(temp_filename)
+        temp_file = os.fdopen(temp_fd)
         # XXX cprov 2006-05-15: maybe we need some sort of data integrity
         # check at this point, and maybe keep the uncrompressed file
         # for debug purposes, let's see how it behaves in real conditions.
-        parsed_contents = apt_pkg.ParseTagFile(temp_fd)
+        parsed_contents = apt_pkg.ParseTagFile(temp_file)
 
-        return temp_fd, temp_filename, parsed_contents
+        return temp_file, temp_filename, parsed_contents
 
     def processSources(self):
         """Process archive sources index.
@@ -1043,7 +1046,7 @@ class LpQueryDistro(LaunchpadScript):
         """
         # XXX sabdfl 2007-05-27: Isn't this a bit risky, if there are
         # multiple series with the desired status?
-        for series in self.location.distribution.serieses:
+        for series in self.location.distribution.series:
             if series.status == status:
                 return series
         raise NotFoundError(

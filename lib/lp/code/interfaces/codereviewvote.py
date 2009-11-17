@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """CodeReviewVoteReference interface."""
 
@@ -57,8 +58,7 @@ class ICodeReviewVoteReference(Interface):
         TextLine(
             title=_('Review type'), required=False,
             description=_(
-                "Lowercase keywords describing the type of review you're "
-                "performing.")))
+                "Lowercase keywords describing the type of review.")))
 
     comment = exported(
         Reference(

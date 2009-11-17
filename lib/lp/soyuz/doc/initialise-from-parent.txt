@@ -49,7 +49,7 @@ Check if it fails for an already released distroseries:
   DEBUG   Initialising connection.
   DEBUG   Check empty mutable queues in parentseries
   DEBUG   Check for no pending builds in parentseries
-  DEBUG   Copying distroarchserieses from parent and setting nominatedarchindep.
+  DEBUG   Copying distroarchseries from parent and setting nominatedarchindep.
   Traceback (most recent call last):
   ...
   AssertionError: Can not copy distroarchseries from parent, there are already distroarchseries(s) initialised for this series.
@@ -70,7 +70,7 @@ Let's initialise the just created distroseries:
   DEBUG   Initialising connection.
   DEBUG   Check empty mutable queues in parentseries
   DEBUG   Check for no pending builds in parentseries
-  DEBUG   Copying distroarchserieses from parent and setting nominatedarchindep.
+  DEBUG   Copying distroarchseries from parent and setting nominatedarchindep.
   DEBUG   initialising from parent, copying publishing records.
   DEBUG   Committing transaction.
   DEBUG   Releasing lock
@@ -139,12 +139,12 @@ was superseded in hoary and won't be inherited by the initialised
 distroseries.
 
   >>> pmount_source = hoary.getSourcePackage('pmount').currentrelease
-  >>> pmount_source.title
-  u'pmount 0.1-2 (source) in ubuntu hoary'
+  >>> print pmount_source.title
+  "pmount" 0.1-2 source package in The Hoary Hedgehog Release
 
   >>> pmount_source = foobuntu.getSourcePackage('pmount').currentrelease
-  >>> pmount_source.title
-  u'pmount 0.1-2 (source) in ubuntutest foobuntu'
+  >>> print pmount_source.title
+  "pmount" 0.1-2 source package in The Foobuntu
 
 
 Since pmount_0.1-2 source is published we can safely look up for the
@@ -158,7 +158,7 @@ It's not present, Let's create it to check if getBuildByArch responds
 appropriately (we won't care about the source architecturehintlist in
 this test, see more details in buildd-queuebuilder)
 
-  >>> from canonical.launchpad.interfaces import PackagePublishingPocket
+  >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
   >>> created_build = pmount_source.sourcepackagerelease.createBuild(
   ...     foobuntu['i386'], PackagePublishingPocket.RELEASE,
   ...     ubuntu.main_archive)

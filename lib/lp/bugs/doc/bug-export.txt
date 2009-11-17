@@ -19,7 +19,10 @@ Exporting one bug
 We will export bug #1 in the context of Firefox.  First some initial setup:
 
   >>> import sys
-  >>> import cElementTree as ET
+  >>> try:
+  ...     import xml.etree.cElementTree as ET
+  ... except ImportError:
+  ...     import cElementTree as ET
   >>> from cStringIO import StringIO
   >>> from zope.component import getUtility
   >>> from canonical.launchpad.interfaces import (
@@ -52,7 +55,7 @@ Now we serialise it as XML, and print it:
   <reporter name="name12">Sample Person</reporter>
   <status>NEW</status>
   <importance>LOW</importance>
-  <assignee name="sabdfl">Mark Shuttleworth</assignee>
+  <assignee name="mark">Mark Shuttleworth</assignee>
   <subscriptions>
   <subscriber name="name12">Sample Person</subscriber>
   <subscriber name="stevea">Steve Alexander</subscriber>

@@ -1,4 +1,5 @@
-# Copyright 2004-2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 __all__ = [
@@ -182,8 +183,9 @@ class PackageDiff(SQLBase):
                 downloaded['to'])
 
             # `debdiff` failed, mark the package diff request accordingly
-            # and return.
-            if return_code != 0:
+            # and return. 0 means no differences, 1 means they differ.
+            # Note that pre-Karmic debdiff will return 0 even if they differ.
+            if return_code not in (0, 1):
                 self.status = PackageDiffStatus.FAILED
                 return
 

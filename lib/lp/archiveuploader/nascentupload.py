@@ -1,4 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """The processing of nascent uploads.
 
 Documentation on general design
@@ -26,9 +28,9 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
+from lp.archiveuploader.permission import verify_upload
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
-from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.publishing import PackagePublishingPocket
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
     ISourcePackageNameSet, NotFoundError, QueueInconsistentStateError)
@@ -384,9 +386,9 @@ class NascentUpload:
         try:
             callable()
         except UploadError, error:
-            self.reject(str(error))
+            self.reject("".join(error.args).encode("utf8"))
         except UploadWarning, error:
-            self.warn(str(error))
+            self.warn("".join(error.args).encode("utf8"))
 
     def run_and_collect_errors(self, callable):
         """Run 'special' callable that generates a list of errors/warnings.
@@ -406,9 +408,9 @@ class NascentUpload:
         """
         for error in callable():
             if isinstance(error, UploadError):
-                self.reject(str(error))
+                self.reject("".join(error.args).encode("utf8"))
             elif isinstance(error, UploadWarning):
-                self.warn(str(error))
+                self.warn("".join(error.args).encode("utf8"))
             else:
                 raise AssertionError(
                     "Unknown error occurred: %s" % str(error))
@@ -475,16 +477,6 @@ class NascentUpload:
     # Signature and ACL stuff
     #
 
-    def _components_valid_for(self, person):
-        """Return the set of components this person could upload to."""
-        permission_set = getUtility(IArchivePermissionSet)
-        permissions = permission_set.componentsForUploader(
-            self.policy.archive, person)
-        possible_components = set(
-            permission.component for permission in permissions)
-
-        return possible_components
-
     def verify_acl(self):
         """Check the signer's upload rights.
 
@@ -492,6 +484,14 @@ class NascentUpload:
         or the explicit source package, or in the case of a PPA must own
         it or be in the owning team.
         """
+        # Binary uploads are never checked (they come in via the security
+        # policy or from the buildds) so they don't need any ACL checks --
+        # this goes for PPAs as well as other archives. The only uploaded file
+        # that matters is the DSC file for sources because it is the only
+        # object that is overridden and created in the database.
+        if self.binaryful:
+            return
+
         # Set up some convenient shortcut variables.
         signer = self.changes.signer
         archive = self.policy.archive
@@ -501,68 +501,14 @@ class NascentUpload:
             self.logger.debug("No signer, therefore ACL not processed")
             return
 
-        # Verify PPA uploads.
-        if self.is_ppa:
-            self.logger.debug("Don't verify signer ACL for PPA")
-            if not archive.canUpload(signer):
-                self.reject("Signer has no upload rights to this PPA.")
-            return
-
-        # Binary uploads are never checked (they come in via the security
-        # policy or from the buildds) so they don't need any ACL checks.
-        # The only uploaded file that matters is the DSC file for sources
-        # because it is the only object that is overridden and created in
-        # the database.
-        if self.binaryful:
-            return
-
-        # Sometimes an uploader may upload a new package to a component
-        # that he does not have rights to (but has rights to other components)
-        # but we let this through because an archive admin may wish to
-        # override it later.  Consequently, if an uploader has no rights
-        # at all to any component, we reject the upload right now even if it's
-        # NEW.
-
-        # Check if the user has package-specific rights.
         source_name = getUtility(
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
-        if (source_name is not None and
-            archive.canUpload(signer, source_name)):
-            return
 
-        # Now check whether this upload can be approved due to
-        # package set based permissions.
-        ap_set = getUtility(IArchivePermissionSet)
-        if source_name is not None and signer is not None:
-            if ap_set.isSourceUploadAllowed(source_name, signer):
-                return
-
-        # If source_name is None then the package must be new, but we
-        # kick it out anyway because it's impossible to look up
-        # any permissions for it.
-        possible_components = self._components_valid_for(signer)
-        if not possible_components:
-            # The user doesn't have package-specific rights or
-            # component rights, so kick him out entirely.
-            self.reject(
-                "The signer of this package has no upload rights to this "
-                "distribution's primary archive.  Did you mean to upload "
-                "to a PPA?")
-            return
-
-        # New packages go straight to the upload queue; we only check upload
-        # rights for old packages.
-        if self.is_new:
-            return
-
-        component = self.changes.dsc.component
-        if component not in possible_components:
-            # The uploader has no rights to the component.
-            self.reject(
-                "Signer is not permitted to upload to the component "
-                "'%s' of file '%s'." % (component.name,
-                                        self.changes.dsc.filename))
-
+        rejection_reason = verify_upload(
+            signer, source_name, archive, self.changes.dsc.component,
+            self.policy.distroseries, not self.is_new)
+        if rejection_reason is not None:
+            self.reject(str(rejection_reason))
 
     #
     # Handling checking of versions and overrides

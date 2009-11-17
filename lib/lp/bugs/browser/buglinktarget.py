@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Views for IBugLinkTarget."""
 
@@ -29,11 +30,15 @@ from canonical.widgets import LabeledMultiCheckBoxWidget
 class BugLinkView(LaunchpadFormView):
     """This view is used to link bugs to any IBugLinkTarget."""
 
-    label = _('Link to bug report')
-
+    label = _('Link a bug report')
     schema = IBugLinkForm
 
     focused_element_id = 'bug'
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormview`."""
+        return canonical_url(self.context)
 
     @action(_('Link'))
     def linkBug(self, action, data):
@@ -89,9 +94,13 @@ class BugsUnlinkView(LaunchpadFormView):
     """This view is used to remove bug links from any IBugLinkTarget."""
 
     label = _('Remove links to bug reports')
-
     schema = IUnlinkBugsForm
     custom_widget('bugs', LabeledMultiCheckBoxWidget)
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormview`."""
+        return canonical_url(self.context)
 
     @action(_('Remove'))
     def unlinkBugs(self, action, data):
@@ -117,4 +126,3 @@ class BugsUnlinkView(LaunchpadFormView):
         """
         return [bug for bug in self.context.bugs
                 if check_permission('launchpad.View', bug)]
-

@@ -1,17 +1,18 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON_VERSION=2.4
+PYTHON_VERSION=2.5
 PYTHON=python${PYTHON_VERSION}
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
+BUILDOUT_CFG=buildout.cfg
 VERBOSITY=-vv
 
 TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
-SHHH=${PY} utilities/shhh.py
+SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
 LPCONFIG=development
@@ -24,10 +25,6 @@ BZR_VERSION_INFO = bzr-version-info.py
 
 WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
 API_INDEX = lib/canonical/launchpad/apidoc/index.html
-
-EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
-				$(shell $(HERE)/utilities/yui-deps.py) \
-				lib/canonical/launchpad/icing/lazr/build/lazr.js
 
 # DO NOT ALTER : this should just build by default
 default: inplace
@@ -43,10 +40,12 @@ hosted_branches: $(PY)
 	$(PY) ./utilities/make-dummy-hosted-branches
 
 $(WADL_FILE): $(BZR_VERSION_INFO)
-	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@
+	LPCONFIG=$(LPCONFIG) $(PY) ./utilities/create-lp-wadl.py > $@.tmp
+	mv $@.tmp $@
 
 $(API_INDEX): $(WADL_FILE)
-	bin/apiindex $(WADL_FILE) > $@
+	bin/apiindex $(WADL_FILE) > $@.tmp
+	mv $@.tmp $@
 
 apidoc: compile $(API_INDEX)
 
@@ -67,17 +66,35 @@ check_db_merge: $(PY)
 # This can be removed once we move to zc.buildout and we have versioned
 # dependencies, but for now we run both Launchpad and all other
 # dependencies tests for any merge to sourcecode.
-check_sourcecode_merge: build check
+check_sourcecode_merge: check
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
 
-check: build
+# Clean before running the test suite, since the build might fail depending
+# what source changes happened. (e.g. apidoc depends on interfaces)
+check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
 	${PY} -t ./test_on_merge.py $(VERBOSITY)
+
+jscheck: build
+	# Run all JavaScript integration tests.  The test runner takes care of
+	# setting up the test environment.
+	@echo
+	@echo "Running the JavaScript integration test suite"
+	@echo
+	bin/test $(VERBOSITY) --layer=WindmillLayer
+
+jscheck_functest: build
+    # Run the old functest Windmill integration tests.  The test runner
+    # takes care of setting up the test environment.
+	@echo
+	@echo "Running Windmill funtest integration test suite"
+	@echo
+	bin/jstest
 
 check_mailman: build
 	# Run all tests, including the Mailman integration
@@ -101,7 +118,18 @@ pagetests: build
 
 inplace: build
 
-build: $(BZR_VERSION_INFO) compile apidoc
+build: $(BZR_VERSION_INFO) compile apidoc jsbuild
+
+jsbuild_lazr:
+	${SHHH} bin/jsbuild -b lazr-js/build
+
+jsbuild: jsbuild_lazr
+	${SHHH} bin/jsbuild \
+		-n launchpad -s lib/canonical/launchpad/javascript \
+		-b lib/canonical/launchpad/icing/build \
+		lib/canonical/launchpad/icing/MochiKit.js \
+		$(shell $(HERE)/utilities/yui-deps.py) \
+		lib/canonical/launchpad/icing/lazr/build/lazr.js
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -117,18 +145,18 @@ download-cache:
 # warning before the eggs directory is made.  The target for the eggs directory
 # is only there for deployment convenience.
 bin/buildout: download-cache eggs
-	$(PYTHON) bootstrap.py
+	$(SHHH) PYTHONPATH= $(PYTHON) bootstrap.py\
+                --ez_setup-source=ez_setup.py \
+		--download-base=download-cache/dist --eggs=eggs
 
-$(PY): bin/buildout versions.cfg
-	./bin/buildout configuration:instance_name=${LPCONFIG}
+$(PY): bin/buildout versions.cfg $(BUILDOUT_CFG) setup.py
+	$(SHHH) PYTHONPATH= ./bin/buildout \
+                configuration:instance_name=${LPCONFIG} -c $(BUILDOUT_CFG)
 
 compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
-	${SHHH} LPCONFIG=${LPCONFIG} $(PY) -t buildmailman.py
-	${SHHH} sourcecode/lazr-js/tools/build.py \
-		-n launchpad -s lib/canonical/launchpad/javascript \
-		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
+	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -141,6 +169,10 @@ ftest_build: build
 
 ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
+
+mpcreationjobs:
+	# Handle merge proposal creations.
+	$(PY) cronscripts/mpcreationjobs.py
 
 run: inplace stop
 	$(RM) thread*.request
@@ -165,41 +197,47 @@ start_codebrowse: build
 stop_codebrowse:
 	$(PY) sourcecode/launchpad-loggerhead/stop-loggerhead.py
 
+start_librarian: build
+	bin/start_librarian
+
+stop_librarian:
+	bin/killservice librarian
+
 pull_branches: support_files
-	# Mirror the hosted branches in the development upload area to the
-	# mirrored area.
-	$(PY) cronscripts/supermirror-pull.py upload
+	$(PY) cronscripts/supermirror-pull.py
 
 scan_branches:
 	# Scan branches from the filesystem into the database.
 	$(PY) cronscripts/branch-scanner.py
 
-sync_branches: pull_branches scan_branches
+
+sync_branches: pull_branches scan_branches mpcreationjobs
 
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
 
 support_files: $(WADL_FILE) $(BZR_VERSION_INFO)
 
+# Intended for use on developer machines
+start: inplace stop support_files initscript-start
+
 # Run as a daemon - hack using nohup until we move back to using zdaemon
 # properly. We also should really wait until services are running before
 # exiting, as running 'make stop' too soon after running 'make start'
-# will not work as expected.
-start: inplace stop support_files
-	nohup bin/run -i $(LPCONFIG) > ${LPCONFIG}-nohup.out 2>&1 &
-
-# This is a stripped down version of the "start" target for use on
-# production servers - removes running 'make build' because we already
-# run this as part of our initscripts, so not needed here. Likewise we
-# don't want to run 'make stop' because it takes unnecessary time
-# even if the service is already stopped, and bzr_version_info is not
-# needed either because it's run as part of 'make build'.
+# will not work as expected. For use on production servers, where
+# we know we don't need the extra steps in a full "make start"
+# because of how the code is deployed/built.
 initscript-start:
 	nohup bin/run -i $(LPCONFIG) > ${LPCONFIG}-nohup.out 2>&1 &
 
+# Intended for use on developer machines
+stop: build initscript-stop
+
 # Kill launchpad last - other services will probably shutdown with it,
-# so killing them after is a race condition.
-stop: build
+# so killing them after is a race condition. For use on production
+# servers, where we know we don't need the extra steps in a full
+# "make stop" because of how the code is deployed/built.
+initscript-stop:
 	bin/killservice librarian buildsequencer launchpad mailman
 
 shutdown: scheduleoutage stop
@@ -223,8 +261,11 @@ rebuildfti:
 
 clean:
 	$(MAKE) -C sourcecode/pygettextpo clean
-	find . -type f \( \
-	    -name '*.o' -o -name '*.so' -o -name '*.la' -o \
+	if test -f sourcecode/mailman/Makefile; then \
+		$(MAKE) -C sourcecode/mailman clean; \
+	fi
+	find . -path ./eggs -prune -false -o \
+		-type f \( -name '*.o' -o -name '*.so' -o -name '*.la' -o \
 	    -name '*.lo' -o -name '*.py[co]' -o -name '*.dll' \) \
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r bin
@@ -287,6 +328,8 @@ copy-apache-config:
 	# We insert the absolute path to the branch-rewrite script
 	# into the Apache config as we copy the file into position.
 	sed -e 's,%BRANCH_REWRITE%,$(shell pwd)/scripts/branch-rewrite.py,' configs/development/local-launchpad-apache > /etc/apache2/sites-available/local-launchpad
+	touch /var/tmp/bazaar.launchpad.dev/rewrite.log
+	chown $(SUDO_UID):$(SUDO_GID) /var/tmp/bazaar.launchpad.dev/rewrite.log
 
 enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
@@ -313,4 +356,5 @@ ID: compile
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge check_mailman check_config
+	reload-apache hosted_branches check_db_merge check_mailman check_config\
+	jsbuild

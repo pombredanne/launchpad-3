@@ -7,7 +7,7 @@ No Privileges Person is not an answer contact for Mozilla Firefox, nor
 the project owner, therefore he cannot create a new FAQ.
 
     >>> user_browser.open('http://answers.launchpad.dev/firefox')
-    >>> user_browser.getLink('List all FAQs').click()
+    >>> user_browser.getLink('All FAQs').click()
 
     >>> user_browser.getLink('Create a new FAQ')
     Traceback (most recent call last):
@@ -27,9 +27,9 @@ from various sources about the subject.
 
     >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> owner_browser.open('http://answers.launchpad.dev/firefox')
-    >>> owner_browser.getLink('List all FAQs').click()
-    >>> owner_browser.title
-    'FAQs for Mozilla Firefox'
+    >>> owner_browser.getLink('All FAQs').click()
+    >>> print owner_browser.title
+    FAQs for Mozilla Firefox : Questions : Mozilla Firefox
 
     >>> print extract_text(
     ...     find_tag_by_id(owner_browser.contents, 'faqs-listing'))
@@ -47,8 +47,8 @@ content field. He then submits the form using the 'Create' button.
 
     >>> owner_browser.url
     'http://answers.launchpad.dev/firefox/+createfaq'
-    >>> owner_browser.title
-    'Create a FAQ for Mozilla Firefox'
+    >>> print owner_browser.title
+    Create a FAQ for...
 
     >>> owner_browser.getControl('Title').value
     ''
@@ -66,23 +66,21 @@ The FAQ is created and the browser displays the page for Sample Person.
 
     >>> owner_browser.url
     'http://answers.launchpad.dev/firefox/+faq/...'
-    >>> owner_browser.title
-    'Mozilla Firefox FAQ #...: ...How do I read RSS?...'
+    >>> print owner_browser.title
+    FAQ #12 : Questions : Mozilla Firefox
 
     >>> content = find_main_content(owner_browser.contents)
-    >>> extract_text(content.h1)
-    u'How do I read RSS?'
-    >>> extract_text(content.find('div', {'id' : 'faq-keywords'}))
+    >>> extract_text(find_tag_by_id(content, 'faq-keywords'))
     u'Keywords:...RSS bookmark'
-    >>> extract_text(content.find('div', {'id' : 'faq-content'}))
+    >>> extract_text(find_tag_by_id(content, 'faq-content'))
     u'Use the bookmark bar.'
 
 He returns to the projects list of FAQs to verify that the newest
 FAQ is listed first.
 
     >>> owner_browser.getLink('List all FAQs').click()
-    >>> owner_browser.title
-    'FAQs for Mozilla Firefox'
+    >>> print owner_browser.title
+    FAQs for Mozilla Firefox : Questions : Mozilla Firefox
 
     >>> print extract_text(
     ...     find_tag_by_id(owner_browser.contents, 'faqs-listing'))

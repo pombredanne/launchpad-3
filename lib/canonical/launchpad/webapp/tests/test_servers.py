@@ -1,4 +1,5 @@
-# Copyright Canonical Limited, 2005, all rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
 
@@ -7,6 +8,9 @@ import unittest
 
 from zope.publisher.base import DefaultPublication
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
+from zope.interface import implements, Interface
+
+from lp.testing import TestCase
 
 from canonical.launchpad.webapp.servers import (
     AnswersBrowserRequest, ApplicationServerSettingRequestFactory,
@@ -14,10 +18,10 @@ from canonical.launchpad.webapp.servers import (
     TranslationsBrowserRequest, VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
     WebServiceClientRequest, WebServicePublication, WebServiceTestRequest)
-
 from canonical.launchpad.webapp.tests import DummyConfigurationTestCase
 
-class SetInWSGIEnvironmentTestCase(unittest.TestCase):
+
+class SetInWSGIEnvironmentTestCase(TestCase):
 
     def test_set(self):
         # Test that setInWSGIEnvironment() can set keys in the WSGI
@@ -60,7 +64,7 @@ class SetInWSGIEnvironmentTestCase(unittest.TestCase):
         self.assertEqual(new_request._orig_env['key'], 'second value')
 
 
-class TestApplicationServerSettingRequestFactory(unittest.TestCase):
+class TestApplicationServerSettingRequestFactory(TestCase):
     """Tests for the ApplicationServerSettingRequestFactory."""
 
     def test___call___should_set_HTTPS_env_on(self):
@@ -273,7 +277,7 @@ class TestWebServiceRequestTraversal(DummyConfigurationTestCase):
             "request traversal stack: %r" % stack)
 
 
-class TestWebServiceRequest(unittest.TestCase):
+class TestWebServiceRequest(TestCase):
 
     def test_application_url(self):
         """Requests to the /api path should return the original request's
@@ -299,7 +303,7 @@ class TestWebServiceRequest(unittest.TestCase):
             'Cookie, Authorization, Accept')
 
 
-class TestBasicLaunchpadRequest(unittest.TestCase):
+class TestBasicLaunchpadRequest(TestCase):
     """Tests for the base request class"""
 
     def test_baserequest_response_should_vary(self):
@@ -317,7 +321,56 @@ class TestBasicLaunchpadRequest(unittest.TestCase):
             'Cookie, Authorization')
 
 
-class TestAnswersBrowserRequest(unittest.TestCase):
+class IThingSet(Interface):
+    """Marker interface for a set of things."""
+
+
+class IThing(Interface):
+    """Marker interface for a thing."""
+
+
+class Thing:
+    implements(IThing)
+
+
+class ThingSet:
+    implements(IThingSet)
+
+
+class TestLaunchpadBrowserRequest_getNearest(TestCase):
+
+    def setUp(self):
+        super(TestLaunchpadBrowserRequest_getNearest, self).setUp()
+        self.request = LaunchpadBrowserRequest('', {})
+        self.thing_set = ThingSet()
+        self.thing = Thing()
+
+    def test_return_value(self):
+        # .getNearest() returns a two-tuple with the object and the interface
+        # that matched. The second item in the tuple is useful when multiple
+        # interfaces are passed to getNearest().
+        request = self.request
+        request.traversed_objects.extend([self.thing_set, self.thing])
+        self.assertEquals(request.getNearest(IThing), (self.thing, IThing))
+        self.assertEquals(
+            request.getNearest(IThingSet), (self.thing_set, IThingSet))
+
+    def test_multiple_traversed_objects_with_common_interface(self):
+        # If more than one object of a particular interface type has been
+        # traversed, the most recently traversed one is returned.
+        thing2 = Thing()
+        self.request.traversed_objects.extend(
+            [self.thing_set, self.thing, thing2])
+        self.assertEquals(self.request.getNearest(IThing), (thing2, IThing))
+
+    def test_interface_not_traversed(self):
+        # If a particular interface has not been traversed, the tuple
+        # (None, None) is returned.
+        self.request.traversed_objects.extend([self.thing_set])
+        self.assertEquals(self.request.getNearest(IThing), (None, None))
+
+
+class TestAnswersBrowserRequest(TestCase):
     """Tests for the Answers request class."""
 
     def test_response_should_vary_based_on_language(self):
@@ -327,7 +380,7 @@ class TestAnswersBrowserRequest(unittest.TestCase):
             'Cookie, Authorization, Accept-Language')
 
 
-class TestTranslationsBrowserRequest(unittest.TestCase):
+class TestTranslationsBrowserRequest(TestCase):
     """Tests for the Translations request class."""
 
     def test_response_should_vary_based_on_language(self):
@@ -337,29 +390,36 @@ class TestTranslationsBrowserRequest(unittest.TestCase):
             'Cookie, Authorization, Accept-Language')
 
 
-class TestLaunchpadBrowserRequest(unittest.TestCase):
+class TestLaunchpadBrowserRequest(TestCase):
+
+    def prepareRequest(self, form):
+        """Return a `LaunchpadBrowserRequest` with the given form.
+
+        Also set the accepted charset to 'utf-8'.
+        """
+        request = LaunchpadBrowserRequest('', form)
+        request.charsets = ['utf-8']
+        return request
 
     def test_query_string_params_on_get(self):
         """query_string_params is populated from the QUERY_STRING during
         GET requests."""
-        request = LaunchpadBrowserRequest('', {
-            'QUERY_STRING': "a=1&b=2&c=3"})
+        request = self.prepareRequest({'QUERY_STRING': "a=1&b=2&c=3"})
         self.assertEqual(
-            request.query_string_params,
             {'a': ['1'], 'b': ['2'], 'c': ['3']},
+            request.query_string_params,
             "The query_string_params dict is populated from the "
             "QUERY_STRING during GET requests.")
 
     def test_query_string_params_on_post(self):
         """query_string_params is populated from the QUERY_STRING during
         POST requests."""
-        request = LaunchpadBrowserRequest('',
+        request = self.prepareRequest(
             {'QUERY_STRING': "a=1&b=2&c=3", 'REQUEST_METHOD': 'POST'})
-
         self.assertEqual(request.method, 'POST')
         self.assertEqual(
-            request.query_string_params,
             {'a':['1'], 'b': ['2'], 'c': ['3']},
+            request.query_string_params,
             "The query_string_params dict is populated from the "
             "QUERY_STRING during POST requests.")
 
@@ -367,23 +427,32 @@ class TestLaunchpadBrowserRequest(unittest.TestCase):
         """The query_string_params dict is always empty when QUERY_STRING
         is empty, None or undefined.
         """
-        request = LaunchpadBrowserRequest('', {'QUERY_STRING': ''})
-        self.assertEqual(request.query_string_params, {})
-        request = LaunchpadBrowserRequest('', {'QUERY_STRING': None})
-        self.assertEqual(request.query_string_params, {})
-        request = LaunchpadBrowserRequest('', {})
-        self.assertEqual(request.query_string_params, {})
+        request = self.prepareRequest({'QUERY_STRING': ''})
+        self.assertEqual({}, request.query_string_params)
+        request = self.prepareRequest({'QUERY_STRING': None})
+        self.assertEqual({}, request.query_string_params)
+        request = self.prepareRequest({})
+        self.assertEqual({}, request.query_string_params)
 
     def test_query_string_params_multi_value(self):
         """The query_string_params dict can include multiple values
         for a parameter."""
-        request = LaunchpadBrowserRequest('', {
-            'QUERY_STRING': "a=1&a=2&b=3"})
+        request = self.prepareRequest({'QUERY_STRING': "a=1&a=2&b=3"})
         self.assertEqual(
-            request.query_string_params,
             {'a': ['1', '2'], 'b': ['3']},
+            request.query_string_params,
             "The query_string_params dict correctly interprets multiple "
             "values for the same key in a query string.")
+
+    def test_query_string_params_unicode(self):
+        # Encoded query string parameters are properly decoded.
+        request = self.prepareRequest({'QUERY_STRING': "a=%C3%A7"})
+        self.assertEqual(
+            {'a': [u'\xe7']},
+            request.query_string_params,
+            "The query_string_params dict correctly interprets encoded "
+            "parameters.")
+
 
 def test_suite():
     suite = unittest.TestSuite()

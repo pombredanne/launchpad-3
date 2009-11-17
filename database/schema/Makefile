@@ -1,3 +1,6 @@
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+#
 # Quick hack makefile to (re)create the Launchpad database.
 # One day the guts of this will be migrated to Python
 #
@@ -39,23 +42,30 @@ DROPDB=${PYTHON} ../../utilities/pgmassacre.py
 # The command we use to drop (if exists) and recreate a database.
 CREATEDB=${PYTHON} ../../utilities/pgmassacre.py -t
 
+HEADER="-- Copyright 2009 Canonical Ltd.  This software is licensed under \
+	the\n-- GNU Affero General Public License version 3 (see the file \
+	LICENSE)."
+
 # The command used (in conjunction with $(call)) to dump the contents of the
 # given database ($1) into an SQL file ($2).
 build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
+	echo $(HEADER) > $(2); \
     pg_dump --schema=public --disable-triggers -a -D -O -d ${1} \
     | grep -v "\( TOC \|INSERT INTO launchpaddatabaserevision \|sessiondata\|sessionpkgdata\|SELECT pg_catalog\.setval\|^--\| fticache \|'fticache'\|ALTER TABLE secret\|INSERT INTO secret\)" \
-    | $(PYTHON) sort_sql.py > $(2); \
+    | $(PYTHON) sort_sql.py >> $(2); \
     $(PYTHON) fti.py --force -d ${1} -q
 
+
 # The latest schema dump from production. Database patches are relative
-# to this baseline. This dump should be updated every production rollout
+# to this baseline. This dump should be updated occasionally from production
 # to ensure that the development database remains in sync with reality
 # on production. It is generated using newbaseline.py in
 # bzr+ssh://devpad.canonical.com/code/stub/dbascripts
 # 
-REV=2109
+REV=2207
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=8a2e8fb0c3665cf1b07487fe3650816e  launchpad-2109-00-0.sql
+MD5SUM=6a28c01a33ee2dc133ab4f8931d94282  launchpad-2207-00-0.sql
+
 default: all
 
 # Create a launchpad_ftest_template DB and load the test sample data into it.
@@ -98,12 +108,12 @@ dev: test
 # database schema, full text indexes and grants into it.
 # It will also create session DBs for the test and dev environments.
 # No sample data is added at this point.
-create: check
+create: 
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\"."
-	@ ${CREATEDB} template1 ${EMPTY_DBNAME}
+	@ ${CREATEDB} template0 ${EMPTY_DBNAME}
 	@ if ! `createlang -l ${EMPTY_DBNAME} | grep -qs plpythonu`; then \
 		echo "* Installing PL/PythonU"; \
 		createlang -d ${EMPTY_DBNAME} plpythonu; \
@@ -132,12 +142,12 @@ create: check
 
 	@ echo "* Creating session databases '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
-	    then ${CREATEDB} template1 ${SESSION_DBNAME} ; \
+	    then ${CREATEDB} template0 ${SESSION_DBNAME} ; \
 	    createlang plpgsql ${SESSION_DBNAME}; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
 	@ echo "* Creating session database '${TEST_SESSION_DBNAME}'"
-	@ ${CREATEDB} template1 ${TEST_SESSION_DBNAME}
+	@ ${CREATEDB} template0 ${TEST_SESSION_DBNAME}
 	@ createlang plpgsql ${TEST_SESSION_DBNAME}
 	@ psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql
 
@@ -183,5 +193,5 @@ lintdata:
 	$(call build_new_sampledata,${TEMPLATE_WITH_TEST_SAMPLEDATA},${LINTDATA})
 	$(call build_new_sampledata,${TEMPLATE_WITH_DEV_SAMPLEDATA},${LINTDATA_DEV})
 
-.PHONY: default base all
+.PHONY: default test dev create check search_path all doc diagram newsampledata_test newsampledata_dev newsampledata lintdata
 

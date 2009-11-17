@@ -83,7 +83,7 @@ subscription for joesmith:
 The new subscription is returned and reflects the data:
 
     >>> print new_sub.displayname
-    Joe Smith's subscription to PPA for Celso Providelo
+    Joe Smith's access to PPA for Celso Providelo
 
     >>> print new_sub.registrant.name
     cprov
@@ -109,17 +109,17 @@ entry is created:
     From: Celso Providelo <noreply@launchpad.net>
     To: joe@example.com
     Reply-To: Celso Providelo <celso.providelo@canonical.com>
-    Subject: New PPA subscription for PPA for Celso Providelo
+    Subject: PPA access granted for PPA for Celso Providelo
     Hello Joe Smith,
     <BLANKLINE>
-    Launchpad: activate your archive subscription
-    ---------------------------------------------
+    Launchpad: access to a private archive
+    --------------------------------------
     <BLANKLINE>
-    Celso Providelo has invited you to subscribe to a private software
-    archive hosted by Launchpad.
+    Celso Providelo has granted you access to a private software archive
+    "PPA for Celso Providelo", which is hosted by Launchpad.
     <BLANKLINE>
     To start downloading and using software from this archive you need to
-    activate your subscription by visiting this link:
+    view your access details by visiting this link:
     <BLANKLINE>
     <http://launchpad.dev/~joesmith/+archivesubscriptions>
     <BLANKLINE>
@@ -148,14 +148,14 @@ cannot be created:
     'PPA for Celso Providelo'.
 
 
-Add another subscription for the test user, this time to sabdfl's ppa:
+Add another subscription for the test user, this time to mark's ppa:
 
-    >>> login("mark@hbd.com")
-    >>> sabdfl = getUtility(IPersonSet).getByName("sabdfl")
-    >>> sabdfl.archive.buildd_secret = "really secret"
-    >>> sabdfl.archive.private = True
-    >>> new_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
-    ...     joesmith, sabdfl, description=u"subscription for joesmith")
+    >>> login("mark@example.com")
+    >>> mark = getUtility(IPersonSet).getByName("mark")
+    >>> mark.archive.buildd_secret = "really secret"
+    >>> mark.archive.private = True
+    >>> new_sub_to_mark_ppa = mark.archive.newSubscription(
+    ...     joesmith, mark, description=u"subscription for joesmith")
 
     >>> print_emails()
     From: Mark Shuttleworth <noreply@launchpad.net>
@@ -164,8 +164,8 @@ Add another subscription for the test user, this time to sabdfl's ppa:
 
 And also a subscription for a Team:
 
-    >>> new_team_sub_to_sabdfl_ppa = sabdfl.archive.newSubscription(
-    ...     team_cprov, sabdfl, description=u"Access for cprov team")
+    >>> new_team_sub_to_mark_ppa = mark.archive.newSubscription(
+    ...     team_cprov, mark, description=u"Access for cprov team")
 
     >>> print_emails()
     From: Mark Shuttleworth <noreply@launchpad.net>
@@ -180,9 +180,9 @@ Explicitly set the date_created for testing purposes:
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(new_sub).date_created = datetime(
     ...     2009, 2, 26, tzinfo=pytz.UTC)
-    >>> removeSecurityProxy(new_sub_to_sabdfl_ppa).date_created = datetime(
+    >>> removeSecurityProxy(new_sub_to_mark_ppa).date_created = datetime(
     ...     2009, 2, 22, tzinfo=pytz.UTC)
-    >>> removeSecurityProxy(new_team_sub_to_sabdfl_ppa).date_created = (
+    >>> removeSecurityProxy(new_team_sub_to_mark_ppa).date_created = (
     ...     datetime(2009, 2, 24, tzinfo=pytz.UTC))
 
 Commit the new subscriptions to the database.
@@ -231,14 +231,14 @@ finding a subscription for a particular user in a particular archive:
 By default the getBySubscriber() and getByArchive() methods return
 all current subscriptions, most recently created first:
 
-    >>> login('mark@hbd.com')
+    >>> login('mark@example.com')
     >>> for subscription in sub_set.getBySubscriber(new_sub.subscriber):
     ...     print subscription.archive.displayname
     ...     print subscription.date_created.date()
     PPA for Celso Providelo      2009-02-26
     PPA for Mark Shuttleworth    2009-02-22
 
-    >>> for subscription in sub_set.getByArchive(sabdfl.archive):
+    >>> for subscription in sub_set.getByArchive(mark.archive):
     ...     print subscription.subscriber.displayname
     ...     print subscription.date_created.date()
     Team Cprov      2009-02-24
@@ -246,8 +246,8 @@ all current subscriptions, most recently created first:
 
 If we cancel one of the subscriptions:
 
-    >>> login("mark@hbd.com")
-    >>> new_sub_to_sabdfl_ppa.status = ArchiveSubscriberStatus.CANCELLED
+    >>> login("mark@example.com")
+    >>> new_sub_to_mark_ppa.status = ArchiveSubscriberStatus.CANCELLED
     >>> login("joe@example.com")
 
 then the cancelled subscription no longer appears in the results
@@ -255,7 +255,7 @@ of getBySubscriber() and getByArchive():
 
     >>> sub_set.getBySubscriber(new_sub.subscriber).count()
     1
-    >>> sub_set.getByArchive(sabdfl.archive).count()
+    >>> sub_set.getByArchive(mark.archive).count()
     1
 
 Unless we explicitly ask for all subscriptions - not just the current ones:
@@ -263,7 +263,7 @@ Unless we explicitly ask for all subscriptions - not just the current ones:
     >>> sub_set.getBySubscriber(
     ...     new_sub.subscriber, current_only=False).count()
     2
-    >>> sub_set.getByArchive(sabdfl.archive, current_only=False).count()
+    >>> sub_set.getByArchive(mark.archive, current_only=False).count()
     2
 
 The getBySubscriber() method includes by default subscriptions for teams
@@ -416,7 +416,7 @@ But if we create an auth token for joe to the archive (this could be via
 a separate subscription), then he will no longer be listed as a non-active
 subscriber for this subscription:
 
-    >>> joesmith_token = sabdfl.archive.newAuthToken(joesmith)
+    >>> joesmith_token = mark.archive.newAuthToken(joesmith)
     >>> for person in subscription.getNonActiveSubscribers():
     ...     print person.displayname
     Celso Providelo
@@ -425,13 +425,13 @@ subscriber for this subscription:
 If the subscription is just for an individual, getNonActiveSubscribers()
 will return a list with the single subscriber as expected:
 
-    >>> login("mark@hbd.com")
+    >>> login("mark@example.com")
     >>> harrysmith = factory.makePerson(name="harrysmith",
     ...                                 displayname="Harry Smith",
     ...                                 password="test",
     ...                                 email="harry@example.com")
-    >>> subscription = sabdfl.archive.newSubscription(
-    ...     harrysmith, sabdfl, description=u"subscription for joesmith")
+    >>> subscription = mark.archive.newSubscription(
+    ...     harrysmith, mark, description=u"subscription for joesmith")
     >>> for person in subscription.getNonActiveSubscribers():
     ...     print person.displayname
     Harry Smith
@@ -440,7 +440,7 @@ If Harry activates a token for his new subscription then
 getNonActiveSubscribers will return an empty result set as he is now
 "active".
 
-    >>> harry_token = sabdfl.archive.newAuthToken(harrysmith)
+    >>> harry_token = mark.archive.newAuthToken(harrysmith)
     >>> print subscription.getNonActiveSubscribers().count()
     0
 
@@ -448,9 +448,9 @@ If the subscription is for a group which itself contains a group, all
 indirect members that are not themselves groups are included:
 
     >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
-    >>> launchpad_devs.addMember(team_cprov, sabdfl, force_team_add=True)
-    >>> subscription = sabdfl.archive.newSubscription(
-    ...     launchpad_devs, sabdfl, description=u"LP team too")
+    >>> launchpad_devs.addMember(team_cprov, mark, force_team_add=True)
+    >>> subscription = mark.archive.newSubscription(
+    ...     launchpad_devs, mark, description=u"LP team too")
     >>> for person in subscription.getNonActiveSubscribers():
     ...     print person.displayname
     Celso Providelo

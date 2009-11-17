@@ -1,4 +1,4 @@
-Distribution Pages
+Distribution Views
 ==================
 
 Lists of distribution mirrors
@@ -8,15 +8,11 @@ There are several pages listing the mirrors of a distribution, and they all
 share a common base class which is responsible for ordering the mirrors by
 country.
 
-    >>> from zope.component import getMultiAdapter, getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
 
-    >>> login("foo.bar@canonical.com")
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
-    >>> ubuntu_cdmirrors = getMultiAdapter(
-    ...     (ubuntu, LaunchpadTestRequest()), name="+cdmirrors")
+    >>> distributionset = getUtility(IDistributionSet)
+    >>> ubuntu = distributionset.getByName("ubuntu")
+    >>> ubuntu_cdmirrors = create_view(ubuntu, name="+cdmirrors")
 
     >>> country_and_mirrors = ubuntu_cdmirrors.getMirrorsGroupedByCountry()
     >>> for country_and_mirror in country_and_mirrors:
@@ -30,189 +26,296 @@ country.
     United Kingdom: 1 mirror(s)
 
 
-== DistributionArchivesView ==
-
-The DistributionArchivesView includes an archive_list property that
-returns a list of copy archives only for the given distribution (because
-only copy archives are exposed through the distribution/+archives UI):
-
-    >>> distro_archives_view = create_initialized_view(ubuntu,
-    ...                                                name="+archives")
-    >>> archives = distro_archives_view.archive_list
-    >>> archives.count()
-    0
-
-And then after creating a copy archive for Ubuntu:
-
-    >>> copy_location = factory.makeCopyArchiveLocation(
-    ...     distribution=ubuntu,
-    ...     name="intrepid-security-rebuild")
-    >>> archives = distro_archives_view.archive_list
-    >>> archives.count()
-    1
+Distribution modification views
+===============================
 
 
-DistributionPackageSearchView
-=============================
+Registering a distribution
+--------------------------
 
-The DistributionPackageSearchView adds some functionality to the base
-PackageSearchView class, specifically for making the results more useful.
+The +add view of the DistributionSet allows admins to register distributions.
 
-By default the view will be initialized as a binary-package-name search,
-and the search_by_binary_name property is used to determine the search
-type (in templates):
+    >>> view = create_view(distributionset, '+add')
+    >>> print view.label
+    Register a new distribution
 
-Note: The substring search for binary names now uses the cached binary
-names on the DistributionSourcePackageCache, which unfortunately are
-not up-to-date in the test data. Hence only seeing mozilla-firefox returned
-here.
+    >>> print view.page_title
+    Register a new distribution
 
-    >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={
-    ...         'text': 'a',
-    ...     })
-    >>> distro_pkg_search_view.search_by_binary_name
-    True
-    >>> for package in distro_pkg_search_view.search_results:
-    ...     print package.name
-    mozilla-firefox
+The view provides a cancel link.
 
-Additionally, a helper property 'source_search_url' is included providing
-easy access to the equivalent search on sources:
+    >>> print view.cancel_url
+    http://launchpad.dev/distros
 
-    >>> print distro_pkg_search_view.source_search_url
-    http://launchpad.dev/ubuntu/+search?search_type=source&text=a
+The view accepts the basic fields to register a distribution.
 
-But users can specify that the search should be on source-package-names
-instead:
+    >>> view.field_names
+    ['name', 'displayname', 'title', 'summary', 'description', 'domainname',
+     'members', 'official_malone', 'official_blueprints', 'official_rosetta',
+     'official_answers']
 
-    >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={
-    ...         'text': 'a',
-    ...         'search_type': 'source'
-    ...     })
-    >>> distro_pkg_search_view.search_by_binary_name
-    False
-    >>> for package in distro_pkg_search_view.search_results:
-    ...     print package.name
-    netapplet
-    alsa-utils
-    foobar
-    mozilla-firefox
-    commercialpackage
+    >>> login("admin@canonical.com")
+    >>> form = {
+    ...     'field.name': 'youbuntu',
+    ...     'field.displayname': 'YoUbuntu',
+    ...     'field.title': 'YoUbuntu OS',
+    ...     'field.summary': 'summary',
+    ...     'field.description': 'description',
+    ...     'field.domainname': 'youbuntu.me',
+    ...     'field.members': 'landscape-developers',
+    ...     'field.actions.save': 'Save',
+    ...     }
+    >>> view = create_initialized_view(distributionset, '+add', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/youbuntu
 
-Unless the distribution being searched does not support binaries, in which
-cases it will always be on source:
+    >>> distribution = distributionset.getByName("youbuntu")
+    >>> print distribution.name
+    youbuntu
 
-    >>> debian = factory.makeDistribution(
-    ...     name='mydebian', displayname='debian-without-binaries')
+Only admins and owners can access the view.
 
-    >>> debian.has_published_binaries
-    False
+    >>> from canonical.launchpad.webapp.authorization import check_permission
 
-    >>> distro_pkg_search_view = create_initialized_view(
-    ...     debian, name="+search", form={'search_type': 'binary'})
-    >>> distro_pkg_search_view.search_by_binary_name
-    False
-
-
-=== Exact matches ===
-
-The DistributionPackageSearchView view has an exact_matches property
-and a has_exact_matches property which are used to find packages that
-match exactly on the binary/source name.
-
-In the following example, there is one source package that has a binary
-with the exact name 'mozilla-firefox':
-
-    >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={'text': 'mozilla-firefox'})
-    >>> distro_pkg_search_view.has_exact_matches
-    True
-    >>> for package in distro_pkg_search_view.exact_matches:
-    ...     print package.name
-    mozilla-firefox
-
-The view can also help the template know when to display exact matches.
-
-    >>> distro_pkg_search_view.display_exact_matches
+    >>> check_permission('launchpad.Admin', view)
     True
 
-Exact matches do not need to be displayed when the user views subsequent
-batches.
-
-    >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={
-    ...         'text': 'mozilla-firefox',
-    ...         'batch': '2',
-    ...         'start': '2',
-    ...         })
-    >>> distro_pkg_search_view.display_exact_matches
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Admin', view)
     False
 
-But they are displayed when returning to the first batch.
 
-    >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={
-    ...         'text': 'mozilla-firefox',
-    ...         'batch': '2',
-    ...         'start': '0',
-    ...         })
-    >>> distro_pkg_search_view.display_exact_matches
+Editing a distribution
+----------------------
+
+The +edit view allows an owner or admin to change a distribution. It provides
+a label, page_title, and cancel_url.
+
+    >>> login("admin@canonical.com")
+    >>> view = create_view(distribution, '+edit')
+    >>> print view.label
+    Change YoUbuntu details
+
+    >>> print view.page_title
+    Change YoUbuntu details
+
+    >>> print view.cancel_url
+    http://launchpad.dev/youbuntu
+
+The view accepts most of the distribution fields.
+
+    >>> distribution.official_malone
+    False
+
+    >>> view.field_names
+    ['displayname', 'title', 'summary', 'description',
+     'bug_reporting_guidelines', 'icon', 'logo', 'mugshot', 'official_malone',
+     'enable_bug_expiration', 'official_blueprints', 'official_rosetta',
+     'official_answers', 'translation_focus']
+
+    >>> del form['field.name']
+    >>> del form['field.actions.save']
+    >>> form['field.bug_reporting_guidelines'] = 'guidelines'
+    >>> form['field.official_malone'] = 'on'
+    >>> form['field.actions.change'] = 'Change'
+    >>> view = create_initialized_view(distribution, '+edit', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/youbuntu
+
+    >>> print distribution.bug_reporting_guidelines
+    guidelines
+
+    >>> distribution.official_malone
     True
 
-Searches against source packages should not display exact matches either:
+Only admins and owners can access the view.
 
-    >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={
-    ...         'text': 'mozilla-firefox',
-    ...         'search_type': 'source',
-    ...         })
-    >>> distro_pkg_search_view.display_exact_matches
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Edit', view)
     False
 
-The DistributionPackageSearchView also has a helper property to
-help templates print the list of distroseries that an exactly-matched
-package is available in:
 
-    >>> distro_pkg_search_view.distroseries_names
-    {u'mozilla-firefox': u'warty'}
-    >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={'text': 'foobar'})
-    >>> distro_pkg_search_view.distroseries_names
-    {u'foobar': ''}
+Changing a distribution mirror administrator
+--------------------------------------------
 
-Another helper on the DistributionPackageSearchView is the
-matching_binary_names property which can be used by templates to get
-a list of the binary names that matched the search term for each
-package:
+the +selectmirroradmins allows the owner or admin to change the mirror
+administrator.
 
-    >>> distro_pkg_search_view = create_initialized_view(
-    ...     ubuntu, name="+search", form={'text': 'moz'})
-    >>> distro_pkg_search_view.matching_binary_names
-    {u'mozilla-firefox': u'mozilla-firefox, mozilla-firefox-data'}
+    >>> login("admin@canonical.com")
+    >>> view = create_view(distribution, '+selectmirroradmins')
+    >>> print view.label
+    Change the YoUbuntu mirror administrator
 
-The matching_binary_names property uses a protected helper method
-'_listFirstFiveMatchingNames' which ensures only the first five matching
-names are returned. An ellipse is used to indicate when more than five
-names match:
+    >>> print view.page_title
+    Change the YoUbuntu mirror administrator
 
-    >>> print distro_pkg_search_view._listFirstFiveMatchingNames(
-    ...     'moz', 
-    ...     'mozilla-firefox mozilla-data moziki '
-    ...     'limozine moza lamoz') # doctest: -ELLIPSIS
-    mozilla-firefox, mozilla-data, moziki, limozine, moza, ...
+    >>> print view.cancel_url
+    http://launchpad.dev/youbuntu
+
+The view accepts the mirror_admin field.
+
+    >>> print distribution.mirror_admin.name
+    name16
+
+    >>> view.field_names
+    ['mirror_admin']
+
+    >>> form = {
+    ...     'field.mirror_admin': 'no-priv',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     distribution, '+selectmirroradmins', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/youbuntu
+
+    >>> print distribution.mirror_admin.name
+    no-priv
+
+Only admins and owners can access the view.
+
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Edit', view)
+    False
 
 
-Substring matches
-=================
+Changing a distribution members team
+------------------------------------
 
-The DistributionPackageSearchView includes substring matches by default.
+the +selectmirroradmins allows the owner or admin to change the members team.
 
-    >>> search_results = distro_pkg_search_view.search_results
-    >>> search_results.count()
-    1
+    >>> login("admin@canonical.com")
+    >>> view = create_view(distribution, '+selectmemberteam')
+    >>> print view.label
+    Change the YoUbuntu members team
 
-    >>> for pkg in search_results:
-    ...     print pkg.name
-    mozilla-firefox
+    >>> print view.page_title
+    Change the YoUbuntu members team
+
+    >>> print view.cancel_url
+    http://launchpad.dev/youbuntu
+
+The view accepts the members field.
+
+    >>> print distribution.members.name
+    landscape-developers
+
+    >>> view.field_names
+    ['members']
+
+    >>> form = {
+    ...     'field.members': 'ubuntu-team',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     distribution, '+selectmemberteam', form=form)
+    >>> view.errors
+    []
+    >>> print view.next_url
+    http://launchpad.dev/youbuntu
+
+    >>> print distribution.members.name
+    ubuntu-team
+
+Only admins and owners can access the view.
+
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
+Distribution +index
+===================
+
++index portlets
+---------------
+
+The distribution index page may contain portlets for Launchpad applications.
+If the distribution does not officially use the apps, its portlet does
+not appear.
+
+    >>> from canonical.launchpad.testing.pages import find_tag_by_id
+
+    >>> owner = distribution.owner
+    >>> login_person(owner)
+    >>> distribution.official_malone = False
+    >>> question = factory.makeQuestion(target=distribution)
+    >>> faq = factory.makeFAQ(target=distribution)
+    >>> bugtask = factory.makeBugTask(target=distribution)
+    >>> blueprint = factory.makeSpecification(distribution=distribution)
+
+    >>> view = create_view(distribution, name='+index', principal=owner)
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print find_tag_by_id(content, 'portlet-latest-faqs')
+    None
+    >>> print find_tag_by_id(content, 'portlet-latest-questions')
+    None
+    >>> print find_tag_by_id(content, 'portlet-latest-bugs')
+    None
+    >>> print find_tag_by_id(content, 'portlet-blueprints')
+    None
+
+If the distribution officially uses the application, its portlet does appear.
+
+    >>> distribution.official_answers = True
+    >>> distribution.official_blueprints = True
+    >>> distribution.official_malone = True
+
+    >>> view = create_view(distribution, name='+index', principal=owner)
+    >>> content = find_tag_by_id(view.render(), 'maincontent')
+    >>> print find_tag_by_id(content, 'portlet-latest-faqs')['id']
+    portlet-latest-faqs
+    >>> print find_tag_by_id(content, 'portlet-latest-questions')['id']
+    portlet-latest-questions
+    >>> print find_tag_by_id(content, 'portlet-latest-bugs')['id']
+    portlet-latest-bugs
+    >>> print find_tag_by_id(content, 'portlet-blueprints')['id']
+    portlet-blueprints
+
+
+Distribution +series
+--------------------
+
+The +series view provides a page title and list of dicts that represent
+the series and the CSS class to present them wth.
+
+    >>> view = create_view(ubuntu, name='+series')
+    >>> print view.label
+    Timeline
+
+    >>> for styled_series in view.styled_series:
+    ...     print styled_series['series'].name, styled_series['css_class']
+    breezy-autotest unhighlighted
+    grumpy unhighlighted
+    hoary highlighted
+    warty unhighlighted
+
+
+Distribution +ppas
+------------------
+
+The +ppas view provides a page title and label, some statistics helpers
+and search results.
+
+    >>> view = create_view(ubuntu, name='+ppas')
+    >>> print view.label
+    Personal Package Archives for Ubuntu Linux
+
+    # The leaf of the breadcrumbs, also used in the page-title.
+    >>> print view.page_title
+    Personal Package Archives

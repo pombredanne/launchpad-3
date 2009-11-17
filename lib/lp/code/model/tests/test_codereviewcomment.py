@@ -1,13 +1,16 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Unit tests for CodeReviewComment"""
 
+from textwrap import dedent
 import unittest
 
 from canonical.launchpad.database.message import MessageSet
 from lp.code.enums import CodeReviewVote
 from lp.code.event.branchmergeproposal import NewCodeReviewCommentEvent
-from lp.testing import TestCaseWithFactory
+from lp.code.model.codereviewcomment import quote_text_as_email
+from lp.testing import TestCaseWithFactory, TestCase
 from canonical.testing import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
 
@@ -95,7 +98,8 @@ class TestCodeReviewComment(TestCaseWithFactory):
     def test_createCommentFromMessage(self):
         """Creating a CodeReviewComment from a message works."""
         message = self.factory.makeMessage(owner=self.submitter)
-        comment = self.bmp.createCommentFromMessage(message, None, None)
+        comment = self.bmp.createCommentFromMessage(
+            message, None, None, original_email=None, _validate=False)
         self.assertEqual(message, comment.message)
 
     def test_createCommentFromMessageNotifies(self):
@@ -103,7 +107,7 @@ class TestCodeReviewComment(TestCaseWithFactory):
         message = self.factory.makeMessage()
         self.assertNotifies(
             NewCodeReviewCommentEvent, self.bmp.createCommentFromMessage,
-            message, None, None)
+            message, None, None, original_email=None, _validate=False)
 
 
 class TestCodeReviewCommentGetAttachments(TestCaseWithFactory):
@@ -180,6 +184,62 @@ class TestCodeReviewCommentGetAttachments(TestCaseWithFactory):
         email_body, attachment = comment.message.chunks
         self.assertEqual(([attachment.blob], []), comment.getAttachments())
 
+
+class TestQuoteTextAsEmail(TestCase):
+    """Test the quote_text_as_email helper method."""
+
+    def test_empty_string(self):
+        # Nothing just gives us an empty string.
+        self.assertEqual('', quote_text_as_email(''))
+
+    def test_none_string(self):
+        # If None is passed the quoted text is an empty string.
+        self.assertEqual('', quote_text_as_email(None))
+
+    def test_whitespace_string(self):
+        # Just whitespace gives us an empty string.
+        self.assertEqual('', quote_text_as_email('  \t '))
+
+    def test_long_string(self):
+        # Long lines are wrapped.
+        long_line = ('This is a very long line that needs to be wrapped '
+                     'onto more than one line given a short length.')
+        self.assertEqual(
+            dedent("""\
+                > This is a very long line that needs to
+                > be wrapped onto more than one line
+                > given a short length."""),
+            quote_text_as_email(long_line, 40))
+
+    def test_code_sample(self):
+        # Initial whitespace is not trimmed.
+        code = """\
+    def test_whitespace_string(self):
+        # Nothing just gives us the prefix.
+        self.assertEqual('', wrap_text('  \t '))"""
+        self.assertEqual(
+            dedent("""\
+                >     def test_whitespace_string(self):
+                >         # Nothing just gives us the prefix.
+                >         self.assertEqual('', wrap_text('         '))"""),
+            quote_text_as_email(code, 60))
+
+    def test_empty_line_mid_string(self):
+        # Lines in the middle of the string are quoted too.
+        value = dedent("""\
+            This is the first line.
+
+            This is the second line.
+            """)
+        expected = dedent("""\
+            > This is the first line.
+            > 
+            > This is the second line.""")
+        self.assertEqual(expected, quote_text_as_email(value))
+
+    def test_trailing_whitespace(self):
+        # Trailing whitespace is removed.
+        self.assertEqual('>   foo', quote_text_as_email('  foo  \n '))
 
 
 def test_suite():

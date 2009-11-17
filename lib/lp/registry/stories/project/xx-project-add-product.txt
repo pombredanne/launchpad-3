@@ -7,7 +7,7 @@ bottom of the project page to add a new product:
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/gnome')
-    >>> browser.getLink('Register another project').click()
+    >>> browser.getLink('Register a project in GNOME').click()
     >>> print browser.url
     http://launchpad.dev/gnome/+newproduct
 
@@ -40,9 +40,3 @@ is accessible both under "/" and under the project URL:
     >>> 'Eye of GNOME' in anon_browser.contents
     True
 
-A default product series named "trunk" was created for the new
-product:
-
-    >>> anon_browser.open('http://launchpad.dev/eog/trunk')
-    >>> print anon_browser.title
-    Eye of GNOME trunk series

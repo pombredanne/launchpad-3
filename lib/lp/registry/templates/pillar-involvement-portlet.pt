@@ -1,0 +1,13 @@
+<div
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="involvement" class="portlet involvement"
+  tal:condition="view/has_involvement">
+  <h2>Get Involved</h2>
+
+  <ul>
+    <li tal:repeat="link view/enabled_links">
+      <a tal:replace="structure link/fmt:link" />
+    </li>
+  </ul>
+</div>

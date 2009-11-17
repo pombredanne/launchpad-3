@@ -1,5 +1,7 @@
-#! /usr/bin/python2.4
-# Copyright 2008, 2009 Canonical Ltd.  All rights reserved.
+#! /usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Test the create_merge_proposals script"""
 
@@ -104,9 +106,9 @@ class TestCreateMergeProposals(TestCaseWithFactory):
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/create_merge_proposals.py', [])
-        self.assertEqual(
-            'INFO    creating lockfile\n'
-            'INFO    Ran 0 CreateMergeProposalJobs.\n', stderr)
+        self.assertIn('INFO    creating lockfile\n', stderr)
+        self.assertIn('INFO    Job resulted in OOPS:', stderr)
+        self.assertIn('INFO    Ran 0 CreateMergeProposalJobs.\n', stderr)
         self.assertEqual('', stdout)
 
 

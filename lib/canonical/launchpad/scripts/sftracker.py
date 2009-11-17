@@ -1,4 +1,5 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Sourceforge.net Tracker import logic.
 
@@ -33,7 +34,7 @@ from storm.store import Store
 
 # use cElementTree if it is available ...
 try:
-    import xml.elementtree.cElementTree as ET
+    import xml.etree.cElementTree as ET
 except ImportError:
     try:
         import cElementTree as ET
@@ -303,11 +304,11 @@ class TrackerImporter:
         # pick a series to attach the milestone.  Pick 'trunk' or
         # 'main' if they exist.  Otherwise pick the first.
         # pylint: disable-msg=W0631
-        for series in self.product.serieses:
+        for series in self.product.series:
             if series.name in ['trunk', 'main']:
                 break
         else:
-            series = self.product.serieses[0]
+            series = self.product.series[0]
 
         milestone = series.newMilestone(name)
         Store.of(milestone).flush()

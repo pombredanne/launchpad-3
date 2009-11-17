@@ -68,7 +68,7 @@ private _getExternalBugTrackersAndWatches() method, which returns a set of
 (ExternalBugTracker, bug_watches) tuples.
 
     >>> from lp.bugs.externalbugtracker import (
-    ...     Bugzilla, BugzillaLPPlugin, BUG_TRACKER_CLASSES)
+    ...     Bugzilla, BugzillaAPI, BUG_TRACKER_CLASSES)
     >>> from lp.bugs.interfaces.bugtracker import (
     ...     BugTrackerType)
     >>> from lp.testing.factory import LaunchpadObjectFactory
@@ -136,7 +136,7 @@ return more than one (ExternalBugTracker, bug_watches) tuple: the Gnome
 Bugzilla. This is because the Gnome Bugzilla is a special case.
 
 Bugzilla allows users to track bugs in more than one product. Launchpad
-supports this functionality through the BugzillaLPPlugin
+supports this functionality through the BugzillaAPI
 ExternalBugTracker subclass. Since the Gnome Bugzilla contains a very
 large number of bugs we only want to synchronise comments and bugs for
 some products. For the others, we want to use the standard
@@ -169,10 +169,10 @@ doesn't have the Launchpad plugin installed.
 
 However, if the Gnome Bugtracker does have the plugin installed,
 _getExternalBugTrackersAndWatches() behaves slightly differently.
-Firstly, we'll subclass BugzillaLPPlugin so that we don't have to
+Firstly, we'll subclass BugzillaAPI so that we don't have to
 connect to any servers.
 
-    >>> class ProductQueryingBugzillLPPlugin(BugzillaLPPlugin):
+    >>> class ProductQueryingBugzillaAPI(BugzillaAPI):
     ...
     ...     remote_bug_products = {
     ...         1: 'HeartOfGold',
@@ -192,14 +192,14 @@ connect to any servers.
 
 Next we'll update our NonConnectingBugzilla class so that its
 getExternalBugTrackerToUse() method will return an instance of our
-BugzillaLPPlugin subclass.
+BugzillaAPI subclass.
 
     >>> NonConnectingBugzilla.bug_tracker_to_use = (
-    ...     ProductQueryingBugzillLPPlugin)
+    ...     ProductQueryingBugzillaAPI)
 
 For those bug watches whose remote bugs are on products that we want to
 sync comments with, _getExternalBugTrackersAndWatches() will return
-(BugzillaLPPlugin, watches).
+(BugzillaAPI, watches).
 
 The checkwatches module contains a variable, SYNCABLE_GNOME_PRODUCTS,
 which defines the products that we want to sync comments for.
@@ -223,9 +223,9 @@ constructor.
 
 We only want to sync comments and bugs for the HeartOfGold product. Bug
 watches against that product will be returned as a batch from
-_getExternalBugTrackersAndWatches() along with a BugzillaLPPlugin
+_getExternalBugTrackersAndWatches() along with a BugzillaAPI
 instance. All the other bug watches will be returned as a batch with
-Bugzilla instance.
+another BugzillaAPI instance which has syncing disabled.
 
     >>> trackers_and_watches = get_trackers_and_watches(
     ...     gnome_bugzilla, bug_watches)
@@ -234,31 +234,32 @@ Bugzilla instance.
     >>> len(trackers_and_watches)
     2
 
-    >>> bugzilla_lp_plugin, lp_plugin_watches = trackers_and_watches[0]
-    >>> isinstance(bugzilla_lp_plugin, BugzillaLPPlugin)
+    >>> bugzilla_for_sync, sync_watches = trackers_and_watches[0]
+    >>> isinstance(bugzilla_for_sync, BugzillaAPI)
+    True
+    >>> bugzilla_for_sync.sync_comments
     True
 
     >>> from operator import attrgetter
-    >>> for watch in sorted(lp_plugin_watches, key=attrgetter('remotebug')):
+    >>> for watch in sorted(sync_watches, key=attrgetter('remotebug')):
     ...     print watch.remotebug
     1
     3
 
-    >>> normal_bugzilla, normal_watches = trackers_and_watches[1]
-    >>> isinstance(normal_bugzilla, Bugzilla)
+    >>> bugzilla_other, other_watches = trackers_and_watches[1]
+    >>> isinstance(bugzilla_other, BugzillaAPI)
     True
-
-    >>> isinstance(normal_bugzilla, BugzillaLPPlugin)
+    >>> bugzilla_other.sync_comments
     False
 
-    >>> for watch in sorted(normal_watches, key=attrgetter('remotebug')):
+    >>> for watch in sorted(other_watches, key=attrgetter('remotebug')):
     ...     print watch.remotebug
     2
     4
     5
 
 If we alter the SYNCABLE_GNOME_PRODUCTS list, different batches of bug
-watches will be returned for the different Bugzilla ExternalBugTrackers.
+watches will be returned for the two Bugzilla ExternalBugTrackers.
 
     >>> syncable_products = [
     ...     'HeartOfGold',
@@ -274,25 +275,27 @@ watches will be returned for the different Bugzilla ExternalBugTrackers.
     >>> len(trackers_and_watches)
     2
 
-    >>> bugzilla_lp_plugin, lp_plugin_watches = trackers_and_watches[0]
-    >>> normal_bugzilla, normal_watches = trackers_and_watches[1]
-    >>> isinstance(bugzilla_lp_plugin, BugzillaLPPlugin)
+    >>> bugzilla_for_sync, sync_watches = trackers_and_watches[0]
+    >>> bugzilla_other, other_watches = trackers_and_watches[1]
+
+    >>> isinstance(bugzilla_for_sync, BugzillaAPI)
+    True
+    >>> bugzilla_for_sync.sync_comments
     True
 
-    >>> isinstance(normal_bugzilla, Bugzilla)
+    >>> isinstance(bugzilla_other, BugzillaAPI)
     True
-
-    >>> isinstance(normal_bugzilla, BugzillaLPPlugin)
+    >>> bugzilla_other.sync_comments
     False
 
-    >>> for watch in sorted(lp_plugin_watches, key=attrgetter('remotebug')):
+    >>> for watch in sorted(sync_watches, key=attrgetter('remotebug')):
     ...     print watch.remotebug
     1
     2
     3
     5
 
-    >>> for watch in sorted(normal_watches, key=attrgetter('remotebug')):
+    >>> for watch in sorted(other_watches, key=attrgetter('remotebug')):
     ...     print watch.remotebug
     4
 

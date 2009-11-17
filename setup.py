@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-
-# Copyright 2009 Canonical Ltd.  All rights reserved.
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 import ez_setup
 ez_setup.use_setuptools()
@@ -19,23 +20,86 @@ setup(
     maintainer='Launchpad Developers',
     description=('A unique collaboration and Bazaar code hosting platform '
                  'for software projects.'),
-    license='LGPL v3',
+    license='Affero GPL v3',
+    # this list should only contain direct dependencies--things imported or
+    # used in zcml.
     install_requires=[
-        'feedvalidator',
-        'launchpadlib',
-        'lazr.smtptest',
-        'lazr.uri',
-        'mocker',
-        'oauth',
-        'python-openid',
-        'pytz',
-        'setuptools',
-        'sourcecodegen',
+        'bzr',
         'chameleon.core',
         'chameleon.zpt',
+        'feedvalidator',
+        'funkload',
+        'launchpadlib',
+        'lazr.batchnavigator',
+        'lazr.config',
+        'lazr.delegates',
+        'lazr.enum',
+        'lazr.lifecycle',
+        'lazr.restful',
+        'lazr.smtptest',
+        'lazr.uri',
+        'lazr-js',
+        'mechanize',
+        'mocker',
+        'oauth',
+        'paramiko',
+        'python-openid',
+        'pytz',
+        # This appears to be a broken indirect dependency from zope.security:
+        'RestrictedPython',
+        'setuptools',
+        'sourcecodegen',
+        'storm',
+        'transaction',
+        'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
-        'wadllib',
+        'zc.zservertracelog',
+        'zope.app.appsetup',
+        'zope.app.component',
+        'zope.app.dav', # ./package-includes/dav-configure.zcml
+        'zope.app.error',
+        'zope.app.exception',
+        'zope.app.file',
+        'zope.app.form',
+        'zope.app.pagetemplate',
+        'zope.app.publication',
+        'zope.app.publisher',
+        'zope.app.security',
+        'zope.app.securitypolicy',
+        'zope.app.server',
+        'zope.app.session',
+        'zope.app.testing',
+        'zope.app.zcmlfiles',
+        'zope.app.wsgi',
+        'zope.app.zapi',
+        'zope.contenttype',
+        'zope.component[zcml]',
+        'zope.datetime',
+        'zope.thread',
+        'zope.error',
+        'zope.event',
+        'zope.exceptions',
+        'zope.formlib',
+        'zope.i18n',
+        'zope.interface',
+        'zope.hookable', # indirect, via zope.app.component
+        'zope.lifecycleevent',
+        'zope.location',
+        'zope.pagetemplate',
+        'zope.publisher',
+        'zope.proxy',
+        'zope.schema',
+        'zope.security',
+        'zope.sendmail',
+        'zope.server',
+        'zope.session',
+        'zope.tal',
+        'zope.tales',
+        'zope.testbrowser',
+        'zope.testing',
+        'zope.traversing',
+        'zope.viewlet', # only fixing a broken dependency
         # Loggerhead dependencies. These should be removed once
         # bug 383360 is fixed and we include it as a source dist.
         'Paste',
@@ -61,6 +125,8 @@ setup(
             'run = canonical.launchpad.scripts.runlaunchpad:start_launchpad',
             'harness = canonical.database.harness:python',
             'twistd = twisted.scripts.twistd:run',
+            'start_librarian '
+                '= canonical.launchpad.scripts.runlaunchpad:start_librarian',
         ]
     ),
 )

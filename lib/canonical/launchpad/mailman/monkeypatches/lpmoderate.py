@@ -1,4 +1,5 @@
-# Copyright 2008 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """A pipeline handler for holding list non-members postings for approval.
 """
@@ -81,7 +82,8 @@ def hold(mlist, msg, msgdata, annotation):
     # This will fail if we can't talk to Launchpad.  That's okay though
     # because Mailman's IncomingRunner will re-queue the message and re-start
     # processing at this handler.
-    proxy.holdMessage(mlist.internal_name(), msg.as_string())
+    proxy.holdMessage(mlist.internal_name(),
+                      xmlrpclib.Binary(msg.as_string()))
     syslog('vette', 'Holding message for LP approval: %s', message_id)
     # Raise this exception, signaling to the incoming queue runner that it is
     # done processing this message, and should not send it through any further

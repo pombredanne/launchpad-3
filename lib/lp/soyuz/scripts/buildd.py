@@ -1,4 +1,6 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Buildd cronscript classes """
 
 __metaclass__ = type
@@ -90,7 +92,7 @@ class QueueBuilder(LaunchpadCronScript):
         if not self.options.score_only:
             # For each distroseries we care about, scan for
             # sourcepackagereleases with no build associated
-            # with the distroarchserieses we're interested in.
+            # with the distroarchseries we're interested in.
             self.logger.info("Rebuilding build queue.")
             for distroseries in sorted_distroseries:
                 buildMaster.createMissingBuilds(distroseries)
@@ -111,7 +113,7 @@ class QueueBuilder(LaunchpadCronScript):
                 "Could not find distribution: %s" % self.options.distribution)
 
         if len(self.options.suite) == 0:
-            return sorted(distribution.serieses, key=distroseries_sort_key)
+            return sorted(distribution.series, key=distroseries_sort_key)
 
         distroseries_set = set()
         for suite in self.options.suite:

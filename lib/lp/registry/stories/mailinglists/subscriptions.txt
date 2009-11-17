@@ -22,11 +22,11 @@ mailing lists but only admins will actually use its mailing list as its
 contact address.
 
     >>> admin_browser.open('http://launchpad.dev/~admins')
-    >>> admin_browser.getLink('Configure mailing list').click()
+    >>> admin_browser.getLink(url='+mailinglist').click()
     >>> admin_browser.getControl('Apply for Mailing List').click()
 
-    >>> admin_browser.open('http://launchpad.dev/~rosetta-admins')
-    >>> admin_browser.getLink('Configure mailing list').click()
+    >>> admin_browser.open('http://launchpad.dev/~rosetta-admins/')
+    >>> admin_browser.getLink(url='+mailinglist').click()
     >>> admin_browser.getControl('Apply for Mailing List').click()
 
     >>> admin_browser.open('http://launchpad.dev/+mailinglists')
@@ -42,8 +42,8 @@ contact address.
     >>> transaction.commit()
     >>> logout()
 
-    >>> admin_browser.open('http://launchpad.dev/~admins')
-    >>> admin_browser.getLink('Change contact address').click()
+    >>> admin_browser.open('http://launchpad.dev/~admins/+edit')
+    >>> admin_browser.getLink(url='+contactaddress').click()
     >>> admin_browser.getControl('The Launchpad mailing list').selected = True
     >>> admin_browser.getControl('Change').click()
 
@@ -52,7 +52,7 @@ actually be approved.
 
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~testing-spanish-team')
-    >>> browser.getLink('Configure mailing list').click()
+    >>> browser.getLink(url='+mailinglist').click()
     >>> browser.getControl('Apply for Mailing List').click()
 
 
@@ -83,10 +83,11 @@ he's a member of.  Mailing lists show up in this list regardless of whether
 it's currently the team contact method.
 
     >>> browser.open('http://launchpad.dev/~carlos')
-    >>> browser.getLink("Change details").click()
-    >>> browser.getLink("E-mail Settings").click()
-    >>> browser.title
-    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+    >>> browser.getLink(url="+editemails").click()
+
+    >>> from canonical.launchpad.helpers import backslashreplace
+    >>> print backslashreplace(browser.title)
+    Change your e-mail settings...
 
     >>> admins = browser.getControl(name='field.subscription.admins')
     >>> rosetta_admins = browser.getControl(
@@ -198,8 +199,8 @@ all.)
     >>> beta = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
     >>> person_set = getUtility(IPersonSet)
     >>> jdub = person_set.getByName('jdub')
-    >>> sabdfl = person_set.getByName('sabdfl')
-    >>> beta.addMember(jdub, reviewer=sabdfl)
+    >>> mark = person_set.getByName('mark')
+    >>> beta.addMember(jdub, reviewer=mark)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
@@ -209,10 +210,9 @@ to.  We will use Carlos, as he is an administrator for the Rosetta
 Admins team, and he should know if the list is available.
 
     >>> browser.open('http://launchpad.dev/~carlos')
-    >>> browser.getLink("Change details").click()
-    >>> browser.getLink("E-mail Settings").click()
-    >>> browser.title
-    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+    >>> browser.getLink(url="+editemails").click()
+    >>> print backslashreplace(browser.title)
+    Change your e-mail settings...
 
     >>> rosetta_admins = browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -228,8 +228,8 @@ Now Jdub can apply for team membership and mailing list access.
     >>> browser.url
     'http://launchpad.dev/~rosetta-admins/+join'
 
-    >>> browser.getControl(name='mailinglist_subscribe').value = ['checked']
-    >>> browser.getControl(name='join').click()
+    >>> browser.getControl(name='field.mailinglist_subscribe').value = ['checked']
+    >>> browser.getControl(name='field.actions.join').click()
     >>> browser.url
     'http://launchpad.dev/~rosetta-admins'
 
@@ -243,10 +243,9 @@ the list.  The list does not show up on his Subscription Management
 screen.
 
     >>> browser.open('http://launchpad.dev/~jdub')
-    >>> browser.getLink("Change details").click()
-    >>> browser.getLink("E-mail Settings").click()
-    >>> browser.title
-    "Jeff Waugh's e-mail addresses"
+    >>> browser.getLink(url="+editemails").click()
+    >>> print browser.title
+    Change your e-mail settings...
 
     >>> browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -258,7 +257,7 @@ Jdub will become a member of the team's mailing list as soon as he has
 been approved for the team.
 
     >>> admin_browser.open('http://launchpad.dev/~rosetta-admins')
-    >>> admin_browser.getLink('Show all members').click()
+    >>> admin_browser.getLink('All members').click()
     >>> admin_browser.getLink(
     ...     url='/~rosetta-admins/+member/jdub').click()
     >>> admin_browser.url
@@ -268,10 +267,9 @@ been approved for the team.
 His mailing list subscription is now available to be managed.
 
     >>> browser.open('http://launchpad.dev/~jdub')
-    >>> browser.getLink("Change details").click()
-    >>> browser.getLink("E-mail Settings").click()
-    >>> browser.title
-    "Jeff Waugh's e-mail addresses"
+    >>> browser.getLink(url="+editemails").click()
+    >>> print browser.title
+    Change your e-mail settings...
 
     >>> rosetta_team = browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -284,7 +282,7 @@ When he requests to re-join, the option to re-subscribe to the mailing
 list is not presented.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins/+leave')
-    >>> browser.getControl(name='leave').click()
+    >>> browser.getControl(name='field.actions.leave').click()
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
@@ -335,11 +333,7 @@ page, because he is not subscribed to the team mailing list.
 
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~admins')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'mailing-list-involvement'))
-    You are not subscribed to the team mailing list.
-    (Subscribe)
-    >>> browser.getLink('Subscribe').click()
+    >>> browser.getLink('Subscribe to mailing list').click()
     >>> print browser.url
     http://launchpad.dev/~carlos/+editemails
 
@@ -348,19 +342,18 @@ has an active mailing list.
 
     # Subscribe to the list using the normal technique.
     >>> browser.open('http://launchpad.dev/~carlos')
-    >>> browser.getLink("Change details").click()
-    >>> browser.getLink("E-mail Settings").click()
+    >>> browser.getLink(url="+editemails").click()
     >>> rosetta_admins = browser.getControl(
     ...     name='field.subscription.rosetta-admins')
     >>> rosetta_admins.value = ['Preferred address']
     >>> browser.getControl('Update Subscriptions').click()
     >>> print rosetta_admins.value
     ['Preferred address']
+    >>> for tag in find_tags_by_class(browser.contents, 'informational'):
+    ...     print tag.renderContents()
+    Subscriptions updated.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
-    >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'mailing-list-involvement'))
-    You are subscribed to the team mailing list.
     >>> browser.getControl('Unsubscribe')
     <SubmitControl name='unsubscribe' type='submit'>
 
@@ -372,9 +365,9 @@ Clicking the link will unsubscribe you from the list immediately.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> print extract_text(
-    ...     find_tag_by_id(browser.contents, 'mailing-list-involvement'))
-    You are not subscribed to the team mailing list.
-    (Subscribe)
+    ...     find_tag_by_id(browser.contents, 'mailing-lists'))
+    Mailing list...
+    Subscribe to mailing list...
 
 The Ubuntu translators team, which does not have any lists configured,
 does not show either link.
@@ -384,7 +377,7 @@ does not show either link.
     ...     find_portlet(browser.contents, 'Mailing list'))
     Mailing list
     This team does not have a mailing list.
-    Configure mailing list
+    Create a mailing list
 
     >>> browser.getLink('Subscribe')
     Traceback (most recent call last):
@@ -408,12 +401,51 @@ rosetta admins team has such a list and carlos is the owner.
     >>> print extract_text(
     ...     find_portlet(browser.contents, 'Mailing list'))
     Mailing list...
-    Mailing list archive
-    Mailing list subscribers...
+    View archive
+    View subscribers...
 
-    >>> browser.getLink('Mailing list subscribers').click()
-    >>> print browser.title
-    Mailing list subscribers for the Rosetta Administrators team
+The mailing list for Rosetta Admins has no subscribers.
+(Jeff Waugh has asked to subscribe but he's not considered a subscriber
+because his membership on Rosetta Admins hasn't been approved)
+
+    >>> browser.getLink('View subscribers').click()
+    >>> browser.title
+    'Mailing list subscribers for the Rosetta Administrators team...
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
+    Nobody has subscribed to this team's mailing list yet.
+
+If it had subscribers, though, they'd be shown on that page, in a batched
+list.
+
+    # Forge two new subscribers to the team's mailing list.
+    >>> from canonical.config import config
+    >>> config.push('default-batch-size', """
+    ... [launchpad]
+    ... default_batch_size: 1
+    ... """)
+    >>> login('foo.bar@canonical.com')
+    >>> salgado = person_set.getByName('salgado')
+    >>> jordi = person_set.getByName('jordi')
+    >>> rosetta_admins = person_set.getByName('rosetta-admins')
+    >>> rosetta_admins.addMember(salgado, reviewer=mark)
+    >>> rosetta_admins.mailing_list.subscribe(salgado)
+    >>> rosetta_admins.addMember(jordi, reviewer=mark)
+    >>> rosetta_admins.mailing_list.subscribe(jordi)
+    >>> logout()
+    >>> browser.reload()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
+    The following people are subscribed...
+    Guilherme Salgado
+    1 of 2 results...
+
+    >>> browser.getLink('Next').click()
+    >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
+    The following people are subscribed...
+    Jordi Mallach
+    2 of 2 results...
+
+    >>> config_data = config.pop('default-batch-size')
 
 If the team has no mailing list, then the archive and subscribers
 links are not present.
@@ -435,10 +467,9 @@ list based on a setting in the person's Email preferences page.
 
     >>> browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~carlos')
-    >>> browser.getLink("Change details").click()
-    >>> browser.getLink("E-mail Settings").click()
-    >>> browser.title
-    "Carlos Perell\xc3\xb3 Mar\xc3\xadn's e-mail addresses"
+    >>> browser.getLink(url="+editemails").click()
+    >>> print backslashreplace(browser.title)
+    Change your e-mail settings...
 
 Carlos's default setting, 'Ask me when I join a team', is still in place.
 
@@ -514,8 +545,7 @@ subscription settings will see the box checked by default.
     ...     auth='Basic james.blackwell@ubuntulinux.com:jblack')
 
     >>> browser.open('http://launchpad.dev/~jblack')
-    >>> browser.getLink("Change details").click()
-    >>> browser.getLink("E-mail Settings").click()
+    >>> browser.getLink(url="+editemails").click()
     >>> print_radio_button_field(browser.contents,
     ...     'mailing_list_auto_subscribe_policy')
     ( ) Never subscribe to mailing lists
@@ -527,13 +557,12 @@ subscription settings will see the box checked by default.
     >>> browser.url
     'http://launchpad.dev/~rosetta-admins/+join'
 
-    >>> print browser.getControl(name='mailinglist_subscribe').value
-    ['subscribe']
+    >>> print browser.getControl(name='field.mailinglist_subscribe').value
+    True
 
     # Change James' setting
     >>> browser.open('http://launchpad.dev/~jblack')
-    >>> browser.getLink("Change details").click()
-    >>> browser.getLink("E-mail Settings").click()
+    >>> browser.getLink(url="+editemails").click()
     >>> set_autosubscribe_policy_and_submit('ALWAYS')
     ( ) Never subscribe to mailing lists
     ( ) Ask me when I join a team
@@ -541,16 +570,15 @@ subscription settings will see the box checked by default.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
-    >>> print browser.getControl(name='mailinglist_subscribe').value
-    ['subscribe']
+    >>> print browser.getControl(name='field.mailinglist_subscribe').value
+    True
 
 Users who have chosen to never be auto-subscribed to mailing
 lists will not have the box checked.
 
     # Change James' setting
     >>> browser.open('http://launchpad.dev/~jblack')
-    >>> browser.getLink("Change details").click()
-    >>> browser.getLink("E-mail Settings").click()
+    >>> browser.getLink(url="+editemails").click()
     >>> set_autosubscribe_policy_and_submit('NEVER')
     (*) Never subscribe to mailing lists
     ( ) Ask me when I join a team
@@ -558,13 +586,12 @@ lists will not have the box checked.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
-    >>> print browser.getControl(name='mailinglist_subscribe').value
-    []
+    >>> print browser.getControl(name='field.mailinglist_subscribe').value
+    False
 
     # Restore James' setting.
     >>> browser.open('http://launchpad.dev/~jblack')
-    >>> browser.getLink("Change details").click()
-    >>> browser.getLink("E-mail Settings").click()
+    >>> browser.getLink(url="+editemails").click()
     >>> set_autosubscribe_policy_and_submit('ON_REGISTRATION')
     ( ) Never subscribe to mailing lists
     (*) Ask me when I join a team

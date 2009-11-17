@@ -33,15 +33,14 @@ Branch URLs are not valid for hosted branches.
     >>> browser.getControl('Branch URL').value = ''
     >>> browser.getControl('Register Branch').click()
 
-    >>> def print_details_table(browser):
-    ...     table = find_tag_by_id(browser.contents, 'branch-details-table')
-    ...     for row in table.findAll('tr'):
-    ...         print extract_text(row)
-    >>> print_details_table(browser)
+    >>> def print_branch_info(browser):
+    ...     branch_info = find_tag_by_id(browser.contents, 'branch-info')
+    ...     print extract_text(branch_info)
+    >>> print_branch_info(browser)
+    Branch information
+    Owner: Sample Person
     Project: Redfish (Unspecified)
     Status: Development
-    Update this branch:
-        bzr push lp://dev/~name12/redfish/hosted-branch
 
 
 == Creating a mirrored branch ==
@@ -71,7 +70,9 @@ Branch URLs are required for mirrored branches.
     ...     'http://example.com/mirrored-branch')
     >>> browser.getControl('Register Branch').click()
 
-    >>> print_details_table(browser)
+    >>> print_branch_info(browser)
+    Branch information
+    Owner: Sample Person
     Project: Redfish (Unspecified)
     Status: Development
     Location: http://example.com/mirrored-branch
@@ -94,7 +95,9 @@ A remote branch may have a URL, but doesn't have to.
     >>> browser.getControl('Branch URL').value = (
     ...     'http://example.com/remote-branch')
     >>> browser.getControl('Register Branch').click()
-    >>> print_details_table(browser)
+    >>> print_branch_info(browser)
+    Branch information
+    Owner: Sample Person
     Project: Redfish (Unspecified)
     Status: Development
     Location: http://example.com/remote-branch
@@ -141,13 +144,15 @@ matching for the angle brackets of an enclosing tag.
     >>> user_browser.url
     'http://code.launchpad.dev/~no-priv/applets/main'
 
-    >>> print extract_text(find_main_content(user_browser.contents))
-    Created by ...
-    ...
+    >>> content = find_tag_by_id(user_browser.contents, 'document')
+    >>> print extract_text(find_tag_by_id(content, 'registration'))
+    Created by No Privileges Person on ... and last modified on ...
+    >>> print extract_text(find_tag_by_id(content, 'privacy'))
     This branch is public
-    ...
+    >>> print extract_text(content.h1)
     lp://dev/~no-priv/applets/main
-    ...http://example.com/applets/main...
+    >>> print extract_text(find_tag_by_id(content, 'mirror-location'))
+    Location: http://example.com/applets/main
 
 
 This page includes a link to other branches associated
@@ -187,6 +192,7 @@ the user is a member of, or to themselves.
     >>> for option in browser.getControl('Owner').displayOptions:
     ...     print option
     Sample Person (name12)
+    HWDB Team (hwdb-team)
     Landscape Developers (landscape-developers)
     Launchpad Users (launchpad-users)
     Ubuntu Gnome Team (name18)
@@ -310,8 +316,9 @@ Trailing slashes on URLs are removed.
     >>> user_browser.getControl('Branch URL').value = (
     ...     'sftp://example.com/~lifeless/pyresources/')
     >>> user_browser.getControl('Register Branch').click()
-    >>> print_tag_with_id(user_browser.contents, 'branch-details-table')
-    Project: ...
+    >>> print_tag_with_id(user_browser.contents, 'branch-info')
+    Branch information
+    Owner: ...
     ...
     Location: sftp://example.com/~lifeless/pyresources
     ...

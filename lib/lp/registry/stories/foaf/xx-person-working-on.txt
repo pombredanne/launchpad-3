@@ -6,8 +6,10 @@ Sample Person is not working on any bugs/blueprints right now, so the section
 won't be displayed.
 
     >>> anon_browser.open('http://launchpad.dev/~name12/')
-    >>> print find_tag_by_id(anon_browser.contents, 'working-on')
-    None
+    >>> text = extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'working-on'))
+    >>> len(text)
+    0
 
 For a person who's working on some bugs/blueprints, though, they'd be
 displayed there.
@@ -32,17 +34,16 @@ displayed there.
     >>> anon_browser.open(new_person_url)
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'working-on'))
-    Working on
-    #... ...
-    Show all bugs in progress
-    ... for ...
+    All bugs in progress
+    Assigned bugs
     ...
-    Show all assigned blueprints
+    All assigned blueprints
+    ...
 
 The links below the bugs/blueprints sections point to the other
 bugs/blueprints that the person is working on.
 
-    >>> anon_browser.getLink('Show all bugs in progress')
+    >>> anon_browser.getLink('All bugs in progress')
     <Link...+assignedbugs?...status=In+Progress...
-    >>> anon_browser.getLink('Show all assigned blueprints')
+    >>> anon_browser.getLink('All assigned blueprints')
     <Link...+specs?role=assignee...

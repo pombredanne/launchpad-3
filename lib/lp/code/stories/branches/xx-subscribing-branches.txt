@@ -139,7 +139,7 @@ specify the person to subscribe.  The person field is required.
     There is 1 error.
     Required input is missing.
 
-    >>> browser.getControl('Person').value = 'sabdfl'
+    >>> browser.getControl('Person').value = 'mark'
     >>> browser.getControl('Subscribe').click()
 
     >>> print_informational_message(browser.contents)

@@ -1,4 +1,6 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 # pylint: disable-msg=E0211,E0213,W0401
 
 __metaclass__ = type
@@ -199,10 +201,15 @@ class IBaseImageUpload(IBytes):
 class StrippedTextLine(TextLine):
     implements(IStrippedTextLine)
 
+    def set(self, object, value):
+        """Strip the value and pass up."""
+        if value is not None:
+            value = value.strip()
+        super(StrippedTextLine, self).set(object, value)
+
 
 class NoneableTextLine(StrippedTextLine):
     implements(INoneableTextLine)
-
 
 # Title
 # A field to capture a launchpad object title
@@ -210,15 +217,29 @@ class Title(StrippedTextLine):
     implements(ITitle)
 
 
+class StrippableText(Text):
+    """A text that can be configured to strip when setting."""
+
+    def __init__(self, strip_text=False, **kwargs):
+        super(StrippableText, self).__init__(**kwargs)
+        self.strip_text = strip_text
+
+    def set(self, object, value):
+        """Strip the value and pass up."""
+        if self.strip_text:
+            value = value.strip()
+        super(StrippableText, self).set(object, value)
+
+
 # Summary
 # A field capture a Launchpad object summary
-class Summary(Text):
+class Summary(StrippableText):
     implements(ISummary)
 
 
 # Description
 # A field capture a Launchpad object description
-class Description(Text):
+class Description(StrippableText):
     implements(IDescription)
 
 
@@ -228,7 +249,7 @@ class NoneableDescription(Description):
 
 # Whiteboard
 # A field capture a Launchpad object whiteboard
-class Whiteboard(Text):
+class Whiteboard(StrippableText):
     implements(IWhiteboard)
 
 

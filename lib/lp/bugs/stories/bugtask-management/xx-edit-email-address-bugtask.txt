@@ -128,7 +128,7 @@ The owner can see the Status and Importance widgets.
 
     >>> login(ANONYMOUS)
     >>> alsa_utils.owner.name
-    u'sabdfl'
+    u'mark'
     >>> logout()
 
     >>> print_widget_visibility(

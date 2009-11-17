@@ -35,7 +35,7 @@
           Releases may be a list or an resultset. We cannot easily know if there
           releases until the first one is returned.
         </tal:comment>
-        <tal:comma condition="series/milestones"> &nbsp &nbsp </tal:comma>
+        <tal:space condition="series/milestones"> &nbsp &nbsp </tal:space>
         Releases:
       </tal:release-start>
       <a tal:attributes="href release/fmt:url" tal:content="release/version"

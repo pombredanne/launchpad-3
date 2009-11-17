@@ -1,4 +1,5 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Browser views for products."""
 
@@ -9,30 +10,27 @@ __all__ = [
     'ProductAddView',
     'ProductAddViewBase',
     'ProductAdminView',
-    'ProductBountiesMenu',
     'ProductBrandingView',
-    'ProductBreadcrumbBuilder',
     'ProductBugsMenu',
-    'ProductChangeTranslatorsView',
+    'ProductDistributionsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
-    'ProductEditNavigationMenu',
     'ProductEditPeopleView',
     'ProductEditView',
     'ProductFacets',
     'ProductNavigation',
     'ProductNavigationMenu',
     'ProductOverviewMenu',
+    'ProductPackagesView',
     'ProductRdfView',
     'ProductReviewLicenseView',
-    'ProductSetBreadcrumbBuilder',
-    'ProductSetContextMenu',
+    'ProductSeriesView',
+    'ProductSetBreadcrumb',
     'ProductSetFacets',
     'ProductSetNavigation',
     'ProductSetReviewLicensesView',
     'ProductSetView',
     'ProductSpecificationsMenu',
-    'ProductTranslationsMenu',
     'ProductView',
     'SortSeriesMixin',
     'ProjectAddStepOne',
@@ -48,7 +46,6 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.interface import implements, Interface
 from zope.formlib import form
-from zope.security.proxy import removeSecurityProxy
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -58,13 +55,14 @@ from canonical.config import config
 from lazr.delegates import delegates
 from canonical.launchpad import _
 from canonical.launchpad.fields import PillarAliases, PublicPersonChoice
+from lp.app.interfaces.headings import IEditableContextTitle
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
 from lp.bugs.interfaces.bugwatch import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
-from canonical.launchpad.interfaces.translationimportqueue import (
-    ITranslationImportQueue)
 from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet
@@ -77,38 +75,41 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from canonical.launchpad import helpers
 from lp.registry.browser.announcement import HasAnnouncementsView
-from canonical.launchpad.browser.branding import BrandingChangeView
+from lp.registry.browser.branding import BrandingChangeView
 from lp.code.browser.branchref import BranchRef
 from lp.bugs.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from lp.registry.browser.distribution import UsesLaunchpadMixin
+from lp.registry.browser.menu import (
+    IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
+from lp.registry.browser.packaging import PackagingDeleteView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.browser.translations import TranslationsMixin
+from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
+    StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
-    ApplicationMenu, ContextMenu, LaunchpadEditFormView, LaunchpadFormView,
-    LaunchpadView, Link, Navigation, StandardLaunchpadFacets, action,
-    canonical_url, custom_widget, enabled_with_permission,
-    sorted_version_numbers, stepthrough, stepto, structured)
+    ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
+    Link, Navigation, StandardLaunchpadFacets, action, canonical_url,
+    custom_widget, enabled_with_permission, sorted_version_numbers,
+    stepthrough, stepto, structured)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.breadcrumb import BreadcrumbBuilder
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.widgets.popup import PersonPickerWidget, VocabularyPickerWidget
+from canonical.widgets.popup import PersonPickerWidget
 from canonical.widgets.date import DateWidget
 from canonical.widgets.itemswidgets import (
     CheckBoxMatrixWidget, LaunchpadRadioWidget)
 from canonical.widgets.lazrjs import TextLineEditorWidget
-from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.product import (
     LicenseWidget, GhostWidget, ProductBugTrackerWidget, ProductNameWidget)
 from canonical.widgets.textwidgets import StrippedTextWidget
-from lp.registry.model.productseries import ProductSeries
 
 
 OR = '|'
@@ -117,7 +118,8 @@ SPACE = ' '
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
-    FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
+    FAQTargetNavigationMixin, QuestionTargetTraversalMixin,
+    StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -246,13 +248,6 @@ class ProductLicenseMixin:
                 "you soon."))
 
 
-class ProductBreadcrumbBuilder(BreadcrumbBuilder):
-    """Builds a breadcrumb for an `IProduct`."""
-    @property
-    def text(self):
-        return self.context.displayname
-
-
 class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IProduct."""
 
@@ -273,14 +268,8 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         summary = 'Bugs reported about %s' % self.context.displayname
         return Link('', text, summary)
 
-    def bounties(self):
-        target = '+bounties'
-        text = 'Bounties'
-        summary = 'Bounties related to %s' % self.context.displayname
-        return Link(target, text, summary)
-
     def branches(self):
-        text = 'Code'
+        text = 'Branches'
         summary = 'Branches for %s' % self.context.displayname
         return Link('', text, summary)
 
@@ -293,10 +282,6 @@ class ProductFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         text = 'Translations'
         summary = 'Translations of %s in Launchpad' % self.context.displayname
         return Link('', text, summary)
-
-
-class IProductEditMenu(Interface):
-    """A marker interface for the 'Change details' navigation menu."""
 
 
 class ProductNavigationMenu(NavigationMenu):
@@ -328,47 +313,8 @@ class ProductNavigationMenu(NavigationMenu):
         return Link('+branchvisibility', text)
 
 
-class ProductEditNavigationMenu(NavigationMenu):
-    """A sub-menu for different aspects of editing a Product's details."""
-
-    usedfor = IProductEditMenu
-    facet = 'overview'
-    title = 'Change project details'
-    links = ('details', 'branding', 'people')
-
-    def details(self):
-        target = '+edit'
-        text = 'Details'
-        return Link(target, text)
-
-    def branding(self):
-        text = 'Branding'
-        return Link('+branding', text)
-
-    def people(self):
-        text = 'People'
-        summary = 'Someone with permission to set goals for all series'
-        return Link('+edit-people', text, summary)
-
-
-class ProductOverviewMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'overview'
-    links = [
-        'edit',
-        'reassign',
-        'top_contributors',
-        'mentorship',
-        'distributions',
-        'packages',
-        'series_add',
-        'announce',
-        'announcements',
-        'administer',
-        'review_license',
-        'rdf',
-        ]
+class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
+    """A mixin class for menus that need Product edit links."""
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -376,30 +322,90 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def branding(self):
+        text = 'Change branding'
+        return Link('+branding', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change maintainer'
+        text = 'Change people'
         return Link('+edit-people', text, icon='edit')
 
+    @enabled_with_permission('launchpad.ProjectReview')
+    def review_license(self):
+        text = 'Review project'
+        return Link('+review-license', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def administer(self):
+        text = 'Administer'
+        return Link('+admin', text, icon='edit')
+
+
+class IProductEditMenu(Interface):
+    """A marker interface for the 'Change details' navigation menu."""
+
+
+class IProductActionMenu(Interface):
+    """A marker interface for the global action navigation menu."""
+
+
+class ProductActionNavigationMenu(NavigationMenu, ProductEditLinksMixin):
+    """A sub-menu for acting upon a Product."""
+
+    usedfor = IProductActionMenu
+    facet = 'overview'
+    title = 'Actions'
+    links = ('edit', 'review_license', 'administer', 'subscribe')
+
+
+class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
+
+    usedfor = IProduct
+    facet = 'overview'
+    links = [
+        'edit',
+        'reassign',
+        'top_contributors',
+        'distributions',
+        'packages',
+        'series',
+        'series_add',
+        'milestones',
+        'downloads',
+        'announce',
+        'announcements',
+        'administer',
+        'review_license',
+        'branchvisibility',
+        'rdf',
+        'branding',
+        ]
+
     def top_contributors(self):
-        text = u'\u00BB More contributors'
-        return Link('+topcontributors', text)
+        text = 'More contributors'
+        return Link('+topcontributors', text, icon='info')
 
     def distributions(self):
-        text = 'Packaging information'
+        text = 'Distribution packaging information'
         return Link('+distributions', text, icon='info')
-
-    def mentorship(self):
-        text = 'Mentoring available'
-        return Link('+mentoring', text, icon='info')
 
     def packages(self):
         text = 'Show distribution packages'
         return Link('+packages', text, icon='info')
 
+    def series(self):
+        text = 'View full history'
+        return Link('+series', text, icon='info')
+
     @enabled_with_permission('launchpad.Driver')
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
+
+    def milestones(self):
+        text = 'View milestones'
+        return Link('+milestones', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
@@ -408,9 +414,9 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+announce', text, summary, icon='add')
 
     def announcements(self):
-        text = u'\u00BB More announcements'
-        enabled = bool(self.context.announcements())
-        return Link('+announcements', text, enabled=enabled)
+        text = 'Read all announcements'
+        enabled = bool(self.context.getAnnouncements())
+        return Link('+announcements', text, icon='info', enabled=enabled)
 
     def rdf(self):
         text = structured(
@@ -418,18 +424,17 @@ class ProductOverviewMenu(ApplicationMenu):
             'RDF</abbr> metadata')
         return Link('+rdf', text, icon='download')
 
+    def downloads(self):
+        text = 'Downloads'
+        return Link('+download', text, icon='info')
+
     @enabled_with_permission('launchpad.Admin')
-    def administer(self):
-        text = 'Administer'
-        return Link('+admin', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Commercial')
-    def review_license(self):
-        text = 'Review project'
-        return Link('+review-license', text, icon='edit')
+    def branchvisibility(self):
+        text = 'Branch Visibility Policy'
+        return Link('+branchvisibility', text, icon='edit')
 
 
-class ProductBugsMenu(ApplicationMenu):
+class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IProduct
     facet = 'bugs'
@@ -458,91 +463,12 @@ class ProductBugsMenu(ApplicationMenu):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
-
-class ProductSpecificationsMenu(ApplicationMenu):
-
+class ProductSpecificationsMenu(NavigationMenu,
+                                HasSpecificationsMenuMixin):
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'table', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        summary = 'Show all specifications for %s' %  self.context.title
-        return Link('+specs?show=all', text, summary, icon='info')
-
-    def doc(self):
-        text = 'List documentation'
-        summary = 'List all complete informational specifications'
-        return Link('+documentation', text, summary,
-            icon='info')
-
-    def table(self):
-        text = 'Assignments'
-        summary = 'Show the full assignment of work, drafting and approving'
-        return Link('+assignments', text, summary, icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
-
-
-class ProductBountiesMenu(ApplicationMenu):
-
-    usedfor = IProduct
-    facet = 'bounties'
-    links = ['new', 'link']
-
-    def new(self):
-        text = 'Register bounty'
-        return Link('+addbounty', text, icon='add')
-
-    def link(self):
-        text = 'Link existing bounty'
-        return Link('+linkbounty', text, icon='edit')
-
-
-class ProductTranslationsMenu(NavigationMenu):
-
-    usedfor = IProduct
-    facet = 'translations'
-    links = (
-        'overview',
-        'translators',
-        'translationdownload',
-        'imports',
-        )
-
-    def imports(self):
-        text = 'Import queue'
-        return Link('+imports', text)
-
-    @enabled_with_permission('launchpad.Edit')
-    def translators(self):
-        text = 'Settings'
-        return Link('+changetranslators', text, icon='edit')
-
-    @enabled_with_permission('launchpad.AnyPerson')
-    def translationdownload(self):
-        text = 'Download'
-        preferred_series = self.context.primary_translatable
-        enabled = (self.context.official_rosetta and
-            preferred_series is not None)
-        link = ''
-        if enabled:
-            link = '%s/+export' % preferred_series.name
-            text = 'Download "%s"' % preferred_series.name
-
-        return Link(link, text, icon='download', enabled=enabled)
-
-    def overview(self):
-        text = 'Overview'
-        link = canonical_url(self.context, rootsite='translations')
-        return Link(link, text, icon='translation')
+    links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
 
 
 def _sort_distros(a, b):
@@ -552,7 +478,7 @@ def _sort_distros(a, b):
     return cmp(a['name'], b['name'])
 
 
-class ProductSetBreadcrumbBuilder(BreadcrumbBuilder):
+class ProductSetBreadcrumb(Breadcrumb):
     """Return a breadcrumb for an `IProductSet`."""
     text = "Projects"
 
@@ -562,46 +488,7 @@ class ProductSetFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSet
 
-    enable_only = ['overview']
-
-
-class ProductSetContextMenu(ContextMenu):
-
-    usedfor = IProductSet
-
-    links = ['products', 'distributions', 'people', 'meetings',
-             'all', 'register', 'register_team', 'review_licenses']
-
-    def register(self):
-        text = 'Register a project'
-        # We link to the guided form, though people who know the URL can
-        # just jump to +new directly. That might be considered a
-        # feature!
-        return Link('+new', text, icon='add')
-
-    def register_team(self):
-        text = 'Register a team'
-        return Link('/people/+newteam', text, icon='add')
-
-    def all(self):
-        text = 'List all projects'
-        return Link('+all', text, icon='list')
-
-    def products(self):
-        return Link('/projects/', 'View projects')
-
-    def distributions(self):
-        return Link('/distros/', 'View distributions')
-
-    def people(self):
-        return Link('/people/', 'View people')
-
-    def meetings(self):
-        return Link('/sprints/', 'View meetings')
-
-    @enabled_with_permission('launchpad.Commercial')
-    def review_licenses(self):
-        return Link('+review-licenses', 'Review projects')
+    enable_only = ['overview', 'branches']
 
 
 class SortSeriesMixin:
@@ -618,7 +505,7 @@ class SortSeriesMixin:
         The development focus is always first in the list.
         """
         series_list = []
-        for series in self.product.serieses:
+        for series in self.product.series:
             if filter is None or filter(series):
                 series_list.append(series)
         # In production data, there exist development focus series that are
@@ -661,26 +548,34 @@ class ProductWithSeries:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid delegates taking them
-    # over.
-    serieses = None
+    # `series` and `development_focus` need to be declared as class
+    # attributes so that this class will not delegate the actual instance
+    # variables to self.product, which would bypass the caching.
+    series = None
     development_focus = None
     delegates(IProduct, 'product')
 
     def __init__(self, product):
         self.product = product
-        self.serieses = []
-        self.series_by_id = {}
+        self.series = []
+        for series in self.product.series:
+            series_with_releases = SeriesWithReleases(series, parent=self)
+            self.series.append(series_with_releases)
+            if self.product.development_focus == series:
+                self.development_focus = series_with_releases
 
-    def setSeries(self, serieses):
-        """Set the serieses to the provided collection."""
-        self.serieses = serieses
-        self.series_by_id = dict(
-            (series.id, series) for series in self.serieses)
-
-    def getSeriesById(self, id):
-        """Look up and return a ProductSeries by id."""
-        return self.series_by_id[id]
+        # Get all of the releases for all of the series in a single
+        # query.  The query sorts the releases properly so we know the
+        # resulting list is sorted correctly.
+        series_by_id = dict((series.id, series) for series in self.series)
+        self.release_by_id = {}
+        milestones_and_releases = list(
+            self.product.getMilestonesAndReleases())
+        for milestone, release in milestones_and_releases:
+            series = series_by_id[milestone.productseries.id]
+            release_delegate = ReleaseWithFiles(release, parent=series)
+            series.addRelease(release_delegate)
+            self.release_by_id[release.id] = release_delegate
 
 
 class SeriesWithReleases:
@@ -691,13 +586,17 @@ class SeriesWithReleases:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid delegates taking them
-    # over.
+    # `parent` and `releases` need to be declared as class attributes so that
+    # this class will not delegate the actual instance variables to
+    # self.series, which would bypass the caching for self.releases and would
+    # raise an AttributeError for self.parent.
+    parent = None
     releases = None
     delegates(IProductSeries, 'series')
 
-    def __init__(self, series):
+    def __init__(self, series, parent):
         self.series = series
+        self.parent = parent
         self.releases = []
 
     def addRelease(self, release):
@@ -729,17 +628,45 @@ class ReleaseWithFiles:
     cached locally and simply returned.
     """
 
-    # These need to be predeclared to avoid delegates taking them
-    # over.
-    files = None
+    # `parent` needs to be declared as class attributes so that
+    # this class will not delegate the actual instance variables to
+    # self.release, which would raise an AttributeError.
+    parent = None
     delegates(IProductRelease, 'release')
 
-    def __init__(self, release):
+    def __init__(self, release, parent):
         self.release = release
-        self.files = []
+        self.parent = parent
+        self._files = None
 
-    def addFile(self, file):
-        self.files.append(file)
+    @property
+    def files(self):
+        """Cache the release files for all the releases in the product."""
+        if self._files is None:
+            # Get all of the files for all of the releases.  The query
+            # returns all releases sorted properly.
+            product = self.parent.parent
+            release_delegates = product.release_by_id.values()
+            files = getUtility(IProductReleaseSet).getFilesForReleases(
+                release_delegates)
+            for release_delegate in release_delegates:
+                release_delegate._files = []
+            for file in files:
+                id = file.productrelease.id
+                release_delegate = product.release_by_id[id]
+                release_delegate._files.append(file)
+
+        # self._files was set above, since self is actually in the
+        # release_delegates variable.
+        return self._files
+
+    @property
+    def name_with_codename(self):
+        milestone = self.release.milestone
+        if milestone.code_name:
+            return "%s (%s)" % (milestone.name, milestone.code_name)
+        else:
+            return milestone.name
 
     @cachedproperty
     def total_downloads(self):
@@ -757,41 +684,7 @@ class ProductDownloadFileMixin:
         Decorated classes are created, and they contain cached data
         obtained with a few queries rather than many iterated queries.
         """
-        # Create the decorated product and set the list of series.
-        original_product = self.context
-
-        product_with_series = ProductWithSeries(original_product)
-        serieses = []
-        for series in original_product.serieses:
-            series_with_releases = SeriesWithReleases(series)
-            serieses.append(series_with_releases)
-            if original_product.development_focus == series:
-                product_with_series.development_focus = series_with_releases
-
-        product_with_series.setSeries(serieses)
-
-        # Get all of the releases for all of the serieses in a single
-        # query.  The query sorts the releases properly so we know the
-        # resulting list is sorted correctly.
-        release_set = getUtility(IProductReleaseSet)
-        release_by_id = {}
-        releases = release_set.getReleasesForSerieses(
-            product_with_series.serieses)
-        for release in releases:
-            series = product_with_series.getSeriesById(
-                release.productseries.id)
-            decorated_release = ReleaseWithFiles(release)
-            series.addRelease(decorated_release)
-            release_by_id[release.id] = decorated_release
-
-        # Get all of the files for all of the releases.  The query
-        # returns all releases sorted properly.
-        files = release_set.getFilesForReleases(releases)
-        for file in files:
-            release = release_by_id[file.productrelease.id]
-            release.addFile(file)
-
-        return product_with_series
+        return ProductWithSeries(self.context)
 
     def deleteFiles(self, releases):
         """Delete the selected files from the set of releases.
@@ -838,12 +731,6 @@ class ProductDownloadFileMixin:
                     "%d files have been deleted." %
                     del_count)
 
-    def seriesHasDownloadFiles(self, series):
-        """Determine whether a series has any download files."""
-        for release in series.releases:
-            if len(release.files) > 0:
-                return True
-
     @cachedproperty
     def latest_release_with_download_files(self):
         """Return the latest release with download files."""
@@ -858,6 +745,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                   ProductDownloadFileMixin, UsesLaunchpadMixin):
 
     __used_for__ = IProduct
+    implements(IProductActionMenu, IEditableContextTitle)
 
     def __init__(self, context, request):
         HasAnnouncementsView.__init__(self, context, request)
@@ -869,6 +757,24 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             self.context, 'title',
             canonical_url(self.context, view_name='+edit'),
             id="product-title", title="Edit this title")
+        if self.context.programminglang is None:
+            additional_arguments = dict(
+                default_text='Not yet specified',
+                initial_value_override='',
+                )
+        else:
+            additional_arguments = {}
+        self.languages_edit_widget = TextLineEditorWidget(
+            self.context, 'programminglang',
+            canonical_url(self.context, view_name='+edit'),
+            id='programminglang', title='Edit programming languages',
+            tag='span', public_attribute='programming_language',
+            accept_empty=True,
+            width='9em',
+            **additional_arguments)
+        self.show_programming_languages = bool(
+            self.context.programminglang or
+            self.user == self.context.owner)
 
     @property
     def show_license_status(self):
@@ -898,40 +804,34 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 self.context.downloadurl)
 
     @property
+    def external_links(self):
+        """The project's external links.
+
+        The home page link is not included because its link must have the
+        rel=nofollow attribute.
+        """
+        from canonical.launchpad.webapp.menu import MenuLink
+        urls = [
+            ('Sourceforge project', self.sourceforge_url),
+            ('Freshmeat record', self.freshmeat_url),
+            ('Wiki', self.context.wikiurl),
+            ('Screenshots', self.context.screenshotsurl),
+            ('External downloads', self.context.downloadurl),
+            ]
+        links = []
+        for (text, url) in urls:
+            if url is not None:
+                menu_link = MenuLink(
+                    Link(url, text, icon='external-link', enabled=True))
+                menu_link.url = url
+                links.append(menu_link)
+        return links
+
+    @property
     def should_display_homepage(self):
         return (self.context.homepageurl and
                 self.context.homepageurl not in
                     [self.freshmeat_url, self.sourceforge_url])
-
-    @cachedproperty
-    def uses_translations(self):
-        """Whether this product has translatable templates."""
-        return (self.context.official_rosetta and self.primary_translatable)
-
-    @cachedproperty
-    def primary_translatable(self):
-        """Return a dictionary with the info for a primary translatable.
-
-        If there is no primary translatable object, returns an empty
-        dictionary.
-
-        The dictionary has the keys:
-         * 'title': The title of the translatable object.
-         * 'potemplates': a set of PO Templates for this object.
-         * 'base_url': The base URL to reach the base URL for this object.
-        """
-        translatable = self.context.primary_translatable
-        naked_translatable = removeSecurityProxy(translatable)
-
-        if (translatable is None or
-            not isinstance(naked_translatable, ProductSeries)):
-            return {}
-
-        return {
-            'title': translatable.title,
-            'potemplates': translatable.getCurrentTranslationTemplates(),
-            'base_url': canonical_url(translatable)
-            }
 
     def requestCountry(self):
         return ICountry(self.request, None)
@@ -951,7 +851,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
         distros = {}
         # first get a list of all relevant packagings
         all_packagings = []
-        for series in self.context.serieses:
+        for series in self.context.series:
             for packaging in series.packagings:
                 all_packagings.append(packaging)
         # we sort it so that the packagings will always be displayed in the
@@ -1025,11 +925,67 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 check_permission('launchpad.Commercial', self.context))
 
 
+class ProductPackagesView(PackagingDeleteView):
+    """View for displaying product packaging"""
+
+    label = 'Linked packages'
+
+    @property
+    def all_packaging(self):
+        """See `PackagingDeleteView`."""
+        for series in self.context.series:
+            for packaging in series.packagings:
+                yield packaging
+
+    @cachedproperty
+    def series_packages(self):
+        """A hierarchy of product series, packaging and field data.
+
+        A dict of series and packagings. Each packaging is a dict of the
+        packaging and a hidden HTML field for forms:
+           [{series: <hoary>,
+             packagings: {
+                packaging: <packaging>,
+                field: '<input type=''hidden' ...>},
+                }]
+        """
+        # This method is a superset of all_packaging. While all_packaging will
+        # be called several times as data is mutated, series_packages should
+        # only be called during render().
+        packaged_series = []
+        for series in self.context.series:
+            packagings = []
+            for packaging in series.packagings:
+                form_id = 'delete-%s-%s-%s' % (
+                    packaging.distroseries.name,
+                    packaging.sourcepackagename.name,
+                    packaging.productseries.name,
+                    )
+                packaging_field = dict(
+                    packaging=packaging,
+                    form_id=form_id,
+                    field=self._renderHiddenPackagingField(packaging))
+                packagings.append(packaging_field)
+            packaged_series.append(dict(
+                series=series, packagings=packagings))
+        return packaged_series
+
+
+class ProductDistributionsView(ProductView):
+    """View for displaying product packaging by distribution"""
+
+    label = 'Package comparison by distribution'
+
+
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
                                ProductDownloadFileMixin):
     """View class for the product's file downloads page."""
     __used_for__ = IProduct
+
+    @property
+    def page_title(self):
+        return "%s project files" % self.context.displayname
 
     def initialize(self):
         """See `LaunchpadFormView`."""
@@ -1040,22 +996,22 @@ class ProductDownloadFilesView(LaunchpadView,
     def getReleases(self):
         """See `ProductDownloadFileMixin`."""
         releases = set()
-        for series in self.product.serieses:
+        for series in self.product.series:
             releases.update(series.releases)
         return releases
 
     @cachedproperty
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
-        for series in self.product.serieses:
-            if self.seriesHasDownloadFiles(series):
+        for series in self.product.series:
+            if series.has_release_files:
                 return True
         return False
 
     @cachedproperty
     def any_download_files_with_signatures(self):
         """Do any series or release download files have signatures?"""
-        for series in self.product.serieses:
+        for series in self.product.series:
             for release in series.releases:
                 for file in release.files:
                     if file.signature:
@@ -1066,7 +1022,7 @@ class ProductDownloadFilesView(LaunchpadView,
     def milestones(self):
         """A mapping between series and releases that are milestones."""
         result = dict()
-        for series in self.product.serieses:
+        for series in self.product.series:
             result[series.name] = set()
             milestone_list = [m.name for m in series.milestones]
             for release in series.releases:
@@ -1081,12 +1037,22 @@ class ProductDownloadFilesView(LaunchpadView,
 
 
 class ProductBrandingView(BrandingChangeView):
-
+    """A view to set branding."""
     implements(IProductEditMenu)
 
-    label = None
+    label = "Change branding"
     schema = IProduct
     field_names = ['icon', 'logo', 'mugshot']
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change %s's branding" % self.context.title
+
+    @property
+    def cancel_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
 
 
 class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
@@ -1094,6 +1060,7 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
 
     implements(IProductEditMenu)
 
+    label = "Edit details"
     schema = IProduct
     field_names = [
         "displayname",
@@ -1123,6 +1090,11 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
     custom_widget('licenses', LicenseWidget)
     custom_widget('bugtracker', ProductBugTrackerWidget)
     custom_widget('license_info', GhostWidget)
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change %s's details" % self.context.title
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`."""
@@ -1180,15 +1152,14 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         return self.next_url
 
 
-class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
-    label = "Select a new translation group"
-    field_names = ["translationgroup", "translationpermission"]
-
-
 class ProductAdminView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
-    custom_widget('registrant', SinglePopupWidget)
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Administer %s' % self.context.title
 
     def setUpFields(self):
         """Setup the normal fields from the schema plus adds 'Registrant'.
@@ -1249,6 +1220,7 @@ class ProductAdminView(ProductEditView):
 
 
 class ProductReviewLicenseView(ProductEditView):
+    """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
         "license_reviewed",
@@ -1257,6 +1229,11 @@ class ProductReviewLicenseView(ProductEditView):
         "private_bugs",
         "reviewer_whiteboard",
         ]
+
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return 'Review %s' % self.context.title
 
     def validate(self, data):
         """See `LaunchpadFormView`.
@@ -1310,6 +1287,17 @@ class ProductAddSeriesView(LaunchpadFormView):
 
     series = None
 
+    @property
+    def label(self):
+        """The form label."""
+        return 'Register a new %s release series' % (
+            self.context.displayname)
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
+
     def validate(self, data):
         """See `LaunchpadFormView`."""
         branch = data.get('branch')
@@ -1336,6 +1324,13 @@ class ProductAddSeriesView(LaunchpadFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
+
+
+class ProductSeriesView(ProductView):
+    """A view for showing a product's series."""
+
+    label = 'timeline'
+    page_title = label
 
 
 class ProductRdfView:
@@ -1375,33 +1370,56 @@ class Icon:
         return self.library_alias.getURL()
 
 
-class ProductSetView(LaunchpadView):
+class ProductSetNavigationMenu(RegistryCollectionActionMenuBase):
+    """Action menu for products index."""
+    usedfor = IProductSet
+    links = [
+        'register_team',
+        'register_project',
+        'create_account',
+        'review_licenses',
+        'view_all_projects',
+        ]
 
-    __used_for__ = IProductSet
+    @enabled_with_permission('launchpad.ProjectReview')
+    def review_licenses(self):
+        return Link('+review-licenses', 'Review projects', icon='edit')
+
+    def view_all_projects(self):
+        return Link('+all', 'Show all projects', icon='list')
+
+
+class ProductSetView(LaunchpadView):
+    """View for products index page."""
+
+    implements(IRegistryCollectionNavigationMenu)
+
+    page_title = 'Projects registered in Launchpad'
 
     max_results_to_display = config.launchpad.default_batch_size
     results = None
-    searchrequested = False
+    search_requested = False
 
     def initialize(self):
-        """See `LaunchpadFormView`."""
+        """See `LaunchpadView`."""
         form = self.request.form_ng
         self.search_string = form.getOne('text')
         if self.search_string is not None:
-            self.searchrequested = True
+            self.search_requested = True
 
+    @cachedproperty
     def all_batched(self):
         return BatchNavigator(self.context.all_active, self.request)
 
     @cachedproperty
     def matches(self):
-        if not self.searchrequested:
+        if not self.search_requested:
             return None
         pillarset = getUtility(IPillarNameSet)
         return pillarset.count_search_matches(self.search_string)
 
     @cachedproperty
-    def searchresults(self):
+    def search_results(self):
         search_string = self.search_string.lower()
         limit = self.max_results_to_display
         return getUtility(IPillarNameSet).search(search_string, limit)
@@ -1414,6 +1432,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
     """View for searching products to be reviewed."""
 
     schema = IProductReviewSearch
+    label = 'Review projects'
 
     full_row_field_names = [
         'search_text',
@@ -1482,7 +1501,7 @@ class ProductSetReviewLicensesView(LaunchpadFormView):
         # Override the defaults with the form values if available.
         search_params.update(data)
         return BatchNavigator(self.context.forReview(**search_params),
-                              self.request, size=10)
+                              self.request, size=100)
 
 
 class ProductAddViewBase(ProductLicenseMixin, LaunchpadFormView):
@@ -1521,7 +1540,7 @@ class ProjectAddStepOne(StepView):
     schema = IProduct
     step_name = 'projectaddstep1'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = "Register a project in Launchpad"
 
     custom_widget('displayname', TextWidget, displayWidth=50, label='Name')
     custom_widget('name', ProductNameWidget, label='URL')
@@ -1556,7 +1575,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     schema = IProduct
     step_name = 'projectaddstep2'
     template = ViewPageTemplateFile('../templates/product-new.pt')
-    heading = "Register a project in Launchpad"
+    page_title = ProjectAddStepOne.page_title
 
     product = None
 
@@ -1678,6 +1697,7 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 class ProductAddView(MultiStepView):
     """The controlling view for product/+new."""
 
+    page_title = ProjectAddStepOne.page_title
     total_steps = 2
 
     @property
@@ -1691,6 +1711,7 @@ class ProductEditPeopleView(LaunchpadEditFormView):
 
     implements(IProductEditMenu)
 
+    label = "Change the roles of people"
     schema = IProduct
     field_names = [
         'owner',
@@ -1702,14 +1723,17 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     custom_widget('driver', PersonPickerWidget, header="Select the driver",
                   include_create_team_link=True)
 
+    @property
+    def page_title(self):
+        """The HTML page title."""
+        return "Change the roles of %s's people" % self.context.title
+
     @action(_('Save changes'), name='save')
     def save_action(self, action, data):
         """Save the changes to the associated people."""
         old_owner = self.context.owner
         old_driver = self.context.driver
         self.updateContextFromData(data)
-        self._reassignProductDependencies(
-            self.context, old_owner, self.context.owner)
         if self.context.owner != old_owner:
             self.request.response.addNotification(
                 "Successfully changed the maintainer to %s"
@@ -1732,22 +1756,3 @@ class ProductEditPeopleView(LaunchpadEditFormView):
     def cancel_url(self):
         """See `LaunchpadFormView`."""
         return canonical_url(self.context)
-
-    def _reassignProductDependencies(self, product, oldOwner, newOwner):
-        """Reassign ownership of objects related to this product.
-
-        Objects related to this product includes: ProductSeries,
-        ProductReleases and TranslationImportQueueEntries that are owned
-        by oldOwner of the product.
-
-        """
-        import_queue = getUtility(ITranslationImportQueue)
-        for entry in import_queue.getAllEntries(target=product):
-            if entry.importer == oldOwner:
-                removeSecurityProxy(entry).importer = newOwner
-        for series in product.serieses:
-            if series.owner == oldOwner:
-                series.owner = newOwner
-        for release in product.releases:
-            if release.owner == oldOwner:
-                release.owner = newOwner

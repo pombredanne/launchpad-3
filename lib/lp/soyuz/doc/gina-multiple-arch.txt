@@ -7,12 +7,11 @@ Get the current counts of stuff in the database:
     ...     SourcePackageRelease,
     ...     SecureSourcePackagePublishingHistory,
     ...     SecureBinaryPackagePublishingHistory,
-    ...     Person,
-    ...     TeamParticipation,
-    ...     WikiName,
     ...     EmailAddress,
     ...     BinaryPackageRelease,
     ...     Build)
+    >>> from lp.registry.model.person import Person, WikiName
+    >>> from lp.registry.model.teammembership import TeamParticipation
     >>> SSPPH = SecureSourcePackagePublishingHistory
     >>> SBPPH = SecureBinaryPackagePublishingHistory
 
@@ -44,7 +43,7 @@ Create a distribution series and an arch series for dapper:
 
 Check it was properly created and create its DistroArchSeriess.
 
-    >>> from canonical.launchpad.database import DistroSeries
+    >>> from lp.registry.model.distroseries import DistroSeries
     >>> dapper = DistroSeries.selectOneBy(name="dapper",
     ...                                    distributionID=ubuntu.id)
     >>> pf = ProcessorFamily.selectOneBy(name="x86")
@@ -161,8 +160,8 @@ distroarchseries:
 
 Check that the source package was correctly imported:
 
-    >>> from canonical.launchpad.database import (SourcePackageName,
-    ...      BinaryPackageName)
+    >>> from lp.registry.model.sourcepackagename import SourcePackageName
+    >>> from canonical.launchpad.database import BinaryPackageName
     >>> n = SourcePackageName.selectOneBy(name="ekg")
     >>> ekg = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...                                        version="1:1.5-4ubuntu1.2")

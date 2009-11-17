@@ -1,4 +1,8 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
+#
+# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
 """Archive Override Check
 
 Given a distribution to run on, report any override inconsistence found.
@@ -18,9 +22,9 @@ from canonical.launchpad.scripts import (
 from canonical.launchpad.interfaces import NotFoundError
 from canonical.lp import initZopeless
 from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.scripts.ftpmaster import PubSourceChecker
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingStatus, PackagePublishingPocket)
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 from contrib.glock import GlobalLock
 
