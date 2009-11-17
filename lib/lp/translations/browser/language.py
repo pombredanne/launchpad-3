@@ -88,7 +88,7 @@ class LanguageSetView:
         self.context = context
         self.request = request
         form = self.request.form
-        self.language_search = form.get('language_search')
+        self.language_search = form.get('find')
         self.search_requested = self.language_search is not None
 
     @cachedproperty

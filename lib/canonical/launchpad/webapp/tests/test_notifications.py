@@ -44,7 +44,7 @@ class MockSessionData(dict):
 class MockHTTPApplicationResponse:
     implements(IHTTPApplicationResponse)
 
-    def redirect(self, location, status=None):
+    def redirect(self, location, status=None, trusted=False):
         """Just report the redirection to the doctest"""
         if status is None:
             status=302

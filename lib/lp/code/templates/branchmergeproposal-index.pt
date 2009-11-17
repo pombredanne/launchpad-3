@@ -21,18 +21,6 @@
     /* A page-specific fix for inline text are editing to line up box. */
     #edit-description .yui-ieditor-input { top: 0; }
   </style>
-  <script type="text/javascript"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/code/codereview.js">
-  </script>
-  <script type="text/javascript"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/lp/comment.js">
-  </script>
-  <script type="text/javascript"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/lp/errors.js">
-  </script>
 </metal:block>
 
 <tal:registering metal:fill-slot="registering">
@@ -173,8 +161,10 @@
 <tal:script
   replace="structure
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
+  conf = <tal:status-config replace="view/status_config" />
   <!--
-  YUI().use('io-base', 'code.codereview', function(Y) {
+  YUI().use('io-base', 'code.codereview', 'code.branchmergeproposal',
+            function(Y) {
 
 
   if(Y.UA.ie) {
@@ -183,6 +173,7 @@
 
   Y.on('domready', function() {
       Y.code.codereview.connect_links();
+      Y.code.branchmergeproposal.connect_status(conf);
   });
 
   (new Y.codereview.NumberToggle()).render();

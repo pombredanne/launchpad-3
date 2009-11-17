@@ -10,8 +10,8 @@ allow them. -- Guilherme Salgado, 2006-10-27
     >>> context_url = (
     ...     'http://launchpad.dev/ubuntu/+mirror/archive-mirror')
 
-Distribution mirrors can be reassigned by anybody with the launchpad.Admin
-permission on them.
+Distribution mirrors can be reassigned by anybody with the launchpad.Edit
+permission on them. Mark is the owner of the archive-mirror.
 
     >>> user_browser.open(context_url)
     >>> user_browser.getLink('Change')
@@ -23,7 +23,7 @@ permission on them.
     ...
     Unauthorized: ...
 
-    >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
+    >>> browser.addHeader('Authorization', 'Basic mark@example.com:test')
     >>> browser.open(context_url)
     >>> browser.getLink('Change owner').click()
     >>> browser.url

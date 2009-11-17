@@ -99,12 +99,12 @@ def test_dbschemaapi():
     ...
     KeyError: 99
 
-    Using a dbschema name that doesn't exist should give a TraversalError
+    Using a dbschema name that doesn't exist should give a LocationError
 
     >>> DBSchemaAPI(99).traverse('NotADBSchema', [])
     Traceback (most recent call last):
     ...
-    TraversalError: 'NotADBSchema'
+    LocationError: 'NotADBSchema'
 
     """
 
