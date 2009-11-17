@@ -571,6 +571,9 @@ while( @ARGV && $ARGV[0] =~ /^-/ ) {
         elsif (/^--purpose=(.)/) {
                 $main::purpose=$1.$';
 	}
+	elsif (/^--build-debug-symbols$/) {
+		$main::build_debug_symbols = 1;
+	}
 	elsif (/^-d/ || /^--dist/) {
 		if (/^-d(.)/ || /^--dist=(.)/) {
 			$main::distribution = $1.$';
@@ -1146,6 +1149,7 @@ EOF
 	print CURRENT "Package: $pkg\nComponent: $main::component\n";
 	print CURRENT "Suite: $main::distribution\n" if $main::distribution;
 	print CURRENT "Purpose: $main::purpose\n" if $main::purpose;
+	print CURRENT "Build-Debug-Symbols: yes\n" if $main::build_debug_symbols;
 	close CURRENT;
 
 	$main::build_start_time = time;

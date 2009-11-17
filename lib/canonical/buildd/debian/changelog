@@ -1,3 +1,12 @@
+launchpad-buildd (53) UNRELEASED; urgency=low
+
+  * debian.py: Tell sbuild to build debug symbols if the
+    build_debug_symbols argument is True.
+  * sbuild: Set "Build-Debug-Symbols: yes" in CurrentlyBuilding if
+    we have been told to build debug symbols.
+
+ -- William Grant <wgrant@ubuntu.com>  Sat, 29 Aug 2009 23:21:35 +1000
+
 launchpad-buildd (52) dapper-cat; urgency=low
 
   * Depends: apt-transport-https
