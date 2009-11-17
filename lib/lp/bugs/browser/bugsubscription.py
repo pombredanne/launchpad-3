@@ -10,6 +10,7 @@ __all__ = [
     'BugSubscriptionAddView',
     ]
 
+from simplejson import dumps
 from zope.event import notify
 
 from lazr.delegates import delegates
@@ -95,6 +96,15 @@ class BugPortletDuplicateSubcribersContents(LaunchpadView, BugViewMixin):
         return [
             SubscriptionAttrDecorator(subscription)
             for subscription in self.context.getSubscriptionsFromDuplicates()]
+
+
+class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):
+    """A view that returns a JSON dump of the subscriber IDs for a bug."""
+
+    @property
+    def subscriber_ids_js(self):
+        """Return subscriber_ids in a form suitable for JavaScript use."""
+        return dumps(self.subscriber_ids)
 
 
 class SubscriptionAttrDecorator:
