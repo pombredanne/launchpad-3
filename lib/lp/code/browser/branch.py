@@ -177,6 +177,7 @@ class BranchNavigation(Navigation):
             if proposal.id == id:
                 return proposal
 
+
 class BranchEditMenu(NavigationMenu):
     """Edit menu for IBranch."""
 
@@ -206,10 +207,11 @@ class BranchEditMenu(NavigationMenu):
         return Link(
             '+whiteboard', text, icon='edit', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Edit')
     def edit_import(self):
         text = 'Edit import source or review import'
-        enabled = self.branch_is_import()
+        enabled = (
+            self.branch_is_import() and
+            check_permission('launchpad.Edit', self.context.code_import))
         return Link(
             '+edit-import', text, icon='edit', enabled=enabled)
 
@@ -225,7 +227,7 @@ class BranchContextMenu(ContextMenu):
     usedfor = IBranch
     facet = 'branches'
     links = [
-        'associations', 'add_subscriber', 'browse_revisions', 'link_bug',
+        'add_subscriber', 'browse_revisions', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
         'edit_status']
 
@@ -257,10 +259,6 @@ class BranchContextMenu(ContextMenu):
     def add_subscriber(self):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
-
-    def associations(self):
-        text = 'View branch associations'
-        return Link('+associations', text)
 
     @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):

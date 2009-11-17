@@ -731,10 +731,10 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         needs_review=Bool(title=_('Needs review'),
             description=_('If True, set queue_status to NEEDS_REVIEW.'
             'Otherwise, it will be WORK_IN_PROGRESS.')),
-        initial_comment=TextLine(
+        initial_comment=Text(
             title=_('Initial comment'),
             description=_("Registrant's initial description of proposal.")),
-        commit_message=TextLine(
+        commit_message=Text(
             title=_('Commit message'),
             description=_('Message to use when committing this merge.')),
         reviewers=List(value_type=Reference(schema=IPerson)),

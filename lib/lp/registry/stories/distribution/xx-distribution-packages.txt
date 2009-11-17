@@ -47,7 +47,7 @@ here first:
     ...     'http://localhost'
     ...     '/ubuntu/breezy-autotest/+package/mozilla-firefox')
     >>> print browser.title
-    mozilla-firefox : 6.6.6 : Ubuntu
+    mozilla-firefox : Breezy Badger Autotest (6.6.6) : Ubuntu
 
 Now run a search for mozilla-firefox and check that it is found:
 
@@ -256,7 +256,7 @@ javascript enabled, the information is shown in-place.
     Built packages
       mozilla-firefox ff from iceweasel
     Package files
-      firefox-0.9.2.orig.tar.gz (9.5 MiB)
+      firefox_0.9.2.orig.tar.gz (9.5 MiB)
       iceweasel-1.0.dsc (123 bytes)
       mozilla-firefox_0.9_i386.deb (3 bytes)
 
