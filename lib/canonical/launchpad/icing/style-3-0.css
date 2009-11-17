@@ -471,12 +471,17 @@ span.see-all {
 ol.subordinate {
     margin-left: 4em;
     }
-.two-column-list li,
 .two-column-list dl {
     width: 48%;
     float: left;
     display: inline;
     margin: 0 0.25em 0.75em 0;
+    }
+.two-column-list li {
+    width: 48%;
+    float: left;
+    display: inline;
+    margin: 0 0.25em 0 0;
     }
 .two-column-list:after {
     content: ".";
