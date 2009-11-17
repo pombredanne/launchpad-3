@@ -14,11 +14,10 @@ import sys
 
 from twisted.internet import reactor, defer
 from zope.component import getUtility
-from zope.interface import implements
 
 from canonical.config import config
 from canonical.twistedsupport.task import (
-    ParallelLimitedTaskConsumer, ITaskSource)
+    ParallelLimitedTaskConsumer, PollingTaskSource)
 from lazr.delegates import delegates
 import transaction
 
@@ -99,19 +98,13 @@ class BaseRunnableJob:
         ctrl.send()
 
 
-class JobRunner(object):
+class BaseJobRunner(object):
     """Runner of Jobs."""
 
-    def __init__(self, jobs, logger=None):
-        self.jobs = jobs
+    def __init__(self, logger=None):
         self.completed_jobs = []
         self.incomplete_jobs = []
         self.logger = logger
-
-    @classmethod
-    def fromReady(cls, job_class, logger=None):
-        """Return a job runner for all ready jobs of a given class."""
-        return cls(job_class.iterReady(), logger)
 
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
@@ -138,24 +131,67 @@ class JobRunner(object):
         # Commit transaction to update job status.
         transaction.commit()
 
+    def runJobHandleError(self, job):
+        job = IRunnableJob(job)
+        try:
+            self.runJob(job)
+        except LeaseHeld:
+            self.incomplete_jobs.append(job)
+        except job.user_error_types, e:
+            job.notifyUserError(e)
+        except Exception:
+            info = sys.exc_info()
+            request = errorlog.ScriptRequest(job.getOopsVars())
+            errorlog.globalErrorUtility.raising(info, request)
+            oops = errorlog.globalErrorUtility.getLastOopsReport()
+            job.notifyOops(oops)
+            if self.logger is not None:
+                self.logger.info('Job resulted in OOPS: %s' % oops.id)
+
+
+class JobRunner(BaseJobRunner):
+
+    def __init__(self, jobs, logger=None):
+        BaseJobRunner.__init__(self, logger=logger)
+        self.jobs = jobs
+
+    @classmethod
+    def fromReady(cls, job_class, logger=None):
+        """Return a job runner for all ready jobs of a given class."""
+        return cls(job_class.iterReady(), logger)
+
     def runAll(self):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
-            job = IRunnableJob(job)
-            try:
-                self.runJob(job)
-            except LeaseHeld:
-                self.incomplete_jobs.append(job)
-            except job.user_error_types, e:
-                job.notifyUserError(e)
-            except Exception:
-                info = sys.exc_info()
-                request = errorlog.ScriptRequest(job.getOopsVars())
-                errorlog.globalErrorUtility.raising(info, request)
-                oops = errorlog.globalErrorUtility.getLastOopsReport()
-                job.notifyOops(oops)
-                if self.logger is not None:
-                    self.logger.info('Job resulted in OOPS: %s' % oops.id)
+            self.runJobHandleError(job)
+
+
+class TwistedJobRunner(BaseJobRunner):
+
+    def __init__(self, job_source, logger=None):
+        BaseJobRunner.__init__(self, logger=logger)
+        self.job_source = job_source
+
+    def getTaskSource(self):
+        def producer():
+            while True:
+                for job in self.job_source.iterReady():
+                    yield lambda: self.runJobHandleError(job)
+                yield None
+        return PollingTaskSource(5, producer().next)
+
+    def doConsumer(self):
+        consumer = ParallelLimitedTaskConsumer(1)
+        return consumer.consume(self.getTaskSource())
+
+    def runAll(self):
+        d = defer.maybeDeferred(self.doConsumer)
+        d.addCallbacks(lambda ignored: reactor.stop(), self.failed)
+
+    @staticmethod
+    def failed(failure):
+        failure.printTraceback()
+        reactor.stop()
 
 
 class JobCronScript(LaunchpadCronScript):
@@ -180,50 +216,13 @@ class JobCronScript(LaunchpadCronScript):
             len(runner.completed_jobs), self.source_interface.__name__)
 
 
-class IterTaskSource:
-    implements(ITaskSource)
-
-    def __init__(self, iterator):
-        self.iterator = iterator
-        self.stopped = False
-
-    def start(self, task_consumer):
-        task = None
-        for task in self.iterator:
-            task_consumer.taskStarted(task)
-            if self.stopped:
-                return
-        if task is None:
-            task_consumer.noTasksFound()
-
-    def stop(self):
-        self.stopped = True
-        return self.stopped
-
-
 class TwistedJobCronScript(JobCronScript):
-
-    def _do_consumer(self, consumer, runner):
-        ready_items = getUtility(self.source_interface).iterReady()
-        task_source = IterTaskSource(lambda: runner.runJob(job) for job in
-                                     ready_items)
-        return consumer.consume(task_source)
-
-    def _runAll(self, consumer, runner):
-        d = defer.maybeDeferred(self._do_consumer, consumer, runner)
-        d.addCallbacks(lambda ignored: reactor.stop(), self.failed)
-
-    @staticmethod
-    def failed(failure):
-        failure.printTraceback()
-        reactor.stop()
 
     def main(self):
         errorlog.globalErrorUtility.configure(self.config_name)
-        consumer = ParallelLimitedTaskConsumer(1)
         cleanups = self.setUp()
-        runner = JobRunner([])
-        reactor.callWhenRunning(self._runAll, consumer, runner)
+        runner = TwistedJobRunner(getUtility(self.source_interface))
+        reactor.callWhenRunning(runner.runAll)
         try:
             reactor.run()
         finally:
