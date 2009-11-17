@@ -27,6 +27,7 @@ setup(
         'bzr',
         'chameleon.core',
         'chameleon.zpt',
+        'cssutils',
         'feedvalidator',
         'funkload',
         'launchpadlib',
