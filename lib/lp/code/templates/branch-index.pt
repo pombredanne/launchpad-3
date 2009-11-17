@@ -49,12 +49,21 @@
   <script type="text/javascript"
           tal:content="string:
     YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit', 'code.branchstatus', function(Y) {
+              'lazr.choiceedit', 'code.branchstatus',
+              'code.branch.subscription', function(Y) {
         Y.on('load',
              function(e) {
                  Y.branchstatus.connect_status(${view/status_config});
              },
              window);
+
+        Y.on('load', function(e) {
+            var subscription_portlet = new Y.code.branch.subscription.SubscriptionWidget({
+                contentBox: '#portlet-subscribers'
+            });
+            subscription_portlet.render();
+        },
+        window);
     });
   "/>
 </metal:block>

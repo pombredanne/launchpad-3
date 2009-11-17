@@ -13,8 +13,7 @@
         tal:condition="link/enabled"
         id="selfsubscriptioncontainer"
         >
-        <a id="selfsubscription"
-           class="sprite add"
+        <a class="sprite add subscribe-self"
            tal:attributes="href link/url"
            tal:content="link/text" />
       </div>
