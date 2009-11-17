@@ -64,12 +64,13 @@
   <script type="text/javascript"
           tal:content="string:
     YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit', 'code.branchstatus', 'code.popupdiff',
+              'lazr.choiceedit', 'code.branchstatus',
+              'code.branchmergeproposal.popupdiff',
               function(Y) {
         Y.on('load',
              function(e) {
                  Y.branchstatus.connect_status(${view/status_config});
-                 Y.popupdiff.connect_diff_links();
+                 Y.code.branchmergeproposal.popupdiff.connect_diff_links();
              },
              window);
     });
