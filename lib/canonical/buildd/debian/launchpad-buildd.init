@@ -47,6 +47,16 @@ case "$1" in
   start)
         echo -n "Starting $DESC:"
         install -m 755 -o buildd -g buildd -d $PIDROOT
+
+	# Create any missing directories and chown them appropriately
+	USER=buildd
+	if $(id $USER >/dev/null 2>&1); then
+	    test -d /home/${USER}/filecache-default || mkdir /home/${USER}/filecache-default
+	    chown $USER:buildd /home/${USER}/filecache-default
+	    test -d /home/${USER}/ccache || mkdir /home/${USER}/ccache
+	    chown $USER:buildd /home/${USER}/ccache
+	fi
+
 	for conf in $CONFS; do
 	    echo -n " $conf"
 	    d_start $conf
