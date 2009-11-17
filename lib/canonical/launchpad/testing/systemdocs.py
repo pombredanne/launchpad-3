@@ -16,12 +16,8 @@ __all__ = [
 
 import logging
 import os
+import pprint
 import sys
-
-# pprint25 is a copy of pprint.py from Python 2.5, which is almost
-# identical to that in 2.4 except that it resolves an ordering issue
-# which makes the 2.4 version unsuitable for use in a doctest.
-import pprint25
 
 import transaction
 from zope.component import getUtility
@@ -189,7 +185,7 @@ def setGlobs(test):
     test.globs['factory'] = LaunchpadObjectFactory()
     test.globs['ordered_dict_as_string'] = ordered_dict_as_string
     test.globs['verifyObject'] = verifyObject
-    test.globs['pretty'] = pprint25.PrettyPrinter(width=1).pformat
+    test.globs['pretty'] = pprint.PrettyPrinter(width=1).pformat
 
 
 def setUp(test):
