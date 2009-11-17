@@ -136,8 +136,8 @@ class SanitizeDb(LaunchpadScript):
         self.removeDeactivatedAccounts()
 
         # Remove unlinked records. These might contain private data.
-        self.removeUnlinkedAccounts()
         self.removeUnlinkedEmailAddresses()
+        self.removeUnlinkedAccounts()
         self.removeUnlinked('revision', [
             ('revisioncache', 'revision'),
             ('revisionparent', 'revision'),
@@ -442,6 +442,23 @@ class SanitizeDb(LaunchpadScript):
             """).rowcount
         self.logger.info("Randomized %d openid identifiers.", count)
 
+    def removeUnlinkedEmailAddresses(self):
+        """Remove EmailAddresses not linked to a Person.
+
+        This needs to be called after all the Person records have been
+        removed.
+
+        We call this before removeUnlinkedAccounts to avoid the
+        ON DELETE SET NULL overhead from the EmailAddress -> Account
+        foreign key constraint.
+        """
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        count = self.store.find(
+            EmailAddress, EmailAddress.person == None).remove()
+        self.store.flush()
+        self.logger.info(
+            "Removed %d email addresses not linked to people.", count)
+
     def removeUnlinkedAccounts(self):
         """Remove Accounts not linked to a Person."""
         count = self.store.execute("""
@@ -451,19 +468,6 @@ class SanitizeDb(LaunchpadScript):
                 AND EmailAddress.person IS NULL
             """).rowcount
         self.logger.info("Removed %d accounts not linked to a person", count)
-
-    def removeUnlinkedEmailAddresses(self):
-        """Remove EmailAddresses not linked to a Person.
-
-        This needs to be called after all the Person records have been
-        removed.
-        """
-        from canonical.launchpad.database.emailaddress import EmailAddress
-        count = self.store.find(
-            EmailAddress, EmailAddress.person == None).remove()
-        self.store.flush()
-        self.logger.info(
-            "Removed %d email addresses not linked to people.", count)
 
     def scrubColumn(self, table, column):
         """Remove production admin related notes."""
