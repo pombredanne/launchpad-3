@@ -291,8 +291,8 @@ that are not in progress.
     >>> len(view.assigned_specs_in_progress)
     0
     >>> from canonical.launchpad.testing.pages import extract_text
-    >>> extract_text(view.render())
-    ''
+    >>> len(extract_text(view.render()))
+    0
 
 Assigned specifications that do not display when they are not in an
 in progress state.

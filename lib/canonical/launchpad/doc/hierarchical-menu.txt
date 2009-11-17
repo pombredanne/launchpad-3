@@ -177,10 +177,8 @@ text must be overriden in subclasses.
     True
     >>> print breadcrumb.text
     None
-    >>> breadcrumb
-    <Breadcrumb
-        url='http://launchpad.dev/joy-of-cooking'
-        text='None'>
+    >>> print breadcrumb.url
+    http://launchpad.dev/joy-of-cooking
 
 As said above, the breadcrumb's attributes can be overridden with subclassing
 and Python properties.

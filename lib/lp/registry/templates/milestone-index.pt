@@ -286,7 +286,7 @@
                 <td tal:content="string:#${bugtask/bug/id}" class="amount">12345</td>
                 <td>
                   <a tal:attributes="href bugtask/bug/fmt:url"
-                     tal:content="bugtask/bug/title/fmt:shorten/65">
+                     tal:content="bugtask/bug/title">
                      Bug Title Here
                   </a>
                 </td>
