@@ -114,8 +114,6 @@ class Revision(SQLBase):
         if not allow_private:
             query = And(query, Not(Branch.private))
         if not allow_junk:
-            # XXX: Tim Penhey 2008-08-20, bug 244768
-            # Using Not(column == None) rather than column != None.
             query = And(
                 query,
                 # Not-junk branches are either associated with a product
