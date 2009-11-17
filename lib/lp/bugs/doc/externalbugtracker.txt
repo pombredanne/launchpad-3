@@ -1079,10 +1079,13 @@ external_bugtracker.
 
     >>> bug_watch_updater = NonConnectingBugWatchUpdater(
     ...     transaction, QuietFakeLogger())
-    >>> bug_watch_updater.updateBugTracker(standard_bugzilla, batch_size=2)
+    >>> success = bug_watch_updater.updateBugTracker(
+    ...     standard_bugzilla, batch_size=2)
     initializeRemoteBugDB() called: [u'5', u'6']
     getRemoteStatus() called: u'5'
     getRemoteStatus() called: u'6'
+    >>> success
+    True
 
 The default entry point into BugWatchUpdater for the checkwatches script is
 the updateBugTrackers() method. This, too, takes a batch_size parameter, which
