@@ -210,6 +210,15 @@ class SanitizeDb(LaunchpadScript):
             self.logger.debug(
                 "Removing %d of %d deactivated people (%s)",
                 deactivated_count, total_deactivated_count, person.name)
+            # Clean out the EmailAddress and Account for this person
+            # while we are here, making subsequent unbatched steps
+            # faster. These don't cascade due to the lack of a foreign
+            # key constraint between Person and EmailAddress, and the
+            # ON DELETE SET NULL foreign key constraint between
+            # EmailAddress and Account.
+            self.store.find(Account, Account.id == person.accountID).remove()
+            self.store.find(
+                EmailAddress, EmailAddress.person == person).remove()
             self.store.remove(person)
             self.store.flush()
         self.logger.info(
