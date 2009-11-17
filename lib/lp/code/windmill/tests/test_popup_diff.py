@@ -29,6 +29,7 @@ CLOSE_VISIBLE_DIFF = (
      '//a[@class="close-button"]')
 JS_ONLOAD_EXECUTE_DELAY = 1000
 
+
 class TestPopupOnBranchPage(TestCaseWithFactory):
     """Test the popup diff."""
 
