@@ -791,6 +791,28 @@
             interface="lp.soyuz.interfaces.section.ISectionSet"/>
     </securedutility>
 
+    <!-- SourcePackageFormatSelection -->
+
+    <class
+        class="lp.soyuz.model.sourcepackageformat.SourcePackageFormatSelection">
+        <allow
+            interface="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelection"/>
+    </class>
+
+    <!-- SourcePackageFormatSelectionSet -->
+
+    <class
+        class="lp.soyuz.model.sourcepackageformat.SourcePackageFormatSelectionSet">
+        <allow
+            interface="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelectionSet"/>
+    </class>
+    <securedutility
+        class="lp.soyuz.model.sourcepackageformat.SourcePackageFormatSelectionSet"
+        provides="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelectionSet">
+        <allow
+            interface="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelectionSet"/>
+    </securedutility>
+
     <!-- SourcePackageReleaseFile -->
 
     <class
