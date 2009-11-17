@@ -15,15 +15,18 @@ from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.security.proxy import removeSecurityProxy
 
-from lp.translations.model.translationmessage import (
-    DummyTranslationMessage)
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.product import IProductSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.potmsgset import (
     POTMsgSetInIncompatibleTemplatesError, TranslationCreditsType)
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationmessage import TranslationConflict
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
+from lp.translations.model.translationmessage import (
+    DummyTranslationMessage)
+
 from lp.testing import TestCaseWithFactory
 from canonical.testing import ZopelessDatabaseLayer
 
@@ -648,23 +651,65 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
     def test_setTranslationCreditsToTranslated_diverged(self):
         # Even if there's a diverged translation credits translation,
         # we should provide an automatic shared translation instead.
-        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
-        credits_potmsgset = self.factory.makePOTMsgSet(
-            self.devel_potemplate, singular=u'translator-credits')
-        diverged_translation = credits_potmsgset.updateTranslation(
-            pofile=sr_pofile, submitter=sr_pofile.owner,
-            new_translations=[u'Diverged credits'], is_imported=True,
-            force_diverged=True, lock_timestamp=datetime.now(pytz.UTC),
-            allow_credits=True)
-        self.assertTrue(diverged_translation.is_current)
-        self.assertNotEqual(None, diverged_translation.potemplate)
+        alsa_utils = getUtility(IProductSet).getByName('alsa-utils')
+        trunk = alsa_utils.getSeries('trunk')
+        potemplate = trunk.getPOTemplate('alsa-utils')
+        es_pofile = potemplate.getPOFileByLang('es')
+        credits_potmsgset = potemplate.getPOTMsgSetByMsgIDText(
+            u'_: EMAIL OF TRANSLATORS\nYour emails')
+
+        es_current = credits_potmsgset.getCurrentTranslationMessage(
+            potemplate, es_pofile.language)
+        # Let's make sure this message is also marked as imported
+        # and diverged.
+        es_current.is_imported = True
+        es_current.potemplate = potemplate
+
+        self.assertTrue(es_current.is_current)
+        self.assertNotEqual(None, es_current.potemplate)
 
         # Setting credits as translated will give us a shared translation.
-        credits_potmsgset.setTranslationCreditsToTranslated(sr_pofile)
+        credits_potmsgset.setTranslationCreditsToTranslated(es_pofile)
         current_shared = credits_potmsgset.getSharedTranslationMessage(
-            sr_pofile.language)
+            es_pofile.language)
         self.assertNotEqual(None, current_shared)
         self.assertEqual(None, current_shared.potemplate)
+
+    def test_setTranslationCreditsToTranslated_permissions(self):
+        # Even if POFile.owner has not agreed to the Launchpad
+        # translations licensing policy, automated credit
+        # messages are still created.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        owner = sr_pofile.owner
+        ITranslationsPerson(owner).translations_relicensing_agreement = False
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        current = credits_potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, sr_pofile.language)
+        self.assertEqual(owner, current.submitter)
+
+    def test_setTranslationCreditsToTranslated_submitter_lasttranslator(self):
+        # Submitter on the automated translation message is set to
+        # POFile.lasttranslator if it's defined.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        last_translator = self.factory.makePerson()
+        sr_pofile.lasttranslator = last_translator
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        current = credits_potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, sr_pofile.language)
+        self.assertEqual(last_translator, current.submitter)
+
+    def test_setTranslationCreditsToTranslated_submitter_owner(self):
+        # Submitter on the automated translation message is set to
+        # POFile.owner if POFile.lasttranslator is not defined.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        self.assertEqual(None, sr_pofile.lasttranslator)
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        current = credits_potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, sr_pofile.language)
+        self.assertEqual(sr_pofile.owner, current.submitter)
 
 
 class TestPOTMsgSetSuggestions(TestCaseWithFactory):

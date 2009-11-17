@@ -140,8 +140,8 @@ class SFTPTestMixin:
         self.assertEqual(os.getuid(), attrs['uid'])
         self.assertEqual(os.getgid(), attrs['gid'])
         self.assertEqual(stat_value.st_mode, attrs['permissions'])
-        self.assertEqual(int(stat_value.st_mtime), attrs['mtime'])
-        self.assertEqual(int(stat_value.st_atime), attrs['atime'])
+        self.assertEqual(stat_value.st_mtime, attrs['mtime'])
+        self.assertEqual(stat_value.st_atime, attrs['atime'])
 
     def getPathSegment(self):
         """Return a unique path segment for testing.

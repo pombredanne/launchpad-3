@@ -8,7 +8,7 @@ import weakref
 
 from zope.interface import classProvides
 from zope.component import getUtility, queryAdapter
-from zope.component.interfaces import IView
+from zope.browser.interfaces import IView
 
 from zope.publisher.interfaces import IApplicationRequest
 from zope.security.interfaces import ISecurityPolicy

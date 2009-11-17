@@ -35,7 +35,7 @@
           <ul class="bulleted" style="margin-bottom: 0;">
             <li>
               Have the branch mirrored from a remote location by
-               <a tal:attributes="href string:/${context/product/name}/+addbranch">
+               <a tal:attributes="href context/menu:overview/branch_add/fmt:url">
               registering a mirrored branch</a>
             </li>
             <li id="ssh-key-directions">

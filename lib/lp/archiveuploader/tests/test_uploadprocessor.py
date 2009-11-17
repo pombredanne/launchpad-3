@@ -1329,7 +1329,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         ap_set = getUtility(IArchivePermissionSet)
         ps_set = getUtility(IPackagesetSet)
         foo_ps = ps_set.new(
-            u'foo-pkg-set', u'Packages that require special care.', uploader)
+            u'foo-pkg-set', u'Packages that require special care.', uploader,
+            distroseries=self.ubuntu['grumpy'])
         self.layer.txn.commit()
 
         foo_ps.add((bar_package,))
@@ -1337,15 +1338,39 @@ class TestUploadProcessor(TestUploadProcessorBase):
             self.ubuntu.main_archive, uploader, foo_ps)
 
         # The uploader now does have a package set based upload permissions
-        # to 'bar'.
+        # to 'bar' in 'grumpy' but not in 'breezy'.
         self.assertTrue(
             ap_set.isSourceUploadAllowed(
-                self.ubuntu.main_archive, 'bar', uploader))
+                self.ubuntu.main_archive, 'bar', uploader,
+                self.ubuntu['grumpy']))
+        self.assertFalse(
+            ap_set.isSourceUploadAllowed(
+                self.ubuntu.main_archive, 'bar', uploader, self.breezy))
 
         # Upload the package again.
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check that it worked,
+        # Check that it failed (permissions were granted for wrong series).
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        self.assertEqual(
+            msg['Subject'], 'bar_1.0-2_source.changes rejected')
+
+        # Grant the permissions in the proper series.
+        breezy_ps = ps_set.new(
+            u'foo-pkg-set-breezy', u'Packages that require special care.',
+            uploader, distroseries=self.breezy)
+        breezy_ps.add((bar_package,))
+        ap_set.newPackagesetUploader(
+            self.ubuntu.main_archive, uploader, breezy_ps)
+        # The uploader now does have a package set based upload permission
+        # to 'bar' in 'breezy'.
+        self.assertTrue(
+            ap_set.isSourceUploadAllowed(
+                self.ubuntu.main_archive, 'bar', uploader, self.breezy))
+        # Upload the package again.
+        self.processUpload(uploadprocessor, upload_dir)
+        # Check that it worked.
         status = uploadprocessor.last_processed_upload.queue_root.status
         self.assertEqual(
             status, PackageUploadStatus.DONE,

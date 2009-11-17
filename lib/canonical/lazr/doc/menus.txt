@@ -1000,7 +1000,7 @@ that the comment refers to.
     ...     implements(IComment)
 
     # This is usually done in ZCML by browser:defaultView.
-    >>> from zope.component.bbb.interfaces import IDefaultViewName
+    >>> from zope.publisher.interfaces import IDefaultViewName
     >>> from zope.publisher.interfaces.browser import IDefaultBrowserLayer
     >>> provideAdapter(
     ...     '+index',

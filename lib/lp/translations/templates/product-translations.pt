@@ -16,14 +16,21 @@
         </a>
         <div></div><!-- to clear-up all floats -->
       </div>
-      <tal:uses-translations condition="uses_translations">
+      <div class="top-portlet">
+        <tal:official_use replace="
+            structure
+            context/@@+portlet-not-using-launchpad"/>
+      </div>
+
+      <tal:uses-translations
+         condition="python:uses_translations or admin_user">
         <tal:translatable define="target context/primary_translatable">
 
           <div class="yui-g">
             <div class="yui-u first">
               <div class="portlet">
                 <h3>Translation details</h3>
-                <p>
+                <p tal:condition="target">
                   Launchpad currently recommends translating
                   <tal:target replace="structure target/fmt:link"
                               >trunk</tal:target>.
@@ -75,7 +82,8 @@
             </div>
           </div>
 
-          <div class="yui-b">
+          <div class="yui-b"
+               tal:condition="target">
             <h2>Translation for
               <span tal:replace="target/displayname">main</span></h2>
             <div tal:replace="structure target/@@+languages" />
@@ -84,67 +92,6 @@
           </div>
         </tal:translatable>
       </tal:uses-translations>
-      <tal:not-uses-translations condition="not: uses_translations">
-        <p>
-          <strong>
-            This project is not configured to use Launchpad for translations.
-          </strong>
-          <tal:admin_or_owner condition="context/required:launchpad.Edit">
-            You can change this in the
-            <a tal:attributes="href string:+edit">project settings</a>. (<a href="/+help/getting-started-for-your-project.html" target="help">Getting started with translating your project in Launchpad</a>)
-          </tal:admin_or_owner>
-        </p>
-        <tal:registrantoradmin
-          condition="admin_user">
-          <p>
-            To set up <tal:product replace="context/displayname" /> for
-            translation in Launchpad, you need to upload a translation
-            template for one of its release series.
-          </p>
-          <ul>
-            <li tal:repeat="series context/series">
-              <a tal:attributes="
-                   href string:${series/fmt:url}/+translations-upload"
-                 tal:content="series/title">main</a>
-            </li>
-          </ul>
-          <p>
-            Or you may want to
-            <a tal:attributes="href string:${context/fmt:url}/+packages">
-              link the project to a distribution package
-            </a> set up for translation, if there is one, so their
-            translations can be shared.
-          </p>
-        </tal:registrantoradmin>
-        <tal:other
-          condition="not: admin_user">
-          <p>
-            The <tal:product replace="context/displayname" /> project is not
-            set up for translation in Launchpad.
-          </p>
-          <tal:not-logged-in condition="not:request/lp:person">
-            <p>
-              If you are
-              <tal:person replace="context/owner/fmt:displayname" />,
-              <a href="+login">log in</a> to begin the setup process.
-            </p>
-            <p>
-              Otherwise, you might want to talk with
-              <a tal:replace="structure context/owner/fmt:link">
-                Foo Bar
-              </a>, the project registrant, about using Launchpad for
-              translations.
-            </p>
-          </tal:not-logged-in>
-          <p tal:condition="request/lp:person">
-            You might want to talk with
-            <a tal:replace="structure context/owner/fmt:link">
-              Foo Bar
-            </a>, the project registrant, about using Launchpad for
-            translations.
-          </p>
-        </tal:other>
-      </tal:not-uses-translations>
     </div>
   </body>
 </html>
