@@ -3855,10 +3855,7 @@ class PersonEditView(BasePersonEditView):
             self.form_fields['name'].for_display = True
         super(PersonEditView, self).setUpWidgets()
         if not writable:
-            # We can't change the widget's .hint directly because that's a
-            # read-only property.  But that property just delegates to the
-            # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = _(
+            self.widgets['name'].hint = _(
                 'This user has a PPA and may not be renamed.')
 
     def validate(self, data):

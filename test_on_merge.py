@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -35,7 +35,7 @@ def main():
 
     # Tabnanny
     # NB. If tabnanny raises an exception, run
-    # python /usr/lib/python2.4/tabnanny.py -vv lib/canonical
+    # python /usr/lib/python2.5/tabnanny.py -vv lib/canonical
     # for more detailed output.
     org_stdout = sys.stdout
     sys.stdout = StringIO()
