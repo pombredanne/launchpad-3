@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import email
 
 import pytz
-from storm.expr import And, Asc, Desc, Exists, Join, Not, Select
+from storm.expr import And, Asc, Desc, Exists, Join, Not, Or, Select
 from storm.locals import Bool, DateTime, Int, Min, Reference, Storm
 from storm.store import Store
 from zope.component import getUtility
@@ -116,7 +116,15 @@ class Revision(SQLBase):
         if not allow_junk:
             # XXX: Tim Penhey 2008-08-20, bug 244768
             # Using Not(column == None) rather than column != None.
-            query = And(query, Not(Branch.product == None))
+            query = And(
+                query,
+                # Not-junk branches are either associated with a product
+                # or with a source package.
+                Or(
+                    (Branch.product != None),
+                    And(
+                        Branch.sourcepackagename != None, 
+                        Branch.distroseries != None)))
         result_set = store.find(Branch, query)
         if self.revision_author.person is None:
             result_set.order_by(Asc(BranchRevision.sequence))
