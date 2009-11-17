@@ -54,9 +54,6 @@ shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     """An view for the default view of the LaunchpadRoot."""
 
-    # The homepage has two columns to hold featured projects.
-    FEATURED_PROJECT_COLS = 2
-
     featured_projects = []
     featured_projects_top = None
 
@@ -72,18 +69,19 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     def initialize(self):
         """Set up featured projects list and the top featured project."""
         super(LaunchpadRootIndexView, self).initialize()
-        featured_projects = list(
+        # The maximum number of projects to be displayed as defined by the
+        # number of items plus one top featured project.
+        self.featured_projects = list(
             getUtility(IPillarNameSet).featured_projects)
-        # Select and get the top featured project (project of the day) and
-        # remove it from the list.
-        top_project = self._get_day_of_year() % len(featured_projects)
-        self.featured_projects_top = featured_projects.pop(top_project)
-        # For an odd number of projects, make column a longer.
-        num_projects_col_a = (
-            len(featured_projects) / self.FEATURED_PROJECT_COLS +
-            len(featured_projects) % self.FEATURED_PROJECT_COLS)
-        self.featured_projects_col_a = featured_projects[:num_projects_col_a]
-        self.featured_projects_col_b = featured_projects[num_projects_col_a:]
+        self._setFeaturedProjectsTop()
+
+    def _setFeaturedProjectsTop(self):
+        """Set the top featured project and remove it from the list."""
+        project_count = len(self.featured_projects)
+        if project_count > 0:
+            top_project = self._get_day_of_year() % project_count
+            self.featured_projects_top = self.featured_projects.pop(
+                top_project)
 
     def canRedirect(self):
         """Return True if the beta server is available to the user."""
@@ -443,7 +441,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         :param start: The index of the page that starts the set of pages.
         :return: A GooglBatchNavigator or None.
         """
-        if query_terms in [None , '']:
+        if query_terms in [None, '']:
             return None
         google_search = getUtility(ISearchService)
         try:

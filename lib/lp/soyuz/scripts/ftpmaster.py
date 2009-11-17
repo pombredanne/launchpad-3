@@ -1046,7 +1046,7 @@ class LpQueryDistro(LaunchpadScript):
         """
         # XXX sabdfl 2007-05-27: Isn't this a bit risky, if there are
         # multiple series with the desired status?
-        for series in self.location.distribution.serieses:
+        for series in self.location.distribution.series:
             if series.status == status:
                 return series
         raise NotFoundError(

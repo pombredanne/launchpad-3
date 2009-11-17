@@ -34,7 +34,7 @@
                 </td>
                 <td>
                   <tal:active condition="token">
-                    <a tal:attributes="href subscription/fmt:url" class="info">
+                    <a tal:attributes="href subscription/fmt:url" class="sprite info">
                       View
                     </a>
                   </tal:active>

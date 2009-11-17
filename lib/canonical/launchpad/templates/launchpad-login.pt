@@ -171,13 +171,13 @@
             <p>
               Creating your Launchpad account is easy. Here's what to do:</p>
 
-              <ol class="subordinate">
-                 <li>Make sure cookies are enabled in your browser.</li>
-                 <li>Enter your e-mail address and answer our random question
-                 so we know that you're human.
-                 </li>
-                 <li>Follow the URL in the confirmation e-mail that Launchpad sends and you're done!</li>
-             </ol>
+            <ol class="subordinate">
+                <li>Make sure cookies are enabled in your browser.</li>
+                <li>Enter your e-mail address and answer our random question
+                    so we know that you're human.
+                </li>
+                <li>Follow the URL in the confirmation e-mail that Launchpad sends and you're done!</li>
+            </ol>
 
 
 

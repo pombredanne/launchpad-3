@@ -149,6 +149,10 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     # a second h1 to display. But as this view implements IMajorHeadingView
     # it should not include an h1 below the app buttons.
     label = None
+    
+    @property
+    def page_title(self):
+        return '%s (sprint or meeting)' % self.context.title
 
     def initialize(self):
         self.notices = []
@@ -340,6 +344,8 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
         return smartquote(
             'Review discussion topics for "%s" sprint' % self.context.title)
 
+    page_title = label
+
     def initialize(self):
         self.status_message = None
         self.process_form()
@@ -470,15 +476,22 @@ class SprintMeetingExportView(LaunchpadView):
 class SprintSetNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for sprints index."""
     usedfor = ISprintSet
-    links = [
+    links = (
         'register_team',
         'register_project',
+        'register_sprint',
         'create_account',
         'view_all_sprints',
-        ]
+        )
+
+    @enabled_with_permission('launchpad.View')
+    def register_sprint(self):
+        text = 'Register a meeting'
+        summary = 'Register a developer sprint, summit, or gathering'
+        return Link('+new', text, summary=summary, icon='add')
 
     def view_all_sprints(self):
-        text = 'Show all sprints'
+        text = 'Show all meetings'
         return Link('+all', text, icon='list')
 
 
@@ -518,7 +531,9 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  'Country',
                  'Timezone',
                  'Arriving',
-                 'Leaving')]
+                 'Leaving',
+                 'Physically present',
+                 )]
         for attendance in self.context.attendances:
             time_zone = ''
             location = attendance.attendee.location
@@ -542,7 +557,8 @@ class SprintAttendeesCsvExportView(LaunchpadView):
                  country,
                  time_zone,
                  attendance.time_starts.strftime('%Y-%m-%dT%H:%M:%SZ'),
-                 attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ')))
+                 attendance.time_ends.strftime('%Y-%m-%dT%H:%M:%SZ'),
+                 attendance.is_physical))
         # CSV can't handle unicode, so we force encoding
         # everything as UTF-8
         rows = [[self.encode_value(column)

@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -19,6 +19,7 @@ __all__ = []
 # pylint: disable-msg=W0403
 import _pythonpath
 
+from distutils.version import LooseVersion
 from optparse import OptionParser
 import sys
 import time
@@ -44,14 +45,31 @@ def main():
     con.set_isolation_level(0) # Autocommit
     cur = con.cursor()
 
+    cur.execute('show server_version')
+    pg_version = LooseVersion(cur.fetchone()[0])
+
     log.debug("Disabling autovacuum on all tables in the database.")
-    cur.execute("""
-        INSERT INTO pg_autovacuum
-        SELECT pg_class.oid, FALSE, -1,-1,-1,-1,-1,-1,-1,-1
-        FROM pg_class
-        WHERE relkind in ('r','t')
-            AND pg_class.oid NOT IN (SELECT vacrelid FROM pg_autovacuum)
-        """)
+    if pg_version < LooseVersion('8.4.0'):
+        cur.execute("""
+            INSERT INTO pg_autovacuum
+            SELECT pg_class.oid, FALSE, -1,-1,-1,-1,-1,-1,-1,-1
+            FROM pg_class
+            WHERE relkind in ('r','t')
+                AND pg_class.oid NOT IN (SELECT vacrelid FROM pg_autovacuum)
+            """)
+    else:
+        cur.execute("""
+            SELECT nspname,relname
+            FROM pg_namespace, pg_class
+            WHERE relnamespace = pg_namespace.oid
+                AND relkind = 'r' AND nspname <> 'pg_catalog'
+            """)
+        for namespace, table in list(cur.fetchall()):
+            cur.execute("""
+                ALTER TABLE ONLY "%s"."%s" SET (
+                    autovacuum_enabled=false,
+                    toast.autovacuum_enabled=false)
+                """ % (namespace, table))
 
     log.debug("Killing existing autovacuum processes")
     num_autovacuums = -1

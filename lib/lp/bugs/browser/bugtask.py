@@ -258,16 +258,17 @@ def get_visible_comments(comments):
 def get_sortorder_from_request(request):
     """Get the sortorder from the request.
 
-    >>> from zope.publisher.browser import TestRequest
-    >>> get_sortorder_from_request(TestRequest(form={}))
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> get_sortorder_from_request(LaunchpadTestRequest(form={}))
     ['-importance']
-    >>> get_sortorder_from_request(TestRequest(form={'orderby': '-status'}))
-    ['-status']
     >>> get_sortorder_from_request(
-    ...     TestRequest(form={'orderby': 'status,-severity,importance'}))
+    ...     LaunchpadTestRequest(form={'orderby': '-status'}))
+    ['-status']
+    >>> get_sortorder_from_request(LaunchpadTestRequest(
+    ...     form={'orderby': 'status,-severity,importance'}))
     ['status', 'importance']
     >>> get_sortorder_from_request(
-    ...     TestRequest(form={'orderby': 'priority,-severity'}))
+    ...     LaunchpadTestRequest(form={'orderby': 'priority,-severity'}))
     ['-importance']
     """
     order_by_string = request.get("orderby", '')
@@ -2418,9 +2419,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         for different series.
         """
         return (
-            IDistribution.providedBy(self.context) and self.context.serieses
+            IDistribution.providedBy(self.context) and self.context.series
             or IDistroSeries.providedBy(self.context)
-            or IProduct.providedBy(self.context) and self.context.serieses
+            or IProduct.providedBy(self.context) and self.context.series
             or IProductSeries.providedBy(self.context))
 
     def shouldShowSubscriberWidget(self):

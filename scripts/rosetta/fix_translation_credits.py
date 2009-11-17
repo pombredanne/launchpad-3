@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -9,12 +9,12 @@
 
 import _pythonpath
 
-from lp.services.scripts.base import LaunchpadCronScript
+from lp.services.scripts.base import LaunchpadScript
 from lp.translations.scripts.fix_translation_credits import (
     FixTranslationCreditsProcess)
 
 
-class FixTranslationCredits(LaunchpadCronScript):
+class FixTranslationCredits(LaunchpadScript):
     """Go through all POFiles and mark translation credits as translated."""
 
     def main(self):

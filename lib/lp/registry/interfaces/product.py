@@ -556,9 +556,8 @@ class IProductPublic(
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
-    serieses = exported(
-        CollectionField(value_type=Object(schema=IProductSeries)),
-        exported_as='series')
+    series = exported(
+        CollectionField(value_type=Object(schema=IProductSeries)))
 
     development_focus = exported(
         ReferenceChoice(

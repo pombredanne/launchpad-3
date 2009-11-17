@@ -250,6 +250,10 @@ span.nolink {
     z-index: 10;
     width: 131%;
     }
+/* The content is already full width; the content should remain full width. */
+.full-page-width .full-page-width {
+    width: 100%;
+    }
 .warning.message {
     margin-top: 17px;
     }
@@ -420,10 +424,6 @@ span.see-all {
 .registered {
     font-size: 85%;
     color: #666;
-    font-style: italic;
-    }
-li .registered {
-    font-style: normal;
     }
 .description {
     clear: both;
@@ -466,6 +466,9 @@ li .registered {
     padding: 0 1.5em 0 0;
     }
 .subordinate {
+    margin-left: 2em;
+    }
+ol.subordinate {
     margin-left: 4em;
     }
 .two-column-list li,
@@ -888,95 +891,6 @@ div.translation-help-links div {
   clear: both;
 }
 
-
-/* Home page */
-.homepage {
-    margin: auto;
-    width: 90%;
-    max-width: 80em;
-}
-.homepage-portlet {
-    margin-bottom: 3em;
-    line-height: 140%;
-}
-.homepage-portlet h2 {
-    border-bottom: 1px solid;
-    margin-top: 2em;
-    font-size: 167%;
-    }
-.homepage-whatslaunchpad h2 {
-    font-size: 189%;
-    font-weight: bold;
-    line-height: 110%;
-    margin-bottom: 0.5em;
-}
-#homepage-whatslaunchpad ul {
-    margin-left: 1em;
-    margin-bottom: 0.5em;
-}
-#homepage-whatslaunchpad ul,
-#homepage-whatslaunchpad-tour {
-    font-size: 116%;
-    font-weight: bold;
-}
-#homepage-stats {
-    max-width: 50em;
-    margin: auto;
-    padding-top: 0.5em;
-    color: gray;
-    font-size: 83.3%
-}
-#homepage-blogposts {
-    padding-right: 4em;
-}
-#homepage-blogposts .blogdate {
-    font-size: 85%;
-    color: grey;
-}
-.homepage-blogposts-older {
-    font-weight: bold;
-}
-.homepage-getstarted h2 {
-    border-bottom: 1px solid;
-    margin-top: 1em;
-    font-size: 161%;
-    }
-#homepage-featured {
-    width: 100%;
-}
-#homepage-featured ul {
-    width: 48%;
-}
-#homepage-featured-left {
-    float: left;
-}
-#homepage-featured-right {
-    float: right;
-}
-#homepage-featured-top img {
-    float: left;
-}
-#homepage-featured-top-title {
-    height: 64px;
-    display: block;
-    margin-left: 70px;
-}
-#homepage-featured-top-title span{
-    font-size: 131%;
-    font-weight: bold;
-    position: relative;
-    top: 20px;
-}
-#homepage-featured-top-text {
-    margin-top: 0.5em;
-    margin-bottom: 1em;
-    border-bottom: 1px solid #888888;
-}
-.homepage-featured-more {
-    font-weight: bold;
-    margin-top: 2em;
-    clear: both;
-}
 .gridflow {
     margin: 0.0em;
     padding: 0.0em;
@@ -1014,6 +928,7 @@ div.translation-help-links div {
     padding-bottom: 0px;
     display: inline-block;
     min-height: 16px;
+    width: 90%;
 }
 .vertical .sprite:first-line {
     line-height: 12px;
@@ -1159,3 +1074,33 @@ div.translation-help-links div {
 .logo-meeting {background:url(icon-sprites-logo-2) 0 -160px no-repeat;}
 .logo-flame {background:url(icon-sprites-logo-2) 0 -240 no-repeat;}
 .logo-trash {background:url(icon-sprites-logo-2) 0 -320 no-repeat;}
+
+/* Code styles */
+.branchstatusMATURE, .branchstatusMATURE a  {color: #090;}
+.branchstatusDEVELOPMENT, .branchstatusDEVELOPMENT a  {color: #900;}
+.branchstatusEXPERIMENTAL, .branchstatusEXPERIMENTAL a {color: #930;}
+.branchstatusMERGED, .branchstatusMERGED a       {color: #666;}
+.branchstatusABANDONED, .branchstatusABANDONED a    {color: #666;}
+.branchstatusNEW, .branchstatusNEW a          {color: black;}
+
+.voteAPPROVE       {color: green;}
+.voteNEEDS_FIXING  {color: #930;}
+.voteDISAPPROVE    {color: red;}
+.voteRESUBMIT      {color: red;}
+.voteABSTAIN       {color: grey;}
+.votePENDING       {color: #f60;}
+
+.mergestatusWORK_IN_PROGRESS, .mergestatusWORK_IN_PROGRESS a  {color: black;}
+.mergestatusNEEDS_REVIEW, .mergestatusNEEDS_REVIEW a          {color: #f60;}
+.mergestatusCODE_APPROVED, .mergestatusCODE_APPROVED a        {color: green;}
+.mergestatusREJECTED, .mergestatusREJECTED a                  {color: red;}
+.mergestatusMERGED, .mergestatusMERGED a                      {color: green;}
+.mergestatusMERGE_FAILED, .mergestatusMERGE_FAILED a          {color: red;}
+.mergestatusQUEUED, .mergestatusQUEUED a                      {color: black;}
+.mergestatusSUPERSEDED, .mergestatusSUPERSEDED a              {color: grey;}
+
+.codeimportNEW       {color: #930;}
+.codeimportINVALID   {color: red;}
+.codeimportREVIEWED  {color: green;}
+.codeimportSUSPENDED {color: red;}
+.codeimportFAILING   {color: red;}
