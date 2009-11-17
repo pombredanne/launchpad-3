@@ -954,7 +954,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
         text = 'Update Jabber IDs'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.EditLocation')
+    @enabled_with_permission('launchpad.Edit')
     def editlocation(self):
         target = '+editlocation'
         text = 'Set location and time zone'
@@ -1808,6 +1808,7 @@ class PersonSpecWorkloadTableView(LaunchpadView):
 class PersonSpecFeedbackView(HasSpecificationsView):
 
     label = 'Feature feedback requests'
+    page_title = label
 
     @cachedproperty
     def feedback_specs(self):
@@ -2858,7 +2859,9 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
 
     def should_show_polls_portlet(self):
         menu = TeamOverviewMenu(self.context)
-        return self.hasCurrentPolls() or menu.add_poll().enabled
+        return (
+            self.hasCurrentPolls() or self.closedpolls
+            or menu.add_poll().enabled)
 
     def hasCurrentPolls(self):
         """Return True if this team has any non-closed polls."""
@@ -3352,12 +3355,19 @@ class PersonEditWikiNamesView(LaunchpadView):
             if wiki and wikiname:
                 existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
                 if existingwiki and existingwiki.person != context:
-                    self.error_message = structured(
+                    owner_name = urllib.quote(existingwiki.person.name)
+                    merge_url = (
+                        '%s/+requestmerge?field.dupe_person=%s'
+                        % (canonical_url(getUtility(IPersonSet)), owner_name))
+                    self.error_message =  structured(
                         'The WikiName %s%s is already registered by '
-                        '<a href="%s">%s</a>.',
+                        '<a href="%s">%s</a>. If you think this is a '
+                        'duplicated account, you can <a href="%s">merge it'
+                        '</a> into your account.',
                         wiki, wikiname, canonical_url(existingwiki.person),
-                        existingwiki.person.displayname)
+                        existingwiki.person.displayname, merge_url)
                     return
+
                 elif existingwiki:
                     self.error_message = structured(
                         'The WikiName %s%s already belongs to you.',
@@ -3854,10 +3864,7 @@ class PersonEditView(BasePersonEditView):
             self.form_fields['name'].for_display = True
         super(PersonEditView, self).setUpWidgets()
         if not writable:
-            # We can't change the widget's .hint directly because that's a
-            # read-only property.  But that property just delegates to the
-            # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = _(
+            self.widgets['name'].hint = _(
                 'This user has a PPA and may not be renamed.')
 
     def validate(self, data):
@@ -5332,6 +5339,7 @@ class PersonEditLocationView(LaunchpadFormView):
     """Edit a person's location."""
 
     schema = PersonLocationForm
+    field_names = ['location', 'hide']
     custom_widget('location', LocationWidget)
 
     @property
@@ -5340,19 +5348,6 @@ class PersonEditLocationView(LaunchpadFormView):
             "%s's location and timezone" % self.context.displayname)
 
     label = page_title
-
-    @property
-    def field_names(self):
-        """See `LaunchpadFormView`.
-
-        If the user has launchpad.Edit on this context, then allow him to set
-        whether or not the location should be visible.  The field for setting
-        the person's location is always shown.
-        """
-        if check_permission('launchpad.Edit', self.context):
-            return ['location', 'hide']
-        else:
-            return ['location']
 
     @property
     def initial_values(self):

@@ -131,8 +131,8 @@ updateBugWatches() issues only one request to update all watches:
     ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
     ...     for bug_watch in example_bug_tracker.watches)
 
-    >>> for remote_bug_id in set(remote_statuses).union(
-    ...     expected_remote_statuses):
+    >>> remote_bug_ids = set(remote_statuses).union(expected_remote_statuses)
+    >>> for remote_bug_id in sorted(remote_bug_ids):
     ...     remote_status = remote_statuses[remote_bug_id]
     ...     expected_remote_status = expected_remote_statuses[remote_bug_id]
     ...     print 'Remote bug %d' % (remote_bug_id,)
@@ -141,21 +141,21 @@ updateBugWatches() issues only one request to update all watches:
     Remote bug 3224
      * Expected << assigned: open >>
      *      Got << assigned: open >>
+    Remote bug 6685
+     * Expected << new: open >>
+     *      Got << new: open >>
+    Remote bug 6919
+     * Expected << assigned: open >>
+     *      Got << assigned: open >>
     Remote bug 7346
      * Expected << assigned: open >>
      *      Got << assigned: open >>
     Remote bug 8006
      * Expected << resolved: no change required >>
      *      Got << resolved: no change required >>
-    Remote bug 6919
-     * Expected << assigned: open >>
-     *      Got << assigned: open >>
     Remote bug 8104
      * Expected << assigned: open >>
      *      Got << assigned: open >>
-    Remote bug 6685
-     * Expected << new: open >>
-     *      Got << new: open >>
 
     >>> example_ext_bug_tracker.trace_calls = False
 
