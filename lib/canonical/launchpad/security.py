@@ -489,7 +489,6 @@ class AdminProductTranslations(AuthorizationBase):
         Any Launchpad/Launchpad Translations administrator or owners are
         able to change translation settings for a product.
         """
-        celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.owner) or
                 is_admin_or_rosetta_expert(user))
 
