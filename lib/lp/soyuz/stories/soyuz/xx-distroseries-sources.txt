@@ -61,22 +61,12 @@ SourcePackage page:
 This page provides its versions publications organised by pocket.
 We can see 'mozilla-firefox' is published once in pocket RELEASE:
 
-  >>> print find_tag_by_id(browser.contents, 'publishing_history')
-  <dl id="publishing_history">
-    <dt><dfn>Release</dfn></dt>
-    <dd>
-      <p>The package versions that were published
-         when the distribution release was made.
-         For releases that are still under development,
-         packages are published here only.
-      </p>
-      <ul>
-        <li>
-         <a href="/ubuntu/warty/+source/mozilla-firefox/0.9">mozilla-firefox 0.9</a>
-        </li>
-      </ul>
-    </dd>
-  </dl>
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'publishing_history'))
+    Release
+    The package versions that were published when the distribution release
+    was made.
+    mozilla-firefox 0.9
 
 It also provides the upstream relationships for this source, Project,
 Product and Branches:

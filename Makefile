@@ -1,7 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON_VERSION=2.4
+PYTHON_VERSION=2.5
 PYTHON=python${PYTHON_VERSION}
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
@@ -274,6 +274,10 @@ clean_js:
 
 clean: clean_js
 	$(MAKE) -C sourcecode/pygettextpo clean
+	# XXX gary 2009-11-16 bug 483782
+	# The pygettextpo Makefile should have this next line in it for its make
+	# clean, and then we should remove this line.
+	$(RM) sourcecode/pygpgme/gpgme/*.so
 	if test -f sourcecode/mailman/Makefile; then \
 		$(MAKE) -C sourcecode/mailman clean; \
 	fi
@@ -283,6 +287,7 @@ clean: clean_js
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r bin
 	$(RM) -r parts
+	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) thread*.request

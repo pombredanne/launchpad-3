@@ -273,7 +273,7 @@ class ProjectSpecificationsMenu(NavigationMenu,
                                 HasSpecificationsMenuMixin):
     usedfor = IProject
     facet = 'specifications'
-    links = ['listall', 'doc', 'assignments', 'new']
+    links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
 
 
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
