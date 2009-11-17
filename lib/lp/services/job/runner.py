@@ -160,6 +160,13 @@ class JobRunner(BaseJobRunner):
         """Return a job runner for all ready jobs of a given class."""
         return cls(job_class.iterReady(), logger)
 
+    @classmethod
+    def runFromSource(cls, job_source, logger):
+        logger.info("Running synchronously.")
+        runner = cls.fromReady(job_source, logger)
+        runner.runAll()
+        return runner
+
     def runAll(self):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
@@ -193,38 +200,29 @@ class TwistedJobRunner(BaseJobRunner):
         failure.printTraceback()
         reactor.stop()
 
+    @classmethod
+    def runFromSource(cls, job_source, logger):
+        logger.info("Running through Twisted.")
+        runner = cls(job_source, logger)
+        reactor.callWhenRunning(runner.runAll)
+        reactor.run()
+        return runner
+
 
 class JobCronScript(LaunchpadCronScript):
     """Base class for scripts that run jobs."""
 
-    def __init__(self):
+    def __init__(self, runner_class=JobRunner):
         dbuser = getattr(config, self.config_name).dbuser
         super(JobCronScript, self).__init__(self.config_name, dbuser)
-
-    def main(self):
-        errorlog.globalErrorUtility.configure(self.config_name)
-        runner = JobRunner.fromReady(
-            getUtility(self.source_interface), self.logger)
-        cleanups = self.setUp()
-        try:
-            runner.runAll()
-        finally:
-            for cleanup in reversed(cleanups):
-                cleanup()
-        self.logger.info(
-            'Ran %d %s jobs.',
-            len(runner.completed_jobs), self.source_interface.__name__)
-
-
-class TwistedJobCronScript(JobCronScript):
+        self.runner_class = runner_class
 
     def main(self):
         errorlog.globalErrorUtility.configure(self.config_name)
         cleanups = self.setUp()
-        runner = TwistedJobRunner(getUtility(self.source_interface))
-        reactor.callWhenRunning(runner.runAll)
         try:
-            reactor.run()
+            job_source = getUtility(self.source_interface)
+            runner = self.runner_class.runFromSource(job_source, self.logger)
         finally:
             for cleanup in reversed(cleanups):
                 cleanup()

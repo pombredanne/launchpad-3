@@ -12,12 +12,12 @@ __metaclass__ = type
 import _pythonpath
 
 from lp.codehosting.vfs import get_scanner_server
-from lp.services.job.runner import TwistedJobCronScript
+from lp.services.job.runner import JobCronScript, TwistedJobRunner
 from lp.code.interfaces.branchmergeproposal import (
     IUpdatePreviewDiffJobSource,)
 
 
-class RunUpdatePreviewDiffJobs(TwistedJobCronScript):
+class RunUpdatePreviewDiffJobs(JobCronScript):
     """Run UpdatePreviewDiff jobs."""
 
     config_name = 'update_preview_diffs'
@@ -30,5 +30,5 @@ class RunUpdatePreviewDiffJobs(TwistedJobCronScript):
 
 
 if __name__ == '__main__':
-    script = RunUpdatePreviewDiffJobs()
+    script = RunUpdatePreviewDiffJobs(TwistedJobRunner)
     script.lock_and_run()
