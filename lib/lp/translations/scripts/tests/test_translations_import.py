@@ -9,9 +9,29 @@ from unittest import TestLoader
 from lp.testing import TestCaseWithFactory
 from canonical.testing.layers import LaunchpadScriptLayer
 
+from lp.translations.interfaces.translationimportqueue import (
+    RosettaImportStatus)
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueue)
 from lp.translations.scripts.po_import import TranslationsImport
+
+
+class UnexpectedException(Exception):
+    """An exception type nobody was expecting."""
+
+
+class OutrageousSystemError(SystemError):
+    """Very serious system error."""
+
+
+class Raiser:
+    """Raise a given exception."""
+    def __init__(self, exception):
+        self.exception = exception
+
+    def __call__(self, *args, **kwargs):
+        """Whatever the arguments, just raise self.exception."""
+        raise self.exception
 
 
 class TestTranslationsImport(TestCaseWithFactory):
@@ -104,6 +124,39 @@ class TestTranslationsImport(TestCaseWithFactory):
         self.assertIn(
             "Entry was approved for the wrong distroseries.",
             self.script.failures.keys())
+
+    def test_handle_serious_error(self):
+        productseries = self._makeProductSeries()
+        template = self.factory.makePOTemplate(productseries=productseries)
+        entry = self._makeEntry(
+            'snaf.pot', productseries=productseries, potemplate=template)
+        entry.potemplate = template
+        entry.status = RosettaImportStatus.APPROVED
+        self.assertNotEqual(None, entry.import_into)
+
+        message = "The system has exploded."
+        self.script._importEntry = Raiser(OutrageousSystemError(message))
+        self.assertRaises(OutrageousSystemError, self.script.main)
+
+        self.assertEqual(RosettaImportStatus.FAILED, entry.status)
+        self.assertEqual(message, entry.error_output)
+
+    def test_handle_unexpected_exception(self):
+        # Unexpected exceptions during import are caught and reported.
+        productseries = self._makeProductSeries()
+        template = self.factory.makePOTemplate(productseries=productseries)
+        entry = self._makeEntry(
+            'foo.pot', productseries=productseries, potemplate=template)
+        entry.potemplate = template
+        entry.status = RosettaImportStatus.APPROVED
+        self.assertNotEqual(None, entry.import_into)
+
+        message = "Nobody expects the Spanish Inquisition!"
+        self.script._importEntry = Raiser(UnexpectedException(message))
+        self.script.main()
+
+        self.assertEqual(RosettaImportStatus.FAILED, entry.status)
+        self.assertEqual(message, entry.error_output)
 
 
 def test_suite():

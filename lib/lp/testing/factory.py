@@ -106,6 +106,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from lp.services.worlddata.interfaces.language import ILanguageSet
+from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.testing import run_with_login, time_counter
@@ -175,9 +176,10 @@ class ObjectFactory:
         :return: A hexadecimal string, with 'a'-'f' in lower case.
         """
         hex_number = '%x' % self.getUniqueInteger()
-        if digits is not None:
-            hex_number.zfill(digits)
-        return hex_number
+        if digits is None:
+            return hex_number
+        else:
+            return hex_number.zfill(digits)
 
     def getUniqueString(self, prefix=None):
         """Return a string unique to this factory instance.
@@ -265,7 +267,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             owner.id,
             keyid=self.getUniqueHexString(digits=8).upper(),
             fingerprint='A' * 40,
-            keysize=self.factory.getUniqueInteger(),
+            keysize=self.getUniqueInteger(),
             algorithm=GPGKeyAlgorithm.R,
             active=True,
             can_encrypt=False)
@@ -529,7 +531,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             description="test file")
 
     def makeProduct(self, *args, **kwargs):
-        """As makeProductNoCommit with an implicit transaction commit.
+        """As makeProductNoCommit with an explicit transaction commit.
 
         This ensures that generated owners and registrants are fully
         flushed and available from all Stores.
@@ -541,7 +543,8 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeProductNoCommit(
         self, name=None, project=None, displayname=None,
         licenses=None, owner=None, registrant=None,
-        title=None, summary=None, official_malone=None):
+        title=None, summary=None, official_malone=None,
+        official_rosetta=None):
         """Create and return a new, arbitrary Product."""
         if owner is None:
             owner = self.makePersonNoCommit()
@@ -570,6 +573,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             registrant=registrant)
         if official_malone is not None:
             product.official_malone = official_malone
+        if official_rosetta is not None:
+            removeSecurityProxy(product).official_rosetta = official_rosetta
         return product
 
     def makeProductSeries(self, product=None, name=None, owner=None,
@@ -614,12 +619,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             description=description,
             owner=owner)
 
-    def makeSprint(self, title=None):
+    def makeSprint(self, title=None, name=None):
         """Make a sprint."""
         if title is None:
             title = self.getUniqueString('title')
         owner = self.makePerson()
-        name = self.getUniqueString('name')
+        if name is None:
+            name = self.getUniqueString('name')
         time_starts = datetime(2009, 1, 1, tzinfo=pytz.UTC)
         time_ends = datetime(2009, 1, 2, tzinfo=pytz.UTC)
         time_zone = 'UTC'
@@ -1191,7 +1197,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, product=None, branch_name=None,
-                       git_repo_url=None):
+                       git_repo_url=None, registrant=None):
         """Create and return a new, arbitrary code import.
 
         The type of code import will be inferred from the source details
@@ -1205,7 +1211,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             product = self.makeProduct()
         if branch_name is None:
             branch_name = self.getUniqueString('name')
-        registrant = self.makePerson()
+        if registrant is None:
+            registrant = self.makePerson()
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
@@ -1433,6 +1440,9 @@ class LaunchpadObjectFactory(ObjectFactory):
         series.status = status
         return series
 
+    # Most people think of distro releases as distro series.
+    makeDistroSeries = makeDistroRelease
+
     def makeDistroArchSeries(self, distroseries=None,
                              architecturetag='powerpc', processorfamily=None,
                              official=True, owner=None,
@@ -1484,6 +1494,34 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
             distribution=distribution, name=name)
+
+    def makeBuilder(self, processor=None, url=None, name=None, title=None,
+                    description=None, owner=None, active=True,
+                    virtualized=True, vm_host=None):
+        """Make a new builder for i386 virtualized builds by default.
+
+        Note: the builder returned will not be able to actually build -
+        we currently have a build slave setup for 'bob' only in the
+        test environment.
+        See lib/canonical/buildd/tests/buildd-slave-test.conf
+        """
+        if processor is None:
+            processor_fam = ProcessorFamilySet().getByName('x86')
+            processor = processor_fam.processors[0]
+        if url is None:
+            url = 'http://%s:8221/' % self.getUniqueString()
+        if name is None:
+            name = self.getUniqueString()
+        if title is None:
+            title = self.getUniqueString()
+        if description is None:
+            description = self.getUniqueString()
+        if owner is None:
+            owner = self.makePerson()
+
+        return getUtility(IBuilderSet).new(
+            processor, url, name, title, description, owner, active,
+            virtualized, vm_host)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
@@ -1537,14 +1575,12 @@ class LaunchpadObjectFactory(ObjectFactory):
                                     create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
-                      context=None, sequence=None):
+                      context=None, sequence=0):
         """Make a new `POTMsgSet` in the given template."""
         if singular is None and plural is None:
             singular = self.getUniqueString()
         potmsgset = potemplate.createMessageSetFromText(
-            singular, plural, context=context)
-        if sequence is not None:
-            potmsgset.setSequence(potemplate, sequence)
+            singular, plural, context, sequence)
         naked_potmsgset = removeSecurityProxy(potmsgset)
         naked_potmsgset.sync()
         return potmsgset
@@ -1689,7 +1725,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return distroseries.getSourcePackage(sourcepackagename)
 
     def makePackageset(self, name=None, description=None, owner=None,
-                       packages=()):
+                       packages=(), distroseries=None):
         """Make an `IPackageset`."""
         if name is None:
             name = self.getUniqueString(u'package-set-name')
@@ -1702,7 +1738,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         ps_set = getUtility(IPackagesetSet)
         package_set = run_with_login(
             techboard.teamowner,
-            lambda: ps_set.new(name, description, owner))
+            lambda: ps_set.new(name, description, owner, distroseries))
         run_with_login(owner, lambda: package_set.add(packages))
         return package_set
 

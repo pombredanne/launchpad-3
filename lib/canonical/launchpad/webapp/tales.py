@@ -471,8 +471,7 @@ class ObjectFormatterAPI:
         try:
             url = canonical_url(
                 self._context, path_only_if_possible=True,
-                rootsite=rootsite,
-                view_name=view_name)
+                rootsite=rootsite, view_name=view_name)
         except Unauthorized:
             url = ""
         return url
@@ -480,14 +479,15 @@ class ObjectFormatterAPI:
     def api_url(self, context):
         """Return the object's (partial) canonical web service URL.
 
-        This method returns everything that goes after the web service
-        version number. It's the same as 'url', but without any view
-        name.
+        This method returns everything that goes after the web service version
+        number.  Effectively the canonical URL but only the relative part with
+        no site.
         """
-
-        # Some classes override the rootsite. We always want a path-only
-        # URL, so we override it to nothing.
-        return self.url(rootsite=None)
+        try:
+            url = canonical_url(self._context, force_local_path=True)
+        except Unauthorized:
+            url = ""
+        return url
 
     def traverse(self, name, furtherPath):
         if name.startswith('link:') or name.startswith('url:'):
@@ -1368,7 +1368,8 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink', 'bzr-link': 'bzrLink'}
+        'title-link': 'titleLink', 'bzr-link': 'bzrLink',
+        'api_url': 'api_url'}
 
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
@@ -2876,7 +2877,7 @@ class FormattersAPI:
             "<<email address hidden>>", "<email address hidden>")
         return text
 
-    def linkify_email(self):
+    def linkify_email(self, preloaded_person_data=None):
         """Linkify any email address recognised in Launchpad.
 
         If an email address is recognised as one registered in Launchpad,
@@ -2891,7 +2892,14 @@ class FormattersAPI:
         matches = re.finditer(self._re_email, text)
         for match in matches:
             address = match.group()
-            person = getUtility(IPersonSet).getByEmail(address)
+            person = None
+            # First try to find the person required in the preloaded person
+            # data dictionary.
+            if preloaded_person_data is not None:
+                person = preloaded_person_data.get(address, None)
+            else:
+                # No pre-loaded data -> we need to perform a database lookup.
+                person = getUtility(IPersonSet).getByEmail(address)
             # Only linkify if person exists and does not want to hide
             # their email addresses.
             if person is not None and not person.hide_email_addresses:

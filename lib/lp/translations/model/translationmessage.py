@@ -386,7 +386,7 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
 
         for form in range(TranslationConstants.MAX_PLURAL_FORMS):
             msgstr_name = 'msgstr%d' % form
-            msgstr = getattr(self, msgstr_name)
+            msgstr = getattr(self, 'msgstr%dID' % form)
             if msgstr is None:
                 form_clause = "%s IS NULL" % msgstr_name
             else:
@@ -454,10 +454,10 @@ class TranslationMessage(SQLBase, TranslationMessageMixIn):
         """See `ITranslationMessage`."""
         store = Store.of(self)
 
-        forms_match = (TranslationMessage.msgstr0 == self.msgstr0)
+        forms_match = (TranslationMessage.msgstr0ID == self.msgstr0ID)
         for form in xrange(1, TranslationConstants.MAX_PLURAL_FORMS):
             form_name = 'msgstr%d' % form
-            form_value = getattr(self, form_name)
+            form_value = getattr(self, 'msgstr%dID' % form)
             forms_match = And(
                 forms_match,
                 getattr(TranslationMessage, form_name) == form_value)

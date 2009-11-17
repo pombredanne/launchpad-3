@@ -155,7 +155,7 @@
     </dl>
 
     <dl id="sshkeys" tal:condition="view/should_show_sshkeys_section">
-      <dt>SSH Keys:
+      <dt>SSH keys:
         <a tal:replace="structure overview_menu/editsshkeys/fmt:icon" />
       </dt>
       <dd tal:define="sshkeys context/sshkeys">

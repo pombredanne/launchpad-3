@@ -672,7 +672,7 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         name="+templates"
         class="lp.translations.browser.productseries.ProductSeriesTemplatesView"
-        permission="launchpad.Edit"
+        permission="zope.Public"
         template="../templates/object-templates.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
@@ -819,6 +819,9 @@
         <browser:page
             name="+portlet-obsolete-translatables"
             template="../templates/product-portlet-obsolete-translatables.pt"/>
+        <browser:page
+            name="+portlet-not-using-launchpad"
+            template="../templates/product-portlet-not-using-launchpad.pt"/>
     </browser:pages>
 
 <!-- Project views -->
@@ -943,7 +946,7 @@
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
         class="lp.translations.browser.distroseries.DistroSeriesTemplatesView"
-        permission="launchpad.Edit"
+        permission="zope.Public"
         layer="canonical.launchpad.layers.TranslationsLayer"
         name="+templates"
         template="../templates/object-templates.pt" />

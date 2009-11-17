@@ -5,6 +5,7 @@ Remove this section when the old templates and these declarations are gone.
 
 */
 #maincontent {
+    clear: both;
     float: left;
     width: 100%;
     margin-right: -25%;
@@ -232,6 +233,10 @@ span.nolink {
 .footer .lp-branding {
     float: left;
     }
+.portlet-border {
+    border-top: 1px solid #EBEBEB;
+    padding: 1em 0;
+    }
 .portlet, .aside {
     clear: both;
     border-top: 1px solid #EBEBEB;
@@ -244,6 +249,10 @@ span.nolink {
 .full-page-width {
     z-index: 10;
     width: 131%;
+    }
+/* The content is already full width; the content should remain full width. */
+.full-page-width .full-page-width {
+    width: 100%;
     }
 .warning.message {
     margin-top: 17px;
@@ -312,8 +321,7 @@ strong.translations-stat {
 
 /* Default text presentation */
 html, body {
-    font-family: bitstream vera sans, arial, helvetica, clean, sans-serif;
-    font-family: sans-serif;
+    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
     font-size: 93%;
     }
 body.private {
@@ -379,6 +387,9 @@ form table th, form table td {
 form table tbody th {
     font-weight: bold;
     }
+input[type='image'] {
+    vertical-align: middle;
+    }
 em {
     font-style: italic;
     }
@@ -413,10 +424,6 @@ span.see-all {
 .registered {
     font-size: 85%;
     color: #666;
-    font-style: italic;
-    }
-li .registered {
-    font-style: normal;
     }
 .description {
     clear: both;
@@ -442,6 +449,19 @@ li .registered {
     margin: 1em 0 0 0;
     }
 .horizontal li {
+    display: inline;
+    padding: 0 1.5em 0 0;
+    }
+.table-actions:nth-child(2) {
+    /* text-align only works here because the <li> also has the
+       style display:inline.
+    */
+    text-align: right;
+    }
+.table-actions {
+    margin: 1em 0 0 0;
+    }
+.table-actions li {
     display: inline;
     padding: 0 1.5em 0 0;
     }
@@ -701,7 +721,7 @@ ul.super-add-action li a {
 
 /* For the Latest updates portlet
  * at https://launchpad.dev/~cprov/+archive/ppa */
-ul.latest-ppa-updates .duration {
+ul.latest-ppa-updates .duration, ul.latest-ppa-updates .build-details {
     font-size: 75%;
 }
 ul.latest-ppa-updates li {
@@ -774,7 +794,7 @@ form.translations div.fields {
 
 form.translations div.actions {
     padding: 1em;
-    text-align: right;
+    text-align: left;
     clear:both;
 }
 
@@ -855,6 +875,22 @@ table.translation-stats tfoot th {
 table.translation-stats tfoot td {
     text-align:center;
 }
+
+/* Translations help links.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/
+ *   https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+translations
+ *   https://translations.launchpad.dev/ubuntu/hoary/
+ *
+ */
+div.translation-help-links a {
+  float: right;
+}
+div.translation-help-links div {
+  clear: both;
+}
+
 
 /* Home page */
 .homepage {
@@ -944,3 +980,216 @@ table.translation-stats tfoot td {
     margin-top: 2em;
     clear: both;
 }
+.gridflow {
+    margin: 0.0em;
+    padding: 0.0em;
+}
+.gridflow ul {
+    margin: 0.5em 0.0em 0.5em 0.0em;
+    padding: 0.5em 0.0em 0.0em 0.0em;
+}
+.gridflow li {
+    display: inline;
+    margin: 0.0em;
+    padding: 0.2em;
+}
+.gridflow li span {
+    display: table-cell;
+    display: inline-table;
+    display: inline-block;
+    width: 192px;
+    text-align: center;
+    vertical-align: middle;
+    padding: 1em 1em 1em 0;
+}
+
+/* == Sprites == */
+.sprite {
+    padding: 2px 0 5px 18px;
+    line-height: 18px;
+}
+.vertical .sprite {
+    /* XXX: EdwinGrubbs 2009-10-29 bug=463032
+       The reduced padding is only necessary to prevent parts of the
+       adjacent sprites in the consolidated image from appearing
+       when the line wraps and the default font size is 16.
+    */
+    padding-bottom: 0px;
+    display: inline-block;
+    min-height: 16px;
+    width: 90%;
+}
+.vertical .sprite:first-line {
+    line-height: 12px;
+}
+.sprite-after {padding: 2px 18px 0 0;}
+
+/* XXX: EdwinGrubbs 2009-07-27 bug=405476
+ * Override the .yui-picker-results style, so that the next icon
+ * in the sprite file won't appear for tall list items.
+ */
+.yui-picker-results li.sprite {
+    padding:2px 0 0 18px;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.add {background:url(icon-sprites) 0 0 no-repeat;}
+.edit {background:url(icon-sprites) 0 -32px no-repeat;}
+.remove {background:url(icon-sprites) 0 -64px no-repeat;}
+.info {background:url(icon-sprites) 0 -96px no-repeat;}
+.question {background:url(icon-sprites) 0 -128px no-repeat;}
+.download-icon {background:url(icon-sprites) 0 -160px no-repeat;}
+.download {background:url(icon-sprites) 0 -160px no-repeat;}
+.search-icon {background:url(icon-sprites) 0 -187px no-repeat;}
+.no {background:url(icon-sprites) 0 -224px no-repeat;}
+.yes {background:url(icon-sprites) 0 -256px no-repeat;}
+.crowd {background:url(icon-sprites) 0 -288px no-repeat;}
+.person {background:url(icon-sprites) 0 -320px no-repeat;}
+.person-tabs {background:url(icon-sprites) 5px -314px no-repeat;}
+.person-badge {background:url(icon-sprites) 0 -352px no-repeat;}
+.team {background:url(icon-sprites) 0 -384px no-repeat;}
+.team-badge {background:url(icon-sprites) 0 -416px no-repeat;}
+.arrowRight {background:url(icon-sprites) 0 -448px no-repeat;}
+.treeCollapsed {background:url(icon-sprites) 0 -480px no-repeat;}
+.treeExpanded {background:url(icon-sprites) 0 -512px no-repeat;}
+.branch, .bzr-favicon {background:url(icon-sprites) 0 -544px no-repeat;}
+.bzr-favicon {background:url(icon-sprites) 5px -538px no-repeat;}
+.distribution {background:url(icon-sprites) 0 -576px no-repeat;}
+.package-source {background:url(icon-sprites) 0 -608px no-repeat;}
+.milestone {background:url(icon-sprites) 0 -640px no-repeat;}
+.language {background:url(icon-sprites) 0 -672px no-repeat;}
+.external-link {background:url(icon-sprites) 0 -704px no-repeat;}
+.mail {background:url(icon-sprites) 0 -736px no-repeat;}
+.cve {background:url(icon-sprites) 0 -768px no-repeat;}
+.cves {float: right; text-align: right;}
+.bug {background:url(icon-sprites) 0 -800px no-repeat;}
+.bug-critical {background:url(icon-sprites) 0 -832px no-repeat;}
+.bug-high {background:url(icon-sprites) 0 -864px no-repeat;}
+.bug-medium {background:url(icon-sprites) 0 -896px no-repeat;}
+.bug-low {background:url(icon-sprites) 0 -928px no-repeat;}
+.bug-wishlist {background:url(icon-sprites) 0 -960px no-repeat;}
+.blueprint {background:url(icon-sprites) 0 -992px no-repeat;}
+.blueprint-essential {background:url(icon-sprites) 0 -1024px no-repeat;}
+.blueprint-high {background:url(icon-sprites) 0 -1056px no-repeat;}
+.blueprint-medium {background:url(icon-sprites) 0 -1088px no-repeat;}
+.blueprint-low {background:url(icon-sprites) 0 -1120px no-repeat;}
+.blueprint-undefined {background:url(icon-sprites) 0 -1152px no-repeat;}
+.blueprint-not {background:url(icon-sprites) 0 -1184px no-repeat;}
+.rss {background:url(icon-sprites) 0 -1216px no-repeat;}
+.ubuntu-logo {background:url(icon-sprites-2) 0 0px no-repeat;}
+.person-inactive {background:url(icon-sprites-2) 0 -32px no-repeat;}
+.person-inactive-badge {background:url(icon-sprites-2) 0 -64px no-repeat;}
+.mentoring {background:url(icon-sprites-2) 0 -96px no-repeat;}
+.undecided {background:url(icon-sprites-2) 0 -128px no-repeat;}
+.error {background:url(icon-sprites-2) 0 -160px no-repeat;}
+.cancel {background:url(icon-sprites-2) 0 -192px no-repeat;}
+.confirm {background:url(icon-sprites-2) 0 -224px no-repeat;}
+.flame {background:url(icon-sprites-2) 0 -256px no-repeat;}
+.bug-undecided {background:url(icon-sprites-2) 0 -288px no-repeat;}
+.bug-remote {background:url(icon-sprites-2) 0 -320px no-repeat;}
+.bug-unknown {background:url(icon-sprites-2) 0 -352px no-repeat;}
+.bug-dupe {background:url(icon-sprites-2) 0 -384px no-repeat;}
+.bug-tracker {background:url(icon-sprites-2) 0 -416px no-repeat;}
+.package-binary {background:url(icon-sprites-2) 0 -448px no-repeat;}
+.retry {background:url(icon-sprites-2) 0 -480px no-repeat;}
+.distribution-badge {background:url(icon-sprites-2) 0 -512px no-repeat;}
+.project-badge {background:url(icon-sprites-2) 0 -544px no-repeat;}
+.project {background:url(icon-sprites-2) 0 -576px no-repeat;}
+.product-badge {background:url(icon-sprites-2) 0 -608px no-repeat;}
+.product {background:url(icon-sprites-2) 0 -640px no-repeat;}
+.read-only {background:url(icon-sprites-2) 0 -672px no-repeat;}
+.warning-icon, .security {background:url(icon-sprites-2) 0 -704px no-repeat;}
+.private {background:url(icon-sprites-2) 0 -736px no-repeat;}
+.meeting {background:url(icon-sprites-2) 0 -768px no-repeat;}
+.translate-icon {background:url(icon-sprites-2) 0 -800px no-repeat;}
+.translation-file {background:url(icon-sprites-2) 0 -832px no-repeat;}
+.translation-template {background:url(icon-sprites-2) 0 -864px no-repeat;}
+.trash-icon {background:url(icon-sprites-2) 0 -896px no-repeat;}
+.stop {background:url(icon-sprites-2) 0 -928px no-repeat;}
+.list {background:url(icon-sprites-2) 0 -992px no-repeat;}
+.bullet {background:url(icon-sprites-2) 0 -1024px no-repeat;}
+.zoom-in {background:url(icon-sprites-2) 0 -1056px no-repeat;}
+.zoom-out {background:url(icon-sprites-2) 0 -1088px no-repeat;}
+.architecture {background:url(icon-sprites-2) 0 -1120px no-repeat;}
+.ppa-icon {background:url(icon-sprites-2) 0 -1147px no-repeat;}
+.ppa-icon-inactive {background:url(icon-sprites-2) 0 -1171px no-repeat;}
+
+.bug-status-expand {background:url(icon-sprites-3) 0 -10px no-repeat;}
+.merge-proposal {
+  background:url(icon-sprites-3) 0 -46px no-repeat;
+  padding-left: 22px}
+.build-superseded {background:url(icon-sprites-3) 0 -80px no-repeat;}
+.build-sucess {background:url(icon-sprites-3) 0 -112px no-repeat;}
+.build-needed {background:url(icon-sprites-3) 0 -144px no-repeat;}
+.build-failure {background:url(icon-sprites-3) 0 -176px no-repeat;}
+.build-depwait {background:url(icon-sprites-3) 0 -208px no-repeat;}
+.arrowUp {background:url(icon-sprites-3) 0 -240px no-repeat;}
+.arrowDown {background:url(icon-sprites-3) 0 -256px no-repeat;}
+.arrowStart {background:url(icon-sprites-3) 0 -288px no-repeat;}
+.arrowEnd {background:url(icon-sprites-3) 0 -304px no-repeat;}
+.arrowTop {background:url(icon-sprites-3) 0 -328px no-repeat;}
+.arrowBottom {background:url(icon-sprites-3) 0 -356px no-repeat;}
+.arrowLeft {background:url(icon-sprites-3) 0 -384px no-repeat;}
+.bluebar {background:url(icon-sprites-3) 0 -416px repeat-x;}
+.redbar {background:url(icon-sprites-3) 0 -505px repeat-x;}
+.greenbar {background:url(icon-sprites-3) 0 -446px repeat-x;}
+.purplebar {background:url(icon-sprites-3) 0 -476px repeat-x;}
+.favorite-yes {background:url(icon-sprites-3) 0 -530px no-repeat;}
+
+/*large*/
+.large-branch {background:url(icon-sprites-large) 0 0 no-repeat;}
+.large-warning {background:url(icon-sprites-large) 0 -48px no-repeat;}
+.large-crowd {background:url(icon-sprites-large) 0 -96px no-repeat;}
+.large-download {background:url(icon-sprites-large) 0 -144px no-repeat;}
+.large-error {background:url(icon-sprites-large) 0 -144px no-repeat;}
+.large-flame {background:url(icon-sprites-large) 0 -192px no-repeat;}
+.large-download {background:url(icon-sprites-large) 0 -240px no-repeat;}
+.large-info {background:url(icon-sprites-large) 0 -288px no-repeat;}
+.large-launchpad {background:url(icon-sprites-large) 0 -336px no-repeat;}
+.large-mentoring {background:url(icon-sprites-large) 0 -384px no-repeat;}
+.large-proposal {background:url(icon-sprites-large) 0 -432px no-repeat;}
+.large-trash {background:url(icon-sprites-large) 0 -480px no-repeat;}
+.large-private {background:url(icon-sprites-large) 0 -528px no-repeat;}
+
+/*logo*/
+.logo-launchpad {background:url(icon-sprites-logo) 0 0 no-repeat;}
+.logo-distribution {background:url(icon-sprites-logo) 0 -80px no-repeat;}
+.logo-project {background:url(icon-sprites-logo) 0 -160px no-repeat;}
+.logo-product {background:url(icon-sprites-logo) 0 -240 no-repeat;}
+.logo-person {background:url(icon-sprites-logo) 0 -320 no-repeat;}
+.logo-inactive {background:url(icon-sprites-logo-2) 0 0 no-repeat;}
+.logo-team {background:url(icon-sprites-logo-2) 0 -80px no-repeat;}
+.logo-meeting {background:url(icon-sprites-logo-2) 0 -160px no-repeat;}
+.logo-flame {background:url(icon-sprites-logo-2) 0 -240 no-repeat;}
+.logo-trash {background:url(icon-sprites-logo-2) 0 -320 no-repeat;}
+
+/* Code styles */
+.branchstatusMATURE, .branchstatusMATURE a  {color: #090;}
+.branchstatusDEVELOPMENT, .branchstatusDEVELOPMENT a  {color: #900;}
+.branchstatusEXPERIMENTAL, .branchstatusEXPERIMENTAL a {color: #930;}
+.branchstatusMERGED, .branchstatusMERGED a       {color: #666;}
+.branchstatusABANDONED, .branchstatusABANDONED a    {color: #666;}
+.branchstatusNEW, .branchstatusNEW a          {color: black;}
+
+.voteAPPROVE       {color: green;}
+.voteNEEDS_FIXING  {color: #930;}
+.voteDISAPPROVE    {color: red;}
+.voteRESUBMIT      {color: red;}
+.voteABSTAIN       {color: grey;}
+.votePENDING       {color: #f60;}
+
+.mergestatusWORK_IN_PROGRESS, .mergestatusWORK_IN_PROGRESS a  {color: black;}
+.mergestatusNEEDS_REVIEW, .mergestatusNEEDS_REVIEW a          {color: #f60;}
+.mergestatusCODE_APPROVED, .mergestatusCODE_APPROVED a        {color: green;}
+.mergestatusREJECTED, .mergestatusREJECTED a                  {color: red;}
+.mergestatusMERGED, .mergestatusMERGED a                      {color: green;}
+.mergestatusMERGE_FAILED, .mergestatusMERGE_FAILED a          {color: red;}
+.mergestatusQUEUED, .mergestatusQUEUED a                      {color: black;}
+.mergestatusSUPERSEDED, .mergestatusSUPERSEDED a              {color: grey;}
+
+.codeimportNEW       {color: #930;}
+.codeimportINVALID   {color: red;}
+.codeimportREVIEWED  {color: green;}
+.codeimportSUSPENDED {color: red;}
+.codeimportFAILING   {color: red;}

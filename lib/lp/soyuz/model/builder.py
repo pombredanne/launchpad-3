@@ -52,6 +52,7 @@ from lp.soyuz.interfaces.builder import (
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus)
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp import urlappend
 from canonical.librarian.utils import copy_and_close
 
@@ -151,11 +152,11 @@ class Builder(SQLBase):
         # Avoid circular imports.
         from lp.soyuz.model.publishing import makePoolPath
 
-        build = build_queue_item.build
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
         archive = build.archive
         archive_url = archive.archive_url
         component_name = build.current_component.name
-        for source_file in build_queue_item.files:
+        for source_file in build.sourcepackagerelease.files:
             file_name = source_file.libraryfile.filename
             sha1 = source_file.libraryfile.content.sha1
             source_name = build.sourcepackagerelease.sourcepackagename.name
@@ -264,8 +265,8 @@ class Builder(SQLBase):
          * Ensure that the build pocket allows builds for the current
            distroseries state.
         """
-        assert not (not self.virtualized and
-                    build_queue_item.is_virtualized), (
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        assert not (not self.virtualized and build.is_virtualized), (
             "Attempt to build non-virtual item on a virtual builder.")
 
         # Assert that we are not silently building SECURITY jobs.
@@ -274,27 +275,27 @@ class Builder(SQLBase):
         # XXX Julian 2007-12-18 spec=security-in-soyuz: This is being
         # addressed in the work on the blueprint:
         # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
-        target_pocket = build_queue_item.build.pocket
+        target_pocket = build.pocket
         assert target_pocket != PackagePublishingPocket.SECURITY, (
             "Soyuz is not yet capable of building SECURITY uploads.")
 
         # Ensure build has the needed chroot
-        chroot = build_queue_item.archseries.getChroot()
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        chroot = build.distroarchseries.getChroot()
         if chroot is None:
             raise CannotBuild(
                 "Missing CHROOT for %s/%s/%s" % (
-                    build_queue_item.build.distroseries.distribution.name,
-                    build_queue_item.build.distroseries.name,
-                    build_queue_item.build.distroarchseries.architecturetag)
+                    build.distroseries.distribution.name,
+                    build.distroseries.name,
+                    build.distroarchseries.architecturetag)
                 )
 
         # The main distribution has policies to prevent uploads to some
         # pockets (e.g. security) during different parts of the distribution
         # series lifecycle. These do not apply to PPA builds nor any archive
         # that allows release pocket updates.
-        if (build_queue_item.build.archive.purpose != ArchivePurpose.PPA and
-            not build_queue_item.build.archive.allowUpdatesToReleasePocket()):
-            build = build_queue_item.build
+        if (build.archive.purpose != ArchivePurpose.PPA and
+            not build.archive.allowUpdatesToReleasePocket()):
             # XXX Robert Collins 2007-05-26: not an explicit CannotBuild
             # exception yet because the callers have not been audited
             assert build.distroseries.canUploadToPocket(build.pocket), (
@@ -306,7 +307,8 @@ class Builder(SQLBase):
     def _dispatchBuildToSlave(self, build_queue_item, args, buildid, logger):
         """Start the build on the slave builder."""
         # Send chroot.
-        chroot = build_queue_item.archseries.getChroot()
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        chroot = build.distroarchseries.getChroot()
         self.cacheFileOnSlave(logger, chroot)
 
         # Build filemap structure with the files required in this build
@@ -314,11 +316,11 @@ class Builder(SQLBase):
         # If the build is private we tell the slave to get the files from the
         # archive instead of the librarian because the slaves cannot
         # access the restricted librarian.
-        private = build_queue_item.build.archive.private
+        private = build.archive.private
         if private:
             self.cachePrivateSourceOnSlave(logger, build_queue_item)
         filemap = {}
-        for source_file in build_queue_item.files:
+        for source_file in build.sourcepackagerelease.files:
             lfa = source_file.libraryfile
             filemap[lfa.filename] = lfa.content.sha1
             if not private:
@@ -349,9 +351,10 @@ class Builder(SQLBase):
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        spr = build.sourcepackagerelease
         logger.info("startBuild(%s, %s, %s, %s)", self.url,
-                    build_queue_item.name, build_queue_item.version,
-                    build_queue_item.build.pocket.title)
+                    spr.name, spr.version, build.pocket.title)
 
         # Make sure the request is valid; an exception is raised if it's not.
         self._verifyBuildRequest(build_queue_item, logger)
@@ -365,39 +368,39 @@ class Builder(SQLBase):
         # turn 'arch_indep' ON only if build is archindep or if
         # the specific architecture is the nominatedarchindep for
         # this distroseries (in case it requires any archindep source)
-        args['arch_indep'] = build_queue_item.archseries.isNominatedArchIndep
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        args['arch_indep'] = build.distroarchseries.isNominatedArchIndep
 
-        suite = build_queue_item.build.distroarchseries.distroseries.name
-        if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
-            suite += "-%s" % (build_queue_item.build.pocket.name.lower())
+        suite = build.distroarchseries.distroseries.name
+        if build.pocket != PackagePublishingPocket.RELEASE:
+            suite += "-%s" % (build.pocket.name.lower())
         args['suite'] = suite
 
-        archive_purpose = build_queue_item.build.archive.purpose
+        archive_purpose = build.archive.purpose
         if (archive_purpose == ArchivePurpose.PPA and
-            not build_queue_item.build.archive.require_virtualized):
+            not build.archive.require_virtualized):
             # If we're building a non-virtual PPA, override the purpose
             # to PRIMARY and use the primary component override.
             # This ensures that the package mangling tools will run over
             # the built packages.
             args['archive_purpose'] = ArchivePurpose.PRIMARY.name
             args["ogrecomponent"] = (
-                get_primary_current_component(build_queue_item.build))
+                get_primary_current_component(build))
         else:
             args['archive_purpose'] = archive_purpose.name
             args["ogrecomponent"] = (
-                build_queue_item.build.current_component.name)
+                build.current_component.name)
 
-        args['archives'] = get_sources_list_for_building(
-            build_queue_item.build)
+        args['archives'] = get_sources_list_for_building(build)
 
         # Let the build slave know whether this is a build in a private
         # archive.
-        args['archive_private'] = build_queue_item.build.archive.private
+        args['archive_private'] = build.archive.private
 
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in
         # subsequent runs.
-        buildid = "%s-%s" % (build_queue_item.build.id, build_queue_item.id)
+        buildid = "%s-%s" % (build.id, build_queue_item.id)
         logger.debug("Initiating build %s on %s" % (buildid, self.url))
 
         # Do it.
@@ -421,8 +424,9 @@ class Builder(SQLBase):
         if currentjob is None:
             return 'Idle'
 
-        msg = 'Building %s' % currentjob.build.title
-        archive = currentjob.build.archive
+        build = getUtility(IBuildSet).getByQueueEntry(currentjob)
+        msg = 'Building %s' % build.title
+        archive = build.archive
         if not archive.owner.private and (archive.is_ppa or archive.is_copy):
             return '%s [%s/%s]' % (msg, archive.owner.name, archive.name)
         else:
@@ -553,26 +557,61 @@ class Builder(SQLBase):
                       SourcePackagePublishingHistory.status IN %s))
               OR
               archive.private IS FALSE) AND
-            buildqueue.build = build.id AND
+            buildqueue.job = buildpackagejob.job AND
+            buildpackagejob.build = build.id AND
             build.distroarchseries = distroarchseries.id AND
             build.archive = archive.id AND
             archive.enabled = TRUE AND
             build.buildstate = %s AND
             distroarchseries.processorfamily = %s AND
             buildqueue.builder IS NULL
-        """ % sqlvalues(private_statuses,
-                        BuildStatus.NEEDSBUILD, self.processor.family)]
+        """ % sqlvalues(
+            private_statuses, BuildStatus.NEEDSBUILD, self.processor.family)]
 
-        clauseTables = ['Build', 'DistroArchSeries', 'Archive']
+        clauseTables = [
+            'Build', 'BuildPackageJob', 'DistroArchSeries', 'Archive']
 
         clauses.append("""
             archive.require_virtualized = %s
         """ % sqlvalues(self.virtualized))
 
-        query = " AND ".join(clauses)
+        # Ensure that if BUILDING builds exist for the same
+        # public ppa archive and architecture and another would not
+        # leave at least 20% of them free, then we don't consider
+        # another as a candidate.
+        #
+        # This clause selects the count of currently building builds on
+        # the arch in question, then adds one to that total before
+        # deriving a percentage of the total available builders on that
+        # arch.  It then makes sure that percentage is under 80.
+        #
+        # The extra clause is only used if the number of available
+        # builders is greater than one, or nothing would get dispatched
+        # at all.
+        num_arch_builders = Builder.selectBy(
+            processor=self.processor, manual=False, builderok=True).count()
+        if num_arch_builders > 1:
+            clauses.append("""
+                EXISTS (SELECT true
+                WHERE ((
+                    SELECT COUNT(build2.id)
+                    FROM Build build2, DistroArchSeries distroarchseries2
+                    WHERE
+                        build2.archive = build.archive AND
+                        archive.purpose = %s AND
+                        archive.private IS FALSE AND
+                        build2.distroarchseries = distroarchseries2.id AND
+                        distroarchseries2.processorfamily = %s AND
+                        build2.buildstate = %s) + 1::numeric)
+                    *100 / %s
+                    < 80)
+            """ % sqlvalues(
+                ArchivePurpose.PPA, self.processor.family,
+                BuildStatus.BUILDING, num_arch_builders))
 
+        query = " AND ".join(clauses)
         candidate = BuildQueue.selectFirst(
-            query, clauseTables=clauseTables, prejoins=['build'],
+            query, clauseTables=clauseTables,
             orderBy=['-buildqueue.lastscore', 'build.id'])
 
         return candidate
@@ -596,26 +635,28 @@ class Builder(SQLBase):
         # Builds in those situation should not be built because they will
         # be wasting build-time, the former case already has a newer source
         # and the latter could not be built in DAK.
+        build_set = getUtility(IBuildSet)
         while candidate is not None:
-            if candidate.build.pocket == PackagePublishingPocket.SECURITY:
+            build = build_set.getByQueueEntry(candidate)
+            if build.pocket == PackagePublishingPocket.SECURITY:
                 # We never build anything in the security pocket.
                 logger.debug(
                     "Build %s FAILEDTOBUILD, queue item %s REMOVED"
-                    % (candidate.build.id, candidate.id))
-                candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
+                    % (build.id, candidate.id))
+                build.buildstate = BuildStatus.FAILEDTOBUILD
                 candidate.destroySelf()
                 candidate = self._findBuildCandidate()
                 continue
 
-            publication = candidate.build.current_source_publication
+            publication = build.current_source_publication
 
             if publication is None:
                 # The build should be superseded if it no longer has a
                 # current publishing record.
                 logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"
-                    % (candidate.build.id, candidate.id))
-                candidate.build.buildstate = BuildStatus.SUPERSEDED
+                    % (build.id, candidate.id))
+                build.buildstate = BuildStatus.SUPERSEDED
                 candidate.destroySelf()
                 candidate = self._findBuildCandidate()
                 continue
@@ -718,13 +759,15 @@ class BuilderSet(object):
         origin = (
             Archive,
             Build,
+            BuildPackageJob,
             BuildQueue,
             DistroArchSeries,
             Processor,
             )
         queue = store.using(*origin).find(
             BuildQueue,
-            BuildQueue.build == Build.id,
+            BuildPackageJob.job == BuildQueue.jobID,
+            BuildPackageJob.build == Build.id,
             Build.distroarchseries == DistroArchSeries.id,
             Build.archive == Archive.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,

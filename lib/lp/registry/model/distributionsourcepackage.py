@@ -15,7 +15,8 @@ import itertools
 import operator
 
 from sqlobject.sqlbuilder import SQLConstant
-from storm.expr import And, Desc, In
+from storm.expr import And, Desc, In, Join, Lower
+from storm.store import EmptyResultSet
 from storm.locals import Int, Reference, Store, Storm, Unicode
 from zope.interface import implements
 
@@ -36,10 +37,13 @@ from lp.soyuz.model.publishing import (
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
 from lp.registry.model.karma import KarmaTotalCache
+from lp.registry.model.person import Person
 from lp.registry.model.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
+from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
+from canonical.launchpad.interfaces.lpstorm import IStore
 
 from canonical.lazr.utils import smartquote
 
@@ -214,7 +218,7 @@ class DistributionSourcePackage(BugTargetBase,
     def get_distroseries_packages(self, active_only=True):
         """See `IDistributionSourcePackage`."""
         result = []
-        for series in self.distribution.serieses:
+        for series in self.distribution.series:
             if active_only:
                 if not series.active:
                     continue
@@ -280,7 +284,7 @@ class DistributionSourcePackage(BugTargetBase,
 
     @property
     def upstream_product(self):
-        for distroseries in self.distribution.serieses:
+        for distroseries in self.distribution.series:
             source_package = distroseries.getSourcePackage(
                 self.sourcepackagename)
             if source_package.direct_packaging is not None:
@@ -407,6 +411,23 @@ class DistributionSourcePackage(BugTargetBase,
         return (
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
+
+    @staticmethod
+    def getPersonsByEmail(email_addresses):
+        """[(EmailAddress,Person), ..] iterable for given email addresses."""
+        if email_addresses is None or len(email_addresses) < 1:
+            return EmptyResultSet()
+        # Perform basic sanitization of email addresses.
+        email_addresses = [
+            address.lower().strip() for address in email_addresses]
+        store = IStore(Person)
+        origin = [
+            Person, Join(EmailAddress, EmailAddress.personID == Person.id)]
+        # Get all persons whose email addresses are in the list.
+        result_set = store.using(*origin).find(
+            (EmailAddress, Person),
+            In(Lower(EmailAddress.email), email_addresses))
+        return result_set
 
 
 class DistributionSourcePackageInDatabase(Storm):

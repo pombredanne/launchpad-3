@@ -70,7 +70,7 @@ She clicks on FAQ's title to display the complete FAQ content:
 
     >>> browser.getLink('How can I play MP3/Divx').click()
     >>> print backslashreplace(browser.title)
-    Questions : Ubuntu
+    FAQ #6 : Questions : Ubuntu
     >>> print browser.url
     http://answers.launchpad.dev/ubuntu/+faq/6
 

@@ -199,6 +199,7 @@ class BMPMailer(BranchMailer):
             'proposal_registrant': self.merge_proposal.registrant.displayname,
             'source_branch': self.merge_proposal.source_branch.bzr_identity,
             'target_branch': self.merge_proposal.target_branch.bzr_identity,
+            'prerequisite': '',
             'proposal_title': self.merge_proposal.title,
             'proposal_url': canonical_url(self.merge_proposal),
             'edit_subscription': '',
@@ -208,6 +209,10 @@ class BMPMailer(BranchMailer):
             'whiteboard': '', # No more whiteboard.
             'diff_cutoff_warning': '',
             }
+
+        if self.merge_proposal.prerequisite_branch is not None:
+            prereq_url = self.merge_proposal.prerequisite_branch.bzr_identity
+            params['prerequisite'] = ' with %s as a prerequisite' % prereq_url
 
         requested_reviews = []
         for review in self.requested_reviews:

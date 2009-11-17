@@ -163,6 +163,9 @@ class IStructuralSubscriptionTarget(Interface):
     parent_subscription_target = Attribute(
         "The target's parent, or None if one doesn't exist.")
 
+    def userCanAlterSubscription(subscriber, subscribed_by):
+        """Check if a user can change a subscription for a person."""
+
     def addSubscription(subscriber, subscribed_by):
         """Add a subscription for this structure.
 
@@ -239,6 +242,9 @@ class IStructuralSubscriptionTarget(Interface):
         """
 
     target_type_display = Attribute("The type of the target, for display.")
+
+    def userHasBugSubscriptions(user):
+        """Is `user` subscribed, directly or via a team, to bug mail?"""
 
 
 class IStructuralSubscriptionForm(Interface):

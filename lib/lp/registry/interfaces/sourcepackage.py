@@ -11,7 +11,7 @@ __all__ = [
     'ISourcePackage',
     'ISourcePackageFactory',
     'SourcePackageFileType',
-    'SourcePackageFormat',
+    'SourcePackageType',
     'SourcePackageRelationships',
     'SourcePackageUrgency',
     ]
@@ -90,14 +90,13 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
     # This is really a reference to an IProductSeries.
     productseries = exported(
         ReferenceChoice(
-            title=_("Product Series"), required=False,
+            title=_("Project series"), required=False,
             vocabulary="ProductSeries",
             schema=Interface,
             description=_(
-                "The best guess we have as to the Launchpad ProductSeries "
-                "for this Source Package. Try find packaging information for "
-                "this specific distroseries then try parent series and "
-                "previous Ubuntu series.")))
+                "The registered project series that this source package."
+                "is based on. This series may be the same as the one that "
+                "earlier versions of this source packages were based on.")))
 
     releases = Attribute("The full set of source package releases that "
         "have been published in this distroseries under this source "
@@ -232,6 +231,15 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
             or one.  If not, they are sorted from oldest to newest.
         """
 
+    @export_read_operation()
+    def linkedBranches():
+        """Get the official branches for this package.
+
+        This operation returns a {`Pocket`-name : `IBranch`} dict.
+
+        :return: A {`Pocket`-name : `IBranch`} dict.
+        """
+
 
 class ISourcePackageFactory(Interface):
     """A creator of source packages."""
@@ -297,7 +305,7 @@ class SourcePackageFileType(DBEnumeratedType):
         used in the build process for this source package.  """)
 
 
-class SourcePackageFormat(DBEnumeratedType):
+class SourcePackageType(DBEnumeratedType):
     """Source Package Format
 
     Launchpad supports distributions that use source packages in a variety

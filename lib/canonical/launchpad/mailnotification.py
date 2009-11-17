@@ -36,6 +36,7 @@ from canonical.launchpad.interfaces import (
     IStructuralSubscriptionTarget, ITeamMembershipSet, IUpstreamBugTask,
     TeamMembershipStatus)
 from lp.bugs.interfaces.bugchange import IBugChange
+from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
 from canonical.launchpad.interfaces.structuralsubscription import (
@@ -45,7 +46,8 @@ from canonical.launchpad.mail import (
 from lp.services.mail.mailwrapper import MailWrapper
 from lp.services.mail.notificationrecipientset import (
     NotificationRecipientSet)
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.publisher import canonical_url
+from canonical.launchpad.webapp.url import urlappend
 
 
 CC = "CC"
@@ -74,6 +76,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
     IBug.getBugNotificationRecipients().
     """
     implements(INotificationRecipientSet)
+
     def __init__(self, duplicateof=None):
         """Constructs a new BugNotificationRecipients instance.
 
@@ -191,7 +194,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
 
 def format_rfc2822_date(date):
     """Formats a date according to RFC2822's desires."""
-    return formatdate(rfc822.mktime_tz(date.utctimetuple() + (0,)))
+    return formatdate(rfc822.mktime_tz(date.utctimetuple() + (0, )))
 
 
 class BugNotificationBuilder:
@@ -461,8 +464,7 @@ def notify_errors_list(message, file_alias_url):
         get_bugmail_error_address(), [config.launchpad.errors_address],
         'Unhandled Email: %s' % file_alias_url,
         template % {'url': file_alias_url, 'error_msg': message},
-        headers={'X-Launchpad-Unhandled-Email': message}
-        )
+        headers={'X-Launchpad-Unhandled-Email': message})
 
 
 def generate_bug_add_email(bug, new_recipients=False, reason=None,
@@ -505,12 +507,12 @@ def generate_bug_add_email(bug, new_recipients=False, reason=None,
 
     mailwrapper = MailWrapper(width=72)
     content_substitutions = {
-        'visibility' : visibility,
-        'bug_url' : canonical_url(bug),
+        'visibility': visibility,
+        'bug_url': canonical_url(bug),
         'bug_info': "\n".join(bug_info),
         'bug_title': bug.title,
         'description': mailwrapper.format(bug.description),
-        'notification_rationale': reason
+        'notification_rationale': reason,
         }
 
     if new_recipients:
@@ -571,13 +573,11 @@ def get_unified_diff(old_text, new_text, text_width):
     # which begin with '?'.
     text_diff = [
         diff_line for diff_line in text_diff
-        if not diff_line.startswith('?')
-        ]
+        if not diff_line.startswith('?')]
     # Add a whitespace between the +/- and the text line.
     text_diff = [
         re.sub('^([\+\- ])(.*)', r'\1 \2', line)
-        for line in text_diff
-        ]
+        for line in text_diff]
     text_diff = '\n'.join(text_diff)
     return text_diff
 
@@ -585,9 +585,9 @@ def get_unified_diff(old_text, new_text, text_width):
 def _get_task_change_row(label, oldval_display, newval_display):
     """Return a row formatted for display in task change info."""
     return u"%(label)13s: %(oldval)s => %(newval)s\n" % {
-        'label' : label.capitalize(),
-        'oldval' : oldval_display,
-        'newval' : newval_display}
+        'label': label.capitalize(),
+        'oldval': oldval_display,
+        'newval': newval_display}
 
 
 def _get_task_change_values(task_change, displayattrname):
@@ -614,7 +614,7 @@ def get_bug_delta(old_bug, new_bug, user):
     """
     changes = {}
 
-    for field_name in ("title", "description",  "name", "private",
+    for field_name in ("title", "description", "name", "private",
                        "security_related", "duplicateof", "tags"):
         # fields for which we show old => new when their values change
         old_val = getattr(old_bug, field_name)
@@ -786,7 +786,7 @@ def notify_bug_attachment_added(bugattachment, event):
         bug=bug,
         bugurl=canonical_url(bug),
         user=IPerson(event.user),
-        attachment={'new' : bugattachment, 'old': None})
+        attachment={'new': bugattachment, 'old': None})
 
     add_bug_change_notifications(bug_delta)
 
@@ -799,7 +799,7 @@ def notify_bug_attachment_removed(bugattachment, event):
         bug=bug,
         bugurl=canonical_url(bug),
         user=IPerson(event.user),
-        attachment={'old' : bugattachment, 'new': None})
+        attachment={'old': bugattachment, 'new': None})
 
     add_bug_change_notifications(bug_delta)
 
@@ -908,8 +908,12 @@ def notify_team_join(event):
                 "You received this email because you are the new member.")
 
         if team.mailing_list is not None:
-            list_instructions = get_email_template(
+            template = get_email_template(
                 'team-list-subscribe-block.txt')
+            editemails_url = urlappend(
+                canonical_url(getUtility(ILaunchpadRoot)),
+                'people/+me/+editemails')
+            list_instructions = template % dict(editemails_url=editemails_url)
         else:
             list_instructions = ''
 
@@ -990,6 +994,7 @@ def specification_notification_subject(spec):
     """Format the email subject line for a specification."""
     return '[Blueprint %s] %s' % (spec.name, spec.title)
 
+
 @block_implicit_flushes
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""
@@ -1061,7 +1066,6 @@ def notify_specification_modified(spec, event):
         simple_sendmail_from_person(user, address, subject, body)
 
 
-
 @block_implicit_flushes
 def notify_specification_subscription_created(specsub, event):
     """Notify a user that they have been subscribed to a blueprint."""
@@ -1074,11 +1078,12 @@ def notify_specification_subscription_created(specsub, event):
         'You are now subscribed to the blueprint '
         '%(blueprint_name)s - %(blueprint_title)s.\n\n'
         '--\n  %(blueprint_url)s' %
-        {'blueprint_name' : spec.name,
-         'blueprint_title' : spec.title,
-         'blueprint_url' : canonical_url(spec)})
+        {'blueprint_name': spec.name,
+         'blueprint_title': spec.title,
+         'blueprint_url': canonical_url(spec)})
     for address in get_contact_email_addresses(person):
         simple_sendmail_from_person(user, address, subject, body)
+
 
 @block_implicit_flushes
 def notify_specification_subscription_modified(specsub, event):
@@ -1103,10 +1108,10 @@ def notify_specification_subscription_modified(specsub, event):
         '%(blueprint_name)s - %(blueprint_title)s '
         'has changed to [%(specsub_type)s].\n\n'
         '--\n  %(blueprint_url)s' %
-        {'blueprint_name' : spec.name,
-         'blueprint_title' : spec.title,
-         'specsub_type' : specsub_type,
-         'blueprint_url' : canonical_url(spec)})
+        {'blueprint_name': spec.name,
+         'blueprint_title': spec.title,
+         'specsub_type': specsub_type,
+         'blueprint_url': canonical_url(spec)})
     for address in get_contact_email_addresses(person):
         simple_sendmail_from_person(user, address, subject, body)
 
@@ -1175,14 +1180,20 @@ def notify_message_held(message_approval, event):
         'team': team.displayname,
         }
 
+    # Don't wrap the paragraph with the url.
+    def wrap_function(paragraph):
+        return (paragraph.startswith('http:') or
+                paragraph.startswith('https:'))
+
     # Send one message to every team administrator.
     person_set = getUtility(IPersonSet)
     for address in team.getTeamAdminsEmailAddresses():
         user = person_set.getByEmail(address)
         replacements['user'] = user.displayname
         body = MailWrapper(72).format(
-            template % replacements, force_wrap=True)
+            template % replacements, force_wrap=True, wrap_func=wrap_function)
         simple_sendmail(from_address, address, subject, body)
+
 
 @block_implicit_flushes
 def notify_new_ppa_subscription(subscription, event):
@@ -1290,7 +1301,7 @@ def send_direct_contact_email(
         u'',
         u'-- ',
         u'This message was sent from Launchpad by the user',
-        u'%s (%s)' % (sender_name , canonical_url(sender)),
+        u'%s (%s)' % (sender_name, canonical_url(sender)),
         u'using %s.',
         u'For more information see',
         u'https://help.launchpad.net/YourAccount/ContactingPeople',

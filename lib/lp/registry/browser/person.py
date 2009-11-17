@@ -842,7 +842,7 @@ class CommonMenuLinks:
 
     def related_software_summary(self):
         target = '+related-software'
-        text = 'Summary'
+        text = 'Related software'
         return Link(target, text, icon='info')
 
     def maintained(self):
@@ -854,21 +854,21 @@ class CommonMenuLinks:
     def uploaded(self):
         target = '+uploaded-packages'
         text = 'Uploaded packages'
-        return Link(target, text, icon='info')
+        enabled = bool(
+            self.person.getLatestUploadedButNotMaintainedPackages())
+        return Link(target, text, enabled=enabled, icon='info')
 
     def ppa(self):
-        # XXX: salgado, 2009-09-09, bug=426899: Need to conditionally disable
-        # this link.
         target = '+ppa-packages'
-        text = 'PPA packages'
-        return Link(target, text, icon='info')
+        text = 'Related PPA packages'
+        enabled = bool(self.person.getLatestUploadedPPAPackages())
+        return Link(target, text, enabled=enabled, icon='info')
 
     def projects(self):
-        # XXX: salgado, 2009-09-09, bug=426900: Need to conditionally disable
-        # this link.
         target = '+related-projects'
         text = 'Related projects'
-        return Link(target, text, icon='info')
+        enabled = bool(self.person.getOwnedOrDrivenPillars())
+        return Link(target, text, enabled=enabled, icon='info')
 
 
 class PersonMenuMixin(CommonMenuLinks):
@@ -954,7 +954,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
         text = 'Update Jabber IDs'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.EditLocation')
+    @enabled_with_permission('launchpad.Edit')
     def editlocation(self):
         target = '+editlocation'
         text = 'Set location and time zone'
@@ -1071,7 +1071,7 @@ class PersonEditNavigationMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Special')
     def sshkeys(self):
         target = '+editsshkeys'
-        text = 'SSH Keys'
+        text = 'SSH keys'
         return Link(target, text)
 
     def gpgkeys(self):
@@ -1138,7 +1138,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def proposed_members(self):
         target = '+editproposedmembers'
-        text = 'Approve/Decline applicants'
+        text = 'Approve or decline members'
         return Link(target, text, icon='add')
 
     def map(self):
@@ -1253,7 +1253,8 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
              'add_poll', 'join', 'leave', 'add_my_teams',
-             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa']
+             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa',
+             'related_software_summary']
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
@@ -1807,6 +1808,7 @@ class PersonSpecWorkloadTableView(LaunchpadView):
 class PersonSpecFeedbackView(HasSpecificationsView):
 
     label = 'Feature feedback requests'
+    page_title = label
 
     @cachedproperty
     def feedback_specs(self):
@@ -3235,17 +3237,20 @@ class TeamIndexView(PersonIndexView):
             raise AssertionError(e)
 
     @property
-    def visibility(self):
-        return self.context.visibility.title + ' Team'
-
-    @property
     def visibility_info(self):
         if self.context.visibility == PersonVisibility.PRIVATE:
-            return 'Viewable by team members.'
+            return 'Private team'
         elif self.context.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
-            return 'Team membership is viewable by team members.'
+            return 'Team membership is viewable by team members'
         else:
-            return ''
+            return 'Public team'
+
+    @property
+    def visibility_portlet_class(self):
+        """The portlet class for team visibility."""
+        if self.context.visibility == PersonVisibility.PUBLIC:
+            return 'portlet'
+        return 'portlet private'
 
 
 class PersonCodeOfConductEditView(LaunchpadView):
@@ -4662,16 +4667,20 @@ class PersonEditEmailsView(LaunchpadFormView):
 class TeamMugshotView(LaunchpadView):
     """A view for the team mugshot (team photo) page"""
 
-    label = "Who's in this team?"
+    label = "Member photos"
+    batch_size = config.launchpad.mugshot_batch_size
 
     def initialize(self):
         """Cache images to avoid dying from a million cuts."""
-        getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
-
+        getUtility(IPersonSet).cacheBrandingForPeople(
+            self.members.currentBatch())
 
     @cachedproperty
-    def allmembers(self):
-        return list(self.context.allmembers)
+    def members(self):
+        """Get a batch of all members in the team."""
+        batch_nav = BatchNavigator(
+            self.context.allmembers, self.request, size=self.batch_size)
+        return batch_nav
 
 
 class TeamReassignmentView(ObjectReassignmentView):
@@ -5324,6 +5333,7 @@ class PersonEditLocationView(LaunchpadFormView):
     """Edit a person's location."""
 
     schema = PersonLocationForm
+    field_names = ['location', 'hide']
     custom_widget('location', LocationWidget)
 
     @property
@@ -5332,19 +5342,6 @@ class PersonEditLocationView(LaunchpadFormView):
             "%s's location and timezone" % self.context.displayname)
 
     label = page_title
-
-    @property
-    def field_names(self):
-        """See `LaunchpadFormView`.
-
-        If the user has launchpad.Edit on this context, then allow him to set
-        whether or not the location should be visible.  The field for setting
-        the person's location is always shown.
-        """
-        if check_permission('launchpad.Edit', self.context):
-            return ['location', 'hide']
-        else:
-            return ['location']
 
     @property
     def initial_values(self):
