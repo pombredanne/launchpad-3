@@ -510,8 +510,10 @@ use Cwd;
 
 # avoid intermixing of stdout and stderr
 $| = 1;
+
+# We should not ignore HUP for our children - it breaks test suites.
 # in case the terminal disappears, the build should continue
-$SIG{'HUP'} = 'IGNORE';
+#$SIG{'HUP'} = 'IGNORE';
 
 $main::distribution = "";
 $main::distribution = $conf::default_distribution if $conf::default_distribution;
