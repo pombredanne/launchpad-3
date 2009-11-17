@@ -193,6 +193,7 @@ class SanitizeDb(LaunchpadScript):
         # Deactivated accounts we don't want to remove.
         people_whitelist = ['janitor']
         from canonical.launchpad.database.account import Account
+        from canonical.launchpad.database.emailaddress import EmailAddress
         from canonical.launchpad.interfaces.account import AccountStatus
         from lp.registry.model.person import Person
         # This is a slow operation due to the huge amount of cascading.
@@ -216,13 +217,13 @@ class SanitizeDb(LaunchpadScript):
             # key constraint between Person and EmailAddress, and the
             # ON DELETE SET NULL foreign key constraint between
             # EmailAddress and Account.
-            self.store.find(Account, Account.id == person.accountID).remove()
             self.store.find(
                 EmailAddress, EmailAddress.person == person).remove()
+            self.store.find(Account, Account.id == person.accountID).remove()
             self.store.remove(person)
             self.store.flush()
         self.logger.info(
-            "Removed %d suspended or deactivated people",
+            "Removed %d suspended or deactivated people + email + accounts",
             total_deactivated_count)
 
     def removeDeactivatedAccounts(self):
