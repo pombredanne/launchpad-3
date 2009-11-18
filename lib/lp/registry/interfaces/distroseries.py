@@ -851,6 +851,12 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         :return: A string.
         """
 
+    def isSourcePackageFormatPermitted(format):
+        """Check if the specified source format is allowed in this series.
+
+        :param format: The SourcePackageFormat to check.
+        """
+
 
 class IDistroSeries(IDistroSeriesEditRestricted, IDistroSeriesPublic,
                     IStructuralSubscriptionTarget):
