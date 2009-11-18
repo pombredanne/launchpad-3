@@ -19,37 +19,28 @@ constant value.
     >>> from lp.registry.browser.root import LaunchpadRootIndexView
     >>> LaunchpadRootIndexView._get_day_of_year = staticmethod(
     ...                                                 fake_get_day_of_year)
+
+Anonymous users will see the list of featured projects with links to the
+projects' pages in Launchpad. The "project of the day" is listed first.
+
     >>> anon_browser.open('http://launchpad.dev/')
     >>> featured = find_tag_by_id(anon_browser.contents, 'homepage-featured')
     >>> print extract_text(featured.h2)
     Featured projects
 
-We show the featured projects in our sample data. The "project of the day"
-is "GNOME" and it is listed separately:
-
-    >>> top_project = find_tag_by_id(featured, 'homepage-featured-top-title')
-    >>> print extract_text(top_project)
+    >>> for link in featured.findAll('a'):
+    ...     print extract_text(link)
+    <BLANKLINE>
     GNOME
-
-These are the projects in the left column.
-
-    >>> def print_column(column_id):
-    ...     column = find_tag_by_id(featured, column_id)
-    ...     for link in column.findAll('a'):
-    ...         print extract_text(link)
-    >>> print_column('homepage-featured-left')
     Gnome Applets
     Bazaar
     Mozilla Firefox
     Gentoo
-
-These are the projects in the right column.
-
-    >>> print_column('homepage-featured-right')
     GNOME Terminal
     the Mozilla Project
     Mozilla Thunderbird
     Ubuntu
+    Browse all ... projects
 
 == Adding a featured project ==
 
@@ -99,28 +90,19 @@ is now at index '4' and is therefore displayed as the top project:
 
     >>> anon_browser.open('http://launchpad.dev/')
     >>> featured = find_tag_by_id(anon_browser.contents, 'homepage-featured')
-    >>> top_project = find_tag_by_id(featured, 'homepage-featured-top-title')
-    >>> print extract_text(top_project)
+    >>> for link in featured.findAll('a'):
+    ...     print extract_text(link)
     Gentoo
-
-These are the projects in the left column. Because the number of projects in
-the columns is odd, the first column is longer.
-
-    >>> print_column('homepage-featured-left')
     Apache
     Gnome Applets
     Bazaar
     Mozilla Firefox
     GNOME
-
-These are the projects in the right column.
-
-    >>> print_column('homepage-featured-right')
     GNOME Terminal
     the Mozilla Project
     Mozilla Thunderbird
     Ubuntu
-
+    Browse all ... projects
 
 == Removing a project ==
 
