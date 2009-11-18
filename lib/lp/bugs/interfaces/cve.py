@@ -94,7 +94,6 @@ class ICve(Interface):
             title=_('Bugs related to this CVE entry.'),
             readonly=True,
             value_type=Reference(schema=Interface))) # Redefined in bug.py
-    bug_links = Attribute('Links between this CVE entry and bugs.')
 
     # other attributes
     url = exported(
