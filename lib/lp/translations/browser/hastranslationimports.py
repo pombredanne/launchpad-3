@@ -352,7 +352,7 @@ class HasTranslationImportsView(LaunchpadFormView):
                 RosettaImportStatus, disabled_items=disabled_items)
         return {
             'value': entry.status.title,
-            'itmes': items}
+            'items': items}
 
 class EntryImportStatusVocabularyFactory:
     """Factory for a vocabulary containing a list of statuses for import."""
