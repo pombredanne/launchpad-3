@@ -634,8 +634,11 @@ branch page.
 
 If there are reviews either pending or completed these are also shown.
 
+The api tag is a hidden anchor that holds the URL for the merge proposal api
+access.
+
     >>> nopriv_browser.open('http://code.launchpad.dev/~fred/fooix/proposed')
     >>> print_tag_with_id(nopriv_browser.contents, 'landing-targets')
     Ready for review for merging into lp://dev/fooix
       Eric the Viking: Pending (code) requested ... ago
-      Diff: 47 lines (+7/-0) 2 files modified
+      Diff: 47 lines (+7/-0) 2 files modified                api
