@@ -132,8 +132,7 @@ class SanitizeDb(LaunchpadScript):
         self.scrambleHiddenEmailAddresses()
         self.scrambleOpenIDIdentifiers()
 
-        self.removeDeactivatedPeople()
-        self.removeDeactivatedAccounts()
+        self.removeDeactivatedPeopleAndAccounts()
 
         # Remove unlinked records. These might contain private data.
         self.removeUnlinkedEmailAddresses()
@@ -188,25 +187,37 @@ class SanitizeDb(LaunchpadScript):
             self.logger.info("Committing.")
             transaction.commit()
 
-    def removeDeactivatedPeople(self):
-        """Remove all suspended and deactivated people."""
+    def removeDeactivatedPeopleAndAccounts(self):
+        """Remove all suspended and deactivated people & their accounts.
+
+        Launchpad celebrities are ignored.
+        """
         # Deactivated accounts we don't want to remove.
-        people_whitelist = ['janitor']
+        people_whitelist = [
+            'janitor', 'bug-importer', 'bug-watch-updater',
+            ]
         from canonical.launchpad.database.account import Account
         from canonical.launchpad.database.emailaddress import EmailAddress
         from canonical.launchpad.interfaces.account import AccountStatus
+        from canonical.launchpad.interfaces.launchpad import (
+            ILaunchpadCelebrities)
         from lp.registry.model.person import Person
+        celebrities = getUtility(ILaunchpadCelebrities)
         # This is a slow operation due to the huge amount of cascading.
         # We remove one row at a time for better reporting and PostgreSQL
         # memory use.
         deactivated_people = self.store.find(
             Person,
             Person.account == Account.id,
-            Account.status != AccountStatus.ACTIVE,
-            Not(Person.name.is_in(people_whitelist)))
+            Account.status != AccountStatus.ACTIVE)
+        #, Not(Person.name.is_in(people_whitelist)))
         total_deactivated_count = deactivated_people.count()
         deactivated_count = 0
         for person in deactivated_people:
+            # Ignore celebrities
+            if celebrities.isCelebrityPerson(person.name):
+                continue
+            assert str(person.name) not in people_whitelist
             deactivated_count += 1
             self.logger.debug(
                 "Removing %d of %d deactivated people (%s)",
@@ -224,19 +235,7 @@ class SanitizeDb(LaunchpadScript):
             self.store.flush()
         self.logger.info(
             "Removed %d suspended or deactivated people + email + accounts",
-            total_deactivated_count)
-
-    def removeDeactivatedAccounts(self):
-        """Remove all suspended or deactivated accounts.
-
-        This needs to be called after removeInactivePeople.
-        """
-        from canonical.launchpad.interfaces.account import AccountStatus
-        count = self.store.execute("""
-            DELETE FROM Account WHERE Account.status != %s
-            """ % sqlvalues(AccountStatus.ACTIVE)).rowcount
-        self.logger.info(
-            "Removed %d suspended or deactivated accounts", count)
+            deactivated_count)
 
     def removePrivatePeople(self):
         """Remove all private people."""
@@ -445,9 +444,6 @@ class SanitizeDb(LaunchpadScript):
     def removeUnlinkedEmailAddresses(self):
         """Remove EmailAddresses not linked to a Person.
 
-        This needs to be called after all the Person records have been
-        removed.
-
         We call this before removeUnlinkedAccounts to avoid the
         ON DELETE SET NULL overhead from the EmailAddress -> Account
         foreign key constraint.
@@ -463,9 +459,7 @@ class SanitizeDb(LaunchpadScript):
         """Remove Accounts not linked to a Person."""
         count = self.store.execute("""
             DELETE FROM Account
-            USING EmailAddress
-            WHERE Account.id = EmailAddress.account
-                AND EmailAddress.person IS NULL
+            WHERE Account.id NOT IN (SELECT account FROM Person)
             """).rowcount
         self.logger.info("Removed %d accounts not linked to a person", count)
 
