@@ -105,7 +105,7 @@ class PlacelessAuthUtility:
             return None
 
     def authenticate(self, request):
-        """See IAuthenticationUtility."""
+        """See IAuthentication."""
         # To avoid confusion (hopefully), basic auth trumps cookie auth
         # totally, and all the time.  If there is any basic auth at all,
         # then cookie auth won't even be considered.
@@ -127,20 +127,23 @@ class PlacelessAuthUtility:
                 return None
 
     def unauthenticatedPrincipal(self):
-        """See IAuthenticationUtility."""
+        """See IAuthentication."""
         return self.nobody
 
     def unauthorized(self, id, request):
-        """See IAuthenticationUtility."""
+        """See IAuthentication."""
         a = ILoginPassword(request)
         # TODO maybe configure the realm from zconfigure.
         a.needLogin(realm="launchpad")
 
     def getPrincipal(self, id):
-        """See IAuthenticationUtility."""
+        """See IAuthentication."""
         utility = getUtility(IPlacelessLoginSource)
         return utility.getPrincipal(id)
 
+    # XXX: This is part of IAuthenticationUtility, but that interface doesn't
+    # exist anymore and I'm not sure this is used anywhere.  Need to
+    # investigate further.
     def getPrincipals(self, name):
         """See IAuthenticationUtility."""
         utility = getUtility(IPlacelessLoginSource)
