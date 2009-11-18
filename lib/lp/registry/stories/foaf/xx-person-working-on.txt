@@ -6,9 +6,10 @@ Sample Person is not working on any bugs/blueprints right now, so the section
 won't be displayed.
 
     >>> anon_browser.open('http://launchpad.dev/~name12/')
-    >>> extract_text(
+    >>> text = extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'working-on'))
-    ''
+    >>> len(text)
+    0
 
 For a person who's working on some bugs/blueprints, though, they'd be
 displayed there.
