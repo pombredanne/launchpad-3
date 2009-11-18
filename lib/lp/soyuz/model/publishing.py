@@ -856,14 +856,15 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def sourceFileUrls(self):
         """See `ISourcePackagePublishingHistory`."""
-        def is_source(lfa):
-            return getFileType(lfa.filename) in SourcePackageFileType
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
 
-        publishing_set = getUtility(IPublishingSet)
-        result_set = publishing_set.getFilesForSources(self)
-        source_urls = [
-            lfa.https_url for (_spph, lfa, _lfc) in result_set if
-            is_source(lfa)]
+        source_urls = []
+        for file in self.sourcepackagerelease.files:
+            proxied_file = ProxiedLibraryFileAlias(
+                file.libraryfile, self.archive)
+            source_urls.append(proxied_file.http_url)
+
         return source_urls
 
 
