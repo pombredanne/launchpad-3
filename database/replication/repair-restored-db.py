@@ -118,7 +118,7 @@ def repair_with_drop_schema(log, con):
     This mechanism fails with Slony added primary keys, but we don't
     do that.
     """
-    log.debug('Dropping _sl schema.')
+    log.info('Fallback mode - dropping _sl schema.')
     cur = con.cursor()
     cur.execute("DROP SCHEMA _sl CASCADE")
     return True
