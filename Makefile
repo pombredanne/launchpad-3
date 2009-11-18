@@ -282,6 +282,7 @@ clean: clean_js
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r bin
 	$(RM) -r parts
+	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) thread*.request
