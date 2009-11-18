@@ -854,7 +854,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         self.secure_record.component = component
         Store.of(self).invalidate(self)
 
-    def sourceFileUrls(self):
+    @property
+    def source_file_urls(self):
         """See `ISourcePackagePublishingHistory`."""
         from canonical.launchpad.browser.librarian import (
             ProxiedLibraryFileAlias)

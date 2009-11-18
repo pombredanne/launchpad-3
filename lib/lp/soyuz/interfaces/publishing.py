@@ -28,7 +28,7 @@ __all__ = [
     'name_priority_map',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
+from zope.schema import Bool, Choice, Datetime, Int, List, TextLine, Text
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -534,6 +534,13 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             description=_("A URL for this source publication's changes file "
                           "for the source upload.")))
 
+    source_file_urls = exported(
+        List(
+            value_type=Text(),
+            title=_("Source File URLs"),
+            description=_("URL list for this source publication's "
+                          "files from the source upload.")))
+
     package_creator = exported(
         Reference(
             IPerson,
@@ -555,14 +562,6 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             description=_('The IPerson who signed the source package.'),
             required=False, readonly=True,
         ))
-
-    # @operation_returns_collection_of(Text)
-    @export_read_operation()
-    def sourceFileUrls():
-        """The URLs for this source publication's files.
-
-        :return: a list of URLs for the files uploaded for this publication.
-        """
 
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
