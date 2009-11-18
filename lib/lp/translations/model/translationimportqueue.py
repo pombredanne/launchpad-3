@@ -304,21 +304,20 @@ class TranslationImportQueueEntry(SQLBase):
             return False
         can_admin = (is_admin_or_rosetta_expert(user) or
                      self.isUbuntuAndIsUserTranslationGroupOwner(user))
-        if (new_status == RosettaImportStatus.APPROVED and
-            not (self.import_into is not None and can_admin)):
+        if new_status == RosettaImportStatus.APPROVED:
             # Only administrators are able to set the APPROVED status, and
             # that's only possible if we know where to import it
             # (import_into not None).
-            return False
-        if new_status == RosettaImportStatus.BLOCKED and not can_admin:
+            return can_admin and self.import_into is not None
+        if new_status == RosettaImportStatus.BLOCKED:
             # Only administrators are able to set an entry to BLOCKED.
-            return False
+            return can_admin
         if (new_status in (RosettaImportStatus.FAILED,
-                           RosettaImportStatus.IMPORTED)
-            and not is_admin_or_rosetta_expert(user)):
+                           RosettaImportStatus.IMPORTED)):
             # Only scripts set these statuses and they report as a rosetta
             # expert.
-            return False
+            return is_admin_or_rosetta_expert(user)
+        # All other statuses can bset set by all authorized persons.
         return self.isUserUploaderOrOwner(user) or can_admin
 
     def setStatus(self, new_status, user):
