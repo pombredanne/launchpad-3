@@ -17,10 +17,6 @@ from lp.testing import TestCaseWithFactory
 
 
 
-# XXX: rockstar - Also needs testing : Admins can edit/delete, members of the
-# team can edit/delete.  At least the latter will require the Launchpad object
-# factory.
-
 class TestBranchSubscriptions(TestCaseWithFactory):
     """Test subscriptions to branches."""
 
