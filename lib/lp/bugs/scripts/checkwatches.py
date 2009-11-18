@@ -777,10 +777,11 @@ class BugWatchUpdater(object):
                     if new_malone_importance is not None:
                         bug_watch.updateImportance(new_remote_importance,
                             new_malone_importance)
-                    if can_import_comments:
-                        self.importBugComments(remotesystem, bug_watch)
-                    if can_push_comments:
-                        self.pushBugComments(remotesystem, bug_watch)
+                    if bug_watch.bug.duplicateof is None:
+                        if can_import_comments:
+                            self.importBugComments(remotesystem, bug_watch)
+                        if can_push_comments:
+                            self.pushBugComments(remotesystem, bug_watch)
                     if ISupportsBackLinking.providedBy(remotesystem):
                         self.linkLaunchpadBug(remotesystem, bug_watch)
 
