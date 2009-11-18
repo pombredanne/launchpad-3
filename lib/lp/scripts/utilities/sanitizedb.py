@@ -19,7 +19,7 @@ from zope.component import getUtility
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.database.postgresql import ConnectionString, listReferences
-from canonical.launchpad.scripts.logger import DEBUG2
+from canonical.launchpad.scripts.logger import DEBUG2, DEBUG3
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.lp import initZopeless
@@ -534,6 +534,7 @@ class SanitizeDb(LaunchpadScript):
             "Setting %d constraints to ON DELETE CASCADE",
             len(cascade_sql) / 2)
         for statement in cascade_sql:
+            self.logger.log(DEBUG3, statement)
             self.store.execute(statement)
 
         # Store the recovery SQL.
