@@ -52,11 +52,12 @@ Starting from the Ubuntu distribution page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu')
 
-Users can press the graphical "Register a blueprint" button:
+Users can use the ISpecificationTarget involvement menu to register a
+blueprint.
 
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/ubuntu/+addspec"
-    id="addspec"> <img alt="Register a blueprint"...
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'involvement').a)
+    Register a blueprint
 
 Users can also follow the textual "Register a blueprint" link:
 
@@ -73,12 +74,6 @@ Starting from the Ubuntu Hoary distribution series page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/hoary')
 
-Users can press the graphical "Register a blueprint" button:
-
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/ubuntu/hoary/+addspec"
-    id="addspec"> <img alt="Register a blueprint"...
-
 Users can also follow the textual "Register a blueprint" link:
 
     >>> for tag in find_tags_by_class(
@@ -94,11 +89,6 @@ Starting from the Bazaar product page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/bzr')
 
-Users can press the graphical "Register a blueprint" button:
-
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/bzr/+addspec"
-    id="addspec"> <img alt="Register a blueprint"...
 
 Users can also follow the textual "Register a blueprint" link:
 
@@ -125,11 +115,6 @@ Starting from the Mozilla Firefox product series page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/firefox/1.0')
 
-Users can press the graphical "Register a blueprint" button:
-
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/firefox/1.0/+addspec"
-    id="addspec"> <img alt="Register a blueprint" ...
 
 Users can also follow the textual "Register a blueprint" link:
 
@@ -146,12 +131,6 @@ Starting from the Mozilla project page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/mozilla')
 
-Users can press the graphical "Register a blueprint" button:
-
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/mozilla/+addspec"
-    id="addspec"> <img alt="Register a blueprint" ...
-
 Users can follow the textual "Register a blueprint" link:
 
     >>> for tag in find_tags_by_class(
@@ -166,12 +145,6 @@ Users can follow the textual "Register a blueprint" link:
 Starting from the Future Mega Meeting sprint page:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/sprints/futurista')
-
-Users can press the graphical "Register a blueprint" button:
-
-    >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/sprints/futurista/+addspec"
-    id="addspec"> <img alt="Register a blueprint"...
 
 Users can also follow the textual "Register a blueprint" link:
 

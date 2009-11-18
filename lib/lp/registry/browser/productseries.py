@@ -155,7 +155,7 @@ class ProductSeriesOverviewMenu(
     usedfor = IProductSeries
     facet = 'overview'
     links = [
-        'edit', 'delete', 'driver', 'link_branch', 'ubuntupkg',
+        'edit', 'delete', 'driver', 'link_branch', 'branch_add', 'ubuntupkg',
         'add_package', 'create_milestone', 'create_release',
         'rdf', 'subscribe'
         ]
@@ -193,6 +193,11 @@ class ProductSeriesOverviewMenu(
             icon = 'edit'
             summary = 'Change the branch for this series'
         return Link('+linkbranch', text, summary, icon=icon)
+
+    def branch_add(self):
+        text = 'Register a branch'
+        summary = "Register a new Bazaar branch for this series' project"
+        return Link('+addbranch', text, summary, icon='add')
 
     @enabled_with_permission('launchpad.View')
     def ubuntupkg(self):
@@ -256,7 +261,9 @@ class ProductSeriesSpecificationsMenu(NavigationMenu,
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'assignments', 'setgoals', 'listdeclined', 'new']
+    links = [
+        'listall', 'assignments', 'setgoals', 'listdeclined',
+        'new', 'register_sprint']
 
 
 class ProductSeriesOverviewNavigationMenu(NavigationMenu):

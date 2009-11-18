@@ -58,10 +58,10 @@ its status is changed to 'Invalid';
 
     >>> def print_question_status(browser):
     ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'registration'))
+    ...         find_tag_by_id(browser.contents, 'question-status'))
 
     >>> print_question_status(admin_browser)
-    Invalid ...
+    Status: Invalid ...
 
 and the rejection message is added to the question board.
 
@@ -147,7 +147,7 @@ Once the operation is completed, a confirmation message is displayed;
 its status is updated;
 
     >>> print_question_status(admin_browser)
-    Open ...
+    Status: Open ...
 
 and the explanation message is added to the question discussion:
 
