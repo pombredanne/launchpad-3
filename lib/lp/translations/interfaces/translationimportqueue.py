@@ -6,6 +6,7 @@
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Field, Int, Object, Text, TextLine)
+from zope.security.interfaces import Unauthorized
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
@@ -18,11 +19,12 @@ from lp.registry.interfaces.productseries import IProductSeries
 
 from lazr.restful.interface import copy_field
 from lazr.restful.fields import Reference
-from lazr.restful.declarations import (
+from lazr.restful.declarations import (call_with,
     collection_default_content, exported, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, operation_parameters,
-    operation_returns_entry, operation_returns_collection_of)
-
+    export_as_webservice_entry, export_read_operation,
+    export_write_operation, operation_parameters,
+    operation_returns_entry, operation_returns_collection_of,
+    REQUEST_USER, webservice_error)
 from lp.translations.interfaces.translationcommonformat import (
     TranslationImportExportBaseException)
 
@@ -37,6 +39,7 @@ __all__ = [
     'RosettaImportStatus',
     'SpecialTranslationImportTargetFilter',
     'TranslationFileType',
+    'UserCannotSetTranslationImportStatus',
     ]
 
 
@@ -44,6 +47,15 @@ class TranslationImportQueueConflictError(
                                     TranslationImportExportBaseException):
     """A new entry cannot be inserted into the queue because it
     conflicts with existing entries."""
+
+
+class UserCannotSetTranslationImportStatus(Unauthorized):
+    """User not permitted to change status.
+
+    Raised when a user tries to transition to a new status who doesn't
+    have the necessary permissions.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorized'
 
 
 class RosettaImportStatus(DBEnumeratedType):
@@ -254,10 +266,27 @@ class ITranslationImportQueueEntry(Interface):
             required=False,
             readonly=True))
 
-    def setStatus(status):
-        """Set status.
+    def isUbuntuAndIsUserTranslationGroupOwner(self, user):
+        """Check for special Ubuntu Translation Group.
 
-        :param status: new status to set.
+        Return true if the entry is targeted to Ubuntu and the user is in
+        the team owning the Ubuntu translation group.
+        """
+
+    def isUserUploaderOrOwner(user):
+        """Check for entry uploader or series owner."""
+
+    def canSetStatus(new_status, user):
+        """Check if the user can set this new status."""
+
+    @call_with(user=REQUEST_USER)
+    @operation_parameters(new_status=copy_field(status))
+    @export_write_operation()
+    def setStatus(new_status, user):
+        """Transition to a new status if possible.
+
+        :param new_status: Status to transition to.
+        :param user: The user that is doing the transition.
         """
 
     def setErrorOutput(output):

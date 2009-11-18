@@ -57,11 +57,14 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry,
     RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
-    TranslationImportQueueConflictError)
+    TranslationImportQueueConflictError,
+    UserCannotSetTranslationImportStatus)
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
+from lp.translations.utilities.permission_helpers import (
+    is_admin_or_rosetta_expert)
 from canonical.librarian.interfaces import ILibrarianClient
 
 
@@ -272,9 +275,57 @@ class TranslationImportQueueEntry(SQLBase):
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
 
-    def setStatus(self, status):
+    def isUbuntuAndIsUserTranslationGroupOwner(self, user):
         """See `ITranslationImportQueueEntry`."""
-        self.status = status
+        # As a special case, the Ubuntu translation group owners can
+        # manage Ubuntu uploads.
+        if self.is_targeted_to_ubuntu:
+            group = self.distroseries.distribution.translationgroup
+            if group is not None and user.inTeam(group.owner):
+                return True
+        return False
+
+    def isUserUploaderOrOwner(self, user):
+        """See `ITranslationImportQueueEntry`."""
+        if user.inTeam(self.importer):
+            return True
+        if self.productseries is not None:
+            return user.inTeam(self.productseries.product.owner)
+        if self.distroseries is not None:
+            return user.inTeam(self.distroseries.distribution.owner)
+        return False
+
+    def canSetStatus(self, new_status, user):
+        """See `ITranslationImportQueueEntry`."""
+        if new_status == self.status:
+            # Leaving status as it is is always allowed.
+            return True
+        if user is None:
+            # Anonymous user cannot do anything.
+            return False
+        can_admin = (is_admin_or_rosetta_expert(user) or
+                     self.isUbuntuAndIsUserTranslationGroupOwner(user))
+        if new_status == RosettaImportStatus.APPROVED:
+            # Only administrators are able to set the APPROVED status, and
+            # that's only possible if we know where to import it
+            # (import_into not None).
+            return can_admin and self.import_into is not None
+        if new_status == RosettaImportStatus.BLOCKED:
+            # Only administrators are able to set an entry to BLOCKED.
+            return can_admin
+        if (new_status in (RosettaImportStatus.FAILED,
+                           RosettaImportStatus.IMPORTED)):
+            # Only scripts set these statuses and they report as a rosetta
+            # expert.
+            return is_admin_or_rosetta_expert(user)
+        # All other statuses can bset set by all authorized persons.
+        return self.isUserUploaderOrOwner(user) or can_admin
+
+    def setStatus(self, new_status, user):
+        """See `ITranslationImportQueueEntry`."""
+        if not self.canSetStatus(new_status, user):
+            raise UserCannotSetTranslationImportStatus()
+        self.status = new_status
         self.date_status_changed = UTC_NOW
 
     def setErrorOutput(self, output):
@@ -474,7 +525,8 @@ class TranslationImportQueueEntry(SQLBase):
         if guessed_language is None:
             # Custom language code says to ignore imports with this language
             # code.
-            self.setStatus(RosettaImportStatus.DELETED)
+            self.setStatus(RosettaImportStatus.DELETED,
+                           getUtility(ILaunchpadCelebrities).rosetta_experts)
             return None
         elif guessed_language == '':
             # We don't recognize this as a translation file with a name
@@ -878,7 +930,7 @@ class TranslationImportQueue:
                 # We got an update for this entry. If the previous import is
                 # deleted or failed or was already imported we should retry
                 # the import now, just in case it can be imported now.
-                entry.setStatus(RosettaImportStatus.NEEDS_REVIEW)
+                entry.setStatus(RosettaImportStatus.NEEDS_REVIEW, importer)
 
             entry.date_status_changed = UTC_NOW
             entry.format = format
@@ -1131,7 +1183,8 @@ class TranslationImportQueue:
 
             # Already know where it should be imported. The entry is approved
             # automatically.
-            entry.setStatus(RosettaImportStatus.APPROVED)
+            entry.setStatus(RosettaImportStatus.APPROVED,
+                            getUtility(ILaunchpadCelebrities).rosetta_experts)
 
             if txn is not None:
                 txn.commit()
@@ -1166,7 +1219,9 @@ class TranslationImportQueue:
             if has_templates and not has_templates_unblocked:
                 # All templates on the same directory as this entry are
                 # blocked, so we can block it too.
-                entry.setStatus(RosettaImportStatus.BLOCKED)
+                entry.setStatus(
+                    RosettaImportStatus.BLOCKED,
+                    getUtility(ILaunchpadCelebrities).rosetta_experts)
                 num_blocked += 1
                 if txn is not None:
                     txn.commit()
