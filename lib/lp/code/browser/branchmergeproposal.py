@@ -97,10 +97,8 @@ def latest_proposals_for_each_branch(proposals):
         # Only show the must recent proposal for any given target.
         date_created = proposal.date_created
         target_id = proposal.target_branch.id
-        if target_id in targets:
-            if date_created > targets[target_id][1]:
-                targets[target_id] = (proposal, date_created)
-        else:
+
+        if target_id not in targets or date_created > targets[target_id][1]:
             targets[target_id] = (proposal, date_created)
 
     return sorted(
