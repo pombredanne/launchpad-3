@@ -6,11 +6,14 @@
 __metaclass__ = type
 __all__ = [
     'BazaarBranchStore',
+    'BzrSvnImportWorker',
     'CSCVSImportWorker',
     'CodeImportSourceDetails',
     'ForeignTreeStore',
+    'GitImportWorker',
     'ImportWorker',
-    'get_default_bazaar_branch_store']
+    'get_default_bazaar_branch_store',
+    ]
 
 
 import os
@@ -105,9 +108,12 @@ class CodeImportSourceDetails:
     :ivar branch_id: The id of the branch associated to this code import, used
         for locating the existing import and the foreign tree.
     :ivar rcstype: 'svn' or 'cvs' as appropriate.
-    :ivar svn_branch_url: The branch URL if rcstype == 'svn', None otherwise.
+    :ivar svn_branch_url: The branch URL if rcstype in ['svn', 'bzr-svn'],
+        None otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
+    :ivar git_repo_url: The URL of the git repo, if rcstype == 'git', None,
+        otherwise.
     """
 
     def __init__(self, branch_id, rcstype, svn_branch_url=None, cvs_root=None,
@@ -124,7 +130,7 @@ class CodeImportSourceDetails:
         """Convert command line-style arguments to an instance."""
         branch_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
-        if rcstype == 'svn':
+        if rcstype in ['svn', 'bzr-svn']:
             [svn_branch_url] = arguments
             cvs_root = cvs_module = git_repo_url = None
         elif rcstype == 'cvs':
@@ -165,7 +171,7 @@ class CodeImportSourceDetails:
         """Return a list of arguments suitable for passing to a child process.
         """
         result = [str(self.branch_id), self.rcstype]
-        if self.rcstype == 'svn':
+        if self.rcstype in ['svn', 'bzr-svn']:
             result.append(self.svn_branch_url)
         elif self.rcstype == 'cvs':
             result.append(self.cvs_root)
@@ -479,16 +485,24 @@ class CSCVSImportWorker(ImportWorker):
 
 
 class PullingImportWorker(ImportWorker):
-    """An import worker for imports that can be done by a bzr plugin."""
+    """An import worker for imports that can be done by a bzr plugin.
+
+    Subclasses should override __init__ to set `pull_url` from the
+    source_details as appropriate.
+    """
 
     def _doImport(self):
         bazaar_tree = self.getBazaarWorkingTree()
+        bazaar_tree.branch.pull(
+            Branch.open(self.pull_url), overwrite=True)
+        self.bazaar_branch_store.push(
+            self.source_details.branch_id, bazaar_tree, self.required_format)
         saved_factory = bzrlib.ui.ui_factory
         bzrlib.ui.ui_factory = LoggingUIFactory(
             writer=lambda m: self._logger.info('%s', m))
         try:
             bazaar_tree.branch.pull(
-                Branch.open(self.source_details.git_repo_url),
+                Branch.open(self.source_details.pull_url),
                 overwrite=True)
         finally:
             bzrlib.ui.ui_factory = saved_factory
@@ -500,6 +514,10 @@ class GitImportWorker(PullingImportWorker):
 
     The only behaviour we add is preserving the 'git.db' shamap between runs.
     """
+
+    @property
+    def pull_url(self):
+        return self.source_details.git_repo_url
 
     def getBazaarWorkingTree(self):
         """See `ImportWorker.getBazaarWorkingTree`.
@@ -523,3 +541,11 @@ class GitImportWorker(PullingImportWorker):
         PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
         self.import_data_store.put(
             'git.db', bazaar_tree.branch.repository._transport)
+
+
+class BzrSvnImportWorker(PullingImportWorker):
+    """XXX."""
+
+    @property
+    def pull_url(self):
+        return self.source_details.svn_branch_url
