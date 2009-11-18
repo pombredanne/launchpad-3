@@ -39,8 +39,12 @@
         </script>
       </tal:devmode>
       <script type="text/javascript">
-        YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
+        YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index',
+                  'code.branchmergeproposal.popupdiff', function(Y) {
             Y.bugs.setup_bugtask_index();
+            Y.on('load', function(e) {
+              Y.code.branchmergeproposal.popupdiff.connect_diff_links();
+            }, window);
         });
       </script>
       <style type="text/css">
@@ -293,14 +297,10 @@
                 button.style.display = 'none';
               </script>
               <script type="text/javascript">
-                YUI().use('lp.comment', 'code.branchmergeproposal.popupdiff',
-                          function(Y) {
-                var comment = new Y.lp.Comment();
-                comment.render();
-                Y.on('load', function(e) {
-                       Y.code.branchmergeproposal.popupdiff.connect_diff_links();
-                     }, window);
-                })
+                YUI().use('lp.comment', function(Y) {
+                    var comment = new Y.lp.Comment();
+                    comment.render();
+                });
               </script>
             </div>
             <tal:attachment-link
