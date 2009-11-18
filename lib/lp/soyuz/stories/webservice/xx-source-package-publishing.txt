@@ -38,7 +38,7 @@ We need to insert some dependent fake data before continuing.
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
 
-getPublishedSources() can accept some optional filtering paramters to reduce
+getPublishedSources() can accept some optional filtering parameters to reduce
 the number of returned publications.
 
 Search by name and version using an exact match:
@@ -159,6 +159,34 @@ Query the source again:
 
     >>> print pubs['entries'][0]['package_signer_link']
     None
+
+Package deletion
+================
+
+A user can request a package to be deleted:
+
+    >>> cprov = webservice.get("/~cprov").jsonBody()
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="testwebservice", version="666",
+    ...     exact_match=True).jsonBody()
+    >>> print pubs['total_size']
+    1
+    >>> package = pubs['entries'][0]['self_link']
+    >>> login("foo.bar@canonical.com")
+    >>> webservice.named_get(
+    ...     package, 'requestDeletion', removed_by=cprov['self_link'],
+    ...     removal_comment="No longer needed")
+    >>> logout()
+
+After removal, the package should no longer show up:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="testwebservice", version="666",
+    ...     exact_match=True).jsonBody()
+    >>> print pubs['total_size']
+    0
 
 Privacy
 =======
