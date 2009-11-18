@@ -237,7 +237,10 @@ class ExportTranslationsToBranch(LaunchpadCronScript):
                 raise
             except Exception, e:
                 items_failed += 1
-                self.logger.error("Failure: %s" % e)
+                message = unicode(e)
+                if message == u'':
+                    message = e.__class__.__name__
+                self.logger.error("Failure: %s" % message)
                 if self.txn:
                     self.txn.abort()
 
