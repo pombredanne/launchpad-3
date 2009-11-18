@@ -36,13 +36,14 @@ class ProductSeriesLanguage(RosettaStats):
         self.variant = variant
         self.pofile = pofile
         self.id = 0
+        self._last_changed_date = None
 
         # Reset all cached counts.
         self.setCounts()
 
     def setCounts(self, total=None, imported=None, changed=None, new=None,
-                  unreviewed=None):
-        """Set aggregated message counts for ProductSeriesLanguage."""
+                  unreviewed=None, last_changed=None):
+        """See `IProductSeriesLanguage`."""
         self._messagecount = total
         # "currentcount" in RosettaStats conflicts our recent terminology
         # and is closer to "imported" (except that it doesn't include
@@ -51,12 +52,48 @@ class ProductSeriesLanguage(RosettaStats):
         self._updatescount = changed
         self._rosettacount = new
         self._unreviewed_count = unreviewed
+        if last_changed is not None:
+            self._last_changed_date = last_changed
+
+
+    def _getMessageCount(self):
+        store = Store.of(self.language)
+        query = store.find(Sum(POTemplate.messagecount),
+                           POTemplate.productseries==self.productseries,
+                           POTemplate.iscurrent==True)
+        total, = query
+        if total is None:
+            total = 0
+        return total
+
+    def recalculateCounts(self):
+        """See `IProductSeriesLanguage`."""
+        store = Store.of(self.language)
+        query = store.find(
+            (Sum(POFile.currentcount),
+              Sum(POFile.updatescount),
+              Sum(POFile.rosettacount),
+              Sum(POFile.unreviewed_count)),
+            POFile.language==self.language,
+            POFile.variant==None,
+            POFile.potemplate==POTemplate.id,
+            POTemplate.productseries==self.productseries,
+            POTemplate.iscurrent==True)
+        imported, changed, new, unreviewed = query[0]
+        if (imported is None or changed is None or
+            new is None or unreviewed is None):
+            # Set all counts to zero.
+            imported = changed = new = unreviewed = 0
+        self.setCounts(self._getMessageCount(), imported, changed,
+                       new, unreviewed)
 
     @property
     def title(self):
         """See `IProductSeriesLanguage`."""
-        return '%s translations for %s' % (
-            self.language.englishname, self.productseries.title)
+        return '%s translations for %s %s' % (
+            self.language.englishname,
+            self.productseries.product.displayname,
+            self.productseries.displayname)
 
     def messageCount(self):
         """See `IProductSeriesLanguage`."""
@@ -77,6 +114,11 @@ class ProductSeriesLanguage(RosettaStats):
     def unreviewedCount(self):
         """See `IProductSeriesLanguage`."""
         return self._unreviewed_count
+
+    @property
+    def last_changed_date(self):
+        """See `IProductSeriesLanguage`."""
+        return self._last_changed_date
 
     @property
     def pofiles(self):
@@ -108,16 +150,6 @@ class DummyProductSeriesLanguage(ProductSeriesLanguage):
         ProductSeriesLanguage.__init__(
             self, productseries, language, variant, pofile)
         self.setCounts(self._getMessageCount(), 0, 0, 0, 0)
-
-    def _getMessageCount(self):
-        store = Store.of(self.language)
-        query = store.find(Sum(POTemplate.messagecount),
-                           POTemplate.productseries==self.productseries,
-                           POTemplate.iscurrent==True)
-        total, = query
-        if total is None:
-            total = 0
-        return total
 
     def getPOFilesFor(self, potemplates):
         """See `IProductSeriesLanguage`."""

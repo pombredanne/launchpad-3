@@ -12,7 +12,7 @@ leads to the settings page.
     ...                   'Basic test@canonical.com:test')
     >>> browser.open(
     ...     'http://translations.launchpad.dev/evolution/trunk/')
-    >>> browser.getLink('Settings').click()
+    >>> browser.getLink('Set up branch synchronization').click()
     >>> print browser.url
     http://translations.l...d.dev/evolution/trunk/+translations-settings
 

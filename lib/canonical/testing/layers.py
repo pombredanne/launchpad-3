@@ -25,6 +25,7 @@ __metaclass__ = type
 __all__ = [
     'AppServerLayer',
     'BaseLayer',
+    'BaseWindmillLayer',
     'DatabaseFunctionalLayer',
     'DatabaseLayer',
     'ExperimentalLaunchpadZopelessLayer',
@@ -58,6 +59,7 @@ import signal
 import socket
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 
@@ -71,8 +73,12 @@ from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
 
+from windmill.bin.admin_lib import (
+    start_windmill, teardown as windmill_teardown)
+
 from zope.app.publication.httpfactory import chooseClasses
 import zope.app.testing.functional
+import zope.publisher.publish
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, provideUtility
 from zope.component.interfaces import ComponentLookupError
@@ -1323,12 +1329,6 @@ class PageTestLayer(LaunchpadFunctionalLayer):
             access_logger.log(MockHTTPTask(response._response, first_line))
             return response
 
-        # Setting STAGGER_RETRIES to False makes tests like
-        # notfound-traversals.txt go much, much faster by avoiding calls to
-        # time.sleep()
-        cls._original_stagger_retries = zope.publisher.http.STAGGER_RETRIES
-        zope.publisher.http.STAGGER_RETRIES = False
-
         PageTestLayer.orig__call__ = (
                 zope.app.testing.functional.HTTPCaller.__call__)
         zope.app.testing.functional.HTTPCaller.__call__ = my__call__
@@ -1340,7 +1340,6 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         PageTestLayer.resetBetweenTests(True)
         zope.app.testing.functional.HTTPCaller.__call__ = (
                 PageTestLayer.orig__call__)
-        zope.publisher.http.STAGGER_RETRIES = cls._original_stagger_retries
         if PageTestLayer.profiler:
             PageTestLayer.profiler.dump_stats(
                 os.environ.get('PROFILE_PAGETESTS_REQUESTS'))
@@ -1689,3 +1688,53 @@ class TwistedAppServerLayer(TwistedLaunchpadZopelessLayer):
     @profiled
     def testTearDown(cls):
         LayerProcessController.postTestInvariants()
+
+
+class BaseWindmillLayer(AppServerLayer):
+    """Layer for Windmill tests.
+
+    This layer shouldn't be used directly. A subclass needs to be
+    created specifying which base URL to use (e.g.
+    http://bugs.launchpad.dev:8085/).
+    """
+
+    base_url = None
+    shell_objects = None
+    config_file = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        if cls.base_url is None:
+            # Only do the setup if we're in a subclass that defines
+            # base_url. With no base_url, we can't create the config
+            # file windmill needs.
+            return
+        # Windmill needs a config file on disk.
+        config_text = dedent("""\
+            START_FIREFOX = True
+            TEST_URL = '%s'
+            """ % cls.base_url)
+        cls.config_file = tempfile.NamedTemporaryFile(suffix='.py')
+        cls.config_file.write(config_text)
+        # Flush the file so that windmill can read it.
+        cls.config_file.flush()
+        os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
+        cls.shell_objects = start_windmill()
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        if cls.shell_objects is not None:
+            windmill_teardown(cls.shell_objects)
+        if cls.config_file is not None:
+            # Close the file so that it gets deleted.
+            cls.config_file.close()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        # Left-over threads should be harmless, since they should all
+        # belong to Windmill, which will be cleaned up on layer
+        # tear down.
+        BaseLayer.disable_thread_check = True

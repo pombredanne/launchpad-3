@@ -7,6 +7,12 @@
   i18n:domain="launchpad"
 >
   <body>
+    <tal:registering metal:fill-slot="registering">
+      Registered
+      <tal:created replace="context/datecreated/fmt:approximatedate" />
+      by
+      <tal:registrant replace="structure context/registrant/fmt:link" />
+    </tal:registering>
 
     <tal:heading metal:fill-slot="heading">
       <h1 tal:content="context/title">Mozilla</h1>
@@ -95,29 +101,11 @@
             There are no projects registered for
             <span tal:replace="context/displayname">project displayname</span>.
           </p>
-          <dl tal:condition="context/products"
+          <ul tal:condition="context/products"
               tal:repeat="product context/products">
-            <dt><a tal:replace="structure product/fmt:link">product</a></dt>
-            <dd tal:define="dev_focus product/development_focus">
-              <a tal:attributes="href dev_focus/fmt:url"
-                 tal:content="dev_focus/name">trunk</a>
-              series:
-              <tal:releases repeat="release dev_focus/releases">
-                <strong>
-                  <a tal:attributes="href release/fmt:url"
-                     tal:content="release/version">release
-                </a></strong>,
-              </tal:releases>
-              <tal:releases repeat="milestone dev_focus/milestones">
-                <strong>
-                  <a tal:attributes="href milestone/fmt:url"
-                     tal:content="milestone/name">milestone
-                  </a></strong><tal:comma
-                    condition="not:repeat/milestone/end">,</tal:comma>
-              </tal:releases>
-            </dd>
-          </dl>
-          <ul class="horizontal">
+            <li><a tal:replace="structure product/fmt:link">product</a></li>
+          </ul>
+          <ul style="margin-top: 0.5em;">
             <li tal:condition="context/menu:overview/new_product/enabled">
               <a tal:replace="structure context/menu:overview/new_product/fmt:link" />
             </li>
@@ -152,4 +140,3 @@
 
   </body>
 </html>
-

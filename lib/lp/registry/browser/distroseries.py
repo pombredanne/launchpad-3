@@ -12,6 +12,7 @@ __all__ = [
     'DistroSeriesEditView',
     'DistroSeriesFacets',
     'DistroSeriesPackageSearchView',
+    'DistroSeriesPackagesView',
     'DistroSeriesNavigation',
     'DistroSeriesView',
     ]
@@ -27,6 +28,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import _
 from canonical.launchpad import helpers
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
 from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
@@ -38,6 +41,7 @@ from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, NotFoundError)
@@ -48,11 +52,12 @@ from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
     LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import (
-    ApplicationMenu, Link, enabled_with_permission)
+    ApplicationMenu, Link, NavigationMenu, enabled_with_permission)
 from canonical.launchpad.webapp.publisher import (
     canonical_url, stepthrough, stepto)
 from canonical.widgets.itemswidgets import LaunchpadDropdownWidget
 from lp.soyuz.interfaces.queue import IPackageUploadSet
+from lp.registry.browser import MilestoneOverlayMixin
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
@@ -128,7 +133,7 @@ class DistroSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IDistroSeries`."""
     @property
     def text(self):
-        return self.context.version
+        return self.context.named_version
 
 
 class DistroSeriesFacets(StandardLaunchpadFacets):
@@ -138,12 +143,13 @@ class DistroSeriesFacets(StandardLaunchpadFacets):
                    'translations']
 
 
-class DistroSeriesOverviewMenu(ApplicationMenu):
+class DistroSeriesOverviewMenu(
+    ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'overview'
     links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
-             'add_port', 'add_milestone', 'admin', 'builds', 'queue',
+             'add_port', 'create_milestone', 'admin', 'builds', 'queue',
              'subscribe']
 
     @enabled_with_permission('launchpad.Admin')
@@ -163,7 +169,7 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         return Link('+reassign', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
-    def add_milestone(self):
+    def create_milestone(self):
         text = 'Create milestone'
         summary = 'Register a new milestone for this series'
         return Link('+addmilestone', text, summary, icon='add')
@@ -198,12 +204,8 @@ class DistroSeriesOverviewMenu(ApplicationMenu):
         text = 'Show uploads'
         return Link('+queue', text, icon='info')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
-
-class DistroSeriesBugsMenu(ApplicationMenu):
+class DistroSeriesBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'bugs'
@@ -219,47 +221,15 @@ class DistroSeriesBugsMenu(ApplicationMenu):
     def nominations(self):
         return Link('+nominations', 'Review nominations', icon='bug')
 
-    def subscribe(self):
-        return Link('+subscribe', 'Subscribe to bug mail')
 
-
-class DistroSeriesSpecificationsMenu(ApplicationMenu):
+class DistroSeriesSpecificationsMenu(NavigationMenu,
+                                     HasSpecificationsMenuMixin):
 
     usedfor = IDistroSeries
     facet = 'specifications'
-    links = ['listall', 'table', 'setgoals', 'listdeclined', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def listapproved(self):
-        text = 'List approved blueprints'
-        return Link('+specs?acceptance=accepted', text, icon='info')
-
-    def listproposed(self):
-        text = 'List proposed blueprints'
-        return Link('+specs?acceptance=proposed', text, icon='info')
-
-    def listdeclined(self):
-        text = 'List declined blueprints'
-        summary = 'Show the goals which have been declined'
-        return Link('+specs?acceptance=declined', text, icon='info')
-
-    def setgoals(self):
-        text = 'Set series goals'
-        summary = 'Approve or decline feature goals that have been proposed'
-        return Link('+setgoals', text, icon='info')
-
-    def table(self):
-        text = 'Assignments'
-        summary = 'Show the assignee, drafter and approver of these specs'
-        return Link('+assignments', text, icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
+    links = [
+        'listall', 'listdeclined', 'assignments', 'setgoals',
+        'new', 'register_sprint']
 
 
 class DistroSeriesPackageSearchView(PackageSearchViewBase):
@@ -268,6 +238,8 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
     def contextSpecificSearch(self):
         """See `AbstractPackageSearchView`."""
         return self.context.searchPackages(self.text)
+
+    label = 'Search packages'
 
 
 class DistroSeriesStatusMixin:
@@ -311,12 +283,19 @@ class DistroSeriesStatusMixin:
             self.context.datereleased = UTC_NOW
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView):
+class DistroSeriesView(BuildRecordsView, QueueItemsView,
+                       MilestoneOverlayMixin):
 
     def initialize(self):
         self.displayname = '%s %s' % (
             self.context.distribution.displayname,
             self.context.version)
+
+    @property
+    def page_title(self):
+        """Return the HTML page title."""
+        return '%s %s in Launchpad' % (
+        self.context.distribution.title, self.context.version)
 
     @cachedproperty
     def cached_packagings(self):
@@ -341,8 +320,11 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         Filing a bug on a distribution series is not directly
         permitted; we redirect to the distribution's file
         """
-        distro_url = canonical_url(self.context.distribution)
-        return self.request.response.redirect(distro_url + "/+filebug")
+        distro_url = canonical_url(
+            self.context.distribution, view_name='+filebug')
+        if self.request.form.get('no-redirect') is not None:
+            distro_url += '?no-redirect'
+        return self.request.response.redirect(distro_url)
 
     @property
     def show_arch_selector(self):
@@ -350,6 +332,8 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
 
         See `BuildRecordsView` for further details."""
         return True
+
+    milestone_can_release = False
 
 
 class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
@@ -455,15 +439,8 @@ class DistroSeriesAddView(LaunchpadFormView):
         'name', 'displayname', 'title', 'summary', 'description', 'version',
         'parent_series']
 
-    @property
-    def label(self):
-        """See `LaunchpadFormView`."""
-        return 'Register a series in %s' % self.context.displayname
-
-    @property
-    def page_title(self):
-        """The page title."""
-        return self.label
+    label = 'Register a series'
+    page_title = label
 
     @action(_('Create Series'), name='create')
     def createAndAdd(self, action, data):
@@ -488,3 +465,9 @@ class DistroSeriesAddView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class DistroSeriesPackagesView(DistroSeriesView):
+    """A View to show series package to upstream package relationships."""
+
+    label = 'Mapping series packages to upstream project series'

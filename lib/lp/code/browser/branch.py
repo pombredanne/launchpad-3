@@ -9,6 +9,7 @@ __all__ = [
     'BranchAddView',
     'BranchContextMenu',
     'BranchDeletionView',
+    'BranchEditStatusView',
     'BranchEditView',
     'BranchEditWhiteboardView',
     'BranchRequestImportView',
@@ -16,7 +17,7 @@ __all__ = [
     'BranchMergeQueueView',
     'BranchMirrorStatusView',
     'BranchNavigation',
-    'BranchNavigationMenu',
+    'BranchEditMenu',
     'BranchInProductView',
     'BranchSparkView',
     'BranchURL',
@@ -71,22 +72,21 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 
 from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
-from lp.code.enums import BranchType, UICreatableBranchType
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchType, UICreatableBranchType)
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch, IBranchNavigationMenu)
+    BranchCreationForbidden, BranchExists, IBranch)
 from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal, InvalidBranchMergeProposal)
-from lp.code.interfaces.branchsubscription import IBranchSubscription
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import CodeImportReviewStatus
 from lp.code.interfaces.codeimportjob import (
     CodeImportJobState, ICodeImportJobWorkflow)
-from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
-from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.productseries import IProductSeries
@@ -123,7 +123,21 @@ class BranchHierarchy(Hierarchy):
     @property
     def objects(self):
         """See `Hierarchy`."""
-        return IHasBranchTarget(self.context).target.components
+        traversed = list(self.request.traversed_objects)
+        # Pass back the root object.
+        yield traversed.pop(0)
+        # Now pop until we find the branch.
+        branch = traversed.pop(0)
+        while not IBranch.providedBy(branch):
+            branch = traversed.pop(0)
+        # Now pass back the branch components.
+        for component in branch.target.components:
+            yield component
+        # Now the branch.
+        yield branch
+        # Now whatever is left.
+        for obj in traversed:
+            yield obj
 
 
 class BranchNavigation(Navigation):
@@ -164,59 +178,17 @@ class BranchNavigation(Navigation):
                 return proposal
 
 
-class BranchNavigationMenu(NavigationMenu):
-    """Internal menu tabs."""
-
-    usedfor = IBranchNavigationMenu
-    facet = 'branches'
-    links = ['details', 'merges', 'source']
-
-    def __init__(self, context):
-        NavigationMenu.__init__(self, context)
-        if IBranch.providedBy(context):
-            self.branch = context
-        elif IBranchMergeProposal.providedBy(context):
-            self.branch = context.source_branch
-            self.disabled = True
-        elif IBranchSubscription.providedBy(context):
-            self.branch = context.branch
-        elif ICodeReviewComment.providedBy(context):
-            self.branch = context.branch_merge_proposal.source_branch
-            self.disabled = True
-        else:
-            raise AssertionError(
-                'Bad context type for branch navigation menu.')
-
-    def details(self):
-        url = canonical_url(self.branch)
-        return Link(url, 'Details')
-
-    def merges(self):
-        url = canonical_url(self.branch, view_name="+merges")
-        return Link(url, 'Merge Proposals')
-
-    def source(self):
-        """Return a link to the branch's file listing on codebrowse."""
-        text = 'Source Code'
-        enabled = self.branch.code_is_browseable
-        url = self.branch.codebrowse_url('files')
-        return Link(url, text, icon='info', enabled=enabled)
-
-
-class BranchContextMenu(ContextMenu):
-    """Context menu for branches."""
+class BranchEditMenu(NavigationMenu):
+    """Edit menu for IBranch."""
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit_whiteboard', 'edit', 'delete_branch', 'browse_revisions',
-             'subscription', 'add_subscriber', 'associations',
-             'register_merge', 'landing_candidates',
-             'link_bug', 'link_blueprint', 'edit_import', 'reviewer'
-             ]
+    title = 'Edit branch'
+    links = (
+        'edit', 'reviewer', 'edit_import', 'edit_whiteboard', 'delete')
 
-    def edit_whiteboard(self):
-        text = 'Edit whiteboard'
-        return Link('+whiteboard', text, icon='edit')
+    def branch_is_import(self):
+        return self.context.branch_type == BranchType.IMPORTED
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -224,14 +196,45 @@ class BranchContextMenu(ContextMenu):
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Edit')
+    def delete(self):
+        text = 'Delete branch'
+        return Link('+delete', text, icon='trash-icon')
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def edit_whiteboard(self):
+        text = 'Edit whiteboard'
+        enabled = self.branch_is_import()
+        return Link(
+            '+whiteboard', text, icon='edit', enabled=enabled)
+
+    def edit_import(self):
+        text = 'Edit import source or review import'
+        enabled = (
+            self.branch_is_import() and
+            check_permission('launchpad.Edit', self.context.code_import))
+        return Link(
+            '+edit-import', text, icon='edit', enabled=enabled)
+
+    @enabled_with_permission('launchpad.Edit')
     def reviewer(self):
         text = 'Set branch reviewer'
         return Link('+reviewer', text, icon='edit')
 
+
+class BranchContextMenu(ContextMenu):
+    """Context menu for branches."""
+
+    usedfor = IBranch
+    facet = 'branches'
+    links = [
+        'add_subscriber', 'browse_revisions', 'link_bug',
+        'link_blueprint', 'register_merge', 'source', 'subscription',
+        'edit_status']
+
     @enabled_with_permission('launchpad.Edit')
-    def delete_branch(self):
-        text = 'Delete branch'
-        return Link('+delete', text)
+    def edit_status(self):
+        text = 'Change branch status'
+        return Link('+edit-status', text, icon='edit')
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
@@ -257,20 +260,14 @@ class BranchContextMenu(ContextMenu):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
 
-    def associations(self):
-        text = 'View branch associations'
-        return Link('+associations', text)
-
     @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
-        text = 'Propose for merging into another branch'
-        enabled = self.context.target.supports_merge_proposals
-        return Link('+register-merge', text, icon='add', enabled=enabled)
-
-    def landing_candidates(self):
-        text = 'View landing candidates'
-        enabled = self.context.landing_candidates.count() > 0
-        return Link('+landing-candidates', text, icon='edit', enabled=enabled)
+        text = 'Propose for merging'
+        enabled = (
+            self.context.target.supports_merge_proposals and
+            not self.context.branch_type == BranchType.IMPORTED)
+        return Link('+register-merge', text, icon='merge-proposal',
+                    enabled=enabled)
 
     def link_bug(self):
         if self.context.linked_bugs:
@@ -293,9 +290,12 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.product is not None
         return Link('+linkblueprint', text, icon='add', enabled=enabled)
 
-    def edit_import(self):
-        text = 'Edit import source or review import'
-        return Link('+edit-import', text, icon='edit', enabled=True)
+    def source(self):
+        """Return a link to the branch's file listing on codebrowse."""
+        text = 'View the branch content'
+        enabled = self.context.code_is_browseable
+        url = self.context.codebrowse_url('files')
+        return Link(url, text, icon='info', enabled=enabled)
 
 
 class DecoratedBug:
@@ -312,6 +312,7 @@ class DecoratedBug:
         """
         return self.branch.target.getBugTask(self.context)
 
+
 class BranchView(LaunchpadView, FeedsMixin):
 
     __used_for__ = IBranch
@@ -319,6 +320,12 @@ class BranchView(LaunchpadView, FeedsMixin):
     feed_types = (
         BranchFeedLink,
         )
+
+    @property
+    def page_title(self):
+        return self.context.bzr_identity
+
+    label = page_title
 
     def initialize(self):
         self.notices = []
@@ -350,15 +357,30 @@ class BranchView(LaunchpadView, FeedsMixin):
         """Is the branch owner the registrant?"""
         return self.context.owner == self.context.registrant
 
+    def owner_is_reviewer(self):
+        """Is the branch owner the default reviewer?"""
+        if self.context.reviewer == None:
+            return True
+        return self.context.owner == self.context.reviewer
+
     def show_whiteboard(self):
         """Return whether or not the whiteboard should be shown.
 
         The whiteboard is only shown for import branches.
         """
-        if self.context.branch_type == BranchType.IMPORTED:
+        if (self.context.branch_type == BranchType.IMPORTED and
+            self.context.whiteboard):
             return True
         else:
             return False
+
+    def has_metadata(self):
+        """Return whether there is branch metadata to display."""
+        return (
+            self.context.branch_format or
+            self.context.repository_format or
+            self.context.control_format or
+            self.context.stacked_on)
 
     @property
     def codebrowse_url(self):
@@ -431,6 +453,15 @@ class BranchView(LaunchpadView, FeedsMixin):
         candidates = self.context.landing_candidates
         return [DecoratedMergeProposal(proposal) for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
+
+    @property
+    def is_import_branch_with_no_landing_candidates(self):
+        """Is the branch an import branch with no landing candidates?"""
+        if self.landing_candidates:
+            return False
+        if not self.context.branch_type == BranchType.IMPORTED:
+            return False
+        return True
 
     def _getBranchCountText(self, count):
         """Help to show user friendly text."""
@@ -533,6 +564,19 @@ class BranchView(LaunchpadView, FeedsMixin):
         """
         # Actually only ProductSeries currently do that.
         return list(self.context.getProductSeriesPushingTranslations())
+
+    @property
+    def status_config(self):
+        """The config to configure the ChoiceSource JS widget."""
+        return simplejson.dumps({
+            'status_widget_items': vocabulary_to_choice_edit_items(
+                BranchLifecycleStatus,
+                css_class_prefix='branchstatus'),
+            'status_value': self.context.lifecycle_status.title,
+            'user_can_edit_status': check_permission(
+                'launchpad.Edit', self.context),
+            'branch_path': '/' + self.context.unique_name,
+            })
 
 
 class DecoratedMergeProposal:
@@ -675,6 +719,12 @@ class BranchEditWhiteboardView(BranchEditFormView):
     """A view for editing the whiteboard only."""
 
     field_names = ['whiteboard']
+
+
+class BranchEditStatusView(BranchEditFormView):
+    """A view for editing the lifecycle status only."""
+
+    field_names = ['lifecycle_status']
 
 
 class BranchMirrorStatusView(LaunchpadFormView):
@@ -1102,6 +1152,13 @@ class RegisterProposalSchema(Interface):
         description=_(
             "The branch that the source branch will be merged into."))
 
+    prerequisite_branch = Choice(
+        title=_('Prerequisite Branch'),
+        vocabulary='Branch', required=False, readonly=False,
+        description=_(
+            'A branch that should be merged before this one.  (Its changes'
+            ' will not be shown in the diff.)'))
+
     comment = Text(
         title=_('Initial Comment'), required=False,
         description=_('Describe your change.'))
@@ -1109,7 +1166,10 @@ class RegisterProposalSchema(Interface):
     reviewer = copy_field(
         ICodeReviewVoteReference['reviewer'], required=False)
 
-    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+    review_type = copy_field(
+        ICodeReviewVoteReference['review_type'],
+        description=u'Lowercase keywords describing the type of review you '
+                     'would like to be performed.')
 
 
 class RegisterBranchMergeProposalView(LaunchpadFormView):
@@ -1152,6 +1212,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         registrant = self.user
         source_branch = self.context
         target_branch = data['target_branch']
+        prerequisite_branch = data.get('prerequisite_branch')
 
         review_requests = []
         reviewer = data.get('reviewer')
@@ -1163,7 +1224,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             # and an advanced expandable section.
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                needs_review=True, initial_comment=data.get('comment'),
+                prerequisite_branch=prerequisite_branch, needs_review=True,
+                initial_comment=data.get('comment'),
                 review_requests=review_requests)
 
             self.next_url = canonical_url(proposal)

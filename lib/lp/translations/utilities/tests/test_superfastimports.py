@@ -5,8 +5,9 @@ __metaclass__ = type
 
 import unittest
 
+from canonical.config import config
 from canonical.testing import ZopelessDatabaseLayer
-from lp.testing import TestCaseWithFactory, verifyObject
+from lp.testing import TestCaseWithFactory
 from lp.translations.utilities.translation_import import (
     ExistingPOFileInDatabase)
 from lp.translations.utilities.translation_common_format import (
@@ -66,6 +67,27 @@ class TestSuperFastImports(TestCaseWithFactory):
         message_data = self.getTranslationMessageData(inactive_message)
         self.assertFalse(cached_file.isAlreadyImportedTheSame(message_data))
         self.assertFalse(cached_file.isAlreadyTranslatedTheSame(message_data))
+
+    def test_query_timeout(self):
+        # Test that super-fast-imports doesn't cache anything when it hits
+        # a timeout.
+
+        # Override the config option to force a timeout error.
+        new_config = ("""
+            [poimport]
+            statement_timeout: timeout
+            """)
+        config.push('super_fast_timeout', new_config)
+
+        # Add a message that would otherwise be cached (see other tests).
+        current_message = self.factory.makeTranslationMessage(
+            pofile=self.pofile, is_imported=False)
+        message_data = self.getTranslationMessageData(current_message)
+        cached_file = ExistingPOFileInDatabase(self.pofile)
+        self.assertFalse(cached_file.isAlreadyTranslatedTheSame(message_data))
+
+        # Restore the old configuration.
+        config.pop('super_fast_timeout')
 
 
 def test_suite():

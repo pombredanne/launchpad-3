@@ -6,7 +6,7 @@
   xml:lang="en"
   lang="en"
   dir="ltr"
-  metal:use-macro="context/@@main_template/master"
+  metal:use-macro="view/macro:page/main_side"
   i18n:domain="launchpad"
 >
   <body>
@@ -47,6 +47,10 @@
       <div tal:content="structure context/@@+portlet-otherpackages" />
     </tal:do_not_show_portlets_advanced_form>
   </metal:leftportlets>
+
+  <metal:side fill-slot="side">
+    <tal:menu replace="structure context/@@+global-actions" />
+  </metal:side>
 
   <div metal:fill-slot="main">
       <tal:do_not_show_advanced_form

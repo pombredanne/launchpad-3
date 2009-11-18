@@ -1,4 +1,5 @@
-== checkwatches.py ==
+checkwatches.py
+===============
 
 The updating and syncing of bug watches is done by a cronscript. We
 can't test it properly, since we don't yet have a mock HTTP server we
@@ -85,6 +86,7 @@ and their type is 'BugWatchUpdateWarning'.
     User: None
     URL: None
     Duration: -1
+    Informational: False
     <BLANKLINE>
     error-explanation=ExternalBugtracker for ... is not known.
 
@@ -156,6 +158,7 @@ will also be automatically filled from the baseurl OOPS property.
     User: None
     URL: http://bugs.example.com
     Duration: -1
+    Informational: False
     <BLANKLINE>
     baseurl=http://bugs.example.com
     bugtracker=example-bugs
@@ -212,7 +215,8 @@ the error that was raised:
     'Unsupported Bugtracker'
 
 
-== Batched Bugwatch Updating ==
+Batched Bugwatch Updating
+-------------------------
 
 checkwatches.py will only update those bugs that need updating, but
 there is a further limit on the amount of bugs which will be updated for
@@ -255,7 +259,116 @@ requests are actually made.
     ...     updater.log = original_log
     ...     externalbugtracker.Roundup.batch_size = batch_size
     ...     urllib2.urlopen = urlopen
+    ...     updater._logout()
     DEBUG Using a global batch size of None
     INFO Updating 5 watches for 5 bugs on http://bugs.example.com
     ERROR Connection timed out when updating ... (OOPS-...)
 
+
+Updating all the watches on a bug tracker
+-----------------------------------------
+
+It's possible to update all the watches on a bug tracker using
+checkwatches using BugWatchUpdater's forceUpdateAll() method.
+forceUpdateAll() accepts a bug_tracker_name argument because it's
+called by the checkwatches script, which doesn't know or care about
+IBugTracker and instances thereof.
+
+If we look at our Savannah bug tracker, we'll see that it's got one bug
+watch.
+
+    >>> savannah.watches.count()
+    1
+
+We'll set the lastchecked time on that Savannah instance to make sure
+that it looks as though it has been updated recently
+
+    >>> import pytz
+    >>> from datetime import datetime
+    >>> login('test@canonical.com')
+    >>> for watch in savannah.watches:
+    ...     watch.lastchecked = datetime.now(pytz.timezone('UTC'))
+
+So our Savannah instance now has no watches that need checking.
+
+    >>> savannah.getBugWatchesNeedingUpdate(23).count()
+    0
+
+However, forceUpdateAll() will update every watch, whether they've
+been recently checked or not.
+
+We'll create a helper method here, because we want to monkey patch the
+BugWatchUpdater's logger.
+
+    >>> def update_all(bug_tracker_name, batch_size=None):
+    ...     updater = BugWatchUpdater(transaction)
+    ...     updater.log = FakeLogger()
+    ...     updater.forceUpdateAll(bug_tracker_name, batch_size)
+
+    >>> update_all('savannah', batch_size)
+    INFO Resetting 1 bug watches for bug tracker 'savannah'
+    INFO Updating 1 watches on bug tracker 'savannah'
+    WARNING ExternalBugtracker for BugTrackerType 'SAVANE' is not known.
+    INFO 0 watches left to check on bug tracker 'savannah'
+
+We can see that the Savannah bug watch has been updated recently. Also,
+its last_error_type field will be set to "Unsupported bug tracker"
+since that's the error that was raised during the update.
+
+    >>> for watch in savannah.watches:
+    ...     print "%s, %s" % (
+    ...         watch.lastchecked is not None, watch.last_error_type.title)
+    True, Unsupported Bugtracker
+
+If a bug tracker doesn't have any watches to update, forceUpdateAll()
+will ignore it.
+
+    >>> login('test@canonical.com')
+    >>> empty_tracker = factory.makeBugTracker(
+    ...     'http://example.com', BugTrackerType.ROUNDUP)
+    >>> update_all(empty_tracker.name)
+    INFO Bug tracker 'auto-example.com' doesn't have any watches. Ignoring.
+
+Similarly, forceUpdateAll() will ignore the bug tracker if it doesn't exist.
+
+    >>> update_all('nah-this-wont-work')
+    INFO Bug tracker 'nah-this-wont-work' doesn't exist. Ignoring.
+
+The batch_size parameter is set, the watches will be updated in batches.
+We'll add some more watches in order to demonstrate this.
+
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> for i in range(5):
+    ...     bug_watch = factory.makeBugWatch(bugtracker=empty_tracker)
+    >>> transaction.commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
+
+    >>> empty_tracker.watches.count()
+    5
+
+With a batch_size of 1, only one bug watch will be updated at once.
+We'll use a custom BugWatchUpdater to make sure that no connections are
+made.
+
+    >>> class NonConnectingUpdater(BugWatchUpdater):
+    ...
+    ...     def updateBugTracker(self, bug_tracker, batch_size):
+    ...         # Update as many watches as the batch size says.
+    ...         watches_to_update = (
+    ...             bug_tracker.getBugWatchesNeedingUpdate(23)[:batch_size])
+    ...
+    ...         for watch in watches_to_update:
+    ...             watch.lastchecked = datetime.now(pytz.timezone('UTC'))
+
+    >>> non_connecting_updater = NonConnectingUpdater(transaction)
+    >>> non_connecting_updater.log = FakeLogger()
+    >>> non_connecting_updater.forceUpdateAll(
+    ...     empty_tracker.name, 1)
+    INFO Resetting 5 bug watches for bug tracker 'auto-example.com'
+    INFO Updating 5 watches on bug tracker 'auto-example.com'
+    INFO 4 watches left to check on bug tracker 'auto-example.com'
+    INFO 3 watches left to check on bug tracker 'auto-example.com'
+    INFO 2 watches left to check on bug tracker 'auto-example.com'
+    INFO 1 watches left to check on bug tracker 'auto-example.com'
+    INFO 0 watches left to check on bug tracker 'auto-example.com'

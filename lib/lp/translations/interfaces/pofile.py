@@ -189,6 +189,12 @@ class IPOFile(IRosettaStats):
         `date_created` with newest first.
         """
 
+    def makeTranslatableMessage(potmsgset):
+        """Factory method for an `ITranslatableMessage` object.
+
+        :param potmsgset: The `IPOTMsgSet` to combine this pofile with.
+        """
+
     def export(ignore_obsolete=False, export_utf8=False):
         """Export this PO file as string.
 
@@ -353,6 +359,13 @@ class IPOFileSet(Interface):
 
         The number of items in the sequence will only be less than batch_size
         if the end of the table has been reached.
+        """
+
+    def getPOFilesWithTranslationCredits():
+        """Get all POFiles with potential translation credits messages.
+
+        Returns a ResultSet of (POFile, POTMsgSet) tuples, ordered by
+        POFile.id.
         """
 
     def getPOFilesTouchedSince(date):

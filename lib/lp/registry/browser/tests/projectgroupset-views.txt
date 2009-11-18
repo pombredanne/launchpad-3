@@ -91,6 +91,9 @@ A Launchpad admin has permission to access the +new view.
     >>> check_permission('launchpad.ProjectReview', view)
     True
 
+    >>> print view.page_title
+    Register a project group with Launchpad
+
 A regular user cannot access the view.
 
     >>> login_person(user)

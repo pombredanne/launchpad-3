@@ -18,7 +18,12 @@ from zope.interface import implements
 
 from operator import attrgetter
 
+import transaction
+
+from canonical.config import config
 from canonical.database.sqlbase import cursor, quote
+
+from storm.exceptions import TimeoutError
 
 from canonical.cachedproperty import cachedproperty
 from lp.registry.interfaces.person import (
@@ -119,7 +124,6 @@ class ExistingPOFileInDatabase:
         # Pre-fill self.messages and self.imported with data.
         self._fetchDBRows()
 
-
     def _fetchDBRows(self):
         msgstr_joins = [
             "LEFT OUTER JOIN POTranslation pt%d "
@@ -168,8 +172,32 @@ class ExistingPOFileInDatabase:
             TranslationTemplateItem.sequence,
             TranslationMessage.potemplate NULLS LAST
           ''' % substitutions
+
         cur = cursor()
-        cur.execute(sql)
+        try:
+            # XXX 2009-09-14 DaniloSegan (bug #408718):
+            # this statement causes postgres to eat the diskspace
+            # from time to time.  Let's wrap it up in a timeout.
+            timeout = config.poimport.statement_timeout
+
+            # We have to commit what we've got so far or we'll lose
+            # it when we hit TimeoutError.
+            transaction.commit()
+
+            if timeout == 'timeout':
+                # This is used in tests.
+                query = "SELECT pg_sleep(2)"
+                timeout = '1s'
+            else:
+                timeout = 1000 * int(timeout)
+                query = sql
+            cur.execute("SET statement_timeout to %s" % quote(timeout))
+            cur.execute(query)
+        except TimeoutError:
+            # Restart the transaction and return empty SelectResults.
+            transaction.abort()
+            transaction.begin()
+            cur.execute("SELECT 1 WHERE 1=0")
         rows = cur.fetchall()
 
         assert TranslationConstants.MAX_PLURAL_FORMS == 6, (

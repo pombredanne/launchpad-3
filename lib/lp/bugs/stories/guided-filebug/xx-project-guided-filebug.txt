@@ -144,9 +144,10 @@ message:
     >>> for message in find_tags_by_class(admin_browser.contents,
     ...     'warning message'):
     ...     print message.renderContents()
-    There are no projects registered for Test Group. <br />
-    You need to <a href="+newproduct">register another project that is
-    part of Test Group</a> or associate an existing project with it.
+    There are no projects registered for Test Group. <br /> You need
+    to <a href="/test-group/+newproduct">register another project that
+    is part of Test Group</a> or associate an existing project with
+    it.
 
 
 == Projects With no Products Using Launchpad Bugs ==
@@ -229,7 +230,7 @@ And on the filebug page...
 Finally, we add Testy Product to a source package:
 
     >>> admin_browser.open('http://bugs.launchpad.dev/testy/trunk/+ubuntupkg')
-    >>> admin_browser.getControl(name='ubuntupkg').value = 'thunderbird'
+    >>> admin_browser.getControl('Source Package Name').value = 'thunderbird'
     >>> admin_browser.getControl('Update').click()
 
 And this is also shown on the filebug page:

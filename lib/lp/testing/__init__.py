@@ -8,10 +8,12 @@ __metaclass__ = type
 from datetime import datetime, timedelta
 from pprint import pformat
 import copy
+from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
 import shutil
 import subprocess
 import tempfile
+import time
 import unittest
 
 from bzrlib.branch import Branch as BzrBranch
@@ -20,7 +22,9 @@ from bzrlib.errors import InvalidURLJoin
 from bzrlib.transport import get_transport
 
 import pytz
+from storm.expr import Variable
 from storm.store import Store
+from storm.tracer import install_tracer, remove_tracer_type
 
 import transaction
 from zope.component import getUtility
@@ -43,28 +47,141 @@ from lp.testing._tales import test_tales
 
 from twisted.python.util import mergeFunctionMetadata
 
+# zope.exception demands more of frame objects than twisted.python.failure
+# provides in its fake frames.  This is enough to make it work with them
+# as of 2009-09-16.  See https://bugs.edge.launchpad.net/bugs/425113.
+from twisted.python.failure import _Frame
+_Frame.f_locals = property(lambda self: {})
+
 
 class FakeTime:
-    """Provides a controllable implementation of time.time()."""
+    """Provides a controllable implementation of time.time().
 
-    def __init__(self, start):
+    You can either advance the time manually using advance() or have it done
+    automatically using next_now(). The amount of seconds to advance the
+    time by is set during initialization but can also be changed for single
+    calls of advance() or next_now().
+
+    >>> faketime = FakeTime(1000)
+    >>> print faketime.now()
+    1000
+    >>> print faketime.now()
+    1000
+    >>> faketime.advance(10)
+    >>> print faketime.now()
+    1010
+    >>> print faketime.next_now()
+    1011
+    >>> print faketime.next_now(100)
+    1111
+    >>> faketime = FakeTime(1000, 5)
+    >>> print faketime.next_now()
+    1005
+    >>> print faketime.next_now()
+    1010
+    """
+
+    def __init__(self, start=None, advance=1):
         """Set up the instance.
 
         :param start: The value that will initially be returned by `now()`.
+            If None, the current time will be used.
+        :param advance: The value in secounds to advance the clock by by
+            default.
         """
-        self._now = start
+        if start is not None:
+            self._now = start
+        else:
+            self._now = time.time()
+        self._advance = advance
 
-    def advance(self, amount):
-        """Advance the value that will be returned by `now()` by 'amount'."""
-        self._now += amount
+    def advance(self, amount=None):
+        """Advance the value that will be returned by `now()`.
+
+        :param amount: The amount of seconds to advance the value by.
+            If None, the configured default value will be used.
+        """
+        if amount is None:
+            self._now += self._advance
+        else:
+            self._now += amount
 
     def now(self):
         """Use this bound method instead of time.time in tests."""
         return self._now
 
+    def next_now(self, amount=None):
+        """Read the current time and advance it.
+
+        Calls advance() and returns the current value of now().
+        :param amount: The amount of seconds to advance the value by.
+            If None, the configured default value will be used.
+        """
+        self.advance(amount)
+        return self.now()
+
+
+class StormStatementRecorder:
+    """A storm tracer to count queries."""
+
+    def __init__(self):
+        self.statements = []
+
+    def connection_raw_execute(self, ignored, raw_cursor, statement, params):
+        """Increment the counter.  We don't care about the args."""
+
+        raw_params = []
+        for param in params:
+            if isinstance(param, Variable):
+                raw_params.append(param.get())
+            else:
+                raw_params.append(param)
+        raw_params = tuple(raw_params)
+        self.statements.append("%r, %r" % (statement, raw_params))
+
+
+def record_statements(function, *args, **kwargs):
+    """Run the function and record the sql statements that are executed.
+
+    :return: a tuple containing the return value of the function,
+        and a list of sql statements.
+    """
+    recorder = StormStatementRecorder()
+    try:
+        install_tracer(recorder)
+        ret = function(*args, **kwargs)
+    finally:
+        remove_tracer_type(StormStatementRecorder)
+    return (ret, recorder.statements)
+
+
+def run_with_storm_debug(function, *args, **kwargs):
+    """A helper function to run a function with storm debug tracing on."""
+    from storm.tracer import debug
+    debug(True)
+    try:
+        return function(*args, **kwargs)
+    finally:
+        debug(False)
+
 
 class TestCase(unittest.TestCase):
     """Provide Launchpad-specific test facilities."""
+
+    # Python 2.4 monkeypatch:
+    if getattr(unittest.TestCase, '_exc_info', None) is None:
+        _exc_info = unittest.TestCase._TestCase__exc_info
+        # We would not expect to need to make this property writeable, but
+        # twisted.trial.unittest.TestCase.__init__ chooses to write to it in
+        # the same way that the __init__ of the standard library's
+        # unittest.TestCase.__init__ does, as part of its own method of
+        # arranging for pre-2.5 compatibility.
+        class MonkeyPatchDescriptor:
+            def __get__(self, obj, type):
+                return obj._TestCase__testMethodName
+            def __set__(self, obj, value):
+                obj._TestCase__testMethodName = value
+        _testMethodName = MonkeyPatchDescriptor()
 
     def __init__(self, *args, **kwargs):
         unittest.TestCase.__init__(self, *args, **kwargs)
@@ -95,7 +212,7 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 ok = False
         return ok
 
@@ -317,14 +434,14 @@ class TestCase(unittest.TestCase):
         if result is None:
             result = self.defaultTestResult()
         result.startTest(self)
-        testMethod = getattr(self, self.__testMethodName)
+        testMethod = getattr(self, self._testMethodName)
         try:
             try:
                 self.setUp()
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 self._runCleanups(result)
                 return
 
@@ -333,11 +450,11 @@ class TestCase(unittest.TestCase):
                 testMethod()
                 ok = True
             except self.failureException:
-                result.addFailure(self, self.__exc_info())
+                result.addFailure(self, self._exc_info())
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
 
             cleanupsOk = self._runCleanups(result)
             try:
@@ -345,7 +462,7 @@ class TestCase(unittest.TestCase):
             except KeyboardInterrupt:
                 raise
             except:
-                result.addError(self, self.__exc_info())
+                result.addError(self, self._exc_info())
                 ok = False
             if ok and cleanupsOk:
                 result.addSuccess(self)
@@ -356,6 +473,18 @@ class TestCase(unittest.TestCase):
         unittest.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
+
+    def assertStatementCount(self, expected_count, function, *args, **kwargs):
+        """Assert that the expected number of SQL statements occurred.
+
+        :return: Returns the result of calling the function.
+        """
+        ret, statements = record_statements(function, *args, **kwargs)
+        if len(statements) != expected_count:
+            self.fail(
+                "Expected %d statements, got %d:\n%s"
+                % (expected_count, len(statements), "\n".join(statements)))
+        return ret
 
 
 class TestCaseWithFactory(TestCase):
@@ -493,7 +622,7 @@ class TestCaseWithFactory(TestCase):
         os.environ['BZR_HOME'] = os.getcwd()
         self.addCleanup(restore_bzr_home)
 
-    def useBzrBranches(self, real_server=False):
+    def useBzrBranches(self, real_server=False, direct_database=False):
         """Prepare for using bzr branches.
 
         This sets up support for lp-hosted and lp-mirrored URLs,
@@ -507,7 +636,9 @@ class TestCaseWithFactory(TestCase):
         self.useTempBzrHome()
         self.real_bzr_server = real_server
         if real_server:
-            server = get_multi_server(write_hosted=True, write_mirrored=True)
+            server = get_multi_server(
+                write_hosted=True, write_mirrored=True,
+                direct_database=direct_database)
             server.setUp()
             self.addCleanup(server.destroy)
         else:
@@ -663,3 +794,69 @@ def map_branch_contents(branch_url):
         tree.unlock()
 
     return contents
+
+def validate_mock_class(mock_class):
+    """Validate method signatures in mock classes derived from real classes.
+
+    We often use mock classes in tests which are derived from real
+    classes.
+
+    This function ensures that methods redefined in the mock
+    class have the same signature as the corresponding methods of
+    the base class.
+
+    >>> class A:
+    ...
+    ...     def method_one(self, a):
+    ...         pass
+
+    >>>
+    >>> class B(A):
+    ...     def method_one(self, a):
+    ...        pass
+    >>> validate_mock_class(B)
+
+    If a class derived from A defines method_one with a different
+    signature, we get an AssertionError.
+
+    >>> class C(A):
+    ...     def method_one(self, a, b):
+    ...        pass
+    >>> validate_mock_class(C)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Different method signature for method_one:...
+
+    Even a parameter name must not be modified.
+
+    >>> class D(A):
+    ...     def method_one(self, b):
+    ...        pass
+    >>> validate_mock_class(D)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Different method signature for method_one:...
+
+    If validate_mock_class() for anything but a class, we get an
+    AssertionError.
+
+    >>> validate_mock_class('a string')
+    Traceback (most recent call last):
+    ...
+    AssertionError: validate_mock_class() must be called for a class
+    """
+    assert isclass(mock_class), (
+        "validate_mock_class() must be called for a class")
+    base_classes = getmro(mock_class)
+    for name, obj in getmembers(mock_class):
+        if ismethod(obj):
+            for base_class in base_classes[1:]:
+                if name in base_class.__dict__:
+                    mock_args = getargspec(obj)
+                    real_args = getargspec(base_class.__dict__[name])
+                    if mock_args != real_args:
+                        raise AssertionError(
+                            'Different method signature for %s: %r %r' % (
+                            name, mock_args, real_args))
+                    else:
+                        break

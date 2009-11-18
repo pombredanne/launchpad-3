@@ -13,7 +13,10 @@ __all__ = [
     'PageMatches',
     ]
 
-import cElementTree as ET
+try:
+    import xml.etree.cElementTree as ET
+except ImportError:
+    import cElementTree as ET
 import urllib
 from urlparse import urlunparse
 

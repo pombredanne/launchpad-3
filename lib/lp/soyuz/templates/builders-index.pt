@@ -75,21 +75,8 @@
                      >386</tal:processor>
                  </td>
                  <td tal:define="job builder/currentjob">
-                   <tal:not-building condition="not: job">
-                     <tal:idle condition="builder/builderok">
-                       <span class="sortkey" tal:content="string:1" />
-                       <img src="/@@/yes" alt="[idle]" title="Idle" />
-                     </tal:idle>
-                     <tal:broken condition="not: builder/builderok">
-                       <span class="sortkey" tal:content="string:0" />
-                       <img src="/@@/no" alt="[disabled]" title="Disabled" />
-                     </tal:broken>
-                   </tal:not-building>
-                   <tal:building condition="job">
-                     <span class="sortkey" tal:content="job/id" />
-                     <tal:icon replace="structure job/build/image:icon" />
-                   </tal:building>
-                   <tal:status replace="builder/status">Buiding fooo</tal:status>
+                   <metal:status-summary
+                     use-macro="builder/@@+index/status-summary" />
                  </td>
                </tr>
              </tbody>

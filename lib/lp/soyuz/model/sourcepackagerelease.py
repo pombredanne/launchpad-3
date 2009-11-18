@@ -39,7 +39,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import (
     ArchivePurpose, IArchiveSet, MAIN_ARCHIVE_PURPOSES)
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.packagediff import PackageDiffAlreadyRequested
+from lp.soyuz.interfaces.packagediff import (
+    PackageDiffAlreadyRequested, PackageDiffStatus)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.soyuz.model.build import Build
@@ -51,7 +52,7 @@ from lp.soyuz.model.queue import (
 from lp.soyuz.scripts.queue import QueueActionError
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.sourcepackage import (
-    SourcePackageFileType, SourcePackageFormat, SourcePackageUrgency)
+    SourcePackageFileType, SourcePackageType, SourcePackageUrgency)
 
 
 def _filter_ubuntu_translation_file(filename):
@@ -104,8 +105,8 @@ class SourcePackageRelease(SQLBase):
     build_conflicts = StringCol(dbName='build_conflicts')
     build_conflicts_indep = StringCol(dbName='build_conflicts_indep')
     architecturehintlist = StringCol(dbName='architecturehintlist')
-    format = EnumCol(dbName='format', schema=SourcePackageFormat,
-        default=SourcePackageFormat.DPKG, notNull=True)
+    format = EnumCol(dbName='format', schema=SourcePackageType,
+        default=SourcePackageType.DPKG, notNull=True)
     upload_distroseries = ForeignKey(foreignKey='DistroSeries',
         dbName='upload_distroseries')
     upload_archive = ForeignKey(
@@ -340,25 +341,23 @@ class SourcePackageRelease(SQLBase):
         if archive.purpose != ArchivePurpose.PRIMARY:
             archives.append(distroarchseries.main_archive.id)
 
-        # Look for all sourcepackagerelease instances that match the name.
-        matching_sprs = SourcePackageRelease.select("""
-            SourcePackageName.name = %s AND
-            SourcePackageRelease.sourcepackagename = SourcePackageName.id
-            """ % sqlvalues(self.name),
-            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
-
-        # Get the (successfully built) build records for this package.
+        # Look for all sourcepackagerelease instances that match the name
+        # and get the (successfully built) build records for this
+        # package.
         completed_builds = Build.select("""
-            sourcepackagerelease IN %s AND
+            Build.sourcepackagerelease = SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
+            SourcePackageName.name = %s AND
             distroarchseries = %s AND
             archive IN %s AND
             buildstate = %s
-            """ % sqlvalues([spr.id for spr in matching_sprs],
+            """ % sqlvalues(self.name,
                             distroarchseries, archives,
                             BuildStatus.FULLYBUILT),
-            orderBy=['-datebuilt', '-id'])
+            orderBy=['-datebuilt', '-id'],
+            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
 
-        if completed_builds:
+        if completed_builds.count() > 0:
             # Historic build data exists, use the most recent value.
             most_recent_build = completed_builds[0]
             estimated_build_duration = most_recent_build.buildduration
@@ -602,6 +601,14 @@ class SourcePackageRelease(SQLBase):
                 "%s was already requested by %s"
                 % (candidate.title, candidate.requester.displayname))
 
+        if self.sourcepackagename.name == 'udev':
+            # XXX 2009-11-23 Julian bug=314436
+            # Currently diff output for udev will fill disks.  It's
+            # disabled until diffutils is fixed in that bug.
+            status = PackageDiffStatus.FAILED
+        else:
+            status = PackageDiffStatus.PENDING
+
         return PackageDiff(
             from_source=self, to_source=to_sourcepackagerelease,
-            requester=requester)
+            requester=requester, status=status)

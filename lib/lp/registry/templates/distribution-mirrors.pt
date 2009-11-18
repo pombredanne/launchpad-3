@@ -46,6 +46,7 @@
 
     <div tal:condition="mirrors_by_country"
          tal:define="show_freshness view/show_freshness;
+                     show_mirror_type view/show_mirror_type;
                      total_mirror_count view/mirror_count;
                      total_throughput view/total_throughput">
       <metal:mirror-list

@@ -10,7 +10,7 @@ wants to contact Salgado.
     >>> user_browser.open('http://launchpad.dev/~salgado')
     >>> user_browser.getLink('Contact this user').click()
     >>> print user_browser.title
-    Contact this user
+    Contact Guilherme Salgado...
 
     >>> user_browser.getControl('Subject').value = 'Hi Salgado'
     >>> user_browser.getControl('Message').value = 'Just saying hello'
@@ -170,20 +170,20 @@ page is different though.
     >>> user_browser.open('http://launchpad.dev/~no-priv')
     >>> user_browser.getLink('Contact this user').click()
     >>> print user_browser.title
-    Contact yourself
+    Contact No Privileges Person...
 
 This holds true even for Sample Person, who is hiding her email addresses.
 
     >>> user_browser.open('http://launchpad.dev/~name12')
     >>> user_browser.getLink('Contact this user').click()
     >>> print user_browser.title
-    Contact this user
+    Contact Sample Person...
 
     >>> name12_browser = setupBrowser('Basic test@canonical.com:test')
     >>> name12_browser.open('http://launchpad.dev/~name12')
     >>> name12_browser.getLink('Contact this user').click()
     >>> print name12_browser.title
-    Contact yourself
+    Contact Sample Person...
 
 
 == Teams ==
@@ -196,8 +196,8 @@ directly.
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen')
     >>> admin_browser.getLink('Contact this team').click()
-    >>> print admin_browser.title
-    Contact your team
+    >>> admin_browser.title
+    'Contact GuadaMen...
 
 Foo Bar registers an explicit contact address for Guadamen...
 
@@ -221,8 +221,8 @@ Foo Bar registers an explicit contact address for Guadamen...
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen')
     >>> admin_browser.getLink('Contact this team').click()
-    >>> print admin_browser.title
-    Contact your team
+    >>> admin_browser.title
+    'Contact GuadaMen...
 
 Foo Bar later registers a Launchpad mailing list for Guadamen...
 
@@ -236,5 +236,5 @@ Foo Bar later registers a Launchpad mailing list for Guadamen...
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen')
     >>> admin_browser.getLink('Contact this team').click()
-    >>> print admin_browser.title
-    Contact your team
+    >>> admin_browser.title
+    'Contact GuadaMen...

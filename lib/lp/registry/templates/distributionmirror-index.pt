@@ -85,17 +85,17 @@
               </p>
 
               <p tal:condition="not: context/isOfficial">
-                This mirror is an
-                <tal:status replace="context/status/title">Official</tal:status>
-                <span tal:replace="context/distribution/title">Ubuntu</span> mirror,
-                and will not be verified.
+                This mirror of
+                <tal:distro tal:replace="context/distribution/title">Ubuntu</tal:distro>
+                will not be verified because its status is
+                '<tal:status replace="context/status/title">Official</tal:status>'.
               </p>
           </tal:not-probe>
           <tal:probe condition="probe">
-              <p>This mirror was last verified on
-                <strong
+              <p>This mirror was last verified
+                <span
                    tal:attributes="title probe/date_created/fmt:datetime"
-                   tal:content="probe/date_created/fmt:approximatedate" />.
+                   tal:content="probe/date_created/fmt:displaydate" />.
 
                 <tal:is-owner condition="context/required:launchpad.Edit">
                   You can see the
@@ -130,14 +130,14 @@
 
     <tal:has-last-probe condition="context/last_probe_record">
       <tal:archive-mirror condition="context/content/enumvalue:ARCHIVE"
-        define="arch_serieses view/summarized_arch_series;
-                source_serieses view/summarized_source_series">
+        define="arch_series view/summarized_arch_series;
+                source_series view/summarized_source_series">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/archive-mirror-content" />
       </tal:archive-mirror>
 
       <tal:cdimage-mirror condition="context/content/enumvalue:RELEASE"
-        define="flavours_by_serieses view/getCDImageMirroredFlavoursBySeries">
+        define="flavours_by_series view/getCDImageMirroredFlavoursBySeries">
         <metal:mirror-content
           use-macro="context/@@+distributionmirror-macros/cdimage-mirror-content" />
       </tal:cdimage-mirror>

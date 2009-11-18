@@ -164,17 +164,19 @@ retry it.
 See pagetests/soyuz/xx-build-record.txt for further information about
 the build-retry permission system.
 
-=== BuildView.has_done_upload property ===
+`BuildView.package_upload` returns the cached `PackageUpload` record
+corresponding to this build. It's None if the binaries for a build were
+not yet collected.
 
-The build view provides the property BuildView.has_done_upload
-that returns whether the build has a package upload that has been
-accepted and processed. The builds that we are using for testing do
-not even have a package upload, so will return False:
+    >>> print cprov_failed_build_view.package_upload
+    None
 
-    >>> cprov_failed_build_view.has_done_upload
+Automatically, 'BuildView.has_published_binaries' reflects this condition.
+
+    >>> print cprov_failed_build_view.has_published_binaries
     False
 
-First lets create a package upload for this build:
+First let's create a package upload for this build:
 XXX: noodles 2009-01-16 bug 317863: move this into the STP.
 
     >>> from lp.registry.interfaces.pocket import (
@@ -187,26 +189,36 @@ XXX: noodles 2009-01-16 bug 317863: move this into the STP.
     >>> package_upload_build = PackageUploadBuild(
     ...     packageupload =package_upload,
     ...     build=cprov_failed_build_view.context)
-
-The status of the package upload will, by default, be NEW:
-
     >>> print package_upload.status.name
     NEW
 
-Now, even though our build has a package upload, because the status is
-not DONE, has_done_upload is still False:
+Now, our build has a package upload and its status is
+NEW. 'has_published_binaries' remains False.
 
-    >>> cprov_failed_build_view.has_done_upload
+    >>> cprov_failed_build_view = create_initialized_view(
+    ...     cprov_failed_build, '+index')
+
+    >>> print cprov_failed_build_view.package_upload.status.name
+    NEW
+
+    >>> print cprov_failed_build_view.has_published_binaries
     False
 
-But once the upload has been accepted and processed, has_done_upload
-is True:
+The view 'package_upload' is still available after it has been
+accepted and processed. Afterwards 'has_published_binaries' becomes
+True.
 
     >>> login('foo.bar@canonical.com')
     >>> package_upload.setDone()
     >>> login("no-priv@canonical.com")
 
-    >>> cprov_failed_build_view.has_done_upload
+    >>> cprov_failed_build_view = create_initialized_view(
+    ...     cprov_failed_build, '+index')
+
+    >>> print cprov_failed_build_view.package_upload.status.name
+    DONE
+
+    >>> print cprov_failed_build_view.has_published_binaries
     True
 
 

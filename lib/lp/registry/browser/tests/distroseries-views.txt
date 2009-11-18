@@ -196,9 +196,9 @@ A distroseries is created using the distroseries view.
 
     >>> view = create_view(ubuntu, '+addseries')
     >>> print view.page_title
-    Register a series in Ubuntu
+    Register a series
     >>> print view.label
-    Register a series in Ubuntu
+    Register a series
 
     >>> print view.cancel_url
     http://launchpad.dev/ubuntu

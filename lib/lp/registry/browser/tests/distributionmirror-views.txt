@@ -266,6 +266,22 @@ Only users with launchpad.Edit can access the view.
     False
 
 
+Reassign distribution mirror
+----------------------------
+
+The mirror owner can reassign the mirror to another user. (The view
+is the common object reassignment view.)
+
+    >>> login('karl@canonical.com')
+    >>> view = create_initialized_view(mirror, '+reassign')
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Edit', view)
+    False
+
+
 Delete distribution mirror
 --------------------------
 
@@ -389,7 +405,7 @@ The last probed information is present.
 
 The information found is also shown.
 
-    >>> print extract_text(find_tag_by_id(content, 'serieses'))
+    >>> print extract_text(find_tag_by_id(content, 'series'))
     Version                     Flavours
     The Hoary Hedgehog Release  Ubuntu, Edubuntu
     The Warty Warthog Release   Ubuntu, Kubuntu

@@ -18,6 +18,7 @@ __all__ = [
     'ISecureSourcePackagePublishingHistory',
     'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
+    'MissingSymlinkInPool',
     'NotInPool',
     'PackagePublishingPriority',
     'PackagePublishingStatus',
@@ -60,6 +61,15 @@ class PoolFileOverwriteError(Exception):
     requires manual intervention in the archive.
     """
 
+class MissingSymlinkInPool(Exception):
+    """Raised when there is a missing symlink in pool.
+
+    This condition is ignored, similarly to what we do for `NotInPool`,
+    since the pool entry requested to be removed is not there anymore.
+
+    The corresponding record is marked as removed and the process
+    continues.
+    """
 
 class PackagePublishingStatus(DBEnumeratedType):
     """Package Publishing Status
@@ -498,7 +508,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
     meta_sourcepackagerelease = Attribute(
-        "Return an IDistribuitionSourcePackageRelease meta object "
+        "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute")
     meta_supersededby = Attribute(
         "Return an IDistribuitionSourcePackageRelease meta object "
@@ -845,6 +855,54 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
+
+    def copyBinariesTo(binaries, distroseries, pocket, archive):
+        """Copy multiple binaries to a given destination.
+
+        Processing multiple binaries in a batch allows certain
+        performance optimisations such as looking up the main
+        component once only, and getting all the BPPH records
+        with one query.
+
+        :param binaries: A list of binaries to copy.
+        :param distroseries: The target distroseries.
+        :param pocket: The target pocket.
+        :param archive: The target archive.
+
+        :return: A result set of the created binary package
+            publishing histories.
+        """
+
+    def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
+                             component, section, priority, pocket):
+        """Create a new `BinaryPackagePublishingHistory`.
+
+        :param archive: An `IArchive`
+        :param binarypackagerelease: An `IBinaryPackageRelease`
+        :param distroarchseries: An `IDistroArchSeries`
+        :param component: An `IComponent`
+        :param section: An `ISection`
+        :param priority: A `PackagePublishingPriority`
+        :param pocket: A `PackagePublishingPocket`
+
+        datecreated will be UTC_NOW.
+        status will be PackagePublishingStatus.PENDING
+        """
+
+    def newSourcePublication(archive, sourcepackagerelease, distroseries,
+                             component, section, pocket):
+        """Create a new `SourcePackagePublishingHistory`.
+
+        :param archive: An `IArchive`
+        :param sourcepackagerelease: An `ISourcePackageRelease`
+        :param distroseries: An `IDistroSeries`
+        :param component: An `IComponent`
+        :param section: An `ISection`
+        :param pocket: A `PackagePublishingPocket`
+
+        datecreated will be UTC_NOW.
+        status will be PackagePublishingStatus.PENDING
+        """
 
     def getByIdAndArchive(id, archive, source=True):
         """Return the publication matching id AND archive.

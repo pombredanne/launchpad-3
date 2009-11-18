@@ -39,6 +39,7 @@ from zope.security.checker import ProxyFactory, NamesChecker
 from zope.traversing.browser.interfaces import IAbsoluteURL
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.launchpad.layers import setFirstLayer, WebServiceLayer
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.launchpad.webapp.interfaces import (
@@ -272,6 +273,10 @@ class LaunchpadView(UserAttributeCache):
         """
         return self.request.response.getStatus() in [301, 302, 303, 307]
 
+    def isRedirectInhibited(self):
+        """Returns True if redirection has been inhibited."""
+        return self.request.cookies.get('inhibit_beta_redirect', '0') == '1'
+
     def __call__(self):
         self.initialize()
         if self._isRedirected():
@@ -425,7 +430,7 @@ class CanonicalAbsoluteURL:
 
 def canonical_url(
     obj, request=None, rootsite=None, path_only_if_possible=False,
-    view_name=None):
+    view_name=None, force_local_path=False):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -450,6 +455,7 @@ def canonical_url(
         for the current request, return a url containing only the path.
     :param view_name: Provide the canonical url for the specified view,
         rather than the default view.
+    :param force_local_path: Strip off the site no matter what.
     :raises: NoCanonicalUrl if a canonical url is not available.
     """
     urlparts = [urldata.path
@@ -512,9 +518,10 @@ def canonical_url(
         root_url = request.getRootURL(rootsite)
 
     path = u'/'.join(reversed(urlparts))
-    if (path_only_if_possible and
-        request is not None and
-        root_url.startswith(request.getApplicationURL())
+    if ((path_only_if_possible and
+         request is not None and
+         root_url.startswith(request.getApplicationURL()))
+        or force_local_path
         ):
         return unicode('/' + path)
     return unicode(root_url + path)
@@ -696,10 +703,6 @@ class Navigation:
         # this request.
         if self.newlayer is not None:
             setFirstLayer(request, self.newlayer)
-
-        # store the current context object in the request's
-        # traversed_objects list:
-        request.traversed_objects.append(self.context)
 
         # Next, see if we're being asked to stepto somewhere.
         stepto_traversals = self.stepto_traversals

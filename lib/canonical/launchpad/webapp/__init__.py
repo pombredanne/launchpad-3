@@ -124,6 +124,6 @@ class StandardLaunchpadFacets(FacetMenu):
     def branches(self):
         # this is disabled by default, because relatively few objects have
         # branch views
-        text = 'Code'
+        text = 'Branches'
         summary = 'View related branches of code'
         return Link('', text, summary=summary)

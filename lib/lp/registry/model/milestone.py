@@ -176,7 +176,7 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """See `IMilestone`."""
         if self.product_release is not None:
             raise AssertionError(
-                'A milestone can only have one Productrelease.')
+                'A milestone can only have one ProductRelease.')
         return ProductRelease(
             owner=owner,
             changelog=changelog,
@@ -188,6 +188,9 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """See `IMilestone`."""
         params = BugTaskSearchParams(milestone=self, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
+        assert len(self.getSubscriptions()) == 0, (
+            "You cannot delete a milestone which has structural "
+            "subscriptions.")
         assert bugtasks.count() == 0, (
             "You cannot delete a milestone which has bugtasks targeted "
             "to it.")
@@ -237,6 +240,7 @@ class MilestoneSet:
     def getVisibleMilestones(self):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
         return Milestone.selectBy(active=True, orderBy='id')
+
 
 class ProjectMilestone(HasBugsBase):
     """A virtual milestone implementation for project.
@@ -302,3 +306,6 @@ class ProjectMilestone(HasBugsBase):
         """See `IHasBugs`."""
         return self.target.official_bug_tags
 
+    def userHasBugSubscriptions(self, user):
+        """See `IStructuralSubscriptionTarget`."""
+        return False

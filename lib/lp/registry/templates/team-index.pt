@@ -22,114 +22,76 @@
 
 <body>
 
-<!-- side slot -->
 <div metal:fill-slot="side"
      tal:define="overview_menu context/menu:overview">
 
-  <div id="privacy" class="portlet">
-    <h2 tal:content="view/visibility">Public Team</h2>
-    <span tal:content="view/visibility_info">Viewable by team members.</span>
+  <div id="privacy" class="portlet private"
+       tal:attributes="class view/visibility_portlet_class">
+    <span tal:content="view/visibility_info">Private team</span>
   </div>
 
-  <ul id="join-team"
-      class="super-add-action"
-      tal:define="link context/menu:overview/join"
-      tal:condition="link/enabled"
-      >
-    <li>
-      <a tal:attributes="href link/fmt:url"
-         tal:content="link/text" />
+  <metal:contact use-macro="context/@@+person-macros/contact">
+    Contact this team
+  </metal:contact>
+
+  <tal:menu replace="structure view/@@+global-actions" />
+  <tal:polls replace="structure context/@@+portlet-polls" />
+
+</div>
+
+<div metal:fill-slot="main"
+     tal:define="overview_menu context/menu:overview">
+
+  <div tal:attributes="class view/public_private_css">
+    <tal:comment condition="nothing">
+      Display striped image.
+    </tal:comment>
+  </div>
+
+  <div
+    class="description"
+    tal:condition="context/homepage_content"
+    tal:content="structure context/homepage_content/fmt:text-to-html"
+  />
+
+  <div
+    class="description"
+    tal:content="structure context/teamdescription/fmt:text-to-html"
+  />
+  <ul class="horizontal">
+    <tal:comment condition="nothing">
+      This link name is different from the menu, since it refers
+      to several pages that are all accessible when you click on this link.
+    </tal:comment>
+    <li
+      tal:define="link context/menu:overview/related_software_summary"
+      tal:condition="link/enabled">
+      <a class="sprite info" tal:attributes="href link/fmt:url">
+        Related software and packages
+      </a>
     </li>
   </ul>
 
-  <tal:menu replace="structure view/@@+global-actions" />
-
-  <div id="polls" class="portlet">
-    <h2>Polls</h2>
-    <p tal:condition="not: view/hasCurrentPolls">
-      No polls created.
-    </p>
-
-    <ul tal:condition="view/hasCurrentPolls">
-      <li tal:repeat="poll view/openpolls">
-        <a tal:attributes="href poll/fmt:url">
-          <span tal:replace="poll/title" />
-        </a> - closes
-        <span
-          tal:attributes="title poll/datecloses/fmt:datetime"
-          tal:content="poll/datecloses/fmt:displaydate" />.
-
-        <tal:block define="user request/lp:person" condition="user">
-          <tal:block condition="python: poll.personVoted(user)">
-            You have
-            <span tal:replace="poll/closesIn/fmt:approximateduration" />
-            to change your vote if you wish.
-          </tal:block>
-
-          <tal:block condition="python: not poll.personVoted(user)">
-            You have
-            <span tal:replace="poll/closesIn/fmt:approximateduration" />
-            left to vote in this poll.
-          </tal:block>
-        </tal:block>
-
-      </li>
-
-      <li tal:condition="view/userIsOwner"
-          tal:repeat="poll view/notyetopenedpolls">
-        <a tal:attributes="href poll/fmt:url">
-          <span tal:replace="poll/title" />
-        </a> - opens
-        <span
-          tal:attributes="title poll/dateopens/fmt:datetime"
-          tal:content="poll/dateopens/fmt:displaydate" />
-      </li>
-    </ul>
-
-    <a tal:condition="view/hasCurrentPolls"
-       tal:replace="structure overview_menu/polls/fmt:link" />
-    <a tal:replace="structure overview_menu/add_poll/fmt:link" />
-
-  </div>
-</div>
-
-<!-- heading slot. -->
-<div metal:fill-slot="heading">
-    <div tal:attributes="class view/public_private_css">
-      <tal:comment condition="nothing">
-        Display striped image.
-      </tal:comment>
+  <div class="yui-g">
+    <div class="first yui-u">
+      <metal:details use-macro="context/@@+person-macros/team-details" />
     </div>
-
-    <div
-      class="description"
-      tal:condition="context/homepage_content"
-      tal:content="structure context/homepage_content/fmt:text-to-html"
-    />
-
-    <div
-      class="description"
-      tal:content="structure context/teamdescription/fmt:text-to-html"
-    />
-</div>
-
-<!-- main slot. -->
-<div metal:fill-slot="main"
-     tal:define="overview_menu context/menu:overview">
+    <div class="first yui-u">
+      <div tal:content="structure context/@@+portlet-membership" />
+    </div>
+  </div>
 
   <div class="yui-g">
     <!-- First portlet column. -->
     <div class="first yui-u">
-      <div tal:content="structure context/@@+portlet-membership" />
       <div tal:content="structure context/@@+portlet-ppas" />
-      <metal:subteam-of use-macro="context/@@+person-macros/subteam-of" />
+      <div tal:content="structure context/@@+portlet-mailinglist" />
     </div>
 
     <!-- Second portlet column. -->
     <div class="yui-u">
-      <metal:details use-macro="context/@@+person-macros/team-details" />
       <div tal:content="structure context/@@+portlet-related-projects" />
-      <div tal:content="structure context/@@+portlet-mailinglist" />
+      <metal:subteam-of use-macro="context/@@+person-macros/subteam-of" />
     </div>
   </div>
 

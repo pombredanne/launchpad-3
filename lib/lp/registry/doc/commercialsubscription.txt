@@ -38,7 +38,7 @@ testing consistency, let's force the start and expiry dates to a known
 date and use a known time as the current time.
 
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from datetime import datetime, timedelta
+    >>> from datetime import date, datetime, timedelta
     >>> from pytz import UTC
     >>> now = datetime(2008, 1, 10, tzinfo=UTC)
     >>> subscription = removeSecurityProxy(bzr.commercial_subscription)
@@ -437,18 +437,19 @@ was created.
 
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
-    ...     created_after=bzr.datecreated, created_before=bzr.datecreated):
+    ...     created_after=bzr.datecreated,
+    ...     created_before=bzr.datecreated):
     ...     print product.name
     bzr
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     created_before=bzr.datecreated-timedelta(seconds=1)):
     ...     print product.name
-    >>> date_expires = bzr.commercial_subscription.date_expires
 
 You can search for products based on the expiration date of
 its commercial subscription.
 
+    >>> date_expires = bzr.commercial_subscription.date_expires
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     subscription_expires_after=date_expires,
@@ -459,12 +460,39 @@ its commercial subscription.
     ...     search_text='bzr',
     ...     subscription_expires_after=date_expires+timedelta(seconds=1)):
     ...     print product.name
-    >>> date_last_modified = bzr.commercial_subscription.date_last_modified
+
+You can also search using a datetime.date object, since that is what
+the web form delivers.
+
+    >>> one_day = timedelta(days=1)
+    >>> date_expires = date_expires.date()
+    >>> early_date = date(1980, 1, 1)
+    >>> late_date = date_expires + timedelta(days=365 * 100)
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=date_expires,
+    ...     subscription_expires_before=date_expires + one_day,
+    ...     created_after=early_date,
+    ...     created_before=late_date,
+    ...     subscription_modified_after=early_date,
+    ...     subscription_modified_before=late_date):
+    ...     print product.name
+    bzr
+
+    >>> for product in product_set.forReview(
+    ...     search_text='bzr',
+    ...     subscription_expires_after=bzr.datecreated.date(),
+    ...     created_before=bzr.datecreated.date() + one_day):
+    ...     print product.name
+    bzr
+
+
 
 You can search for products based on the date of that
 its commercial subscription was modified, which only
 happens when a voucher is redeemed.
 
+    >>> date_last_modified = bzr.commercial_subscription.date_last_modified
     >>> for product in product_set.forReview(
     ...     search_text='bzr',
     ...     subscription_modified_after=date_last_modified,

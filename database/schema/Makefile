@@ -57,14 +57,15 @@ build_new_sampledata=$(PYTHON) fti.py --null -d ${1} -q; \
 
 
 # The latest schema dump from production. Database patches are relative
-# to this baseline. This dump should be updated every production rollout
+# to this baseline. This dump should be updated occasionally from production
 # to ensure that the development database remains in sync with reality
 # on production. It is generated using newbaseline.py in
 # bzr+ssh://devpad.canonical.com/code/stub/dbascripts
 # 
-REV=2109
+REV=2207
 BASELINE=launchpad-${REV}-00-0.sql
-MD5SUM=8a2e8fb0c3665cf1b07487fe3650816e  launchpad-2109-00-0.sql
+MD5SUM=6a28c01a33ee2dc133ab4f8931d94282  launchpad-2207-00-0.sql
+
 default: all
 
 # Create a launchpad_ftest_template DB and load the test sample data into it.
@@ -107,12 +108,12 @@ dev: test
 # database schema, full text indexes and grants into it.
 # It will also create session DBs for the test and dev environments.
 # No sample data is added at this point.
-create: check
+create: 
 	@ echo "* If this fails you need to run as the postgresql superuser"
 	@ echo "* eg. sudo -u postgres make create"
 	@ echo
 	@ echo "* Creating database \"$(EMPTY_DBNAME)\"."
-	@ ${CREATEDB} template1 ${EMPTY_DBNAME}
+	@ ${CREATEDB} template0 ${EMPTY_DBNAME}
 	@ if ! `createlang -l ${EMPTY_DBNAME} | grep -qs plpythonu`; then \
 		echo "* Installing PL/PythonU"; \
 		createlang -d ${EMPTY_DBNAME} plpythonu; \
@@ -141,12 +142,12 @@ create: check
 
 	@ echo "* Creating session databases '${SESSION_DBNAME}' (if necessary)"
 	@if [ "$$((`psql -l | grep -w ${SESSION_DBNAME} | wc -l`))" = '0' ]; \
-	    then ${CREATEDB} template1 ${SESSION_DBNAME} ; \
+	    then ${CREATEDB} template0 ${SESSION_DBNAME} ; \
 	    createlang plpgsql ${SESSION_DBNAME}; \
 	    psql -q -d ${SESSION_DBNAME} -f launchpad_session.sql ; \
 	fi
 	@ echo "* Creating session database '${TEST_SESSION_DBNAME}'"
-	@ ${CREATEDB} template1 ${TEST_SESSION_DBNAME}
+	@ ${CREATEDB} template0 ${TEST_SESSION_DBNAME}
 	@ createlang plpgsql ${TEST_SESSION_DBNAME}
 	@ psql -q -d ${TEST_SESSION_DBNAME} -f launchpad_session.sql
 

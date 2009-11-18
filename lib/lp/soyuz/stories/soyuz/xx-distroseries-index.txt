@@ -54,30 +54,3 @@ in production environment):
   ...     "+portlet-latestuploads")
   >>> "<ul" in anon_browser.contents
   False
-
-
-== Details portlet ==
-
-The distroseries page contains a details portlet giving more information
-on the series' details.
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/ubuntu/warty/+portlet-details")
-    >>> print extract_text(anon_browser.contents)
-    Drivers: Ubuntu Team
-    Status: Current Stable Release
-    Source packages: 3
-    Binary packages: 4
-
-On series that have no source or binary packages, the portlet will change its
-text slightly to annouce this:
-
-    >>> anon_browser.open(
-    ...     "http://launchpad.dev/debian/sarge/+portlet-details")
-    >>> print extract_text(anon_browser.contents)
-    Drivers: Jeff Waugh Mark Shuttleworth
-    Status: Pre-release Freeze
-    No sources imported or published.
-    No binaries imported or published.
-    Derives from: Debian Woody
-

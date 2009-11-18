@@ -16,6 +16,8 @@ import re
 import rfc822
 import sys
 import urllib
+##import warnings
+
 from xml.sax.saxutils import unescape as xml_unescape
 from datetime import datetime, timedelta
 from lazr.enum import enumerated_type_registry
@@ -60,6 +62,9 @@ from canonical.launchpad.webapp.badge import IHasBadges
 from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr.canonicalurl import nearest_adapter
 from lp.soyuz.interfaces.build import BuildStatus
+
+
+SEPARATOR = ' : '
 
 
 def escape(text, quote=True):
@@ -439,10 +444,15 @@ class ObjectFormatterAPI:
     # constants, so it's not a problem. We might want to use something like
     # frozenset (http://code.activestate.com/recipes/414283/) here, though.
     # The names which can be traversed further (e.g context/fmt:url/+edit).
-    traversable_names = {'link': 'link', 'url': 'url', 'api_url': 'api_url'}
+    traversable_names = {
+        'api_url': 'api_url',
+        'link': 'link',
+        'url': 'url',
+        }
 
     # Names which are allowed but can't be traversed further.
     final_traversable_names = {
+        'pagetitle': 'pagetitle',
         'public-private-css': 'public_private_css',
         }
 
@@ -461,8 +471,7 @@ class ObjectFormatterAPI:
         try:
             url = canonical_url(
                 self._context, path_only_if_possible=True,
-                rootsite=rootsite,
-                view_name=view_name)
+                rootsite=rootsite, view_name=view_name)
         except Unauthorized:
             url = ""
         return url
@@ -470,14 +479,15 @@ class ObjectFormatterAPI:
     def api_url(self, context):
         """Return the object's (partial) canonical web service URL.
 
-        This method returns everything that goes after the web service
-        version number. It's the same as 'url', but without any view
-        name.
+        This method returns everything that goes after the web service version
+        number.  Effectively the canonical URL but only the relative part with
+        no site.
         """
-
-        # Some classes override the rootsite. We always want a path-only
-        # URL, so we override it to nothing.
-        return self.url(rootsite=None)
+        try:
+            url = canonical_url(self._context, force_local_path=True)
+        except Unauthorized:
+            url = ""
+        return url
 
     def traverse(self, name, furtherPath):
         if name.startswith('link:') or name.startswith('url:'):
@@ -533,6 +543,67 @@ class ObjectFormatterAPI:
             return 'private'
         else:
             return 'public'
+
+    def pagetitle(self):
+        """The page title to be used.
+
+        By default, reverse breadcrumbs are always used if they are available.
+        If not available, then the view's .page_title attribute or entry in
+        pagetitles.py (deprecated) is used.  If breadcrumbs are available,
+        then a view can still choose to override them by setting the attribute
+        .override_title_breadcrumbs to True.
+        """
+        view = self._context
+        request = get_current_browser_request()
+        module = canonical.launchpad.pagetitles
+        hierarchy_view = getMultiAdapter(
+            (view.context, request), name='+hierarchy')
+        override = getattr(view, 'override_title_breadcrumbs', False)
+        if (override or
+            hierarchy_view is None or
+            not hierarchy_view.display_breadcrumbs):
+            # The breadcrumbs are either not available or are overridden.  If
+            # the view has a .page_title attribute use that.
+            page_title = getattr(view, 'page_title', None)
+            if page_title is not None:
+                return page_title
+            # If there is no template for the view, just use the default
+            # Launchpad title.
+            template = getattr(view, 'template', None)
+            if template is None:
+                template = getattr(view, 'index', None)
+                if template is None:
+                    return module.DEFAULT_LAUNCHPAD_TITLE
+            # There is no .page_title attribute on the view, so fallback to
+            # looking for an an entry in pagetitles.py.  This is deprecated
+            # though, so issue a warning.
+            filename = os.path.basename(template.filename)
+            name, ext = os.path.splitext(filename)
+            title_name = name.replace('-', '_')
+            title_object = getattr(module, title_name, None)
+            # Page titles are mandatory.
+            assert title_object is not None, (
+                'No .page_title or pagetitles.py found for %s'
+                % template.filename)
+            ## 2009-09-08 BarryWarsaw bug 426527: Enable this when we want to
+            ## force conversions from pagetitles.py; however tests will fail
+            ## because of this output.
+            ## warnings.warn('Old style pagetitles.py entry found for %s. '
+            ##               'Switch to using a .page_title attribute on the '
+            ##               'view instead.' % template.filename,
+            ##               DeprecationWarning)
+            if isinstance(title_object, basestring):
+                return title_object
+            else:
+                title = title_object(view.context, view)
+                if title is None:
+                    return module.DEFAULT_LAUNCHPAD_TITLE
+                else:
+                    return title
+        # Use the reverse breadcrumbs.
+        return SEPARATOR.join(
+            breadcrumb.text for breadcrumb
+            in reversed(hierarchy_view.items))
 
 
 class ObjectImageDisplayAPI:
@@ -1215,6 +1286,17 @@ class PillarFormatterAPI(CustomizableFormatter):
         return html
 
 
+class DistroSeriesFormatterAPI(CustomizableFormatter):
+    """Adapter for IDistroSeries objects to a formatted string."""
+
+    _link_summary_template = '%(displayname)s'
+    _link_permission = 'zope.Public'
+
+    def _link_summary_values(self):
+        displayname = self._context.displayname
+        return {'displayname': displayname}
+
+
 class SourcePackageFormatterAPI(CustomizableFormatter):
     """Adapter for ISourcePackage objects to a formatted string."""
 
@@ -1286,7 +1368,8 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink', 'bzr-link': 'bzrLink'}
+        'title-link': 'titleLink', 'bzr-link': 'bzrLink',
+        'api_url': 'api_url'}
 
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
@@ -1322,68 +1405,6 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '%(name)s</a>: %(title)s' % self._args(view_name))
-
-
-class PreviewDiffFormatterAPI(ObjectFormatterAPI):
-    """Formatter for preview diffs."""
-
-    def url(self, view_name=None, rootsite=None):
-        """Use the url of the librarian file containing the diff.
-        """
-        librarian_alias = self._context.diff_text
-        if librarian_alias is None:
-            return None
-        else:
-            return librarian_alias.getURL()
-
-    def link(self, view_name):
-        """The link to the diff should show the line count.
-
-        Stale diffs will have a stale-diff css class.
-        Diffs with conflicts will have a conflict-diff css class.
-        Diffs with neither will have clean-diff css class.
-
-        The title of the diff will show the number of lines added or removed
-        if available.
-
-        :param view_name: If not None, the link will point to the page with
-            that name on this object.
-        """
-        title_words = []
-        if self._context.conflicts is not None:
-            style = 'conflicts-diff'
-            title_words.append(_('CONFLICTS'))
-        else:
-            style = 'clean-diff'
-        # Stale style overrides conflicts or clean.
-        if self._context.stale:
-            style = 'stale-diff'
-            title_words.append(_('Stale'))
-
-        if self._context.added_lines_count:
-            title_words.append(
-                _("%s added") % self._context.added_lines_count)
-
-        if self._context.removed_lines_count:
-            title_words.append(
-                _("%s removed") % self._context.removed_lines_count)
-
-        args = {
-            'line_count': _('%s lines') % self._context.diff_lines_count,
-            'style': style,
-            'title': ', '.join(title_words),
-            'url': self.url(view_name),
-            }
-        # Under normal circumstances, there will be an associated file,
-        # however if the diff is empty, then there is no alias to link to.
-        if args['url'] is None:
-            return (
-                '<span title="%(title)s" class="%(style)s">'
-                '%(line_count)s</span>' % args)
-        else:
-            return (
-                '<a href="%(url)s" title="%(title)s" class="%(style)s">'
-                '<img src="/@@/download"/>&nbsp;%(line_count)s</a>' % args)
 
 
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):
@@ -2114,6 +2135,8 @@ def clean_path_segments(request):
     return clean_path_split
 
 
+# 2009-09-08 BarryWarsaw bug 426532.  Remove this class, all references to it,
+# and all instances of CONTEXTS/fmt:pagetitle
 class PageTemplateContextsAPI:
     """Adapter from page tempate's CONTEXTS object to fmt:pagetitle.
 
@@ -2149,7 +2172,6 @@ class PageTemplateContextsAPI:
         name = name.replace('-', '_')
         titleobj = getattr(canonical.launchpad.pagetitles, name, None)
         if titleobj is None:
-            # sabdfl 25/0805 page titles are now mandatory hence the assert
             raise AssertionError(
                  "No page title in canonical.launchpad.pagetitles "
                  "for %s" % name)
@@ -2767,7 +2789,7 @@ class FormattersAPI:
         \b[a-zA-Z0-9._/="'+-]{1,64}@  # The localname.
         [a-zA-Z][a-zA-Z0-9-]{1,63}    # The hostname.
         \.[a-zA-Z0-9.-]{1,251}\b      # Dot starts one or more domains.
-        """, re.VERBOSE)
+        """, re.VERBOSE)              # ' <- font-lock turd
 
     def obfuscate_email(self):
         """Obfuscate an email address if there's no authenticated user.
@@ -2793,7 +2815,7 @@ class FormattersAPI:
             "<<email address hidden>>", "<email address hidden>")
         return text
 
-    def linkify_email(self):
+    def linkify_email(self, preloaded_person_data=None):
         """Linkify any email address recognised in Launchpad.
 
         If an email address is recognised as one registered in Launchpad,
@@ -2808,11 +2830,17 @@ class FormattersAPI:
         matches = re.finditer(self._re_email, text)
         for match in matches:
             address = match.group()
-            person = getUtility(IPersonSet).getByEmail(address)
+            person = None
+            # First try to find the person required in the preloaded person
+            # data dictionary.
+            if preloaded_person_data is not None:
+                person = preloaded_person_data.get(address, None)
+            else:
+                # No pre-loaded data -> we need to perform a database lookup.
+                person = getUtility(IPersonSet).getByEmail(address)
             # Only linkify if person exists and does not want to hide
             # their email addresses.
             if person is not None and not person.hide_email_addresses:
-                person_formatter = PersonFormatterAPI(person)
                 css_sprite = ObjectImageDisplayAPI(person).sprite_css()
                 text = text.replace(
                     address, '<a href="%s" class="%s">&nbsp;%s</a>' % (
@@ -3017,6 +3045,8 @@ class PageMacroDispatcher:
             return self.pagetype()
         elif name == 'show_actions_menu':
             return self.show_actions_menu()
+        elif name == 'isbetauser':
+            return getattr(self.context, 'isBetaUser', False)
         else:
             raise TraversalError(name)
 
@@ -3177,6 +3207,54 @@ class TranslationGroupFormatterAPI(ObjectFormatterAPI):
         group = self._context
         url = self.url(view_name, rootsite)
         return u'<a href="%s">%s</a>' % (url, cgi.escape(group.title))
+
+    def displayname(self, view_name, rootsite=None):
+        """Return the displayname as a string."""
+        return self._context.title
+
+
+class LanguageFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `ILanguage` objects to a formatted string."""
+    traversable_names = {
+        'link': 'link',
+        'url': 'url',
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(LanguageFormatterAPI, self).url(view_name, rootsite)
+
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s" class="sprite language">%s</a>' % (
+            url, cgi.escape(self._context.englishname))
+
+    def displayname(self, view_name, rootsite=None):
+        """See `ObjectFormatterAPI`."""
+        return self._context.englishname
+
+
+class POFileFormatterAPI(ObjectFormatterAPI):
+    """Adapter for `IPOFile` objects to a formatted string."""
+
+    traversable_names = {
+        'link': 'link',
+        'url': 'url',
+        'displayname': 'displayname',
+    }
+
+    def url(self, view_name=None, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        return super(POFileFormatterAPI, self).url(view_name, rootsite)
+
+    def link(self, view_name, rootsite='translations'):
+        """See `ObjectFormatterAPI`."""
+        pofile = self._context
+        url = self.url(view_name, rootsite)
+        return u'<a href="%s">%s</a>' % (url, cgi.escape(pofile.title))
 
     def displayname(self, view_name, rootsite=None):
         """Return the displayname as a string."""

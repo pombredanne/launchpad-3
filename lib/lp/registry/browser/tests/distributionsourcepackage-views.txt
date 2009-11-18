@@ -25,17 +25,46 @@ package within a distribution.
 The DistributionSourcePackageView includes a helper property
 'all_published_in_active_distroseries' that returns a list of
 all the published versions of the source package within the distribution's
-serieses.
+series.
 
-    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-    >>> from zope.component import getMultiAdapter
     >>> ubuntu_gedit = ubuntutest.getSourcePackage('gedit')
-    >>> ubuntu_gedit_view = getMultiAdapter(
-    ...     (ubuntu_gedit, LaunchpadTestRequest()), name="+index")
+    >>> ubuntu_gedit_view = create_initialized_view(
+    ...     ubuntu_gedit, name='+index')
     >>> for result in ubuntu_gedit_view.all_published_in_active_distroseries:
     ...     print "%s - %s" % (
     ...         result['suite'], result['description'])
     Breezy-autotest - (666): main/base
+
+The view has an active_series property that provides a sorted list of active
+series.
+
+    >>> eel_main_src_hist = publisher.getPubSource(
+    ...     sourcename="eel", archive=ubuntutest.main_archive,
+    ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     distroseries=ubuntutest.getSeries('breezy-autotest'))
+    >>> earliest_series = factory.makeDistroRelease(
+    ...     distribution=ubuntutest, version='1.1', name='earliest')
+    >>> eel_main_src_hist = publisher.getPubSource(
+    ...     sourcename="eel", archive=ubuntutest.main_archive,
+    ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     distroseries=earliest_series)
+    >>> latest_series = factory.makeDistroRelease(
+    ...     distribution=ubuntutest, version='10.04', name='latest')
+    >>> eel_main_src_hist = publisher.getPubSource(
+    ...     sourcename="eel", archive=ubuntutest.main_archive,
+    ...     date_uploaded=datetime(2010, 12, 30, tzinfo=pytz.UTC),
+    ...     status=PackagePublishingStatus.PUBLISHED,
+    ...     distroseries=latest_series)
+    >>> transaction.commit()
+    >>> ubuntu_eel = ubuntutest.getSourcePackage('eel')
+    >>> view = create_initialized_view(ubuntu_eel, name='+index')
+    >>> for series in view.active_series:
+    ...     print series.name, series.version
+    latest 10.04
+    breezy-autotest 6.6.6
+    earliest 1.1
 
 
 Related PPA versions
@@ -64,7 +93,7 @@ package.
     ...     sourcename="gedit", archive=ppa_beta,
     ...     creator=ppa_nightly.owner,
     ...     status=PackagePublishingStatus.PUBLISHED, version='0.8.0',
-    ...     distroseries=ubuntutest.serieses[0])
+    ...     distroseries=ubuntutest.getSeries('hoary-test'))
 
     # Give the creators of the above source packages some soyuz
     # karma for their efforts.
@@ -95,15 +124,15 @@ package.
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
     >>> ubuntu_gedit = ubuntutest.getSourcePackage('gedit')
-    >>> ubuntu_gedit_view = getMultiAdapter(
-    ...     (ubuntu_gedit, LaunchpadTestRequest()), name="+index")
+    >>> ubuntu_gedit_view = create_initialized_view(
+    ...     ubuntu_gedit, name='+index')
     >>> for archive_pub in ubuntu_gedit_view.related_ppa_versions:
     ...     print "%s - %s" % (
     ...         archive_pub['archive'].displayname,
     ...         archive_pub['versions']
     ...         )
-    PPA named nightly for Person-name2 - Breezy Badger Autotest (0.8.2n3)
-    PPA named beta for Person-name5 - Breezy Badger Autotest (0.8.1),
+    PPA named nightly for Person-name... - Breezy Badger Autotest (0.8.2n3)
+    PPA named beta for Person-name... - Breezy Badger Autotest (0.8.1),
         Hoary Mock (0.8.0)
 
 The view also calculates the url for finding further PPA versions.

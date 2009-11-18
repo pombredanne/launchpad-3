@@ -8,22 +8,14 @@
   <h2>
     <span class="see-all">
       <a tal:attributes="href context/menu:overview/members/fmt:url">
-        Show all members
+        All members
       </a>
     </span>
-    Members
   </h2>
 
   <div id="membership-summary" class="portletBody portletContent"
     style="margin-bottom: 1.5em;">
     <div id="membership-summary">
-      This is a
-      <span>
-        <strong id="subscription-policy"
-                tal:content="context/subscriptionpolicy/title" />.
-        <img src="/@@/maybe"
-          tal:attributes="title context/subscriptionpolicy/description" />
-      </span>
       <div>
         <img src="/@@/team" alt="team" />
         <strong><tal:active content="context/all_member_count" /></strong>
@@ -101,7 +93,13 @@
   <table style="margin: 0px 0px .5em 0px;"
     tal:condition="view/has_recent_approved_or_proposed_members">
     <tr>
-      <td style="padding: 0px 3em 0px 0px" id="recently-approved"
+      <td style="padding: 0px 0px 1em 0px;"
+          tal:define="link context/menu:overview/mugshots">
+        <tal:mugshots replace="structure link/fmt:link-icon" />
+      </td>
+    </tr>
+    <tr>
+      <td style="padding: 3px 3em 0px 0px;" id="recently-approved"
         tal:condition="view/recently_approved_members">
         <h3 style="color:black; font-weight:bold; margin: 0px">
           Recently approved
@@ -128,4 +126,5 @@
     </tr>
   </table>
   </tal:can-view>
+</div>
 </tal:root>

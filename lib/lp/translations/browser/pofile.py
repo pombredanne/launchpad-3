@@ -49,6 +49,8 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.menu import structured
 
+from canonical.launchpad import _
+
 
 class CustomDropdownWidget(DropdownWidget):
     def _div(self, cssClass, contents, **kw):
@@ -109,21 +111,21 @@ class POFileFacets(POTemplateFacets):
 class POFileMenuMixin:
     """Mixin class to share code between navigation and action menus."""
 
-    def description(self):
-        text = 'Description'
-        return Link('', text)
+    def details(self):
+        text = 'Translation details'
+        return Link('+details', text, icon='info')
 
     def translate(self):
         text = 'Translate'
-        return Link('+translate', text, icon='languages')
+        return Link('+translate', text, icon='language')
 
     @enabled_with_permission('launchpad.Edit')
     def upload(self):
-        text = 'Upload a file'
-        return Link('+upload', text, icon='edit')
+        text = 'Upload translation'
+        return Link('+upload', text, icon='add')
 
     def download(self):
-        text = 'Download'
+        text = 'Download translation'
         return Link('+export', text, icon='download')
 
 
@@ -131,7 +133,249 @@ class POFileNavigationMenu(NavigationMenu, POFileMenuMixin):
     """Navigation menus for `IPOFile` objects."""
     usedfor = IPOFile
     facet = 'translations'
-    links = ('description', 'translate', 'upload', 'download')
+    links = ('details', 'translate', 'upload', 'download')
+
+
+class POFileBaseView(LaunchpadView):
+    """A basic view for a POFile
+
+    This view is different from POFileView as it is the base for a new
+    generation of POFile views that use the new TranslatableMessage class
+    to display messages. They will eventually replace POFileView and its
+    decendants."""
+
+    DEFAULT_SHOW = 'all'
+    DEFAULT_SIZE = 10
+
+    def initialize(self):
+        super(POFileBaseView, self).initialize()
+
+        self._initializeShowOption()
+
+        self.batchnav = self._buildBatchNavigator()
+
+
+    @cachedproperty
+    def contributors(self):
+        return tuple(self.context.contributors)
+
+    @property
+    def user_can_edit(self):
+        """Does the user have full edit rights for this translation?"""
+        return self.context.canEditTranslations(self.user)
+
+    @property
+    def user_can_suggest(self):
+        """Is the user allowed to make suggestions here?"""
+        return self.context.canAddSuggestions(self.user)
+
+    @property
+    def permission_statement(self):
+        """Construct the statement about permissions.
+
+        Explain the permissions the current user has on this pofile.
+        """
+
+        if self.user_can_edit:
+            return _("You have full access to this translation.")
+        if self.user_can_suggest:
+            return _("Your suggestions will be held for review by "
+                     "the managers of this translation.")
+        # Check for logged in state
+        if self.user is None:
+            return _("You are not logged in.  Please log in to "
+                     "work on translations.")
+        if not self.has_translationgroup:
+            return _("This translation is not open for changes.")
+        if self.is_managed:
+            return _("This template can be translated only by its managers.")
+        return _("There is nobody to manage translation into this particular "
+                 "language.  If you are interested in working on it, please "
+                 "contact the translation group.")
+
+    @property
+    def translation_groups_statement(self):
+        """List translation groups and translation teams for this translation.
+
+        Returns a HTML string that lists the translation groups and the
+        relevant translators for this translation.
+        """
+        if self.translation_group is not None:
+            language = self.context.language
+            groups = []
+            for group in self.context.potemplate.translationgroups:
+                translator = group.query_translator(language)
+                # XXX: henninge 2009-09-09 bug=426745:
+                # The group and translator should be linkified.
+                if translator is None:
+                    groups.append(_(u"%s translation group") % group.title)
+                else:
+                    groups.append(_(u"%s assigned by %s") % (
+                        translator.translator.displayname, group.title))
+            # There are at most two translation groups, so just using 'and'
+            # is fine here.
+            statement = (_(u"This translation is managed by ") +
+                         _(u" and ").join(groups))+"."
+        else:
+            statement = _(u"No translation group has been assigned.")
+        return statement
+
+    @property
+    def has_plural_form_information(self):
+        """Return whether we know the plural forms for this language."""
+        if self.context.potemplate.hasPluralMessage():
+            return self.context.language.pluralforms is not None
+        # If there are no plural forms, we assume that we have the
+        # plural form information for this language.
+        return True
+
+    @property
+    def number_of_plural_forms(self):
+        """The number of plural forms for the language or 1 if not known."""
+        if self.context.language.pluralforms is not None:
+            return self.context.language.pluralforms
+        return 1
+
+    @property
+    def plural_expression(self):
+        """The plural expression for this language or the empty string."""
+        if self.context.language.pluralexpression is not None:
+            return self.context.language.pluralexpression
+        return ""
+
+    @cachedproperty
+    def translation_group(self):
+        """Is there a translation group for this translation?
+
+        :return: TranslationGroup or None if not found.
+        """
+        translation_groups = self.context.potemplate.translationgroups
+        if translation_groups is not None and len(translation_groups) > 0:
+            group = translation_groups[0]
+        else:
+            group = None
+        return group
+
+    def _get_translator_entry(self):
+        """The translator entry or None if none is assigned."""
+        group = self.translation_group
+        if group is not None:
+            return group.query_translator(self.context.language)
+        return None
+
+    @cachedproperty
+    def translator(self):
+        """Who is assigned for translations to this language?"""
+        translator_entry = self._get_translator_entry()
+        if translator_entry is not None:
+            return translator_entry.translator
+        return None
+
+    @cachedproperty
+    def has_any_documentation(self):
+        """Return whether there is any documentation for this POFile."""
+        if (self.translation_group is not None and
+            self.translation_group.translation_guide_url is not None):
+            return True
+        translator_entry = self._get_translator_entry()
+        if (translator_entry is not None and
+            translator_entry.style_guide_url is not None):
+            return True
+        return False
+
+    def _initializeShowOption(self):
+        # Get any value given by the user
+        self.show = self.request.form.get('show')
+        self.search_text = self.request.form.get('search')
+        if self.search_text is not None:
+            self.show = 'all'
+
+        # Functions that deliver the correct message counts for each
+        # valid option value.
+        count_functions = {
+            'all': self.context.messageCount,
+            'translated': self.context.translatedCount,
+            'untranslated': self.context.untranslatedCount,
+            'new_suggestions': self.context.unreviewedCount,
+            'changed_in_launchpad': self.context.updatesCount,
+            }
+
+        if self.show not in count_functions:
+            self.show = self.DEFAULT_SHOW
+
+        self.shown_count = count_functions[self.show]()
+
+    def _buildBatchNavigator(self):
+        """Construct a BatchNavigator of POTMsgSets and return it."""
+
+        # Changing the "show" option resets batching.
+        old_show_option = self.request.form.get('old_show')
+        show_option_changed = (
+            old_show_option is not None and old_show_option != self.show)
+        if show_option_changed:
+            force_start = True # start will be 0, by default
+        else:
+            force_start = False
+        return POFileBatchNavigator(self._getSelectedPOTMsgSets(),
+                                    self.request, size=self.DEFAULT_SIZE,
+                                    transient_parameters=["old_show"],
+                                    force_start=force_start)
+
+    def _handleShowAll(self):
+        """Get `POTMsgSet`s when filtering for "all" (but possibly searching).
+
+        Normally returns all `POTMsgSet`s for this `POFile`, but also handles
+        search requests which act as a separate form of filtering.
+        """
+        if self.search_text is None:
+            return self.context.potemplate.getPOTMsgSets()
+
+        if len(self.search_text) <= 1:
+            self.request.response.addWarningNotification(
+                "Please try searching for a longer string.")
+            return self.context.potemplate.getPOTMsgSets()
+
+        return self.context.findPOTMsgSetsContaining(text=self.search_text)
+
+    def _getSelectedPOTMsgSets(self):
+        """Return a list of the POTMsgSets that will be rendered."""
+        # The set of message sets we get is based on the selection of kind
+        # of strings we have in our form.
+        get_functions = {
+            'all': self._handleShowAll,
+            'translated': self.context.getPOTMsgSetTranslated,
+            'untranslated': self.context.getPOTMsgSetUntranslated,
+            'new_suggestions': self.context.getPOTMsgSetWithNewSuggestions,
+            'changed_in_launchpad':
+                self.context.getPOTMsgSetChangedInLaunchpad,
+            }
+
+        if self.show not in get_functions:
+            raise UnexpectedFormData('show = "%s"' % self.show)
+
+        # We cannot listify the results to avoid additional count queries,
+        # because we could end up with a list of more than 32000 items with
+        # an average list of 5000 items.
+        # The batch system will slice the list of items so we will fetch only
+        # the exact number of entries we need to render the page.
+        return get_functions[self.show]()
+
+    @property
+    def messages(self):
+        """The list of TranslatableMessages to show."""
+        last = None
+        messages = []
+        for potmsgset in self.batchnav.currentBatch():
+            assert (last is None or
+                    potmsgset.getSequence(
+                        self.context.potemplate) >= last.getSequence(
+                            self.context.potemplate)), (
+                "POTMsgSets on page not in ascending sequence order")
+            last = potmsgset
+
+            messages.append(
+                self.context.makeTranslatableMessage(potmsgset))
+        return messages
 
 
 class POFileView(LaunchpadView):
@@ -199,6 +443,17 @@ class POFileView(LaunchpadView):
         return managers
 
 
+class POFileDetailsView(POFileView):
+    """View for the detail page of a POFile"""
+
+    page_title = _("Details")
+
+    @property
+    def label(self):
+        return _("Details for %s translation") % (
+                    self.context.language.englishname)
+
+
 class TranslationMessageContainer:
     def __init__(self, translation, pofile):
         self.data = translation
@@ -248,6 +503,8 @@ class POFileFilteredView(LaunchpadView):
 
     DEFAULT_BATCH_SIZE = 50
 
+    page_title = "Contributions"
+
     @property
     def _person_name(self):
         """Person's display name.  Graceful about unknown persons."""
@@ -256,6 +513,7 @@ class POFileFilteredView(LaunchpadView):
         else:
             return self.person.displayname
 
+    @property
     def page_title(self):
         """See `LaunchpadView`."""
         return smartquote('Translations by %s in "%s"') % (
@@ -300,6 +558,8 @@ class POFileFilteredView(LaunchpadView):
 class POFileUploadView(POFileView):
     """A basic view for a `POFile`."""
 
+    page_title = "Upload translation"
+
     def initialize(self):
         self.form = self.request.form
         self.process_form()
@@ -309,10 +569,8 @@ class POFileUploadView(POFileView):
         return canonical_url(self.context)
 
     @property
-    def page_title(self):
-        return "Upload %s translation for %s" % (
-            self.context.language.englishname,
-            self.context.potemplate.displayname)
+    def label(self):
+        return "Upload %s translation" % self.context.language.englishname
 
     def process_form(self):
         """Handle a form submission to request a translation file upload."""
@@ -675,6 +933,8 @@ class POFileTranslateView(BaseTranslationView):
 
 class POExportView(BaseExportView):
 
+    page_title = "Download translation"
+
     def modifyFormat(self, format):
         pochanged = self.request.form.get("pochanged")
         if format == 'PO' and pochanged == 'POCHANGED':
@@ -692,7 +952,5 @@ class POExportView(BaseExportView):
         return canonical_url(self.context)
 
     @property
-    def page_title(self):
-        return "Download %s translation of %s" % (
-            self.context.language.englishname,
-            self.context.potemplate.displayname)
+    def label(self):
+        return "Download %s translation" % self.context.language.englishname

@@ -6,7 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_status_count',
+    'get_status_counts',
     'MilestoneOverlayMixin',
     'RegistryEditFormView',
     'RegistryDeleteViewMixin',
@@ -17,6 +17,8 @@ __all__ = [
 from operator import attrgetter
 
 from zope.component import getUtility
+
+from storm.store import Store
 
 from lp.bugs.interfaces.bugtask import BugTaskSearchParams, IBugTaskSet
 from lp.registry.interfaces.productseries import IProductSeries
@@ -39,17 +41,20 @@ class StatusCount:
         self.count = count
 
 
-def get_status_counts(workitems, status_attr):
+def get_status_counts(workitems, status_attr, key='sortkey'):
     """Return a list StatusCounts summarising the workitem."""
     statuses = {}
     for workitem in workitems:
         status = getattr(workitem, status_attr)
+        if status is None:
+            # This is not something we want to count.
+            continue
         if status not in statuses:
             statuses[status] = 0
         statuses[status] += 1
     return [
         StatusCount(status, statuses[status])
-        for status in sorted(statuses, key=attrgetter('sortkey'))]
+        for status in sorted(statuses, key=attrgetter(key))]
 
 
 class MilestoneOverlayMixin:
@@ -133,15 +138,22 @@ class RegistryDeleteViewMixin:
         """The context's URL."""
         return canonical_url(self.context)
 
-    def _getBugtasks(self, milestone):
-        """Return the list `IBugTask`s targeted to the milestone."""
-        params = BugTaskSearchParams(milestone=milestone, user=None)
+    def _getBugtasks(self, target):
+        """Return the list `IBugTask`s associated with the target."""
+        if IProductSeries.providedBy(target):
+            params = BugTaskSearchParams(user=None)
+            params.setProductSeries(target)
+        else:
+            params = BugTaskSearchParams(milestone=target, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
         return list(bugtasks)
 
-    def _getSpecifications(self, milestone):
-        """Return the list `ISpecification`s targeted to the milestone."""
-        return list(milestone.specifications)
+    def _getSpecifications(self, target):
+        """Return the list `ISpecification`s associated to the target."""
+        if IProductSeries.providedBy(target):
+            return list(target.all_specifications)
+        else:
+            return list(target.specifications)
 
     def _getProductRelease(self, milestone):
         """The `IProductRelease` associated with the milestone."""
@@ -155,10 +167,37 @@ class RegistryDeleteViewMixin:
         else:
             return []
 
+    def _unsubscribe_structure(self, structure):
+        """Removed the subscriptions from structure."""
+        for subscription in structure.getSubscriptions():
+            # The owner of the subscription or an admin are the only users
+            # that can destroy a subscription, but this rule cannot prevent
+            # the owner from removing the structure.
+            Store.of(subscription).remove(subscription)
+
+    def _remove_series_bugs_and_specifications(self, series):
+        """Untarget the associated bugs and subscriptions."""
+        for spec in self._getSpecifications(series):
+            spec.proposeGoal(None, self.user)
+        for bugtask in self._getBugtasks(series):
+            # Bugtasks cannot be deleted directly. In this case, the bugtask
+            # is already reported on the product, so the series bugtask has
+            # no purpose without a series.
+            Store.of(bugtask).remove(bugtask)
+
     def _deleteProductSeries(self, series):
-        """Remove the series and delete/unlink related objects."""
-        # Delete all milestones, releases, and files.
-        # Any associated bugtasks and specifications are untargeted.
+        """Remove the series and delete/unlink related objects.
+
+        All subordinate milestones, releases, and files will be deleted.
+        Milestone bugs and blueprints will be untargeted.
+        Series bugs and blueprints will be untargeted.
+        Series and milestone structural subscriptions are unsubscribed.
+        Series branches are unlinked.
+        """
+        self._unsubscribe_structure(series)
+        self._remove_series_bugs_and_specifications(series)
+        series.branch = None
+
         for milestone in series.all_milestones:
             self._deleteMilestone(milestone)
         # Series are not deleted because some objects like translations are
@@ -171,6 +210,7 @@ class RegistryDeleteViewMixin:
 
     def _deleteMilestone(self, milestone):
         """Delete a milestone and unlink related objects."""
+        self._unsubscribe_structure(milestone)
         for bugtask in self._getBugtasks(milestone):
             bugtask.milestone = None
         for spec in self._getSpecifications(milestone):
@@ -188,6 +228,7 @@ class RegistryDeleteViewMixin:
 
 class RegistryEditFormView(LaunchpadEditFormView):
     """A base class that provides consistent edit form behaviour."""
+
     @property
     def page_title(self):
         """The page title."""

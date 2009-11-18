@@ -71,3 +71,17 @@ For distroseries we publish a subset of its attributes.
     title: u'The Hoary Hedgehog Release'
     version: u'5.04'
 
+
+Creating a milestone on the distroseries
+----------------------------------------
+
+    >>> response = webservice.named_post(
+    ...     current_series['self_link'], 'newMilestone', {},
+    ...     name='alpha1', code_name='wombat', date_targeted=u'2009-09-06',
+    ...     summary='summary.')
+    >>> print response
+    HTTP/1.1 201 Created
+    ...
+    Location: http://.../ubuntu/+milestone/alpha1
+    ...
+

@@ -26,8 +26,9 @@ files into the branches.  We mock it up here.
 
     >>> class MockDirectBranchCommit:
     ...     """Mock DirectBranchCommit.  Prints actions."""
-    ...
     ...     simulate_race = False
+    ...     bzrbranch = None
+    ...     written_files = 0
     ...
     ...     def __init__(self, logger):
     ...         self.logger = logger
@@ -35,6 +36,7 @@ files into the branches.  We mock it up here.
     ...     def writeFile(self, path, contents):
     ...         self.logger.info("Writing file '%s':" % path)
     ...         self.logger.info(contents)
+    ...         self.written_files += 1
     ...
     ...     def lockForCommit(self):
     ...         pass
@@ -45,7 +47,7 @@ files into the branches.  We mock it up here.
     ...
     ...     def commit(self, message=None, txn=None):
     ...         self._checkForRace()
-    ...         self.logger.info("Commit.")
+    ...         self.logger.info("Committed %d file(s)." % self.written_files)
     ...
     ...     def unlock(self):
     ...         self.logger.info("Unlock.")
@@ -53,13 +55,17 @@ files into the branches.  We mock it up here.
     >>> from canonical.launchpad.scripts.logger import FakeLogger
 
     >>> class MockExportTranslationsToBranch(ExportTranslationsToBranch):
-    ...
+    ...     """Test version of ExportTranslationsToBranch."""
     ...     simulate_race = False
+    ...     simulated_latest_commit = None
     ...
     ...     def __init__(self, *args, **kwargs):
     ...         super(MockExportTranslationsToBranch, self).__init__(
     ...             *args, **kwargs)
     ...         self.logger = FakeLogger()
+    ...
+    ...     def _getLatestTranslationsCommit(self, branch):
+    ...         return self.simulated_latest_commit
     ...
     ...     def _makeDirectBranchCommit(self, bzrbranch):
     ...         committer = MockDirectBranchCommit(self.logger)
@@ -106,14 +112,16 @@ have Dutch translations.
     ...
     ...     if not iscurrent:
     ...         removeSecurityProxy(template).iscurrent = False
+    ...
+    ...     return pofile
 
-    >>> main_template = setup_template_and_translations(
+    >>> main_pofile = setup_template_and_translations(
     ...     'po/main/gazpot.pot', 'maingazpot')
 
-    >>> module_template = setup_template_and_translations(
+    >>> module_pofile = setup_template_and_translations(
     ...     'po/module/module.pot', 'gazmod')
 
-    >>> old_template = setup_template_and_translations(
+    >>> old_pofile = setup_template_and_translations(
     ...     'po/gazpot.pot', 'oldgazpot', iscurrent=False)
 
 When the translations-export-to-branch script runs, it feeds the
@@ -121,7 +129,7 @@ translations to the DirectBranchCommit.
 
     >>> transaction.commit()
     >>> script = MockExportTranslationsToBranch(
-    ...     'export-to-branch', test_args=['-vv'])
+    ...     'export-to-branch', test_args=[])
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
@@ -147,7 +155,7 @@ translations to the DirectBranchCommit.
     msgstr "gazmod msgstr"
     <BLANKLINE>
     DEBUG ...
-    INFO Commit.
+    INFO Committed 2 file(s).
     INFO Unlock.
     INFO Processed 1 item(s); 0 failure(s).
 
@@ -160,8 +168,50 @@ also.
     INFO Exporting to translations branches.
     INFO Processed 0 item(s); 0 failure(s).
 
+    >>> gazblachko.official_rosetta = True
+    >>> transaction.commit()
 
-== Race conditions ==
+
+Incremental exports
+-------------------
+
+If the script detects that POFiles have not been touched roughly since
+the time it last exported them, it won't export them again.
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> now = datetime.now(UTC)
+    >>> script.simulated_latest_commit = now
+    >>> main_pofile.date_changed = now - timedelta(days=3)
+    >>> module_pofile.date_changed = now - timedelta(days=4)
+    >>> old_pofile.date_changed = now - timedelta(days=5)
+
+    >>> script.main()
+    INFO Exporting to translations branches.
+    INFO Exporting Gazblachko trunk series.
+    DEBUG ....
+    DEBUG Last commit was at ....
+    INFO Unlock.
+    INFO Processed 1 item(s); 0 failure(s).
+
+If one of the files is updated, it is exported again.  Unchanged files
+are not.
+
+    >>> main_pofile.date_changed = now
+    >>> script.main()
+    INFO Exporting to translations branches.
+    INFO Exporting Gazblachko trunk series.
+    DEBUG ....
+    DEBUG Last commit was at ...
+    INFO Writing file 'po/main/nl.po':
+    INFO ...
+    INFO Committed 1 file(s).
+    INFO Unlock.
+    INFO Processed 1 item(s); 0 failure(s).
+
+
+Race conditions
+---------------
 
 The script checks for possible race conditions.  Otherwise it might
 overwrite translations committed to the branch that hadn't been
@@ -178,14 +228,14 @@ jobs have completed.
 If the DirectBranchCommit detects a concurrent update, the script will
 refuse to commit to the branch.
 
-    >>> gazblachko.official_rosetta = True
-    >>> transaction.commit()
-
     >>> script.simulate_race = True
+    >>> script.simulated_latest_commit = None
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
-    ...
+    DEBUG ....
+    DEBUG No previous translations commit found.
+    DEBUG ....
     INFO Writing file 'po/main/nl.po':
     ...
     msgstr "gazmod msgstr"
@@ -215,3 +265,20 @@ pending translations BranchJobs on the branch.
     has pending translations changes.  Not committing.
     INFO Processed 1 item(s); 1 failure(s).
 
+There is one problem with detecting this race condition.  Jobs are never
+cleaned up.  So if the job failed for whatever reason, an unfinished job
+will stick around forever.
+
+To avoid blocking on such a job forever, the check ignores jobs that are
+old enough that they must have completed one way or another.
+
+    >>> job.date_created -= timedelta(days=7)
+    >>> transaction.commit()
+    >>> script.main()
+    INFO Exporting to translations branches.
+    INFO Exporting Gazblachko trunk series.
+    DEBUG ...
+    INFO Writing file 'po/main/nl.po':
+    INFO ...
+    INFO Unlock.
+    INFO Processed 1 item(s); 0 failure(s).

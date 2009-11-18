@@ -208,18 +208,6 @@
         classes="MaloneRelatedPages"
         module="lp.bugs.browser.malone"/>
     <browser:page
-        name="+filebug"
-        for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FrontPageFileBugGuidedView"
-        facet="bugs"
-        permission="launchpad.AnyPerson"/>
-    <browser:page
-        name="+filebug-advanced"
-        for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
-        facet="bugs"
-        permission="launchpad.AnyPerson"/>
-    <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         class="lp.bugs.browser.bugtask.BugsBugTaskSearchListingView"
         permission="zope.Public"
@@ -342,6 +330,13 @@
         template="../templates/bugtask-portlet-seriesbugs.pt"/>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-milestonebugs"
+        template="../templates/bugtask-portlet-milestonebugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distroseries.IDistroSeries"
         name="+nominations"
         class="lp.bugs.browser.bugtask.BugNominationsView"
         permission="zope.Public"
@@ -369,12 +364,26 @@
         name="+portlet-bugtasklist-seriesbugs"
         template="../templates/bugtask-portlet-seriesbugs.pt"/>
     <browser:page
+        for="lp.registry.interfaces.product.IProduct"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-milestonebugs"
+        template="../templates/bugtask-portlet-milestonebugs.pt"/>
+    <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
         facet="bugs"
         permission="zope.Public"
         name="+portlet-bugtasklist-seriesbugs"
         template="../templates/bugtask-portlet-seriesbugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.distribution.IDistribution"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-milestonebugs"
+        template="../templates/bugtask-portlet-milestonebugs.pt"/>
     <browser:page
         name="+filebug"
         for="lp.registry.interfaces.project.IProject"
@@ -408,6 +417,13 @@
         template="../templates/bugtask-portlet-seriesbugs.pt"/>
     <browser:page
         for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.bugs.browser.bugtarget.BugTargetBugListingView"
+        facet="bugs"
+        permission="zope.Public"
+        name="+portlet-bugtasklist-milestonebugs"
+        template="../templates/bugtask-portlet-milestonebugs.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.productseries.IProductSeries"
         name="+nominations"
         class="lp.bugs.browser.bugtask.BugNominationsView"
         permission="zope.Public"
@@ -418,7 +434,8 @@
         <browser:menus
             module="lp.bugs.browser.bugtask"
             classes="
-                BugTaskContextMenu"/>
+                BugTaskContextMenu
+                BugTaskSearchListingMenu"/>
         <browser:page
             for="*"
             name="+bugtask-macros-tableview"
@@ -470,8 +487,8 @@
             template="../templates/bugtask-tasks-and-nominations-table-row.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            name="+listing-detailed"
-            template="../templates/bugtask-listing-detailed.pt"
+            name="+bugtask-macros-listing"
+            template="../templates/bugtask-macros-listing.pt"
             permission="zope.Public"/>
         <browser:page
             name="+edit"
@@ -800,6 +817,15 @@
         facet="branches"
         permission="launchpad.Edit"
         template="../templates/bugbranch-delete.pt"/>
+    <browser:page
+        name="+bug-branch"
+        for="lp.bugs.interfaces.bugbranch.IBugBranch"
+        permission="launchpad.View"
+        template="../templates/bug-branch.pt"/>
+    <adapter
+         factory="lp.bugs.browser.bugbranch.BugBranchXHTMLRepresentation"
+         name="lazr.restful.EntryResource"
+        />
     <facet
         facet="bugs">
         <browser:menus
@@ -887,58 +913,6 @@
         attribute_to_parent="bug"
         rootsite="bugs"/>
     <facet
-        facet="overview">
-        <browser:pages
-            for="canonical.launchpad.interfaces.IHasMentoringOffers"
-            class="lp.registry.browser.mentoringoffer.HasMentoringOffersView"
-            permission="zope.Public">
-            <browser:page
-                name="+mentoring"
-                template="../templates/hasmentoringoffers-mentoring.pt"/>
-        </browser:pages>
-        <browser:page
-            name="+retractmentoring"
-            for="canonical.launchpad.interfaces.ICanBeMentored"
-            class="lp.registry.browser.mentoringoffer.MentoringOfferRetractView"
-            permission="launchpad.AnyPerson"
-            template="../templates/canbementored-retractmentoring.pt"/>
-        <browser:page
-            name="+mentor"
-            for="canonical.launchpad.interfaces.ICanBeMentored"
-            class="lp.registry.browser.mentoringoffer.MentoringOfferAddView"
-            permission="launchpad.AnyPerson"
-            template="../templates/canbementored-mentoringoffer.pt">
-        </browser:page>
-        <browser:url
-            for="canonical.launchpad.interfaces.IMentoringOfferSet"
-            path_expression="string:+mentoring"
-            parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"/>
-        <browser:menus
-            module="lp.registry.browser.mentoringoffer"
-            classes="
-                MentoringOfferSetFacets
-                MentoringOfferSetOverviewMenu"/>
-        <browser:defaultView
-            for="canonical.launchpad.interfaces.IMentoringOfferSet"
-            name="+mentoring"/>
-        <browser:pages
-            for="canonical.launchpad.interfaces.IMentoringOfferSet"
-            class="lp.registry.browser.mentoringoffer.MentoringOfferSetView"
-            permission="launchpad.Admin">
-            
-            <!-- this is repeated here from IHasMentoringOffers because it has a
-                                 different (and stricter) permission. We want only admins to see the
-                                 overall mentoring picture. -->
-
-            <browser:page
-                name="+mentoring"
-                template="../templates/hasmentoringoffers-mentoring.pt"/>
-            <browser:page
-                name="+success"
-                template="../templates/mentoringofferset-success.pt"/>
-        </browser:pages>
-    </facet>
-    <facet
         facet="bugs">
         <browser:menus
             module="lp.bugs.browser.bug"
@@ -1006,9 +980,6 @@
                 name="+portlet-duplicates"
                 template="../templates/bug-portlet-duplicates.pt"/>
             <browser:page
-                name="+portlet-cve"
-                template="../templates/bug-portlet-cve.pt"/>
-            <browser:page
                 name="+portlet-attachments"
                 template="../templates/bug-portlet-attachments.pt"/>
             <browser:page
@@ -1017,12 +988,21 @@
             <browser:page
                 name="+portlet-notified"
                 template="../templates/bug-portlet-notified.pt"/>
+            <browser:page
+                name="+portlet-actions"
+                template="../templates/bug-portlet-actions.pt"/>
         </browser:pages>
         <browser:page
             for="lp.bugs.interfaces.bug.IBug"
             name="+bug-portlet-subscribers-content"
             class="lp.bugs.browser.bugsubscription.BugPortletSubcribersContents"
             template="../templates/bug-portlet-subscribers-content.pt"
+            permission="zope.Public"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            name="+bug-portlet-dupe-subscribers-content"
+            class="lp.bugs.browser.bugsubscription.BugPortletDuplicateSubcribersContents"
+            template="../templates/bug-portlet-dupe-subscribers-content.pt"
             permission="zope.Public"/>
         <browser:navigation
             module="lp.bugs.browser.bug"

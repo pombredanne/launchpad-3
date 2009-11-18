@@ -30,13 +30,12 @@ A team member should be able to view the +members page.
 
 == Team Page ==
 
-The page states that the team is private.
+The page indicates that the team is private.
 
     >>> browser.open('http://launchpad.dev/~myteam')
     >>> privacy_info = find_tag_by_id(browser.contents, 'privacy')
     >>> print extract_text(privacy_info)
-    Private Membership Team
-    Team membership is viewable by team members.
+    Team membership is viewable by team members
 
 A team member will be able to see these parts of the team page.
 
@@ -49,7 +48,6 @@ A team member will be able to see these parts of the team page.
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
-    This is a Moderated Team.
     2 active members, 1 proposed members...
 
 
@@ -223,24 +221,6 @@ MyTeam as an option in the +answer-contact form.
     >>> for label in team_div.findAll('label'):
     ...     print label.contents[1]
     &nbsp;Other Team
-
-
-== Restrict Mentorship ==
-
-To prevent leaking information about a team's private membership,
-no user can select that team when offering mentorship for a bug
-or a blueprint.
-
-Even the owner of the team with private membership should not see
-MyTeam as an option in the +mentor form.
-
-    >>> owner_browser.open(
-    ...     'http://answers.launchpad.dev/firefox/+bug/1/+mentor')
-    >>> team_select = find_tag_by_id(owner_browser.contents, 'field.team')
-    >>> for option in team_select.findAll('option'):
-    ...     print option['value']
-    hwdb-team
-    otherteam
 
 
 == Preventing Private Team Information Leakage ==

@@ -1,3 +1,4 @@
+=====
 Karma
 =====
 
@@ -14,24 +15,17 @@ profile page.
     >>> print karma.renderContents()
     138
 
-The navigation menu links to Sample Person's karma summary page, which
-details their karma-generating activities.
+The total karma points is also a link to the person's karma summary page.
 
-    >>> print_navigation_links(anon_browser.contents)
-    Profile
-    Related Software: ...
-    Karma: http://launchpad.dev/~name12/+karma
-
-    >>> anon_browser.getLink('Karma').click()
+    >>> anon_browser.getLink('138').click()
     >>> print anon_browser.title
-    Sample Person's karma in Launchpad
+    Launchpad Karma for Sample Person...
 
 Any user can see the categories that a user has earned karma in.
 
     >>> content = find_main_content(anon_browser.contents)
     >>> for row in find_tag_by_id(content, 'karmapoints').findAll('tr'):
     ...     print extract_text(row)
-    Category                 Points
     Bug Management           94
     Specification Tracking   44
 
@@ -39,10 +33,11 @@ Any user can see that a user has latest actions.
 
     >>> for row in find_tag_by_id(content, 'karmaactions').findAll('tr'):
     ...     print extract_text(row)
-    Action                     Date
-    Registered Specification   2001-11-02
-    Registered Specification   2001-11-02
-    New Bug Filed              2001-10-28 ...
+    Date        Action
+    2001-11-02  Registered Specification
+    2001-11-02  Registered Specification
+    2001-10-28  New Bug Filed
+    ...
 
 The karma page can also show any user that a user has never earned karma.
 
@@ -62,5 +57,5 @@ a that user's last karma actions
 
     >>> for row in find_tag_by_id(content, 'karmaactions').findAll('tr'):
     ...     print extract_text(row)
-    Action                     Date
-    New Bug Filed              2001-08-09
+    Date        Action
+    2001-08-09  New Bug Filed

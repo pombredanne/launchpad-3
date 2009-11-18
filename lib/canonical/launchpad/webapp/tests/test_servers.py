@@ -8,6 +8,9 @@ import unittest
 
 from zope.publisher.base import DefaultPublication
 from zope.testing.doctest import DocTestSuite, NORMALIZE_WHITESPACE, ELLIPSIS
+from zope.interface import implements, Interface
+
+from lp.testing import TestCase
 
 from canonical.launchpad.webapp.servers import (
     AnswersBrowserRequest, ApplicationServerSettingRequestFactory,
@@ -15,10 +18,10 @@ from canonical.launchpad.webapp.servers import (
     TranslationsBrowserRequest, VHostWebServiceRequestPublicationFactory,
     VirtualHostRequestPublicationFactory, WebServiceRequestPublicationFactory,
     WebServiceClientRequest, WebServicePublication, WebServiceTestRequest)
-
 from canonical.launchpad.webapp.tests import DummyConfigurationTestCase
 
-class SetInWSGIEnvironmentTestCase(unittest.TestCase):
+
+class SetInWSGIEnvironmentTestCase(TestCase):
 
     def test_set(self):
         # Test that setInWSGIEnvironment() can set keys in the WSGI
@@ -61,7 +64,7 @@ class SetInWSGIEnvironmentTestCase(unittest.TestCase):
         self.assertEqual(new_request._orig_env['key'], 'second value')
 
 
-class TestApplicationServerSettingRequestFactory(unittest.TestCase):
+class TestApplicationServerSettingRequestFactory(TestCase):
     """Tests for the ApplicationServerSettingRequestFactory."""
 
     def test___call___should_set_HTTPS_env_on(self):
@@ -274,7 +277,7 @@ class TestWebServiceRequestTraversal(DummyConfigurationTestCase):
             "request traversal stack: %r" % stack)
 
 
-class TestWebServiceRequest(unittest.TestCase):
+class TestWebServiceRequest(TestCase):
 
     def test_application_url(self):
         """Requests to the /api path should return the original request's
@@ -300,7 +303,7 @@ class TestWebServiceRequest(unittest.TestCase):
             'Cookie, Authorization, Accept')
 
 
-class TestBasicLaunchpadRequest(unittest.TestCase):
+class TestBasicLaunchpadRequest(TestCase):
     """Tests for the base request class"""
 
     def test_baserequest_response_should_vary(self):
@@ -318,7 +321,56 @@ class TestBasicLaunchpadRequest(unittest.TestCase):
             'Cookie, Authorization')
 
 
-class TestAnswersBrowserRequest(unittest.TestCase):
+class IThingSet(Interface):
+    """Marker interface for a set of things."""
+
+
+class IThing(Interface):
+    """Marker interface for a thing."""
+
+
+class Thing:
+    implements(IThing)
+
+
+class ThingSet:
+    implements(IThingSet)
+
+
+class TestLaunchpadBrowserRequest_getNearest(TestCase):
+
+    def setUp(self):
+        super(TestLaunchpadBrowserRequest_getNearest, self).setUp()
+        self.request = LaunchpadBrowserRequest('', {})
+        self.thing_set = ThingSet()
+        self.thing = Thing()
+
+    def test_return_value(self):
+        # .getNearest() returns a two-tuple with the object and the interface
+        # that matched. The second item in the tuple is useful when multiple
+        # interfaces are passed to getNearest().
+        request = self.request
+        request.traversed_objects.extend([self.thing_set, self.thing])
+        self.assertEquals(request.getNearest(IThing), (self.thing, IThing))
+        self.assertEquals(
+            request.getNearest(IThingSet), (self.thing_set, IThingSet))
+
+    def test_multiple_traversed_objects_with_common_interface(self):
+        # If more than one object of a particular interface type has been
+        # traversed, the most recently traversed one is returned.
+        thing2 = Thing()
+        self.request.traversed_objects.extend(
+            [self.thing_set, self.thing, thing2])
+        self.assertEquals(self.request.getNearest(IThing), (thing2, IThing))
+
+    def test_interface_not_traversed(self):
+        # If a particular interface has not been traversed, the tuple
+        # (None, None) is returned.
+        self.request.traversed_objects.extend([self.thing_set])
+        self.assertEquals(self.request.getNearest(IThing), (None, None))
+
+
+class TestAnswersBrowserRequest(TestCase):
     """Tests for the Answers request class."""
 
     def test_response_should_vary_based_on_language(self):
@@ -328,7 +380,7 @@ class TestAnswersBrowserRequest(unittest.TestCase):
             'Cookie, Authorization, Accept-Language')
 
 
-class TestTranslationsBrowserRequest(unittest.TestCase):
+class TestTranslationsBrowserRequest(TestCase):
     """Tests for the Translations request class."""
 
     def test_response_should_vary_based_on_language(self):
@@ -338,7 +390,7 @@ class TestTranslationsBrowserRequest(unittest.TestCase):
             'Cookie, Authorization, Accept-Language')
 
 
-class TestLaunchpadBrowserRequest(unittest.TestCase):
+class TestLaunchpadBrowserRequest(TestCase):
 
     def prepareRequest(self, form):
         """Return a `LaunchpadBrowserRequest` with the given form.

@@ -13,7 +13,7 @@ __all__ = [
 
 from unittest import TestSuite
 from testtools import MultiTestResult, iterate_tests
-from zope.testing import testrunner
+from zope.testing.testrunner import find, runner
 
 
 class NullOutputFormatter:
@@ -39,10 +39,10 @@ def patch_find_tests(hook):
         `testrunner.find_tests` and returns a thing with the same type and
         structure.
     """
-    real_find_tests = testrunner.find_tests
+    real_find_tests = find.find_tests
     def find_tests(*args):
         return hook(real_find_tests(*args))
-    testrunner.find_tests = find_tests
+    find.find_tests = find_tests
 
 
 def list_tests(tests_by_layer_name):
@@ -84,7 +84,7 @@ def patch_zope_testresult(result):
 
     :param result: A TestResult instance.
     """
-    old_zope_factory = testrunner.TestResult
+    old_zope_factory = runner.TestResult
     def zope_result_factory(options, tests, layer_name=None):
         zope_result = old_zope_factory(options, tests, layer_name=layer_name)
         if isinstance(zope_result, MultiTestResult):
@@ -92,4 +92,4 @@ def patch_zope_testresult(result):
         else:
             zope_result.options.output = NullOutputFormatter()
             return MultiTestResult(result, zope_result)
-    testrunner.TestResult = zope_result_factory
+    runner.TestResult = zope_result_factory

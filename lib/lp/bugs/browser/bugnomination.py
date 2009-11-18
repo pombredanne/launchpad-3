@@ -45,7 +45,7 @@ class BugNominationView(LaunchpadFormView):
 
     schema = IBugNominationForm
     initial_focus_widget = None
-    custom_widget('nominatable_serieses', LabeledMultiCheckBoxWidget)
+    custom_widget('nominatable_series', LabeledMultiCheckBoxWidget)
 
     def __init__(self, context, request):
         self.current_bugtask = context
@@ -99,11 +99,11 @@ class BugNominationView(LaunchpadFormView):
     @action(_("Submit"), name="submit")
     def nominate(self, action, data):
         """Nominate bug for series."""
-        serieses = data["nominatable_serieses"]
-        nominated_serieses = []
+        nominatable_series = data["nominatable_series"]
+        nominated_series = []
         approved_nominations = []
 
-        for series in serieses:
+        for series in nominatable_series:
             nomination = self.context.bug.addNomination(
                 target=series, owner=self.user)
 
@@ -114,16 +114,16 @@ class BugNominationView(LaunchpadFormView):
                 approved_nominations.append(
                     nomination.target.bugtargetdisplayname)
             else:
-                nominated_serieses.append(series.bugtargetdisplayname)
+                nominated_series.append(series.bugtargetdisplayname)
 
         if approved_nominations:
             self.request.response.addNotification(
                 "Targeted bug to: %s" %
                 ", ".join(approved_nominations))
-        if nominated_serieses:
+        if nominated_series:
             self.request.response.addNotification(
                 "Added nominations for: %s" %
-                ", ".join(nominated_serieses))
+                ", ".join(nominated_series))
 
     @property
     def next_url(self):
@@ -238,6 +238,11 @@ class BugNominationEditView(LaunchpadView):
     def getCurrentBugTaskURL(self):
         """Return the URL of the current bugtask."""
         return canonical_url(getUtility(ILaunchBag).bugtask)
+
+    @property
+    def title(self):
+        return 'Approve or decline nomination for bug #%d in %s' % (
+            self.context.bug.id, self.context.target.bugtargetdisplayname)
 
 
 class BugNominationContextMenu(BugContextMenu):

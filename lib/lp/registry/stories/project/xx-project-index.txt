@@ -30,24 +30,15 @@ its development focus.
     Projects
     Gnome Applets ...
     Evolution ...
-    trunk series: 2.1.6,
     GNOME Terminal ...
     gnomebaker ...
-    trunk series: 2.1.7, 2.1.7
     NetApplet ...
-    trunk series: 1.0,
     ...
 
-And the projects, milestone, and releases are linked.
+The projects are linked.
 
     >>> print anon_browser.getLink('gnomebaker').url
     http://launchpad.dev/gnomebaker
-
-    >>> print anon_browser.getLink('1.0').url
-    http://launchpad.dev/netapplet/trunk/1.0
-
-    >>> print anon_browser.getLink('2.1.7').url
-    http://launchpad.dev/gnomebaker/trunk/2.1.7
 
 The project overview page contains a link to register new products with the
 project. It is only available to users which have 'Admin' privileges on the
@@ -101,10 +92,6 @@ question' or 'Help translate' buttons.
     Traceback (most recent call last):
       ..
     LinkNotFoundError...
-    >>> user_browser.getLink(url='+mentoring')
-    Traceback (most recent call last):
-      ..
-    LinkNotFoundError...
 
 Also, the bugs, blueprints, translations and answers facets will be disabled:
 
@@ -143,8 +130,8 @@ the new product form for the project group.
 
     >>> admin_browser.getLink(
     ...     'register another project that is part of Test Group').click()
-    >>> admin_browser.title
-    'Register a project in your project group'
+    >>> print admin_browser.title
+    Register a project in Launchpad...
 
 == Products of a project ==
 
@@ -186,4 +173,4 @@ can create structural bug subscriptions.
     >>> print user_browser.url
     http://launchpad.dev/mozilla/+subscribe
     >>> print user_browser.title
-    Bug subscriptions for The Mozilla Project
+    Subscribe to Bugs in The Mozilla Project

@@ -11,11 +11,10 @@ The page contains a link back to the bug page in the breadcrumbs and
 the main heading repeats the bug number for clarity:
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Debian > ?mozilla-firefox? package >
-        Bugs on mozilla-firefox > Bug #3...
+    Hierarchy: Debian > ?mozilla-firefox? package > Bugs > Bug #3...
     Tabs:
     * Overview - http://launchpad.dev/debian/+source/mozilla-firefox
-    * Code - http://code.launchpad.dev/debian/+source/mozilla-firefox
+    * Branches - http://code.launchpad.dev/debian/+source/mozilla-firefox
     * Bugs (selected) - http://bugs.launchpad.dev/debian/+source/mozilla-firefox
     * Blueprints - not linked
     * Translations - not linked
@@ -34,6 +33,14 @@ The activity log itself is presented as a table.
     2005-08-10 16:30:32 | Sample Person | bug |  |  | assigned to source ...
     2005-08-10 16:30:47 | Sample Person | bug |  |  | assigned to source ...
     2006-02-24 21:34:52 | Foo Bar | mozilla-firefox: statusexplanation |  |  |
+
+The bug page contains a link to the activity log.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/debian/+source/'
+    ...     'mozilla-firefox/+bug/3')
+    >>> print anon_browser.getLink('See full activity log').url
+    http://.../+bug/3/+activity
 
 
 == Activity interleaved with comments ==

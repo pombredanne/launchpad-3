@@ -93,6 +93,8 @@ class LoginTokenView(LaunchpadView):
         }
     login_token_pages.update(auth_token_pages)
     PAGES = login_token_pages
+    page_title = 'You have already done this'
+    label = 'Confirmation already concluded'
 
     def render(self):
         if self.context.date_consumed is None:
@@ -108,6 +110,30 @@ class BaseTokenView:
 
     expected_token_types = ()
     successfullyProcessed = False
+    # The next URL to use when the user clicks on the 'Cancel' button.
+    _next_url_for_cancel = None
+    _missing = object()
+    # To be overridden in subclasses.
+    default_next_url = _missing
+
+    @property
+    def next_url(self):
+        """The next URL to redirect to on successful form submission.
+
+        When the cancel action is used, self._next_url_for_cancel won't be
+        None so we return that.  Otherwise we return self.default_next_url.
+        """
+        if self._next_url_for_cancel is not None:
+            return self._next_url_for_cancel
+        assert self.default_next_url is not self._missing, (
+            'The implementation of %s should provide a value for '
+            'default_next_url' % self.__class__.__name__)
+        return self.default_next_url
+
+    @property
+    def page_title(self):
+        """The page title."""
+        return self.label
 
     def redirectIfInvalidOrConsumedToken(self):
         """If this is a consumed or invalid token redirect to the LoginToken
@@ -140,11 +166,12 @@ class BaseTokenView:
         logInPrincipal(self.request, principal, email)
 
     def _cancel(self):
-        """Consume the LoginToken and set self.next_url.
+        """Consume the LoginToken and set self._next_url_for_cancel.
 
-        next_url is set to the home page of this LoginToken's requester.
+        _next_url_for_cancel is set to the home page of this LoginToken's
+        requester.
         """
-        self.next_url = canonical_url(self.context.requester)
+        self._next_url_for_cancel = canonical_url(self.context.requester)
         self.context.consume()
 
     def accountWasSuspended(self, account, reason):
@@ -193,7 +220,7 @@ class ResetPasswordView(BaseTokenView, LaunchpadFormView):
                 "you provided when requesting the password reset."))
 
     @property
-    def next_url(self):
+    def default_next_url(self):
         if self.context.redirection_url is not None:
             return self.context.redirection_url
         else:
@@ -214,7 +241,8 @@ class ResetPasswordView(BaseTokenView, LaunchpadFormView):
 
         naked_account = removeSecurityProxy(account)
         # Reset password can be used to reactivate a deactivated account.
-        if account.status == AccountStatus.DEACTIVATED:
+        inactive_states = [AccountStatus.DEACTIVATED, AccountStatus.NOACCOUNT]
+        if account.status in inactive_states:
             self.reactivate(data)
             self.request.response.addInfoNotification(
                 _('Welcome back to Launchpad.'))
@@ -228,7 +256,7 @@ class ResetPasswordView(BaseTokenView, LaunchpadFormView):
         self.request.response.addInfoNotification(
             _('Your password has been reset successfully.'))
 
-    @action(_('Cancel'), name='cancel')
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         self._cancel()
 
@@ -263,7 +291,7 @@ class ClaimProfileView(BaseTokenView, LaunchpadFormView):
         return {'displayname': self.claimed_profile.displayname}
 
     @property
-    def next_url(self):
+    def default_next_url(self):
         return canonical_url(self.claimed_profile)
 
     @action(_('Continue'), name='confirm')
@@ -328,6 +356,10 @@ class ClaimTeamView(
     def initial_values(self):
         return {'teamowner': self.context.requester}
 
+    @property
+    def default_next_url(self):
+        return canonical_url(self.claimed_profile)
+
     @action(_('Continue'), name='confirm')
     def confirm_action(self, action, data):
         self.claimed_profile.convertToTeam(team_owner=self.context.requester)
@@ -338,11 +370,10 @@ class ClaimTeamView(
         # have to remove its security proxy before we update it.
         self.updateContextFromData(
             data, context=removeSecurityProxy(self.claimed_profile))
-        self.next_url = canonical_url(self.claimed_profile)
         self.request.response.addInfoNotification(
             _('Team claimed successfully'))
 
-    @action(_('Cancel'), name='cancel')
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         self._cancel()
 
@@ -353,6 +384,19 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
     field_names = []
     expected_token_types = (LoginTokenType.VALIDATEGPG,
                             LoginTokenType.VALIDATESIGNONLYGPG)
+
+    @property
+    def label(self):
+        if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
+            return 'Confirm sign-only OpenPGP key'
+        else:
+            assert self.context.tokentype == LoginTokenType.VALIDATEGPG, (
+                'unexpected token type: %r' % self.context.tokentype)
+            return 'Confirm OpenPGP key'
+
+    @property
+    def default_next_url(self):
+        return canonical_url(self.context.requester)
 
     def initialize(self):
         if not self.redirectIfInvalidOrConsumedToken():
@@ -365,13 +409,12 @@ class ValidateGPGKeyView(BaseTokenView, LaunchpadFormView):
         if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
             self._validateSignOnlyGPGKey(data)
 
-    @action(_('Cancel'), name='cancel')
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         self._cancel()
 
     @action(_('Continue'), name='continue')
     def continue_action_gpg(self, action, data):
-        self.next_url = canonical_url(self.context.requester)
         assert self.gpg_key is not None
         can_encrypt = (
             self.context.tokentype != LoginTokenType.VALIDATESIGNONLYGPG)
@@ -571,6 +614,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
     schema = Interface
     field_names = []
     expected_token_types = (LoginTokenType.VALIDATEEMAIL,)
+    label = 'Confirm e-mail address'
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
@@ -620,7 +664,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
                 pass
 
     @property
-    def next_url(self):
+    def default_next_url(self):
         if self.context.redirection_url is not None:
             return self.context.redirection_url
         else:
@@ -628,7 +672,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
                 "LoginTokens of this type must have a requester")
             return canonical_url(self.context.requester)
 
-    @action(_('Cancel'), name='cancel')
+    @action(_('Cancel'), name='cancel', validator='validate_cancel')
     def cancel_action(self, action, data):
         self._cancel()
 
@@ -670,6 +714,7 @@ class ValidateEmailView(BaseTokenView, LaunchpadFormView):
 class ValidateTeamEmailView(ValidateEmailView):
 
     expected_token_types = (LoginTokenType.VALIDATETEAMEMAIL,)
+    # The desired label is the same as ValidateEmailView.
 
     def markEmailAsValid(self, email):
         """See `ValidateEmailView`"""
@@ -679,6 +724,7 @@ class ValidateTeamEmailView(ValidateEmailView):
 class MergePeopleView(BaseTokenView, LaunchpadView):
     expected_token_types = (LoginTokenType.ACCOUNTMERGE,)
     mergeCompleted = False
+    label = 'Merge Launchpad accounts'
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
@@ -795,7 +841,7 @@ class NewUserAccountView(BaseTokenView, LaunchpadFormView):
             super(NewUserAccountView, self).initialize()
 
     @property
-    def next_url(self):
+    def default_next_url(self):
         if self.context.redirection_url:
             return self.context.redirection_url
         elif self.created_person is not None:

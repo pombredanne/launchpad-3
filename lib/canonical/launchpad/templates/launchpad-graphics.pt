@@ -3,10 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  xml:lang="en"
-  lang="en"
-  dir="ltr"
-  metal:use-macro="view/macro:page/applicationhome"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
@@ -169,12 +166,12 @@
       <tr>
         <td>cancel</td>
         <td><img alt="cancel" src="/@@/cancel" /></td>
-        <td rowspan="2">Cancel an action.</td>
+        <td>Cancel an action.</td>
       </tr>
       <tr>
         <td>confirm</td>
         <td><img alt="confirm" src="/@@/confirm" /></td>
-        <td rowspan="2">Confirm an action.</td>
+        <td>Confirm an action.</td>
       </tr>
       <tr>
         <td>crowd</td>
@@ -203,15 +200,15 @@
       <tr>
         <td>distribution-badge</td>
         <td><img alt="" src="/@@/distribution-badge" /></td>
-        <td rowspan="4">An operating system compiled from various software.</td>
+        <td rowspan="3">An operating system compiled from various software.</td>
       </tr>
       <tr>
         <td>distribution</td>
-        <td colspan="2"><img alt="" src="/@@/distribution" /></td>
+        <td><img alt="" src="/@@/distribution" /></td>
       </tr>
       <tr>
         <td>distribution-logo</td>
-        <td colspan="2"><img alt="" src="/@@/distribution-logo" /></td>
+        <td><img alt="" src="/@@/distribution-logo" /></td>
       </tr>
       <tr>
         <td>download</td>
@@ -246,15 +243,17 @@
       <tr>
         <td>flame-icon</td>
         <td><img alt="" src="/@@/flame-icon" /></td>
-        <td>Currently used to show a bug affecting many users.</td>
+        <td rowspan="3">
+          Currently used to show a bug affecting many users.
+        </td>
       </tr>
       <tr>
         <td>flame-large</td>
-        <td colspan="2"><img alt="" src="/@@/flame-large" /></td>
+        <td><img alt="" src="/@@/flame-large" /></td>
       </tr>
       <tr>
         <td>flame-logo</td>
-        <td colspan="2"><img alt="" src="/@@/flame-logo" /></td>
+        <td><img alt="" src="/@@/flame-logo" /></td>
       </tr>
       <tr>
         <td>info</td>
@@ -278,7 +277,7 @@
       <tr>
         <td>launchpad-large</td>
         <td><img alt="" src="/@@/launchpad-large" /></td>
-        <td colspan="2">
+        <td rowspan="2">
           The Launchpad icon,
           used for pages that don't belong to a pillar with its own icon.
         </td>
@@ -292,7 +291,7 @@
         <td>
           <img alt="" src="/@@/tour-icon" />
         </td>
-        <td>The Launchpad Tour icon</td>
+        <td rowspan="3">The Launchpad Tour icon</td>
       </tr>
       <tr>
         <td>tour-large</td>
@@ -338,32 +337,32 @@
       </tr>
       <tr>
         <td>person</td>
-        <td colspan="2"><img alt="person icon" src="/@@/person" /></td>
+        <td><img alt="person icon" src="/@@/person" /></td>
       </tr>
       <tr>
         <td>person-logo</td>
-        <td colspan="2"><img alt="" src="/@@/person-logo" /></td>
+        <td><img alt="" src="/@@/person-logo" /></td>
       </tr>
       <tr>
         <td>person-mugshot</td>
-        <td colspan="2"><img alt="" src="/@@/person-mugshot" /></td>
+        <td><img alt="" src="/@@/person-mugshot" /></td>
       </tr>
       <tr>
         <td>person-inactive-badge</td>
         <td><img alt="" src="/@@/person-inactive-badge" /></td>
-        <td>A person who does not use Launchpad.</td>
+        <td rowspan="4">A person who does not use Launchpad.</td>
       </tr>
       <tr>
         <td>person-inactive</td>
-        <td colspan="2"><img alt="" src="/@@/person-inactive" /></td>
+        <td><img alt="" src="/@@/person-inactive" /></td>
       </tr>
       <tr>
         <td>person-inactive-logo</td>
-        <td colspan="2"><img alt="" src="/@@/person-inactive-logo" /></td>
+        <td><img alt="" src="/@@/person-inactive-logo" /></td>
       </tr>
       <tr>
         <td>person-inactive-mugshot</td>
-        <td colspan="2"><img alt="" src="/@@/person-inactive-mugshot" /></td>
+        <td><img alt="" src="/@@/person-inactive-mugshot" /></td>
       </tr>
       <tr>
         <td>private</td>
@@ -380,7 +379,7 @@
       <tr>
         <td>product-badge</td>
         <td><img alt="" src="/@@/product-badge" /></td>
-        <td>
+        <td rowspan="3">
           A software project.
           The <code>-logo</code> and <code>-mugshot</code> sizes should be
           used where the project owner has not uploaded a custom icon.
@@ -397,7 +396,7 @@
       <tr>
         <td>project-badge</td>
         <td><img alt="" src="/@@/project-badge" /></td>
-        <td rowspan="4">A group of projects.</td>
+        <td rowspan="3">A group of projects.</td>
       </tr>
       <tr>
         <td>project</td>
@@ -463,29 +462,26 @@
       <tr>
         <td>meeting</td>
         <td><img alt="" src="/@@/meeting" /></td>
-        <td>A meeting or sprint.</td>
+        <td rowspan="3">A meeting or sprint.</td>
       </tr>
       <tr>
         <td>meeting-logo</td>
         <td><img alt="" src="/@@/meeting-logo" /></td>
-        <td></td>
       </tr>
       <tr>
         <td>meeting-mugshot</td>
         <td><img alt="" src="/@@/meeting-mugshot" /></td>
-        <td></td>
       </tr>
       <tr>
         <td>mentoring</td>
         <td><img alt="" src="/@@/mentoring" /></td>
-        <td>A bug or blueprint for which mentoring has been
+        <td rowspan="2">A bug or blueprint for which mentoring has been
           offered.
         </td>
       </tr>
       <tr>
         <td>mentoring-large</td>
         <td><img alt="" src="/@@/mentoring-large" /></td>
-        <td></td>
       </tr>
       <tr>
         <td>milestone</td>
@@ -496,7 +492,7 @@
       <tr>
         <td>team-badge</td>
         <td><img alt="" src="/@@/team-badge" /></td>
-        <td colspan="4">
+        <td rowspan="4">
           An anonymous icon for a team.
           The <code>-logo</code> and <code>-mugshot</code> sizes should be
           used where the team has not uploaded their own custom picture.
@@ -504,15 +500,15 @@
       </tr>
       <tr>
         <td>team</td>
-        <td colspan="2"><img alt="" src="/@@/team" /></td>
+        <td><img alt="" src="/@@/team" /></td>
       </tr>
       <tr>
         <td>team-logo</td>
-        <td colspan="2"><img alt="" src="/@@/team-logo" /></td>
+        <td><img alt="" src="/@@/team-logo" /></td>
       </tr>
       <tr>
         <td>team-mugshot</td>
-        <td colspan="2"><img alt="" src="/@@/team-mugshot" /></td>
+        <td><img alt="" src="/@@/team-mugshot" /></td>
       </tr>
       <tr>
         <td>treeCollapsed</td>
@@ -537,7 +533,6 @@
       <tr>
         <td>warning-large</td>
         <td><img alt="" src="/@@/warning-large" /></td>
-        <td></td>
       </tr>
       <tr>
         <td>yes</td>
@@ -575,7 +570,7 @@
       <tr>
         <td>file a bug</td>
         <td><img src="/@@/bugs-bg-button" /></td>
-        <td>This is used as the "file a bug" background image. Can be 
+        <td>This is used as the "file a bug" background image. Can be
             used for other bug-related actions.</td>
       </tr>
       <tr>
@@ -705,32 +700,26 @@
       <tr>
         <td>blueprint-essential</td>
         <td><img src="/@@/blueprint-essential" /></td>
-        <td></td>
       </tr>
       <tr>
         <td>blueprint-high</td>
         <td><img src="/@@/blueprint-high" /></td>
-        <td></td>
       </tr>
       <tr>
         <td>blueprint-medium</td>
         <td><img src="/@@/blueprint-medium" /></td>
-        <td></td>
       </tr>
       <tr>
         <td>blueprint-low</td>
         <td><img src="/@@/blueprint-low" /></td>
-        <td></td>
       </tr>
       <tr>
         <td>blueprint-not</td>
         <td><img src="/@@/blueprint-not" /></td>
-        <td></td>
       </tr>
       <tr>
         <td>blueprint-undefined</td>
         <td><img src="/@@/blueprint-undefined" /></td>
-        <td></td>
       </tr>
       <tr>
         <td colspan="3">
@@ -746,22 +735,20 @@
       <tr>
         <td>branch</td>
         <td><img src="/@@/branch" /></td>
-        <td>A branch, or line of development.</td>
+        <td rowspan="2">A branch, or line of development.</td>
       </tr>
       <tr>
         <td>branch-large</td>
         <td><img src="/@@/branch-large" /></td>
-        <td></td>
       </tr>
       <tr>
         <td>merge-proposal-icon</td>
         <td><img src="/@@/merge-proposal-icon" /></td>
-        <td>Represents a merge proposal.</td>
+        <td rowspan="2">Represents a merge proposal.</td>
       </tr>
       <tr>
         <td>merge-proposal-large</td>
         <td><img src="/@@/merge-proposal-large" /></td>
-        <td></td>
       </tr>
       <tr>
         <td>branch-upgrade</td>
@@ -778,14 +765,7 @@
         <td>
           <img alt="" src="/@@/ppa-icon" />
         </td>
-        <td>Icon for active PPAs</td>
-      </tr>
-      <tr>
-        <td>ppa-icon-inactive</td>
-        <td>
-          <img alt="" src="/@@/ppa-icon-inactive" />
-        </td>
-        <td>Icon for inactive PPAs</td>
+        <td rowspan="3">An active PPA.</td>
       </tr>
       <tr>
         <td>ppa-large</td>
@@ -794,6 +774,13 @@
       <tr>
         <td>ppa-logo</td>
         <td><img alt="" src="/@@/ppa-logo" /></td>
+      </tr>
+      <tr>
+        <td>ppa-icon-inactive</td>
+        <td>
+          <img alt="" src="/@@/ppa-icon-inactive" />
+        </td>
+        <td>Icon for inactive PPAs</td>
       </tr>
       <tr>
         <td>architecture</td>

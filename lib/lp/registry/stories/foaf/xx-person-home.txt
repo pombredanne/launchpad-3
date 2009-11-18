@@ -22,37 +22,33 @@ the world. Anonymous users cannot see Mark's address
 
     >>> anon_browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'contact-details'))
+    ...     find_tag_by_id(anon_browser.contents, 'email-addresses'))
     Email: Log in for email information.
-    ...
 
 A logged in user such as Sample Person, can see Mark's addresses.
 
     >>> sample_browser = setupBrowser(auth='Basic test@canonical.com:test')
     >>> sample_browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'contact-details'))
+    ...     find_tag_by_id(sample_browser.contents, 'email-addresses'))
     Email: mark@example.com
-    ...
 
 As for Sample Person, he has chosen not to disclose his email addresses.
 unprivileged users like No Privileges Person cannot see his addresses:
 
     >>> user_browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'contact-details'))
+    ...     find_tag_by_id(user_browser.contents, 'email-addresses'))
     Email: No public address provided.
-    ...
 
 But Foo Bar can:
 
     >>> admin_browser.open('http://launchpad.dev/~name12')
     >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'contact-details'))
-    Email: test@canonical.com
-    (Contact this user)
-           testing@canonical.com
-    ...
+    ...     find_tag_by_id(admin_browser.contents, 'email-addresses'))
+    Email: Change e-mail settings
+    test@canonical.com
+    testing@canonical.com
 
 
 == Open ID link ==
@@ -89,17 +85,13 @@ A person's jabber IDs are only show to authenticated users.
 
     >>> user_browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'contact-details'))
-    Email:...
+    ...     find_tag_by_id(user_browser.contents, 'jabber-ids'))
     Jabber: markshuttleworth@jabber.org
-    ...
 
     >>> anon_browser.open('http://launchpad.dev/~mark')
     >>> print extract_text(
-    ...     find_tag_by_id(anon_browser.contents, 'contact-details'))
-    Email:...
+    ...     find_tag_by_id(anon_browser.contents, 'jabber-ids'))
     Jabber: &lt;email address hidden&gt;
-    ...
 
 
 == OpenPGP keys ==
@@ -108,18 +100,15 @@ In order to avoid email harvesters to find a person's email addresses just by
 following the link to that person's OpenPGP keys, only authenticated users can
 see the key ID with a link to the keyserver.
 
-    >>> import re
     >>> user_browser.open('http://launchpad.dev/~name16')
-    >>> details = find_tag_by_id(user_browser.contents, 'contact-details')
-    >>> opengpg = details.find('th', text='OpenPGP keys:').parent.parent
-    >>> print re.sub('\s+', ' ', str(opengpg))
-    <tr>...<a href="http://keyserver...> 12345678</a>...
+    >>> print find_tag_by_id(user_browser.contents, 'pgp-keys')
+    <dl...
+    <a href="http://keyserver...
 
     >>> anon_browser.open('http://launchpad.dev/~name16')
-    >>> details = find_tag_by_id(anon_browser.contents, 'contact-details')
-    >>> opengpg = details.find('th', text='OpenPGP keys:').parent.parent
-    >>> print re.sub('\s+', ' ', str(opengpg))
-    <tr>...<td> 12345678 </td>...
+    >>> print find_tag_by_id(anon_browser.contents, 'pgp-keys')
+    <dl...
+    <dd> 12345678...
 
 
 == Languages ==
@@ -136,32 +125,28 @@ When viewing his own page, No Privileges Person sees his languages and can
 edit them.
 
     >>> user_browser.open('http://launchpad.dev/~no-priv')
-    >>> languages_row = find_tag_by_id(user_browser.contents, 'languages')
-    >>> print languages_row.td
-    <td> English <a href=".../~no-priv/+editlanguages"...
+    >>> print extract_text(find_tag_by_id(user_browser.contents, 'languages'))
+    Languages: Set preferred languages
+    English
 
 
 == Summary Pagelets ==
 
-A person's homepage also lists Karma and status information:
+A person's homepage also lists Karma information:
 
     >>> browser.open('http://launchpad.dev/~mark')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
-    Bragging rights
-    Member since: 2005-06-06
+    >>> print extract_text(find_tag_by_id(browser.contents, 'karma'))
     Karma: 130
 
 Negative Ubuntu Code of Conduct signatory status is only displayed for
 yourself; others won't see it:
 
-    >>> "Signed Ubuntu Code of Conduct:" in browser.contents
-    False
+    >>> print find_tag_by_id(browser.contents, 'ubuntu-coc')
+    None
 
     >>> browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> browser.open('http://launchpad.dev/~mark')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'portlet-details'))
-    Bragging rights
-    ...
+    >>> print extract_text(find_tag_by_id(browser.contents, 'ubuntu-coc'))
     Signed Ubuntu Code of Conduct: No
 
 You can grab certain bits of information programatically:
@@ -182,11 +167,18 @@ Teams don't have member-since; they have created-date:
 
 The user's time zone is displayed next to their location details:
 
-    >>> browser.open('http://launchpad.dev/~name12')
+    >>> browser.open('http://launchpad.dev/~kamion')
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'portlet-map'))
     Location
-    Time zone: Australia/Perth
+    Time zone: Europe/London...
+
+If the user does not have location data set then the portlet will not
+be shown.
+
+    >>> browser.open('http://launchpad.dev/~bac')
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'portlet-map'))
 
 Teams don't have a time zone field.
 

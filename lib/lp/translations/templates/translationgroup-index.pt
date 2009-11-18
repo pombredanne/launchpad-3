@@ -6,14 +6,6 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="heading">
-      <h1>
-        <tal:translation-group replace="context/title">
-          Foo bar
-        </tal:translation-group> translation group
-      </h1>
-    </div>
-
     <div metal:fill-slot="main"
          style="max-width:800px;">
       <p>

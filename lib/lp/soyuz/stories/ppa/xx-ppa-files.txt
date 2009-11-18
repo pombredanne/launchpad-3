@@ -144,10 +144,11 @@ builds.
 
     >>> no_priv_browser = setupBrowser(
     ...     auth='Basic no-priv@canonical.com:test')
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+packages")
 
     >>> print no_priv_browser.title
-    PPA for No Privileges Person
+    Packages in “PPA for No Privileges Person”...
 
 Source changesfiles are served on the PPA '+files' traversal.
 
@@ -160,7 +161,7 @@ Source changesfiles are served on the PPA '+files' traversal.
     ...            'http://launchpad.dev/~no-priv/+archive/ppa')
     test-pkg_1.1_source.changes: OK
 
-    >>> no_priv_browser.getLink('PPA').click()
+    >>> no_priv_browser.getLink('Cancel').click()
     >>> no_priv_browser.getLink('Delete packages').click()
     >>> check_urls(no_priv_browser, ppa_links,
     ...            'http://launchpad.dev/~no-priv/+archive/ppa')
@@ -169,8 +170,8 @@ Source changesfiles are served on the PPA '+files' traversal.
 Buildlogs are served on the Build '+files' traversal, when the PPA
 builds list is presented.
 
-    >>> no_priv_browser.getLink('PPA').click()
-    >>> no_priv_browser.getLink('View build records').click()
+    >>> no_priv_browser.getLink('Cancel').click()
+    >>> no_priv_browser.getLink('View all builds').click()
     >>> no_priv_browser.getControl(name="build_state").value = ['built']
     >>> no_priv_browser.getControl("Filter").click()
 
@@ -178,7 +179,8 @@ builds list is presented.
     ...            'http://launchpad.dev/~no-priv/+archive/ppa/+build/31')
     buildlog_ubuntu-breezy-autotest-i386.test-pkg_1.0_FULLYBUILT.txt.gz: OK
 
-    >>> no_priv_browser.getLink('PPA').click()
+    >>> no_priv_browser.open(
+    ...     'http://launchpad.dev/~no-priv/+archive/ppa/+packages')
 
 Source and binary files, in the expandable-row area, are served via
 the PPA '+files' traversal.
@@ -198,7 +200,7 @@ Buildlog, upload_log and binary changesfile are served via the Build
 
     >>> no_priv_browser.getLink('i386').click()
     >>> print no_priv_browser.title
-    i386 build of test-pkg 1.0 in ubuntutest breezy-autotest RELEASE
+    PPA for No Privileges Person : No Privileges Person
 
     >>> check_urls(no_priv_browser, build_links,
     ...            'http://launchpad.dev/~no-priv/+archive/ppa/+build/31')
@@ -209,7 +211,8 @@ Buildlog, upload_log and binary changesfile are served via the Build
 Package-diff files, in the expandable-row area, are served via the PPA
 '+files' traversal.
 
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive")
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+packages")
 
     >>> expander_id = find_tags_by_class(
     ...     no_priv_browser.contents, 'expander')[0]['id']
@@ -415,7 +418,8 @@ The librarian URL for a deleted file is None, by convention. See
 In this circumstance, when a file is deleted, the file reference
 remains in the PPA page, but it's not a link anymore.
 
-    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa")
+    >>> no_priv_browser.open(
+    ...     "http://launchpad.dev/~no-priv/+archive/ppa/+packages")
 
     >>> expander_id = find_tags_by_class(
     ...     no_priv_browser.contents, 'expander')[1]['id']

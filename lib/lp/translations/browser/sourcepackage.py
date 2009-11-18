@@ -22,6 +22,10 @@ class SourcePackageTranslationsView(TranslationsMixin):
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
 
+    @property
+    def label(self):
+        return "Translations for %s" % self.context.displayname
+
 
 class SourcePackageTranslationsMenu(NavigationMenu):
     usedfor = ISourcePackage
@@ -45,6 +49,8 @@ class SourcePackageTranslationsMenu(NavigationMenu):
 class SourcePackageTranslationsExportView(BaseExportView):
     """Request tarball export of all translations for a source package."""
 
+    page_title = "Download"
+
     @property
     def download_description(self):
         """Current context description used inline in paragraphs."""
@@ -58,5 +64,5 @@ class SourcePackageTranslationsExportView(BaseExportView):
         return canonical_url(self.context)
 
     @property
-    def page_title(self):
+    def label(self):
         return "Download translations for %s" % self.download_description

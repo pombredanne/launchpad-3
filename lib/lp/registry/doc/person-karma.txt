@@ -1,10 +1,12 @@
-= People karma =
+============
+People karma
+============
 
 In Launchpad, everytime a user performs an action, we give him some karma
 points. These karma points are stored in the KarmaAction table and the
 assignment to a user is made in the Karma table. The method used to calculate
 a users karma is time-dependent, because we want to give more karma points for
-actions performed recently. This method is described in 
+actions performed recently. This method is described in
 https://launchpad.canonical.com/KarmaImplementation.
 
 Depending on the action a given person performs in Launchpad, that person can
@@ -18,8 +20,8 @@ what users are the top contributors for a given product/distribution.
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IPerson, IKarma, IKarmaCache, IProductSet,
-    ...     ISourcePackageNameSet, IDistributionSet)
+    ...     IDistributionSet, IKarma, IPersonSet, IProductSet,
+    ...     ISourcePackageNameSet)
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -43,7 +45,8 @@ assigned to a given person.
 Salgado wrote the karma framework. Let's give him some karma points.
 
   - First, some karma by fixing a bug in firefox
-    >>> salgado_firefox_karma = salgado.assignKarma('bugfixed', product=firefox)
+    >>> salgado_firefox_karma = salgado.assignKarma(
+    ...     'bugfixed', product=firefox)
 
   - Then some karma by adding a new spec for Ubuntu
     >>> salgado_ubuntu_karma = salgado.assignKarma(
@@ -79,11 +82,14 @@ karma.
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
     >>> dummy = janitor.assignKarma('specreviewed', product=firefox)
     <BLANKLINE>
-    
-== Projects a person is most active on ==
+
+
+Projects a person is most active on
+===================================
 
 Using our karma records we can also tell in which projects a person is most
-active on, including the type of work the person does on each project. We only show the 5 most active projects.
+active on, including the type of work the person does on each project. We only
+show the 5 most active projects.
 
     >>> foobar = getUtility(IPersonSet).getByName('name16')
     >>> for contrib in foobar.getProjectsAndCategoriesContributedTo():
@@ -103,7 +109,9 @@ on that project.
     [(u'evolution', 175), (u'ubuntu', 26), (u'gnomebaker', 15),
      (u'thunderbird', 15), (u'firefox', 8), (u'bazaar', 2)]
 
-== Karma Updater ==
+
+Karma Updater
+=============
 
 It would be a problem if every time we wanted to see a user's total karma we
 had to calculate it, so we decided to cache this total and update it
@@ -143,21 +151,20 @@ is updated by the foaf-update-karma-cache.py cronscript.
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
-
 Independently of the number of "Bug Management"-related and "Specification
-Tracking"-related actions performed by Salgado, the total points he gets
-on each of these categories will always be the same. This is so because
-we use a scaling factor to balance the total karma of each category and
-because at this point, all non-expired karma we have in the database
-is what we assigned to Salgado during this test. However, when a new
-category is created, its karma pool is dramatically smaller than the
-existing ones. This causes the scaling to generate rediculous results
-until the karma pool starts filling up. To work around this problem,
-we ensure that the scaling factors never get too high. So as we saw
-earlier when running the karma updater script, the scaling factor for
-the Bug Management category was calculated to be 2.667, but reduced to
-2 because this was the maximum specified in
-config.karmacacheupdater.max_scaling.
+Tracking"-related actions performed by Salgado, the total points he gets on
+each of these categories will always be the same. This is so because we use a
+scaling factor to balance the total karma of each category and because at this
+point, all non-expired karma we have in the database is what we assigned to
+Salgado during this test.
+
+However, when a new category is created, its karma pool is dramatically
+smaller than the existing ones. This causes the scaling to generate ridiculous
+results until the karma pool starts filling up. To work around this problem,
+we ensure that the scaling factors never get too high. So as we saw earlier
+when running the karma updater script, the scaling factor for the Bug
+Management category was calculated to be 2.667, but reduced to 2 because this
+was the maximum specified in config.karmacacheupdater.max_scaling.
 
     >>> for cache in salgado.karma_category_caches:
     ...     print "%s: %d" % (cache.category.title, cache.karmavalue)
@@ -166,5 +173,3 @@ config.karmacacheupdater.max_scaling.
 
     >>> salgado.karma
     70
-
-

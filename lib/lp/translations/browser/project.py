@@ -23,10 +23,10 @@ class ProjectTranslationsMenu(NavigationMenu):
 
     usedfor = IProject
     facet = 'translations'
-    links = ['products', 'changetranslators', 'overview']
+    links = ['products', 'settings', 'overview']
 
     @enabled_with_permission('launchpad.Edit')
-    def changetranslators(self):
+    def settings(self):
         text = 'Settings'
         return Link('+changetranslators', text, icon='edit')
 
@@ -41,17 +41,21 @@ class ProjectTranslationsMenu(NavigationMenu):
 
 
 class ProjectView(LaunchpadView):
-    pass
+    """A view for `IProject` in the translations context."""
+
+    label = "Translatable applications"
+
+    @property
+    def untranslatables(self):
+        translatables = set(self.context.translatables())
+        all_products = set(self.context.products)
+        return list(all_products - translatables)
 
 
 class ProjectChangeTranslatorsView(TranslationsMixin, ProjectEditView):
-    label = "Select a new translation group"
+    label = "Set permissions and policies"
+    page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]
-
-    @property
-    def page_title(self):
-        return "Set translation permissions for %s" % (
-            self.context.displayname)
 
     @property
     def cancel_url(self):

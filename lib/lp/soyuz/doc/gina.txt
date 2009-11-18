@@ -447,26 +447,6 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
     >>> print EmailAddress.select().count() - orig_email_count
     12
 
-The ensure_person function, defined in gina/handlers.py is used by gina to
-create Person entries when necessary. It also sets the creation_rationale
-and creation_comment of the created Person entry.
-
-    >>> from lp.soyuz.scripts.gina.handlers import ensure_person
-    >>> transaction.commit()
-    >>> person = ensure_person(
-    ...     'Display Name', 'bar@foo.com', 'firefox', 'Ubuntu Breezy')
-    >>> person.is_valid_person  # Not valid because it lacks a preferred email
-    False
-    >>> person.creation_rationale.name
-    'SOURCEPACKAGEIMPORT'
-    >>> person.creation_comment
-    u'when the firefox package was imported into Ubuntu Breezy'
-
-Now we remove the newly created person so it doesn't interfere in the rest of
-the test.
-
-    >>> transaction.abort()
-
 
 === Re-run Gina ===
 

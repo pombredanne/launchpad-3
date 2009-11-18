@@ -9,8 +9,8 @@ import logging
 
 import zope.app.publication.interfaces
 from zope.interface import Interface, Attribute, implements
-from zope.app.security.interfaces import IAuthenticationUtility, IPrincipal
-from zope.app.pluggableauth.interfaces import IPrincipalSource
+from zope.app.security.interfaces import (
+    IAuthentication, IPrincipal, IPrincipalSource)
 from zope.traversing.interfaces import IContainmentRoot
 from zope.schema import Bool, Choice, Datetime, Int, Object, Text, TextLine
 from lazr.batchnavigator.interfaces import IBatchNavigator
@@ -256,8 +256,6 @@ class IBreadcrumb(Interface):
 
     text = Attribute('Text of this breadcrumb.')
 
-    icon = Attribute("An <img> tag showing this breadcrumb's 14x14 icon.")
-
 
 #
 # Canonical URLs
@@ -350,7 +348,7 @@ class IBasicLaunchpadRequest(Interface):
 
     def getRootURL(rootsite):
         """Return this request's root URL.
-        
+
         If rootsite is not None, then return the root URL for that rootsite,
         looked up from our config.
         """
@@ -462,7 +460,7 @@ class LoggedOutEvent:
         self.request = request
 
 
-class IPlacelessAuthUtility(IAuthenticationUtility):
+class IPlacelessAuthUtility(IAuthentication):
     """This is a marker interface for a utility that supplies the interface
     of the authentication service placelessly, with the addition of
     a method to allow the acquisition of a principal using his
@@ -613,7 +611,7 @@ class INotificationRequest(Interface):
 
 
 class INotificationResponse(Interface):
-    """This class is responsible for propogating any notifications that
+    """This class is responsible for propagating any notifications that
     have been set when redirect() is called.
     """
 
@@ -626,11 +624,11 @@ class INotificationResponse(Interface):
         instance of a Zope internationalized message will cause the
         message to be translated, then CGI escaped.
 
-        :param msg: This may be a string, an instance of
-        	`zope.i18n.Message`, , or an instance of `IStructuredString`.
+        :param msg: This may be a string, an instance of `zope.i18n.Message`,
+            or an instance of `IStructuredString`.
 
         :param level: One of the `BrowserNotificationLevel` values: DEBUG,
-        	INFO, NOTICE, WARNING, ERROR.
+            INFO, NOTICE, WARNING, ERROR.
         """
 
     def removeAllNotifications():
@@ -659,9 +657,12 @@ class INotificationResponse(Interface):
     def addErrorNotification(msg):
         """Shortcut to addNotification(msg, ERROR)."""
 
-    def redirect(location, status=None):
-        """As per IHTTPApplicationResponse.redirect, except notifications
-        are preserved.
+    def redirect(location, status=None, trusted=True):
+        """Like IHTTPApplicationResponse.redirect, preserving notifications.
+
+        Also, for convenience we use trusted=True here, so that our callsites
+        that redirect from lp.net to vhost.lp.net don't have to pass
+        trusted=True explicitly.
         """
 
 
@@ -796,7 +797,7 @@ class IStoreSelector(Interface):
     """Get a Storm store with a desired flavor.
 
     Stores come in two flavors - MASTER_FLAVOR and SLAVE_FLAVOR.
- 
+
     The master is writable and up to date, but we should not use it
     whenever possible because there is only one master and we don't want
     it to be overloaded.

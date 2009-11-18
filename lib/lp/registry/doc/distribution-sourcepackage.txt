@@ -142,8 +142,8 @@ getVersion():
     True
 
     >>> pmount_dspr = dsp.getVersion('0.1-1')
-    >>> pmount_dspr.title
-    u'pmount 0.1-1 (source) in Ubuntu'
+    >>> print pmount_dspr.title
+    "pmount" 0.1-1 source package in Ubuntu
 
     >>> for pub in pmount_dspr.publishing_history:
     ...     print pub.distroseries.name, pub.status.name
@@ -156,8 +156,8 @@ archive (bug #60440):
     >>> ubuntutest = getUtility(IDistributionSet)["ubuntutest"]
     >>> alsa_dsp = ubuntutest.getSourcePackage("alsa-utils")
     >>> alsa_dspr = alsa_dsp.getVersion('1.0.9a-4')
-    >>> alsa_dspr.title
-    u'alsa-utils 1.0.9a-4 (source) in ubuntutest'
+    >>> print alsa_dspr.title
+    "alsa-utils" 1.0.9a-4 source package in ubuntutest
 
     >>> for pub in alsa_dspr.publishing_history:
     ...     is_removed = pub.dateremoved is not None
@@ -284,6 +284,6 @@ packages in other archives too:
     ...     archive_purpose=None)
     >>> for archive in archive_versions_for_gedit:
     ...     print archive.displayname
-    PPA named nightly for Person...
     Primary Archive for Ubuntu Test
+    PPA named nightly for Person...
     PPA named beta for Person...

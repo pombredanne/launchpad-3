@@ -45,7 +45,7 @@ from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.registry.interfaces.sourcepackage import SourcePackageFormat
+from lp.registry.interfaces.sourcepackage import SourcePackageType
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -555,8 +555,12 @@ class SourcePackageHandler:
         from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 
         displayname, emailaddress = src.maintainer
-        maintainer = ensure_person(
-            displayname, emailaddress, src.package, distroseries.displayname)
+        comment = 'when the %s package was imported into %s' % (
+            src.package, distroseries.displayname)
+        maintainer = getUtility(IPersonSet).ensurePerson(
+            emailaddress, displayname,
+            PersonCreationRationale.SOURCEPACKAGEIMPORT,
+            comment=comment)
 
         # XXX Debonzi 2005-05-16: Check it later.
         #         if src.dsc_signing_key_owner:
@@ -595,7 +599,7 @@ class SourcePackageHandler:
             build_conflicts=src.build_conflicts,
             build_conflicts_indep=src.build_conflicts_indep,
             architecturehintlist=src.architecture,
-            format=SourcePackageFormat.DPKG,
+            format=SourcePackageType.DPKG,
             upload_distroseries=distroseries.id,
             dsc_format=src.format,
             dsc_maintainer_rfc822=maintainer_line,
@@ -962,25 +966,3 @@ class BinaryPackagePublisher:
         if ret:
             return ret[0]
         return None
-
-
-
-def ensure_person(displayname, emailaddress, package_name, distroseries_name):
-    """Return a person by its email.
-
-    :package_name: The imported package that mentions the person with the
-                   given email address.
-    :distroseries_name: The distroseries into which the package is to be
-                         imported.
-
-    Create and return a new Person if it does not exist.
-    """
-    person = getUtility(IPersonSet).getByEmail(emailaddress)
-    if person is None:
-        comment = ('when the %s package was imported into %s'
-                 % (package_name, distroseries_name))
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
-            emailaddress, PersonCreationRationale.SOURCEPACKAGEIMPORT,
-            comment=comment, displayname=displayname)
-    return person
-

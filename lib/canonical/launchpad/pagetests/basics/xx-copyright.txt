@@ -10,6 +10,6 @@ The tour pages.
 The main template.
 
   >>> browser.open('http://launchpad.dev')
-  >>> print extract_text(find_tag_by_id(browser.contents, 'lp-arcana'))
-  &copy; 2004-2009 Canonical Ltd.
+  >>> print extract_text(find_tag_by_id(browser.contents, 'footer'))
+  &bull; ... &copy; 2004-2009 Canonical Ltd.
   ...

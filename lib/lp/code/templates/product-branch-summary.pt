@@ -35,47 +35,22 @@
   </tal:no-branches>
 
   <tal:has-branches condition="view/branch_count">
-    <p>
-    <strong tal:content="view/branch_count">1234</strong>
-    <tal:branches replace="view/branch_text">branches</tal:branches>
-
-    owned by
-    <tal:individuals condition="view/person_owner_count">
-    <strong tal:content="view/person_owner_count">42</strong>
-    <tal:people replace="view/person_text">people</tal:people
-    ></tal:individuals
-    ><tal:teams condition="view/team_owner_count">
-    <tal:individuals condition="view/person_owner_count">
-      and
-    </tal:individuals>
-    <strong tal:content="view/team_owner_count">1</strong>
-    <tal:people replace="view/team_text">team</tal:people
-    ></tal:teams>,
-
-    <strong tal:content="view/commit_count">23</strong>
-    <tal:commits replace="view/commit_text">commits</tal:commits>
-    <tal:has-committers condition="view/committer_count">
-      by
-    <strong tal:content="view/committer_count">4</strong>
-    <tal:people replace="view/committer_text">people</tal:people>
-    </tal:has-committers>
-    in the last month
+    <p tal:replace="structure context/@@+count-summary"/>
+    <p id="merge-counts"
+       tal:define="menu context/menu:branches">
+      <strong class="count" tal:content="menu/active_review_count">5</strong>
+      <tal:link
+          define="link menu/active_reviews"
+          replace="structure link/render"
+          />
     </p>
-  <p id="merge-counts"
-     tal:define="menu context/menu:branches">
-    <strong class="count" tal:content="menu/active_review_count">5</strong>
-    <tal:link
-        define="link menu/active_reviews"
-        replace="structure link/render"
-        />
-  </p>
     <div tal:condition="view/has_development_focus_branch"
          style="margin: 1em 0"
          tal:define="config modules/canonical.config/config;
                      dev_focus context/development_focus/branch">
       You can
       <tal:browseable condition="dev_focus/code_is_browseable">
-        <a tal:attributes="href dev_focus/codebrowse_url"
+        <a tal:attributes="href dev_focus/browse_source_url"
            >browse the source code</a> for the development focus branch or get a
            copy of the branch</tal:browseable>
       <tal:not-browseable condition="not: dev_focus/code_is_browseable">

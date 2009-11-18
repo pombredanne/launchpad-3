@@ -65,6 +65,8 @@
           <p>
             <input tal:replace="structure
                view/actions/field.actions.delete/render" />
+            or <a tal:attributes="href context/menu:overview/packages/fmt:url">
+                 Cancel</a>
           </p>
           <label tal:attributes="for widget/name"
                  tal:content="string:${widget/label}:">Label</label>

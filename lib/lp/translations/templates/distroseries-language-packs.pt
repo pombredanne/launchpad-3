@@ -16,10 +16,6 @@
 
     <div metal:fill-slot="main">
      <div id="language_packs">
-       <h1>
-         Language packs for
-         <tal:title replace="view/displayname">Ubuntu 5.04</tal:title>
-       </h1>
 
        <div class="top-portlet">
          <p id="description">

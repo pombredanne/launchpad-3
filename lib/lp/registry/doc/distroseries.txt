@@ -85,6 +85,49 @@ To search the set of IDistroSeriess, use IDistroSeriesSet.search:
     >>> all_ubuntu_releases.count()
     4
 
+
+Distroseries identifying attributes
+-----------------------------------
+
+A distroseries has a set of attributes that identify it. The launchpad id is
+the name attribute.
+
+    >>> print warty.name
+    warty
+
+It has a title for heading and titles...
+
+    >>> print warty.title
+    The Warty Warthog Release
+
+And a displayname for referring to it in a sentence.
+
+    >>> print warty.displayname
+    Warty
+
+The fullseriesname attribute is used when the context of the series name
+can be confused. Note that the value is created from the launchpad id names
+of the distribution and the series, though it may look like the displayname
+attributes were used.
+
+    >>> print warty.fullseriesname
+    Ubuntu Warty
+
+The version attribute holds the debversion of the series.
+
+    >>> print warty.version
+    4.10
+
+The named_version attribute is used is used to present the series displayname
+and version values consistently.
+
+    >>> print warty.named_version
+    Warty (4.10)
+
+
+Published releases
+------------------
+
 DistroSeries.getPublishedReleases:
 
     >>> from lp.registry.model.distroseries import DistroSeries
@@ -493,8 +536,8 @@ an ILibraryFileAlias:
 
    >>> firefox_srcrel =  warty.getSourcePackage(
    ...    'mozilla-firefox').currentrelease
-   >>> firefox_srcrel.title
-   u'mozilla-firefox 0.9 (source) in ubuntu warty'
+   >>> print firefox_srcrel.title
+   "mozilla-firefox" 0.9 source package in The Warty Warthog Release
 
    >>> firefox_srcrel.changesfile
    <LibraryFileAlias at ...>
@@ -1014,7 +1057,7 @@ Each element is an IDistroSeriesSourcePackageRelease instance:
 
     >>> for upload in latest_uploads:
     ...     print upload.title
-    mozilla-firefox 0.9 (source) in ubuntu warty
+    "mozilla-firefox" 0.9 source package in The Warty Warthog Release
 
 Also, empty results (caused obviously by lack of sample data or very
 earlier development state of a distroseries) are possible:

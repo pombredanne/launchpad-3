@@ -40,7 +40,7 @@ from canonical.launchpad.fields import (
     PublicPersonChoice, Summary, Title, URIField)
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
-from lp.app.interfaces.rootcontext import IRootContext
+from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
     IHasBranchVisibilityPolicy)
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
@@ -556,9 +556,8 @@ class IProductPublic(
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
-    serieses = exported(
-        CollectionField(value_type=Object(schema=IProductSeries)),
-        exported_as='series')
+    series = exported(
+        CollectionField(value_type=Object(schema=IProductSeries)))
 
     development_focus = exported(
         ReferenceChoice(
@@ -942,14 +941,13 @@ class IProductReviewSearch(Interface):
         title=_('Description of additional licenses'),
         description=_('Either this field or any one of the selected licenses'
                       ' must match.'),
-        vocabulary=emptiness_vocabulary, required=False, default=False)
+        vocabulary=emptiness_vocabulary, required=False, default=None)
 
     licenses = Set(
         title=_('Licenses'),
         value_type=Choice(vocabulary=License),
         required=False,
-        default=set(
-            [License.OTHER_PROPRIETARY, License.OTHER_OPEN_SOURCE]))
+        default=set())
 
     has_zero_licenses = Choice(
         title=_('Or has no license specified'),

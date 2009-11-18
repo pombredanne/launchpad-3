@@ -714,8 +714,13 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     def __init__(self, header_output=None, http_transaction=None):
         super(LaunchpadBrowserResponse, self).__init__()
 
-    def redirect(self, location, status=None, temporary_if_possible=False):
+    def redirect(self, location, status=None, trusted=True,
+                 temporary_if_possible=False):
         """Do a redirect.
+
+        Unlike Zope's BrowserResponse.redirect(), consider all redirects to be
+        trusted. Otherwise we'd have to change all callsites that redirect
+        from lp.net to vhost.lp.net to pass trusted=True.
 
         If temporary_if_possible is True, then do a temporary redirect
         if this is a HEAD or GET, otherwise do a 303.
@@ -737,8 +742,7 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
             else:
                 status = 303
         super(LaunchpadBrowserResponse, self).redirect(
-                unicode(location).encode('UTF-8'), status=status
-                )
+            unicode(location).encode('UTF-8'), status=status, trusted=trusted)
 
 
 def adaptResponseToSession(response):
@@ -1300,6 +1304,7 @@ class PrivateXMLRPCPublication(PublicXMLRPCPublication):
 class PrivateXMLRPCRequest(PublicXMLRPCRequest):
     """Request type for doing private XML-RPC in Launchpad."""
     # For now, the same as public requests.
+
 
 # ---- Protocol errors
 

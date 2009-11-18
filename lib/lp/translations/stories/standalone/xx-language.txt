@@ -13,7 +13,7 @@ There we can find a link to browse and manage languages.
 
 Following the link, there is a form to add new languages.
 
-    >>> admin_browser.getLink('Add Language').click()
+    >>> admin_browser.getLink('Add new language').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/+languages/+add
 
@@ -60,7 +60,7 @@ A normal user will not be able to see or use the url to add languages.
     >>> print user_browser.url
     http://translations.launchpad.dev/+languages
 
-    >>> user_browser.getLink('Add Language')
+    >>> user_browser.getLink('Add new language')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -76,26 +76,26 @@ From the top languages page, anyone can find languages.
     >>> print browser.url
     http://translations.launchpad.dev/+languages
 
-    >>> text_search = browser.getControl(name='language_search')
+    >>> text_search = browser.getControl(name='find')
     >>> text_search.value = 'Spanish'
-    >>> browser.getControl('Search', index=0).click()
+    >>> browser.getControl('Find language', index=0).click()
     >>> print browser.url
-    http://translations.launchpad.dev/+languages/+index
+    http://translations.launchpad.dev/+languages/+index?find=Spanish
 
 And following one of the found languages, we can see a brief information
 about the selected language.
 
-    >>> browser.getLink('Spanish (es)').click()
+    >>> browser.getLink('Spanish').click()
     >>> print browser.url
     http://translations.launchpad.dev/+languages/es
 
-    >>> pluralforms_portlet = find_portlet(browser.contents, 'Plural forms')
-    >>> print pluralforms_portlet
-    <...
-    There are 2 plural forms for Spanish.
-    ...
-    <pre>n != 1</pre>
-    ...
+    >>> print extract_text(find_portlet(browser.contents, 'Plural forms'
+    ...     ).renderContents())
+    Plural forms
+    Spanish has 2 plural forms:
+    Form 0 for 1.
+    Form 1 for 2, 3, 4, 5, 6, 7...
+    When ...
 
     >>> translationteams_portlet = find_portlet(
     ...     browser.contents, 'Translation teams')

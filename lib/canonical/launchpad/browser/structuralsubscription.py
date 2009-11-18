@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'StructuralSubscriptionMenuMixin',
     'StructuralSubscriptionTargetTraversalMixin',
     'StructuralSubscriptionView',
     ]
@@ -19,12 +20,15 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     BugNotificationLevel, IDistributionSourcePackage,
     IStructuralSubscriptionForm)
+from canonical.launchpad.interfaces.structuralsubscription import (
+    IStructuralSubscriptionTarget)
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.milestone import IProjectMilestone
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url, custom_widget, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.menu import Link
 from canonical.widgets import LabeledMultiCheckBoxWidget
-
 
 class StructuralSubscriptionView(LaunchpadFormView):
     """View class for structural subscriptions."""
@@ -33,6 +37,16 @@ class StructuralSubscriptionView(LaunchpadFormView):
 
     custom_widget('subscriptions_team', LabeledMultiCheckBoxWidget)
     custom_widget('remove_other_subscriptions', LabeledMultiCheckBoxWidget)
+
+    override_title_breadcrumbs = True
+
+    @property
+    def page_title(self):
+        return 'Subscribe to Bugs in %s' % self.context.title
+
+    @property
+    def label(self):
+        return self.page_title
 
     def setUpFields(self):
         """See LaunchpadFormView."""
@@ -267,3 +281,33 @@ class StructuralSubscriptionTargetTraversalMixin:
         """Traverses +subscription portions of URLs."""
         person = getUtility(IPersonSet).getByName(name)
         return self.context.getSubscription(person)
+
+
+class StructuralSubscriptionMenuMixin:
+    """Mix-in class providing the subscription add/edit menu link."""
+
+    def subscribe(self):
+        """The subscribe menu link.
+        
+        If the user, or any of the teams he's a member of, already has a
+        subscription to the context, the link offer to edit the subscriptions
+        and displays the edit icon. Otherwise, the link offers to subscribe
+        and displays the add icon.
+        """
+        if IStructuralSubscriptionTarget.providedBy(self.context):
+            sst = self.context
+        else:
+            # self.context is a view, and the target is its context
+            sst = self.context.context
+
+        # Project milestones aren't really structural subscription targets
+        # as they're not real milestones, so you can't subscribe to them.
+        enabled = not IProjectMilestone.providedBy(sst)
+
+        if sst.userHasBugSubscriptions(self.user):
+            text = 'Edit bug mail subscription'
+            icon = 'edit'
+        else:
+            text = 'Subscribe to bug mail'
+            icon = 'add'
+        return Link('+subscribe', text, icon=icon, enabled=enabled)

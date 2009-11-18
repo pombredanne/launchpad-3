@@ -138,7 +138,7 @@ as well as to upload files.
     ...     '+pots/evolution-2.2/cy/+translate')
 
     >>> print_menu_option(browser.contents, 'upload')
-    <...Upload a file...
+    Upload translation
 
 No Privileges person is going to translate here.  Message number 137 is
 not yet translated.

@@ -18,7 +18,7 @@ translators.
     ...     'http://translations.launchpad.dev/'
     ...     '+groups/testing-translation-team/es/+admin')
     >>> print carlos_browser.title
-    Edit Spanish translation team in Just a testing team
+    Just a testing team...
 
 This way he can also set the documentation URL.
 
@@ -77,7 +77,8 @@ the documentation url through the edit view.
     ...     'http://translations.launchpad.dev/'
     ...     '+groups/testing-translation-team/eo/+edit')
     >>> print test_browser.title
-    Set Esperanto guidelines for Just a testing team
+    Set Esperanto guidelines...
+
     >>> test_browser.getControl('Translation guidelines').value = (
     ...     'http://www.launchpad.net/')
     >>> test_browser.getControl('Set guidelines').click()

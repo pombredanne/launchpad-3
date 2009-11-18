@@ -8,8 +8,14 @@ Documentation-style tests go in there, ones that go systematically
 through the possibilities should go here.
 """
 
+from datetime import datetime, timedelta
+from pytz import UTC
+import transaction
 import unittest
 
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
+
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.sourcepackagename import (
     SourcePackageName,
@@ -20,7 +26,7 @@ from lp.translations.model.potemplate import (
     POTemplateSet,
     POTemplateSubset)
 from lp.translations.model.translationimportqueue import (
-    TranslationImportQueue)
+    TranslationImportQueue, TranslationImportQueueEntry)
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
 from lp.translations.interfaces.translationimportqueue import (
     RosettaImportStatus)
@@ -28,6 +34,12 @@ from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
+
+
+def become_the_gardener(layer):
+    """Switch to the translations import queue gardener database role."""
+    transaction.commit()
+    layer.switchDbUser('translations_import_queue_gardener')
 
 
 class TestCustomLanguageCode(unittest.TestCase):
@@ -166,6 +178,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
         # Of course matching will work without custom language codes.
         tr_file = self._makePOFile('tr')
         entry = self._makeQueueEntry('tr')
+        become_the_gardener(self.layer)
         self.assertEqual(entry.getGuessedPOFile(), tr_file)
 
     def test_CustomLanguageCodeEnablesMatch(self):
@@ -177,6 +190,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
         self._setCustomLanguageCode('fy_NL', 'fy')
 
+        become_the_gardener(self.layer)
         self.assertEqual(entry.getGuessedPOFile(), fy_file)
 
     def test_CustomLanguageCodeParsesBogusLanguage(self):
@@ -187,6 +201,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
         self._setCustomLanguageCode('flemish', 'nl')
 
+        become_the_gardener(self.layer)
         nl_file = entry.getGuessedPOFile()
         self.assertEqual(nl_file.language.code, 'nl')
 
@@ -199,6 +214,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
         self._setCustomLanguageCode('sv', None)
 
+        become_the_gardener(self.layer)
         self.assertEqual(entry.getGuessedPOFile(), None)
         self.assertEqual(entry.status, RosettaImportStatus.DELETED)
 
@@ -211,6 +227,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
         self._setCustomLanguageCode('elx', 'el')
 
+        become_the_gardener(self.layer)
         el_file = entry.getGuessedPOFile()
         self.failIfEqual(el_file, elx_file)
         self.assertEqual(el_file.language.code, 'el')
@@ -225,6 +242,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
         self._setCustomLanguageCode('nb', 'nn')
 
+        become_the_gardener(self.layer)
         self.assertEqual(entry.getGuessedPOFile(), nn_file)
 
     def test_CustomLanguageCodeReplacesMatch(self):
@@ -237,6 +255,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
         self._setCustomLanguageCode('pt', None)
         self._setCustomLanguageCode('pt_PT', 'pt')
 
+        become_the_gardener(self.layer)
         self.assertEqual(pt_entry.getGuessedPOFile(), None)
         self.assertEqual(pt_PT_entry.getGuessedPOFile(), pt_file)
 
@@ -250,6 +269,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
         self._setCustomLanguageCode('zh_CN', 'zh_TW')
         self._setCustomLanguageCode('zh_TW', 'zh_CN')
 
+        become_the_gardener(self.layer)
         self.assertEqual(zh_CN_entry.getGuessedPOFile(), zh_TW_file)
         self.assertEqual(zh_TW_entry.getGuessedPOFile(), zh_CN_file)
 
@@ -262,6 +282,8 @@ class TestTemplateGuess(unittest.TestCase):
         self.factory = LaunchpadObjectFactory()
         self.templateset = POTemplateSet()
 
+    def _setUpProduct(self):
+        """Set up a `Product` with release series and two templates."""
         self.product = self.factory.makeProduct()
         self.productseries = self.factory.makeSeries(product=self.product)
         product_subset = POTemplateSubset(productseries=self.productseries)
@@ -270,32 +292,102 @@ class TestTemplateGuess(unittest.TestCase):
         self.producttemplate2 = product_subset.new(
             'test2', 'test2', 'test.pot', self.product.owner)
 
+    def _makeTemplateForDistroSeries(self, distroseries, name):
+        """Create a template in the given `DistroSeries`."""
+        distro_subset = POTemplateSubset(
+            distroseries=distroseries, sourcepackagename=self.packagename)
+        return distro_subset.new(name, name, 'test.pot', self.distro.owner)
+
+    def _setUpDistro(self):
+        """Set up a `Distribution` with two templates."""
         self.distro = self.factory.makeDistribution()
         self.distroseries = self.factory.makeDistroRelease(
             distribution=self.distro)
         self.packagename = SourcePackageNameSet().new('package')
         self.from_packagename = SourcePackageNameSet().new('from')
-        distro_subset = POTemplateSubset(
-            distroseries=self.distroseries,
+        self.distrotemplate1 = self._makeTemplateForDistroSeries(
+            self.distroseries, 'test1')
+        self.distrotemplate2 = self._makeTemplateForDistroSeries(
+            self.distroseries, 'test2')
+
+    def test_ByPathAndOrigin_product_duplicate(self):
+        # When multiple templates match for a product series,
+        # getPOTemplateByPathAndOrigin returns none.
+        self._setUpProduct()
+        become_the_gardener(self.layer)
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', productseries=self.productseries)
+        self.assertEqual(None, guessed_template)
+
+    def test_ByPathAndOrigin_package_duplicate(self):
+        # When multiple templates match on sourcepackagename,
+        # getPOTemplateByPathAndOrigin returns none.
+        self._setUpDistro()
+        become_the_gardener(self.layer)
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', sourcepackagename=self.packagename)
+        self.assertEqual(None, guessed_template)
+
+    def test_ByPathAndOrigin_from_package_duplicate(self):
+        # When multiple templates match on from_sourcepackagename,
+        # getPOTemplateByPathAndOrigin returns none.
+        self._setUpDistro()
+        become_the_gardener(self.layer)
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', sourcepackagename=self.from_packagename)
+        self.assertEqual(None, guessed_template)
+
+    def test_ByPathAndOrigin_similar_between_distroseries(self):
+        # getPOTemplateByPathAndOrigin disregards templates from other
+        # distroseries.
+        self._setUpDistro()
+        other_series = self.factory.makeDistroRelease(
+            distribution=self.distro)
+        other_template = self._makeTemplateForDistroSeries(
+            other_series, 'test1')
+        self.distrotemplate1.iscurrent = False
+        self.distrotemplate2.iscurrent = True
+        self.distrotemplate1.from_sourcepackagename = None
+        self.distrotemplate2.from_sourcepackagename = None
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.packagename)
-        self.distrotemplate1 = distro_subset.new(
-            'test1', 'test1', 'test.pot', self.distro.owner)
-        self.distrotemplate2 = distro_subset.new(
-            'test2', 'test2', 'test.pot', self.distro.owner)
+        self.assertEqual(self.distrotemplate2, guessed_template)
+
+    def test_ByPathAndOrigin_preferred_match(self):
+        # getPOTemplateByPathAndOrigin prefers from_sourcepackagename
+        # matches over sourcepackagename matches.
+        self._setUpDistro()
+        # Use unique name for this package, since the search does not
+        # pass a distroseries and so might pick one of the same name up
+        # from elsewhere.
+        match_package = SourcePackageNameSet().new(
+            self.factory.getUniqueString())
+        self.distrotemplate1.sourcepackagename = match_package
+        self.distrotemplate2.from_sourcepackagename = match_package
+
+        become_the_gardener(self.layer)
+        guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
+            'test.pot', sourcepackagename=match_package)
+        self.assertEqual(self.distrotemplate2, guessed_template)
 
     def test_ByPathAndOriginProductNonCurrentDuplicate(self):
         # If two templates for the same product series have the same
         # path, but only one is current, that one is returned.
+        self._setUpProduct()
         self.producttemplate1.iscurrent = False
         self.producttemplate2.iscurrent = True
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', productseries=self.productseries)
         self.assertEqual(guessed_template, self.producttemplate2)
 
     def test_ByPathAndOriginProductNoCurrentTemplate(self):
         # Non-current templates in product series are ignored.
+        self._setUpProduct()
         self.producttemplate1.iscurrent = False
         self.producttemplate2.iscurrent = False
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', productseries=self.productseries)
         self.assertEqual(guessed_template, None)
@@ -304,10 +396,12 @@ class TestTemplateGuess(unittest.TestCase):
         # If two templates for the same distroseries and source package
         # have the same  path, but only one is current, the current one
         # is returned.
+        self._setUpDistro()
         self.distrotemplate1.iscurrent = False
         self.distrotemplate2.iscurrent = True
         self.distrotemplate1.from_sourcepackagename = None
         self.distrotemplate2.from_sourcepackagename = None
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.packagename)
@@ -315,10 +409,12 @@ class TestTemplateGuess(unittest.TestCase):
 
     def test_ByPathAndOriginDistroNoCurrentTemplate(self):
         # Non-current templates in distroseries are ignored.
+        self._setUpDistro()
         self.distrotemplate1.iscurrent = False
         self.distrotemplate2.iscurrent = False
         self.distrotemplate1.from_sourcepackagename = None
         self.distrotemplate2.from_sourcepackagename = None
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.packagename)
@@ -328,10 +424,12 @@ class TestTemplateGuess(unittest.TestCase):
         # If two templates for the same distroseries and original source
         # package have the same path, but only one is current, that one is
         # returned.
+        self._setUpDistro()
         self.distrotemplate1.iscurrent = False
         self.distrotemplate2.iscurrent = True
         self.distrotemplate1.from_sourcepackagename = self.from_packagename
         self.distrotemplate2.from_sourcepackagename = self.from_packagename
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.from_packagename)
@@ -340,10 +438,12 @@ class TestTemplateGuess(unittest.TestCase):
     def test_ByPathAndOriginDistroFromSourcePackageNoCurrentTemplate(self):
         # Non-current templates in distroseries are ignored by the
         # "from_sourcepackagename" match.
+        self._setUpDistro()
         self.distrotemplate1.iscurrent = False
         self.distrotemplate2.iscurrent = False
         self.distrotemplate1.from_sourcepackagename = self.from_packagename
         self.distrotemplate2.from_sourcepackagename = self.from_packagename
+        become_the_gardener(self.layer)
         guessed_template = self.templateset.getPOTemplateByPathAndOrigin(
             'test.pot', distroseries=self.distroseries,
             sourcepackagename=self.from_packagename)
@@ -352,19 +452,24 @@ class TestTemplateGuess(unittest.TestCase):
     def test_ByTranslationDomain(self):
         # getPOTemplateByTranslationDomain looks up a template by
         # translation domain.
+        self._setUpDistro()
         subset = POTemplateSubset(distroseries=self.distroseries)
+        become_the_gardener(self.layer)
         potemplate = subset.getPOTemplateByTranslationDomain('test1')
         self.assertEqual(potemplate, self.distrotemplate1)
 
     def test_ByTranslationDomain_none(self):
         # Test getPOTemplateByTranslationDomain for the zero-match case.
+        self._setUpDistro()
         subset = POTemplateSubset(distroseries=self.distroseries)
+        become_the_gardener(self.layer)
         potemplate = subset.getPOTemplateByTranslationDomain('notesthere')
         self.assertEqual(potemplate, None)
 
     def test_ByTranslationDomain_duplicate(self):
         # getPOTemplateByTranslationDomain returns no template if there
         # is more than one match.
+        self._setUpDistro()
         self.distrotemplate1.iscurrent = True
         other_package = SourcePackageNameSet().new('other-package')
         other_subset = POTemplateSubset(
@@ -372,6 +477,7 @@ class TestTemplateGuess(unittest.TestCase):
         clashing_template = other_subset.new(
             'test3', 'test1', 'test3.pot', self.distro.owner)
         distro_subset = POTemplateSubset(distroseries=self.distroseries)
+        become_the_gardener(self.layer)
         potemplate = distro_subset.getPOTemplateByTranslationDomain('test1')
         self.assertEqual(potemplate, None)
 
@@ -385,6 +491,7 @@ class TestTemplateGuess(unittest.TestCase):
         # To tickle this condition, the user first has to upload a file
         # that's not attached to a template; then upload another one
         # that is, before the first one goes into auto-approval.
+        self._setUpProduct()
         queue = TranslationImportQueue()
         template = self.producttemplate1
 
@@ -400,9 +507,74 @@ class TestTemplateGuess(unittest.TestCase):
             'program/nl.po', 'other contents', False, template.owner,
             productseries=template.productseries, potemplate=template)
 
+        become_the_gardener(self.layer)
         entry1.getGuessedPOFile()
 
         self.assertEqual(entry1.potemplate, None)
+
+    def test_pathless_template_match(self):
+        # If an uploaded template has no directory component in its
+        # path, and no matching template is found in the database, the
+        # approver also tries if there might be exactly 1 template with
+        # the same base filename.  If so, that's a match.
+        self._setUpProduct()
+        template = self.producttemplate1
+        template.path = 'po/test.pot'
+        self.producttemplate2.path = 'different.pot'
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'test.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(template, entry.guessed_potemplate)
+
+    def test_pathless_template_no_match(self):
+        # The search for a matching filename will still ignore
+        # templates with non-matching paths.
+        self._setUpProduct()
+        template = self.producttemplate1
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'other.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(None, entry.guessed_potemplate)
+
+    def test_pathless_template_multiple_matches(self):
+        # If multiple active templates have matching filenames
+        # (regardless of whether they're in subdirectories or in the
+        # project root directory) then there is no unique match.
+        self._setUpProduct()
+        template = self.producttemplate1
+        template.path = 'here/test.pot'
+        self.producttemplate2.path = 'there/test.pot'
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'test.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(None, entry.guessed_potemplate)
+
+    def test_pathless_template_one_current_match(self):
+        # Deactivated templates are not considered in the match; if one
+        # active and one non-active template both match on filename, the
+        # active one is returned as a unique match.
+        self._setUpProduct()
+        template = self.producttemplate1
+        template.iscurrent = True
+        template.path = 'here/test.pot'
+        self.producttemplate2.iscurrent = False
+        self.producttemplate2.path = 'there/test.pot'
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'test.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(template, entry.guessed_potemplate)
 
 
 class TestKdePOFileGuess(unittest.TestCase):
@@ -457,6 +629,7 @@ class TestKdePOFileGuess(unittest.TestCase):
             poname, self.pocontents, False, self.distroseries.owner,
             sourcepackagename=self.kde_i18n_ca,
             distroseries=self.distroseries)
+        become_the_gardener(self.layer)
         pofile = entry.getGuessedPOFile()
         self.assertEqual(pofile, self.pofile_ca)
 
@@ -468,6 +641,7 @@ class TestKdePOFileGuess(unittest.TestCase):
             poname, self.pocontents, False, self.distroseries.owner,
             sourcepackagename=self.kde_l10n_nl,
             distroseries=self.distroseries)
+        become_the_gardener(self.layer)
         pofile = entry.getGuessedPOFile()
         self.assertEqual(pofile, self.pofile_nl)
 
@@ -495,6 +669,7 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory):
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
+        become_the_gardener(self.layer)
         pofile = entry._get_pofile_from_language('nl', 'domain')
         self.assertNotEqual(None, pofile)
 
@@ -512,8 +687,143 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory):
         entry = self.queue.addOrUpdateEntry(
             'nl.po', '# ...', False, template.owner, productseries=trunk)
 
+        become_the_gardener(self.layer)
         pofile = entry._get_pofile_from_language('nl', 'domain')
         self.assertEqual(None, pofile)
+
+    def test_get_pofile_from_language_works_with_translation_credits(self):
+        # When the template has translation credits, a new dummy translation
+        # is created in the new POFile. Since this is running with gardener
+        # privileges, we need to check that this works, too.
+        product = self.factory.makeProduct()
+        product.official_rosetta = True
+        trunk = product.getSeries('trunk')
+        template = self.factory.makePOTemplate(
+            productseries=trunk, translation_domain='domain')
+        template.iscurrent = True
+        credits = self.factory.makePOTMsgSet(template, "translator-credits",
+                                             sequence=1)
+        
+        entry = self.queue.addOrUpdateEntry(
+            'nl.po', '# ...', False, template.owner, productseries=trunk)
+
+        become_the_gardener(self.layer)
+        pofile = entry._get_pofile_from_language('nl', 'domain')
+        self.assertNotEqual(None, pofile)
+
+
+class TestCleanup(TestCaseWithFactory):
+    """Test `TranslationImportQueueEntry` garbage collection."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestCleanup, self).setUp()
+        self.queue = TranslationImportQueue()
+        self.store = IMasterStore(TranslationImportQueueEntry)
+
+    def _makeProductEntry(self):
+        """Simulate upload for a product."""
+        product = self.factory.makeProduct()
+        product.official_rosetta = True
+        trunk = product.getSeries('trunk')
+        return self.queue.addOrUpdateEntry(
+            'foo.pot', '# contents', False, product.owner,
+            productseries=trunk)
+
+    def _makeDistroEntry(self):
+        """Simulate upload for a distribution package."""
+        package = self.factory.makeSourcePackage()
+        owner = package.distroseries.owner
+        return self.queue.addOrUpdateEntry(
+            'bar.pot', '# contents', False, owner,
+            sourcepackagename=package.sourcepackagename,
+            distroseries=package.distroseries)
+
+    def _exists(self, entry_id):
+        """Is the entry with the given id still on the queue?"""
+        entry = self.store.find(
+            TranslationImportQueueEntry,
+            TranslationImportQueueEntry.id == entry_id).any()
+        return entry is not None
+
+    def _setStatus(self, entry, status, when=None):
+        """Simulate status on queue entry having been set at a given time."""
+        entry.setStatus(status)
+        if when is not None:
+            entry.date_status_changed = when
+        entry.syncUpdate()
+
+    def test_cleanUpObsoleteEntries_unaffected_statuses(self):
+        # _cleanUpObsoleteEntries leaves entries in non-terminal states
+        # (Needs Review, Approved, Blocked) alone no matter how old they
+        # are.
+        one_year_ago = datetime.now(UTC) - timedelta(days=366)
+        entry = self._makeProductEntry()
+        entry_id = entry.id
+
+        self._setStatus(entry, RosettaImportStatus.APPROVED, one_year_ago)
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        self._setStatus(entry, RosettaImportStatus.BLOCKED, one_year_ago)
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        self._setStatus(entry, RosettaImportStatus.NEEDS_REVIEW, one_year_ago)
+        become_the_gardener(self.layer)
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+    def test_cleanUpObsoleteEntries_affected_statuses(self):
+        # _cleanUpObsoleteEntries deletes entries in terminal states
+        # (Imported, Failed, Deleted) after a few days.  The exact
+        # period depends on the state.
+        entry = self._makeProductEntry()
+        self._setStatus(entry, RosettaImportStatus.IMPORTED, None)
+        entry_id = entry.id
+
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        entry.date_status_changed -= timedelta(days=7)
+        entry.syncUpdate()
+
+        become_the_gardener(self.layer)
+        self.queue._cleanUpObsoleteEntries(self.store)
+        self.assertFalse(self._exists(entry_id))
+
+    def test_cleanUpInactiveProductEntries(self):
+        # After a product is deactivated, _cleanUpInactiveProductEntries
+        # will clean up any entries it may have on the queue.
+        entry = self._makeProductEntry()
+        entry_id = entry.id
+
+        self.queue._cleanUpInactiveProductEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        entry.productseries.product.active = False
+        entry.productseries.product.syncUpdate()
+
+        become_the_gardener(self.layer)
+        self.queue._cleanUpInactiveProductEntries(self.store)
+        self.assertFalse(self._exists(entry_id))
+
+    def test_cleanUpObsoleteDistroEntries(self):
+        # _cleanUpObsoleteDistroEntries cleans up entries for
+        # distroseries that are in the Obsolete state.
+        entry = self._makeDistroEntry()
+        entry_id = entry.id
+
+        self.queue._cleanUpObsoleteDistroEntries(self.store)
+        self.assertTrue(self._exists(entry_id))
+
+        entry.distroseries.status = DistroSeriesStatus.OBSOLETE
+        entry.distroseries.syncUpdate()
+
+        become_the_gardener(self.layer)
+        self.queue._cleanUpObsoleteDistroEntries(self.store)
+        self.assertFalse(self._exists(entry_id))
 
 
 def test_suite():

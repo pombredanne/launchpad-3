@@ -7,18 +7,6 @@
   metal:use-macro="view/macro:page/main_side"
 >
 <body>
-  <h1 metal:fill-slot="heading">
-    Overview of 
-    <tal:has_nativename condition="context/nativename">
-      <tal:nativename replace="context/nativename">
-        Espa&ntilde;ol
-      </tal:nativename> (
-    </tal:has_nativename>
-    <tal:englishname replace="context/englishname">Spain</tal:englishname>
-    <tal:has_nativename condition="context/nativename">)</tal:has_nativename>
-    in Launchpad
-  </h1>
-
   <tal:side metal:fill-slot="side">
     <div tal:replace="structure context/@@+global-actions" />
     <div tal:replace="structure context/@@+portlet-details" />
@@ -32,15 +20,15 @@
           <h2>Plural forms</h2>
           <tal:has_pluralforms condition="context/pluralexpression">
             <p>
-              There are <tal:pluralforms replace="context/pluralforms">2</tal:pluralforms> 
-              plural forms for <tal:language replace="view/language_name">Espa&ntilde;ol</tal:language>.
+              <tal:language replace="view/language_name">Espa&ntilde;ol</tal:language> has
+              <tal:pluralforms replace="context/pluralforms">2</tal:pluralforms> plural forms:
             </p>
-            <p>
-              The default plural form expression for <tal:language replace="view/language_name">Espa&ntilde;ol</tal:language> is:
-            </p>
-            <pre tal:content="context/pluralexpression">
-              n != 1
-            </pre>
+            <div tal:repeat="pluralform view/friendly_plural_forms">
+              <p>
+                Form <tal:index replace="pluralform/form">0</tal:index> for
+                <tal:examples replace="pluralform/examples">1, 2, 3...</tal:examples>
+              </p>
+            </div>
             <p>
               When translating into this language, you need to be able to
               express plural forms effectively. The plural form expression tells
@@ -114,7 +102,6 @@
           </p>
         </div>
       </div>
-
       <div class="yui-u">
         <div class="portlet">
           <h2>Countries</h2>

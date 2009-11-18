@@ -6,10 +6,9 @@
 
 <div class="portlet" id="portlet-translatable-branches"
      tal:condition="context/translatable_series">
-  <h2>All translatable series</h2>
+  <h3>All translatable series</h3>
 
   <div class="portletBody portletContent">
-
     <ul>
       <li class="translations"
           tal:repeat="series context/translatable_series">
@@ -18,14 +17,37 @@
           series title</a>
       </li>
     </ul>
+  </div>
+</div>
 
+<div tal:condition="context/required:launchpad.Edit">
+  <div class="portlet" id="portlet-untranslatable-branches"
+       tal:condition="view/untranslatable_series">
+    <h3>Set up translations for a series</h3>
+
+    <div class="portletBody portletContent">
+      <ul>
+        <li class="translations"
+            tal:repeat="series view/untranslatable_series">
+          <a tal:content="series/title"
+             tal:attributes="href string:${series/fmt:url}/+translations">
+            series title</a> —
+          <a tal:attributes="
+              href string:${series/fmt:url}/+translations-upload">
+            manual</a> or
+          <a tal:attributes="
+              href string:${series/fmt:url}/+translations-settings">
+            automatic import</a>.
+        </li>
+      </ul>
+    </div>
   </div>
 </div>
 
 <div class="portlet" id="portlet-translatable-packages"
      tal:condition="context/translatable_packages">
 
-  <h2>All translatable distribution packages</h2>
+  <h3>All translatable distribution packages</h3>
 
   <div class="portletBody portletContent ">
 

@@ -108,7 +108,7 @@ class BranchMergeProposal(SQLBase):
     target_branch = ForeignKey(
         dbName='target_branch', foreignKey='Branch', notNull=True)
 
-    dependent_branch = ForeignKey(
+    prerequisite_branch = ForeignKey(
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
 
     whiteboard = StringCol(default=None)
@@ -116,6 +116,13 @@ class BranchMergeProposal(SQLBase):
     queue_status = EnumCol(
         enum=BranchMergeProposalStatus, notNull=True,
         default=BranchMergeProposalStatus.WORK_IN_PROGRESS)
+
+    @property
+    def private(self):
+        return (
+            self.source_branch.private or self.target_branch.private or
+            (self.prerequisite_branch is not None and
+             self.prerequisite_branch.private))
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
@@ -231,11 +238,16 @@ class BranchMergeProposal(SQLBase):
             self.target_branch: self.target_branch.bzr_identity,
             }
         branches = [self.source_branch, self.target_branch]
-        if self.dependent_branch is not None:
-            branches.append(self.dependent_branch)
+        if self.prerequisite_branch is not None:
+            branches.append(self.prerequisite_branch)
         for branch in branches:
             branch_recipients = branch.getNotificationRecipients()
             for recipient in branch_recipients:
+                # If the recipient cannot see either of the branches, skip
+                # them.
+                if (not self.source_branch.visibleByUser(recipient) or
+                    not self.target_branch.visibleByUser(recipient)):
+                    continue
                 subscription, rationale = branch_recipients.getReason(
                     recipient)
                 if (subscription.review_level < min_level):
@@ -329,13 +341,19 @@ class BranchMergeProposal(SQLBase):
         self.date_reviewed = None
         self.reviewed_revision_id = None
 
-    def requestReview(self):
-        """See `IBranchMergeProposal`."""
+    def requestReview(self, _date_requested=None):
+        """See `IBranchMergeProposal`.
+
+        :param _date_requested: used only for testing purposes to override
+            the normal UTC_NOW for when the review was requested.
+        """
         # Don't reset the date_review_requested if we are already in the
         # review state.
+        if _date_requested is None:
+            _date_requested = UTC_NOW
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
-            self.date_review_requested = UTC_NOW
+            self.date_review_requested = _date_requested
 
     def isMergable(self):
         """See `IBranchMergeProposal`."""
@@ -343,7 +361,8 @@ class BranchMergeProposal(SQLBase):
         # or superseded, then it is valid to be merged.
         return (self.queue_status not in FINAL_STATES)
 
-    def _reviewProposal(self, reviewer, next_state, revision_id):
+    def _reviewProposal(self, reviewer, next_state, revision_id,
+                        _date_reviewed=None):
         """Set the proposal to one of the two review statuses."""
         # Check the reviewer can review the code for the target branch.
         old_state = self.queue_status
@@ -353,21 +372,25 @@ class BranchMergeProposal(SQLBase):
         self._transitionToState(next_state, reviewer)
         # Record the reviewer
         self.reviewer = reviewer
-        self.date_reviewed = UTC_NOW
+        if _date_reviewed is None:
+            _date_reviewed = UTC_NOW
+        self.date_reviewed = _date_reviewed
         # Record the reviewed revision id
         self.reviewed_revision_id = revision_id
         notify(BranchMergeProposalStatusChangeEvent(
                 self, reviewer, old_state, next_state))
 
-    def approveBranch(self, reviewer, revision_id):
+    def approveBranch(self, reviewer, revision_id, _date_reviewed=None):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
-            reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id)
+            reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id,
+            _date_reviewed)
 
-    def rejectBranch(self, reviewer, revision_id):
+    def rejectBranch(self, reviewer, revision_id, _date_reviewed=None):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
-            reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
+            reviewer, BranchMergeProposalStatus.REJECTED, revision_id,
+            _date_reviewed)
 
     def enqueue(self, queuer, revision_id):
         """See `IBranchMergeProposal`."""
@@ -469,7 +492,7 @@ class BranchMergeProposal(SQLBase):
         proposal = self.source_branch.addLandingTarget(
             registrant=registrant,
             target_branch=self.target_branch,
-            dependent_branch=self.dependent_branch,
+            prerequisite_branch=self.prerequisite_branch,
             whiteboard=self.whiteboard,
             needs_review=True, review_requests=review_requests)
         self.superseded_by = proposal
@@ -657,13 +680,13 @@ class BranchMergeProposal(SQLBase):
         return code_review_message
 
     def updatePreviewDiff(self, diff_content, source_revision_id,
-                          target_revision_id, dependent_revision_id=None,
+                          target_revision_id, prerequisite_revision_id=None,
                           conflicts=None):
         """See `IBranchMergeProposal`."""
         # Create the PreviewDiff.
         self.preview_diff = PreviewDiff.create(
             diff_content, source_revision_id, target_revision_id,
-            dependent_revision_id, conflicts)
+            prerequisite_revision_id, conflicts)
 
         # XXX: TimPenhey 2009-02-19 bug 324724
         # Since the branch_merge_proposal attribute of the preview_diff

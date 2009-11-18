@@ -28,18 +28,18 @@ release to add download files.
     >>> print extract_text(content)
     Downloads
     Latest version is 0.9.2
-    firefox-0.9.2.orig.tar.gz...
+    firefox_0.9.2.orig.tar.gz...
 
     >>> anon_browser.getLink('All downloads').click()
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'project-downloads'))
-    0.9.2 (One (secure) Tree Hill) release, from the trunk series.
+    0.9.2 (One (secure) Tree Hill) release from the trunk series released 2004-10-15
+    Release information
     Release notes:
     Security fixes
      * 250180 - [Windows] Disallow access to insecure shell: protocol.
-    Released: 2004-10-15
     File                            Description   Downloads
-    firefox-0.9.2.orig.tar.gz (md5)               -
+    firefox_0.9.2.orig.tar.gz (md5)               -
 
 
 == Deletion is only for the privileged ==
@@ -91,14 +91,16 @@ A project owner should not see the delete button when there are no files.
     >>> tbird_owner = setupBrowser(
     ...     auth='Basic foo.bar@canonical.com:test')
     >>> tbird_owner.open('http://launchpad.dev/thunderbird/+download')
-    >>> tbird_owner.title
-    'Mozilla Thunderbird project files'
+    >>> print tbird_owner.title
+    Mozilla Thunderbird project files...
+
     >>> main_content = find_main_content(tbird_owner.contents)
     >>> print extract_text(main_content)
     Download project files
     Mozilla Thunderbird...
     No download files exist for this project...
-    Add download file for release: 0.8
+    Add download file to the trunk series for release: 0.8
+
     >>> tbird_owner.getControl('Delete Files')
     Traceback (most recent call last):
     ...
@@ -113,8 +115,8 @@ add download files for each release in that series is presented.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> for tag in find_tags_by_class(firefox_owner.contents, 'add-files'):
     ...     print extract_text(tag)
-    Add download file for release: 0.9.2, 0.9.1, 0.9
-    Add download file for release: 1.0.0
+    Add download file to the trunk series for release: 0.9.2, 0.9.1, 0.9
+    Add download file to the 1.0 series for release: 1.0.0
 
 If a project has a series with no releases associated with it, that
 series should not show up in the list.
@@ -128,8 +130,8 @@ series should not show up in the list.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> for tag in find_tags_by_class(firefox_owner.contents, 'add-files'):
     ...     print extract_text(tag)
-    Add download file for release: 0.9.2, 0.9.1, 0.9
-    Add download file for release: 1.0.0
+    Add download file to the trunk series for release: 0.9.2, 0.9.1, 0.9
+    Add download file to the 1.0 series for release: 1.0.0
 
 If a release is added to the new series the series will appear in
 the list.
@@ -149,9 +151,9 @@ the list.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> for tag in find_tags_by_class(firefox_owner.contents, 'add-files'):
     ...     print extract_text(tag)
-    Add download file for release: 0.9.2, 0.9.1, 0.9
-    Add download file for release: 3.14159
-    Add download file for release: 1.0.0
+    Add download file to the trunk series for release: 0.9.2, 0.9.1, 0.9
+    Add download file to the 3.0 series for release: 3.14159
+    Add download file to the 1.0 series for release: 1.0.0
 
 
 == Adding new files ==
@@ -176,9 +178,8 @@ To add a download file the release version link is used.
 
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> firefox_owner.getLink('1.0.0').click()
-    >>> title = firefox_owner.title.decode('UTF-8')
-    >>> print title.encode('us-ascii', 'backslashreplace')
-    Add a download file to Mozilla Firefox 1.0.0 \u201cFirst Stable Release\u201d
+    >>> print firefox_owner.title
+    Add a download file to Mozilla Firefox...
 
 Ensure a non-owner doesn't see the 'Add download file' link after
 navigating to the product release page.
@@ -369,7 +370,7 @@ are listed within series in reverse chronological order, except
     ...     a_list = row.findAll('a')
     ...     if len(a_list) > 0:
     ...        print a_list[0].string
-    firefox-0.9.2.orig.tar.gz
+    firefox_0.9.2.orig.tar.gz
     foo09.txt
     foo3.txt
     foo2.txt
@@ -424,7 +425,7 @@ Ensure the file is no longer listed.
     ...     a_list = row.findAll('a')
     ...     if len(a_list) > 0:
     ...        print a_list[0].string
-    firefox-0.9.2.orig.tar.gz
+    firefox_0.9.2.orig.tar.gz
     foo09.txt
     foo3.txt
     foo.txt
@@ -484,7 +485,7 @@ to reset it when we're done.
 
     >>> from canonical.config import config
     >>> use_https_true_data = """
-    ...     [vhosts]
+    ...     [librarian]
     ...     use_https: True
     ...     """
     >>> config.push('use_https_true_data', use_https_true_data)

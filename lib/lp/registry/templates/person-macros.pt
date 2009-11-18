@@ -23,20 +23,11 @@
           No contact email
         </tal:no_preferredemail>
 
-        <div tal:condition="view/can_contact">
-          <img src="/@@/mail" alt="email"/>
-          <a href="+contactuser"
-            tal:attributes="title view/contact_link_title"
-            tal:content="view/specific_contact_text"
-            >Contact this person</a>
-        </div>
-
         <tal:emails repeat="email view/visible_email_addresses">
           <div style="white-space: nowrap">
             <img src="/@@/mail" alt="mail" />
             <tal:email replace="email">foo2@bar.com</tal:email>
-            <a class="sprite edit"
-               tal:attributes="href overview_menu/editemail/fmt:url"></a>
+            <a tal:replace="structure overview_menu/editemail/fmt:icon"></a>
           </div>
         </tal:emails>
         <a tal:condition="not: view/visible_email_addresses"
@@ -65,13 +56,30 @@
         <dt>Languages:</dt>
         <dd>
           <tal:languages content="view/languages">English</tal:languages>
-          <a tal:attributes="href overview_menu/editlanguages/fmt:url"
-            class="sprite edit">
-          <span class="invisible-link">Set preferred languages</span></a>
+          <a tal:replace="structure overview_menu/editlanguages/fmt:icon" />
+        </dd>
+      </dl>
+      <dl id="subscription-policy">
+        <dt>Subscription policy:</dt>
+        <dd>
+          <span tal:replace="context/subscriptionpolicy/title" />
+          <img src="/@@/maybe"
+            tal:attributes="title context/subscriptionpolicy/description" />
         </dd>
       </dl>
 
     </div>
+  </div>
+</metal:macro>
+
+<!-- contact macro -->
+<metal:macro define-macro="contact">
+  <div class="portlet" id="contact-user"
+    tal:condition="view/can_contact">
+    <a href="+contactuser" class="sprite mail"
+      tal:attributes="title view/contact_link_title"
+      tal:content="view/specific_contact_text">Contact
+        this person</a>
   </div>
 </metal:macro>
 

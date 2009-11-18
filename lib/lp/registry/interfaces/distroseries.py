@@ -33,7 +33,7 @@ from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
     IHasAppointedDriver, IHasDrivers)
 from lp.registry.interfaces.role import IHasOwner
-from lp.registry.interfaces.milestone import IHasMilestones
+from lp.registry.interfaces.milestone import IHasMilestones, IMilestone
 from lp.blueprints.interfaces.specificationtarget import (
     ISpecificationGoal)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -49,9 +49,10 @@ from canonical.launchpad import _
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, export_as_webservice_entry,
+    export_factory_operation,
     export_read_operation, exported, operation_parameters,
     operation_returns_collection_of, operation_returns_entry,
-    webservice_error)
+    rename_parameters_as, webservice_error)
 
 
 # XXX: salgado, 2008-06-02: We should use a more generic name here as this
@@ -198,7 +199,9 @@ class DistroSeriesVersionField(UniqueField):
 
 class IDistroSeriesEditRestricted(Interface):
     """IDistroSeries properties which require launchpad.Edit."""
-
+    @rename_parameters_as(dateexpected='date_targeted')
+    @export_factory_operation(
+        IMilestone, ['name', 'dateexpected', 'summary', 'code_name'])
     def newMilestone(name, dateexpected=None, summary=None, code_name=None):
         """Create a new milestone for this DistroSeries."""
 
@@ -261,6 +264,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             Interface, # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
+    named_version =  Attribute('The combined display name and version.')
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
     upload_components = Attribute("The series components that can be "
@@ -385,7 +389,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         "All language packs associated with this distribution series.")
 
     # other properties
-    previous_serieses = Attribute("Previous series from the same "
+    previous_series = Attribute("Previous series from the same "
         "distribution.")
 
     main_archive = exported(

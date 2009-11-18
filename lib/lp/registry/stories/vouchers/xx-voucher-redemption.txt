@@ -107,7 +107,7 @@ setting up Canonical-internal projects.
     ...     auth='Basic commercial-member@canonical.com:test')
 
 Show that the commercial member does not own or drive any projects by
-viewing his +related-software page.
+viewing his +related-projects page.
 
     >>> login('foo.bar@canonical.com')
     >>> from zope.component import getUtility
@@ -120,13 +120,13 @@ viewing his +related-software page.
     >>> celebs.registry_experts.addMember(commercial_member, commercial_member)
     >>> logout()
 
-    >>> browser.open('http://launchpad.dev/~commercial-member/+related-software')
+    >>> browser.open(
+    ...     'http://launchpad.dev/~commercial-member/+related-projects')
     >>> main = find_main_content(browser.contents)
     >>> print extract_text(main)
-    Profile...
-    Related projects...
-    Commercial Member
-    doesn't own or drive any projects...
+    Projects related to Commercial Member
+    ...
+    Commercial Member doesn't own or drive any projects.
 
 He can still redeem a voucher against a commercial project even though
 he is not responsible for it.

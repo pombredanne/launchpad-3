@@ -67,7 +67,7 @@ class DistributionSourcePackageRelease:
     @property
     def title(self):
         """See IDistributionSourcePackageRelease."""
-        return '%s %s (source) in %s' % (
+        return '"%s" %s source package in %s' % (
             self.name, self.version, self.distribution.displayname)
 
     @property
@@ -163,7 +163,7 @@ class DistributionSourcePackageRelease:
                             self.distribution.all_distro_archive_ids,
                             self.sourcepackagerelease),
             distinct=True,
-            orderBy=['-datecreated'],
+            orderBy=['BinaryPackageName.name'],
             clauseTables=['DistroArchSeries', 'DistroSeries',
                           'BinaryPackageRelease', 'BinaryPackageName',
                           'Build'],

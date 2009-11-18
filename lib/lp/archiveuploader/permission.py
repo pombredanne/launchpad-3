@@ -13,6 +13,7 @@ __all__ = [
 
 from zope.component import getUtility
 
+from lp.registry.interfaces.distribution import IDistributionSet
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 
 
@@ -44,6 +45,13 @@ class NoRightsForArchive(CannotUploadToArchive):
         "a PPA?")
 
 
+class InsufficientUploadRights(CannotUploadToArchive):
+    """Raised when a person has insufficient upload rights."""
+    _fmt = (
+        "The signer of this package is lacking the upload rights for "
+        "the source package, component or package set in question.")
+
+
 class NoRightsForComponent(CannotUploadToArchive):
     """Raised when a person tries to upload to a component without permission.
     """
@@ -67,8 +75,20 @@ def components_valid_for(archive, person):
     return set(permission.component for permission in permissions)
 
 
+def packagesets_valid_for(archive, person):
+    """Return the package sets that 'person' can upload to 'archive'.
+
+    :param archive: The `IArchive` than 'person' wishes to upload to.
+    :param person: An `IPerson` wishing to upload to an archive.
+    :return: A `set` of `IPackageset`s that 'person' can upload to.
+    """
+    permission_set = getUtility(IArchivePermissionSet)
+    permissions = permission_set.packagesetsForUploader(archive, person)
+    return set(permission.packageset for permission in permissions)
+
+
 def verify_upload(person, sourcepackagename, archive, component,
-                  strict_component=True):
+                  distroseries, strict_component=True):
     """Can 'person' upload 'sourcepackagename' to 'archive'?
 
     :param person: The `IPerson` trying to upload to the package. Referred to
@@ -77,6 +97,7 @@ def verify_upload(person, sourcepackagename, archive, component,
         package is new.
     :param archive: The `IArchive` being uploaded to.
     :param component: The `IComponent` that the source package belongs to.
+    :param distroseries: The upload's target distro series.
     :param strict_component: True if access to the specific component for the
         package is needed to upload to it. If False, then access to any
         package will do.
@@ -92,13 +113,23 @@ def verify_upload(person, sourcepackagename, archive, component,
 
     # For any other archive...
     ap_set = getUtility(IArchivePermissionSet)
-    if sourcepackagename is not None and (
-        archive.canUpload(person, sourcepackagename)
-        or ap_set.isSourceUploadAllowed(archive, sourcepackagename, person)):
-        return None
+
+    if sourcepackagename is not None:
+        # Check whether user may upload because he holds a permission for
+        #   - the given source package directly
+        #   - a package set in the correct distro series that includes the
+        #     given source package
+        source_allowed = archive.canUpload(person, sourcepackagename)
+        set_allowed = ap_set.isSourceUploadAllowed(
+            archive, sourcepackagename, person, distroseries)
+        if source_allowed or set_allowed:
+            return None
 
     if not components_valid_for(archive, person):
-        return NoRightsForArchive()
+        if not packagesets_valid_for(archive, person):
+            return NoRightsForArchive()
+        else:
+            return InsufficientUploadRights()
 
     if (component is not None
         and strict_component

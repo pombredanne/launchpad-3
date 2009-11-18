@@ -29,16 +29,36 @@ class TestHasSpecificationsBreadcrumbOnBlueprintsVHost(
             self.product_specs_url, [self.root, self.product])
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.product_specs_url)
-        self.assertEquals(
-            last_crumb.text, 'Blueprints for %s' % self.product.title)
+        self.assertEquals(last_crumb.text, 'Blueprints')
 
     def test_person(self):
         crumbs = self._getBreadcrumbs(
             self.person_specs_url, [self.root, self.person])
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.person_specs_url)
-        self.assertEquals(last_crumb.text,
-                          'Blueprints involving %s' % self.person.displayname)
+        self.assertEquals(last_crumb.text, 'Blueprints')
+
+
+class TestSpecificationBreadcrumb(BaseBreadcrumbTestCase):
+    """Test breadcrumbs for an `ISpecification`."""
+
+    def setUp(self):
+        super(TestSpecificationBreadcrumb, self).setUp()
+        self.product = self.factory.makeProduct(
+            name='crumb-tester', displayname="Crumb Tester")
+        self.specification = self.factory.makeSpecification(
+            title="Crumby Specification", product=self.product)
+        self.specification_url = canonical_url(
+            self.specification, rootsite='blueprints')
+
+    def test_specification(self):
+        crumbs = self._getBreadcrumbs(
+            self.specification_url,
+            [self.root, self.product, self.specification])
+        last_crumb = crumbs[-1]
+        self.assertEquals(last_crumb.url, self.specification_url)
+        self.assertEquals(
+            last_crumb.text, self.specification.title)
 
 
 def test_suite():

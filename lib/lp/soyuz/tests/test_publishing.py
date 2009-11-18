@@ -206,6 +206,11 @@ class SoyuzTestPublisher:
             filename, filecontent, restricted=archive.private)
         spr.addFile(alias)
 
+        if status == PackagePublishingStatus.PUBLISHED:
+            datepublished = UTC_NOW
+        else:
+            datepublished = None
+
         sspph = SecureSourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
@@ -214,10 +219,12 @@ class SoyuzTestPublisher:
             status=status,
             datecreated=date_uploaded,
             dateremoved=dateremoved,
+            datepublished=datepublished,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
             embargo=False,
             archive=archive)
+
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
         # of SSPPH and other useful attributes.
@@ -377,6 +384,41 @@ class SoyuzTestPublisher:
 
         return [BinaryPackagePublishingHistory.get(pub.id)
                 for pub in secure_pub_binaries]
+
+    def _findChangesFile(self, top, name_fragment):
+        """File with given name fragment in directory tree starting at top."""
+        for root, dirs, files in os.walk(top, topdown=False):
+            for name in files:
+                if name.endswith('.changes') and name.find(name_fragment) > -1:
+                    return os.path.join(root, name)
+        return None
+
+    def createSource(
+        self, archive, sourcename, version, distroseries=None,
+        new_version=None):
+        """Create source with meaningful '.changes' file."""
+        top = 'lib/lp/archiveuploader/tests/data/suite'
+        name_fragment = '%s_%s' % (sourcename, version)
+        changesfile_path = self._findChangesFile(top, name_fragment)
+
+        source = None
+
+        if changesfile_path is not None:
+            if new_version is None:
+                new_version = version
+            changesfile_content = ''
+            handle = open(changesfile_path, 'r')
+            try:
+                changesfile_content = handle.read()
+            finally:
+                handle.close()
+
+            source = self.getPubSource(
+                sourcename=sourcename, archive=archive, version=new_version,
+                changes_file_content=changesfile_content,
+                distroseries=distroseries)
+
+        return source
 
 
 class TestNativePublishingBase(unittest.TestCase, SoyuzTestPublisher):

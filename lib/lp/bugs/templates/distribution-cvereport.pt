@@ -7,19 +7,19 @@
     i18n:domain="launchpad">
 
   <div metal:fill-slot="heading"
-       tal:define="serieses context/serieses">
-    <h1 tal:condition="not: serieses">
+       tal:define="series context/series">
+    <h1 tal:condition="not: series">
       CVEs related to bugs in <span tal:replace="context/displayname" />
     </h1>
-    <h1 tal:condition="serieses">
+    <h1 tal:condition="series">
       CVE reports in releases of <span tal:replace="context/displayname" />
     </h1>
   </div>
 
   <div class="top-portlet"
        metal:fill-slot="main"
-       tal:define="serieses context/serieses">
-    <tal:no_series tal:condition="not: serieses">
+       tal:define="series context/series">
+    <tal:no_series tal:condition="not: series">
       <tal:open-issues define="bugtaskcves view/open_cve_bugtasks">
         <h2>Open bugs</h2>
         <tal:listing condition="bugtaskcves">
@@ -41,12 +41,10 @@
         </p>
       </tal:resolved-issues>
     </tal:no_series>
-    <tal:series condition="serieses">
+    <tal:series condition="series">
       <ul>
-        <li tal:repeat="series serieses">
-          <a tal:attributes="href series/fmt:url/+cve"
-             tal:content="series/displayname" />
-        </li>
+        <li tal:repeat="series series"
+            tal:content="structure series/fmt:link/+cve" />
       </ul>
     </tal:series>
   </div>

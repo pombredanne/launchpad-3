@@ -12,7 +12,7 @@ The product page has a link to help translate it.
     ...     url='http://translations.launchpad.dev/evolution')
     >>> link.click()
     >>> print user_browser.title
-    Translations of The Evolution Groupware Application in Launchpad
+    Translations : Evolution
 
 
 Links and Programming languages
@@ -315,8 +315,8 @@ Launchpad administrators will see the expiration information.
     Commercial subscription expires ...
 
 
-Focus of development
---------------------
+Development
+-----------
 
 The project page shows the series that is the focus of development.
 
@@ -324,6 +324,18 @@ The project page shows the series that is the focus of development.
     >>> print extract_text(
     ...     find_tag_by_id(anon_browser.contents, 'development-focus'))
     Mozilla Firefox trunk series  is the current focus of development
+
+The page has a link to view the project's milestones.
+
+    >>> anon_browser.getLink('View milestones')
+    <Link ... url='http://launchpad.dev/firefox/+milestones'>
+
+Project owners and driver can see a link to register series.
+
+    >>> owner_browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> owner_browser.open('http://launchpad.dev/firefox')
+    >>> owner_browser.getLink('Register a series')
+    <Link ... url='http://launchpad.dev/firefox/+addseries'>
 
 
 Aliases
@@ -336,5 +348,3 @@ home page.
     >>> anon_browser.open('http://launchpad.dev/firefox')
     >>> print extract_text(find_tag_by_id(anon_browser.contents, 'aliases'))
     Also known as: iceweasel, snowchicken
-
-

@@ -27,7 +27,7 @@ from canonical.launchpad.fields import (
     PublicPersonChoice)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.launchpad import IHasDrivers
-from lp.app.interfaces.rootcontext import IRootContext
+from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.role import IHasOwner
 from lp.blueprints.interfaces.specificationtarget import IHasSpecifications
 
@@ -143,7 +143,7 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications, IRootContext):
         """
 
     # subscription-related methods
-    def attend(person, time_starts, time_ends):
+    def attend(person, time_starts, time_ends, is_physical):
         """Record that this person will be attending the Sprint."""
 
     def removeAttendance(person):

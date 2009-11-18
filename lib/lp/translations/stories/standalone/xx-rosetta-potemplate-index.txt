@@ -6,17 +6,16 @@ evolution-2.2 POTemplate page.
 
     >>> anon_browser.open("http://translations.launchpad.dev/"
     ...     "ubuntu/hoary/+source/evolution/+pots/evolution-2.2/")
-    >>> anon_browser.title
-    'Translation status for...
-    ...Template "evolution-2.2" in Ubuntu Hoary package "evolution"...'
+    >>> print anon_browser.title
+    Template ...evolution-2.2... :
+    ...evolution... package : Translations : Hoary (5.04) : Ubuntu
 
 The owner of the template is diplayed.
 
     >>> owner_display = find_tag_by_id(anon_browser.contents,
     ...                                'potemplate-owner')
     >>> print extract_text(owner_display)
-    This template is owned by
-    Rosetta Administrators
+    Owner: Rosetta Administrators
 
 The page lists the status of all the translations. It merges the
 No Privileges Person's languages (which are South African) with
@@ -27,7 +26,7 @@ that represents, when the translation was updated, and by whom.
 
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(content.findAll('h1')[0])
-    Translation status for evolution-2.2
+    Translation status
 
     >>> table = content.findAll('table')[0]
     >>> for row in table.findAll('tr'):
@@ -48,13 +47,13 @@ that there are alternates that may be translated.
     >>> alternate_notice = find_tag_by_id(anon_browser.contents,
     ...                                   'potemplate-relatives')
     >>> print extract_text(alternate_notice)
-    Other templates from the same source: evolution-2.2.
+    Other templates here: evolution-2.2
 
 The notice links to the alternate template.
 
     >>> print alternate_notice
     <p...>
-    Other templates from the same source:
+    <span>Other templates here:</span>
     <a href="/evolution/trunk/+pots/evolution-2.2">evolution-2.2</a>...
     </p>
 
@@ -82,7 +81,7 @@ source, but also with links to the same template in (other) distroseries.
     >>> alternate_notice = find_tag_by_id(anon_browser.contents,
     ...                                   'potemplate-rel-by-name')
     >>> print extract_text(alternate_notice)
-    See the same template in: Ubuntu Hoary.
+    Templates with the same name elsewhere: Ubuntu Hoary
     >>> print alternate_notice
     <p...<a href="/ubuntu/hoary/+source/evolution/+pots/evolution-2.2"...
 
@@ -92,7 +91,7 @@ The template in the other distroseries links back to this one.
     >>> alternate_notice = find_tag_by_id(anon_browser.contents,
     ...                                   'potemplate-rel-by-name')
     >>> print extract_text(alternate_notice)
-    See the same template in: Evolution trunk.
+    Templates with the same name elsewhere: Evolution trunk
     >>> print alternate_notice
     <p...<a href="/evolution/trunk/+pots/evolution-2.2"...
 

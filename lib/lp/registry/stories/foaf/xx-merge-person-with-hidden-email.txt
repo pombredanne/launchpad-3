@@ -24,7 +24,6 @@ FooBar will now request that FooBarDupe be merged into his account.
     >>> browser.url
     'http://launchpad.dev/people/+mergerequest-sent?dupe=...
     >>> print extract_text(find_main_content(browser.contents))
-    People registered with Launchpad
     An email message was sent to...
     Please follow the instructions on that message to complete the merge.
 

@@ -86,8 +86,13 @@ class DirectBranchCommit:
         if to_mirror:
             self.bzrbranch = Branch.open(self.db_branch.warehouse_url)
         else:
+            # Have the opening done through a branch mirrorer.  It will
+            # pick the right policy.  In case we're writing to a hosted
+            # branch stacked on a mirrored branch, the mirrorer knows
+            # how to do the right thing.
             mirrorer = make_branch_mirrorer(self.db_branch.branch_type)
             self.bzrbranch = mirrorer.open(self.db_branch.getPullURL())
+
         self.bzrbranch.lock_write()
         self.is_locked = True
 

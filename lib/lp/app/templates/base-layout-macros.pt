@@ -141,6 +141,17 @@
             tal:attributes="src string:${lp_js}/inlinehelp/inlinehelp.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/client/client.js"></script>
+
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branchmergeproposal.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/codereview.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/lp/comment.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/lp/errors.js"></script>
+
   </tal:devmode>
   <tal:production condition="not:devmode">
     <script type="text/javascript"
@@ -300,8 +311,8 @@
 
 <metal:application-buttons define-macro="application-buttons">
   <!-- Application Menu -->
-  <ul
-    tal:define="facetmenu view/menu:facet">
+  <ul class="facetmenu"
+      tal:define="facetmenu view/menu:facet">
     <tal:facet repeat="link facetmenu">
       <li
         tal:condition="python: link.enabled and link.selected"
@@ -334,18 +345,22 @@
 <metal:footer define-macro="footer">
   <div id="footer" class="footer">
     <div class="lp-arcana">
-      <img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/>
-      &nbsp;&bull;&nbsp;
-      <a href="/+tour">Take the tour</a>
-      &nbsp;&bull;&nbsp;
-      <a href="https://help.launchpad.net/">Read the guide</a>
-      &nbsp;
-      <form id="globalsearch" method="get" accept-charset="UTF-8"
-        class="sprite-after search-icon"
-        tal:condition="view/macro:pagehas/globalsearch"
-        tal:attributes="action string:${rooturl}+search">
-        <input type="search" id="search-text" name="field.text" />
-      </form>
+        <div class="lp-branding">
+          <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
+          &nbsp;&bull;&nbsp;
+          <a href="/+tour">Take the tour</a>
+          &nbsp;&bull;&nbsp;
+          <a href="https://help.launchpad.net/">Read the guide</a>
+          &nbsp;
+          <form id="globalsearch" method="get" accept-charset="UTF-8"
+            class="sprite-after search-icon"
+            tal:condition="view/macro:pagehas/globalsearch"
+            tal:attributes="action string:${rooturl}+search">
+            <input type="search" id="search-text" name="field.text" />
+          </form>
+        </div>
+        <metal:site-message
+          use-macro="context/@@+base-layout-macros/site-message"/>
     </div>
 
     <div class="colophon">
@@ -354,8 +369,11 @@
       &nbsp;&bull;&nbsp;
       <a href="/legal">Terms of use</a>
       &nbsp;&bull;&nbsp;
-      <a href="/feedback"
-        tal:condition="request/lp:person">Contact us</a>
+      <a href="https://help.launchpad.net/Feedback"
+        >Contact us</a>
+      &nbsp;&bull;&nbsp;
+      <a href="http://identi.ca/launchpadstatus"
+        >System status</a>
       <span id="lp-version" tal:condition="not:is_lpnet">
       &nbsp;&bull;&nbsp;
         <a href="https://help.launchpad.net/LaunchpadReleases"
@@ -367,4 +385,25 @@
     </div>
   </div>
 </metal:footer>
+
+<metal:site-message define-macro="site-message">
+  <div class="sitemessage" tal:condition="site_message">
+    <tal:site_message tal:content="structure site_message">
+      This site is running pre-release code.
+    </tal:site_message>
+    <tal:edge_only condition="is_edge">
+      <tal:beta_user condition="view/macro:isbetauser">
+        <a href="#" class="js-action" onclick="setBetaRedirect(false)"
+           tal:condition="not:view/isRedirectInhibited">
+          Disable edge redirect.
+        </a>
+        <a href="#" class="js-action" onclick="setBetaRedirect(true)"
+           tal:condition="view/isRedirectInhibited">
+          Enable edge redirect.
+        </a>
+      </tal:beta_user>
+    </tal:edge_only>
+  </div>
+</metal:site-message>
+
 </macros>
