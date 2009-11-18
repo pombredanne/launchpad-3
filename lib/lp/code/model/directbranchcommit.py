@@ -74,7 +74,7 @@ class DirectBranchCommit:
         self.db_branch = db_branch
         self.to_mirror = to_mirror
 
-        self.last_scanned_id = self.db_branch.last_scanned_id:
+        self.last_scanned_id = self.db_branch.last_scanned_id
 
         if committer is None:
             committer = db_branch.owner

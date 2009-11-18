@@ -43,7 +43,7 @@ files into the branches.  We mock it up here.
     ...         if self.simulate_race:
     ...             raise ConcurrentUpdateError("Simulated race condition.")
     ...
-    ...     def commit(self, message=None):
+    ...     def commit(self, message=None, txn=None):
     ...         self._checkForRace()
     ...         self.logger.info("Commit.")
     ...
@@ -125,6 +125,7 @@ translations to the DirectBranchCommit.
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
+    DEBUG ...
     INFO Writing file 'po/main/nl.po':
     INFO # ...
     msgid ""
@@ -134,6 +135,7 @@ translations to the DirectBranchCommit.
     msgid "maingazpot msgid"
     msgstr "maingazpot msgstr"
     <BLANKLINE>
+    DEBUG ...
     INFO Writing file 'po/module/nl.po':
     INFO # ...
     msgid ""
@@ -143,6 +145,8 @@ translations to the DirectBranchCommit.
     <BLANKLINE>
     msgid "gazmod msgid"
     msgstr "gazmod msgstr"
+    <BLANKLINE>
+    DEBUG ...
     INFO Commit.
     INFO Unlock.
     INFO Processed 1 item(s); 0 failure(s).
@@ -181,10 +185,12 @@ refuse to commit to the branch.
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
+    ...
     INFO Writing file 'po/main/nl.po':
     ...
     msgstr "gazmod msgstr"
     <BLANKLINE>
+    DEBUG ...
     INFO Unlock.
     ERROR Failure: Simulated race condition.
     INFO Processed 1 item(s); 1 failure(s).
