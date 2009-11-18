@@ -106,6 +106,10 @@ class BugPortletSubcribersIds(LaunchpadView, BugViewMixin):
         """Return subscriber_ids in a form suitable for JavaScript use."""
         return dumps(self.subscriber_ids)
 
+    def render(self):
+        """Override the default render() to return only JSON."""
+        return self.subscriber_ids_js
+
 
 class SubscriptionAttrDecorator:
     """A BugSubscription with added attributes for HTML/JS."""
