@@ -72,14 +72,14 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # If there is no diff, there is no link.
         preview = self._createPreviewDiff(0)
         self.assertEqual(
-            '<span class="clean-diff">0 lines</span>',
+            '<span class="empty-diff">0 lines</span>',
             test_tales('preview/fmt:link', preview=preview))
 
     def test_fmt_lines_no_add_or_remove(self):
         # If the lines added and removed are None, they are now shown.
         preview = self._createPreviewDiff(10, added=None, removed=None)
         self.assertEqual(
-            '<a href="%s" class="clean-diff diff-link">'
+            '<a href="%s" class="diff-link">'
             '10 lines</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
@@ -88,7 +88,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # If the added and removed values are not None, they are shown.
         preview = self._createPreviewDiff(10, added=4, removed=0)
         self.assertEqual(
-            '<a href="%s" class="clean-diff diff-link">'
+            '<a href="%s" class="diff-link">'
             '10 lines (+4/-0)</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
@@ -101,7 +101,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
                 'file1': (1, 0),
                 'file2': (3, 0)})
         self.assertEqual(
-            '<a href="%s" class="clean-diff diff-link">'
+            '<a href="%s" class="diff-link">'
             '10 lines (+4/-0) 2 files modified</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
@@ -112,7 +112,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
             10, added=4, removed=0, diffstat={
                 'file': (3, 0)})
         self.assertEqual(
-            '<a href="%s" class="clean-diff diff-link">'
+            '<a href="%s" class="diff-link">'
             '10 lines (+4/-0) 1 file modified</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
@@ -121,7 +121,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # Conflicts are indicated using text in the link.
         preview = self._createPreviewDiff(10, 2, 3, u'conflicts')
         self.assertEqual(
-            '<a href="%s" class="conflicts-diff diff-link">'
+            '<a href="%s" class="diff-link">'
             '10 lines (+2/-3) (has conflicts)</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
@@ -130,7 +130,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         # If there is no diff, there is no link.
         preview = self._createStalePreviewDiff(0)
         self.assertEqual(
-            '<span class="stale-diff">0 lines</span>',
+            '<span class="empty-diff">0 lines</span>',
             test_tales('preview/fmt:link', preview=preview))
 
     def test_fmt_stale_non_empty_diff(self):
@@ -140,7 +140,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         preview = self._createStalePreviewDiff(
             500, 89, 340, diffstat=diffstat)
         self.assertEqual(
-            '<a href="%s" class="stale-diff diff-link">'
+            '<a href="%s" class="diff-link">'
             '500 lines (+89/-340) 23 files modified</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
@@ -152,7 +152,7 @@ class TestPreviewDiffFormatter(TestCaseWithFactory):
         preview = self._createStalePreviewDiff(
             500, 89, 340, u'conflicts', diffstat=diffstat)
         self.assertEqual(
-            '<a href="%s" class="stale-diff diff-link">'
+            '<a href="%s" class="diff-link">'
             '500 lines (+89/-340) 23 files modified (has conflicts)</a>'
             % preview.diff_text.getURL(),
             test_tales('preview/fmt:link', preview=preview))
