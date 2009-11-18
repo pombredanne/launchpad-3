@@ -27,7 +27,7 @@ VISIBLE_DIFF = (
 CLOSE_VISIBLE_DIFF = (
     u'//table[contains(@class, "yui-diff-overlay")]'
      '//a[@class="close-button"]')
-JS_ONLOAD_EXECUTE_DELAY = 1000
+JS_ONLOAD_EXECUTE_DELAY = 2000
 
 
 class TestPopupOnBranchPage(TestCaseWithFactory):
@@ -43,6 +43,31 @@ class TestPopupOnBranchPage(TestCaseWithFactory):
 
         start_url = (
             windmill.settings['TEST_URL'] + '~fred/fooix/proposed')
+        client.open(url=start_url)
+        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        # Sleep for a bit to make sure that the JS onload has had time to execute.
+        client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)
+
+        # Make sure that the link anchor has the js-action class.
+        client.asserts.assertNode(xpath=POPUP_DIFF)
+        client.click(xpath=POPUP_DIFF)
+
+        # Wait for the diff to show.
+        client.waits.forElement(xpath=VISIBLE_DIFF)
+        # Click on the close button.
+        client.click(xpath=CLOSE_VISIBLE_DIFF)
+        # Make sure that the diff has gone.
+        client.asserts.assertNotNode(xpath=VISIBLE_DIFF)
+
+    def test_bug_popup_diff(self):
+        """Test bug page diff popups."""
+        client = WindmillTestClient("Bug popup diffs")
+        objs = make_erics_fooix_project(self.factory)
+        bug = self.factory.makeBug(product=objs['fooix'])
+        bug.linkBranch(objs['proposed'], objs['fred'])
+        transaction.commit()
+
+        start_url = (windmill.settings['TEST_URL'] + 'bugs/%d' % bug.id)
         client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
         # Sleep for a bit to make sure that the JS onload has had time to execute.
