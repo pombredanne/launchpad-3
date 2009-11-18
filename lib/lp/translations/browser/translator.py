@@ -2,6 +2,11 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
+__all__ = [
+    'TranslatorAdminView',
+    'TranslatorEditView',
+    'TranslatorRemoveView',
+    ]
 
 import cgi
 
@@ -10,12 +15,6 @@ from lp.translations.interfaces.translator import (
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadEditFormView, LaunchpadFormView)
 from canonical.launchpad.webapp.menu import structured
-
-__all__ = [
-    'TranslatorAdminView',
-    'TranslatorEditView',
-    'TranslatorRemoveView',
-    ]
 
 
 class TranslatorAdminView(LaunchpadEditFormView):

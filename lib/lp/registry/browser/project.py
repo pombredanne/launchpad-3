@@ -44,6 +44,8 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.webapp.menu import NavigationMenu
+from lp.blueprints.browser.specificationtarget import (
+    HasSpecificationsMenuMixin)
 from lp.registry.interfaces.product import IProductSet
 from lp.registry.interfaces.project import (
     IProject, IProjectSeries, IProjectSet)
@@ -132,7 +134,7 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
                    'answers', 'translations']
 
     def branches(self):
-        text = 'Code'
+        text = 'Branches'
         return Link('', text, enabled=self.context.hasProducts())
 
     def bugs(self):
@@ -267,29 +269,11 @@ class ProjectEditNavigationMenu(NavigationMenu, ProjectEditMenuMixin):
     links = ('branding', 'reassign', 'driver', 'administer')
 
 
-class ProjectSpecificationsMenu(ApplicationMenu):
-
+class ProjectSpecificationsMenu(NavigationMenu,
+                                HasSpecificationsMenuMixin):
     usedfor = IProject
     facet = 'specifications'
-    links = ['listall', 'doc', 'assignments', 'new']
-
-    def listall(self):
-        text = 'List all blueprints'
-        return Link('+specs?show=all', text, icon='info')
-
-    def doc(self):
-        text = 'List documentation'
-        summary = 'Show all completed informational specifications'
-        return Link('+documentation', text, summary, icon="info")
-
-    def assignments(self):
-        text = 'Assignments'
-        return Link('+assignments', text, icon='info')
-
-    def new(self):
-        text = 'Register a blueprint'
-        summary = 'Register a new blueprint for %s' % self.context.title
-        return Link('+addspec', text, summary, icon='add')
+    links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
 
 
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
@@ -492,24 +476,15 @@ class ProjectSetView(LaunchpadView):
         self.rosetta = self.form.getOne('rosetta', None)
         self.malone = self.form.getOne('malone', None)
         self.bazaar = self.form.getOne('bazaar', None)
-        self.text = self.form.getOne('text', None)
+        self.search_string = self.form.getOne('text', None)
         self.search_requested = False
-        self.search_string = None
-        if (self.text is not None or
+        if (self.search_string is not None or
             self.bazaar is not None or
             self.malone is not None or
             self.rosetta is not None or
             self.soyuz is not None):
             self.search_requested = True
         self.results = None
-        self.matches = 0
-
-    def initialize(self):
-        """See `LaunchpadView`."""
-        form = self.request.form_ng
-        self.search_string = form.getOne('text')
-        if self.search_string is not None:
-            self.search_requested = True
 
     @cachedproperty
     def search_results(self):
@@ -517,15 +492,22 @@ class ProjectSetView(LaunchpadView):
         and then present those as a list. Only do this the first
         time the method is called, otherwise return previous results.
         """
-        if self.results is None:
-            self.results = self.context.search(
-                text=self.text,
-                bazaar=self.bazaar,
-                malone=self.malone,
-                rosetta=self.rosetta,
-                soyuz=self.soyuz)
-        self.matches = self.results.count()
+        self.results = self.context.search(
+            text=self.search_string,
+            bazaar=self.bazaar,
+            malone=self.malone,
+            rosetta=self.rosetta,
+            soyuz=self.soyuz,
+            search_products=True)
         return self.results
+
+    @property
+    def matches(self):
+        """Number of matches."""
+        if self.results is None:
+            return 0
+        else:
+            return self.results.count()
 
 
 class ProjectAddView(LaunchpadFormView):

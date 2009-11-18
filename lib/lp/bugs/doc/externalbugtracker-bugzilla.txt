@@ -67,14 +67,18 @@ slightly modified implementation.
 
 == Launchpad plugin ==
 
-Some Bugzillas have a Launchpad plugin installed. For these bugtrackers,
-we use the BugzillaLPPlugin ExternalBugTracker class. The Bugzilla
+Some Bugzillas offer the Bugzilla 3.4 XML-RPC API or have a Launchpad
+plugin installed. For these bugtrackers, we use the BugzillaAPI
+ExternalBugTracker or its subclass, BugzillaLPPlugin, depending upon
+which type of Bugzilla we're dealing with. The Bugzilla
 ExternalBugTracker class has a getExternalBugTrackerToUse() method which
-will return a BugzillaLPPlugin instance if the remote Bugzilla has the
-plugin installed or a standard Bugzilla ExternalBugTracker if not.
+will return a BugzillaAPI instance if the remote Bugzilla offers the 3.4
+API or a  BugzillaLPPlugin instance if the remote Bugzilla has the
+plugin installed. If neither of these is offered, a standard Bugzilla
+ExternalBugTracker will be returned.
 
-The Bugzilla ExternalBugTracker has an xmlrpc_proxy property which we
-override for the purpose of this test.
+The Bugzilla ExternalBugTracker has a _test_xmlrpc_proxy property which
+we override for the purpose of this test.
 
     >>> import xmlrpclib
     >>> class FailingXMLRPCTransport(xmlrpclib.Transport):
@@ -103,14 +107,14 @@ the remote server in response to its check, it will return a standard
 Bugzilla instance.
 
     >>> from lp.bugs.externalbugtracker import (
-    ...     BugzillaLPPlugin)
+    ...     BugzillaAPI, BugzillaLPPlugin)
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
 
 The returned bugtracker will be a Bugzilla instance bug not a
-BugzillaLPPlugin instance.
+BugzillaAPI instance.
 
     >>> (isinstance(bugzilla_to_use, Bugzilla) and
-    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    ...  not isinstance(bugzilla_to_use, BugzillaAPI))
     True
 
 The same is true if getExternalBugTrackerToUse() receives a 404 error
@@ -122,7 +126,7 @@ from the remote server.
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
 
     >>> (isinstance(bugzilla_to_use, Bugzilla) and
-    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    ...  not isinstance(bugzilla_to_use, BugzillaAPI))
     True
 
 Some Bugzillas respond to an invalid XML-RPC method call by returning a
@@ -134,7 +138,7 @@ Some Bugzillas respond to an invalid XML-RPC method call by returning a
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
 
     >>> (isinstance(bugzilla_to_use, Bugzilla) and
-    ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    ...  not isinstance(bugzilla_to_use, BugzillaAPI))
     True
 
 Some other Bugzillas generate an unparsable response, causing
@@ -144,7 +148,57 @@ ResponseError to be raised.
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
 
     >>> (isinstance(bugzilla_to_use, Bugzilla) and
+    ...  not isinstance(bugzilla_to_use, BugzillaAPI))
+    True
+
+If the remote Bugzilla offers the Bugzilla 3.4 API, an instance of
+BuzillaAPI will be returned. To test this, we use a specially-crafted
+XML-RPC proxy that behaves like a Bugzilla 3.4 instance.
+
+    >>> class APIXMLRPCTransport(xmlrpclib.Transport):
+    ...
+    ...     version = '3.4.2'
+    ...
+    ...     def request(self, host, handler, request, verbose=None):
+    ...         args, method_name = xmlrpclib.loads(request)
+    ...
+    ...         if method_name == 'Bugzilla.version':
+    ...             return [{'version': self.version}]
+    ...         else:
+    ...             raise xmlrpclib.Fault('Client', 'No such method')
+    ...
+    >>> test_transport = APIXMLRPCTransport()
+
+    >>> bugzilla._test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...     'http://example.com/xmlrpc.cgi',
+    ...     transport=test_transport)
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+    >>> (isinstance(bugzilla_to_use, BugzillaAPI) and
     ...  not isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    True
+
+If the remote system has the Launchpad plugin installed, an
+getExternalBugTrackerToUse() will return a BugzillaLPPlugin instance.
+
+    >>> class PluginXMLRPCTransport(xmlrpclib.Transport):
+    ...
+    ...     def request(self, host, handler, request, verbose=None):
+    ...         args, method_name = xmlrpclib.loads(request)
+    ...
+    ...         if method_name == 'Launchpad.plugin_version':
+    ...             return [{'version': '0.2'}]
+    ...         else:
+    ...             raise xmlrpclib.Fault('Client', 'No such method')
+    ...
+    >>> test_transport = PluginXMLRPCTransport()
+
+    >>> bugzilla._test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...     'http://example.com/xmlrpc.cgi',
+    ...     transport=test_transport)
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+    >>> isinstance(bugzilla_to_use, BugzillaLPPlugin)
     True
 
 

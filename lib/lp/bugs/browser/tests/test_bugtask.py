@@ -11,6 +11,7 @@ from zope.testing.doctest import DocTestSuite
 from canonical.launchpad.ftests import login
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import LaunchpadFunctionalLayer
 
 from lp.bugs.browser import bugtask
@@ -26,7 +27,8 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         super(TestBugTasksAndNominationsView, self).setUp()
         login('foo.bar@canonical.com')
         self.bug = self.factory.makeBug()
-        self.view = BugTasksAndNominationsView(self.bug, None)
+        self.view = BugTasksAndNominationsView(
+            self.bug, LaunchpadTestRequest())
 
     def test_current_user_affected_status(self):
         self.failUnlessEqual(
@@ -47,6 +49,24 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.view.context.markUserAffected(self.view.user, False)
         self.failUnlessEqual(
             'false', self.view.current_user_affected_js_status)
+
+    def test_not_many_bugtasks(self):
+        for count in range(10 - len(self.bug.bugtasks) - 1):
+            self.factory.makeBugTask(bug=self.bug)
+        self.view.initialize()
+        self.failIf(self.view.many_bugtasks)
+        row_view = self.view._getTableRowView(
+            self.bug.default_bugtask, False, False)
+        self.failIf(row_view.many_bugtasks)
+
+    def test_many_bugtasks(self):
+        for count in range(10 - len(self.bug.bugtasks)):
+            self.factory.makeBugTask(bug=self.bug)
+        self.view.initialize()
+        self.failUnless(self.view.many_bugtasks)
+        row_view = self.view._getTableRowView(
+            self.bug.default_bugtask, False, False)
+        self.failUnless(row_view.many_bugtasks)
 
 
 def test_suite():

@@ -51,7 +51,7 @@ the moderation page.  But right now, there is nothing to moderate.
     >>> admin_browser.open(
     ...     'http://launchpad.dev/~guadamen/+mailinglist-moderate')
     >>> admin_browser.title
-    '+mailinglist-moderate : \xe2\x80\x9cGuadaMen\xe2\x80\x9d team'
+    'Mailing list moderation...
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'legend'))
     There are no mailing list messages requiring your review.
 

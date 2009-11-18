@@ -17,13 +17,18 @@ from lp.blueprints.interfaces.sprintattendance import ISprintAttendance
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url, custom_widget)
 from canonical.widgets.date import DateTimeWidget
+from canonical.widgets.itemswidgets import LaunchpadBooleanRadioWidget
 
 
 class BaseSprintAttendanceAddView(LaunchpadFormView):
 
     schema = ISprintAttendance
+    field_names = ['time_starts', 'time_ends', 'is_physical']
     custom_widget('time_starts', DateTimeWidget)
     custom_widget('time_ends', DateTimeWidget)
+    custom_widget(
+        'is_physical', LaunchpadBooleanRadioWidget, orientation='vertical',
+        true_label="Physically", false_label="Remotely", hint=None)
 
     def setUpWidgets(self):
         LaunchpadFormView.setUpWidgets(self)
@@ -103,7 +108,10 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(self.context)
 
+    cancel_url = next_url
+
     _local_timeformat = '%H:%M on %A, %Y-%m-%d'
+
     @property
     def local_start(self):
         """The sprint start time, in the local time zone, as text."""
@@ -122,7 +130,7 @@ class BaseSprintAttendanceAddView(LaunchpadFormView):
 class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
     """A view used to register your attendance at a sprint."""
 
-    field_names = ['time_starts', 'time_ends']
+    label = "Register your attendance"
 
     @property
     def initial_values(self):
@@ -130,7 +138,8 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
         for attendance in self.context.attendances:
             if attendance.attendee == self.user:
                 return dict(time_starts=attendance.time_starts,
-                            time_ends=attendance.time_ends)
+                            time_ends=attendance.time_ends,
+                            is_physical=attendance.is_physical)
         # If this person is not yet registered, then default to showing the
         # full sprint dates.
         return {'time_starts': self.context.time_starts,
@@ -139,13 +148,15 @@ class SprintAttendanceAttendView(BaseSprintAttendanceAddView):
     @action(_('Register'), name='register')
     def register_action(self, action, data):
         time_starts, time_ends = self.getDates(data)
-        self.context.attend(self.user, time_starts, time_ends)
+        is_physical = data['is_physical']
+        self.context.attend(self.user, time_starts, time_ends, is_physical)
 
 
 class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     """A view used to register someone else's attendance at a sprint."""
 
-    field_names = ['attendee', 'time_starts', 'time_ends']
+    label = 'Register someone else'
+    field_names = ['attendee'] + list(BaseSprintAttendanceAddView.field_names)
 
     @property
     def initial_values(self):
@@ -156,4 +167,6 @@ class SprintAttendanceRegisterView(BaseSprintAttendanceAddView):
     @action(_('Register'), name='register')
     def register_action(self, action, data):
         time_starts, time_ends = self.getDates(data)
-        self.context.attend(data['attendee'], time_starts, time_ends)
+        is_physical = data['is_physical']
+        self.context.attend(
+            data['attendee'], time_starts, time_ends, is_physical)

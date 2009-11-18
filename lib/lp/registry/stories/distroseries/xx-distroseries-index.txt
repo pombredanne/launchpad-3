@@ -7,7 +7,7 @@ this distribution series.
     >>> user_browser.open('http://launchpad.dev/ubuntu/hoary')
     >>> user_browser.getLink('Help translate').click()
     >>> print user_browser.title
-    Translations : 5.04 : Ubuntu
+    Translations : Hoary (5.04) : Ubuntu
 
 
 Registering information
@@ -19,11 +19,10 @@ its main 'heading'.
     >>> anon_browser.open('http://launchpad.dev/ubuntu/warty')
 
     >>> print extract_text(
-    ...     first_tag_by_class(anon_browser.contents, 'registering'))
+    ...     find_tag_by_id(anon_browser.contents, 'registration'))
     registered by Ubuntu Team on 2006-10-16
 
     >>> print extract_text(find_main_content(anon_browser.contents))
-    registered by Ubuntu Team on 2006-10-16
     Warty
     ...
 
@@ -41,11 +40,11 @@ on the series' details.
     ...     find_portlet(anon_browser.contents, 'Series information'))
     Series information
     Distribution: Ubuntu
-    Series: Warty
+    Series: Warty (4.10)
     Project drivers: Ubuntu Team
     Release manager: None
     Status: Current Stable Release
-    Derives from: Warty is not derived from another series.
+    Derives from: Warty (4.10) is not derived from another series.
     Source packages: 3
     Binary packages: 4
 
@@ -57,11 +56,11 @@ change its text slightly to annouce this:
     ...     find_portlet(anon_browser.contents, 'Series information'))
     Series information
     Distribution: Debian
-    Series: Sarge
+    Series: Sarge (3.1)
     Project drivers: Jeff Waugh, Mark Shuttleworth
     Release manager: Jeff Waugh
     Status: Pre-release Freeze
-    Derives from: Woody
+    Derives from: Woody (3.0)
     Source packages: No sources imported or published.
     Binary packages: No binaries imported or published.
 

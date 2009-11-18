@@ -34,7 +34,7 @@ It also provides a link to the currently published version:
 
     >>> browser.getLink("0.9").click()
     >>> print browser.title
-    0.9 : mozilla-firefox : i386 : 4.10 : Ubuntu
+    0.9 : mozilla-firefox : i386 : Warty (4.10) : Ubuntu
 
 As well as a link to the related distribution source package:
 
@@ -43,7 +43,7 @@ As well as a link to the related distribution source package:
     >>> browser.getLink(id="source_package").click()
     >>> print browser.title.decode('ascii', 'ignore')
     iceweasel package : Ubuntu
-    
+
 If the binary distribution does not have a current release, then the
 link to the source package will not be present:
 
@@ -82,7 +82,7 @@ Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
 
     >>> browser.getLink(url="mozilla-firefox/0.9").click()
     >>> print browser.title
-    0.9 : mozilla-firefox : i386 : 4.10 : Ubuntu
+    0.9 : mozilla-firefox : i386 : Warty (4.10) : Ubuntu
 
 This page represents an IDistroArchSeriesBinaryPackageRelease and is
 able to point the user to the IDistroSeriesSourcePackageRelease which
@@ -90,7 +90,7 @@ originated itself:
 
     >>> source_element = find_tag_by_id(browser.contents, 'source')
     >>> print extract_text(source_element)
-    mozilla-firefox 0.9 (source) in Ubuntu
+    "mozilla-firefox" 0.9 source package in Ubuntu
 
     >>> print source_element.find(name='a')['href']
     /ubuntu/+source/mozilla-firefox/0.9
@@ -146,7 +146,7 @@ It also provides a link to the currently published version:
 
     >>> browser.getLink("1.0-1").click()
     >>> print browser.title
-    1.0-1 : commercialpackage : i386 : 6.6.6 : Ubuntu
+    1.0-1 : commercialpackage : i386 : Breezy Badger Autotest (6.6.6) : Ubuntu
 
 A BinaryPackageRelease once published in a DistroArchSeries is
 represented by a DistroArchSeriesBinaryPackageRelease and easily
@@ -177,14 +177,14 @@ Click on the wanted name to get on the DistroArchSeriesBinaryPackageRelease:
 
     >>> browser.getLink("commercialpackage").click()
     >>> print browser.title
-    1.0-1 : commercialpackage : i386 : 6.6.6 : Ubuntu
+    1.0-1 : commercialpackage : i386 : Breezy Badger Autotest (6.6.6) : Ubuntu
 
 This page represents an IDistroArchSeriesBinaryPackageRelease and is
 able to point the user to the IDistroSeriesSourcePackageRelease which
 originated itself:
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'source'))
-    commercialpackage 1.0-1 (source) in Ubuntu
+    "commercialpackage" 1.0-1 source package in Ubuntu
 
 Also provide a section with the contained files, including respective
 librarian URL and size:

@@ -17,9 +17,9 @@ Logged in as a regular user, the +export page is accessible.
     ...     '/+source/evolution/+pots/evolution-2.2/es')
     >>> user_browser.getLink('Download').click()
 
-    >>> user_browser.title
-    '+export : Spanish (es) : Template ...evolution-2.2... :
-    ...evolution... package : Translations : 5.04 : Ubuntu'
+    >>> print user_browser.title
+    Download translation : Spanish (es)...
+    ...evolution... package : Translations : Hoary (5.04) : Ubuntu
 
     >>> print find_main_content(user_browser.contents)
     <...

@@ -68,7 +68,48 @@ $$
 $$;
 
 COMMENT ON FUNCTION replication_lag() IS
-'Returns the worst lag time known to this node in our cluster, or NULL if not a replicated installation.';
+'Returns the worst lag time in our cluster, or NULL if not a replicated installation. Only returns meaningful results on the lpmain replication set master.';
+
+
+CREATE OR REPLACE FUNCTION replication_lag(node_id integer) RETURNS interval
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_lag interval;
+    BEGIN
+        SELECT INTO v_lag st_lag_time FROM _sl.sl_status
+            WHERE st_origin = _sl.getlocalnodeid('_sl')
+                AND st_received = node_id;
+        RETURN v_lag;
+    -- Slony-I not installed here - non-replicated setup.
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+        WHEN undefined_table THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION replication_lag(integer) IS
+'Returns the lag time of the lpmain replication set to the given node, or NULL if not a replicated installation. The node id parameter can be obtained by calling getlocalnodeid() on the relevant database. This function only returns meaningful results on the lpmain replication set master.';
+
+
+CREATE OR REPLACE FUNCTION getlocalnodeid() RETURNS integer
+LANGUAGE plpgsql STABLE SECURITY DEFINER AS
+$$
+    DECLARE
+        v_node_id integer;
+    BEGIN
+        SELECT INTO v_node_id _sl.getlocalnodeid('_sl');
+        RETURN v_node_id;
+    EXCEPTION
+        WHEN invalid_schema_name THEN
+            RETURN NULL;
+    END;
+$$;
+
+COMMENT ON FUNCTION getlocalnodeid() IS
+'Return the replication node id for this node, or NULL if not a replicated installation.';
 
 
 CREATE OR REPLACE FUNCTION activity()
@@ -988,7 +1029,22 @@ BEGIN
     DECLARE
         parent_name text;
         child_name text;
+        parent_distroseries text;
+        child_distroseries text;
     BEGIN
+        -- Make sure that the package sets being associated here belong
+        -- to the same distro series.
+        IF (SELECT parent.distroseries != child.distroseries
+            FROM packageset parent, packageset child
+            WHERE parent.id = NEW.parent AND child.id = NEW.child)
+        THEN
+            SELECT name INTO parent_name FROM packageset WHERE id = NEW.parent;
+            SELECT name INTO child_name FROM packageset WHERE id = NEW.child;
+            SELECT ds.name INTO parent_distroseries FROM packageset ps, distroseries ds WHERE ps.id = NEW.parent AND ps.distroseries = ds.id;
+            SELECT ds.name INTO child_distroseries FROM packageset ps, distroseries ds WHERE ps.id = NEW.child AND ps.distroseries = ds.id;
+            RAISE EXCEPTION 'Package sets % and % belong to different distro series (to % and % respectively) and thus cannot be associated.', child_name, parent_name, child_distroseries, parent_distroseries;
+        END IF;
+
         IF EXISTS(
             SELECT * FROM flatpackagesetinclusion
             WHERE parent = NEW.child AND child = NEW.parent LIMIT 1)

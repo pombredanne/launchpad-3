@@ -105,7 +105,8 @@
                   </td>
                   <td>
                     <tal:block condition="entry/required:launchpad.Admin">
-                      <a class="sprite edit" tal:attributes="href entry/fmt:url">
+                      <a class="sprite edit"
+                         tal:attributes="href entry/fmt:url">
                         <span class="invisible-link">Change this entry</span>
                       </a>
                     </tal:block>
@@ -165,6 +166,7 @@
           </form>
         </tal:block>
       </div>
+      <div id="spinner-loader"></div>
     </metal:translation-import-queue>
 </body>
 </html>

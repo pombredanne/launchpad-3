@@ -10,7 +10,7 @@ The PPA packages page is accessible from the PPA page.
     http://launchpad.dev/~cprov/+archive/ppa/+packages
 
     >>> print anon_browser.title
-    +packages : PPA for Celso Providelo : Celso Providelo
+    Packages in...
 
 
 Page structure
@@ -20,10 +20,10 @@ The PPA packages page uses the 'Overview' application button and displays
 a descriptive main heading.
 
     >>> print_location(anon_browser.contents)
-    Hierarchy: Celso Providelo > PPA for Celso Providelo > +packages
+    Hierarchy: Celso Providelo > PPA for Celso Providelo > Packages in...
     Tabs:
     * Overview (selected) - http://launchpad.dev/~cprov
-    * Code - http://code.launchpad.dev/~cprov
+    * Branches - http://code.launchpad.dev/~cprov
     * Bugs - http://bugs.launchpad.dev/~cprov
     * Blueprints - http://blueprints.launchpad.dev/~cprov
     * Translations - http://translations.launchpad.dev/~cprov
@@ -35,7 +35,7 @@ the 'View all builds' link.
 
     >>> anon_browser.getLink('View all builds').click()
     >>> print anon_browser.title
-    +builds : PPA for Celso Providelo : Celso Providelo
+    Builds for...
 
     >>> print anon_browser.url
     http://launchpad.dev/~cprov/+archive/ppa/+builds
@@ -145,7 +145,7 @@ published, this will be indicated to the viewer:
     Built packages
       mozilla-firefox ff from iceweasel
     Package files
-      firefox-0.9.2.orig.tar.gz (9.5 MiB)
+      firefox_0.9.2.orig.tar.gz (9.5 MiB)
       iceweasel-1.0.dsc (123 bytes)
       mozilla-firefox_0.9_i386.deb (3 bytes)
 
@@ -327,7 +327,7 @@ Links from files go to their on-archive locations:
     >>> expander_url = foo_browser.getLink(id=expander_id).url
     >>> anon_browser.open(expander_url)
     >>> print anon_browser.getLink("orig").url
-    http://.../firefox-0.9.2.orig.tar.gz
+    http://.../firefox_0.9.2.orig.tar.gz
 
 The uploader name is linkified to that user's home page:
 

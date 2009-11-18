@@ -45,13 +45,9 @@
 <div metal:fill-slot="side" tal:define="overview_menu context/menu:overview">
   <tal:menu replace="structure view/@@+global-actions" />
 
-  <div class="portlet"
-    tal:condition="view/can_contact">
-    <a href="+contactuser" class="sprite mail"
-      tal:attributes="title view/contact_link_title"
-      tal:content="view/specific_contact_text">Contact
-        this person</a>
-  </div>
+  <metal:contact use-macro="context/@@+person-macros/contact">
+    Contact this person
+  </metal:contact>
 
   <div id="involvement" class="portlet involvement"
     tal:condition="context/is_valid_person">
@@ -71,7 +67,7 @@
           tal:attributes="href context/fmt:url:translations">Translations</a>
       </li>
       <li>
-        <a class="sprite blueprints"
+        <a class="sprite code"
           tal:attributes="href context/fmt:url:code">Code</a>
       </li>
       <li>
@@ -92,22 +88,17 @@
       tal:content="structure context/homepage_content/fmt:text-to-html"
     />
     <ul class="horizontal">
+      <tal:comment condition="nothing">
+        This link name is different from the menu, since it refers
+        to several pages that are all accessible when you click on this link.
+      </tal:comment>
       <li
         tal:define="link context/menu:overview/related_software_summary"
-        tal:condition="link/enabled"
-        tal:content="structure link/fmt:link" />
-      <li
-        tal:define="link context/menu:overview/projects"
-        tal:condition="link/enabled"
-        tal:content="structure link/fmt:link" />
-      <li
-        tal:define="link context/menu:overview/maintained"
-        tal:condition="link/enabled"
-        tal:content="structure link/fmt:link" />
-      <li
-        tal:define="link context/menu:overview/ppa"
-        tal:condition="link/enabled"
-        tal:content="structure link/fmt:link" />
+        tal:condition="link/enabled">
+        <a class="sprite info" tal:attributes="href link/fmt:url">
+          Related software and packages
+        </a>
+      </li>
       <li
         tal:define="link context/menu:overview/oauth_tokens"
         tal:condition="link/enabled"

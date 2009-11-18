@@ -148,7 +148,7 @@ builds.
     ...     "http://launchpad.dev/~no-priv/+archive/ppa/+packages")
 
     >>> print no_priv_browser.title
-    +packages : PPA for No Privileges Person : No Privileges Person
+    Packages in “PPA for No Privileges Person”...
 
 Source changesfiles are served on the PPA '+files' traversal.
 

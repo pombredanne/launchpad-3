@@ -8,6 +8,8 @@ __metaclass__ = type
 import cgi
 import urllib
 from datetime import datetime, timedelta
+import md5
+import random
 
 from BeautifulSoup import UnicodeDammit
 
@@ -18,10 +20,12 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from z3c.ptcompat import ViewPageTemplateFile
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.account import AccountStatus
-from canonical.launchpad.interfaces.authtoken import LoginTokenType
+from canonical.launchpad.interfaces.authtoken import (
+    IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import (
@@ -150,8 +154,44 @@ class RestrictedLoginInfo:
         return getUtility(IPersonSet).getByName(
             config.launchpad.restrict_to_team).title
 
+class CaptchaMixin:
+    """Mixin class to provide simple captcha capabilities."""
+    def validateCaptcha(self):
+        """Validate the submitted captcha value matches what we expect."""
+        expected = self.request.form.get(self.captcha_hash)
+        submitted = self.request.form.get(self.captcha_submission)
+        if expected is not None and submitted is not None:
+            return md5.new(submitted).hexdigest() == expected
+        return False
 
-class LoginOrRegister:
+    @cachedproperty
+    def captcha_answer(self):
+        """Get the answer for the current captcha challenge.
+
+        With each failed attempt a new challenge will be given.  Our answer
+        space is acknowledged to be ridiculously small but is chosen in the
+        interest of ease-of-use.  We're not trying to create an iron-clad
+        challenge but only a minimal obstacle to dumb bots.
+        """
+        return random.randint(10, 20)
+
+    @property
+    def get_captcha_hash(self):
+        """Get the captcha hash.
+
+        The hash is the value we put in the form for later comparison.
+        """
+        return md5.new(str(self.captcha_answer)).hexdigest()
+
+    @property
+    def captcha_problem(self):
+        """Create the captcha challenge."""
+        op1 = random.randint(1, self.captcha_answer - 1)
+        op2 = self.captcha_answer - op1
+        return '%d + %d =' % (op1, op2)
+
+
+class LoginOrRegister(CaptchaMixin):
     """Merges the former CookieLoginPage and JoinLaunchpadView classes
     to allow the two forms to appear on a single page.
 
@@ -167,6 +207,8 @@ class LoginOrRegister:
     submit_registration = form_prefix + 'submit_registration'
     input_email = form_prefix + 'email'
     input_password = form_prefix + 'password'
+    captcha_submission = form_prefix + 'captcha_submission'
+    captcha_hash = form_prefix + 'captcha_hash'
 
     # Instance variables that represent the state of the form.
     login_error = None
@@ -292,10 +334,18 @@ class LoginOrRegister:
             redirection_url = redirection_url_list[0]
 
         self.email = request.form.get(self.input_email).strip()
+
         if not valid_email(self.email):
             self.registration_error = (
                 "The email address you provided isn't valid. "
                 "Please verify it and try again.")
+            return
+
+        # Validate the user is human, more or less.
+        if not self.validateCaptcha():
+            self.registration_error = (
+                "The answer to the simple math question was incorrect "
+                "or missing.  Please try again.")
             return
 
         registered_email = getUtility(IEmailAddressSet).getByEmail(self.email)
@@ -385,7 +435,6 @@ class LoginOrRegister:
             value = UnicodeDammit(value).markup
             L.append(html % (name, cgi.escape(value, quote=True)))
         return '\n'.join(L)
-
 
 def logInPrincipal(request, principal, email):
     """Log the principal in. Password validation must be done in callsites."""
@@ -495,33 +544,50 @@ class CookieLogoutPage:
         return ''
 
 
-class ForgottenPasswordPage:
+class ForgottenPasswordPage(CaptchaMixin):
 
     errortext = None
     submitted = False
+    captcha_submission = 'captcha_submission'
+    captcha_hash = 'captcha_hash'
 
     def process_form(self):
         request = self.request
         if request.method != "POST":
             return
 
+        # Validate the user is human, more or less.
+        if not self.validateCaptcha():
+            self.errortext = (
+                "The answer to the simple math question was incorrect "
+                "or missing.  Please try again.")
+            return
+
         email = request.form.get("email").strip()
-        person = getUtility(IPersonSet).getByEmail(email)
-        if person is None:
+        email_address = getUtility(IEmailAddressSet).getByEmail(email)
+        if email_address is None:
             self.errortext = ("Your account details have not been found. "
                               "Please check your subscription email "
                               "address and try again.")
             return
 
-        if person.isTeam():
+        person = email_address.person
+        if person is not None and person.isTeam():
             self.errortext = ("The email address <strong>%s</strong> "
                               "belongs to a team, and teams cannot log in to "
                               "Launchpad." % email)
             return
 
-        logintokenset = getUtility(ILoginTokenSet)
-        token = logintokenset.new(
-            person, email, email, LoginTokenType.PASSWORDRECOVERY)
+        if person is None:
+            account = email_address.account
+            redirection_url = urlappend(
+                self.request.getApplicationURL(), '+login')
+            token = getUtility(IAuthTokenSet).new(
+                account, email, email, LoginTokenType.PASSWORDRECOVERY,
+                redirection_url=redirection_url)
+        else:
+            token = getUtility(ILoginTokenSet).new(
+                person, email, email, LoginTokenType.PASSWORDRECOVERY)
         token.sendPasswordResetEmail()
         self.submitted = True
         return

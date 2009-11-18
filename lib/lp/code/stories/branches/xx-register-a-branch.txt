@@ -7,7 +7,7 @@ registration page.
     >>> browser.open('http://code.launchpad.dev/')
     >>> browser.getLink('Register a branch').click()
     >>> print browser.title
-    +addbranch : Branches for Sample Person : Sample Person
+    Register a branch...
 
 Clicking the link as an anonymous user should take you to a login page. Once
 you've logged in, you should be redirected to the registration page.
@@ -22,4 +22,4 @@ you've logged in, you should be redirected to the registration page.
     >>> anon_browser.getControl('Password').value = 'test'
     >>> anon_browser.getControl('Log In').click()
     >>> print anon_browser.title
-    +addbranch : Branches for Sample Person : Sample Person
+    Register a branch...

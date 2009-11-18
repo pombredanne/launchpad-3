@@ -94,8 +94,8 @@
   </script>
   <script
     tal:define="
-      include_inactive request/form/include_inactive | nothing;
-      resize_frame request/form/resize_frame | nothing"
+      include_inactive request/form/include_inactive | string:false;
+      resize_frame request/form/resize_frame | string:"
     tal:content="
       string: show_timeline_graph('${include_inactive}', '${resize_frame}');"/>
 

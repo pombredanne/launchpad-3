@@ -15,7 +15,7 @@ Anyone logged in is able to register a new bug tracker.
   'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
 
   >>> print user_browser.title
-  +newbugtracker : Bug trackers
+  Register an external bug tracker...
 
 In case the user gets cold feet, there is always a cancel link that
 takes them back to the bug tracker listing page.
@@ -176,7 +176,7 @@ We can edit the details of the newly added bugtracker.
   'http://bugs.launchpad.dev/bugs/bugtrackers/testmantis/+edit'
 
   >>> print user_browser.title
-  +edit : Test Mantis Tracker : Bug trackers
+  Change details for the...
 
   >>> user_browser.getControl('Name').value = 'testbugzilla'
   >>> user_browser.getControl('Title').value = 'A test Bugzilla Tracker'

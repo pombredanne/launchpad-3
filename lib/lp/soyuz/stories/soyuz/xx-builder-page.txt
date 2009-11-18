@@ -114,7 +114,7 @@ Celso changes the builder title and the change takes effect immediately.
     # We use backslashreplace because the page title includes smart quotes.
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> print backslashreplace(cprov_browser.title)
-    +edit : Bob The Builder : Build Farm
+    Change details for...
 
     >>> title = cprov_browser.getControl(name="field.title")
     >>> original_title = title.value

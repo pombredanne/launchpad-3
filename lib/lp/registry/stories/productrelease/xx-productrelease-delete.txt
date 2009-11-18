@@ -34,7 +34,7 @@ Salgado has the necessary rights, so he sees the link and the +delete page.
     >>> salgados_browser.open('http://launchpad.dev/firefox/trunk/0.9.2')
     >>> salgados_browser.getLink('Delete release').click()
     >>> print salgados_browser.title
-    +delete : Series trunk : Mozilla Firefox
+    Delete Mozilla Firefox 0.9.2...
 
 The 0.9.2 release has some files associated with it. Salgado reads that
 they will be deleted too.
@@ -46,7 +46,7 @@ they will be deleted too.
     Are you sure you want to delete the 0.9.2 release of
     Mozilla Firefox trunk series?
     The following files must be deleted:
-    firefox-0.9.2.orig.tar.gz...
+    firefox_0.9.2.orig.tar.gz...
 
 Salgado chooses the delete button, then reads that the action is successful.
 

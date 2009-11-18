@@ -361,6 +361,8 @@
 </metal:bug_reporting_guidelines>
 
 <metal:similar-bugs define-macro="display-similar-bugs">
+  <p id="filebug-query-heading">Is "<strong><span tal:replace="view/search_text">my submitted bug
+    summary</span></strong>" one of these bugs?</p>
   <ul id="similar-bugs">
     <li tal:repeat="bug view/similar_bugs" class="similar-bug">
       <table tal:define="bugtask python:view.getRelevantBugTask(bug)">

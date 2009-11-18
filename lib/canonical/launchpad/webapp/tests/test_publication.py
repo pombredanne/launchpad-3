@@ -10,12 +10,10 @@ import unittest
 
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
 
-from psycopg2.extensions import TransactionRollbackError
 from storm.exceptions import DisconnectionError
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.publisher.interfaces import Retry
-from zope.security.management import endInteraction
 
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
@@ -23,9 +21,35 @@ from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.testing import TestCase, TestCaseWithFactory
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import OAuthPermission
-from canonical.launchpad.webapp.publication import is_browser
+from canonical.launchpad.webapp.publication import (
+    is_browser, LaunchpadBrowserPublication)
 from canonical.launchpad.webapp.servers import (
     LaunchpadTestRequest, WebServicePublication)
+
+
+class TestLaunchpadBrowserPublication(TestCase):
+
+    def test_callTraversalHooks_appends_to_traversed_objects(self):
+        # Traversed objects are appended to request.traversed_objects in the
+        # order they're traversed.
+        obj1 = object()
+        obj2 = object()
+        request = LaunchpadTestRequest()
+        publication = LaunchpadBrowserPublication(None)
+        publication.callTraversalHooks(request, obj1)
+        publication.callTraversalHooks(request, obj2)
+        self.assertEquals(request.traversed_objects, [obj1, obj2])
+
+    def test_callTraversalHooks_appends_only_once_to_traversed_objects(self):
+        # callTraversalHooks() may be called more than once for a given
+        # traversed object, but if that's the case we won't add the same
+        # object twice to traversed_objects.
+        obj1 = obj2 = object()
+        request = LaunchpadTestRequest()
+        publication = LaunchpadBrowserPublication(None)
+        publication.callTraversalHooks(request, obj1)
+        publication.callTraversalHooks(request, obj2)
+        self.assertEquals(request.traversed_objects, [obj1])
 
 
 class TestWebServicePublication(TestCaseWithFactory):
@@ -90,6 +114,9 @@ class TestWebServicePublication(TestCaseWithFactory):
 
         # Ensure the OOPS mentions the correct exception
         self.assertNotEqual(repr(next_oops).find("DisconnectionError"), -1)
+
+        # Ensure the OOPS is correctly marked as informational only.
+        self.assertEqual(next_oops.informational, 'True')
 
         # Ensure that it is different to the last logged OOPS.
         self.assertNotEqual(repr(last_oops), repr(next_oops))

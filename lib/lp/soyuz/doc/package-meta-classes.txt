@@ -52,9 +52,11 @@ Combining DistroSeries and SourcePackageRelease:
  >>> verifyObject(IDistroSeriesSourcePackageRelease, drspr)
  True
 
- >>> drspr.displayname
- u'pmount 0.1-1'
+ >>> print drspr.displayname
+ pmount 0.1-1
 
+ >>> print drspr.title
+ "pmount" 0.1-1 source package in The Hoary Hedgehog Release
 
 == Querying builds for DistributionSPR and DistroSeriesSPR ==
 

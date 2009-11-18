@@ -68,7 +68,7 @@ provided link.
 
     >>> jblack_browser.getLink('Create a new PPA').click()
     >>> print jblack_browser.title
-    +activate-ppa : James Blackwell
+    Personal Package Archive Activation : James Blackwell
 
     >>> jblack_browser.getControl(
     ...     name="field.displayname").value = 'PPA for James Blackwell'
@@ -247,7 +247,7 @@ also marked as pending build for i386.
 
     >>> jblack_browser.getLink('PPA for James Blackwell').click()
     >>> print jblack_browser.title
-    +packages : PPA for James Blackwell : James Blackwell
+    Packages in “PPA for James Blackwell”...
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -294,7 +294,6 @@ build created during the copy is ready to be dispatched.
     PPA for James Blackwell : James Blackwell
 
     >>> print extract_text(find_main_content(jblack_browser.contents))
-    created ... ago
     i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
     James Blackwell
     PPA for James Blackwell
@@ -329,11 +328,11 @@ James goes straight to the copy interface of his PPA.
     >>> jblack_browser.getLink('PPA for James Blackwell').click()
     >>> jblack_browser.getLink('View package details').click()
     >>> print jblack_browser.title
-    +packages : PPA for James Blackwell : James Blackwell
+    Packages in “PPA for James Blackwell”...
 
     >>> jblack_browser.getLink('Copy packages').click()
     >>> print jblack_browser.title
-    +copy-packages : PPA for James Blackwell : James Blackwell
+    Copy packages from PPA for James Blackwell...
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
@@ -739,8 +738,7 @@ sources and binaries are copied to their PPA.
 
     >>> jblack_browser.getLink('PPA for James Blackwell Friends').click()
     >>> print jblack_browser.title
-    +packages : PPA for James Blackwell Friends
-    : “James Blackwell Friends” team
+    Packages in “PPA for James Blackwell Friends”...
 
     >>> print_ppa_packages(jblack_browser.contents)
     Source            Uploader    Published   Status   Series  Section  Build

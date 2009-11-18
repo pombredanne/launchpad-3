@@ -8,19 +8,15 @@
 >
 
 <body>
-<div metal:fill-slot="main">
+  <div metal:fill-slot="main">
 
-<div class="top-portlet">
-  <h1>
-    Version history
-  </h1>
+    <div class="top-portlet">
+      <tal:block
+        repeat="dspr view/releases"
+        replace="structure dspr/@@+changes">
+      </tal:block>
+    </div>
 
-  <tal:block
-    repeat="dspr view/releases"
-    replace="structure dspr/@@+changes">
-  </tal:block>
-</div>
-
-</div>
+  </div>
 </body>
 </html>

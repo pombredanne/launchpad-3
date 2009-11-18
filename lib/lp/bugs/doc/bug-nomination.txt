@@ -493,7 +493,7 @@ created.
 == Automatic targeting of new source packages ==
 
 If a another distribution task is added, and nomination for that
-distribution's serieses already exists, the nominations will be valid
+distribution's series already exists, the nominations will be valid
 for the new task as well, and bugtasks will be created for all accepted
 ones.
 
@@ -540,7 +540,7 @@ source package on an accepted nomination. For example, if we would
 change the thunderbird package on the Grumpy task, it won't have a
 corresponding generic distribution task.
 
-The way we tie nominations to distribution serieses, and not to source
+The way we tie nominations to distribution series, and not to source
 packages, makes it hard to solve source package changes in a nice way.
 So what happens when a source package is changed is that we simply
 rename all other bugtasks which points to the same distribution and

@@ -58,7 +58,8 @@ class TestErrorReport(unittest.TestCase):
                             [('name1', 'value1'), ('name2', 'value2'),
                              ('name1', 'value3')],
                             [(1, 5, 'store_a', 'SELECT 1'),
-                             (5, 10, 'store_b', 'SELECT 2')])
+                             (5, 10, 'store_b', 'SELECT 2')],
+                            False)
         self.assertEqual(entry.id, 'id')
         self.assertEqual(entry.type, 'exc-type')
         self.assertEqual(entry.value, 'exc-value')
@@ -69,6 +70,7 @@ class TestErrorReport(unittest.TestCase):
         self.assertEqual(entry.username, 'username')
         self.assertEqual(entry.url, 'url')
         self.assertEqual(entry.duration, 42)
+        self.assertEqual(entry.informational, False)
         self.assertEqual(len(entry.req_vars), 3)
         self.assertEqual(entry.req_vars[0], ('name1', 'value1'))
         self.assertEqual(entry.req_vars[1], ('name2', 'value2'))
@@ -93,7 +95,7 @@ class TestErrorReport(unittest.TestCase):
                              ('HTTP_REFERER', 'http://localhost:9000/'),
                              ('name=foo', 'hello\nworld')],
                             [(1, 5, 'store_a', 'SELECT 1'),
-                             (5, 10,'store_b', 'SELECT\n2')])
+                             (5, 10,'store_b', 'SELECT\n2')], False)
         fp = StringIO.StringIO()
         entry.write(fp)
         self.assertEqual(fp.getvalue(), dedent("""\
@@ -107,6 +109,7 @@ class TestErrorReport(unittest.TestCase):
             User: Sample User
             URL: http://localhost:9000/foo
             Duration: 42
+            Informational: False
 
             HTTP_USER_AGENT=Mozilla/5.0
             HTTP_REFERER=http://localhost:9000/
@@ -377,19 +380,20 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: None\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
-        self.assertEqual(lines[10], '\n')
-
-        # no request vars
+        self.assertEqual(lines[10], 'Informational: False\n')
         self.assertEqual(lines[11], '\n')
 
-        # no database statements
+        # no request vars
         self.assertEqual(lines[12], '\n')
 
+        # no database statements
+        self.assertEqual(lines[13], '\n')
+
         # traceback
-        self.assertEqual(lines[13], 'Traceback (most recent call last):\n')
+        self.assertEqual(lines[14], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
-        self.assertEqual(lines[16], 'ArbitraryException: xyz\n')
+        self.assertEqual(lines[17], 'ArbitraryException: xyz\n')
 
     def test_raising_with_request(self):
         """Test ErrorReportingUtility.raising() with a request"""
@@ -432,6 +436,7 @@ class TestErrorReportingUtility(unittest.TestCase):
             lines.pop(0), 'User: Login, 42, title, description |\\u25a0|\n')
         self.assertEqual(lines.pop(0), 'URL: http://localhost:9000/foo\n')
         self.assertEqual(lines.pop(0), 'Duration: -1\n')
+        self.assertEqual(lines.pop(0), 'Informational: False\n')
         self.assertEqual(lines.pop(0), '\n')
 
         # request vars
@@ -479,7 +484,7 @@ class TestErrorReportingUtility(unittest.TestCase):
         errorfile = os.path.join(utility.errordir(now), '01800.T1')
         self.assertTrue(os.path.exists(errorfile))
         lines = open(errorfile, 'r').readlines()
-        self.assertEqual(lines[15], 'xmlrpc args=(1, 2)\n')
+        self.assertEqual(lines[16], 'xmlrpc args=(1, 2)\n')
 
     def test_raising_with_webservice_request(self):
         # Test ErrorReportingUtility.raising() with a WebServiceRequest
@@ -546,22 +551,23 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: https://launchpad.net/example\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
-        self.assertEqual(lines[10], '\n')
+        self.assertEqual(lines[10], 'Informational: False\n')
+        self.assertEqual(lines[11], '\n')
 
         # request vars
-        self.assertEqual(lines[11], 'name1=value1\n')
-        self.assertEqual(lines[12], 'name1=value3\n')
-        self.assertEqual(lines[13], 'name2=value2\n')
-        self.assertEqual(lines[14], '\n')
-
-        # no database statements
+        self.assertEqual(lines[12], 'name1=value1\n')
+        self.assertEqual(lines[13], 'name1=value3\n')
+        self.assertEqual(lines[14], 'name2=value2\n')
         self.assertEqual(lines[15], '\n')
 
+        # no database statements
+        self.assertEqual(lines[16], '\n')
+
         # traceback
-        self.assertEqual(lines[16], 'Traceback (most recent call last):\n')
+        self.assertEqual(lines[17], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
-        self.assertEqual(lines[19], 'ArbitraryException: xyz\n')
+        self.assertEqual(lines[20], 'ArbitraryException: xyz\n')
 
         # verify that the oopsid was set on the request
         self.assertEqual(request.oopsid, 'OOPS-91T1')
@@ -590,7 +596,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: UnprintableException\n')
         self.assertEqual(
-            lines[2], 'Exception-Value: <unprintable instance object>\n')
+            lines[2],
+            'Exception-Value: <unprintable UnprintableException object>\n')
         self.assertEqual(lines[3], 'Date: 2006-01-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
@@ -598,20 +605,22 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: None\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
-        self.assertEqual(lines[10], '\n')
-
-        # no request vars
+        self.assertEqual(lines[10], 'Informational: False\n')
         self.assertEqual(lines[11], '\n')
 
-        # no database statements
+        # no request vars
         self.assertEqual(lines[12], '\n')
 
+        # no database statements
+        self.assertEqual(lines[13], '\n')
+
         # traceback
-        self.assertEqual(lines[13], 'Traceback (most recent call last):\n')
+        self.assertEqual(lines[14], 'Traceback (most recent call last):\n')
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise UnprintableException()
         self.assertEqual(
-            lines[16], 'UnprintableException: <unprintable instance object>\n'
+            lines[17],
+            'UnprintableException: <unprintable UnprintableException object>\n'
             )
 
     def test_raising_unauthorized_without_request(self):
@@ -715,16 +724,57 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[7], 'User: None\n')
         self.assertEqual(lines[8], 'URL: None\n')
         self.assertEqual(lines[9], 'Duration: -1\n')
-        self.assertEqual(lines[10], '\n')
-
-        # no request vars
+        self.assertEqual(lines[10], 'Informational: False\n')
         self.assertEqual(lines[11], '\n')
 
-        # no database statements
+        # no request vars
         self.assertEqual(lines[12], '\n')
 
+        # no database statements
+        self.assertEqual(lines[13], '\n')
+
         # traceback
-        self.assertEqual(''.join(lines[13:17]), exc_tb)
+        self.assertEqual(''.join(lines[14:18]), exc_tb)
+
+    def test_handling(self):
+        """Test ErrorReportingUtility.handling()."""
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        try:
+            raise ArbitraryException('xyz')
+        except ArbitraryException:
+            utility.handling(sys.exc_info(), now=now)
+
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertTrue(os.path.exists(errorfile))
+        lines = open(errorfile, 'r').readlines()
+
+        # the header
+        self.assertEqual(lines[0], 'Oops-Id: OOPS-91T1\n')
+        self.assertEqual(lines[1], 'Exception-Type: ArbitraryException\n')
+        self.assertEqual(lines[2], 'Exception-Value: xyz\n')
+        self.assertEqual(lines[3], 'Date: 2006-04-01T00:30:00+00:00\n')
+        self.assertEqual(lines[4], 'Page-Id: \n')
+        self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
+        self.assertEqual(lines[6], 'Revision: %s\n'% versioninfo.revno)
+        self.assertEqual(lines[7], 'User: None\n')
+        self.assertEqual(lines[8], 'URL: None\n')
+        self.assertEqual(lines[9], 'Duration: -1\n')
+        self.assertEqual(lines[10], 'Informational: True\n')
+        self.assertEqual(lines[11], '\n')
+
+        # no request vars
+        self.assertEqual(lines[12], '\n')
+
+        # no database statements
+        self.assertEqual(lines[13], '\n')
+
+        # traceback
+        self.assertEqual(lines[14], 'Traceback (most recent call last):\n')
+        #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
+        #    raise ArbitraryException(\'xyz\')
+        self.assertEqual(lines[17], 'ArbitraryException: xyz\n')
 
 
 class TestSensitiveRequestVariables(unittest.TestCase):

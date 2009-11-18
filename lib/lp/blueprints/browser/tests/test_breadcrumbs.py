@@ -29,16 +29,14 @@ class TestHasSpecificationsBreadcrumbOnBlueprintsVHost(
             self.product_specs_url, [self.root, self.product])
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.product_specs_url)
-        self.assertEquals(
-            last_crumb.text, 'Blueprints for %s' % self.product.title)
+        self.assertEquals(last_crumb.text, 'Blueprints')
 
     def test_person(self):
         crumbs = self._getBreadcrumbs(
             self.person_specs_url, [self.root, self.person])
         last_crumb = crumbs[-1]
         self.assertEquals(last_crumb.url, self.person_specs_url)
-        self.assertEquals(last_crumb.text,
-                          'Blueprints involving %s' % self.person.displayname)
+        self.assertEquals(last_crumb.text, 'Blueprints')
 
 
 class TestSpecificationBreadcrumb(BaseBreadcrumbTestCase):

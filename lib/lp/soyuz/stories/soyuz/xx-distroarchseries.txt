@@ -16,7 +16,7 @@ feature in 'DistroArchSeries Actions'.
     >>> anon_browser.getLink('i386').click()
 
     >>> print anon_browser.title
-    i386 : 4.10 : Ubuntu
+    i386 : Warty (4.10) : Ubuntu
 
 We present only minimal information in this page, its main feature is
 to allow binary package searching.
@@ -195,7 +195,7 @@ architectures in this DistroSeries.
     >>> admin_browser.open("http://launchpad.dev/ubuntu/hoary")
     >>> admin_browser.getLink("Add architecture").click()
     >>> print admin_browser.title
-    +addport : 5.04 : Ubuntu
+    Add a port of The Hoary Hedgehog...
 
 Ubuntu hoary already has i386 & hppa distroarchseries and should not
 allow duplications.
@@ -247,7 +247,7 @@ When the new architecture has been created, it is displayed to the
 administrator.
 
     >>> print admin_browser.title
-    amd64 : 5.04 : Ubuntu
+    amd64 : Hoary (5.04) : Ubuntu
 
 And other users can see the just-created architecture listed in the
 distroseries page.

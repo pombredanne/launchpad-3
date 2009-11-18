@@ -60,7 +60,7 @@
         <tal:can-edit
           define="link view/milestone/menu:overview/create_release"
           condition="link/enabled">
-          <a style="sprite add"
+          <a style="white-space: nowrap"
             tal:attributes="href link/fmt:url;
                             title link/summary;
                             class string:sprite ${link/icon}">Release now</a>
@@ -68,10 +68,14 @@
         </tal:not-yet>
       </tal:no-release>
     </td>
-    <td>
+    <td tal:condition="view/is_distroseries_milestone"
+        tal:content="structure milestone/summary/fmt:shorten/80"
+        />
+    <td tal:condition="not: view/is_distroseries_milestone">
       <tal:summary
         content="structure milestone/summary/fmt:shorten/80" />
-      <tal:bug-blueprint-details condition="not: view/show_series_context">
+      <tal:bug-blueprint-details
+          condition="view/should_show_bugs_and_blueprints">
       <tal:bugtasks condition="view/bugtasks">
         <br tal:omit-tag="not: view/milestone/summary" />
         Bugs targeted:

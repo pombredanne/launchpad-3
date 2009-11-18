@@ -12,7 +12,7 @@ added by gina. Now he wants to validate it.
     >>> browser = setupBrowser(auth='Basic salgado@ubuntu.com:zeca')
     >>> browser.open('http://launchpad.dev/~salgado/+editemails')
     >>> print browser.title
-    +editemails : Guilherme Salgado
+    Change your e-mail settings...
 
     >>> browser.getControl(name="field.UNVALIDATED_SELECTED").getControl(
     ...     value='salgado@ubuntu.com').selected = True
@@ -91,7 +91,7 @@ should display an error message.
 
     >>> browser.getControl('Add', index=1).click()
     >>> print browser.title
-    +editemails : Guilherme Salgado
+    Change your e-mail settings...
 
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
@@ -102,12 +102,12 @@ Entering a string that does not look like an email address causes an
 error to be displayed.
 
     >>> print browser.title
-    +editemails : Guilherme Salgado
+    Change your e-mail settings...
 
     >>> browser.getControl('Add a new address').value = 'foo'
     >>> browser.getControl('Add', index=1).click()
     >>> print browser.title
-    +editemails : Guilherme Salgado
+    Change your e-mail settings...
 
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
@@ -120,7 +120,7 @@ will not run. A malicious hacker cannot use a XSS vulnerability to gain
 information about Launchpad users.
 
     >>> print browser.title
-    +editemails : Guilherme Salgado
+    Change your e-mail settings...
 
     >>> browser.getControl('Add a new address').value = (
     ...     "salgado@example.com<br/><script>window.alert('XSS')</script>")

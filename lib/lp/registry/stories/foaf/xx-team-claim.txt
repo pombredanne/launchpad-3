@@ -36,12 +36,14 @@ Non-logged-in users see only a link to claim the profile..
     <Link text='Are you Ubuntu Doc Team?'...
 
 While logged-in users get a link to claim that profile and turn it into a
-team.
+team. This works even if the profile's email addresses would normally be
+hidden.
 
+    >>> doc_team.hide_email_addresses = True
     >>> user_browser.open('http://launchpad.dev/~doc')
     >>> user_browser.getLink('Is this a team you run?').click()
     >>> user_browser.title
-    '+claimteam : Ubuntu Doc Team'
+    'Claim team...
 
 Now we enter the doc team's email address to continue the process of
 turning that profile into a team.

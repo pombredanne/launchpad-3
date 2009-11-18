@@ -166,13 +166,6 @@ empty.
     Recent revisions
     This branch is empty.
 
-Since this branch's product has more than one branch, the links to propose
-it for merging are shown.
-
-    >>> print_merge_links(browser)
-    &laquo; No branches proposed for merging into this one.
-    &raquo; This branch is not proposed for merging into any others.
-
 
 == Branch Details ==
 
@@ -183,16 +176,22 @@ For hosted branches, the table has a link to the branch's project and the URL
 for the branch's canonical location.
 
     >>> def get_branch_details_table():
-    ...     table = find_tag_by_id(browser.contents, 'branch-details-table')
-    ...     return table.tbody
+    ...     return find_tag_by_id(browser.contents, 'branch-info')
+    >>> def get_branch_management_portlet():
+    ...     return find_tag_by_id(browser.contents, 'branch-management')
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(get_branch_details_table())
+    Branch information
+    Owner: Sample Person
     Project: GNOME Terminal (Unspecified)
     Status: Development
-    Upload URL: Only Sample Person can upload to this branch.
-      If you are Sample Person please log in for upload directions.
+
+    >>> print extract_text(get_branch_management_portlet())
+    Only Sample Person can upload to this branch.
+    If you are Sample Person please log in for upload directions.
+    View the branch content
 
 For mirrored branches, the table has a link to the branch's project, the
 location of the original branch, the mirror on Launchpad, information about
@@ -216,6 +215,7 @@ been mirrored:
     >>> browser.open(
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirrored')
     >>> print extract_text(get_branch_details_table())
+    Branch information...
     Status: Development
     Location: http://example.com/mirrored
     Last mirrored: 2007-10-01
@@ -225,17 +225,18 @@ The branch description should not be shown if there is none.
 
     >>> def get_branch_description(browser):
     ...     return extract_text(find_tag_by_id(
-    ...         browser.contents, 'branch-description').p)
+    ...         browser.contents, 'branch-description'))
     >>> print get_branch_description(browser)
     Traceback (most recent call last):
-    ...
-    AttributeError: 'NoneType' object has no attribute 'p'
+    TypeError: expected string or buffer
 
 Branches that have never been mirrored don't have a 'Last mirrored' field.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> print extract_text(get_branch_details_table())
+    Branch information
+    Owner: Sample Person
     Project: GNOME Terminal (Unspecified)
     Status: Development
     Location: http://example.com/gnome-terminal/main
@@ -244,7 +245,8 @@ Branches that have never been mirrored don't have a 'Last mirrored' field.
 
     >>> print get_branch_description(browser)
     Main branch of development for GNOME Terminal.
-    Stable branches are based on that one.
+    Stable branches are based on that one...
+
 
 If next_mirror_time is NULL, then mirroring of the branch is disabled.
 
@@ -264,6 +266,8 @@ If next_mirror_time is NULL, then mirroring of the branch is disabled.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~no-priv/+junk/mirror-disabled')
     >>> print extract_text(get_branch_details_table())
+    Branch information
+    Owner: No Privileges Person
     Status: Development
     Location: http://example.com/disabled
     Last mirrored: Not mirrored yet
@@ -332,9 +336,7 @@ So we need to fake that here.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~landscape-developers/landscape/trunk')
     >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'branch-details-table'))
-    Project: The Landscape Project (Unspecified)
-    Status: Development
+    ...     browser.contents, 'branch-management'))
     Get this branch:
       bzr branch lp://dev/~landscape-developers/landscape/trunk
     ...
@@ -344,9 +346,7 @@ Public branches use the lp spec bzr lookup name.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(find_tag_by_id(
-    ...     browser.contents, 'branch-details-table'))
-    Project: GNOME Terminal (Unspecified)
-    Status: Development
+    ...     browser.contents, 'branch-management'))
     Get this branch: bzr branch lp://dev/~name12/gnome-terminal/scanned
     ...
 
@@ -391,7 +391,7 @@ And we browse to the stacked branch:
 The stacked-on information appears in the branch summary:
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'stacked-on'))
-    Stacked on: ...
+    Stacked on: lp://dev/~person-name.../product-name.../branch...
 
     >>> browser.getLink(stacked_on_name).url == stacked_on_url
     True
@@ -408,10 +408,10 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print_location(browser.contents)
-    Hierarchy: GNOME Terminal > Branches for GNOME Terminal > scanned
+    Hierarchy: GNOME Terminal > Branches > scanned
     Tabs:
     * Overview - http://launchpad.dev/gnome-terminal
-    * Code (selected) - http://code.launchpad.dev/gnome-terminal
+    * Branches (selected) - http://code.launchpad.dev/gnome-terminal
     * Bugs - http://bugs.launchpad.dev/gnome-terminal
     * Blueprints - http://blueprints.launchpad.dev/gnome-terminal
     * Translations - http://translations.launchpad.dev/gnome-terminal
@@ -420,10 +420,10 @@ as the primary context for the branch and used for the breadcrumbs and tabs.
 
     >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
     >>> print_location(browser.contents)
-    Hierarchy: Sample Person > Branches for Sample Person > junk.dev
+    Hierarchy: Sample Person > Branches > junk.dev
     Tabs:
     * Overview - http://launchpad.dev/~name12
-    * Code (selected) - http://code.launchpad.dev/~name12
+    * Branches (selected) - http://code.launchpad.dev/~name12
     * Bugs - http://bugs.launchpad.dev/~name12
     * Blueprints - http://blueprints.launchpad.dev/~name12
     * Translations - http://translations.launchpad.dev/~name12

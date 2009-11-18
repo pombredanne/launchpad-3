@@ -15,7 +15,7 @@ import datetime
 
 from sqlobject import (
     ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
-from storm.expr import Sum
+from storm.expr import Sum, Max
 from zope.component import getUtility
 from zope.interface import implements
 from storm.locals import And, Desc
@@ -33,7 +33,7 @@ from lp.bugs.model.bugtask import BugTask
 from lp.services.worlddata.model.language import Language
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
-from canonical.launchpad.database.packaging import Packaging
+from lp.registry.model.packaging import Packaging
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership)
 from lp.translations.model.pofile import POFile
@@ -53,7 +53,7 @@ from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.interfaces.packaging import PackagingType
+from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
 from lp.blueprints.interfaces.specification import (
     SpecificationDefinitionStatus, SpecificationFilter,
@@ -493,13 +493,16 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True,
                 Language.id!=english.id)
 
-            for language, pofile in query.order_by(['Language.englishname']):
+            ordered_results = query.order_by(['Language.englishname'])
+
+            for language, pofile in ordered_results:
                 psl = ProductSeriesLanguage(self, language, pofile=pofile)
                 psl.setCounts(pofile.potemplate.messageCount(),
                               pofile.currentCount(),
                               pofile.updatesCount(),
                               pofile.rosettaCount(),
-                              pofile.unreviewedCount())
+                              pofile.unreviewedCount(),
+                              pofile.date_changed)
                 results.append(psl)
         else:
             # If there is more than one template, do a single
@@ -517,7 +520,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                  Sum(POFile.currentcount),
                  Sum(POFile.updatescount),
                  Sum(POFile.rosettacount),
-                 Sum(POFile.unreviewed_count)),
+                 Sum(POFile.unreviewed_count),
+                 Max(POFile.date_changed)),
                 POFile.language==Language.id,
                 POFile.variant==None,
                 Language.visible==True,
@@ -526,10 +530,22 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
                 POTemplate.iscurrent==True,
                 Language.id!=english.id).group_by(Language)
 
-            for (language, imported, changed, new, unreviewed) in (
-                query.order_by(['Language.englishname'])):
+            # XXX: Ursinha 2009-11-02: The Max(POFile.date_changed) result
+            # here is a naive datetime. My guess is that it happens
+            # because UTC awareness is attibuted to the field in the POFile
+            # model class, and in this case the Max function deals directly
+            # with the value returned from the database without
+            # instantiating it.
+            # This seems to be irrelevant to what we're trying to achieve
+            # here, but making a note either way.
+
+            ordered_results = query.order_by(['Language.englishname'])
+
+            for (language, imported, changed, new, unreviewed,
+                last_changed) in ordered_results:
                 psl = ProductSeriesLanguage(self, language)
-                psl.setCounts(total, imported, changed, new, unreviewed)
+                psl.setCounts(
+                    total, imported, changed, new, unreviewed, last_changed)
                 results.append(psl)
 
         return results
@@ -569,6 +585,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
         return dict(
             name=self.name,
             is_development_focus=self.is_development_focus,
+            status=self.status.title,
             uri=canonical_url(self, path_only_if_possible=True),
             landmarks=landmarks)
 

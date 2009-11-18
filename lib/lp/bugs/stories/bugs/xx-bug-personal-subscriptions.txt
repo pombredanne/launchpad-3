@@ -4,7 +4,8 @@ Users can subscribe to bugs reported in Launchpad, via the "Subscribe" link
 in the actions portlet.
 
   >>> from lp.bugs.tests.bug import (
-  ...     print_direct_subscribers, print_indirect_subscribers)
+  ...     print_direct_subscribers, print_also_notified,
+  ...     print_subscribers_from_duplicates)
 
   >>> browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
@@ -53,7 +54,7 @@ in the context of the bug page.
   >>> browser.open('http://bugs.launchpad.dev/firefox/+bug/1/')
   >>> browser.getLink('Unsubscribe').click()
   >>> print browser.title
-  +subscribe : Bug #1 : Bugs in firefox : Mozilla Firefox
+  Bug #1...
   >>> browser.url
   'http://bugs.launchpad.dev/firefox/+bug/1/+subscribe'
 
@@ -183,9 +184,13 @@ For example, Steve Alexander can currently subscribe to bug #3.
     >>> stevea_browser = setupBrowser(
     ...   auth="Basic steve.alexander@ubuntulinux.com:test")
     >>> stevea_browser.open(
-    ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
-    >>> print_indirect_subscribers(stevea_browser.contents)
+    ...     "http://launchpad.dev/bugs/3/+bug-portlet-dupe-subscribers-content")
+    >>> print_subscribers_from_duplicates(stevea_browser.contents)
     From duplicates:
+
+    >>> stevea_browser.open(
+    ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
+    >>> print_also_notified(stevea_browser.contents)
     Also notified:
     Mark Shuttleworth
 
@@ -200,14 +205,11 @@ is presented with the Unsubscribe link instead.
   >>> stevea_browser.getControl("Change").click()
 
   >>> stevea_browser.open(
-  ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
-
-  >>> print_indirect_subscribers(stevea_browser.contents)
+  ...     "http://launchpad.dev/bugs/3/+bug-portlet-dupe-subscribers-content")
+  >>> print_subscribers_from_duplicates(stevea_browser.contents)
   From duplicates:
   Steve Alexander (Subscribed by Launchpad Janitor)
                   (Unsubscribe Steve Alexander)
-  Also notified:
-  Mark Shuttleworth
 
   >>> stevea_browser.getLink(id='unsubscribe-subscriber-11').mech_link.url
   '+subscribe'
@@ -233,9 +235,13 @@ unsubscribed from the dupes and thus is no longer indirectly subscribed
 to bug #3.)
 
   >>> stevea_browser.open(
-  ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
-  >>> print_indirect_subscribers(stevea_browser.contents)
+  ...     "http://launchpad.dev/bugs/3/+bug-portlet-dupe-subscribers-content")
+  >>> print_subscribers_from_duplicates(stevea_browser.contents)
   From duplicates:
+
+  >>> stevea_browser.open(
+  ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
+  >>> print_also_notified(stevea_browser.contents)
   Also notified:
   Mark Shuttleworth
 
@@ -256,12 +262,16 @@ previous example.)
   >>> stevea_browser.getControl("Continue").click()
 
   >>> stevea_browser.open(
-  ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
-  >>> print_indirect_subscribers(stevea_browser.contents)
+  ...     "http://launchpad.dev/bugs/3/+bug-portlet-dupe-subscribers-content")
+  >>> print_subscribers_from_duplicates(stevea_browser.contents)
   From duplicates:
   Sample Person (Subscribed ...)
   Steve Alexander (Subscribed ...) (Unsubscribe Steve Alexander)
   testing Spanish team (Subscribed by Foo Bar)
+
+  >>> stevea_browser.open(
+  ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
+  >>> print_also_notified(stevea_browser.contents)
   Also notified:
   Mark Shuttleworth
 
@@ -295,11 +305,16 @@ include that team.
   >>> foobar_browser.getControl("Subscribe user").click()
 
   >>> foobar_browser.open(
-  ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
+  ...     "http://launchpad.dev/bugs/3/+bug-portlet-dupe-subscribers-content")
 
-  >>> print_indirect_subscribers(foobar_browser.contents)
+  >>> print_subscribers_from_duplicates(foobar_browser.contents)
   From duplicates:
   Ubuntu Team (Subscribed by Foo Bar) (Unsubscribe Ubuntu Team)
+
+  >>> foobar_browser.open(
+  ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
+
+  >>> print_also_notified(foobar_browser.contents)
   Also notified:
   Mark Shuttleworth
 
@@ -326,9 +341,13 @@ up in the indirect subscriptions.
 (ubuntu-team is no longer an indirect subscriber.)
 
   >>> foobar_browser.open(
-  ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
-  >>> print_indirect_subscribers(foobar_browser.contents)
+  ...     "http://launchpad.dev/bugs/3/+bug-portlet-dupe-subscribers-content")
+  >>> print_subscribers_from_duplicates(foobar_browser.contents)
   From duplicates:
+
+  >>> foobar_browser.open(
+  ...     "http://launchpad.dev/bugs/3/+bug-portlet-subscribers-content")
+  >>> print_also_notified(foobar_browser.contents)
   Also notified:
   Mark Shuttleworth
 

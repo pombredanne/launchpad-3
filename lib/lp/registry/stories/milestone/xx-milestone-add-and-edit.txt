@@ -75,6 +75,14 @@ can create structural bug subscriptions.
     >>> print user_browser.title
     Subscribe to Bugs in Mozilla Firefox 1.0
 
+But we can't subscribe to project milestones, since they are not real objects.
+
+    >>> user_browser.open('http://launchpad.dev/mozilla/+milestone/1.0')
+    >>> user_browser.getLink('Subscribe to bug mail')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
 
 == Deleting milestones ==
 
@@ -105,7 +113,7 @@ access the delete page. Sample Person is the driver so he has those rights.
     Mozilla Firefox 0.9.2 "One (secure) Tree Hill"
     >>> driver_browser.getLink('Delete milestone').click()
     >>> print driver_browser.title
-    +delete : Mozilla Firefox
+    Delete Mozilla Firefox 0.9.2...
 
 The 0.9.2 release has a release and files associated with it. Sample
 Person reads that they will be deleted too.
@@ -115,7 +123,7 @@ Person reads that they will be deleted too.
     ...
     The associated 0.9.2 release "One (secure) Tree Hill" and its files
     will be also be deleted:
-    firefox-0.9.2.orig.tar.gz ...
+    firefox_0.9.2.orig.tar.gz ...
 
 Sample Person chooses the delete button, then reads that the action is
 successful.

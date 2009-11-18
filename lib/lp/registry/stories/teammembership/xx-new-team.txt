@@ -57,7 +57,7 @@ Sample Person cannot change the renewal period 'New Test Team' to zero.
 
     >>> browser.getLink('Change details').click()
     >>> browser.title
-    '+edit : \xe2\x80\x9cNew Test Team\xe2\x80\x9d team'
+    'Edit "New Test Team" team...
 
     >>> browser.getControl('Renewal period').value = '0'
     >>> browser.getControl('Save').click()

@@ -8,10 +8,9 @@ To register a Jabber ID with his account, the user visits his
 profile page and uses the 'Update Jabber IDs' link.
 
     >>> user_browser.open('http://launchpad.dev/~no-priv')
-    >>> user_browser.getLink('Change details').click()
     >>> user_browser.getLink('Update Jabber IDs').click()
     >>> print user_browser.title
-    +editjabberids : No Privileges Person
+    No Privileges Person's Jabber IDs...
 
 The user enters the Jabber ID in the text field and clicks on the
 'Save Changes' button.

@@ -33,15 +33,14 @@ Branch URLs are not valid for hosted branches.
     >>> browser.getControl('Branch URL').value = ''
     >>> browser.getControl('Register Branch').click()
 
-    >>> def print_details_table(browser):
-    ...     table = find_tag_by_id(browser.contents, 'branch-details-table')
-    ...     for row in table.findAll('tr'):
-    ...         print extract_text(row)
-    >>> print_details_table(browser)
+    >>> def print_branch_info(browser):
+    ...     branch_info = find_tag_by_id(browser.contents, 'branch-info')
+    ...     print extract_text(branch_info)
+    >>> print_branch_info(browser)
+    Branch information
+    Owner: Sample Person
     Project: Redfish (Unspecified)
     Status: Development
-    Update this branch:
-        bzr push lp://dev/~name12/redfish/hosted-branch
 
 
 == Creating a mirrored branch ==
@@ -71,7 +70,9 @@ Branch URLs are required for mirrored branches.
     ...     'http://example.com/mirrored-branch')
     >>> browser.getControl('Register Branch').click()
 
-    >>> print_details_table(browser)
+    >>> print_branch_info(browser)
+    Branch information
+    Owner: Sample Person
     Project: Redfish (Unspecified)
     Status: Development
     Location: http://example.com/mirrored-branch
@@ -94,7 +95,9 @@ A remote branch may have a URL, but doesn't have to.
     >>> browser.getControl('Branch URL').value = (
     ...     'http://example.com/remote-branch')
     >>> browser.getControl('Register Branch').click()
-    >>> print_details_table(browser)
+    >>> print_branch_info(browser)
+    Branch information
+    Owner: Sample Person
     Project: Redfish (Unspecified)
     Status: Development
     Location: http://example.com/remote-branch
@@ -141,12 +144,15 @@ matching for the angle brackets of an enclosing tag.
     >>> user_browser.url
     'http://code.launchpad.dev/~no-priv/applets/main'
 
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'privacy'))
+    >>> content = find_tag_by_id(user_browser.contents, 'document')
+    >>> print extract_text(find_tag_by_id(content, 'registration'))
+    Created by No Privileges Person on ... and last modified on ...
+    >>> print extract_text(find_tag_by_id(content, 'privacy'))
     This branch is public
-    >>> print extract_text(find_main_content(user_browser.contents))
-    Gnome Applets ...
-    lp://dev/~no-priv/applets/main ...
-    ...http://example.com/applets/main...
+    >>> print extract_text(content.h1)
+    lp://dev/~no-priv/applets/main
+    >>> print extract_text(find_tag_by_id(content, 'mirror-location'))
+    Location: http://example.com/applets/main
 
 
 This page includes a link to other branches associated
@@ -157,6 +163,34 @@ with that product, and a link to other branches maintained by that person.
     Nearby
     Other Gnome Applets branches
     Other branches owned by No Privileges Person
+
+
+Adding a branch via a product series
+------------------------------------
+
+A user can register a branch from the project series page using the
+'Submit code' link, or in the case of a series driver, by using the
+'registering a mirrored branch' link.
+
+    >>> browser.open('http://launchpad.dev/gnome-terminal/trunk')
+    >>> browser.getLink('registering a mirrored branch').click()
+    >>> print browser.title
+    Register a branch : Series trunk : GNOME Terminal
+
+The user sees that he is registering a branch for the series' project.
+
+    >>> print extract_text(find_main_content(browser.contents).h1)
+    Register a branch on GNOME Terminal
+
+After posting the form, he sees the registered branch page.
+
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://example.com/applets/master')
+    >>> browser.getControl('Name').value = 'master'
+    >>> browser.getControl('Experimental').click()
+    >>> browser.getControl('Register Branch').click()
+    >>> print browser.title
+    master : Branches : GNOME Terminal
 
 
 == Finding person/+addbranch ==
@@ -310,8 +344,9 @@ Trailing slashes on URLs are removed.
     >>> user_browser.getControl('Branch URL').value = (
     ...     'sftp://example.com/~lifeless/pyresources/')
     >>> user_browser.getControl('Register Branch').click()
-    >>> print_tag_with_id(user_browser.contents, 'branch-details-table')
-    Project: ...
+    >>> print_tag_with_id(user_browser.contents, 'branch-info')
+    Branch information
+    Owner: ...
     ...
     Location: sftp://example.com/~lifeless/pyresources
     ...

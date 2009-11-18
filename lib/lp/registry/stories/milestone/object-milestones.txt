@@ -71,6 +71,14 @@ including the inactive ones. They do not include the bug and blueprint counts
     Mozilla Firefox 1.0                             trunk  2056-10-16
                                                               not yet released
 
+When the project is a member of a project group, the the user can see a link
+to the project groups's milestone's page.
+
+    >>> anon_browser.getLink(
+    ...     'View milestones for the Mozilla Project').click()
+    >>> print anon_browser.title
+    Milestones : the Mozilla Project
+
 
 === Product Series ===
 
@@ -143,7 +151,7 @@ A project milestone page has the same navigation as the project:
     Hierarchy: None displayed
     Tabs:
     * Overview (selected) - http://launchpad.dev/firefox
-    * Code - http://code.launchpad.dev/firefox
+    * Branches - http://code.launchpad.dev/firefox
     * Bugs - http://bugs.launchpad.dev/firefox
     * Blueprints - http://blueprints.launchpad.dev/firefox
     * Translations - http://translations.launchpad.dev/firefox
@@ -161,7 +169,7 @@ the distribution:
     Hierarchy: None displayed
     Tabs:
     * Overview (selected) - http://launchpad.dev/debian
-    * Code - http://code.launchpad.dev/debian
+    * Branches - http://code.launchpad.dev/debian
     * Bugs - http://bugs.launchpad.dev/debian
     * Blueprints - http://blueprints.launchpad.dev/debian
     * Translations - http://translations.launchpad.dev/debian
@@ -235,7 +243,7 @@ Next, we'll target each bug to the 1.0 milestone:
 Observe that both bugs are listed in the 1.0 milestone listing:
 
     >>> browser.open('http://launchpad.dev/firefox/trunk')
-    >>> browser.getLink('All milestones').click()
+    >>> browser.getLink('View milestones').click()
     >>> browser.getLink("Mozilla Firefox 1.0", index=1).click()
     >>> print browser.title
     Mozilla Firefox 1.0
@@ -256,8 +264,8 @@ Now we'll mark the second bug as a duplicate of the first:
     >>> browser.getLink('Mark as duplicate').click()
     >>> browser.getControl('Duplicate').value = bug_1_nickname
     >>> browser.getControl('Change').click()
-    >>> print extract_text(find_main_content(browser.contents))
-    Bug #20 reported...
+    >>> print extract_text(browser.contents)
+    Bug #20 in Mozilla Firefox...
     Duplicate of bug #19...
 
 Since duplicate bugs are not listed in milestone listings, only our first bug
@@ -307,7 +315,7 @@ Mozilla Firefox product, to complement the existing series "1.0":
     >>> browser.open('http://launchpad.dev/firefox')
     >>> browser.getLink('Register a series').click()
     >>> print browser.title
-    +addseries : Mozilla Firefox
+    Register a new Mozilla Firefox release series...
 
     >>> browser.getControl('Name').value = '2.0'
     >>> browser.getControl('Summary').value = 'The Firefox 2.0 Series'
@@ -323,7 +331,7 @@ We'll also create a new test milestone within the "trunk" series:
 
     >>> browser.getLink('Create milestone').click()
     >>> print browser.title
-    +addmilestone : Series trunk : Mozilla Firefox
+    Register a new milestone...
 
     >>> milestone = 'test-milestone'
     >>> browser.getControl('Name').value = milestone
@@ -352,7 +360,7 @@ Let's target an existing bug to both series "1.0" and series "2.0":
 
     >>> browser.getLink('Target to release').click()
     >>> print browser.title
-    +nominate : Bug #19 (test-bug-1) : Bugs in firefox : Mozilla Firefox
+    Target bug #19 to series...
 
     >>> browser.getControl('1.0').selected = True
     >>> browser.getControl('2.0').selected = True

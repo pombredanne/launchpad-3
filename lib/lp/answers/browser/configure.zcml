@@ -136,6 +136,12 @@
     rootsite="answers"
     />
 
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+    for="lp.answers.interfaces.question.IQuestion"
+    factory="lp.answers.browser.question.QuestionBreadcrumb"
+    permission="zope.Public"/>
+
   <browser:pages
     for="lp.answers.interfaces.question.IQuestion"
     permission="zope.Public"
@@ -319,6 +325,7 @@
   <browser:page
     name="+index"
     for="lp.answers.interfaces.faq.IFAQ"
+    class=".faq.FAQView"
     permission="zope.Public"
     template="../templates/faq-index.pt"
     />
@@ -342,6 +349,11 @@
     permission="launchpad.Edit"
     template="../../app/templates/generic-edit.pt"
     />
+  <adapter
+    provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+    for="lp.answers.interfaces.faq.IFAQ"
+    factory="lp.answers.browser.faq.FAQBreadcrumb"
+    permission="zope.Public"/>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IPerson"

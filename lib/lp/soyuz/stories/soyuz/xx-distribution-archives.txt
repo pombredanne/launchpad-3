@@ -44,7 +44,7 @@ page, but it exists at:
 
     >>> anon_browser.open("http://launchpad.dev/ubuntu/+archives")
     >>> print anon_browser.title
-    +archives : Ubuntu
+    Ubuntu Linux Copy Archives...
 
 This index of /ubuntu/+archives provides an overview describing
 what the viewer can expect to find here
@@ -103,7 +103,7 @@ The package details can be accessed for a distribution archive.
     >>> anon_browser.getLink("intrepid-security-rebuild").click()
     >>> anon_browser.getLink("View package details").click()
     >>> print anon_browser.title
-    +packages : Copy archive intrepid-security-rebuild for Joe Bloggs : Ubuntu
+    Packages in “Copy archive intrepid-security-rebuild...
 
 The list of copy archives for a distribution may also include private
 copy archives. These should not be displayed unless the user has
@@ -175,4 +175,23 @@ is disabled.
     >>> tag = first_tag_by_class(nopriv_browser.contents, 'warning message')
     >>> print extract_text(tag)
     This archive has been disabled.
+
+When a COPY archive gets enabled, No Privileges users can still access
+it and the 'disabled' styling is gone.
+
+    >>> login('foo.bar@canonical.com')
+    >>> disabled_archive.enabled = True
+    >>> logout()
+
+    >>> nopriv_browser.reload()
+
+    >>> print nopriv_browser.title
+    Copy archive disabled-security-rebuild for No Privileges Person : Ubuntu
+
+    >>> main_content = find_main_content(nopriv_browser.contents)
+    >>> print main_content.h1
+    <h1 id="displayname">...</h1>
+
+    >>> print first_tag_by_class(nopriv_browser.contents, 'warning message')
+    None
 

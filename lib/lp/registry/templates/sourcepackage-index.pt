@@ -8,9 +8,12 @@
   <body>
     <div metal:fill-slot="main"
         tal:define="current context/currentrelease">
-      <div class="top-portlet">
-        <h1 tal:content="view/page_title"></h1>
-
+      <ul class="horizontal">
+        <li>
+          <a tal:replace="structure context/menu:overview/distribution_source_package/fmt:link" />
+        </li>
+      </ul>
+      <div class="portlet">
         <h2>Versions published</h2>
 
         <p class="warning message" tal:condition="not:current">
@@ -116,9 +119,7 @@
         </div>
 
         <div class="yui-u">
-          <div tal:replace="structure context/@@+portlet-upstream" />
-
-          <div tal:condition="current">
+          <div class="portlet" tal:condition="current">
             <h2>Binary packages</h2>
 
             <div id="binaries" tal:define="binaries view/binaries">

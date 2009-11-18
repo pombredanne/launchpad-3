@@ -149,7 +149,8 @@
                 getSubscription
                 getSubscriptions
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -285,7 +286,8 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -390,12 +392,14 @@
                 getSubscription
                 parent_subscription_target
                 getBugNotificationsRecipients
+                getPersonsByEmail
                 getReleasesAndPublishingHistory
                 upstream_product
                 target_type_display
                 official_bug_tags
                 findRelatedArchives
-                findRelatedArchivePublications"/>
+                findRelatedArchivePublications
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -801,7 +805,7 @@
                 permission="launchpad.View"
                 interface="lp.registry.interfaces.person.IPersonViewRestricted"/>
             <require
-                permission="launchpad.EditLocation"
+                permission="launchpad.Edit"
                 interface="lp.registry.interfaces.location.ISetLocation"/>
             <require
                 permission="launchpad.Edit"
@@ -903,7 +907,8 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1150,13 +1155,15 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
@@ -1297,7 +1304,8 @@
                 getSubscription
                 getSubscriptions
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1407,13 +1415,15 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
@@ -1640,5 +1650,28 @@
         provides="lp.registry.interfaces.mentoringoffer.IMentoringOfferSet">
         <allow
             interface="lp.registry.interfaces.mentoringoffer.IMentoringOfferSet"/>
+    </securedutility>
+
+    <!-- Packaging -->
+    <class
+        class="lp.registry.model.packaging.Packaging">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackaging"/>
+        <require
+            permission="zope.Public"
+            set_schema="lp.registry.interfaces.packaging.IPackaging"/>
+    </class>
+    
+    <!-- PackagingUtil -->
+    <class
+        class="lp.registry.model.packaging.PackagingUtil">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
+    </class>
+    <securedutility
+        class="lp.registry.model.packaging.PackagingUtil"
+        provides="lp.registry.interfaces.packaging.IPackagingUtil">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
     </securedutility>
 </configure>

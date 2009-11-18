@@ -23,6 +23,7 @@ from textwrap import dedent
 from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
+from storm.expr import And, Or
 from storm.locals import Int, Reference
 
 from canonical.database.sqlbase import (
@@ -32,10 +33,13 @@ from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.distroseries import (
+    IDistroSeries, DistroSeriesStatus)
+from lp.registry.interfaces.person import (
+    IPerson, validate_person_not_private_membership)
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
@@ -58,12 +62,15 @@ from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
 from canonical.librarian.interfaces import ILibrarianClient
-from lp.registry.interfaces.person import validate_public_person
 
 
-# Number of days when the DELETED and IMPORTED entries are removed from the
-# queue.
-DAYS_TO_KEEP = 3
+# Period to wait before entries with terminal statuses are removed from
+# the queue.
+entry_gc_age = {
+    RosettaImportStatus.DELETED: datetime.timedelta(days=3),
+    RosettaImportStatus.IMPORTED: datetime.timedelta(days=3),
+    RosettaImportStatus.FAILED: datetime.timedelta(days=30),
+}
 
 
 def is_gettext_name(path):
@@ -113,7 +120,8 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False)
     importer = ForeignKey(
         dbName='importer', foreignKey='Person',
-        storm_validator=validate_public_person, notNull=True)
+        storm_validator=validate_person_not_private_membership,
+        notNull=True)
     dateimported = UtcDateTimeCol(dbName='dateimported', notNull=True,
         default=DEFAULT)
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
@@ -159,12 +167,28 @@ class TranslationImportQueueEntry(SQLBase):
         assert importer.isTemplateName(self.path), (
             "We cannot handle file %s here: not a template." % self.path)
 
-        # It's an IPOTemplate
         potemplate_set = getUtility(IPOTemplateSet)
-        return potemplate_set.getPOTemplateByPathAndOrigin(
+        candidate = potemplate_set.getPOTemplateByPathAndOrigin(
             self.path, productseries=self.productseries,
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
+        if candidate is not None:
+            # This takes care of most of the auto-approvable cases.
+            return candidate
+
+        directory, filename = os.path.split(self.path)
+        if not directory:
+            # Uploads don't always have paths associated with them, but
+            # there may still be a unique single active template with
+            # the right filename.
+            subset = potemplate_set.getSubset(
+                distroseries=self.distroseries,
+                sourcepackagename=self.sourcepackagename,
+                productseries=self.productseries, iscurrent=True)
+            return subset.findUniquePathlessMatch(filename)
+
+        # I give up.
+        return None
 
     @property
     def _guessed_potemplate_for_pofile_from_path(self):
@@ -249,9 +273,8 @@ class TranslationImportQueueEntry(SQLBase):
 
     def setStatus(self, status):
         """See `ITranslationImportQueueEntry`."""
-        # XXX JeroenVermeulen 2009-04-09 bug=358404: This looks like a
-        # good place to set date_status_changed.
         self.status = status
+        self.date_status_changed = UTC_NOW
 
     def setErrorOutput(self, output):
         """See `ITranslationImportQueueEntry`."""
@@ -1068,7 +1091,7 @@ class TranslationImportQueue:
 
         return distroseriess + products
 
-    def executeOptimisticApprovals(self, ztm):
+    def executeOptimisticApprovals(self, txn=None):
         """See ITranslationImportQueue."""
         there_are_entries_approved = False
         importer = getUtility(ITranslationImporter)
@@ -1108,12 +1131,13 @@ class TranslationImportQueue:
             # Already know where it should be imported. The entry is approved
             # automatically.
             entry.setStatus(RosettaImportStatus.APPROVED)
-            # Do the commit to save the changes.
-            ztm.commit()
+
+            if txn is not None:
+                txn.commit()
 
         return there_are_entries_approved
 
-    def executeOptimisticBlock(self, ztm=None):
+    def executeOptimisticBlock(self, txn=None):
         """See ITranslationImportQueue."""
         importer = getUtility(ITranslationImporter)
         num_blocked = 0
@@ -1143,40 +1167,80 @@ class TranslationImportQueue:
                 # blocked, so we can block it too.
                 entry.setStatus(RosettaImportStatus.BLOCKED)
                 num_blocked += 1
-                if ztm is not None:
-                    # Do the commit to save the changes.
-                    ztm.commit()
+                if txn is not None:
+                    txn.commit()
 
         return num_blocked
 
-    def cleanUpQueue(self):
-        """See ITranslationImportQueue."""
-        cur = cursor()
+    def _cleanUpObsoleteEntries(self, store):
+        """Delete obsolete queue entries.
 
-        # Delete outdated DELETED and IMPORTED entries.
-        delta = datetime.timedelta(DAYS_TO_KEEP)
-        last_date = datetime.datetime.utcnow() - delta
+        :param store: The Store to delete from.
+        :return: Number of entries deleted.
+        """
+        now = datetime.datetime.now(pytz.UTC)
+        deletion_clauses = []
+        for status, gc_age in entry_gc_age.iteritems():
+            cutoff = now - gc_age
+            deletion_clauses.append(And(
+                TranslationImportQueueEntry.status == status,
+                TranslationImportQueueEntry.date_status_changed < cutoff))
+
+        entries = store.find(
+            TranslationImportQueueEntry, Or(*deletion_clauses))
+
+        return entries.remove()
+
+    def _cleanUpInactiveProductEntries(self, store):
+        """Delete queue entries for deactivated `Product`s.
+
+        :param store: The Store to delete from.
+        :return: Number of entries deleted.
+        """
+        # XXX JeroenVermeulen 2009-09-18 bug=271938: Stormify this once
+        # the Storm remove() syntax starts working properly for joins.
+        cur = cursor()
+        cur.execute("""
+            DELETE FROM TranslationImportQueueEntry AS Entry
+            USING ProductSeries, Product
+            WHERE
+                ProductSeries.id = Entry.productseries AND
+                Product.id = ProductSeries.product AND
+                Product.active IS FALSE
+            """)
+        return cur.rowcount
+
+    def _cleanUpObsoleteDistroEntries(self, store):
+        """Delete some queue entries for obsolete `DistroSeries`.
+
+        :param store: The Store to delete from.
+        :return: Number of entries deleted.
+        """
+        # XXX JeroenVermeulen 2009-09-18 bug=271938,432484: Stormify
+        # this once Storm's remove() supports joins and slices.
+        cur = cursor()
         cur.execute("""
             DELETE FROM TranslationImportQueueEntry
-            WHERE
-            (status = %s OR status = %s) AND date_status_changed < %s
-            """ % sqlvalues(RosettaImportStatus.DELETED.value,
-                            RosettaImportStatus.IMPORTED.value,
-                            last_date))
-        n_entries = cur.rowcount
+            WHERE id IN (
+                SELECT Entry.id
+                FROM TranslationImportQueueEntry Entry
+                JOIN DistroSeries ON
+                    DistroSeries.id = Entry.distroseries
+                JOIN Distribution ON
+                    Distribution.id = DistroSeries.distribution
+                WHERE DistroSeries.releasestatus = %s
+                LIMIT 100)
+            """ % quote(DistroSeriesStatus.OBSOLETE))
+        return cur.rowcount
 
-        # Delete entries belonging to inactive product series.
-        cur.execute("""
-            DELETE FROM TranslationImportQueueEntry AS entry
-            USING ProductSeries AS series, Product AS product
-            WHERE
-                entry.productseries = series.id AND
-                series.product = product.id AND
-                product.active IS FALSE
-            """)
-        n_entries += cur.rowcount
+    def cleanUpQueue(self):
+        """See `ITranslationImportQueue`."""
+        store = IMasterStore(TranslationImportQueueEntry)
 
-        return n_entries
+        return (
+            self._cleanUpObsoleteEntries(store) +
+            self._cleanUpInactiveProductEntries(store) +
+            self._cleanUpObsoleteDistroEntries(store))
 
     def remove(self, entry):
         """See ITranslationImportQueue."""

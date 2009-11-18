@@ -82,6 +82,13 @@ IBreadcrumb adapters are registered for them.  The hierarchy builds a list of
 breadcrumbs starting with the breadcrumb closest to the hierarchy root.
 
     >>> from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+    >>> from canonical.launchpad.browser.launchpad import Hierarchy
+
+    # Monkey patch Hierarchy.makeBreadcrumbForRequestedPage so that we don't
+    # have to create fake views and other stuff to test breadcrumbs here. The
+    # functionality provided by that method is tested in
+    # webapp/tests/test_breadcrumbs.py.
+    >>> Hierarchy.makeBreadcrumbForRequestedPage = lambda self: None
 
     # Note that the Hierarchy assigns the breadcrumb's URL, but we need to
     # give it a valid .text attribute.
@@ -136,6 +143,25 @@ above it.
     >>> cooker_hierarchy.display_breadcrumbs
     False
 
+Additionally, if the view implements IMajorHeadingView then the breadcrumbs
+will not be displayed.
+
+    >>> ham_recipe = Recipe('ham', cookbook)
+    >>> ham_request = make_fake_request(
+    ...     'http://launchpad.dev/joy-of-cooking/ham',
+    ...     [root, cookbook, ham_recipe])
+
+    >>> ham_hierarchy = getMultiAdapter(
+    ...     (ham_recipe, ham_request), name='+hierarchy')
+    >>> hierarchy.display_breadcrumbs
+    True
+
+    >>> from zope.interface import alsoProvides
+    >>> from lp.app.interfaces.headings import IMajorHeadingView
+    >>> alsoProvides(ham_recipe, IMajorHeadingView)
+    >>> ham_hierarchy.display_breadcrumbs
+    False
+
 
 == Building IBreadcrumb objects ==
 
@@ -151,10 +177,8 @@ text must be overriden in subclasses.
     True
     >>> print breadcrumb.text
     None
-    >>> breadcrumb
-    <Breadcrumb
-        url='http://launchpad.dev/joy-of-cooking'
-        text='None'>
+    >>> print breadcrumb.url
+    http://launchpad.dev/joy-of-cooking
 
 As said above, the breadcrumb's attributes can be overridden with subclassing
 and Python properties.
@@ -180,7 +204,6 @@ The Hierarchy object should *not* construct the Breadcrumb objects
 itself.  It should let the IBreadcrumbBuilder handle it: this ensures
 consistency across the site.
 
-    >>> from canonical.launchpad.browser.launchpad import Hierarchy
     >>> class CustomHierarchy(Hierarchy):
     ...     @property
     ...     def objects(self):

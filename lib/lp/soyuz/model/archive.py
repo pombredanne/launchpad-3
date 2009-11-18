@@ -56,7 +56,7 @@ from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
     ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, default_name_by_purpose)
+    NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -174,6 +174,12 @@ class Archive(SQLBase):
     relative_build_score = IntCol(
         dbName='relative_build_score', notNull=True, default=0)
 
+    # This field is specifically and only intended for OEM migration to
+    # Launchpad and should be re-examined in October 2010 to see if it
+    # is still relevant.
+    external_dependencies = StringCol(
+        dbName='external_dependencies', notNull=False, default=None)
+
     def _init(self, *args, **kw):
         """Provide the right interface for URL traversal."""
         SQLBase._init(self, *args, **kw)
@@ -214,7 +220,7 @@ class Archive(SQLBase):
         # Import DistroSeries here to avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
 
-        distro_serieses = store.find(
+        distro_series = store.find(
             DistroSeries,
             DistroSeries.distribution == self.distribution,
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
@@ -222,12 +228,12 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory.status.is_in(
                 active_publishing_status))
 
-        distro_serieses.config(distinct=True)
+        distro_series.config(distinct=True)
 
         # Ensure the ordering is the same as presented by
-        # Distribution.serieses
+        # Distribution.series
         return sorted(
-            distro_serieses, key=lambda a: Version(a.version), reverse=True)
+            distro_series, key=lambda a: Version(a.version), reverse=True)
 
     @property
     def dependencies(self):
@@ -254,11 +260,21 @@ class Archive(SQLBase):
         return archives
 
     @property
+    def debug_archive(self):
+        """See `IArchive`."""
+        if self.purpose == ArchivePurpose.PRIMARY:
+            return getUtility(IArchiveSet).getByDistroPurpose(
+                self.distribution, ArchivePurpose.DEBUG)
+        else:
+            return self
+
+    @property
     def archive_url(self):
         """See `IArchive`."""
         archive_postfixes = {
             ArchivePurpose.PRIMARY : '',
             ArchivePurpose.PARTNER : '-partner',
+            ArchivePurpose.DEBUG : '-debug',
         }
 
         if self.is_ppa:
@@ -320,8 +336,10 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
             clauses.append("""
                 SourcePackageRelease.version = %s
             """ % sqlvalues(version))
@@ -442,8 +460,10 @@ class Archive(SQLBase):
     def sources_size(self):
         """See `IArchive`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.find(
-            (LibraryFileContent),
+        result = store.find((
+            LibraryFileAlias.filename,
+            LibraryFileContent.sha1,
+            LibraryFileContent.filesize,),
             SourcePackagePublishingHistory.archive == self.id,
             SourcePackagePublishingHistory.dateremoved == None,
             SourcePackagePublishingHistory.sourcepackagereleaseID ==
@@ -451,15 +471,22 @@ class Archive(SQLBase):
             SourcePackageReleaseFile.libraryfileID == LibraryFileAlias.id,
             LibraryFileAlias.contentID == LibraryFileContent.id)
 
-        # We need to select distinct `LibraryFileContent`s because that how
-        # they end up published in the archive disk. Duplications may happen
-        # because of the publishing records join, the same `LibraryFileAlias`
-        # gets logically re-published in several locations and the fact that
-        # the same `LibraryFileContent` can be shared by multiple
-        # `LibraryFileAlias.` (librarian-gc).
+        # Note: we can't use the LFC.sha1 instead of LFA.filename above
+        # because some archives publish the same file content with different
+        # names in the archive, so although the duplication will be removed
+        # in the librarian by the librarian-gc, we do not (yet) remove
+        # this duplication in the pool when the filenames are different.
+
+        # We need to select distinct on the (filename, filesize) result
+        # so that we only count duplicate files (with the same filename)
+        # once (ie. the same tarball used for different distroseries) as
+        # we do avoid this duplication in the pool when the names are
+        # the same.
         result = result.config(distinct=True)
-        size = sum([lfc.filesize for lfc in result])
-        return size
+
+        # Using result.sum(LibraryFileContent.filesize) throws errors when
+        # the result is empty, so instead:
+        return sum(result.values(LibraryFileContent.filesize))
 
     def _getBinaryPublishingBaseClauses (
         self, name=None, version=None, status=None, distroarchseries=None,
@@ -491,8 +518,11 @@ class Archive(SQLBase):
                 """ % quote_like(name))
 
         if version is not None:
-            assert name is not None, (
-                "'version' can be only used when name is set")
+            if name is None:
+                raise VersionRequiresName(
+                    "The 'version' parameter can be used only together with"
+                    " the 'name' parameter.")
+
             clauses.append("""
                 BinaryPackageRelease.version = %s
             """ % sqlvalues(version))
@@ -974,11 +1004,12 @@ class Archive(SQLBase):
         return permission_set.packagesetsForSource(
             self, sourcepackagename, direct_permissions)
 
-    def isSourceUploadAllowed(self, sourcepackagename, person):
+    def isSourceUploadAllowed(
+        self, sourcepackagename, person, distroseries=None):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.isSourceUploadAllowed(
-            self, sourcepackagename, person)
+            self, sourcepackagename, person, distroseries)
 
     def getFileByName(self, filename):
         """See `IArchive`."""
@@ -1384,6 +1415,19 @@ class ArchiveSet:
             return 0
         return int(size)
 
+    def getPPAOwnedByPerson(self, person, name=None):
+        """See `IArchiveSet`."""
+        store = Store.of(person)
+        clause = [
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.owner == person]
+        if name is not None:
+            clause.append(Archive.name == name)
+        result = store.find(Archive, *clause).order_by(Archive.id).first()
+        if name is not None and result is None:
+            raise NoSuchPPA(name)
+        return result
+
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
         # Avoiding circular imports.
@@ -1396,14 +1440,15 @@ class ArchiveSet:
             TeamParticipation.team == Archive.ownerID,
             TeamParticipation.person == user,
             )
-        third_part_upload_acl = store.find(
+        third_party_upload_acl = store.find(
             Archive,
             Archive.purpose == ArchivePurpose.PPA,
             ArchivePermission.archiveID == Archive.id,
-            ArchivePermission.person == user,
+            TeamParticipation.person == user,
+            TeamParticipation.team == ArchivePermission.personID,
             )
 
-        result = direct_membership.union(third_part_upload_acl)
+        result = direct_membership.union(third_party_upload_acl)
         result.order_by(Archive.displayname)
 
         return result

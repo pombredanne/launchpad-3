@@ -1,19 +1,22 @@
-= Source Packages =
+Source Packages
+===============
 
-A source package is a thing from which binary packages are built, to then be
-installed using a package management tool like apt-get or rpm. One named source
-package in a distro may be used to build several different named binary
-packages, on one or more architectures. One named binary package in a distro
-may have been built from more than one named source package (e.g. a different
-source package may have been used to build "foo" on i386 vs. "foo" on ppc.)
+A source package is a thing from which binary packages are built, to
+then be installed using a package management tool like apt-get or rpm.
+One named source package in a distro may be used to build several
+different named binary packages, on one or more architectures. One named
+binary package in a distro may have been built from more than one named
+source package (e.g. a different source package may have been used to
+build "foo" on i386 vs. "foo" on ppc.)
 
 
-== Named Source Package ==
+Named Source Package
+--------------------
 
-The are various metadata we're interested in collecting about a bundle of code
-used to build binary packages for installation in a particular distro series.
-One such thing is the name of that bundle of code. This is abstracted into a
-separate SourcePackageName table.
+The are various metadata we're interested in collecting about a bundle
+of code used to build binary packages for installation in a particular
+distro series. One such thing is the name of that bundle of code. This
+is abstracted into a separate SourcePackageName table.
 
 Accessing source package names is done through the ISourcePackageNameSet
 utility.
@@ -21,10 +24,12 @@ utility.
 The ISourcePackageNameSet utility is accessed in the usual fashion:
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import ISourcePackageNameSet
+    >>> from lp.registry.interfaces.sourcepackagename import (
+    ...     ISourcePackageNameSet)
     >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
 
-To retrieve a specific source package name, use ISourcePackageNameSet.get:
+To retrieve a specific source package name, use
+ISourcePackageNameSet.get:
 
     >>> firefox = sourcepackagenameset.get(1)
     >>> print firefox.name
@@ -44,12 +49,13 @@ If the package doesn't exist, queryByName returns None:
     None
 
 
-=== Latest published component ===
+Latest published component
+..........................
 
 The 'latest_published_component' attribute indicates the component where
 the package was last published.
 
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_warty = ubuntu.getSeries('warty')
     >>> firefox_warty = ubuntu_warty.getSourcePackage('mozilla-firefox')
@@ -65,6 +71,7 @@ upload, even though it gets changed in the publishing record.
 
     # Remove the security proxy to access the non-public
     # _getPublishingHistory method.
+
     >>> from zope.security.proxy import removeSecurityProxy
     >>> publishing_history = removeSecurityProxy(
     ...     firefox_warty)._getPublishingHistory()
@@ -82,6 +89,7 @@ upload, even though it gets changed in the publishing record.
     # SourcePackagePublishingHistory is just a view on
     # SecureSourcePackagePublishingHistory with some rows removed, so need
     # to update the SecureSourcePackagePublishingHistory table.
+
     >>> latest_publishing = SecureSourcePackagePublishingHistory.get(
     ...     publishing_history[-1].id)
     >>> universe = Component.byName('universe')
@@ -92,6 +100,7 @@ upload, even though it gets changed in the publishing record.
     >>> for release in firefox_warty.distinctreleases:
     ...     print release.component.name
     main
+
     >>> firefox_warty.latest_published_component.name
     u'universe'
 
@@ -113,14 +122,14 @@ SourcePackage context will be reachable.
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
-    pmount 0.1-1 (source) in Ubuntu SUPERSEDED
-    pmount 0.1-2 (source) in Ubuntu PUBLISHED
+    "pmount" 0.1-1 source package in Ubuntu SUPERSEDED
+    "pmount" 0.1-2 source package in Ubuntu PUBLISHED
 
     >>> print pmount_hoary['0.1-1'].title
-    pmount 0.1-1 (source) in ubuntu hoary
+    "pmount" 0.1-1 source package in The Hoary Hedgehog Release
 
     >>> print pmount_hoary['0.1-2'].title
-    pmount 0.1-2 (source) in ubuntu hoary
+    "pmount" 0.1-2 source package in The Hoary Hedgehog Release
 
     >>> len(list(pmount_hoary.distinctreleases))
     2
@@ -131,11 +140,12 @@ SourcePackage context will be reachable.
     ...     pmount_hoary['0.1-1'].publishing_history[0].id)
     >>> secure_pub.datesuperseded is not None
     True
+
     >>> secure_pub.dateremoved is None
     True
 
-We will emulate disk-removal to ensure it will continue to be
-reachable. See bug #179028 for further information.
+We will emulate disk-removal to ensure it will continue to be reachable.
+See bug #179028 for further information.
 
     >>> from datetime import timedelta
     >>> secure_pub.dateremoved = secure_pub.datesuperseded + timedelta(days=1)
@@ -143,20 +153,21 @@ reachable. See bug #179028 for further information.
 
     >>> for release in pmount_hoary.releases:
     ...     print release.title, release.publishing_history[0].status.name
-    pmount 0.1-1 (source) in Ubuntu SUPERSEDED
-    pmount 0.1-2 (source) in Ubuntu PUBLISHED
+    "pmount" 0.1-1 source package in Ubuntu SUPERSEDED
+    "pmount" 0.1-2 source package in Ubuntu PUBLISHED
 
     >>> print pmount_hoary['0.1-1'].title
-    pmount 0.1-1 (source) in ubuntu hoary
+    "pmount" 0.1-1 source package in The Hoary Hedgehog Release
 
     >>> len(list(pmount_hoary.distinctreleases))
     2
 
-We will leave the pmount_0.1-1 marked as 'removed from disk' because
-we do want it to affect the next test cases.
+We will leave the pmount_0.1-1 marked as 'removed from disk' because we
+do want it to affect the next test cases.
 
 
-== Distribution Source Packages ==
+Distribution Source Packages
+----------------------------
 
 In some cases it's useful to be able to refer to a source package at a
 distribution level, independent of any particular distroseries. For
@@ -167,20 +178,26 @@ something quite different, but is outside the scope of this document.)
 To retrieve a distribution source package, use the getSourcePackage
 method on a distribution:
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IDistributionSourcePackage)
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.distributionsourcepackage import (
+    ...     IDistributionSourcePackage)
     >>> ubuntu = getUtility(IDistributionSet).get(1)
     >>> ubuntu_firefox = ubuntu.getSourcePackage(firefox)
     >>> IDistributionSourcePackage.providedBy(ubuntu_firefox)
     True
+
     >>> print ubuntu_firefox.name
     mozilla-firefox
+
     >>> print ubuntu_firefox.title.encode('ascii', 'backslashreplace')
     \u201cmozilla-firefox\u201d package in Ubuntu
+
     >>> print ubuntu_firefox.displayname
     mozilla-firefox in ubuntu
+
     >>> ubuntu_firefox.distribution == ubuntu
     True
+
     >>> ubuntu_firefox.sourcepackagename == firefox
     True
 
@@ -192,24 +209,27 @@ Distro sourcepackages know how to compare to each other:
 
     >>> ubuntu_firefox_also == ubuntu_firefox
     True
+
     >>> ubuntu_firefox != debian_firefox
     True
 
 You can search for bugs in an IDistroSourcePackage using the
 .searchTasks method:
 
-    >>> from canonical.launchpad.interfaces import (
+    >>> from lp.bugs.interfaces.bugtask import (
     ...     BugTaskSearchParams, BugTaskStatus)
     >>> params = BugTaskSearchParams(
     ...     status=BugTaskStatus.NEW, user=None)
     >>> tasks = ubuntu_firefox.searchTasks(params)
     >>> tasks.count()
     1
+
     >>> tasks[0].id
     17
 
 
-== Packaging ==
+Packaging
+---------
 
 Distribution packages are linked to upstream productseries through the
 packaging process. Here we test the code that links all of those.
@@ -230,7 +250,8 @@ First, let's get some useful objects from the db.
     >>> sid = DistroSeries.get(8)
     >>> g2k5 = DistroSeries.get(9)
 
-Now let's make sure that we can see a productseries for a source package.
+Now let's make sure that we can see a productseries for a source
+package.
 
     >>> from lp.registry.model.sourcepackage import SourcePackage
     >>> sp = SourcePackage(sourcepackagename=firefox, distroseries=hoary)
@@ -239,9 +260,9 @@ Now let's make sure that we can see a productseries for a source package.
 
 Now we make sure there is no Packaging data for a52dec in hoary.
 
-    >>> from canonical.launchpad.database import PackagingUtil
+    >>> from lp.registry.model.packaging import PackagingUtil
     >>> a52decsp = SourcePackage(sourcepackagename=a52dec,
-    ...     distroseries=hoary) 
+    ...     distroseries=hoary)
     >>> a52decsp.productseries.name
     u'trunk'
 
@@ -265,9 +286,10 @@ fact that we have Warty data for it
     >>> a52decsp.productseries.product.name
     u'a52dec'
 
-Similarly, we should be able to get the packaging information from a parent
-distroseries, on the basis that a derivative is highly unlikely to change
-the packaging drastically without changing the name of the package.
+Similarly, we should be able to get the packaging information from a
+parent distroseries, on the basis that a derivative is highly unlikely
+to change the packaging drastically without changing the name of the
+package.
 
 First, show there is no packging data for a52dec in g2k5:
 
@@ -275,7 +297,7 @@ First, show there is no packging data for a52dec in g2k5:
     ...     productseries=a52decsp.productseries,
     ...     sourcepackagename=a52dec,
     ...     distroseries=g2k5)
-    False 
+    False
 
 Now verify we still get a product for that source package
 
@@ -286,7 +308,7 @@ Now verify we still get a product for that source package
 And if we want to link that productseries to a source package in that
 distroseries
 
-    >>> from canonical.launchpad.interfaces import PackagingType
+    >>> from lp.registry.interfaces.packaging import PackagingType
     >>> from lp.registry.model.person import Person
     >>> foobar = Person.byName('name16')
     >>> PackagingUtil().createPackaging(
@@ -314,15 +336,14 @@ Packaging entries can be deleted using PackagingUtil.deletePackaging.
     ...     distroseries=g2k5)
     False
 
-Linkified changelogs are available through SourcePackageReleaseView:
-XXX julian 2007-09-17
-This is duplicating the page test. Instead it should be more like the bug
-number linkification just below.
+Linkified changelogs are available through SourcePackageReleaseView: XXX
+julian 2007-09-17 This is duplicating the page test. Instead it should
+be more like the bug number linkification just below.
 
     >>> from zope.component import queryMultiAdapter
-    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> mock_form = {}
-    >>> request = TestRequest(form=mock_form)
+    >>> request = LaunchpadTestRequest(form=mock_form)
     >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
     >>> spr = sp['0.1-2']
     >>> spr_view = queryMultiAdapter((spr, request), name="+changelog")
@@ -338,47 +359,50 @@ number linkification just below.
      * Fix debian (Debian #2000)
      * Fix warty (Warty Ubuntu #1)
     <BLANKLINE>
-     -- Sample Person &lt;email address hidden&gt; Tue, 7 Feb 2006 12:10:08 +0300
+     -- Sample Person &lt;email address hidden&gt; ... Feb 2006 12:10:08 +0300
     <BLANKLINE>
     <BLANKLINE>
 
-The view will linkify bug numbers of the format "LP: #number" in the changelog
-if number is a valid bug ID (also see Soyuz page tests
-24-sourcepackage-changelog.txt).  The changelog() method calls a method
+The view will linkify bug numbers of the format "LP: #number" in the
+changelog if number is a valid bug ID (also see Soyuz page tests 24
+-sourcepackage-changelog.txt).  The changelog() method calls a method
 _linkify_bug_numbers() to do this.
 
 Zero or more spaces may appear between the ":" and the "#".
 
-    >>> spr_view._linkify_bug_numbers("LP: #10")
+    >>> from lp.soyuz.browser.sourcepackagerelease import (
+    ...     linkify_bug_numbers)
+    >>> linkify_bug_numbers("LP: #10")
     u'LP: <a href="/bugs/10" title="another test bug">#10</a>'
 
-    >>> spr_view._linkify_bug_numbers("LP:         #10")
+    >>> linkify_bug_numbers("LP:         #10")
     u'LP:         <a href="/bugs/10" title="another test bug">#10</a>'
 
-    >>> spr_view._linkify_bug_numbers("LP:#10")
+    >>> linkify_bug_numbers("LP:#10")
     u'LP:<a href="/bugs/10" title="another test bug">#10</a>'
 
-    >>> spr_view._linkify_bug_numbers("LP: #999")
+    >>> linkify_bug_numbers("LP: #999")
     'LP: <a href="/bugs/999" title="No such bug">#999</a>'
 
-    >>> spr_view._linkify_bug_numbers("garbage")
+    >>> linkify_bug_numbers("garbage")
     'garbage'
 
-    >>> spr_view._linkify_bug_numbers("LP: #10, #7")
+    >>> linkify_bug_numbers("LP: #10, #7")
     u'LP: <a href="/bugs/10" title="another test bug">#10</a>,
     <a href="/bugs/7" title="A test bug">#7</a>'
 
-    >>> spr_view._linkify_bug_numbers("LP: #10 LP: #10")
+    >>> linkify_bug_numbers("LP: #10 LP: #10")
     u'LP: <a href="/bugs/10" title="another test bug">#10</a>
       LP: <a href="/bugs/10" title="another test bug">#10</a>'
 
 The regex is case-insensitive, so "lp: #nnn" also works.
 
-    >>> spr_view._linkify_bug_numbers("lp: #10")
+    >>> linkify_bug_numbers("lp: #10")
     u'lp: <a href="/bugs/10" title="another test bug">#10</a>'
 
 
-== Comparing Sourcepackages ==
+Comparing Sourcepackages
+------------------------
 
 Lastly, note that sourcepackages know how to compare to each other:
 
@@ -391,8 +415,10 @@ Lastly, note that sourcepackages know how to compare to each other:
 
     >>> hoary_firefox_one == hoary_firefox_two
     True
+
     >>> hoary_firefox_one != warty_firefox
     True
+
     >>> hoary_firefox_one == warty_firefox
     False
 
@@ -400,6 +426,7 @@ And they can be used as dictionary keys also:
 
     >>> hash(hoary_firefox_one) == hash(hoary_firefox_two)
     True
+
     >>> hash(hoary_firefox_one) != hash(warty_firefox)
     True
 
@@ -408,45 +435,35 @@ And they can be used as dictionary keys also:
     >>> a_map[warty_firefox] = 'warty'
     >>> a_map[hoary_firefox_two]
     'hoary'
+
     >>> a_map[warty_firefox]
     'warty'
 
 
-== Direct Packagings ==
+Direct Packagings
+-----------------
 
 The direct packaging returns the IPackaging related to the source
 package.
 
     >>> print sp.direct_packaging
     None
+
     >>> print hoary_firefox_one.direct_packaging.productseries.title
     Mozilla Firefox 1.0 series
+
     >>> print warty_firefox.direct_packaging.productseries.title
     Mozilla Firefox trunk series
 
-If multiple product series link to a sourcepackage, direct_packaging
-returns the last packaging added:
 
-    >>> from canonical.launchpad.interfaces import IProductSet
-    >>> firefox_product = getUtility(IProductSet).getByName('firefox')
-    >>> firefox_trunk = firefox_product.getSeries('trunk')
-    >>> PackagingUtil().createPackaging(
-    ...     sourcepackagename=firefox,
-    ...     distroseries=hoary,
-    ...     productseries=firefox_trunk,
-    ...     packaging=PackagingType.PRIME,
-    ...     owner=foobar)
-    >>> print hoary_firefox_one.direct_packaging.productseries.title
-    Mozilla Firefox trunk series
-
-
-== Release History ==
+Release History
+---------------
 
 The distinct release history for a SourcePackage is obtained via
 'distinctreleases' property.
 
-We will use `SoyuzTestPublisher` for creating source releases in
-Ubuntu warty and hoary series.
+We will use `SoyuzTestPublisher` for creating source releases in Ubuntu
+warty and hoary series.
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
@@ -465,8 +482,8 @@ Ubuntu warty and hoary series.
 
     >>> login(ANONYMOUS)
 
-Warty, hoary and grumpy SourcePackages only consider their
-corresponding versions, their history is isolated by series.
+Warty, hoary and grumpy SourcePackages only consider their corresponding
+versions, their history is isolated by series.
 
     >>> def print_releases(sourcepackage):
     ...     releases = sourcepackage.distinctreleases
@@ -490,8 +507,8 @@ corresponding versions, their history is isolated by series.
     No releases available
 
 The SourcePackage history can overlap if releases are copied across
-distroseries. The 'test-source - 1.0' is copied from warty to hoary
-and is present in the history for both.
+distroseries. The 'test-source - 1.0' is copied from warty to hoary and
+is present in the history for both.
 
     >>> login('foo.bar@canonical.com')
     >>> copied_source = warty_source.copyTo(
@@ -506,7 +523,8 @@ and is present in the history for both.
     test-source - 1.0
 
 We will create new source releases in warty and verify the ResultSet
-returned from 'distinctreleases' is ordered by descending source version.
+returned from 'distinctreleases' is ordered by descending source
+version.
 
     >>> login('foo.bar@canonical.com')
 
@@ -524,7 +542,8 @@ returned from 'distinctreleases' is ordered by descending source version.
     test-source - 0.9
 
 
-== Interface implementation ==
+Interface implementation
+------------------------
 
 SourcePackage implements IHasTranslationImports interface:
 
@@ -533,5 +552,8 @@ SourcePackage implements IHasTranslationImports interface:
     ...     IHasTranslationImports)
     >>> IHasTranslationImports.providedBy(warty_firefox)
     True
+
     >>> verifyObject(IHasTranslationImports, warty_firefox)
     True
+
+

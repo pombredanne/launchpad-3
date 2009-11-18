@@ -23,7 +23,7 @@ Start out with a clean page containing no imported keys:
     >>> browser.open("http://launchpad.dev/~name12")
     >>> browser.getLink(url='+editpgpkeys').click()
     >>> print browser.title
-    +editpgpkeys : Sample Person
+    Change your OpenPGP keys...
 
     >>> browser.getControl(name='DEACTIVATE_GPGKEY')
     Traceback (most recent call last):

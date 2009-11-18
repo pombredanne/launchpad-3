@@ -87,7 +87,7 @@ it's currently the team contact method.
 
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> print backslashreplace(browser.title)
-    +editemails : Carlos Perell\xf3 Mar\xedn
+    Change your e-mail settings...
 
     >>> admins = browser.getControl(name='field.subscription.admins')
     >>> rosetta_admins = browser.getControl(
@@ -212,7 +212,7 @@ Admins team, and he should know if the list is available.
     >>> browser.open('http://launchpad.dev/~carlos')
     >>> browser.getLink(url="+editemails").click()
     >>> print backslashreplace(browser.title)
-    +editemails : Carlos Perell\xf3 Mar\xedn
+    Change your e-mail settings...
 
     >>> rosetta_admins = browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -245,7 +245,7 @@ screen.
     >>> browser.open('http://launchpad.dev/~jdub')
     >>> browser.getLink(url="+editemails").click()
     >>> print browser.title
-    +editemails : Jeff Waugh
+    Change your e-mail settings...
 
     >>> browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -257,7 +257,7 @@ Jdub will become a member of the team's mailing list as soon as he has
 been approved for the team.
 
     >>> admin_browser.open('http://launchpad.dev/~rosetta-admins')
-    >>> admin_browser.getLink('Show all members').click()
+    >>> admin_browser.getLink('All members').click()
     >>> admin_browser.getLink(
     ...     url='/~rosetta-admins/+member/jdub').click()
     >>> admin_browser.url
@@ -269,7 +269,7 @@ His mailing list subscription is now available to be managed.
     >>> browser.open('http://launchpad.dev/~jdub')
     >>> browser.getLink(url="+editemails").click()
     >>> print browser.title
-    +editemails : Jeff Waugh
+    Change your e-mail settings...
 
     >>> rosetta_team = browser.getControl(
     ...     name='field.subscription.rosetta-admins')
@@ -410,7 +410,7 @@ because his membership on Rosetta Admins hasn't been approved)
 
     >>> browser.getLink('View subscribers').click()
     >>> browser.title
-    '+mailing-list-subscribers : \xe2\x80\x9cRosetta Administrators\xe2\x80\x9d team'
+    'Mailing list subscribers for the Rosetta Administrators team...
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
     Nobody has subscribed to this team's mailing list yet.
@@ -469,7 +469,7 @@ list based on a setting in the person's Email preferences page.
     >>> browser.open('http://launchpad.dev/~carlos')
     >>> browser.getLink(url="+editemails").click()
     >>> print backslashreplace(browser.title)
-    +editemails : Carlos Perell\xf3 Mar\xedn
+    Change your e-mail settings...
 
 Carlos's default setting, 'Ask me when I join a team', is still in place.
 

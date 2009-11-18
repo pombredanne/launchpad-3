@@ -122,6 +122,8 @@ class JobRunner(object):
         except Exception:
             transaction.abort()
             job.fail()
+            # Record the failure.
+            transaction.commit()
             self.incomplete_jobs.append(job)
             raise
         else:

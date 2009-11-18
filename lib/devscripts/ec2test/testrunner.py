@@ -33,26 +33,6 @@ class UnknownBranchURL(Exception):
             self,
             "Couldn't parse '%s', not a Launchpad branch." % (branch_url,))
 
-def validate_file(filename):
-    """Raise an error if 'filename' is not a file we can write to."""
-    if filename is None:
-        return
-
-    check_file = filename
-    if os.path.exists(check_file):
-        if not os.path.isfile(check_file):
-            raise ValueError(
-                'file argument %s exists and is not a file' % (filename,))
-    else:
-        check_file = os.path.dirname(check_file)
-        if (not os.path.exists(check_file) or
-            not os.path.isdir(check_file)):
-            raise ValueError(
-                'file %s cannot be created.' % (filename,))
-    if not os.access(check_file, os.W_OK):
-        raise ValueError(
-            'you do not have permission to write %s' % (filename,))
-
 
 def parse_branch_url(branch_url):
     """Given the URL of a branch, return its components in a dict."""
@@ -131,11 +111,11 @@ class EC2TestRunner:
 
     def __init__(self, branch, email=False, file=None, test_options='-vv',
                  headless=False, branches=(),
-                 machine_id=None,
                  pqm_message=None, pqm_public_location=None,
                  pqm_submit_location=None,
                  open_browser=False, pqm_email=None,
-                 include_download_cache_changes=None, instance=None, vals=None):
+                 include_download_cache_changes=None, instance=None,
+                 launchpad_login=None):
         """Create a new EC2TestRunner.
 
         This sets the following attributes:
@@ -148,29 +128,15 @@ class EC2TestRunner:
           - message (after validating PQM submisson)
           - email (after validating email capabilities)
           - image (after connecting to ec2)
-          - file (after checking we can write to it)
-          - vals, a dict containing
-            - the environment
-            - trunk_branch (either from global or derived from branches)
-            - branch
-            - smtp_server
-            - smtp_username
-            - smtp_password
-            - email (distinct from the email attribute)
-            - key_type
-            - key
-            - launchpad_login
+          - file
         """
-        self.original_branch = branch # just for easy access in debugging
+        self.original_branch = branch
         self.test_options = test_options
         self.headless = headless
         self.include_download_cache_changes = include_download_cache_changes
         self.open_browser = open_browser
-
-        if test_options != '-vv' and pqm_message is not None:
-            raise ValueError(
-                "Submitting to PQM with non-default test options isn't "
-                "supported")
+        self.file = file
+        self._launchpad_login = launchpad_login
 
         trunk_specified = False
         trunk_branch = TRUNK_BRANCH
@@ -195,7 +161,7 @@ class EC2TestRunner:
             if user == 'launchpad-pqm':
                 trunk_specified = True
             trunk_branch = src
-
+        self._trunk_branch = trunk_branch
         self.branches = branches.items()
 
         # XXX: JonathanLange 2009-05-31: The trunk_specified stuff above and
@@ -296,6 +262,8 @@ class EC2TestRunner:
                         '--ignore-download-cache-changes, -c and -g '
                         'respectively), or '
                         'commit or remove the files in the download-cache.')
+        self._branch = branch
+
         if email is not False:
             if email is True:
                 email = [config.username()]
@@ -308,54 +276,32 @@ class EC2TestRunner:
                 for item in email:
                     if not isinstance(item, basestring):
                         raise ValueError(
-                            'email must be True, False, a string, or a list of '
-                            'strings')
+                            'email must be True, False, a string, or a list '
+                            'of strings')
                     tmp.append(item)
                 email = tmp
         else:
             email = None
         self.email = email
 
-        # We do a lot of looking before leaping here because we want to avoid
-        # wasting time and money on errors we could have caught early.
-
-        # Validate and set file.
-        validate_file(file)
-        self.file = file
-
-        # Make a dict for string substitution based on the environ.
-        #
-        # XXX: JonathanLange 2009-06-02: Although this defintely makes the
-        # scripts & commands easier to write, it makes it harder to figure out
-        # how the different bits of the system interoperate (passing 'vals' to
-        # a method means it uses...?). Consider changing things around so that
-        # vals is not needed.
-        self.vals = vals
-        self.vals['trunk_branch'] = trunk_branch
-        self.vals['branch'] = branch
-
         # Email configuration.
         if email is not None or pqm_message is not None:
-            server = self.vals['smtp_server'] = config.get_user_option(
-                'smtp_server')
-            if server is None or server == 'localhost':
+            self._smtp_server = config.get_user_option('smtp_server')
+            if self._smtp_server is None or self._smtp_server == 'localhost':
                 raise ValueError(
                     'To send email, a remotely accessible smtp_server (and '
                     'smtp_username and smtp_password, if necessary) must be '
                     'configured in bzr.  See the SMTP server information '
                     'here: https://wiki.canonical.com/EmailSetup .')
-            self.vals['smtp_username'] = config.get_user_option(
-                'smtp_username')
-            self.vals['smtp_password'] = config.get_user_option(
-                'smtp_password')
+            self._smtp_username = config.get_user_option('smtp_username')
+            self._smtp_password = config.get_user_option('smtp_password')
             from_email = config.username()
             if not from_email:
+                # XXX: JonathanLange 2009-10-04: Is this strictly true? I
+                # can't actually see where this is used.
                 raise ValueError(
                     'To send email, your bzr email address must be set '
                     '(use ``bzr whoami``).')
-            else:
-                self.vals['email'] = (
-                    from_email.encode('utf8').encode('string-escape'))
 
         self._instance = instance
 
@@ -366,55 +312,50 @@ class EC2TestRunner:
         sys.stdout.write(msg)
         sys.stdout.flush()
 
-
     def configure_system(self):
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
         as_user = user_connection.perform
-        user_sftp = user_connection.ssh.open_sftp()
         # Set up bazaar.conf with smtp information if necessary
         if self.email or self.message:
-            as_user('mkdir /home/%(USER)s/.bazaar')
-            bazaar_conf_file = user_sftp.open(
-                "/home/%(USER)s/.bazaar/bazaar.conf" % self.vals, 'w')
+            as_user('mkdir .bazaar')
+            bazaar_conf_file = user_connection.sftp.open(
+                ".bazaar/bazaar.conf", 'w')
             bazaar_conf_file.write(
-                'smtp_server = %(smtp_server)s\n' % self.vals)
-            if self.vals['smtp_username']:
+                'smtp_server = %s\n' % (self._smtp_server,))
+            if self._smtp_username:
                 bazaar_conf_file.write(
-                    'smtp_username = %(smtp_username)s\n' % self.vals)
-            if self.vals['smtp_password']:
+                    'smtp_username = %s\n' % (self._smtp_username,))
+            if self._smtp_password:
                 bazaar_conf_file.write(
-                    'smtp_password = %(smtp_password)s\n' % self.vals)
+                    'smtp_password = %s\n' % (self._smtp_password,))
             bazaar_conf_file.close()
         # Copy remote ec2-remote over
         self.log('Copying ec2test-remote.py to remote machine.\n')
-        user_sftp.put(
+        user_connection.sftp.put(
             os.path.join(os.path.dirname(os.path.realpath(__file__)),
                          'ec2test-remote.py'),
             '/var/launchpad/ec2test-remote.py')
-        user_sftp.close()
         # Set up launchpad login and email
-        as_user('bzr launchpad-login %(launchpad-login)s')
+        as_user('bzr launchpad-login %s' % (self._launchpad_login,))
         user_connection.close()
 
     def prepare_tests(self):
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
         # Clean up the test branch left in the instance image.
         user_connection.perform('rm -rf /var/launchpad/test')
-        # get newest sources
-        user_connection.run_with_ssh_agent(
-            "rsync -avp --partial --delete "
-            "--filter='P *.o' --filter='P *.pyc' --filter='P *.so' "
-            "devpad.canonical.com:/code/rocketfuel-built/launchpad/sourcecode/* "
-            "/var/launchpad/sourcecode/")
         # Get trunk.
         user_connection.run_with_ssh_agent(
-            'bzr branch %(trunk_branch)s /var/launchpad/test')
+            'bzr branch %s /var/launchpad/test' % (self._trunk_branch,))
         # Merge the branch in.
-        if self.vals['branch'] is not None:
+        if self._branch is not None:
             user_connection.run_with_ssh_agent(
-                'cd /var/launchpad/test; bzr merge %(branch)s')
+                'cd /var/launchpad/test; bzr merge %s' % (self._branch,))
         else:
             self.log('(Testing trunk, so no branch merge.)')
+        # get newest sources
+        user_connection.run_with_ssh_agent(
+            "/var/launchpad/test/utilities/update-sourcecode "
+            "/var/launchpad/sourcecode")
         # Get any new sourcecode branches as requested
         for dest, src in self.branches:
             fulldest = os.path.join('/var/launchpad/test/sourcecode', dest)
@@ -455,20 +396,18 @@ class EC2TestRunner:
         p('mv /var/launchpad/download-cache /var/launchpad/tmp/download-cache')
         if (self.include_download_cache_changes and
             self.download_cache_additions):
-            sftp = user_connection.ssh.open_sftp()
             root = os.path.realpath(
                 os.path.join(self.original_branch, 'download-cache'))
             for info in self.download_cache_additions:
                 src = os.path.join(root, info[0])
                 self.log('Copying %s to remote machine.\n' % (src,))
-                sftp.put(
+                user_connection.sftp.put(
                     src,
                     os.path.join('/var/launchpad/tmp/download-cache', info[0]))
-            sftp.close()
         p('/var/launchpad/test/utilities/link-external-sourcecode '
           '-p/var/launchpad/tmp -t/var/launchpad/test'),
         # set up database
-        p('/var/launchpad/test/utilities/launchpad-database-setup %(USER)s')
+        p('/var/launchpad/test/utilities/launchpad-database-setup $USER')
         # close ssh connection
         user_connection.close()
 
@@ -476,7 +415,7 @@ class EC2TestRunner:
         """Turn ec2 instance into a demo server."""
         self.configure_system()
         self.prepare_tests()
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
         p = user_connection.perform
         p('make -C /var/launchpad/test schema')
         p('mkdir -p /var/tmp/bazaar.launchpad.dev/static')
@@ -510,7 +449,7 @@ class EC2TestRunner:
     def run_tests(self):
         self.configure_system()
         self.prepare_tests()
-        user_connection = self._instance.connect_as_user()
+        user_connection = self._instance.connect()
 
         # Make sure we activate the failsafe --shutdown feature.  This will
         # make the server shut itself down after the test run completes, or
@@ -536,14 +475,14 @@ class EC2TestRunner:
             cmd.append('--daemon')
 
         # Which branch do we want to test?
-        if self.vals['branch'] is not None:
-            branch = self.vals['branch']
+        if self._branch is not None:
+            branch = self._branch
             remote_branch = Branch.open(branch)
             branch_revno = remote_branch.revno()
         else:
-            branch = self.vals['trunk_branch']
+            branch = self._trunk_branch
             branch_revno = None
-        cmd.append('--public-branch=%s'  % branch)
+        cmd.append('--public-branch=%s' % branch)
         if branch_revno is not None:
             cmd.append('--public-branch-revno=%d' % branch_revno)
 
@@ -580,11 +519,9 @@ class EC2TestRunner:
 
             # deliver results as requested
             if self.file:
-                sftp = user_connection.ssh.open_sftp()
                 self.log(
                     'Writing abridged test results to %s.\n' % self.file)
-                sftp.get('/var/www/summary.log', self.file)
-                sftp.close()
+                user_connection.sftp.get('/var/www/summary.log', self.file)
         user_connection.close()
 
     def get_remote_test_options(self):

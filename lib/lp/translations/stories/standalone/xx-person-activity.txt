@@ -45,7 +45,7 @@ contributions to the selected translation.
     >>> alsa_utils_link = 'Spanish (es) translation of alsa-utils in alsa-utils trunk'
     >>> anon_browser.getLink(alsa_utils_link).click()
     >>> print anon_browser.title
-    +filter : Spanish (es) : Template ...alsa-utils... : Translations : Series trunk : alsa-utils
+    Translations by ... in...Spanish (es) translation...
 
 
 URL-escaped user names
@@ -76,5 +76,4 @@ Because of this, the link actually works.
 
     >>> user_browser.open(url.encode('ascii'))
     >>> print user_browser.title
-    +filter : Serbian (sr) : Template ... : Translations :
-    Series ... : ...
+    Translations by A+b in...Serbian (sr) translation...

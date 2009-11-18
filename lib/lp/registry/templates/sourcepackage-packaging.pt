@@ -11,8 +11,6 @@
 
 <div metal:fill-slot="main">
 
-  <h1 tal:content="view/page_title" />
-
   <p>
     Linking distribution packages to upstream series allows
     distribution and upstream developers share bugs, patches, and translations

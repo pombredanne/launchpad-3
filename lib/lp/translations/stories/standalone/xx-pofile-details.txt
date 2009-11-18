@@ -22,8 +22,7 @@ appearing among contributors), by choosing the 'filter' link:
 
     >>> anon_browser.getLink('filter').click()
     >>> print anon_browser.title
-    +filter : Spanish (es) : Template ...evolution-2.2... : Translations :
-    Series trunk : Evolution
+    Translations by Carlos ... in ...
 
 To display all the translations submitted by Carlos, and allow easier
 debugging and problem catching when changes are introduced, we define
@@ -102,8 +101,7 @@ A POTMsgSet sequence number is also a link to edit a translation.
     >>> anon_browser.url
     'http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2/es/14/+translate'
     >>> print anon_browser.title
-    Spanish (es) : Template ...evolution-2.2... : Translations :
-    Series trunk : Evolution
+    Browsing Spanish translation...
 
 == Invalid input ==
 

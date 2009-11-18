@@ -18,10 +18,10 @@ simply mimics the `DistributionSourcePackageRelease.title`.
     >>> dspr_view = create_initialized_view(dspr, name="+index")
 
     >>> print dspr.title
-    testing-dspr 1.0 (source) in ubuntutest
+    "testing-dspr" 1.0 source package in ubuntutest
 
     >>> print dspr_view.page_title
-    testing-dspr 1.0 (source) in ubuntutest
+    “testing-dspr” 1.0 source package in ubuntutest
 
 The 'files' property returns a list of files included in the source
 upload encapsulated as `ProxiedLibraryFileAlias` objects. Their

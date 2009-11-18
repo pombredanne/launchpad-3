@@ -59,23 +59,6 @@ For a 3-0 page:
     >>> print browser.getLink(url="http://example.com").text
     File a bug
 
-And for a non-3-0 page:
-
-    >>> browser.open('http://launchpad.dev/')
-    >>> print browser.contents
-    <...
-    <style...url(/@@/demo)...</style>
-    ...
-    >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    |...Launchpad...) devmode demo site
-
-    >>> print extract_text(find_tags_by_class(
-    ...     browser.contents, 'sitemessage')[0])
-    This is a demo site mmk. File a bug.
-    >>> print browser.getLink(url="http://example.com").text
-    File a bug
-
-
 When you are not on a demo site, the text no longer appears.
 
     >>> # Restore the previous config:
@@ -88,15 +71,6 @@ First for a 3-0 page:
     >>> browser.open('http://launchpad.dev/ubuntu')
     >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
     &bull;...Launchpad...) devmode
-    >>> len(find_tags_by_class(browser.contents, 'sitemessage'))
-    0
-
-
-And for a non-3-0 page:
-
-    >>> browser.open('http://launchpad.dev/')
-    >>> print extract_text(find_tag_by_id(browser.contents, 'lp-version'))
-    |...Launchpad...) devmode
     >>> len(find_tags_by_class(browser.contents, 'sitemessage'))
     0
 
@@ -130,8 +104,8 @@ the redirects.
     Disable edge redirect.
 
 The disable-redirect link will not appear for locationless pages, such
-as the login page, as the view does not inherit from LaunchpadView and
-so cannot support this functionality.
+as the login page, or any other view that does not inherit from
+LaunchpadView and therefore does not provide isBetaUser().
 
     >>> beta_browser.open('http://launchpad.dev/+login')
     >>> print extract_text(find_tags_by_class(

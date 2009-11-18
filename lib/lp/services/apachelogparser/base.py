@@ -33,11 +33,7 @@ def get_files_to_parse(root, file_names):
     store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     for file_name in file_names:
         file_path = os.path.join(root, file_name)
-        file_size = os.path.getsize(file_path)
-        if file_name.endswith('.gz'):
-            fd = gzip.open(file_path)
-        else:
-            fd = open(file_path)
+        fd, file_size = get_fd_and_file_size(file_path)
         first_line = unicode(fd.readline())
         parsed_file = store.find(ParsedApacheLog, first_line=first_line).one()
         position = 0
@@ -55,6 +51,29 @@ def get_files_to_parse(root, file_names):
 
         files_to_parse[fd] = position
     return files_to_parse
+
+
+def get_fd_and_file_size(file_path):
+    """Return a file descriptor and the file size for the given file path.
+
+    The file descriptor will have the default mode ('r') and will be seeked to
+    the beginning.
+
+    The file size returned is that of the uncompressed file, in case the given
+    file_path points to a gzipped file.
+    """
+    if file_path.endswith('.gz'):
+        fd = gzip.open(file_path)
+        # There doesn't seem to be a better way of figuring out the
+        # uncompressed size of a file, so we'll read the whole file here.
+        file_size = len(fd.read())
+        # Seek back to the beginning of the file as if we had just opened
+        # it.
+        fd.seek(0)
+    else:
+        fd = open(file_path)
+        file_size = os.path.getsize(file_path)
+    return fd, file_size
 
 
 def parse_file(fd, start_position, logger, get_download_key):

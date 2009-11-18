@@ -76,7 +76,7 @@ Watermark images
 The image for the watermark is determined effectively by context/image:logo.
 
     >>> print test_tales('view/watermark:logo', view=view(dev_focus))
-    <img ... src="/@@/product-logo" />
+    <a href="..."><img ... src="/@@/product-logo" /></a>
 
     >>> print test_tales('view/watermark:logo', view=view(eric))
     <img ... src="/@@/person-logo" />

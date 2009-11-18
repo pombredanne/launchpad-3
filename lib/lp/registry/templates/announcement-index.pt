@@ -8,10 +8,6 @@
 >
 
 <body>
-  <tal:heading metal:fill-slot="heading">
-    <h1 tal:content="context/title">Announcement headline</h1>
-  </tal:heading>
-
   <div metal:fill-slot="main">
     <tal:body define="announcement context;
                       show_title nothing">

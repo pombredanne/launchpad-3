@@ -630,32 +630,6 @@ COMMENT ON COLUMN ProductSeries.name IS 'The name of the ProductSeries is like a
 COMMENT ON COLUMN ProductSeries.status IS 'The current status of this productseries.';
 COMMENT ON COLUMN ProductSeries.summary IS 'A summary of this Product Series. A good example would include the date the series was initiated and whether this is the current recommended series for people to use. The summary is usually displayed at the top of the page, in bold, just beneath the title and above the description, if there is a description field.';
 COMMENT ON COLUMN ProductSeries.driver IS 'This is a person or team who can approve spes and bugs for implementation or fixing in this specific series. Note that the product drivers and project drivers can also do this for any series in the product or project, so use this only for the specific team responsible for this specific series.';
-COMMENT ON COLUMN ProductSeries.importstatus IS 'A status flag which
-gives the state of our efforts to import the upstream code from its revision
-control system and publish that in the baz revision control system. The
-allowed values are documented in ImportStatus.';
-COMMENT ON COLUMN ProductSeries.rcstype IS 'The revision control system used
-by upstream for this product series. The value is defined in
-dbschema.RevisionControlSystems.  If NULL, then there should be no CVS or
-SVN information attached to this productseries, otherwise the relevant
-fields for CVS or SVN etc should be filled out.';
-COMMENT ON COLUMN ProductSeries.cvsroot IS 'The CVS root where this
-productseries hosts its code. Only used if rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.cvsmodule IS 'The CVS module which contains
-the upstream code for this productseries. Only used if rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.cvsmodule IS 'The CVS branch that contains
-the upstream code for this productseries.  Only used if rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.cvstarfileurl IS 'The URL of a tarfile of
-the CVS repository for this productseries. This is an optimisation of the
-CVS import process - instead of hitting the server to pass us every set of
-changes in history, we can sometimes arrange to be given a tarfile of the
-CVS repository and then process it all locally. Once imported, we switch
-back to using the CVS server for ongoing syncronization.  Only used if
-rcstype is CVS.';
-COMMENT ON COLUMN ProductSeries.svnrepository IS 'The URL of the SVN branch
-where the upstream productseries code can be found. This single URL is the
-equivalent of the cvsroot, cvsmodule and cvsbranch for CVS. Only used if
-rcstype is SVN.';
 COMMENT ON COLUMN ProductSeries.releasefileglob IS 'A fileglob that lets us
 see which URLs are potentially new upstream tarball releases. For example:
 http://ftp.gnu.org/gnu/libtool/libtool-1.5.*.gz.';
@@ -663,25 +637,6 @@ COMMENT ON COLUMN ProductSeries.releaseverstyle IS 'An enum giving the style
 of this product series release version numbering system.  The options are
 documented in dbschema.UpstreamReleaseVersionStyle.  Most applications use
 Gnu style numbering, but there are other alternatives.';
-COMMENT ON COLUMN ProductSeries.dateprocessapproved IS 'The timestamp when
-this upstream import was certified for processing. Processing means it has
-passed autotesting, and is being moved towards production syncing. If the
-sync goes well, it will be approved for sync and then be fully in
-production.';
-COMMENT ON COLUMN ProductSeries.datesyncapproved IS 'The timestamp when this
-upstream import was certified for ongoing syncronisation.';
-COMMENT ON COLUMN ProductSeries.dateautotested IS 'This upstream revision
-control system target has passed automatic testing. It can probably be moved
-towards production sync status. This date is the timestamp when it passed
-the autotester. The autotester allows us to find the low hanging fruit that
-is easily brought into the bazaar import system by highlighting repositories
-which had no apparent difficulty in being imported.';
-COMMENT ON COLUMN ProductSeries.datestarted IS 'The timestamp when we last
-initiated an import test or sync of this upstream repository.';
-COMMENT ON COLUMN ProductSeries.datefinished IS 'The timestamp when we last
-completed an import test or sync of this upstream repository.';
-COMMENT ON COLUMN ProductSeries.datelastsynced IS 'The timestamp when we last successfully completed a production sync of this upstream repository.';
-COMMENT ON COLUMN ProductSeries.date_published_sync IS 'The saved value of datelastsynced from the last time it was older than the corresponding branch''s last_mirrored timestamp. The timestamp currently published import branch is either datelastsynced or datepublishedsync.';
 COMMENT ON COLUMN ProductSeries.branch IS 'The branch for this product
 series.';
 COMMENT ON COLUMN ProductSeries.translations_autoimport_mode IS 'Level of
@@ -808,8 +763,11 @@ COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of
 
 -- SprintAttendance
 COMMENT ON TABLE SprintAttendance IS 'The record that someone will be attending a particular sprint or meeting.';
+COMMENT ON COLUMN SprintAttendance.attendee IS 'The person attending the sprint.';
+COMMENT ON COLUMN SprintAttendance.sprint IS 'The sprint the person is attending.';
 COMMENT ON COLUMN SprintAttendance.time_starts IS 'The time from which the person will be available to participate in meetings at the sprint.';
 COMMENT ON COLUMN SprintAttendance.time_ends IS 'The time of departure from the sprint or conference - this is the last time at which the person is available for meetings during the sprint.';
+COMMENT ON COLUMN SprintAttendance.is_physical IS 'Is the person physically attending the sprint';
 
 
 -- SprintSpecification
@@ -1907,6 +1865,7 @@ COMMENT ON COLUMN Archive.signing_key IS 'The GpgKey used for signing this archi
 COMMENT ON COLUMN Archive.removed_binary_retention_days IS 'The number of days before superseded or deleted binary files are expired in the librarian, or zero for never.';
 COMMENT ON COLUMN Archive.num_old_versions_published IS 'The number of versions of a package to keep published before older versions are superseded.';
 COMMENT ON COLUMN Archive.relative_build_score IS 'A delta to the build score that is applied to all builds in this archive.';
+COMMENT ON COLUMN Archive.external_dependencies IS 'Newline-separated list of repositories to be used to retrieve any external build dependencies when building packages in this archive, in the format: deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] [components]  The series variable is replaced with the series name of the context build.  This column is specifically and only intended for OEM migration to Launchpad and should be re-examined in October 2010 to see if it is still relevant.';
 
 -- ArchiveAuthToken
 
@@ -2280,11 +2239,20 @@ COMMENT ON COLUMN UserToUserEmail.message_id IS 'The Message-ID: header.';
 
 -- Packageset
 
-COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages for purposes like the control of upload permissions, et.';
+COMMENT ON TABLE Packageset IS 'Package sets facilitate the grouping of packages (in a given distro series) for purposes like the control of upload permissions, etc.';
 COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
 COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package set';
 COMMENT ON COLUMN Packageset.name IS 'The name for the package set on hand.';
 COMMENT ON COLUMN Packageset.description IS 'The description for the package set on hand.';
+COMMENT ON COLUMN Packageset.packagesetgroup IS 'The group this package set is affiliated with.';
+COMMENT ON COLUMN Packageset.distroseries IS 'The distro series this package set belongs to.';
+
+-- PackagesetGroup
+
+COMMENT ON TABLE PackagesetGroup IS 'Package set groups keep track of equivalent package sets across distro series boundaries.';
+COMMENT ON COLUMN Packageset.date_created IS 'Date and time of creation.';
+COMMENT ON COLUMN Packageset.owner IS 'The Person or team who owns the package
+set group.';
 
 -- PackagesetSources
 
@@ -2301,3 +2269,9 @@ COMMENT ON COLUMN PackagesetInclusion.child IS 'The package set that is being in
 COMMENT ON TABLE FlatPackagesetInclusion IS 'In order to facilitate the querying of set-subset relationships an expanded or flattened representation of the set-subset hierarchy is provided by this table.';
 COMMENT ON COLUMN FlatPackagesetInclusion.parent IS 'The package set that is (directly or indirectly) including a subset.';
 COMMENT ON COLUMN FlatPackagesetInclusion.child IS 'The package set that is being included as a subset.';
+
+-- SourcePackageFormatSelection
+COMMENT ON TABLE SourcePackageFormatSelection IS 'Allowed source package formats for a given distroseries.';
+COMMENT ON COLUMN SourcePackageFormatSelection.distroseries IS 'Refers to the distroseries in question.';
+COMMENT ON COLUMN SourcePackageFormatSelection.format IS 'The SourcePackageFormat to allow.';
+

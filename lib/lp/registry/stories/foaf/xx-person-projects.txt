@@ -17,7 +17,7 @@ unimplemented specs and open questions.
 
     >>> anon_browser.getLink('Show related projects').click()
     >>> anon_browser.title
-    '+related-software : \xe2\x80\x9cUbuntu Team\xe2\x80\x9d team'
+    'Software related to Ubuntu Team...
 
     >>> related_projects = find_tag_by_id(
     ...     anon_browser.contents, 'related-projects')
@@ -44,7 +44,7 @@ accessible through the main navigation menu.
     >>> print anon_browser.url
     http://launchpad.dev/~mark/+related-software
     >>> print anon_browser.title
-    +related-software : Mark Shuttleworth
+    Software related to Mark Shuttleworth...
 
 In the case of a person that owns/drives more than
 config.launchpad.default_batch_size, a message is displayed and the

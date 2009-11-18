@@ -19,28 +19,16 @@
 
     <div id="full-subscribers" tal:condition="view/full_subscribers">
       <img src="/@@/mail"/> to all changes:
-      <dl>
-        <dt tal:repeat="subscriber view/full_subscribers">
-          <img src="/@@/yes"/>
-          <tal:subscriber replace="structure subscriber/fmt:link"/>
-        </dt>
-        <dt tal:condition="not: view/full_subscribers">
-          <img src="/@@/no"/> No one
-        </dt>
-      </dl>
+      <ul tal:repeat="subscriber view/full_subscribers">
+        <li tal:content="structure subscriber/fmt:link"/>
+      </ul>
     </div>
 
     <div id="status-subscribers" tal:condition="view/status_subscribers">
       <img src="/@@/mail"/> to status/vote changes:
-      <dl>
-        <dt tal:repeat="subscriber view/status_subscribers">
-          <img src="/@@/yes"/>
-          <tal:subscriber replace="structure subscriber/fmt:link"/>
-        </dt>
-        <dt tal:condition="not: view/status_subscribers">
-          <img src="/@@/no"/> No one
-        </dt>
-      </dl>
+      <ul tal:repeat="subscriber view/status_subscribers" >
+        <li tal:content="structure subscriber/fmt:link"/>
+      </ul>
     </div>
   </div>
 </div>

@@ -56,9 +56,11 @@ definitive that it is not possible to upload to this branch.
     >>> content = ddaa_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print instructions.renderContents()
+    <div...
     You cannot upload to this branch. Only
     <a href="http://launchpad.dev/~name12">Sample Person</a>
     can upload to this branch.
+    ...
 
 The user is the owner of the branch and logs in. The page gives the full upload
 URL for the branch.
@@ -67,6 +69,7 @@ URL for the branch.
     >>> content = name12_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
+    Update this branch:
     bzr push lp://dev/~name12/gnome-terminal/pushed
 
 
@@ -159,9 +162,11 @@ a link to the team.
     >>> content = ddaa_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print instructions.renderContents()
+    <div...
     You cannot upload to this branch. Members of <a
     href="http://launchpad.dev/~landscape-developers">Landscape
     Developers</a> can upload to this branch.
+    ...
 
 Finally, if the user is a member of the team, we display the same "you can
 upload" message as before. Of course the upload URL looks different, in
@@ -172,6 +177,7 @@ owning team's name.
     >>> content = name12_browser.contents
     >>> instructions = find_tag_by_id(content, 'upload-directions')
     >>> print extract_text(instructions)
+    Update this branch:
     bzr push lp://dev/~landscape-developers/gnome-terminal/pushed
 
 

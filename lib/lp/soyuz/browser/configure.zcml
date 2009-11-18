@@ -112,9 +112,6 @@
             name="+files"
             facet="overview"
             template="../templates/sourcepackagerelease-files.pt"/>
-        <browser:page
-            name="+change_summary"
-            template="../templates/sourcepackagerelease-change-summary.pt"/>
     </browser:pages>
     <facet
         facet="overview">
@@ -543,11 +540,14 @@
             name="+changes"
             facet="overview"
             template="../templates/distributionsourcepackagerelease-changes.pt"/>
-        <browser:page
-            name="+publishinghistory"
-            facet="overview"
-            template="../templates/distributionsourcepackage-publishinghistory.pt"/>
     </browser:pages>
+    <browser:page
+        for="lp.soyuz.interfaces.distributionsourcepackagerelease.IDistributionSourcePackageRelease"
+        class="lp.soyuz.browser.distributionsourcepackagerelease.DistributionSourcePackageReleasePublishingHistoryView"
+        permission="zope.Public"
+        name="+publishinghistory"
+        facet="overview"
+        template="../templates/distributionsourcepackage-publishinghistory.pt" />
     <browser:defaultView
         for="lp.soyuz.interfaces.distroseriesbinarypackage.IDistroSeriesBinaryPackage"
         name="+index"/>
@@ -698,7 +698,7 @@
             template="../templates/distributionsourcepackage-portlet-pub-details.pt"/>
         <browser:page
             for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-            class="canonical.launchpad.webapp.publisher.LaunchpadView"
+            class="lp.registry.browser.distributionsourcepackage.DistributionSourcePackagePublishingHistoryView"
             permission="zope.Public"
             name="+publishinghistory"
             facet="overview"
@@ -783,7 +783,7 @@
         />
     <browser:url
         for="lp.soyuz.interfaces.packageset.IPackageset"
-        path_expression="name"
+        path_expression="string:${distroseries/name}/${name}"
         parent_utility="lp.soyuz.interfaces.packageset.IPackagesetSet"
         />
     <browser:url

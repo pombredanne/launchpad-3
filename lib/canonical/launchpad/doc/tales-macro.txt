@@ -27,12 +27,12 @@ The pagetype is registered in the __pagetype__ attribute.
     >>> view.__pagetype__
     'default'
 
-If the pagetype isn't defined, a TraversalError is raised.
+If the pagetype isn't defined, a LocationError is raised.
 
     >>> test_tales('view/macro:page/not-defined', view=FakeView())
     Traceback (most recent call last):
       ...
-    TraversalError: 'unknown pagetype: not-defined'
+    LocationError: 'unknown pagetype: not-defined'
 
 The 'macro:pagehas' can then be used to test for features that should be
 rendered in the layout.
@@ -71,5 +71,20 @@ These two layouts have the actionsmenu turned off.
 
     >>> macro = test_tales('view/macro:page/onecolumn', view=view)
     >>> test_tales('view/macro:pagehas/actionsmenu', view=view)
+    False
+
+The 'macro:isbetauser' can be used to safely try to determine if the
+current user is a beta user. It works for views that provide
+isBetaUser() (ie. all views inheriting LaunchpadView), and simply
+returns False for older views that do not.
+
+    >>> class LPView(object):
+    ...     def isBetaUser(self):
+    ...         return True
+
+    >>> test_tales('view/macro:isbetauser', view=LPView())
+    True
+
+    >>> test_tales('view/macro:isbetauser', view=view)
     False
 

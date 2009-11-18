@@ -12,7 +12,7 @@ product. Users simply click the 'Ask a question' buttion.
     >>> user_browser.open('http://launchpad.dev/firefox')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for Mozilla Firefox : Mozilla Firefox
+    Ask a question about...
 
 There is also an 'Ask a question' link on the Bugs home page of the
 product:
@@ -20,7 +20,7 @@ product:
     >>> user_browser.open('http://bugs.launchpad.dev/firefox')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for Mozilla Firefox : Mozilla Firefox
+    Ask a question about...
 
 The list of all the currently active questions for the product is
 available from the 'Answers' facet.
@@ -53,7 +53,7 @@ question page.
 
     >>> browser.getLink('Problem showing the SVG demo on W3C site').click()
     >>> print browser.title
-    +index : Questions for Mozilla Firefox : Mozilla Firefox
+    Question #2 : ...
     >>> print find_main_content(browser.contents).first('h1').renderContents()
     Problem showing the SVG demo on W3C site
 
@@ -64,14 +64,14 @@ Distributions have an 'Ask a question' link on the front page:
     >>> user_browser.open('http://launchpad.dev/ubuntu')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for Ubuntu Linux : Ubuntu
+    Ask a question about...
 
 As well as on the Bugs facet home page:
 
     >>> user_browser.open('http://bugs.launchpad.dev/ubuntu')
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for Ubuntu Linux : Ubuntu
+    Ask a question about...
 
 The distribution home page also has a link to the 'Answers' facet:
 
@@ -80,7 +80,7 @@ The distribution home page also has a link to the 'Answers' facet:
     'http://answers.launchpad.dev/ubuntu'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions for Ubuntu
+    Questions : Ubuntu
     >>> browser.getLink('Ask a question')
     <Link...>
 
@@ -104,7 +104,7 @@ the Answers facet.
     'http://answers.launchpad.dev/ubuntu/hoary/+source/evolution'
     >>> browser.getLink('Answers').click()
     >>> print browser.title
-    Questions for evolution in Ubuntu Hoary...
+    Questions : ...evolution... source package : Hoary (5.04) : Ubuntu
     >>> browser.getLink('Ask a question').url
     '.../ubuntu/hoary/+source/evolution/+addquestion'
 
@@ -124,8 +124,8 @@ page:
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox'
     >>> browser.getLink('Answers').click()
-    >>> print browser.title
-    Questions for mozilla-firefox in ubuntu
+    >>> browser.title
+    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
     >>> browser.getLink('Ask a question').url
     '.../ubuntu/+source/mozilla-firefox/+addquestion'
     >>> browser.getLink('Open').url
@@ -155,7 +155,7 @@ Project also have the 'Latest questions' portlet and the
 
     >>> user_browser.getLink('Ask a question').click()
     >>> print user_browser.title
-    +addquestion : Questions for The Mozilla Project : the Mozilla Project
+    Ask a question about...
 
 == Persons ==
 
@@ -166,10 +166,10 @@ involving a person.
     >>> browser.getLink('Answers').url
     'http://answers.launchpad.dev/~name16'
     >>> browser.getLink('Answers').click()
-    >>> browser.title
-    'Questions involving Foo Bar'
+    >>> print browser.title
+    Questions : Foo Bar
     >>> print find_main_content(browser.contents).first('h1').renderContents()
-    Questions involving Foo Bar
+    Questions for Foo Bar
     >>> browser.getLink('Slow system').url
     '.../ubuntu/+question/7'
 

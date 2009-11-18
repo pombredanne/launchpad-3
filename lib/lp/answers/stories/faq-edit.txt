@@ -11,7 +11,7 @@ No Privileges Person:
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> anon_browser.open('http://answers.launchpad.dev/firefox/+faq/7')
     >>> print backslashreplace(anon_browser.title)
-    +index : Questions for Mozilla Firefox : Mozilla Firefox
+    FAQ #7 : Questions : Mozilla Firefox
 
     >>> anon_browser.getLink('Edit FAQ')
     Traceback (most recent call last):
@@ -46,7 +46,7 @@ project:
     >>> print browser.url
     http://answers.launchpad.dev/firefox/+faq/7/+edit
     >>> print browser.title
-    +edit : Questions for Mozilla Firefox : Mozilla Firefox
+    Edit FAQ...
 
 The user can change the title, keywords and content fields. He then
 clicks 'Save' to save his changes.
@@ -82,10 +82,5 @@ The user can see his changes on the page:
 The 'Last updated by' field in the 'Lifecycle' portlet is updated
 with the name of the user who made the last modification:
 
-    >>> print extract_text(find_portlet(browser.contents, 'Lifecycle'))
-    Lifecycle
-    Created by: Sample Person
-    When: ...
-    Last updated by: Sample Person
-    When: ...
-
+    >>> print extract_text(find_tag_by_id(browser.contents, 'faq-updated'))
+    Last updated by: Sample Person on ...

@@ -83,6 +83,20 @@ milestone has any bugs or specifications.
     ...     print spec.title
     dodo
 
+On a IDistroSeries/IProductSeries main page, we use this view to list detailed
+information about the context's milestones. However, generating the summary of
+bugs/blueprints for a milestone is rather expensive, so we only do that for
+active milestones.
+
+    >>> milestone.active
+    True
+    >>> view.should_show_bugs_and_blueprints
+    True
+
+    >>> milestone.active = False
+    >>> view.should_show_bugs_and_blueprints
+    False
+
 The bugtasks are decorated. They are wrapped by the BugTaskListingItem
 that has cached information to create badges quickly. The
 _bug_badge_properties property provides the additional information that
@@ -640,6 +654,9 @@ milestone.
     >>> bug = factory.makeBug(product=firefox)
     >>> bugtask = bug.bugtasks[0]
     >>> bugtask.milestone = milestone
+    >>> subscription = milestone.addSubscription(owner, owner)
+    >>> [subscription for subscription in owner.structural_subscriptions]
+    [<StructuralSubscription ...>]
 
     >>> view = create_initialized_view(milestone, '+delete')
     >>> [bugtask.milestone.name for bugtask in view.bugtasks]
@@ -670,6 +687,9 @@ milestone.
 
     >>> print bugtask.milestone
     None
+
+    >>> [subscription for subscription in owner.structural_subscriptions]
+    []
 
 No Privileges Person cannot access this view because he is neither the
 project owner or series driver..

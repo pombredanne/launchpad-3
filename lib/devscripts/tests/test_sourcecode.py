@@ -15,9 +15,9 @@ from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCase
 from bzrlib.transport import get_transport
 
+from devscripts import get_launchpad_root
 from devscripts.sourcecode import (
-    find_branches, get_launchpad_root, interpret_config, parse_config_file,
-    plan_update)
+    find_branches, interpret_config, parse_config_file, plan_update)
 
 
 class TestParseConfigFile(unittest.TestCase):
@@ -64,21 +64,35 @@ class TestInterpretConfiguration(unittest.TestCase):
 
     def test_empty(self):
         # An empty configuration stream means no configuration.
-        config = interpret_config([])
+        config = interpret_config([], False)
         self.assertEqual({}, config)
 
     def test_key_value(self):
         # A (key, value) pair without a third optional value is returned in
         # the configuration as a dictionary entry under 'key' with '(value,
         # False)' as its value.
-        config = interpret_config([['key', 'value']])
+        config = interpret_config([['key', 'value']], False)
+        self.assertEqual({'key': ('value', False)}, config)
+
+    def test_key_value_public_only(self):
+        # A (key, value) pair without a third optional value is returned in
+        # the configuration as a dictionary entry under 'key' with '(value,
+        # False)' as its value when public_only is true.
+        config = interpret_config([['key', 'value']], True)
         self.assertEqual({'key': ('value', False)}, config)
 
     def test_key_value_optional(self):
         # A (key, value, optional) entry is returned in the configuration as a
         # dictionary entry under 'key' with '(value, True)' as its value.
-        config = interpret_config([['key', 'value', 'optional']])
+        config = interpret_config([['key', 'value', 'optional']], False)
         self.assertEqual({'key': ('value', True)}, config)
+
+    def test_key_value_optional_public_only(self):
+        # A (key, value, optional) entry is not returned in the configuration
+        # when public_only is true.
+        config = interpret_config([['key', 'value', 'optional']], True)
+        self.assertEqual({}, config)
+
 
 
 class TestPlanUpdate(unittest.TestCase):
@@ -125,7 +139,7 @@ class TestPlanUpdate(unittest.TestCase):
         root = get_launchpad_root()
         config_filename = os.path.join(root, 'utilities', 'sourcedeps.conf')
         config_file = open(config_filename)
-        config = interpret_config(parse_config_file(config_file))
+        config = interpret_config(parse_config_file(config_file), False)
         config_file.close()
         plan_update([], config)
 

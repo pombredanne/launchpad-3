@@ -123,7 +123,7 @@ Administrators can create new builders.
     >>> admin_browser.getLink("Register a new build machine").click()
 
     >>> print admin_browser.title
-    +new : Build Farm
+    Register a new...
 
 Registering a new builder involves setting its name, title,
 description and corresponding location.

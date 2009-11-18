@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'DistributionSourcePackageReleaseNavigation',
     'DistributionSourcePackageReleaseView',
+    'DistributionSourcePackageReleasePublishingHistoryView',
     ]
 
 import operator
@@ -22,6 +23,8 @@ from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.distributionsourcepackagerelease import (
     IDistributionSourcePackageRelease)
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+
+from canonical.lazr.utils import smartquote
 
 
 class DistributionSourcePackageReleaseNavigation(Navigation):
@@ -45,8 +48,12 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
     usedfor = IDistributionSourcePackageRelease
 
     @property
+    def label(self):
+        return smartquote(self.context.title)
+
+    @property
     def page_title(self):
-        return self.context.title
+        return self.label
 
     @cachedproperty
     def _cached_publishing_history(self):
@@ -127,3 +134,15 @@ class DistributionSourcePackageReleaseView(LaunchpadView):
                 {'distroseries': distroseries, 'builds': builds})
 
         return distroseries_builds
+
+
+class DistributionSourcePackageReleasePublishingHistoryView(LaunchpadView):
+    """Presenting `DistributionSourcePackageRelease` publishing history."""
+
+    usedfor = IDistributionSourcePackageRelease
+
+    page_title = 'Publishing history'
+
+    @property
+    def label(self):
+        return 'Publishing history of %s' % smartquote(self.context.title)

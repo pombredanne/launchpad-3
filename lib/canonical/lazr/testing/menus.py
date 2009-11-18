@@ -61,7 +61,7 @@ def make_fake_request(url, traversed_objects=None):
         PATH_INFO=path_info)
     request._traversed_names = path_info.split('/')[1:]
     if traversed_objects is not None:
-        request.traversed_objects = traversed_objects
+        request.traversed_objects = traversed_objects[:]
     # After making the request, setup a new interaction.
     endInteraction()
     newInteraction(request)

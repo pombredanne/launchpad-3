@@ -9,7 +9,9 @@ __metaclass__ = type
 
 __all__ = [
     'ALLOW_RELEASE_BUILDS',
+    'AlreadySubscribed',
     'ArchiveDependencyError',
+    'ArchiveNotPrivate',
     'ArchivePurpose',
     'CannotCopy',
     'ComponentNotFound',
@@ -28,8 +30,7 @@ __all__ = [
     'MAIN_ARCHIVE_PURPOSES',
     'NoSuchPPA',
     'PocketNotFound',
-    'AlreadySubscribed',
-    'ArchiveNotPrivate',
+    'VersionRequiresName',
     'default_name_by_purpose',
     ]
 
@@ -101,6 +102,7 @@ class ComponentNotFound(Exception):
     """Invalid source name."""
     webservice_error(400) #Bad request.
 
+
 class InvalidComponent(Exception):
     """Invalid component name."""
     webservice_error(400) #Bad request.
@@ -110,6 +112,11 @@ class NoSuchPPA(NameLookupFailed):
     """Raised when we try to look up an PPA that doesn't exist."""
     webservice_error(400) #Bad request.
     _message_prefix = "No such ppa"
+
+
+class VersionRequiresName(Exception):
+    """Raised on some queries when version is specified but name is not."""
+    webservice_error(400) # Bad request.
 
 
 class IArchivePublic(IHasOwner, IPrivacy):
@@ -189,6 +196,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
         "The expanded list of archive dependencies. It includes the implicit "
         "PRIMARY archive dependency for PPAs.")
 
+    debug_archive = Attribute(
+        "The archive into which debug binaries should be uploaded.")
+
     archive_url = Attribute("External archive URL.")
 
     is_ppa = Attribute("True if this archive is a PPA.")
@@ -245,6 +255,18 @@ class IArchivePublic(IHasOwner, IPrivacy):
         title=_("Relative Build Score"), required=True, readonly=False,
         description=_(
             "A delta to apply to all build scores for this archive."))
+
+    external_dependencies = Text(
+        title=_("External dependencies"), required=False, readonly=False,
+        description=_(
+            "Newline-separated list of repositories to be used to retrieve "
+            "any external build dependencies when building packages in this "
+            "archive, in the format:\n"
+            "deb http[s]://[user:pass@]<host>[/path] %(series)s[-pocket] "
+                "[components]\n"
+            "The series variable is replaced with the series name of the "
+            "context build.\n"
+            "NOTE: This is for migration of OEM PPAs only!"))
 
     def getSourcesForDeletion(name=None, status=None, distroseries=None):
         """All `ISourcePackagePublishingHistory` available for deletion.
@@ -423,8 +445,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     @operation_parameters(
         person=Reference(schema=IPerson),
-        packageset=TextLine(
-            title=_("Package set"), required=True),
+        # Really IPackageset, corrected in _schema_circular_imports to avoid
+        # circular import.
+        packageset=Reference(
+            Interface, title=_("Package set"), required=True),
         explicit=Bool(
             title=_("Explicit"), required=False))
     # Really IArchivePermission, set in _schema_circular_imports to avoid
@@ -434,7 +458,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         """Add a package set based permission for a person.
 
         :param person: An `IPerson` for whom you want to add permission.
-        :param packageset: An `IPackageset` or a string package set name.
+        :param packageset: An `IPackageset`.
         :param explicit: True if the package set in question requires
             specialist skills for proper handling.
 
@@ -443,8 +467,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
         """
 
     @operation_parameters(
-        packageset=TextLine(
-            title=_("Package set"), required=True),
+        # Really IPackageset, corrected in _schema_circular_imports to avoid
+        # circular import.
+        packageset=Reference(
+            Interface, title=_("Package set"), required=True),
         direct_permissions=Bool(
             title=_("Ignore package set hierarchy"), required=False))
     # Really IArchivePermission, set in _schema_circular_imports to avoid
@@ -454,7 +480,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
     def getUploadersForPackageset(packageset, direct_permissions=True):
         """The `ArchivePermission` records for uploaders to the package set.
 
-        :param packageset: An `IPackageset` or a string package set name.
+        :param packageset: An `IPackageset`.
         :param direct_permissions: If True, only consider permissions granted
             directly for the package set at hand. Otherwise, include any
             uploaders for package sets that include this one.
@@ -465,8 +491,10 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
     @operation_parameters(
         person=Reference(schema=IPerson),
-        packageset=TextLine(
-            title=_("Package set"), required=True),
+        # Really IPackageset, corrected in _schema_circular_imports to avoid
+        # circular import.
+        packageset=Reference(
+            Interface, title=_("Package set"), required=True),
         explicit=Bool(
             title=_("Explicit"), required=False))
     @export_write_operation()
@@ -474,7 +502,7 @@ class IArchivePublic(IHasOwner, IPrivacy):
         """Revoke upload permissions for a person.
 
         :param person: An `IPerson` for whom you want to revoke permission.
-        :param packageset: An `IPackageset` or a string package set name.
+        :param packageset: An `IPackageset`.
         :param explicit: The value of the 'explicit' flag for the permission
             to be revoked.
         """
@@ -557,9 +585,13 @@ class IArchivePublic(IHasOwner, IPrivacy):
     @operation_parameters(
         sourcepackagename=TextLine(
             title=_("Source package name"), required=True),
-        person=Reference(schema=IPerson))
+        person=Reference(schema=IPerson),
+        distroseries=Reference(
+            # Really IDistroSeries, avoiding a circular import here.
+            Interface,
+            title=_("The distro series"), required=False))
     @export_read_operation()
-    def isSourceUploadAllowed(sourcepackagename, person):
+    def isSourceUploadAllowed(sourcepackagename, person, distroseries=None):
         """True if the person is allowed to upload the given source package.
 
         Return True if there exists a permission that combines
@@ -575,6 +607,9 @@ class IArchivePublic(IHasOwner, IPrivacy):
             either a string or a `ISourcePackageName`.
         :param person: An `IPerson` for whom you want to find out which
             package sets he has access to.
+        :param distroseries: The `IDistroSeries` for which to check
+            permissions. If none is supplied then `currentseries` in
+            Ubuntu is assumed.
 
         :raises NoSuchSourcePackageName: if a source package with the
             given name could not be found.
@@ -1068,11 +1103,14 @@ class IPPAActivateForm(Interface):
 
     name = TextLine(
         title=_("PPA name"), required=True, constraint=name_validator,
-        description=_("A unique name used to identify this PPA."))
+        description=_("A unique name used to identify this PPA. It will "
+                      "form part of the URL to the archive repository."))
 
     displayname = StrippedTextLine(
         title=_("Displayname"), required=True,
-        description=_("Displayname for this PPA."))
+        description=_("Displayname for this PPA. It will be used in "
+                      "the signing key's description if this is the "
+                      "first PPA for a person."))
 
     description = Text(
         title=_("PPA contents description"), required=False,
@@ -1162,6 +1200,18 @@ class IArchiveSet(Interface):
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""
+
+    def getPPAOwnedByPerson(person, name=None):
+        """Return the named PPA owned by person.
+
+        :param person: An `IPerson`
+        :param name: The PPA name required.
+
+        If the person is not supplied it will default to the
+        first PPA that the person created.
+
+        :raises NoSuchPPA: if the named PPA does not exist.
+        """
 
     def getPPAsForUser(user):
         """Return all PPAs the given user can participate.

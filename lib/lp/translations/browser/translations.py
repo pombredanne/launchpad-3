@@ -203,10 +203,7 @@ class TranslationsRedirectView(PageRedirectView):
 
 class TranslationsVHostBreadcrumb(Breadcrumb):
     rootsite = 'translations'
-
-    @property
-    def text(self):
-        return 'Translations'
+    text = 'Translations'
 
 
 class TranslationsLanguageBreadcrumb(Breadcrumb):

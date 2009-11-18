@@ -173,6 +173,8 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
             And(BranchMergeProposalJob.job_type == klass.class_job_type,
                 BranchMergeProposalJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs),
+                BranchMergeProposalJob.branch_merge_proposal
+                    == BranchMergeProposal.id,
                 BranchMergeProposal.source_branch == Branch.id,
                 # A proposal isn't considered ready if it has no revisions,
                 # or if it is hosted but pending a mirror.
@@ -180,7 +182,6 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
                 Or(Branch.next_mirror_time == None,
                    Branch.branch_type != BranchType.HOSTED)
                 ))
-        jobs.config(distinct=True)
         return (klass(job) for job in jobs)
 
     def getOopsVars(self):
@@ -201,10 +202,19 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.MERGE_PROPOSAL_CREATED
 
-    def run(self):
+    def run(self, _create_preview=True):
         """See `IMergeProposalCreatedJob`."""
+        # _create_preview can be set False for testing purposes.
+        diff_created = False
         if self.branch_merge_proposal.review_diff is None:
             self.branch_merge_proposal.review_diff = self._makeReviewDiff()
+            diff_created = True
+        if _create_preview:
+            preview_diff = PreviewDiff.fromBranchMergeProposal(
+                self.branch_merge_proposal)
+            self.branch_merge_proposal.preview_diff = preview_diff
+            diff_created = True
+        if diff_created:
             transaction.commit()
         mailer = BMPMailer.forCreation(
             self.branch_merge_proposal, self.branch_merge_proposal.registrant)
