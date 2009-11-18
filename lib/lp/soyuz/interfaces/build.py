@@ -524,6 +524,13 @@ class IBuildSet(Interface):
         :rtype: ``dict``.
         """
 
+    def getByQueueEntry(queue_entry):
+        """Return an IBuild instance for the given build queue entry.
+
+        Retrieve the only one possible build record associated with the given
+        build queue entry. If not found, return None.
+        """
+
 
 class IBuildRescoreForm(Interface):
     """Form for rescoring a build."""

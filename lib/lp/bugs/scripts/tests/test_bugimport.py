@@ -400,12 +400,14 @@ Another paragraph
     </text>
     <attachment>
       <mimetype>application/octet-stream;key=value</mimetype>
-      <contents>PGh0bWw+</contents>
+      <!-- contents ('<html><body></body></html>') is base64-encoded. -->
+      <contents>PGh0bWw+PGJvZHk+PC9ib2R5PjwvaHRtbD4=</contents>
     </attachment>
     <attachment>
       <type>PATCH</type>
       <filename>foo.patch</filename>
       <mimetype>text/html</mimetype>
+      <!-- contents ('A patch') is base64-encoded. -->
       <contents>QSBwYXRjaA==</contents>
     </attachment>
   </comment>

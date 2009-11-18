@@ -9,8 +9,8 @@ from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -26,13 +26,84 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
 
-        # Create two i386 builders ready to build PPA builds.
-        builder_set = getUtility(IBuilderSet)
-        self.builder1 = self.factory.makeBuilder(name='bob2')
-        self.builder2 = self.factory.makeBuilder(name='frog2')
+        # Create some i386 builders ready to build PPA builds.  Two
+        # already exist in sampledata so we'll use those first.
+        self.builder1 = getUtility(IBuilderSet)['bob']
+        self.builder2 = getUtility(IBuilderSet)['frog']
+        self.builder3 = self.factory.makeBuilder(name='builder3')
+        self.builder4 = self.factory.makeBuilder(name='builder4')
+        self.builder5 = self.factory.makeBuilder(name='builder5')
+        self.builders = [
+            self.builder1,
+            self.builder2,
+            self.builder3,
+            self.builder4,
+            self.builder5,
+            ]
+
+        # Ensure all builders are operational.
+        for builder in self.builders:
+            builder.builderok = True
+            builder.manual = False
+
+
+class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestFindBuildCandidatePPAWithSingleBuilder, self).setUp()
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.bob_builder = getUtility(IBuilderSet)['bob']
+        self.frog_builder = getUtility(IBuilderSet)['frog']
+
+        # Disable bob so only frog is available.
+        self.bob_builder.manual = True
+        self.bob_builder.builderok = True
+        self.frog_builder.manual = False
+        self.frog_builder.builderok = True
+
+        # Make a new PPA and give it some builds.
+        self.ppa_joe = self.factory.makeArchive(name="joesppa")
+        builds = self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+            archive=self.ppa_joe).createMissingBuilds()
+
+    def test_findBuildCandidate_first_build_started(self):
+        # The allocation rule for PPA dispatching doesn't apply when
+        # there's only one builder available.
+
+        # Asking frog to find a candidate should give us the joesppa build.
+        next_job = self.frog_builder.findBuildCandidate()
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.assertEqual('joesppa', build.archive.name)
+
+        # If bob is in a failed state the joesppa build is still
+        # returned.
+        self.bob_builder.builderok = False
+        self.bob_builder.manual = False
+        next_job = self.frog_builder.findBuildCandidate()
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.assertEqual('joesppa', build.archive.name)
 
 
 class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
+
+    def _setBuildsBuildingForArch(self, builds_list, num_builds,
+                                  archtag="i386"):
+        """Helper function.
+
+        Set the first `num_builds` in `builds_list` with `archtag` as
+        BUILDING.
+        """
+        count = 0
+        for build in builds_list[:num_builds]:
+            if build.distroarchseries.architecturetag == archtag:
+                build.buildstate = BuildStatus.BUILDING
+                build.builder = self.builders[count]
+            count += 1
 
     def setUp(self):
         """Publish some builds for the test archive."""
@@ -42,50 +113,70 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         self.ppa_joe = self.factory.makeArchive(name="joesppa")
         self.ppa_jim = self.factory.makeArchive(name="jimsppa")
 
-        self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-            archive=self.ppa_joe).createMissingBuilds()
-        self.publisher.getPubSource(
-            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
-            archive=self.ppa_joe).createMissingBuilds()
+        self.joe_builds = []
+        self.joe_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_joe).createMissingBuilds())
+        self.joe_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="firefox",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_joe).createMissingBuilds())
+        self.joe_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="cobblers",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_joe).createMissingBuilds())
+        self.joe_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="thunderpants",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_joe).createMissingBuilds())
 
-        self.publisher.getPubSource(
-            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
-            archive=self.ppa_jim).createMissingBuilds()
-        self.publisher.getPubSource(
-            sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
-            archive=self.ppa_jim).createMissingBuilds()
+        self.jim_builds = []
+        self.jim_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gedit",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_jim).createMissingBuilds())
+        self.jim_builds.extend(
+            self.publisher.getPubSource(
+                sourcename="firefox",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.ppa_jim).createMissingBuilds())
 
-        # Grab the first build, ensure that it is what we expect
-        # (ie. the first build from joesppa) and set it building.
-        self.first_job = self.builder1.findBuildCandidate()
-        self.failUnlessEqual('joesppa', self.first_job.build.archive.name)
-        self.failUnlessEqual(
-            u'i386 build of gedit 666 in ubuntutest breezy-autotest RELEASE',
-            self.first_job.build.title)
-        self.first_job.build.buildstate = BuildStatus.BUILDING
-        self.first_job.build.builder = self.builder1
+        # Set the first three builds in joe's PPA as building, which
+        # leaves two builders free.
+        self._setBuildsBuildingForArch(self.joe_builds, 3)
+        num_active_builders = len(
+            [build for build in self.joe_builds if build.builder is not None])
+        num_free_builders = len(self.builders) - num_active_builders
+        self.assertEqual(num_free_builders, 2)
 
     def test_findBuildCandidate_first_build_started(self):
-        # Once a build for an ppa+arch has started, a second one for the
-        # same ppa+arch will not be a candidate.
-        next_job = self.builder2.findBuildCandidate()
-        self.failIfEqual('joesppa', next_job.build.archive.name)
+        # A PPA cannot start a build if it would use 80% or more of the
+        # builders.
+        next_job = self.builder4.findBuildCandidate()
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.failIfEqual('joesppa', build.archive.name)
 
     def test_findBuildCandidate_first_build_finished(self):
-        # When joe's first ppa build finishes, his second i386 build
+        # When joe's first ppa build finishes, his fourth i386 build
         # will be the next build candidate.
-        self.first_job.build.buildstate = BuildStatus.FAILEDTOBUILD
-        next_job = self.builder2.findBuildCandidate()
-        self.failUnlessEqual('joesppa', next_job.build.archive.name)
+        self.joe_builds[0].buildstate = BuildStatus.FAILEDTOBUILD
+        next_job = self.builder4.findBuildCandidate()
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.failUnlessEqual('joesppa', build.archive.name)
 
     def test_findBuildCandidate_for_private_ppa(self):
         # If a ppa is private it will be able to have parallel builds
         # for the one architecture.
         self.ppa_joe.private = True
         self.ppa_joe.buildd_secret = 'sekrit'
-        next_job = self.builder2.findBuildCandidate()
-        self.failUnlessEqual('joesppa', next_job.build.archive.name)
+        next_job = self.builder4.findBuildCandidate()
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.failUnlessEqual('joesppa', build.archive.name)
 
 
 class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
@@ -110,18 +201,18 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         # arch.
 
         next_job = self.builder2.findBuildCandidate()
-        self.failUnlessEqual('primary', next_job.build.archive.name)
-        self.failUnlessEqual(
-            'gedit', next_job.build.sourcepackagerelease.name)
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.failUnlessEqual('primary', build.archive.name)
+        self.failUnlessEqual('gedit', build.sourcepackagerelease.name)
 
         # Now even if we set the build building, we'll still get the
         # second non-ppa build for the same archive as the next candidate.
-        next_job.build.buildstate = BuildStatus.BUILDING
-        next_job.build.builder = self.builder2
+        build.buildstate = BuildStatus.BUILDING
+        build.builder = self.builder2
         next_job = self.builder2.findBuildCandidate()
-        self.failUnlessEqual('primary', next_job.build.archive.name)
-        self.failUnlessEqual(
-            'firefox', next_job.build.sourcepackagerelease.name)
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.failUnlessEqual('primary', build.archive.name)
+        self.failUnlessEqual('firefox', build.sourcepackagerelease.name)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

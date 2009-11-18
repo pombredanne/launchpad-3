@@ -554,8 +554,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         # It should present the builds in a more natural order.
         if build_state in [BuildStatus.NEEDSBUILD, BuildStatus.BUILDING]:
             orderBy = ["-BuildQueue.lastscore"]
+            clauseTables.append('BuildPackageJob')
+            condition_clauses.append('BuildPackageJob.build = Build.id')
             clauseTables.append('BuildQueue')
-            condition_clauses.append('BuildQueue.build = Build.id')
+            condition_clauses.append('BuildQueue.job = BuildPackageJob.job')
         elif build_state == BuildStatus.SUPERSEDED or build_state is None:
             orderBy = ["-Build.datecreated"]
         else:
@@ -688,3 +690,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
         custom_files.sort(key=attrgetter('id'))
         return [custom.libraryfilealias for custom in custom_files]
+
+    def linkedBranches(self):
+        """See `ISourcePackage`."""
+        return dict((p.name,b) for (p,b) in self.linked_branches)

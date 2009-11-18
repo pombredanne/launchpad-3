@@ -948,6 +948,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         except NotFoundError:
             self.fail('bar_1.0.orig.tar.gz is not yet published.')
 
+        # Please note: this upload goes to the Ubuntu main archive.
         upload_dir = self.queueUpload("bar_1.0-10")
         self.processUpload(self.uploadprocessor, upload_dir)
         # Discard the announcement email and check the acceptance message
@@ -963,6 +964,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Make the official bar orig.tar.gz available in the system.
         self.uploadNewBarToUbuntu()
 
+        # Please note: the upload goes to the PPA.
         # Upload a higher version of 'bar' to a PPA that relies on the
         # availability of orig.tar.gz published in ubuntu.
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
@@ -1034,6 +1036,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Make the official bar orig.tar.gz available in the system.
         self.uploadNewBarToUbuntu()
 
+        # Please note: the upload goes to the PPA.
         # Upload a higher version of 'bar' to a PPA that relies on the
         # availability of orig.tar.gz published in the PPA itself.
         upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
