@@ -13,6 +13,7 @@ import windmill
 from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
+from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.code.tests.helpers import make_erics_fooix_project
 from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import TestCaseWithFactory
@@ -58,6 +59,15 @@ class TestPopupOnBranchPage(TestCaseWithFactory):
         client.click(xpath=CLOSE_VISIBLE_DIFF)
         # Make sure that the diff has gone.
         client.asserts.assertNotNode(xpath=VISIBLE_DIFF)
+
+
+class TestPopupOnBugPage(TestCaseWithFactory):
+    """Test the popup diff for bug pages.
+
+    Need this to be in the BugsWindmillLayer to run from the right subdomain.
+    """
+
+    layer = BugsWindmillLayer
 
     def test_bug_popup_diff(self):
         """Test bug page diff popups."""
