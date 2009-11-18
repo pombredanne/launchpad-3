@@ -10,11 +10,12 @@
 >
 <body>
   <metal:translation-import-queue define-macro="translation-import-queue-content">
-    <script
-      type="text/javascript"
-      tal:condition="devmode"
-      tal:attributes="src string:${icingroot}/build/translations/translations.js">
-    </script>
+      <script type="text/javascript" tal:content="view/choice_confs_js" />
+      <script
+        type="text/javascript"
+        tal:condition="devmode"
+        tal:attributes="src string:${icingroot}/build/translations/translations.js">
+      </script>
 
       <script type="text/javascript">
           YUI().use( 'translations', 'event', function(Y) {
@@ -97,8 +98,11 @@
                        Evolution Series: MAIN</a>
                   </td>
                   <td tal:condition="entry/required:launchpad.Edit">
-                    <tal:status define="name string:status_${entry/id}"
-                                replace="structure view/widgets/?name" />
+                    <span class="status-choice">
+                      <span class="value" tal:content="entry/status/title">
+                        Needs review</span>
+                      <img class="editicon" src="/@@/edit" />
+                    </span>
                   </td>
                   <td tal:condition="not: entry/required:launchpad.Edit"
                       tal:content="entry/status/title">Needs Review

@@ -11,6 +11,7 @@ __all__ = [
 
 import datetime
 import pytz
+import simplejson
 from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.formlib import form
@@ -33,6 +34,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, action, custom_widget, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
+from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 
 
 class HasTranslationImportsView(LaunchpadFormView):
@@ -115,7 +117,7 @@ class HasTranslationImportsView(LaunchpadFormView):
         return form.Fields(
             Choice(
                 __name__=name,
-                source=EntryImportStatusVocabularyFactory(entry),
+                source=EntryImportStatusVocabularyFactory(entry, self.user),
                 title=_('Select import status')),
             custom_widget=self.custom_widgets['status'],
             render_context=self.render_context)
@@ -330,44 +332,48 @@ class HasTranslationImportsView(LaunchpadFormView):
         """Return batch object for this page."""
         return TableBatchNavigator(self.entries, self.request)
 
+    @property
+    def choice_confs_js(self):
+        """"Generate configuration for lazr-js widget.
+
+        Only editable items are included in the list.
+        """
+        confs = []
+        for entry in self.batchnav.batch:
+            if check_permission('launchpad.Edit', entry):
+                confs.append(self.generateChoiceConfForEntry(entry))
+        return 'var choice_confs = %s;' % simplejson.dumps(confs)
+
+    def generateChoiceConfForEntry(self, entry):
+        disabled_items = [
+            item.value for item in RosettaImportStatus
+                       if not entry.canSetStatus(item.value, self.user)]
+        items = vocabulary_to_choice_edit_items(
+                RosettaImportStatus, disabled_items=disabled_items)
+        return {
+            'value': entry.status.title,
+            'itmes': items}
 
 class EntryImportStatusVocabularyFactory:
     """Factory for a vocabulary containing a list of statuses for import."""
 
     implements(IContextSourceBinder)
 
-    def __init__(self, entry):
+    def __init__(self, entry, user):
         """Create a EntryImportStatusVocabularyFactory.
 
         :param entry: The ITranslationImportQueueEntry related with this
             vocabulary.
         """
         self.entry = entry
+        self.user = user
 
     def __call__(self, context):
         terms = []
         for status in RosettaImportStatus.items:
-            if (status in (RosettaImportStatus.FAILED,
-                           RosettaImportStatus.IMPORTED) and
-                self.entry.status != status):
-                # FAILED and IMPORTED status cannot be set by hand so we
-                # don't give that choice.
-                continue
-            if (status == RosettaImportStatus.APPROVED and
-                self.entry.status != status and
-                (self.entry.import_into is None or
-                 not check_permission('launchpad.Admin', self.entry))):
-                # Only administrators are able to set the APPROVED status, and
-                # that's only possible if we know where to import it
-                # (import_into not None).
-                continue
-            if (status == RosettaImportStatus.BLOCKED and
-                self.entry.status != status and
-                not check_permission('launchpad.Admin', self.entry)):
-                # Only administrators are able to set the BLOCKED status
-                continue
-
-            terms.append(SimpleTerm(status.name, status.name, status.title))
+            if self.entry.canSetStatus(status, self.user):
+                terms.append(
+                    SimpleTerm(status.name, status.name, status.title))
         return SimpleVocabulary(terms)
 
 
