@@ -253,11 +253,7 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
                     reason = 'has a mailing list'
                 else:
                     reason = 'has a mailing list and a PPA'
-
-            # We can't change the widget's .hint directly because that's a
-            # read-only property.  But that property just delegates to the
-            # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = _(
+            self.widgets['name'].hint = _(
                 'This team cannot be renamed because it %s.' % reason)
 
 

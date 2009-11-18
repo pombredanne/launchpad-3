@@ -27,12 +27,12 @@ The pagetype is registered in the __pagetype__ attribute.
     >>> view.__pagetype__
     'default'
 
-If the pagetype isn't defined, a TraversalError is raised.
+If the pagetype isn't defined, a LocationError is raised.
 
     >>> test_tales('view/macro:page/not-defined', view=FakeView())
     Traceback (most recent call last):
       ...
-    TraversalError: 'unknown pagetype: not-defined'
+    LocationError: 'unknown pagetype: not-defined'
 
 The 'macro:pagehas' can then be used to test for features that should be
 rendered in the layout.
