@@ -556,6 +556,14 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             required=False, readonly=True,
         ))
 
+    # @operation_returns_collection_of(Text)
+    @export_read_operation()
+    def sourceFileUrls():
+        """The URLs for this source publication's files.
+
+        :return: a list of URLs for the files uploaded for this publication.
+        """
+
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()

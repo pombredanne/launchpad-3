@@ -44,6 +44,7 @@ from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
+from canonical.launchpad.helpers import getFileType
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
@@ -62,6 +63,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
@@ -851,6 +853,18 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         self.secure_record.component = component
         Store.of(self).invalidate(self)
+
+    def sourceFileUrls(self):
+        """See `ISourcePackagePublishingHistory`."""
+        def is_source(lfa):
+            return getFileType(lfa.filename) in SourcePackageFileType
+
+        publishing_set = getUtility(IPublishingSet)
+        result_set = publishing_set.getFilesForSources(self)
+        source_urls = [
+            lfa.https_url for (_spph, lfa, _lfc) in result_set if
+            is_source(lfa)]
+        return source_urls
 
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
