@@ -27,10 +27,10 @@
 YUI().use('node', function(Y) {
 
   function submit_filter() {
-    Y.get('#filter_form').submit();
+    Y.one('#filter_form').submit();
   }
   Y.on('domready', function () {
-    var field = Y.get("[id=field.status]");
+    var field = Y.one("[id=field.status]");
     field.on('change', submit_filter);
   });
 
