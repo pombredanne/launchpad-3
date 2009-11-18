@@ -62,7 +62,7 @@ class DistributionMirrorOverviewMenu(NavigationMenu):
         text = 'Delete this mirror'
         return Link('+delete', text, icon='remove', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change owner'
         return Link('+reassign', text, icon='edit')

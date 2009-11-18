@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
     IStructuralSubscription, IStructuralSubscriptionTarget,
     UserCannotSubscribePerson)
 from lp.registry.interfaces.person import (
-    IPerson, validate_public_person, validate_person_not_private_membership)
+    validate_public_person, validate_person_not_private_membership)
 
 
 class StructuralSubscription(SQLBase):
@@ -131,8 +131,8 @@ class StructuralSubscriptionTargetMixin:
                 '%s is not a valid structural subscription target.')
         return args
 
-    def _userCanAlterSubscription(self, subscriber, subscribed_by):
-        """Check if a user can change a subscription for a person."""
+    def userCanAlterSubscription(self, subscriber, subscribed_by):
+        """See `IStructuralSubscriptionTarget`."""
         # A Launchpad administrator or the user can subscribe a user.
         # A Launchpad or team admin can subscribe a team.
 
@@ -155,7 +155,7 @@ class StructuralSubscriptionTargetMixin:
         if subscriber is None:
             subscriber = subscribed_by
 
-        if not self._userCanAlterSubscription(subscriber, subscribed_by):
+        if not self.userCanAlterSubscription(subscriber, subscribed_by):
             raise UserCannotSubscribePerson(
                 '%s does not have permission to subscribe %s.' % (
                     subscribed_by.name, subscriber.name))
@@ -185,7 +185,7 @@ class StructuralSubscriptionTargetMixin:
         if subscriber is None:
             subscriber = unsubscribed_by
 
-        if not self._userCanAlterSubscription(subscriber, unsubscribed_by):
+        if not self.userCanAlterSubscription(subscriber, unsubscribed_by):
             raise UserCannotSubscribePerson(
                 '%s does not have permission to unsubscribe %s.' % (
                     unsubscribed_by.name, subscriber.name))

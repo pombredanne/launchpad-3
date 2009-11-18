@@ -1,6 +1,20 @@
 ProductSeries Views
 ===================
 
+Productseries menus
+-------------------
+
+The ProductSeriesOverviewMenu provides the links to the common ProductSeries
+views.
+
+    >>> from lp.registry.browser.productseries import (
+    ...     ProductSeriesOverviewMenu)
+    >>> from lp.testing.menu import check_menu_links
+
+    >>> series = factory.makeSeries()
+    >>> check_menu_links(ProductSeriesOverviewMenu(series))
+    True
+
 
 ProductSeries view
 ------------------
