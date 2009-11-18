@@ -23,6 +23,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.milestone import IProjectMilestone
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, canonical_url, custom_widget, stepthrough)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -299,10 +300,14 @@ class StructuralSubscriptionMenuMixin:
             # self.context is a view, and the target is its context
             sst = self.context.context
 
+        # Project milestones aren't really structural subscription targets
+        # as they're not real milestones, so you can't subscribe to them.
+        enabled = not IProjectMilestone.providedBy(sst)
+
         if sst.userHasBugSubscriptions(self.user):
             text = 'Edit bug mail subscription'
             icon = 'edit'
         else:
             text = 'Subscribe to bug mail'
             icon = 'add'
-        return Link('+subscribe', text, icon=icon)
+        return Link('+subscribe', text, icon=icon, enabled=enabled)
