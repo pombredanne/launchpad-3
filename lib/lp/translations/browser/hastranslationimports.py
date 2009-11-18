@@ -223,17 +223,17 @@ class HasTranslationImportsView(LaunchpadFormView):
             # special permissions to change status.
             if (new_status_name == RosettaImportStatus.DELETED.name and
                 check_permission('launchpad.Edit', entry)):
-                entry.setStatus(RosettaImportStatus.DELETED)
+                entry.setStatus(RosettaImportStatus.DELETED, self.user)
             elif (new_status_name == RosettaImportStatus.BLOCKED.name and
                   check_permission('launchpad.Admin', entry)):
-                entry.setStatus(RosettaImportStatus.BLOCKED)
+                entry.setStatus(RosettaImportStatus.BLOCKED, self.user)
             elif (new_status_name == RosettaImportStatus.APPROVED.name and
                   check_permission('launchpad.Admin', entry) and
                   entry.import_into is not None):
-                entry.setStatus(RosettaImportStatus.APPROVED)
+                entry.setStatus(RosettaImportStatus.APPROVED, self.user)
             elif (new_status_name == RosettaImportStatus.NEEDS_REVIEW.name and
                   check_permission('launchpad.Admin', entry)):
-                entry.setStatus(RosettaImportStatus.NEEDS_REVIEW)
+                entry.setStatus(RosettaImportStatus.NEEDS_REVIEW, self.user)
             else:
                 # The user was not the importer or we are trying to set a
                 # status that must not be set from this form. That means that

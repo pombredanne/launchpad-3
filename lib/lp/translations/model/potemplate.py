@@ -891,6 +891,7 @@ class POTemplate(SQLBase, RosettaStats):
 
         translation_importer = getUtility(ITranslationImporter)
 
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
         subject = 'Translation template import - %s' % self.displayname
         template_mail = 'poimport-template-confirmation.txt'
         errors, warnings = None, None
@@ -908,7 +909,8 @@ class POTemplate(SQLBase, RosettaStats):
                 template_mail = 'poimport-bad-encoding.txt'
             else:
                 template_mail = 'poimport-syntax-error.txt'
-            entry_to_import.setStatus(RosettaImportStatus.FAILED)
+            entry_to_import.setStatus(RosettaImportStatus.FAILED,
+                                      rosetta_experts)
             error_text = str(exception)
             entry_to_import.setErrorOutput(error_text)
         else:
@@ -926,7 +928,8 @@ class POTemplate(SQLBase, RosettaStats):
         entry_to_import.addWarningOutput(replacements['warnings'])
 
         if entry_to_import.status != RosettaImportStatus.FAILED:
-            entry_to_import.setStatus(RosettaImportStatus.IMPORTED)
+            entry_to_import.setStatus(RosettaImportStatus.IMPORTED,
+                                      rosetta_experts)
 
             # Assign karma to the importer if this is not an automatic import
             # (all automatic imports come from the rosetta expert team).
