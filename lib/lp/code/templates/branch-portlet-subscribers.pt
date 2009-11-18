@@ -35,6 +35,8 @@
       </div>
     </div>
   </div>
-  <div tal:replace="structure context/@@+branch-portlet-subscriber-content" />
+  <div id="branch-subscribers-greater">
+    <div tal:replace="structure context/@@+branch-portlet-subscriber-content" />
+  </div>
 
 </div>

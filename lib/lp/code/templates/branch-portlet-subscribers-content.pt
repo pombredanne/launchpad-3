@@ -3,8 +3,9 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  id="branch-subscribers"
   >
-  <div class="section" id="subscriber-list">
+  <div class="section">
     <div
       tal:condition="view/subscriptions"
       tal:repeat="subscription view/subscriptions"
