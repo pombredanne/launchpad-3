@@ -42,13 +42,7 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
         diff = self._context
         conflict_text = ''
         if diff.conflicts is not None:
-            style = 'conflicts-diff'
             conflict_text = _(' (has conflicts)')
-        else:
-            style = 'clean-diff'
-        # Stale style overrides conflicts or clean.
-        if self._context.stale:
-            style = 'stale-diff'
 
         count_text = ''
         added = diff.added_lines_count
@@ -69,16 +63,15 @@ class PreviewDiffFormatterAPI(ObjectFormatterAPI):
             'file_text': file_text,
             'conflict_text': conflict_text,
             'count_text': count_text,
-            'style': style,
             'url': self.url(view_name),
             }
         # Under normal circumstances, there will be an associated file,
         # however if the diff is empty, then there is no alias to link to.
         if args['url'] is None:
             return (
-                '<span class="%(style)s">'
+                '<span class="empty-diff">'
                 '%(line_count)s</span>' % args)
         else:
             return (
-                '<a href="%(url)s" class="%(style)s diff-link">'
+                '<a href="%(url)s" class="diff-link">'
                 '%(line_count)s%(count_text)s%(file_text)s%(conflict_text)s</a>' % args)
