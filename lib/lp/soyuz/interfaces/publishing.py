@@ -541,6 +541,13 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             description=_("URL list for this source publication's "
                           "files from the source upload.")))
 
+    binary_file_urls = exported(
+        List(
+            value_type=Text(),
+            title=_("Binary File URLs"),
+            description=_("URL list for this source publication's "
+                          "files resulting from the build.")))
+
     package_creator = exported(
         Reference(
             IPerson,
@@ -970,8 +977,25 @@ class IPublishingSet(Interface):
             (`SourcePackagePublishingHistory`, `Build`)
         """
 
+    def getBinaryFilesForSources(one_or_more_source_publication):
+        """Return binary files related to each given source publication.
+
+        The returned ResultSet contains entries with the wanted
+        `LibraryFileAlias`s (binaries only) associated with the
+        corresponding source publication and its `LibraryFileContent`
+        in a 3-element tuple. This way the extra information will be
+        cached and the callsites can group files in any convenient form.
+
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
+
+        :return: a storm ResultSet containing triples as follows:
+            (`SourcePackagePublishingHistory`, `LibraryFileAlias`,
+             `LibraryFileContent`)
+        """
+
     def getFilesForSources(one_or_more_source_publication):
-        """Return all files related with each given source publication.
+        """Return all files related to each given source publication.
 
         The returned ResultSet contains entries with the wanted
         `LibraryFileAlias`s (source and binaries) associated with the
