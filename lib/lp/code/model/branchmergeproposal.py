@@ -361,7 +361,8 @@ class BranchMergeProposal(SQLBase):
         # or superseded, then it is valid to be merged.
         return (self.queue_status not in FINAL_STATES)
 
-    def _reviewProposal(self, reviewer, next_state, revision_id):
+    def _reviewProposal(self, reviewer, next_state, revision_id,
+                        _date_reviewed=None):
         """Set the proposal to one of the two review statuses."""
         # Check the reviewer can review the code for the target branch.
         old_state = self.queue_status
@@ -371,21 +372,25 @@ class BranchMergeProposal(SQLBase):
         self._transitionToState(next_state, reviewer)
         # Record the reviewer
         self.reviewer = reviewer
-        self.date_reviewed = UTC_NOW
+        if _date_reviewed is None:
+            _date_reviewed = UTC_NOW
+        self.date_reviewed = _date_reviewed
         # Record the reviewed revision id
         self.reviewed_revision_id = revision_id
         notify(BranchMergeProposalStatusChangeEvent(
                 self, reviewer, old_state, next_state))
 
-    def approveBranch(self, reviewer, revision_id):
+    def approveBranch(self, reviewer, revision_id, _date_reviewed=None):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
-            reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id)
+            reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id,
+            _date_reviewed)
 
-    def rejectBranch(self, reviewer, revision_id):
+    def rejectBranch(self, reviewer, revision_id, _date_reviewed=None):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
-            reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
+            reviewer, BranchMergeProposalStatus.REJECTED, revision_id,
+            _date_reviewed)
 
     def enqueue(self, queuer, revision_id):
         """See `IBranchMergeProposal`."""
