@@ -1182,7 +1182,6 @@ class IBranchSet(Interface):
                 u'or any mix of all these different kinds.'),
             value_type=TextLine(),
             required=True))
-    @operation_returns_collection_of(IBranch)
     @export_read_operation()
     def getByUrls(urls):
         """Find a branch by URL.
