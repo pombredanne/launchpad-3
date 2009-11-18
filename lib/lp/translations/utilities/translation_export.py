@@ -143,7 +143,7 @@ class LaunchpadWriteTarFile:
             joined_path = os.path.join(*path_bits[:i])
 
             try:
-                self.tarfile.getmember(joined_path + os.path.sep)
+                self.tarfile.getmember(joined_path)
             except KeyError:
                 tarinfo = tarfile.TarInfo(joined_path)
                 tarinfo.type = tarfile.DIRTYPE

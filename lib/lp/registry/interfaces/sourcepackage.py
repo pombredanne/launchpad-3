@@ -231,6 +231,15 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
             or one.  If not, they are sorted from oldest to newest.
         """
 
+    @export_read_operation()
+    def linkedBranches():
+        """Get the official branches for this package.
+
+        This operation returns a {`Pocket`-name : `IBranch`} dict.
+
+        :return: A {`Pocket`-name : `IBranch`} dict.
+        """
+
 
 class ISourcePackageFactory(Interface):
     """A creator of source packages."""

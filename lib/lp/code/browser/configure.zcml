@@ -876,6 +876,14 @@
         permission="launchpad.AnyPerson"
         template="../templates/branch-add.pt"/>
 
+    <browser:page
+        name="+addbranch"
+        for="lp.registry.interfaces.productseries.IProductSeries"
+        class="lp.code.browser.branch.BranchAddView"
+        facet="branches"
+        permission="launchpad.AnyPerson"
+        template="../templates/branch-add.pt"/>
+
     <browser:menus
         classes="ProductBranchesMenu"
         module="lp.code.browser.branchlisting"/>
