@@ -37,14 +37,16 @@ class TestBranchSubscriptions(TestCaseWithFactory):
         client.open(url=(
             windmill.settings['TEST_URL'] + '/~mark/firefox/release--0.9.1'))
         client.waits.forElement(id=u'none-subscribers', timeout=u'10000')
-        client.asserts.assertText(xpath=u'//a[@id="selfsubscription"]',
+        client.asserts.assertText(
+            xpath=u'//a[@class="sprite add subscribe-self js-action"]',
             validator='Subscribe yourself')
         client.asserts.assertText(id=u'none-subscribers',
             validator=u'No subscribers.')
 
-        client.click(id=u'selfsubscription')
+        client.click(
+            xpath=u'//a[@class="sprite add subscribe-self js-action"]')
         client.waits.forElement(id=u'yui-pretty-overlay-modal')
-        client.click(xpath=u'//button[@name="field.actions.change"]')
+        client.click(xpath=u'//button[@name="field.actions.subscribe"]')
 
         client.waits.forElement(id=u'editsubscription-icon-name16',
             timeout=u'10000')
@@ -58,8 +60,6 @@ class TestBranchSubscriptions(TestCaseWithFactory):
         client.click(id=u'field.actions.unsubscribe')
 
         client.waits.forElement(id=u'none-subscribers', timeout=u'10000')
-        client.asserts.assertText(xpath=u'//a[@id="selfsubscription"]',
-            validator='Subscribe yourself')
         client.asserts.assertText(id=u'none-subscribers',
             validator=u'No subscribers.')
 
