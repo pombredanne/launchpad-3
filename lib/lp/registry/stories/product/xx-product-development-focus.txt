@@ -120,3 +120,40 @@ branch.
         (http://launchpad.dev/fooix/trunk/+linkbranch)
       View the branch content
         (http://bazaar.launchpad.dev/~eric/fooix/trunk/files)
+
+
+Private development focus branches
+----------------------------------
+
+If the development focus branch is private, then for unauthorized viewers, it
+appears as if there is no series branch set.
+
+    >>> login('admin@canonical.com')
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(branch).private = True
+    >>> logout()
+
+    >>> anon_browser.open('http://launchpad.dev/fooix')
+    >>> print_development_focus(anon_browser)
+    Development focus:
+    trunk series
+    Development focus branch has not been specified
+    Links:
+      trunk series (/fooix/trunk)
+
+    >>> owner_browser.open('http://launchpad.dev/fooix')
+    >>> print_development_focus(owner_browser)
+    Development focus:
+    trunk series     Change details
+    lp://dev/~eric/fooix/trunk   Change branch
+    View the branch content
+    Links:
+      trunk series (/fooix/trunk)
+      <span class="invisible-link">Change details</span>
+        (http://launchpad.dev/fooix/+edit)
+      lp://dev/~eric/fooix/trunk (http://code.launchpad.dev/~eric/fooix/trunk)
+      <span class="invisible-link">Change branch</span>
+      Change the branch for this series
+        (http://launchpad.dev/fooix/trunk/+linkbranch)
+      View the branch content
+        (https://bazaar.launchpad.dev/~eric/fooix/trunk/files)

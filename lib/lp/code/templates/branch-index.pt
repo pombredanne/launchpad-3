@@ -25,6 +25,20 @@
     #download-url dd span.branch-url, #upload-url dd span.branch-url {
       font-weight: normal;
     }
+    dl.reviews dd {
+      padding-left: 2em;
+      margin-bottom: 0;
+    }
+    .yui-diff-overlay-hidden {
+      display: none;
+    }
+    .yui-diff-overlay {
+      width: 80%;
+    }
+    .yui-diff-overlay #yui-pretty-overlay-modal {
+      width: auto;
+      color: black;
+    }
 
   </style>
   <script type="text/javascript"
@@ -43,12 +57,20 @@
       tal:attributes="src string:${lp_js}/code/branchstatus.js">
   </script>
   <script type="text/javascript"
+      tal:condition="devmode"
+      tal:define="lp_js string:${icingroot}/build"
+      tal:attributes="src string:${lp_js}/code/popupdiff.js">
+  </script>
+  <script type="text/javascript"
           tal:content="string:
     YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit', 'code.branchstatus', function(Y) {
+              'lazr.choiceedit', 'code.branchstatus',
+              'code.branchmergeproposal.popupdiff',
+              function(Y) {
         Y.on('load',
              function(e) {
                  Y.branchstatus.connect_status(${view/status_config});
+                 Y.code.branchmergeproposal.popupdiff.connect_diff_links();
              },
              window);
     });

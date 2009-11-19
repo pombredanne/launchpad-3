@@ -36,6 +36,8 @@ NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
 STAGING_CONFIG=staging # For swapping fresh db into place.
 STAGING_DUMP=launchpad.dump # Dumpfile to build new staging from.
 STAGING_TABLESPACE=pg_default # 'pg_default' for default
+DOGFOOD_DBNAME=launchpad_dogfood
+DOGFOOD_DUMP=launchpad.dump
 
 _CONFIG=overridden-on-command-line
 _SLAVE_TABLESPACE=pg_default
@@ -98,12 +100,13 @@ stagingsetup:
 	psql -q -d lpmain_staging_new -f authdb_drop.sql
 	psql -q -d lpmain_staging_new -f authdb_create.sql \
 	    2>&1 | grep -v _sl || true
-	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
-	# Slony-I installed isn't usable without this step.
-	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
+	# Restore the data
 	pg_restore --dbname=lpmain_staging_new \
 	    --no-acl --no-owner --disable-triggers --data-only \
 	    --exit-on-error ${STAGING_DUMP}
+	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
+	# Slony-I installed isn't usable without this step.
+	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
 	# Setup replication
 	make _replicate LPCONFIG=${NEW_STAGING_CONFIG} LAG="0 seconds" \
 	    _MASTER=lpmain_staging_new _SLAVE=lpmain_staging_slave_new \
@@ -138,10 +141,10 @@ dogfood:
 	psql -q -d ${DOGFOOD_DBNAME} -f authdb_drop.sql
 	psql -q -d ${DOGFOOD_DBNAME} -f authdb_create.sql \
 	    2>&1 | grep -v _sl || true
-	./repair-restored-db.py -d ${DOGFOOD_DBNAME}
 	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
 	    --disable-triggers --data-only \
 	    --exit-on-error ${DOGFOOD_DUMP}
+	./repair-restored-db.py -d ${DOGFOOD_DBNAME}
 	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
 	../schema/fti.py -d ${DOGFOOD_DBNAME}
 	../schema/security.py -d ${DOGFOOD_DBNAME}
