@@ -1170,6 +1170,10 @@ class IBranchSet(Interface):
         Either from the external specified in Branch.url, from the URL on
         http://bazaar.launchpad.net/ or the lp: URL.
 
+        This is a frontend shim to `IBranchLookup.getByUrl` to allow it to be
+        exported over the API. If you want to call this from within the
+        Launchpad app, use the `IBranchLookup` version instead.
+
         Return None if no match was found.
         """
 
@@ -1188,6 +1192,10 @@ class IBranchSet(Interface):
 
         Either from the external specified in Branch.url, from the URL on
         http://bazaar.launchpad.net/ or the lp: URL.
+
+        This is a frontend shim to `IBranchLookup.getByUrls` to allow it to be
+        exported over the API. If you want to call this from within the
+        Launchpad app, use the `IBranchLookup` version instead.
 
         :param urls: An iterable of URLs expressed as strings.
         :return: A dictionary mapping URLs to branches. If the URL has no
