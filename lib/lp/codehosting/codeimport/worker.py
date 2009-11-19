@@ -21,7 +21,7 @@ import os
 import shutil
 
 from bzrlib.branch import Branch
-from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
+from bzrlib.bzrdir import BzrDir, BzrDirFormat
 from bzrlib.transport import get_transport
 from bzrlib.errors import NoSuchFile, NotBranchError
 import bzrlib.ui
@@ -228,8 +228,8 @@ class ImportDataStore:
         characters.  For example 'tree.tar.gz' might become '0000a23d.tar.gz'
         or 'git.db' might become '00003e4.db'.
 
-        :param local_name: The local name of the file to be stored.  :return:
-        The name to store the file as on the remote transport.
+        :param local_name: The local name of the file to be stored.
+        :return: The name to store the file as on the remote transport.
         """
         if '/' in local_name:
             raise AssertionError("local_name must be a name, not a path")
@@ -412,11 +412,13 @@ class ImportWorker:
         if os.path.exists(working_directory):
             shutil.rmtree(working_directory)
         os.makedirs(working_directory)
+        saved_pwd = os.getcwd()
         os.chdir(working_directory)
         try:
             self._doImport()
         finally:
             shutil.rmtree(working_directory)
+            os.chdir(saved_pwd)
 
     def _doImport(self):
         raise NotImplementedError()
@@ -500,14 +502,15 @@ class CSCVSImportWorker(ImportWorker):
 class PullingImportWorker(ImportWorker):
     """An import worker for imports that can be done by a bzr plugin.
 
-    Subclasses should override __init__ to set `pull_url` from the
-    source_details as appropriate.
+    Subclasses need to implement `pull_url`.
     """
+    @property
+    def pull_url(self):
+        """Return the URL that should be pulled from."""
+        raise NotImplementedError
 
     def _doImport(self):
         bazaar_tree = self.getBazaarWorkingTree()
-        bazaar_tree.branch.pull(
-            Branch.open(self.pull_url), overwrite=True)
         self.bazaar_branch_store.push(
             self.source_details.branch_id, bazaar_tree, self.required_format)
         saved_factory = bzrlib.ui.ui_factory
@@ -515,8 +518,7 @@ class PullingImportWorker(ImportWorker):
             writer=lambda m: self._logger.info('%s', m))
         try:
             bazaar_tree.branch.pull(
-                Branch.open(self.source_details.pull_url),
-                overwrite=True)
+                Branch.open(self.pull_url), overwrite=True)
         finally:
             bzrlib.ui.ui_factory = saved_factory
         self.pushBazaarWorkingTree(bazaar_tree)
@@ -530,6 +532,7 @@ class GitImportWorker(PullingImportWorker):
 
     @property
     def pull_url(self):
+        """See `PullingImportWorker.pull_url`."""
         return self.source_details.git_repo_url
 
     def getBazaarWorkingTree(self):
@@ -591,8 +594,9 @@ class HgImportWorker(PullingImportWorker):
 
 
 class BzrSvnImportWorker(PullingImportWorker):
-    """XXX."""
+    """An import worker for importing Subversion via bzr-svn."""
 
     @property
     def pull_url(self):
+        """See `PullingImportWorker.pull_url`."""
         return self.source_details.svn_branch_url
