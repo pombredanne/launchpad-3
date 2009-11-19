@@ -35,19 +35,17 @@
         }
       </style>
       <script language="JavaScript" type="text/javascript">
-      YUI().use('node', function(Y) {
+      YUI().use('node-base', 'event-delegate', function(Y) {
           Y.on('domready', function(e) {
-              Y.all('.template_links').addClass('inactive_links');
-              var template_rows = Y.all('.template_row');
-              template_rows.each(function(row) {
-                  var template_links = row.query('.template_links');
-                  row.on('mouseover', function(e) {
-                      template_links.removeClass('inactive_links');
-                  });
-                  row.on('mouseout', function(e) {
-                      template_links.addClass('inactive_links');
-                  });
-              });
+              Y.all('#template_table .template_links').addClass('inactive_links');
+
+              Y.delegate('mouseover', function(e) {
+                  this.removeClass('inactive_links');
+              }, '#template_table tbody', '.template_links');
+
+              Y.delegate('mouseout', function(e) {
+                  this.addClass('inactive_links');
+              }, '#template_table tbody', '.template_links');
           });
       });
       </script>
