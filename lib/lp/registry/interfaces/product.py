@@ -638,7 +638,8 @@ class IProductPublic(
         :param subscription_months: integer indicating the number of months
             the voucher is for.
         :param whiteboard: Notes for this activity.
-        :param current_datetime: Current time.  Will be datetime.now() if not specified.
+        :param current_datetime: Current time.  Will be datetime.now() if not
+            specified.
         :return: None
         """
 
