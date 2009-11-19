@@ -38,6 +38,11 @@
       tal:attributes="src string:${lp_js}/code/branchstatus.js">
   </script>
   <script type="text/javascript"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/code/popupdiff.js">
+    </script>
+  </tal:devmode>
+  <script type="text/javascript"
           tal:define="lp_js string:${icingroot}/build"
           tal:attributes="src string:${lp_js}/code/subscription.js">
   </script>
@@ -45,6 +50,7 @@
           tal:content="string:
     YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
               'lazr.choiceedit', 'code.branchstatus',
+              'code.branchmergeproposal.popupdiff',
               'code.branch.subscription', function(Y) {
 
         Y.on('load', function(e) {
@@ -54,6 +60,7 @@
             subscription_portlet.render();
 
             Y.branchstatus.connect_status(${view/status_config});
+            Y.code.branchmergeproposal.popupdiff.connect_diff_links();
             },
             window);
     });

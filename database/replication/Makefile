@@ -18,6 +18,11 @@
 #  $ make stagingsetup STAGING_CONFIG=dev-staging STAGING_DUMP=launchpad.dump
 #  $ make stagingswitch STAGING_CONFIG=dev-staging
 #
+# To restore a dogfood database:
+#
+#  $ cd database/replication
+#  $ make dogfood DOGFOOD_DBNAME=launchpad_dogfood DOGFOOD_DUMP=launchpad.dump
+#
 
 # This used to be 10 seconds, so we always ran staging lagged to detect
 # replication glitches more easily. However, this does not play well
@@ -31,6 +36,8 @@ NEW_STAGING_CONFIG=staging-setup # For building the db with a different name.
 STAGING_CONFIG=staging # For swapping fresh db into place.
 STAGING_DUMP=launchpad.dump # Dumpfile to build new staging from.
 STAGING_TABLESPACE=pg_default # 'pg_default' for default
+DOGFOOD_DBNAME=launchpad_dogfood
+DOGFOOD_DUMP=launchpad.dump
 
 _CONFIG=overridden-on-command-line
 _SLAVE_TABLESPACE=pg_default
@@ -89,10 +96,14 @@ stagingsetup:
 	# up when roles don't exist in this cluster, and we rebuild it later
 	# with security.py anyway.
 	pg_restore --dbname=lpmain_staging_new \
-	    --no-acl --exit-on-error ${STAGING_DUMP}
+	    --no-acl --no-owner --schema-only --exit-on-error ${STAGING_DUMP}
 	psql -q -d lpmain_staging_new -f authdb_drop.sql
 	psql -q -d lpmain_staging_new -f authdb_create.sql \
 	    2>&1 | grep -v _sl || true
+	# Restore the data
+	pg_restore --dbname=lpmain_staging_new \
+	    --no-acl --no-owner --disable-triggers --data-only \
+	    --exit-on-error ${STAGING_DUMP}
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
@@ -122,6 +133,21 @@ stagingswitch:
 	"UPDATE _sl.sl_path SET pa_conninfo=replace(pa_conninfo, '_new', '')"
 	# Start the slon daemons, with requested lag.
 	LPCONFIG=${STAGING_CONFIG} ./slon_ctl.py --lag="${LAG}" start
+
+dogfood:
+	createdb --encoding UTF8 ${DOGFOOD_DBNAME}
+	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
+	    --schema-only --exit-on-error ${DOGFOOD_DUMP}
+	psql -q -d ${DOGFOOD_DBNAME} -f authdb_drop.sql
+	psql -q -d ${DOGFOOD_DBNAME} -f authdb_create.sql \
+	    2>&1 | grep -v _sl || true
+	pg_restore --dbname=${DOGFOOD_DBNAME} --no-acl --no-owner \
+	    --disable-triggers --data-only \
+	    --exit-on-error ${DOGFOOD_DUMP}
+	./repair-restored-db.py -d ${DOGFOOD_DBNAME}
+	../schema/upgrade.py -d ${DOGFOOD_DBNAME}
+	../schema/fti.py -d ${DOGFOOD_DBNAME}
+	../schema/security.py -d ${DOGFOOD_DBNAME}
 
 _prelim:
 	@echo LPCONFIG currently ${LPCONFIG}

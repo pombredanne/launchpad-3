@@ -549,6 +549,11 @@
                 interface="lp.translations.interfaces.translationmessage.ITranslationMessageSet"/>
         </securedutility>
     </facet>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        factory="lp.translations.browser.customlanguagecode.CustomLanguageCodeBreadcrumb"
+        permission="zope.Public"/>
     <class
         class="lp.translations.model.customlanguagecode.CustomLanguageCode">
         <allow

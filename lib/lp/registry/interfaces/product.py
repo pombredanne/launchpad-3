@@ -668,13 +668,6 @@ class IProductPublic(
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
 
-    def getCustomLanguageCode(language_code):
-        """Look up `ICustomLanguageCode` for `language_code`, if any.
-
-        Products may override language code definitions for translation
-        import purposes.
-        """
-
     def userCanEdit(user):
         """Can the user edit this product?"""
 

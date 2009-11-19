@@ -66,13 +66,16 @@ class AskAQuestionButtonView:
             target = IQuestionTarget(self.context)
 
         return """
-              <a href="%s/+addquestion">
-                <img
-                  alt="Ask a question"
-                  src="/+icing/but-sml-askaquestion.gif"
-                />
-              </a>
-        """ % canonical_url(target, rootsite='answers')
+            <div id="involvement" class="portlet involvement">
+              <ul>
+                <li style="border: none">
+                  <a class="menu-link-ask_question sprite answers"
+                    href="%s">Ask a question</a>
+                </li>
+              </ul>
+            </div>
+        """ % canonical_url(
+            target, view_name='+addquestion', rootsite='answers')
 
 
 class UserSupportLanguagesMixin:

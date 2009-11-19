@@ -54,11 +54,6 @@ shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     """An view for the default view of the LaunchpadRoot."""
 
-    # The homepage has two columns to hold featured projects. This
-    # determines the number of projects we display in each column.
-    FEATURED_PROJECT_ROWS = 11
-    FEATURED_PROJECT_COLS = 2
-
     featured_projects = []
     featured_projects_top = None
 
@@ -75,15 +70,18 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         """Set up featured projects list and the top featured project."""
         super(LaunchpadRootIndexView, self).initialize()
         # The maximum number of projects to be displayed as defined by the
-        # number and size of the columns plus one top featured project.
-        max_projects = (
-            self.FEATURED_PROJECT_ROWS * self.FEATURED_PROJECT_COLS + 1)
+        # number of items plus one top featured project.
         self.featured_projects = list(
-            getUtility(IPillarNameSet).featured_projects)[:max_projects]
-        # Select and get the top featured project (project of the day) and
-        # remove it from the list.
-        top_project = self._get_day_of_year() % len(self.featured_projects)
-        self.featured_projects_top = self.featured_projects.pop(top_project)
+            getUtility(IPillarNameSet).featured_projects)
+        self._setFeaturedProjectsTop()
+
+    def _setFeaturedProjectsTop(self):
+        """Set the top featured project and remove it from the list."""
+        project_count = len(self.featured_projects)
+        if project_count > 0:
+            top_project = self._get_day_of_year() % project_count
+            self.featured_projects_top = self.featured_projects.pop(
+                top_project)
 
     def canRedirect(self):
         """Return True if the beta server is available to the user."""
@@ -103,18 +101,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
             'ubuntu': canonical_url(
                 getUtility(ILaunchpadCelebrities).ubuntu),
             }
-
-    @property
-    def featured_projects_col_a(self):
-        """Return a list of featured projects."""
-        return self.featured_projects[:self.FEATURED_PROJECT_ROWS]
-
-    @property
-    def featured_projects_col_b(self):
-        """The list of featured projects."""
-        index_from = self.FEATURED_PROJECT_ROWS
-        index_to = self.FEATURED_PROJECT_ROWS * 2
-        return self.featured_projects[index_from:index_to]
 
     @property
     def branch_count(self):
@@ -455,7 +441,7 @@ class LaunchpadSearchView(LaunchpadFormView):
         :param start: The index of the page that starts the set of pages.
         :return: A GooglBatchNavigator or None.
         """
-        if query_terms in [None , '']:
+        if query_terms in [None, '']:
             return None
         google_search = getUtility(ISearchService)
         try:

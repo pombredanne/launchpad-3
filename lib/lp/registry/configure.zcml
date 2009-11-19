@@ -353,6 +353,9 @@
     <class
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
         <allow
+            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
+
+        <allow
             attributes="
                 distribution
                 development_version
@@ -805,7 +808,7 @@
                 permission="launchpad.View"
                 interface="lp.registry.interfaces.person.IPersonViewRestricted"/>
             <require
-                permission="launchpad.EditLocation"
+                permission="launchpad.Edit"
                 interface="lp.registry.interfaces.location.ISetLocation"/>
             <require
                 permission="launchpad.Edit"
@@ -1045,6 +1048,8 @@
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
+        <allow
+            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
             permission="launchpad.Driver"
             interface="lp.registry.interfaces.product.IProductDriverRestricted"/>
