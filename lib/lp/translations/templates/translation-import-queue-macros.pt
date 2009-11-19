@@ -73,7 +73,7 @@
 
             <table id="import-entries-list" class="listing" width="100%">
               <tal:loop repeat="entry view/batchnav/currentBatch">
-                <tr tal:attributes="id entry/id">
+                <tr class="import_entry_row" tal:attributes="id entry/id">
                   <tal:XXX replace="nothing">
                     # XXX: CarlosPerelloMarin 2006-03-09 bug=34213
                     # We are using here
