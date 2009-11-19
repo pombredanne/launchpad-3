@@ -399,11 +399,13 @@ class ImportWorker:
         if os.path.exists(working_directory):
             shutil.rmtree(working_directory)
         os.makedirs(working_directory)
+        saved_pwd = os.getcwd()
         os.chdir(working_directory)
         try:
             self._doImport()
         finally:
             shutil.rmtree(working_directory)
+            os.chdir(saved_pwd)
 
     def _doImport(self):
         raise NotImplementedError()

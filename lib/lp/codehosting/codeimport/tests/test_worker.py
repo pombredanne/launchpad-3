@@ -28,7 +28,7 @@ from lp.codehosting.codeimport.worker import (
     ForeignTreeStore, GitImportWorker, ImportDataStore, ImportWorker,
     get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, run_in_temporary_directory, SubversionServer)
+    CVSServer, GitServer, SubversionServer)
 from lp.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
@@ -117,7 +117,7 @@ class TestBazaarBranchStore(WorkerTest):
         store = self.makeBranchStore()
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
         knit_format = format_registry.get('knit')()
-        tree = create_branch_with_one_revision(target_url, format=knit_format)
+        create_branch_with_one_revision(target_url, format=knit_format)
         default_format = BzrDirFormat.get_default_format()
 
         # The fetched branch is in the default format.
@@ -139,7 +139,7 @@ class TestBazaarBranchStore(WorkerTest):
         store = self.makeBranchStore()
         target_url = store._getMirrorURL(self.arbitrary_branch_id)
         knit_format = format_registry.get('knit')()
-        tree = create_branch_with_one_revision(target_url, format=knit_format)
+        create_branch_with_one_revision(target_url, format=knit_format)
         upgrade(target_url, format_registry.get('dirstate-tags')())
         self.failUnless(get_transport(target_url).has('backup.bzr'))
         default_format = BzrDirFormat.get_default_format()
@@ -584,7 +584,6 @@ def clean_up_default_stores_for_import(source_details):
             if filename.startswith(prefix):
                 tree_transport.delete(filename)
     branchstore = get_default_bazaar_branch_store()
-    branch_transport = branchstore.transport
     branch_name = '%08x' % source_details.branch_id
     if branchstore.transport.has(branch_name):
         branchstore.transport.delete_tree(branch_name)
@@ -612,8 +611,10 @@ class TestActualImportMixin:
         raise NotImplementedError(
             "Override this with a VCS-specific implementation.")
 
-    def commitInForeignTree(self, foreign_tree):
-        """Commit a single revision to `foreign_tree`.
+    def makeForeignCommit(self):
+        """Commit a revision to the repo described by `self.source_details`.
+
+        Increment `self.foreign_commit_count` as appropriate.
 
         Override this in your subclass.
         """
@@ -622,6 +623,8 @@ class TestActualImportMixin:
 
     def makeSourceDetails(self, module_name, files):
         """Make a `CodeImportSourceDetails` that points to a real repository.
+
+        This should set `self.foreign_commit_count` to an appropriate value.
 
         Override this in your subclass.
         """
@@ -653,18 +656,7 @@ class TestActualImportMixin:
             self.foreign_commit_count, len(branch.revision_history()))
 
         # Change the remote branch.
-
-        tree_dir = self.makeTemporaryDirectory()
-        # This is pretty gross, but it works: the call to worker.run() will
-        # chdir() again to the worker's scratch directory, and in any case the
-        # tests subclass bzrlib's TestCaseInTempdir, so the directory will be
-        # restored at the end of the test.
-        os.chdir(tree_dir)
-        if isinstance(worker, CSCVSImportWorker):
-            foreign_tree = worker.foreign_tree_store.fetch(tree_dir)
-        else:
-            foreign_tree = None
-        self.commitInForeignTree(foreign_tree)
+        self.makeForeignCommit()
 
         # Run the same worker again.
         worker.run()
@@ -733,9 +725,10 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
         super(TestCVSImport, self).setUp()
         self.setUpImport()
 
-    def commitInForeignTree(self, foreign_tree):
+    def makeForeignCommit(self):
         # If you write to a file in the same second as the previous commit,
         # CVS will not think that it has changed.
+        1/0
         time.sleep(1)
         self.build_tree_contents(
             [(os.path.join(foreign_tree.local_path, 'README'),
@@ -758,18 +751,13 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
             rcstype='cvs', cvs_root=cvs_server.getRoot(), cvs_module='trunk')
 
 
-class TestSubversionImport(WorkerTest, CSCVSActualImportMixin):
-    """Tests for the worker importing and syncing a Subversion branch."""
+class SubversionImportHelpers:
+    """XXX."""
 
-    def setUp(self):
-        WorkerTest.setUp(self)
-        self.setUpImport()
-
-    def commitInForeignTree(self, foreign_tree):
-        """Change the foreign tree, generating exactly one commit."""
-        svn_url = foreign_tree.remote_url
+    def makeForeignCommit(self):
+        """Change the foreign tree."""
         client = pysvn.Client()
-        client.checkout(svn_url, 'working_tree')
+        client.checkout(self.source_details.svn_branch_url, 'working_tree')
         file = open('working_tree/newfile', 'w')
         file.write('No real content\n')
         file.close()
@@ -786,10 +774,21 @@ class TestSubversionImport(WorkerTest, CSCVSActualImportMixin):
         self.addCleanup(svn_server.tearDown)
 
         svn_branch_url = svn_server.makeBranch(branch_name, files)
+        svn_branch_url = svn_branch_url.replace('://localhost/', ':///')
         self.foreign_commit_count = 2
-
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='svn', svn_branch_url=svn_branch_url)
+            rcstype=self.rcstype, svn_branch_url=svn_branch_url)
+
+
+class TestSubversionImport(WorkerTest, SubversionImportHelpers,
+                           CSCVSActualImportMixin):
+    """Tests for the worker importing and syncing a Subversion branch."""
+
+    rcstype = 'svn'
+
+    def setUp(self):
+        WorkerTest.setUp(self)
+        self.setUpImport()
 
 
 class TestGitImport(WorkerTest, TestActualImportMixin):
@@ -817,11 +816,11 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
             self.source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger())
 
-    def commitInForeignTree(self, foreign_tree):
+    def makeForeignCommit(self):
         """Change the foreign tree, generating exactly one commit."""
         from bzrlib.plugins.git.tests import run_git
         wd = os.getcwd()
-        os.chdir(self.repository_path)
+        os.chdir(self.source_details.git_repo_url)
         try:
             run_git('config', 'user.name', 'Joe Random Hacker')
             run_git('commit', '-m', 'dsadas')
@@ -832,8 +831,8 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
     def makeSourceDetails(self, branch_name, files):
         """Make a Git `CodeImportSourceDetails` pointing at a real Git repo.
         """
-        self.repository_path = self.makeTemporaryDirectory()
-        git_server = GitServer(self.repository_path)
+        repository_path = self.makeTemporaryDirectory()
+        git_server = GitServer(repository_path)
         git_server.setUp()
         self.addCleanup(git_server.tearDown)
 
@@ -841,10 +840,13 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git', git_repo_url=self.repository_path)
+            rcstype='git', git_repo_url=repository_path)
 
 
-class TestBzrSvnImport(WorkerTest, TestActualImportMixin):
+class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
+                       TestActualImportMixin):
+
+    rcstype = 'bzr-svn'
 
     def setUp(self):
         super(TestBzrSvnImport, self).setUp()
@@ -856,33 +858,6 @@ class TestBzrSvnImport(WorkerTest, TestActualImportMixin):
         return BzrSvnImportWorker(
             self.source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger())
-
-    @run_in_temporary_directory
-    def commitInForeignTree(self, foreign_tree):
-        """Change the foreign tree, generating exactly one commit."""
-        client = pysvn.Client()
-        client.checkout(self.cisd.svn_branch_url, 'working_tree')
-        file = open('working_tree/newfile', 'w')
-        file.write('No real content\n')
-        file.close()
-        client.add('working_tree/newfile')
-        client.checkin('working_tree', 'Add a file', recurse=True)
-        self.foreign_commit_count += 1
-
-    def makeSourceDetails(self, branch_name, files):
-        """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
-        """
-        self.repository_path = self.makeTemporaryDirectory()
-        svn_server = SubversionServer(self.repository_path)
-        svn_server.setUp()
-        self.addCleanup(svn_server.tearDown)
-
-        svn_branch_url = svn_server.makeBranch(branch_name, files)
-        svn_branch_url = svn_branch_url.replace('://localhost/', ':///')
-        self.foreign_commit_count = 2
-        self.cisd = self.factory.makeCodeImportSourceDetails(
-            rcstype='bzr-svn', svn_branch_url=svn_branch_url)
-        return self.cisd
 
 
 def test_suite():
