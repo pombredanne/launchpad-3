@@ -448,8 +448,9 @@ We'll generate a bug watch with which to test this.
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
-If we pass our UselessExternalBugTracker and the bug watches we just
-generated we can see that comment syncing happens for all of them.
+If we pass our UselessExternalBugTracker and the bug watch we just
+generated to updateBugWatches we can see that its comments will be
+synced and it will be linked to the remote bug.
 
     >>> import transaction
     >>> updater = BugWatchUpdater(transaction)
