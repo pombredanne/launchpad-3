@@ -21,7 +21,13 @@ from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import join as urljoin
 
+from CVS import Repository, tree
+
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
+from canonical.launchpad.scripts.logger import QuietFakeLogger
+from canonical.testing import BaseLayer
+
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore, BzrSvnImportWorker, CSCVSImportWorker,
@@ -31,9 +37,7 @@ from lp.codehosting.codeimport.tests.servers import (
     CVSServer, GitServer, SubversionServer)
 from lp.codehosting.tests.helpers import (
     create_branch_with_one_revision)
-from canonical.config import config
 from lp.testing.factory import LaunchpadObjectFactory
-from canonical.testing import BaseLayer
 
 import pysvn
 
@@ -729,9 +733,7 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
         # If you write to a file in the same second as the previous commit,
         # CVS will not think that it has changed.
         time.sleep(1)
-        from CVS import Repository, tree
-        from lp.codehosting.codeimport.tests.servers import _make_silent_logger
-        r = Repository(self.source_details.cvs_root, _make_silent_logger())
+        r = Repository(self.source_details.cvs_root, QuietFakeLogger())
         r.get(self.source_details.cvs_module, 'working_dir')
         self.build_tree_contents([('working_dir/README', 'New content')])
         tree = tree('working_dir')
