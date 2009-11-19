@@ -107,5 +107,30 @@ class TestDistributionMirrorBreadcrumb(BaseBreadcrumbTestCase):
             last_crumb.text, "Example.com-archive")
 
 
+class TestPollBreadcrumb(BaseBreadcrumbTestCase):
+    """Test breadcrumbs for an `IPoll`."""
+
+    def setUp(self):
+        super(TestPollBreadcrumb, self).setUp()
+        self.team = self.factory.makeTeam(displayname="Poll Team")
+        name = "pollo-poll"
+        title = "Marco Pollo"
+        proposition = "Be mine"
+        self.poll = self.factory.makePoll(
+            team=self.team,
+            name=name,
+            title=title,
+            proposition=proposition)
+        self.poll_url = canonical_url(self.poll)
+
+    def test_poll(self):
+        crumbs = self._getBreadcrumbs(
+            self.poll_url,
+            [self.root, self.team, self.poll])
+        last_crumb = crumbs[-1]
+        self.assertEquals(
+            last_crumb.text, self.poll.title)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

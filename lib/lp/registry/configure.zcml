@@ -632,6 +632,12 @@
                 set_schema="lp.registry.interfaces.poll.IPoll"/>
         </class>
 
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.registry.interfaces.poll.IPoll"
+            factory="lp.registry.browser.poll.PollBreadcrumb"
+            permission="zope.Public"/>
+
         <!-- PollOption -->
 
         <class
