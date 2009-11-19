@@ -13,6 +13,9 @@ from pytz import UTC
 import transaction
 import unittest
 
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
@@ -749,7 +752,8 @@ class TestCleanup(TestCaseWithFactory):
 
     def _setStatus(self, entry, status, when=None):
         """Simulate status on queue entry having been set at a given time."""
-        entry.setStatus(status)
+        entry.setStatus(status,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
         if when is not None:
             entry.date_status_changed = when
         entry.syncUpdate()
@@ -760,6 +764,8 @@ class TestCleanup(TestCaseWithFactory):
         # are.
         one_year_ago = datetime.now(UTC) - timedelta(days=366)
         entry = self._makeProductEntry()
+        entry.potemplate = (
+            self.factory.makePOTemplate(productseries=entry.productseries))
         entry_id = entry.id
 
         self._setStatus(entry, RosettaImportStatus.APPROVED, one_year_ago)

@@ -16,7 +16,8 @@ notify the user about them.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> from lp.translations.model.potemplate import POTemplateSubset
@@ -24,6 +25,7 @@ Here are some imports we need to get this test running.
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
 And also, the DBSchema to change the imports status
 
@@ -80,7 +82,7 @@ First, we do a valid import.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
 We do the import.  This succeeds without errors.
 
@@ -128,7 +130,7 @@ field with a date older than a previous .po import.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
 We do the import.
 
@@ -191,7 +193,7 @@ Finally we are going to import the same po file with the old
 
 We approve the entry and import it.
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
 This succeeds although the file's timestamp is older than that of the
