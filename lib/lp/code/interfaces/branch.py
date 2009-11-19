@@ -1184,12 +1184,14 @@ class IBranchSet(Interface):
             required=True))
     @export_read_operation()
     def getByUrls(urls):
-        """Find a branch by URL.
+        """Finds branches by URL.
 
         Either from the external specified in Branch.url, from the URL on
         http://bazaar.launchpad.net/ or the lp: URL.
 
-        Return None if no match was found.
+        :param urls: An iterable of URLs expressed as strings.
+        :return: A dictionary mapping URLs to branches. If the URL has no
+            associated branch, the URL will map to `None`.
         """
 
     @collection_default_content()
