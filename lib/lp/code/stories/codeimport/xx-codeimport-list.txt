@@ -29,9 +29,13 @@ few imports that will be displayed in the listing.
     ...     factory, product_name="herproj", branch_name="master",
     ...     git_repo_url="git://git.example.org/herproj",
     ...     last_update=datetime.datetime(2007, 1, 3, tzinfo=pytz.UTC))
+    >>> active_hg_import = make_active_import(
+    ...     factory, product_name="herproj", branch_name="master",
+    ...     hg_repo_url="http://hg.example.org/proj",
+    ...     last_update=datetime.datetime(2007, 1, 4, tzinfo=pytz.UTC))
     >>> flush_database_updates()
     >>> len(list(code_import_set.getActiveImports()))
-    3
+    4
     >>> logout()
 
 The page is linked to from the "$N imported branches" text.
@@ -49,6 +53,7 @@ It lists the active imports, sorted by product then branch name:
 
    >>> print_import_table()
    Project   Branch Name Source Details                         Last Updated
+   proj      master      http://hg.example.org/proj             2007-01-04
    herproj   master      git://git.example.org/herproj          2007-01-03
    hisproj   main        :pserver:anon@example.com:/cvs hisproj 2007-01-02
    myproject trunk       http://example.com/svn/myproject/trunk 2007-01-01

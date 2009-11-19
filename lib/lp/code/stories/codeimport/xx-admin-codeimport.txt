@@ -24,6 +24,12 @@ to edit the details.
     ...     git_repo_url="git://git.example.org/fooix")
     >>> git_import_location = str(canonical_url(git_import.branch))
     >>> git_import_branch_unique_name = git_import.branch.unique_name
+
+    >>> hg_import = factory.makeCodeImport(
+    ...     hg_repo_url="http://hg.example.org/bar")
+    >>> hg_import_location = str(canonical_url(hg_import.branch))
+    >>> hg_import_branch_unique_name = hg_import.branch.unique_name
+
     >>> logout()
 
     >>> import_browser = setupBrowser(
@@ -87,6 +93,12 @@ in the form.
     >>> print_form_fields(import_browser)
     field.git_repo_url: git://git.example.org/fooix
 
+    >>> import_browser.open(hg_import_location)
+    >>> import_browser.getLink('Edit import source or review import').click()
+    >>> print_form_fields(import_browser)
+    field.hg_repo_url: http://hg.example.org/bar
+
+
 === Editing the import location ===
 
 The +edit-import page allows the import operator to edit the location
@@ -114,7 +126,7 @@ CVS imports,
     ...     print extract_text(message)
     The code import has been updated.
 
-and Git imports.
+Git imports,
 
     >>> import_browser.open(git_import_location + '/+edit-import')
     >>> import_browser.getControl('Repo URL').value = \
@@ -124,6 +136,15 @@ and Git imports.
     ...     print extract_text(message)
     The code import has been updated.
 
+and Mercurial imports.
+
+    >>> import_browser.open(hg_import_location + '/+edit-import')
+    >>> import_browser.getControl('Repo URL').value = \
+    ...     'http://metal.example.org/bar'
+    >>> import_browser.getControl('Update').click()
+    >>> for message in get_feedback_messages(import_browser.contents):
+    ...     print extract_text(message)
+    The code import has been updated.
 
 === Approving an import ===
 

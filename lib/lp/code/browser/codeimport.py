@@ -130,6 +130,7 @@ class CodeImportBaseView(LaunchpadFormView):
     custom_widget('cvs_module', StrippedTextWidget, displayWidth=20)
     custom_widget('svn_branch_url', URIWidget, displayWidth=50)
     custom_widget('git_repo_url', URIWidget, displayWidth=50)
+    custom_widget('hg_repo_url', URIWidget, displayWidth=50)
 
     @cachedproperty
     def _super_user(self):
@@ -213,6 +214,26 @@ class CodeImportBaseView(LaunchpadFormView):
                     escape(canonical_url(code_import.branch)),
                     escape(code_import.branch.unique_name)))
 
+    def _validateHg(self, hg_repo_url, existing_import=None):
+        """If the user has specified a hg repo url, we need
+        to make sure that there isn't already an import with
+        that url."""
+        if hg_repo_url is None:
+            self.setSecondaryFieldError(
+                'hg_repo_url', 'Enter the URL of a Mercurial repo.')
+        else:
+            code_import = getUtility(ICodeImportSet).getByHgDetails(
+                hg_repo_url)
+            if (code_import is not None and
+                code_import != existing_import):
+                self.setFieldError(
+                    'hg_repo_url',
+                    structured("""
+                    This Mercurial repository URL is already specified for
+                    the imported branch <a href="%s">%s</a>.""",
+                    escape(canonical_url(code_import.branch)),
+                    escape(code_import.branch.unique_name)))
+
 
 class CodeImportNewView(CodeImportBaseView):
     """The view to request a new code import."""
@@ -221,7 +242,7 @@ class CodeImportNewView(CodeImportBaseView):
     label = 'Request a code import'
     field_names = [
         'product', 'rcs_type', 'svn_branch_url', 'cvs_root', 'cvs_module',
-        'git_repo_url',
+        'git_repo_url', 'hg_repo_url',
         ]
 
     custom_widget('rcs_type', LaunchpadRadioWidget)
@@ -256,16 +277,18 @@ class CodeImportNewView(CodeImportBaseView):
         # display them separately in the form.
         soup = BeautifulSoup(self.widgets['rcs_type']())
         fields = soup.findAll('input')
-        [cvs_button, svn_button, git_button, empty_marker] = [
+        [cvs_button, svn_button, git_button, hg_button, empty_marker] = [
             field for field in fields
             if field.get('value') in ['CVS', 'SVN', 'GIT', '1']]
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
         git_button['onclick'] = 'updateWidgets()'
+        hg_button['onclick'] = 'updateWidgets()'
         # The following attributes are used only in the page template.
         self.rcs_type_cvs = str(cvs_button)
         self.rcs_type_svn = str(svn_button)
         self.rcs_type_git = str(git_button)
+        self.rcs_type_hg = str(hg_button)
         self.rcs_type_emptymarker = str(empty_marker)
 
     def _create_import(self, data, status):
@@ -279,7 +302,8 @@ class CodeImportNewView(CodeImportBaseView):
             cvs_root=data['cvs_root'],
             cvs_module=data['cvs_module'],
             review_status=status,
-            git_repo_url=data['git_repo_url'])
+            git_repo_url=data['git_repo_url'],
+            hg_repo_url=data['hg_repo_url'])
 
     def _setBranchExists(self, existing_branch):
         """Set a field error indicating that the branch already exists."""
@@ -359,17 +383,26 @@ class CodeImportNewView(CodeImportBaseView):
         if rcs_type == RevisionControlSystems.CVS:
             data['svn_branch_url'] = None
             data['git_repo_url'] = None
+            data['hg_repo_url'] = None
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
         elif rcs_type == RevisionControlSystems.SVN:
             data['cvs_root'] = None
             data['cvs_module'] = None
             data['git_repo_url'] = None
+            data['hg_repo_url'] = None
             self._validateSVN(data.get('svn_branch_url'))
         elif rcs_type == RevisionControlSystems.GIT:
             data['cvs_root'] = None
             data['cvs_module'] = None
             data['svn_branch_url'] = None
+            data['hg_repo_url'] = None
             self._validateGit(data.get('git_repo_url'))
+        elif rcs_type == RevisionControlSystems.HG:
+            data['cvs_root'] = None
+            data['cvs_module'] = None
+            data['svn_branch_url'] = None
+            data['git_repo_url'] = None
+            self._validateHg(data.get('hg_repo_url'))
         else:
             raise AssertionError('Unknown revision control type.')
 
@@ -379,7 +412,8 @@ class EditCodeImportForm(Interface):
 
     use_template(
         ICodeImport,
-        ['svn_branch_url', 'cvs_root', 'cvs_module', 'git_repo_url'])
+        ['svn_branch_url', 'cvs_root', 'cvs_module', 'git_repo_url', 
+         'hg_repo_url'])
     whiteboard = copy_field(IBranch['whiteboard'])
 
 
@@ -457,13 +491,16 @@ class CodeImportEditView(CodeImportBaseView):
         # fields, and vice versa.
         if self.code_import.rcs_type == RevisionControlSystems.CVS:
             self.form_fields = self.form_fields.omit(
-                'svn_branch_url', 'git_repo_url')
+                'svn_branch_url', 'git_repo_url', 'hg_repo_url')
         elif self.code_import.rcs_type == RevisionControlSystems.SVN:
             self.form_fields = self.form_fields.omit(
-                'cvs_root', 'cvs_module', 'git_repo_url')
+                'cvs_root', 'cvs_module', 'git_repo_url', 'hg_repo_url')
         elif self.code_import.rcs_type == RevisionControlSystems.GIT:
             self.form_fields = self.form_fields.omit(
-                'cvs_root', 'cvs_module', 'svn_branch_url')
+                'cvs_root', 'cvs_module', 'svn_branch_url', 'hg_repo_url')
+        elif self.code_import.rcs_type == RevisionControlSystems.HG:
+            self.form_fields = self.form_fields.omit(
+                'cvs_root', 'cvs_module', 'svn_branch_url', 'git_repo_url')
         else:
             raise AssertionError('Unknown rcs_type for code import.')
 
@@ -499,6 +536,9 @@ class CodeImportEditView(CodeImportBaseView):
         elif self.code_import.rcs_type == RevisionControlSystems.GIT:
             self._validateGit(
                 data.get('git_repo_url'), self.code_import)
+        elif self.code_import.rcs_type == RevisionControlSystems.HG:
+            self._validateHg(
+                data.get('hg_repo_url'), self.code_import)
         else:
             raise AssertionError('Unknown rcs_type for code import.')
 
