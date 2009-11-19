@@ -85,6 +85,8 @@ from lp.registry.browser.packaging import PackagingDeleteView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
+from lp.translations.browser.customlanguagecode import (
+    HasCustomLanguageCodesTraversalMixin)
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
@@ -117,8 +119,8 @@ SPACE = ' '
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
-    FAQTargetNavigationMixin, QuestionTargetTraversalMixin,
-    StructuralSubscriptionTargetTraversalMixin):
+    FAQTargetNavigationMixin, HasCustomLanguageCodesTraversalMixin,
+    QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IProduct
 
