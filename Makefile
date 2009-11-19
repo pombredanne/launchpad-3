@@ -1,7 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON_VERSION=2.4
+PYTHON_VERSION=2.5
 PYTHON=python${PYTHON_VERSION}
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
@@ -16,6 +16,9 @@ SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
 LPCONFIG=development
+
+LP_BUILT_JS_ROOT=lib/canonical/launchpad/icing/build
+LAZR_BUILT_JS_ROOT=lazr-js/build
 
 MINS_TO_SHUTDOWN=15
 
@@ -259,8 +262,16 @@ rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
-clean:
+clean_js:
+	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
+	$(RM) -r $(LAZR_BUILT_JS_ROOT)
+
+clean: clean_js
 	$(MAKE) -C sourcecode/pygettextpo clean
+	# XXX gary 2009-11-16 bug 483782
+	# The pygettextpo Makefile should have this next line in it for its make
+	# clean, and then we should remove this line.
+	$(RM) sourcecode/pygpgme/gpgme/*.so
 	if test -f sourcecode/mailman/Makefile; then \
 		$(MAKE) -C sourcecode/mailman clean; \
 	fi
@@ -270,6 +281,7 @@ clean:
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r bin
 	$(RM) -r parts
+	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) thread*.request
@@ -357,4 +369,4 @@ ID: compile
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild
+	jsbuild clean_js

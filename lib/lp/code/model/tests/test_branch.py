@@ -553,13 +553,13 @@ class TestBranchDeletion(TestCaseWithFactory):
             CodeReviewNotificationLevel.NOEMAIL)
         self.assertEqual(True, self.branch.canBeDeleted())
 
-    def test_codeImportDisablesDeletion(self):
-        """A branch that has an attached code import can't be deleted."""
+    def test_codeImportCanStillBeDeleted(self):
+        """A branch that has an attached code import can be deleted."""
         code_import = LaunchpadObjectFactory().makeCodeImport()
         branch = code_import.branch
-        self.assertEqual(branch.canBeDeleted(), False,
-                         "A branch that has a import is not deletable.")
-        self.assertRaises(CannotDeleteBranch, branch.destroySelf)
+        self.assertEqual(
+            branch.canBeDeleted(), True,
+            "A branch that has a import is deletable.")
 
     def test_bugBranchLinkDisablesDeletion(self):
         """A branch linked to a bug cannot be deleted."""
@@ -881,9 +881,7 @@ class TestBranchDeletionConsequences(TestCase):
         code_import = self.factory.makeCodeImport()
         # Remove the implicit branch subscription first.
         code_import.branch.unsubscribe(code_import.branch.owner)
-        self.assertEqual({code_import:
-            ('delete', _('This is the import data for this branch.'))},
-             code_import.branch.deletionRequirements())
+        self.assertEqual({}, code_import.branch.deletionRequirements())
 
     def test_branchWithCodeImportDeletion(self):
         """break_links allows deleting a code import branch."""

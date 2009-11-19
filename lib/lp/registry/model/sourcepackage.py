@@ -705,3 +705,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
         custom_files.sort(key=attrgetter('id'))
         return [custom.libraryfilealias for custom in custom_files]
+
+    def linkedBranches(self):
+        """See `ISourcePackage`."""
+        return dict((p.name,b) for (p,b) in self.linked_branches)

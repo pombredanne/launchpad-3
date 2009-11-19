@@ -9,6 +9,7 @@ import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -204,7 +205,8 @@ class XpiTestCase(unittest.TestCase):
             ).count()
 
         # Force the entry to be imported again:
-        entry.setStatus(RosettaImportStatus.APPROVED)
+        entry.setStatus(RosettaImportStatus.APPROVED,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
         # Now, we tell the PO template to import from the file data it has.
         (subject, body) = self.firefox_template.importFromQueue(entry)
 

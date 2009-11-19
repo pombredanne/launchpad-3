@@ -818,12 +818,12 @@ But if a non-existing entry is requested, a KeyError is raised:
     KeyError: 'broken'
 
 We also report when the selected facet does not exist with a
-TraversalError exception:
+LocationError exception:
 
     >>> test_tales('view/menu:broken/bar', view=view)
     Traceback (most recent call last):
     ...
-    TraversalError: ..., 'broken')
+    LocationError: ..., 'broken')
 
 We can also get a context menu as menu:context.  It makes no difference
 whether the TALES code is view/menu:context or context/menu:context,
@@ -858,7 +858,7 @@ And thus, we don't have a facet to navigate to:
     >>> test_tales('view/menu:foo/+first', view=view)
     Traceback (most recent call last):
     ...
-    TraversalError: ..., 'foo')
+    LocationError: ..., 'foo')
 
     >>> view = LaunchpadView(house, request)
     >>> view.__launchpad_facetname__ = 'bar'
