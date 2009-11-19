@@ -874,7 +874,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     def binary_file_urls(self):
         """See `ISourcePackagePublishingHistory`."""
         publishing_set = getUtility(IPublishingSet)
-        binaries = publishing_set.getBinaryFilesForSources(self).config(distinct=True)
+        binaries = publishing_set.getBinaryFilesForSources(
+            self).config(distinct=True)
         binary_urls = self._proxied_urls(
             [binary for _source, binary, _content in binaries], self.archive)
 
