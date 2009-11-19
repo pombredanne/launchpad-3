@@ -36,6 +36,7 @@
           <div>
             <tal:merge-fragment tal:replace="structure mergeproposal/@@+link-summary" />
           </div>
+          <tal:merge-fragment tal:replace="structure mergeproposal/@@+vote-summary" />
         </tal:landing-candidates>
       </div>
 
