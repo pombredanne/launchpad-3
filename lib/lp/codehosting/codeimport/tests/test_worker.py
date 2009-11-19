@@ -733,11 +733,11 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
         # If you write to a file in the same second as the previous commit,
         # CVS will not think that it has changed.
         time.sleep(1)
-        r = Repository(self.source_details.cvs_root, QuietFakeLogger())
-        r.get(self.source_details.cvs_module, 'working_dir')
+        repo = Repository(self.source_details.cvs_root, QuietFakeLogger())
+        repo.get(self.source_details.cvs_module, 'working_dir')
+        wt = tree('working_dir')
         self.build_tree_contents([('working_dir/README', 'New content')])
-        tree = tree('working_dir')
-        tree.commit(log='Log message')
+        wt.commit(log='Log message')
         self.foreign_commit_count += 1
         shutil.rmtree('working_dir')
 
@@ -757,7 +757,8 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
 
 
 class SubversionImportHelpers:
-    """XXX."""
+    """Implementations of `makeForeignCommit` and `makeSourceDetails` for svn.
+    """
 
     def makeForeignCommit(self):
         """Change the foreign tree."""
