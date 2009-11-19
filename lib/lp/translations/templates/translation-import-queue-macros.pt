@@ -81,10 +81,7 @@
                     # sometimes, entry/import_into evaluates as false because
                     # __len__ method returns 0.
                   </tal:XXX>
-                  <td tal:condition="entry/import_into/title|nothing" rowspan="3">
-                    <span class="download sprite"></span>
-                  </td>
-                  <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
+                  <td rowspan="3">
                     <span class="download sprite"></span>
                   </td>
                   <td>
@@ -117,14 +114,6 @@
                     </td>
                   </tal:status>
                   <td>
-                    <tal:block condition="entry/required:launchpad.Admin">
-                      <a class="sprite edit"
-                         tal:attributes="href entry/fmt:url">
-                        <span class="invisible-link">Change this entry</span>
-                      </a>
-                    </tal:block>
-                  </td>
-                  <td>
                     <tal:block condition="view/user">
                       <tal:comment replace="nothing">
                         Placeholder for "show output" button, if this entry
@@ -153,12 +142,25 @@
                   # sometimes, entry/import_into evaluates as false because
                   # __len__ method returns 0.
                 </tal:XXX>
-                <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
+                <tr class="discreet secondary">
                   <td colspan="3">
-                    Will be imported into 
-                    <a tal:content="entry/import_into/title"
-                       tal:attributes="href entry/import_into/fmt:url"
-                       >Foo</a>
+                    <span style="margin-right: 0.5em"
+                          tal:condition="entry/import_into/title|nothing" >
+                      Will be imported into 
+                      <a tal:content="entry/import_into/title"
+                         tal:attributes="href entry/import_into/fmt:url"
+                         >Foo</a>
+                    </span>
+                    <span style="margin-right: 0.5em"
+                          tal:condition="not:entry/import_into/title|nothing">
+                      No import target selected yet.
+                    </span>
+                    <tal:block condition="entry/required:launchpad.Admin">
+                      <a class="sprite edit"
+                         tal:attributes="href entry/fmt:url">
+                        <span class="invisible-link">Change this entry</span>
+                      </a>
+                    </tal:block>
                   </td>
                 </tr>
               </tal:loop>
