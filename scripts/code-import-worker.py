@@ -26,7 +26,7 @@ from canonical.config import config
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     BzrSvnImportWorker, CSCVSImportWorker, CodeImportSourceDetails,
-    GitImportWorker, get_default_bazaar_branch_store)
+    GitImportWorker, HgImportWorker, get_default_bazaar_branch_store)
 from canonical.launchpad import scripts
 
 
@@ -46,6 +46,9 @@ class CodeImportWorker:
         elif source_details.rcstype == 'bzr-svn':
             load_optional_plugin('svn')
             import_worker_cls = BzrSvnImportWorker
+        elif source_details.rcstype == 'bzr-hg':
+            load_optional_plugin('hg')
+            import_worker_cls = HgImportWorker
         else:
             if source_details.rcstype not in ['cvs', 'svn']:
                 raise AssertionError(

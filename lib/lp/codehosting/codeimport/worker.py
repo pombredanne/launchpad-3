@@ -11,6 +11,7 @@ __all__ = [
     'CodeImportSourceDetails',
     'ForeignTreeStore',
     'GitImportWorker',
+    'HgImportWorker',
     'ImportWorker',
     'get_default_bazaar_branch_store',
     ]
@@ -114,16 +115,19 @@ class CodeImportSourceDetails:
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
     :ivar git_repo_url: The URL of the git repo, if rcstype == 'git', None,
         otherwise.
+    :ivar hg_repo_url: The URL of the hg repo, if rcstype == 'hg', None,
+        otherwise.
     """
 
     def __init__(self, branch_id, rcstype, svn_branch_url=None, cvs_root=None,
-                 cvs_module=None, git_repo_url=None):
+                 cvs_module=None, git_repo_url=None, hg_repo_url=None):
         self.branch_id = branch_id
         self.rcstype = rcstype
         self.svn_branch_url = svn_branch_url
         self.cvs_root = cvs_root
         self.cvs_module = cvs_module
         self.git_repo_url = git_repo_url
+        self.hg_repo_url = hg_repo_url
 
     @classmethod
     def fromArguments(cls, arguments):
@@ -132,18 +136,21 @@ class CodeImportSourceDetails:
         rcstype = arguments.pop(0)
         if rcstype in ['svn', 'bzr-svn']:
             [svn_branch_url] = arguments
-            cvs_root = cvs_module = git_repo_url = None
+            cvs_root = cvs_module = git_repo_url = hg_repo_url = None
         elif rcstype == 'cvs':
-            svn_branch_url = git_repo_url = None
+            svn_branch_url = git_repo_url = hg_repo_url = None
             [cvs_root, cvs_module] = arguments
         elif rcstype == 'git':
-            cvs_root = cvs_module = svn_branch_url = None
+            cvs_root = cvs_module = svn_branch_url = hg_repo_url = None
             [git_repo_url] = arguments
+        elif rcstype == 'hg':
+            cvs_root = cvs_module = svn_branch_url = git_repo_url = None
+            [hg_repo_url] = arguments
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(
             branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
-            git_repo_url)
+            git_repo_url, hg_repo_url)
 
     @classmethod
     def fromCodeImport(cls, code_import):
@@ -151,21 +158,25 @@ class CodeImportSourceDetails:
         if code_import.rcs_type == RevisionControlSystems.SVN:
             rcstype = 'svn'
             svn_branch_url = str(code_import.svn_branch_url)
-            cvs_root = cvs_module = git_repo_url = None
+            cvs_root = cvs_module = git_repo_url = hg_repo_url = None
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             rcstype = 'cvs'
-            svn_branch_url = git_repo_url = None
+            svn_branch_url = git_repo_url = hg_repo_url = None
             cvs_root = str(code_import.cvs_root)
             cvs_module = str(code_import.cvs_module)
         elif code_import.rcs_type == RevisionControlSystems.GIT:
             rcstype = 'git'
-            svn_branch_url = cvs_root = cvs_module = None
+            svn_branch_url = cvs_root = cvs_module = hg_repo_url = None
             git_repo_url = str(code_import.git_repo_url)
+        elif code_import.rcs_type == RevisionControlSystems.HG:
+            rcstype = 'hg'
+            svn_branch_url = cvs_root = cvs_module = git_repo_url = None
+            hg_repo_url = str(code_import.hg_repo_url)
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return cls(
             code_import.branch.id, rcstype, svn_branch_url,
-            cvs_root, cvs_module, git_repo_url)
+            cvs_root, cvs_module, git_repo_url, hg_repo_url)
 
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
@@ -178,6 +189,8 @@ class CodeImportSourceDetails:
             result.append(self.cvs_module)
         elif self.rcstype == 'git':
             result.append(self.git_repo_url)
+        elif self.rcstype == 'hg':
+            result.append(self.hg_repo_url)
         else:
             raise AssertionError("Unknown rcstype %r." % self.rcstype)
         return result
@@ -541,6 +554,40 @@ class GitImportWorker(PullingImportWorker):
         PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
         self.import_data_store.put(
             'git.db', bazaar_tree.branch.repository._transport)
+
+
+class HgImportWorker(PullingImportWorker):
+    """An import worker for Mercurial imports.
+
+    The only behaviour we add is preserving the 'hg.tdb' map between runs.
+    """
+
+    @property
+    def pull_url(self):
+        return self.source_details.hg_repo_url
+
+    def getBazaarWorkingTree(self):
+        """See `ImportWorker.getBazaarWorkingTree`.
+
+        In addition to the superclass' behaviour, we retrieve the 'hg.tdb'
+        map from the import data store and put it where bzr-hg will find
+        it in the Bazaar tree, that is at '.bzr/repository/hg.tdb'.
+        """
+        tree = PullingImportWorker.getBazaarWorkingTree(self)
+        self.import_data_store.fetch(
+            'hg.tdb', tree.branch.repository._transport)
+        return tree
+
+    def pushBazaarWorkingTree(self, bazaar_tree):
+        """See `ImportWorker.pushBazaarWorkingTree`.
+
+        In addition to the superclass' behaviour, we store the 'hg.tdb' shamap
+        that bzr-hg will have created at .bzr/repository/hg.tdb into the
+        import data store.
+        """
+        PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
+        self.import_data_store.put(
+            'hg.tdb', bazaar_tree.branch.repository._transport)
 
 
 class BzrSvnImportWorker(PullingImportWorker):

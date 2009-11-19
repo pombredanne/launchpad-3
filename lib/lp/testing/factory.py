@@ -1197,14 +1197,15 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, product=None, branch_name=None,
-                       git_repo_url=None, registrant=None):
+                       git_repo_url=None, hg_repo_url=None, registrant=None):
         """Create and return a new, arbitrary code import.
 
         The type of code import will be inferred from the source details
         passed in, but defaults to a Subversion import from an arbitrary
         unique URL.
         """
-        if svn_branch_url is cvs_root is cvs_module is git_repo_url is None:
+        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is hg_repo_url
+            is None):
             svn_branch_url = self.getUniqueURL()
 
         if product is None:
@@ -1225,6 +1226,11 @@ class LaunchpadObjectFactory(ObjectFactory):
                 registrant, product, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
                 git_repo_url=git_repo_url)
+        elif hg_repo_url is not None:
+            return code_import_set.new(
+                registrant, product, branch_name,
+                rcs_type=RevisionControlSystems.HG,
+                hg_repo_url=hg_repo_url)
         else:
             return code_import_set.new(
                 registrant, product, branch_name,
@@ -1293,30 +1299,37 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
                                     svn_branch_url=None, cvs_root=None,
-                                    cvs_module=None, git_repo_url=None):
+                                    cvs_module=None, git_repo_url=None,
+                                    hg_repo_url=None):
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'svn'
         if rcstype in ['svn', 'bzr-svn']:
-            assert cvs_root is cvs_module is git_repo_url is None
+            assert cvs_root is cvs_module is git_repo_url is hg_repo_url is None
             if svn_branch_url is None:
                 svn_branch_url = self.getUniqueURL()
         elif rcstype == 'cvs':
-            assert svn_branch_url is git_repo_url is None
+            assert svn_branch_url is git_repo_url is hg_repo_url is None
             if cvs_root is None:
                 cvs_root = self.getUniqueString()
             if cvs_module is None:
                 cvs_module = self.getUniqueString()
         elif rcstype == 'git':
-            assert cvs_root is cvs_module is svn_branch_url is None
+            assert (cvs_root is cvs_module is svn_branch_url is hg_repo_url
+                    is None)
             if git_repo_url is None:
                 git_repo_url = self.getUniqueURL(scheme='git')
+        elif rcstype == 'hg':
+            assert (cvs_root is cvs_module is svn_branch_url is git_repo_url
+                    is None)
+            if hg_repo_url is None:
+                hg_repo_url = self.getUniqueURL(scheme='hg')
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return CodeImportSourceDetails(
             branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
-            git_repo_url)
+            git_repo_url, hg_repo_url)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
