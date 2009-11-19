@@ -272,7 +272,7 @@ class License(DBEnumeratedType):
 class IProductDriverRestricted(Interface):
     """`IProduct` properties which require launchpad.Driver permission."""
 
-    def newSeries(owner, name, summary, branch=None):
+    def newSeries(owner, name, summary, branch=None, releasefileglob=None):
         """Creates a new ProductSeries for this product."""
 
 

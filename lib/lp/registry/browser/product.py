@@ -1312,7 +1312,8 @@ class ProductAddSeriesView(LaunchpadFormView):
             owner=self.user,
             name=data['name'],
             summary=data['summary'],
-            branch=data['branch'])
+            branch=data['branch'],
+            releasefileglob=data['releasefileglob'])
 
     @property
     def next_url(self):

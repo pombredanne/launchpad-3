@@ -913,12 +913,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         return ProductSeries.selectOneBy(product=self, name=name)
 
-    def newSeries(self, owner, name, summary, branch=None):
+    def newSeries(
+        self, owner, name, summary, branch=None, releasefileglob=None):
         # XXX: jamesh 2008-04-11
         # Set the ID of the new ProductSeries to avoid flush order
         # loops in ProductSet.createProduct()
-        series = ProductSeries(productID=self.id, owner=owner, name=name,
-                             summary=summary, branch=branch)
+        series = ProductSeries(
+            productID=self.id, owner=owner, name=name,
+            summary=summary, branch=branch, releasefileglob=releasefileglob)
         if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
             # The user is a product driver, and should be the driver of this
             # series to make him the release manager.
