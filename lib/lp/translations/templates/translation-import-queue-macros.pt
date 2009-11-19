@@ -97,16 +97,21 @@
                        tal:replace="structure entry/productseries/fmt:link">
                        Evolution Series: MAIN</a>
                   </td>
-                  <td tal:condition="entry/required:launchpad.Edit">
-                    <span class="status-choice">
-                      <span class="value" tal:content="entry/status/title">
-                        Needs review</span>
-                      <img class="editicon" src="/@@/edit" />
-                    </span>
-                  </td>
-                  <td tal:condition="not: entry/required:launchpad.Edit"
-                      tal:content="entry/status/title">Needs Review
-                  </td>
+                  <tal:status define="css_status string:translationimportstatus${entry/status/name}"
+                              omit-tag="">
+                    <td tal:condition="entry/required:launchpad.Edit">
+                      <span class="status-choice">
+                        <span tal:attributes="class string:value ${css_status}"
+                              tal:content="entry/status/title">
+                          Needs review</span>
+                        <img class="editicon" src="/@@/edit" />
+                      </span>
+                    </td>
+                    <td tal:condition="not: entry/required:launchpad.Edit"
+                        tal:attributes="class css_status"
+                        tal:content="entry/status/title">Needs Review
+                    </td>
+                  </tal:status>
                   <td>
                     <tal:block condition="entry/required:launchpad.Admin">
                       <a class="sprite edit"
