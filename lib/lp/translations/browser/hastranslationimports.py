@@ -349,7 +349,9 @@ class HasTranslationImportsView(LaunchpadFormView):
             item.value for item in RosettaImportStatus
                        if not entry.canSetStatus(item.value, self.user)]
         items = vocabulary_to_choice_edit_items(
-                RosettaImportStatus, disabled_items=disabled_items)
+                RosettaImportStatus,
+                disabled_items=disabled_items,
+                css_class_prefix='translationimportstatus')
         return {
             'value': entry.status.title,
             'items': items}
