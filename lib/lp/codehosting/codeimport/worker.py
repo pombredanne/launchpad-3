@@ -496,8 +496,6 @@ class PullingImportWorker(ImportWorker):
 
     def _doImport(self):
         bazaar_tree = self.getBazaarWorkingTree()
-        bazaar_tree.branch.pull(
-            Branch.open(self.pull_url), overwrite=True)
         self.bazaar_branch_store.push(
             self.source_details.branch_id, bazaar_tree, self.required_format)
         saved_factory = bzrlib.ui.ui_factory
@@ -505,8 +503,7 @@ class PullingImportWorker(ImportWorker):
             writer=lambda m: self._logger.info('%s', m))
         try:
             bazaar_tree.branch.pull(
-                Branch.open(self.source_details.pull_url),
-                overwrite=True)
+                Branch.open(self.pull_url), overwrite=True)
         finally:
             bzrlib.ui.ui_factory = saved_factory
         self.pushBazaarWorkingTree(bazaar_tree)

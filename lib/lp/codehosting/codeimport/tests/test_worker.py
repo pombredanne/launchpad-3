@@ -28,7 +28,7 @@ from lp.codehosting.codeimport.worker import (
     ForeignTreeStore, GitImportWorker, ImportDataStore, ImportWorker,
     get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, SubversionServer)
+    CVSServer, GitServer, run_in_temporary_directory, SubversionServer)
 from lp.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from canonical.config import config
@@ -854,18 +854,20 @@ class TestBzrSvnImport(WorkerTest, TestActualImportMixin):
     def makeImportWorker(self):
         """Make a new `ImportWorker`."""
         return BzrSvnImportWorker(
-            self.source_details, self.bazaar_store, logging.getLogger())
+            self.source_details, self.get_transport('import_data'),
+            self.bazaar_store, logging.getLogger())
 
+    @run_in_temporary_directory
     def commitInForeignTree(self, foreign_tree):
         """Change the foreign tree, generating exactly one commit."""
         client = pysvn.Client()
-        client.checkout(self.repository_path, 'working_tree')
+        client.checkout(self.cisd.svn_branch_url, 'working_tree')
         file = open('working_tree/newfile', 'w')
         file.write('No real content\n')
         file.close()
         client.add('working_tree/newfile')
         client.checkin('working_tree', 'Add a file', recurse=True)
-        shutil.rmtree('working_tree')
+        self.foreign_commit_count += 1
 
     def makeSourceDetails(self, branch_name, files):
         """Make a SVN `CodeImportSourceDetails` pointing at a real SVN repo.
@@ -877,8 +879,10 @@ class TestBzrSvnImport(WorkerTest, TestActualImportMixin):
 
         svn_branch_url = svn_server.makeBranch(branch_name, files)
         svn_branch_url = svn_branch_url.replace('://localhost/', ':///')
-        return self.factory.makeCodeImportSourceDetails(
+        self.foreign_commit_count = 2
+        self.cisd = self.factory.makeCodeImportSourceDetails(
             rcstype='bzr-svn', svn_branch_url=svn_branch_url)
+        return self.cisd
 
 
 def test_suite():
