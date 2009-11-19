@@ -221,28 +221,21 @@ class HasTranslationImportsView(LaunchpadFormView):
             # The status changed.
             number_of_changes += 1
 
-            # Only the importer, launchpad admins or Rosetta experts have
-            # special permissions to change status.
-            if (new_status_name == RosettaImportStatus.DELETED.name and
-                check_permission('launchpad.Edit', entry)):
-                entry.setStatus(RosettaImportStatus.DELETED, self.user)
-            elif (new_status_name == RosettaImportStatus.BLOCKED.name and
-                  check_permission('launchpad.Admin', entry)):
-                entry.setStatus(RosettaImportStatus.BLOCKED, self.user)
-            elif (new_status_name == RosettaImportStatus.APPROVED.name and
-                  check_permission('launchpad.Admin', entry) and
-                  entry.import_into is not None):
-                entry.setStatus(RosettaImportStatus.APPROVED, self.user)
-            elif (new_status_name == RosettaImportStatus.NEEDS_REVIEW.name and
-                  check_permission('launchpad.Admin', entry)):
-                entry.setStatus(RosettaImportStatus.NEEDS_REVIEW, self.user)
-            else:
-                # The user was not the importer or we are trying to set a
-                # status that must not be set from this form. That means that
-                # it's a broken request.
+            # Determine status enum from from value.
+            new_status = None
+            for status in RosettaImportStatus.items:
+                if new_status_name == status.name:
+                    new_status = status
+                    break
+            if new_status is None:
+                # We are trying to set a bogus status. 
+                # That means that it's a broken request.
                 raise UnexpectedFormData(
                     'Ignored the request to change the status from %s to %s.'
                         % (entry.status.name, new_status_name))
+            else:
+                # This will raise an exception if the user is not authorized.
+                entry.setStatus(new_status, self.user)
 
             # Update the date_status_change field.
             UTC = pytz.timezone('UTC')
