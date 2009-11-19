@@ -645,7 +645,10 @@ class INewSpecificationTarget(Interface):
 
 class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     ICanBeMentored, IHasLinkedBranches):
-    """A Specification."""
+    """A Specification.
+
+    Also known as a blueprint.
+    """
 
     export_as_webservice_entry()
 
