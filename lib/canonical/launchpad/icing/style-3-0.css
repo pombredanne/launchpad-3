@@ -786,6 +786,21 @@ ul.language, li.language             {
   background: inherit;
 }
 
+/* ==== Translations styles ==== */
+
+.translationimportstatusAPPROVED,
+.translationimportstatusAPPROVED a {color: green;}
+.translationimportstatusIMPORTED,
+.translationimportstatusIMPORTED a {color: black;}
+.translationimportstatusDELETED,
+.translationimportstatusDELETED a {color: darkgray;}
+.translationimportstatusFAILED,
+.translationimportstatusFAILED a {color: red;}
+.translationimportstatusNEEDS_REVIEW,
+.translationimportstatusNEEDS_REVIEW a {color: blue;}
+.translationimportstatusBLOCKED,
+.translationimportstatusBLOCKED a {color: darkgray;}
+
 /* ==== Translations hand-made forms ==== */
 
 form.translations div.fields {
