@@ -820,6 +820,7 @@
     <browser:page
         name="+bug-branch"
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
+        class="lp.bugs.browser.bugbranch.BugBranchView"
         permission="launchpad.View"
         template="../templates/bug-branch.pt"/>
     <adapter
@@ -1003,6 +1004,11 @@
             name="+bug-portlet-dupe-subscribers-content"
             class="lp.bugs.browser.bugsubscription.BugPortletDuplicateSubcribersContents"
             template="../templates/bug-portlet-dupe-subscribers-content.pt"
+            permission="zope.Public"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            name="+bug-portlet-subscribers-ids"
+            class="lp.bugs.browser.bugsubscription.BugPortletSubcribersIds"
             permission="zope.Public"/>
         <browser:navigation
             module="lp.bugs.browser.bug"

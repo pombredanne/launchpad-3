@@ -30,7 +30,6 @@ from email.MIMEText import MIMEText
 import re
 
 import pytz
-from simplejson import dumps
 
 from zope.app.form.browser import TextWidget
 from zope.component import adapter, getUtility
@@ -432,11 +431,6 @@ class BugViewMixin:
         for sub in subscribers:
             ids[sub.name] = 'subscriber-%s' % sub.id
         return ids
-
-    @property
-    def subscriber_ids_js(self):
-        """Return subscriber_ids in a form suitable for JavaScript use."""
-        return dumps(self.subscriber_ids)
 
     def subscription_class(self, subscribed_person):
         """Return a set of CSS class names based on subscription status.

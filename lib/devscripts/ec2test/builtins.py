@@ -557,7 +557,7 @@ class cmd_update_image(EC2Command):
             'bzr pull -d /var/launchpad/download-cache '
             'lp:lp-source-dependencies')
         if public:
-            update_sourcecode_options = '--public-only'
+            update_sourcecode_options = ' --public-only'
         else:
             update_sourcecode_options = ''
         user_connection.run_with_ssh_agent(
