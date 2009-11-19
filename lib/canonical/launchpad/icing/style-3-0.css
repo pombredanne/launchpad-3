@@ -789,17 +789,17 @@ ul.language, li.language             {
 /* ==== Translations styles ==== */
 
 .translationimportstatusAPPROVED,
-.translationimportstatusAPPROVED a {color: green;}
+.translationimportstatusAPPROVED a {color: #050;}
 .translationimportstatusIMPORTED,
-.translationimportstatusIMPORTED a {color: black;}
+.translationimportstatusIMPORTED a {color: green;}
 .translationimportstatusDELETED,
-.translationimportstatusDELETED a {color: darkgray;}
+.translationimportstatusDELETED a {color: black;}
 .translationimportstatusFAILED,
 .translationimportstatusFAILED a {color: red;}
 .translationimportstatusNEEDS_REVIEW,
-.translationimportstatusNEEDS_REVIEW a {color: blue;}
+.translationimportstatusNEEDS_REVIEW a {color: #f60;}
 .translationimportstatusBLOCKED,
-.translationimportstatusBLOCKED a {color: darkgray;}
+.translationimportstatusBLOCKED a {color: blue;}
 
 /* ==== Translations hand-made forms ==== */
 
