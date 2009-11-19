@@ -100,7 +100,11 @@
                   <tal:status define="css_status string:translationimportstatus${entry/status/name}"
                               omit-tag="">
                     <td tal:condition="entry/required:launchpad.Edit">
-                      <span class="status-choice">
+                      <noscript>
+                        <tal:status define="name string:status_${entry/id}"
+                                    replace="structure view/widgets/?name" />
+                      </noscript>
+                      <span class="status-choice" style="display:none">
                         <span tal:attributes="class string:value ${css_status}"
                               tal:content="entry/status/title">
                           Needs review</span>
@@ -167,10 +171,12 @@
                     tal:condition="script"
                     tal:content="structure script" />
             <tal:block define="user request/lp:person" condition="user">
-              <div class="actions">
-                <input
-                  tal:replace="structure view/change_status_action/render" />
-              </div>
+              <noscript>
+                <div class="actions">
+                  <input
+                    tal:replace="structure view/change_status_action/render" />
+                </div>
+              </noscript>
             </tal:block>
           </form>
         </tal:block>
