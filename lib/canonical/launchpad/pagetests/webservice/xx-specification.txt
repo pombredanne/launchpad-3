@@ -1,0 +1,24 @@
+
+= Prelude =
+
+  >>> login(ANONYMOUS)
+  >>> specification = factory.makeSpecification()
+  >>> spec_url = canonical_url(specification, rootsite='api')
+  >>> drafter = factory.makePerson()
+  >>> drafter_url = canonical_url(drafter, rootsite='api')
+  >>> logout()
+
+= Specifications =
+
+Specifications are exposed over the API.
+
+  >>> from simplejson import dumps
+  >>> web_spec = webservice.get(spec_url).jsonBody()
+  >>> web_spec['drafter_link'] is None
+  True
+  >>> patch = dict(drafter_link=drafter_url)
+  >>> webservice.patch(
+  ...     spec_url, 'application/json', dumps(patch))
+  >>> web_spec = webservice.get(spec_url).jsonBody()
+  >>> web_spec['drafter_link'] == drafter_url
+  True

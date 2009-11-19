@@ -28,7 +28,8 @@ __all__ = [
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_write_operation, operation_parameters, operation_returns_entry)
+    exported, export_write_operation, operation_parameters,
+    operation_returns_entry)
 from lazr.restful.fields import Reference
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
@@ -586,11 +587,12 @@ class INewSpecification(Interface):
         title=_('Assignee'), required=False,
         description=_("The person responsible for implementing the feature."),
         vocabulary='ValidPersonOrTeam')
-    drafter = PublicPersonChoice(
-        title=_('Drafter'), required=False,
-        description=_(
+    drafter = exported(
+        PublicPersonChoice(
+            title=_('Drafter'), required=False,
+            description=_(
                 "The person responsible for drafting the specification."),
-        vocabulary='ValidPersonOrTeam')
+            vocabulary='ValidPersonOrTeam'))
     approver = PublicPersonChoice(
         title=_('Approver'), required=False,
         description=_(
