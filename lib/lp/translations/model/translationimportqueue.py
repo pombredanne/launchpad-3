@@ -297,9 +297,6 @@ class TranslationImportQueueEntry(SQLBase):
 
     def canSetStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
-        if new_status == self.status:
-            # Leaving status as it is is always allowed.
-            return True
         if user is None:
             # Anonymous user cannot do anything.
             return False
