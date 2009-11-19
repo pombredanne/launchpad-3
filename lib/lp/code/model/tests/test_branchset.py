@@ -68,14 +68,16 @@ class TestBranchSet(TestCaseWithFactory):
         # it's given.
         a = self.factory.makeAnyBranch()
         b = self.factory.makeAnyBranch()
-        urls = self.branch_set.getByUrls([a.bzr_identity, b.bzr_identity])
-        self.assertEqual([a, b], list(urls))
+        branches = self.branch_set.getByUrls(
+            [a.bzr_identity, b.bzr_identity])
+        self.assertEqual({a.bzr_identity: a, b.bzr_identity: b}, branches)
 
     def test_getByUrls_cant_find_url(self):
         # If a branch cannot be found for a URL, then None appears in the list
         # in place of the branch.
-        urls = self.branch_set.getByUrls(['http://example.com/doesntexist'])
-        self.assertEqual([None], list(urls))
+        url = 'http://example.com/doesntexist'
+        branches = self.branch_set.getByUrls([url])
+        self.assertEqual({url: None}, branches)
 
 
 def test_suite():
