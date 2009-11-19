@@ -148,11 +148,11 @@ YUI({
     }).use('node', 'event', 'lazr.effects', function(Y) {
 
     // Hide the widget body contents.
-    Y.get('#ppa-install .widget-body').addClass('lazr-closed');
+    Y.one('#ppa-install .widget-body').addClass('lazr-closed');
 
     // Ensure that the widget header uses the correct sprite icon
     // and gets the styling for javascript actions applied.
-    var widget_header = Y.get('#ppa-install .widget-header');
+    var widget_header = Y.one('#ppa-install .widget-header');
     widget_header.addClass('sprite');
     widget_header.addClass('treeCollapsed');
     widget_header.addClass('js-action');

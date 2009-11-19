@@ -157,7 +157,7 @@
                       // non-JS form, we first disable the link. This is awful and
                       // must be fixed as soon as YUI3 is fixed.
                       if (LP.client.links['me'] !== undefined) {
-                          Y.get('#edit-tags-trigger').on('click', function(e) {
+                          Y.one('#edit-tags-trigger').on('click', function(e) {
                               e.halt();
                           });
                       }
