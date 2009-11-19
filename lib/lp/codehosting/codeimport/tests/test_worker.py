@@ -728,13 +728,16 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
     def makeForeignCommit(self):
         # If you write to a file in the same second as the previous commit,
         # CVS will not think that it has changed.
-        1/0
         time.sleep(1)
-        self.build_tree_contents(
-            [(os.path.join(foreign_tree.local_path, 'README'),
-              'New content')])
-        foreign_tree.commit()
+        from CVS import Repository, tree
+        from lp.codehosting.codeimport.tests.servers import _make_silent_logger
+        r = Repository(self.source_details.cvs_root, _make_silent_logger())
+        r.get(self.source_details.cvs_module, 'working_dir')
+        self.build_tree_contents([('working_dir/README', 'New content')])
+        tree = tree('working_dir')
+        tree.commit(log='Log message')
         self.foreign_commit_count += 1
+        shutil.rmtree('working_dir')
 
     def makeSourceDetails(self, module_name, files):
         """Make a CVS `CodeImportSourceDetails` pointing at a real CVS repo.
