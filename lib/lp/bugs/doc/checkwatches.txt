@@ -444,7 +444,7 @@ We'll generate a bug watch with which to test this.
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
     >>> bug_tracker = factory.makeBugTracker()
-    >>> bug_watche = factory.makeBugWatch(bugtracker=bug_tracker)
+    >>> bug_watch = factory.makeBugWatch(bugtracker=bug_tracker)
     >>> transaction.commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
