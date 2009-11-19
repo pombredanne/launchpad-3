@@ -8,6 +8,7 @@ __metaclass__ = type
 from unittest import TestLoader
 from zope.component import getUtility
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators.name import valid_name
 from canonical.testing import LaunchpadZopelessLayer
 from lp.translations.interfaces.translationimportqueue import (
@@ -213,7 +214,8 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
             RosettaImportStatus.BLOCKED,
             )
         for status in not_approve_status:
-            entry.setStatus(status)
+            entry.setStatus(
+                status, getUtility(ILaunchpadCelebrities).rosetta_experts)
             approver = self._create_approver(pot_path)
             approver.approve(entry)
             self.assertEqual(status, entry.status)
