@@ -92,6 +92,8 @@ class CodeImport(SQLBase):
 
     git_repo_url = StringCol(default=None)
 
+    hg_repo_url = StringCol(default=None)
+
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)
 
@@ -107,6 +109,8 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
                 config.codeimport.default_interval_git,
+            RevisionControlSystems.HG:
+                config.codeimport.default_interval_hg,
             }
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
@@ -124,6 +128,8 @@ class CodeImport(SQLBase):
             return self.svn_branch_url
         elif self.rcs_type == RevisionControlSystems.GIT:
             return self.git_repo_url
+        elif self.rcs_type == RevisionControlSystems.HG:
+            return self.hg_repo_url
         else:
             raise AssertionError(
                 'Unknown rcs type: %s'% self.rcs_type.title)
@@ -212,20 +218,28 @@ class CodeImportSet:
 
     def new(self, registrant, product, branch_name, rcs_type,
             svn_branch_url=None, cvs_root=None, cvs_module=None,
-            review_status=None, git_repo_url=None):
+            review_status=None, git_repo_url=None, hg_repo_url=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
             assert svn_branch_url is None
+            assert hg_repo_url is None
             assert git_repo_url is None
         elif rcs_type == RevisionControlSystems.SVN:
             assert cvs_root is None and cvs_module is None
             assert svn_branch_url is not None
+            assert hg_repo_url is None
             assert git_repo_url is None
         elif rcs_type == RevisionControlSystems.GIT:
             assert cvs_root is None and cvs_module is None
             assert svn_branch_url is None
+            assert hg_repo_url is None
             assert git_repo_url is not None
+        elif rcs_type == RevisionControlSystems.HG:
+            assert cvs_root is None and cvs_module is None
+            assert svn_branch_url is None
+            assert git_repo_url is None
+            assert hg_repo_url is not None
         else:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
@@ -246,7 +260,8 @@ class CodeImportSet:
             registrant=registrant, owner=registrant, branch=import_branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module,
-            review_status=review_status, git_repo_url=git_repo_url)
+            review_status=review_status, git_repo_url=git_repo_url,
+            hg_repo_url=hg_repo_url)
 
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         notify(ObjectCreatedEvent(code_import))
@@ -328,6 +343,10 @@ class CodeImportSet:
     def getByGitDetails(self, git_repo_url):
         """See `ICodeImportSet`."""
         return CodeImport.selectOneBy(git_repo_url=git_repo_url)
+
+    def getByHgDetails(self, hg_repo_url):
+        """See `ICodeImportSet`."""
+        return CodeImport.selectOneBy(hg_repo_url=hg_repo_url)
 
     def getBySVNDetails(self, svn_branch_url):
         """See `ICodeImportSet`."""

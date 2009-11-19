@@ -405,6 +405,12 @@ class RevisionControlSystems(DBEnumeratedType):
         Imports from Git using bzr-git.
         """)
 
+    HG = DBItem(5, """
+        Mercurial
+
+        Imports from Mercurial using bzr-hg.
+        """)
+
 
 class CodeImportReviewStatus(DBEnumeratedType):
     """CodeImport review status.
@@ -664,6 +670,18 @@ class CodeImportEventDataType(DBEnumeratedType):
         Previous Git repo URL
 
         Previous Git repo URL, when recording on import source change.
+        """)
+
+    HG_REPO_URL = DBItem(239, """
+        Mercurial repo URL
+
+        Location of the Mercurial repo to import.
+        """)
+
+    OLD_HG_REPO_URL = DBItem(240, """
+        Previous Mercurial repo URL
+
+        Previous Mercurial repo URL, when recording on import source change.
         """)
 
     # Data related to machine events

@@ -263,6 +263,8 @@ class CodeImportEventSet:
             yield 'CVS_MODULE', code_import.cvs_module
         elif code_import.rcs_type == RevisionControlSystems.GIT:
             yield 'GIT_REPO_URL', code_import.git_repo_url
+        elif code_import.rcs_type == RevisionControlSystems.HG:
+            yield 'HG_REPO_URL', code_import.hg_repo_url
         else:
             raise AssertionError(
                 "Unknown RCS type: %s" % (code_import.rcs_type,))

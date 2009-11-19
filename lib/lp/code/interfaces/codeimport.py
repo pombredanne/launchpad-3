@@ -128,6 +128,15 @@ class ICodeImport(Interface):
         allow_fragment=False, # Fragment makes no sense in Subversion.
         trailing_slash=False) # See http://launchpad.net/bugs/56357.
 
+    hg_repo_url = URIField(title=_("Repo URL"), required=False,
+        description=_("The URL of the Mercurial repository."),
+        allowed_schemes=["hg"],
+        allow_userinfo=False, # Only anonymous access is supported.
+        allow_port=True,
+        allow_query=False,    # Query makes no sense in Mercurial
+        allow_fragment=False, # Fragment makes no sense in Mercurial
+        trailing_slash=False) # See http://launchpad.net/bugs/56357.
+
     cvs_root = TextLine(title=_("Repository"), required=False,
         constraint=validate_cvs_root,
         description=_("The CVSROOT. "
@@ -202,7 +211,7 @@ class ICodeImportSet(Interface):
 
     def new(registrant, product, branch_name, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None, git_repo_url=None,
-            review_status=None):
+            hg_repo_url=None, review_status=None):
         """Create a new CodeImport."""
 
     def getAll():
@@ -232,6 +241,9 @@ class ICodeImportSet(Interface):
 
     def getByGitDetails(git_repo_url):
         """Get the CodeImport with the specified Git details."""
+
+    def getByHgDetails(hg_repo_url):
+        """Get the CodeImport with the specified Mercurial details."""
 
     def getBySVNDetails(svn_branch_url):
         """Get the CodeImport with the specified SVN details."""

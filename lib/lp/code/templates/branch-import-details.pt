@@ -45,6 +45,12 @@
           </p>
         </tal:git-import>
 
+        <tal:hg-import condition="code_import/rcs_type/enumvalue:HG">
+          <p>This branch is an import of the Mercurial repo at
+            <span tal:replace="code_import/hg_repo_url" />.
+          </p>
+        </tal:hg-import>
+
         <tal:svn-import condition="code_import/rcs_type/enumvalue:SVN">
           <p>This branch is an import of the Subversion branch from
           <tal:is-web-url condition="view/svn_url_is_web">
