@@ -14,6 +14,9 @@
     <div id="sub-unsub-spinner">Subscribing...</div>
     <div tal:content="structure context_menu/addsubscriber/render" />
   </div>
+  <a id="subscribers-ids-link"
+     tal:define="bug context/bug|context"
+     tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-ids"></a>
   <a id="subscribers-content-link"
      tal:define="bug context/bug|context"
      tal:attributes="href bug/fmt:url/+bug-portlet-subscribers-content"></a>
@@ -25,7 +28,7 @@
     YUI().use('io-base', 'node', 'bugs.bugtask_index', function(Y) {
         // Must be done inline here to ensure the load event fires.
         // This is a work around for a YUI3 issue with event handling.
-        var subscription_link = Y.get('.menu-link-subscription');
+        var subscription_link = Y.one('.menu-link-subscription');
         var subscription_link_handler;
         if (subscription_link) {
             subscription_link_handler = subscription_link.on('click', function(e) {

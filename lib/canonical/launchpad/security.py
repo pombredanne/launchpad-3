@@ -10,6 +10,7 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.archiveuploader.permission import verify_upload
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
@@ -48,7 +49,8 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.translations.utilities.permission_helpers import (
+    is_admin_or_rosetta_expert)
 from lp.registry.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
@@ -475,10 +477,7 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Allow Launchpad's admins and Rosetta experts edit all fields."""
-        celebrities = getUtility(ILaunchpadCelebrities)
-        return (user.inTeam(celebrities.admin) or
-                user.inTeam(celebrities.rosetta_experts))
-
+        return is_admin_or_rosetta_expert(user)
 
 class AdminProductTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
@@ -490,10 +489,8 @@ class AdminProductTranslations(AuthorizationBase):
         Any Launchpad/Launchpad Translations administrator or owners are
         able to change translation settings for a product.
         """
-        celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.owner) or
-                user.inTeam(celebrities.admin) or
-                user.inTeam(celebrities.rosetta_experts))
+                is_admin_or_rosetta_expert(user))
 
 
 class AdminSeriesByVCSImports(AuthorizationBase):
@@ -1278,10 +1275,8 @@ class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
 
         # As a special case, the Ubuntu translation group owners can
         # manage Ubuntu uploads.
-        if self.obj.is_targeted_to_ubuntu:
-            group = self.obj.distroseries.distribution.translationgroup
-            if group is not None and user.inTeam(group.owner):
-                return True
+        if self.obj.isUbuntuAndIsUserTranslationGroupOwner(user):
+            return True
 
         return False
 
@@ -1291,11 +1286,12 @@ class EditTranslationImportQueueEntry(AdminTranslationImportQueueEntry):
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        """Anyone who can admin an entry, plus its owner, can edit it.
+        """Anyone who can admin an entry, plus its owner or the owner of the
+        product or distribution, can edit it.
         """
         if AdminTranslationImportQueueEntry.checkAuthenticated(self, user):
             return True
-        if user.inTeam(self.obj.importer):
+        if self.obj.isUserUploaderOrOwner(user):
             return True
 
         return False
