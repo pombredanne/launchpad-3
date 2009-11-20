@@ -84,7 +84,7 @@
                   <td rowspan="3">
                     <span class="download sprite"></span>
                   </td>
-                  <td>
+                  <td class="import_source">
                     <a tal:attributes="href entry/content/http_url"
                        tal:content="entry/path">po/foo.pot</a> in
                     <a tal:condition="entry/sourcepackage"
@@ -96,7 +96,8 @@
                   </td>
                   <tal:status define="css_status string:translationimportstatus${entry/status/name}"
                               omit-tag="">
-                    <td tal:condition="entry/required:launchpad.Edit">
+                    <td class="import_status"
+                        tal:condition="entry/required:launchpad.Edit">
                       <noscript>
                         <tal:status define="name string:status_${entry/id}"
                                     replace="structure view/widgets/?name" />
@@ -109,8 +110,11 @@
                       </span>
                     </td>
                     <td tal:condition="not: entry/required:launchpad.Edit"
-                        tal:attributes="class css_status"
-                        tal:content="entry/status/title">Needs Review
+                        class="import_status">
+                        <span tal:attributes="class css_status"
+                               tal:content="entry/status/title">
+                            Needs Review
+                        </span>
                     </td>
                   </tal:status>
                   <td>

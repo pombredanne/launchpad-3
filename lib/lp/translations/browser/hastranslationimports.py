@@ -365,7 +365,8 @@ class EntryImportStatusVocabularyFactory:
     def __call__(self, context):
         terms = []
         for status in RosettaImportStatus.items:
-            if self.entry.canSetStatus(status, self.user):
+            if (status == self.entry.status or 
+                self.entry.canSetStatus(status, self.user)):
                 terms.append(
                     SimpleTerm(status.name, status.name, status.title))
         return SimpleVocabulary(terms)
