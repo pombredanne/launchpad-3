@@ -114,7 +114,8 @@ and an owner is the owner has a link to create more polls.
     Show polls
     Create a poll
 
-When allthe polls are closed
+When all the polls are closed, the portlet states the case and has a link to
+see the polls.
 
     >>> poll.datecloses = close_date - timedelta(weeks=2)
 
