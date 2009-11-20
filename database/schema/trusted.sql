@@ -259,6 +259,7 @@ $$
         uses_netloc.insert(0, 'sftp')
         uses_netloc.insert(0, 'bzr')
         uses_netloc.insert(0, 'bzr+ssh')
+        uses_netloc.insert(0, 'ssh') # Mercurial
         uses_netloc.insert(0, 'git')
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
     return bool(scheme and netloc)
