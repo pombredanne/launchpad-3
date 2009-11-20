@@ -9,7 +9,7 @@
        tal:condition="view/should_show_polls_portlet">
     <h2>Polls</h2>
     <p tal:condition="not: view/hasCurrentPolls">
-      No polls created.
+      No current polls.
     </p>
 
     <ul tal:condition="view/hasCurrentPolls">
@@ -48,7 +48,7 @@
       </li>
     </ul>
 
-    <a tal:condition="view/hasCurrentPolls"
+    <a tal:condition="view/should_show_polls_portlet"
        tal:replace="structure overview_menu/polls/fmt:link" />
     <a tal:replace="structure overview_menu/add_poll/fmt:link" />
 
