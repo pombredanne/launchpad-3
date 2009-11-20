@@ -272,8 +272,18 @@ class License(DBEnumeratedType):
 class IProductDriverRestricted(Interface):
     """`IProduct` properties which require launchpad.Driver permission."""
 
-    def newSeries(owner, name, summary, branch=None):
-        """Creates a new ProductSeries for this product."""
+    def newSeries(owner, name, summary, branch=None, releasefileglob=None):
+        """Creates a new `IProductSeries` for this `IProduct`.
+
+        :param owner: The registrant of this series.
+        :param name: The unique name of this series.
+        :param summary: The summary of the purpose and focus of development
+            of this series.
+        :param branch: The bazaar branch that contains the code for
+            this series.
+        :param releasefileglob: The public URL pattern where release files can
+            be automatically downloaded from and linked to this series.
+        """
 
 
 class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
@@ -638,7 +648,8 @@ class IProductPublic(
         :param subscription_months: integer indicating the number of months
             the voucher is for.
         :param whiteboard: Notes for this activity.
-        :param current_datetime: Current time.  Will be datetime.now() if not specified.
+        :param current_datetime: Current time.  Will be datetime.now() if not
+            specified.
         :return: None
         """
 
