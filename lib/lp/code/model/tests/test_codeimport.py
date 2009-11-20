@@ -129,10 +129,10 @@ class TestCodeImportCreation(unittest.TestCase):
             hg_repo_url=self.factory.getUniqueURL(),
             review_status=None)
         self.assertEqual(
-            CodeImportReviewStatus.REVIEWED,
+            CodeImportReviewStatus.NEW,
             code_import.review_status)
-        # A job is created for the import.
-        self.assertTrue(code_import.import_job is not None)
+        # No job is created for the import.
+        self.assertTrue(code_import.import_job is None)
 
 
 class TestCodeImportDeletion(unittest.TestCase):

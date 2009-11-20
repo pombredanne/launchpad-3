@@ -6,6 +6,7 @@
 __all__ = [
     'CVSServer',
     'GitServer',
+    'MercurialServer',
     'SubversionServer',
     ]
 
@@ -172,3 +173,23 @@ class GitServer(Server):
             builder.finish()
         finally:
             os.chdir(wd)
+
+
+class MercurialServer(Server):
+
+    def __init__(self, repo_url):
+        super(MercurialServer, self).__init__()
+        self.repo_url = repo_url
+
+    def makeRepo(self, tree_contents):
+        from mercurial.ui import ui
+        from mercurial.localrepo import localrepository
+        repo = localrepository(ui(), self.repo_url, create=1)
+        for filename, contents in tree_contents:
+            f = open(os.path.join(self.repo_url, filename), 'w')
+            try:
+                f.write(contents)
+            finally:
+                f.close()
+            repo.add([filename])
+        repo.commit(text='<The commit message>', user='jane Foo <joe@foo.com>')

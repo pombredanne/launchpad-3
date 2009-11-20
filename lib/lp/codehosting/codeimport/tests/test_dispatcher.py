@@ -20,7 +20,7 @@ from twisted.trial.unittest import TestCase
 from canonical.config import config
 from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
 from lp.codehosting.codeimport.tests.servers import (
-    _make_silent_logger)
+    QuietFakeLogger)
 from canonical.launchpad import scripts
 from canonical.testing.layers import TwistedLaunchpadZopelessLayer
 
@@ -43,7 +43,7 @@ class TestCodeImportDispatcherUnit(TestCase):
     def setUp(self):
         self.config_count = 0
         self.pushConfig(forced_hostname='none')
-        self.dispatcher = CodeImportDispatcher(_make_silent_logger())
+        self.dispatcher = CodeImportDispatcher(QuietFakeLogger())
 
     def pushConfig(self, **args):
         """Push some key-value pairs into the codeimportdispatcher config.

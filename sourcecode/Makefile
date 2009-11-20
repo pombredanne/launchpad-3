@@ -4,7 +4,7 @@ PYTHON=python${PYTHON_VERSION}
 # the ones we test.  If we fix them all to have EITHER a good makefile
 # (build and check targets work), or no makefile we can reenable auto
 # detection.
-build_dirs:=cscvs dulwich mercurial pygettextpo pygpgme subvertpy twisted 
+build_dirs:=cscvs dulwich pygettextpo pygpgme subvertpy twisted 
 test_dirs:=cscvs pygettextpo twisted
 
 TEST_ENV_VARS = \
@@ -24,5 +24,6 @@ build:
 			$(MAKE) -C $$subdir $(TEST_ENV_VARS) || exit $$?;\
 		fi;\
 	done
+	$(MAKE) -C mercurial local $(TEST_ENV_VARS)
 
 .PHONY: check all build

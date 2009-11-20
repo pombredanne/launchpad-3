@@ -46,7 +46,7 @@ class CodeImportWorker:
         elif source_details.rcstype == 'bzr-svn':
             load_optional_plugin('svn')
             import_worker_cls = BzrSvnImportWorker
-        elif source_details.rcstype == 'bzr-hg':
+        elif source_details.rcstype == 'hg':
             load_optional_plugin('hg')
             import_worker_cls = HgImportWorker
         else:

@@ -42,7 +42,7 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, SubversionServer, _make_silent_logger)
+    CVSServer, GitServer, SubversionServer, QuietFakeLogger)
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from lp.testing import login, logout
@@ -174,7 +174,7 @@ class TestWorkerMonitorUnit(TestCase):
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
         self.worker_monitor = self.WorkerMonitor(
-            job.id, _make_silent_logger())
+            job.id, QuietFakeLogger())
         self.worker_monitor._failures = []
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
@@ -350,7 +350,7 @@ class TestWorkerMonitorRunNoProcess(TestCase):
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
         self.worker_monitor = self.WorkerMonitor(
-            job.id, _make_silent_logger())
+            job.id, QuietFakeLogger())
         self.worker_monitor.result_status = None
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
@@ -539,7 +539,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         This implementation does it in-process.
         """
         self.layer.switchDbUser('codeimportworker')
-        monitor = CIWorkerMonitorForTesting(job_id, _make_silent_logger())
+        monitor = CIWorkerMonitorForTesting(job_id, QuietFakeLogger())
         deferred = monitor.run()
         def save_protocol_object(result):
             """Save the process protocol object.
