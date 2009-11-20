@@ -90,3 +90,9 @@ class ImportQueueEntryTest(TestCaseWithFactory):
         client.select(id=u'field.file_type', val=u'UNSPEC')
         self._assertAllFieldsHidden(client, 'POT')
         self._assertAllFieldsHidden(client, 'PO')
+
+class ImportQueueStatusTest(TestCaseWithFactory):
+    """Test that the entries in the import queue can switch types."""
+
+    layer = TranslationsWindmillLayer
+
