@@ -21,8 +21,8 @@ from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalAddVoteView, BranchMergeProposalChangeStatusView,
     BranchMergeProposalContextMenu, BranchMergeProposalMergedView,
-    BranchMergeProposalView, BranchMergeProposalVoteView,
-    DecoratedCodeReviewVoteReference)
+    BranchMergeProposalVoteView, DecoratedCodeReviewVoteReference,
+    latest_proposals_for_each_branch)
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
@@ -728,6 +728,48 @@ class TestBranchMergeCandidateView(TestCaseWithFactory):
                 year=2008, month=9, day=10, tzinfo=pytz.UTC))
         view = create_initialized_view(bmp, '+link-summary')
         self.assertEqual('Eric on 2008-09-10', view.status_title)
+
+
+class TestLatestProposalsForEachBranch(TestCaseWithFactory):
+    """Confirm that the latest branch is returned."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_newest_first(self):
+        # If each proposal targets a different branch, each will be returned.
+        bmp1 = self.factory.makeBranchMergeProposal(
+            date_created=(
+                datetime(year=2008, month=9, day=10, tzinfo=pytz.UTC)))
+        bmp2 = self.factory.makeBranchMergeProposal(
+            date_created=(
+                datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
+        self.assertEqual(
+            [bmp2, bmp1], latest_proposals_for_each_branch([bmp1, bmp2]))
+
+    def test_visible_filtered_out(self):
+        # If the proposal is not visible to the user, they are not returned.
+        bmp1 = self.factory.makeBranchMergeProposal(
+            date_created=(
+                datetime(year=2008, month=9, day=10, tzinfo=pytz.UTC)))
+        bmp2 = self.factory.makeBranchMergeProposal(
+            date_created=(
+                datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
+        removeSecurityProxy(bmp2.source_branch).private = True
+        self.assertEqual(
+            [bmp1], latest_proposals_for_each_branch([bmp1, bmp2]))
+
+    def test_same_target(self):
+        # If the proposals target the same branch, then the most recent is
+        # returned.
+        bmp1 = self.factory.makeBranchMergeProposal(
+            date_created=(
+                datetime(year=2008, month=9, day=10, tzinfo=pytz.UTC)))
+        bmp2 = self.factory.makeBranchMergeProposal(
+            target_branch = bmp1.target_branch,
+            date_created=(
+                datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
+        self.assertEqual(
+            [bmp2], latest_proposals_for_each_branch([bmp1, bmp2]))
 
 
 def test_suite():

@@ -73,7 +73,8 @@ class TranslationsImport(LaunchpadCronScript):
     def _registerFailure(self, entry, reason, traceback=False, abort=False):
         """Note that a queue entry is unusable in some way."""
         reason_text = unicode(reason)
-        entry.setStatus(RosettaImportStatus.FAILED)
+        entry.setStatus(RosettaImportStatus.FAILED,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
         entry.setErrorOutput(reason_text)
 
         if abort:
