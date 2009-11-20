@@ -164,7 +164,7 @@
               <tal:email
                 replace="context/preferredemail/email">foo@bar.com</tal:email>
 
-              <a tal:replace="overview_menu/editemailaddresses/fmt:icon" />
+              <a tal:replace="structure overview_menu/editemailaddresses/fmt:icon" />
 
             </li>
           </ul>
