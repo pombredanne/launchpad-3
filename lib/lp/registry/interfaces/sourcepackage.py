@@ -94,7 +94,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
             vocabulary="ProductSeries",
             schema=Interface,
             description=_(
-                "The registered project series that this source package."
+                "The registered project series that this source package. "
                 "is based on. This series may be the same as the one that "
                 "earlier versions of this source packages were based on.")))
 
