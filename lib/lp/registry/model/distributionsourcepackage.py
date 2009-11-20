@@ -44,11 +44,18 @@ from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
+from lp.translations.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes)
+from lp.translations.model.customlanguagecode import (
+    CustomLanguageCode, HasCustomLanguageCodesMixin)
+
 
 class DistributionSourcePackage(BugTargetBase,
                                 SourcePackageQuestionTargetMixin,
                                 StructuralSubscriptionTargetMixin,
-                                HasBranchesMixin, HasMergeProposalsMixin):
+                                HasBranchesMixin, 
+                                HasCustomLanguageCodesMixin,
+                                HasMergeProposalsMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -56,7 +63,8 @@ class DistributionSourcePackage(BugTargetBase,
     or current release, etc.
     """
 
-    implements(IDistributionSourcePackage, IQuestionTarget)
+    implements(
+        IDistributionSourcePackage, IHasCustomLanguageCodes, IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -412,6 +420,19 @@ class DistributionSourcePackage(BugTargetBase,
         return (
             'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
                 sqlvalues(self.distribution, self.sourcepackagename))
+
+    def composeCustomLanguageCodeMatch(self):
+        """See `HasCustomLanguageCodesMixin`."""
+        return And(
+            CustomLanguageCode.distribution == self.distribution,
+            CustomLanguageCode.sourcepackagename == self.sourcepackagename)
+
+    def createCustomLanguageCode(self, language_code, language):
+        """See `IHasCustomLanguageCodes`."""
+        return CustomLanguageCode(
+            distribution=self.distribution,
+            sourcepackagename=self.sourcepackagename,
+            language_code=language_code, language=language)
 
     @staticmethod
     def getPersonsByEmail(email_addresses):
