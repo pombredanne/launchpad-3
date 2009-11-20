@@ -54,7 +54,7 @@ Related question's portlet.
     >>> user_browser.getControl('Link to FAQ').click()
     >>> user_browser.getLink('How can I make VOIP calls?').click()
     >>> print user_browser.title
-    Questions : Ubuntu
+    FAQ #4 : Questions : Ubuntu
 
     >>> portlet = find_portlet(user_browser.contents, 'Related questions')
     >>> portlet.a['title']
@@ -74,9 +74,9 @@ description. He can then see the email address in the tooltip in the
     >>> user_browser.getControl('Continue').click()
     >>> user_browser.getControl('Description').value = (
     ...     'The clicking mailto:user@domain.com crashes the browser.')
-    >>> user_browser.getControl('Add').click()
-    >>> user_browser.title
-    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    >>> user_browser.getControl('Post Question').click()
+    >>> print user_browser.title
+    Question #... : ...
 
     >>> user_browser.open('http://answers.launchpad.dev/')
     >>> question_portlet = find_tag_by_id(
@@ -101,13 +101,13 @@ page.
     >>> for tr in question_portlet.findAll('tr'):
     ...     tr['title']
     u'I am not able to ... if i click on a
-      mailto:&lt;email address hidden&gt; ...'
+      mailto:<email address hidden> ...'
 
     >>> question_portlet = find_tag_by_id(
     ...     anon_browser.contents, 'latest-questions-asked')
     >>> for tr in question_portlet.findAll('tr'):
     ...     tr['title']
-    u'The clicking mailto:&lt;email address hidden&gt; crashes the browser.'
+    u'The clicking mailto:<email address hidden> crashes the browser.'
      ...
 
 Nor can he see it in the question listings for the project.
@@ -125,7 +125,7 @@ He cannot see the address reading the question either.
     ...     anon_browser.contents, 'question-listing')
     >>> for tr in question_listing.tbody.findAll('tr'):
     ...     tr['title']
-    u'I am not able to ... if i click on a mailto:&lt;email address hidden&gt;
+    u'I am not able to ... if i click on a mailto:<email address hidden>
       link ...'
 
     >>> anon_browser.getLink('mailto: problem in webpage').click()
@@ -144,9 +144,9 @@ questions portlet on a FAQ page.
 
     >>> anon_browser.getLink('How can I make VOIP calls?').click()
     >>> print anon_browser.title
-    Questions : Ubuntu
+    FAQ #4 : Questions : Ubuntu
 
     >>> portlet = find_portlet(anon_browser.contents, 'Related questions')
     >>> portlet.a['title']
     u'I am not able to open my email client if i click on a
-      mailto:&lt;email address hidden&gt; link in a web...'
+      mailto:<email address hidden> link in a web...'

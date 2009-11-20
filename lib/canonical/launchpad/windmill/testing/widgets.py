@@ -86,8 +86,9 @@ class InlineEditorWidgetTest:
         # And make sure it's actually saved on the server.
         client.open(url=self.url)
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
-        client.asserts.assertNode(
-            xpath=widget_base + '/span[1]')
+        client.waits.forElement(
+            xpath=widget_base + '/span[1]',
+            timeout=constants.FOR_ELEMENT)
         client.asserts.assertText(
             xpath=widget_base + '/span[1]', validator=self.new_value)
 

@@ -3,6 +3,7 @@
 
 __all__ = [
     'BranchJob',
+    'BranchUpgradeJob',
     'RevisionsAddedJob',
     'RevisionMailJob',
     'RosettaUploadJob',
@@ -247,9 +248,13 @@ class BranchUpgradeJob(BranchJobDerived):
     implements(IBranchUpgradeJob)
 
     classProvides(IBranchUpgradeJobSource)
+    class_job_type = BranchJobType.UPGRADE_BRANCH
+
     @classmethod
     def create(cls, branch):
         """See `IBranchUpgradeJobSource`."""
+        if not branch.needs_upgrading:
+            raise AssertionError('Branch does not need upgrading.')
         branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
         return cls(branch_job)
 
@@ -261,7 +266,7 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_transport = get_transport(upgrade_branch_path)
             source_branch_transport = get_transport(self.branch.getPullURL())
             source_branch_transport.copy_tree_to_transport(upgrade_transport)
-            upgrade_branch = BzrBranch.open(upgrade_transport.base)
+            upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
             # Perform the upgrade.
             upgrade(upgrade_branch.base, self.upgrade_format)
@@ -278,8 +283,8 @@ class BranchUpgradeJob(BranchJobDerived):
             source_branch.unlock()
 
             # Move the branch in the old format to backup.bzr
-            source_branch_transport.rename('.bzr', 'backup.bzr')
             upgrade_transport.delete_tree('backup.bzr')
+            source_branch_transport.rename('.bzr', 'backup.bzr')
             upgrade_transport.copy_tree_to_transport(source_branch_transport)
         finally:
             shutil.rmtree(upgrade_branch_path)
@@ -293,7 +298,7 @@ class BranchUpgradeJob(BranchJobDerived):
         repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
             self.branch.repository_format)
         if branch_format is None or repository_format is None:
-            branch = self.branch.getBzrBranch()
+            branch = BzrBranch.open(self.branch.getPullURL())
             if branch_format is None:
                 branch_format = type(branch._format)
             if repository_format is None:

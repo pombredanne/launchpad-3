@@ -1,10 +1,10 @@
-PYTHON_VERSION=2.4
+PYTHON_VERSION=2.5
 PYTHON=python${PYTHON_VERSION}
 # Not all packages have a working Makefile. Work around this by hardcoding
 # the ones we test.  If we fix them all to have EITHER a good makefile
 # (build and check targets work), or no makefile we can reenable auto
 # detection.
-build_dirs:=cscvs dulwich lazr-js lsprof pygettextpo pygpgme twisted
+build_dirs:=cscvs dulwich pygettextpo pygpgme twisted
 test_dirs:=cscvs pygettextpo twisted
 
 TEST_ENV_VARS = \
@@ -25,4 +25,11 @@ build:
 		fi;\
 	done
 
-.PHONY: check all build
+clean:
+	@ for subdir in ${build_dirs}; do\
+		if [ -e $$subdir/Makefile ]; then\
+			(cd $$subdir && bzr clean-tree --ignored --force) || exit $$?;\
+		fi;\
+	done
+
+.PHONY: check all build clean

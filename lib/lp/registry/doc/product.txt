@@ -305,9 +305,9 @@ We can create new products with the createProduct() method:
 
 When creating a product, a default product series is created for it:
 
-    >>> product.serieses.count()
+    >>> product.series.count()
     1
-    >>> trunk = product.serieses[0]
+    >>> trunk = product.series[0]
     >>> print trunk.name
     trunk
 
@@ -543,7 +543,7 @@ We'll also create new templates, so we need IPOTemplateSet:
 Firefox has two series, but no translatable series either:
 
     >>> firefox = productset.getByName('firefox')
-    >>> for firefoxseries in firefox.serieses:
+    >>> for firefoxseries in firefox.series:
     ...     print '%s %s' % (firefoxseries.displayname,
     ...                      list(firefoxseries.getCurrentTranslationTemplates()))
     1.0 []
@@ -663,7 +663,7 @@ owned by the old owner are transfered to the new owner.
     >>> print firefox.owner.name
     name12
 
-    >>> for series in firefox.serieses:
+    >>> for series in firefox.series:
     ...     print series.owner.name, series.name
     name12 1.0
     name12 trunk
@@ -680,11 +680,11 @@ owned by the old owner are transfered to the new owner.
     >>> import_queue = getUtility(ITranslationImportQueue)
     >>> entry = import_queue.addOrUpdateEntry(
     ...     u'po/sr.po', 'foo', True, firefox.owner,
-    ...      productseries=firefox.serieses[0])
+    ...      productseries=firefox.series[0])
     >>> foobar = getUtility(IPersonSet).getByEmail("foo.bar@canonical.com")
     >>> entry = import_queue.addOrUpdateEntry(
     ...     u'po/sr.po', 'foo', True, foobar,
-    ...      productseries=firefox.serieses[1])
+    ...      productseries=firefox.series[1])
     >>> for entry in import_queue.getAllEntries(target=firefox):
     ...     print entry.importer.name
     name12
@@ -706,7 +706,7 @@ owned by name12 are unchanged.
     >>> print firefox.owner.name
     mark
 
-    >>> for series in firefox.serieses:
+    >>> for series in firefox.series:
     ...     print series.owner.name, series.name
     mark 1.0
     mark trunk

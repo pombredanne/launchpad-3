@@ -36,7 +36,7 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         super(TestMergeProposalMailing, self).setUp('admin@canonical.com')
 
     def makeProposalWithSubscriber(self, diff_text=None,
-                                   initial_comment=None):
+                                   initial_comment=None, prerequisite=False):
         if diff_text is not None:
             preview_diff = PreviewDiff.create(
                 diff_text,
@@ -49,9 +49,14 @@ class TestMergeProposalMailing(TestCaseWithFactory):
         registrant = self.factory.makePerson(
             name='bazqux', displayname='Baz Qux', email='baz.qux@example.com')
         product = self.factory.makeProduct(name='super-product')
+        if prerequisite:
+            prerequisite_branch = self.factory.makeProductBranch(product)
+        else:
+            prerequisite_branch = None
         bmp = self.factory.makeBranchMergeProposal(
-            registrant=registrant, product=product, preview_diff=preview_diff,
-            initial_comment=initial_comment)
+            registrant=registrant, product=product,
+            prerequisite_branch=prerequisite_branch,
+            preview_diff=preview_diff, initial_comment=initial_comment)
         subscriber = self.factory.makePerson(displayname='Baz Quxx',
             email='baz.quxx@example.com')
         bmp.source_branch.subscribe(subscriber,
@@ -132,6 +137,14 @@ Baz Qux has proposed merging lp://dev/~bob/super-product/fix-foo-for-bar into lp
         self.assertIn(
             'Requested reviews:\n    Review-person (review-person)\n\n-- \n',
             ctrl.body)
+
+    def test_forCreation_with_prerequisite_branch(self):
+        """Correctly format list of reviewers."""
+        bmp, subscriber = self.makeProposalWithSubscriber(prerequisite=True)
+        mailer = BMPMailer.forCreation(bmp, bmp.registrant)
+        ctrl = mailer.generateEmail('baz.quxx@example.com', subscriber)
+        prereq = bmp.prerequisite_branch.bzr_identity
+        self.assertIn(' with %s as a prerequisite.' % prereq, ctrl.body)
 
     def test_to_addrs_includes_reviewers(self):
         """The addresses for the to header include requested reviewers"""

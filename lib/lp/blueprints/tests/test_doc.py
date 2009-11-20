@@ -7,9 +7,7 @@ Run the doctests and pagetests.
 
 import logging
 import os
-import unittest
 
-from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
 from canonical.launchpad.ftests.test_system_documentation import(
@@ -33,4 +31,4 @@ special = {
 
 
 def test_suite():
-    return build_test_suite(here, special)
+    return build_test_suite(here, special, layer=DatabaseFunctionalLayer)

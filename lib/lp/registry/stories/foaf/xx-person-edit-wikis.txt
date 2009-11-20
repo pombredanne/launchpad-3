@@ -55,7 +55,8 @@ Nor can he have a WikiName that is already registered in Launchpad.
     'http://localhost/~mark/+editwikinames'
     >>> print "\n".join(get_feedback_messages(browser.contents))
     The WikiName https://wiki.ubuntu.com/GuilhermeSalgado is already
-    registered by Guilherme Salgado.
+    registered by Guilherme Salgado. If you think this is a duplicated
+    account, you can merge it into your account.
 
 A WikiName's URL can't be empty nor invalid.
 

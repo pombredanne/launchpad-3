@@ -45,22 +45,16 @@ translation, or link the product to a translatable package.
     >>> registrant = setupBrowser(auth='Basic mark@example.com:test')
     >>> registrant.open(
     ...     'http://translations.launchpad.dev/gnomebaker')
-    >>> print find_main_content(registrant.contents)
-    <...Translation overview...
-    This project is not configured to use Launchpad for translations...
-    You can change this in the <a ...>project settings</a>. (<a ...>Getting
-    started with translating your project in Launchpad</a>)
-    ...
-    To set up gnomebaker for translation in Launchpad, you need to upload a
-    translation template for one of its release series.
-    ...
+    >>> print extract_text(
+    ...     find_tag_by_id(
+    ...         registrant.contents, 'not-translated-in-launchpad'))
+    This project is not using Launchpad for translations.
+    You can change this in the project settings. (Getting
+    started with translating your project in Launchpad)
+
     >>> registrant.getLink(
     ...     url=('/gnomebaker/trunk/'
     ...          '+translations-upload')) is not None
-    True
-    >>> registrant.getLink(
-    ...     url='/gnomebaker/+packages'
-    ...     ) is not None
     True
 
 The instructions for the registrant link to the settings page, where they can
@@ -82,10 +76,8 @@ contact the product's registrant.
     Translation overview
     gnomebaker
     ...
-    This project is not configured to use Launchpad for translations.
-    The gnomebaker project is not set up for translation in Launchpad.
-    You might want to talk with Foo Bar, the project registrant, about
-    using Launchpad for translations.
+    This project is not using Launchpad for translations.
+    ...
 
 It omits the registrant-only links ...
 
@@ -107,14 +99,6 @@ It omits the registrant-only links ...
     ...
     Unauthorized:...
 
-(In the packages case, you can look at the packages, but you can't link any.)
-
-    >>> unprivileged.open(
-    ...     'http://translations.launchpad.dev/gnomebaker/trunk/+addpackage')
-    Traceback (most recent call last):
-    ...
-    Unauthorized:...
-
 
 Meanwhile, if you're not logged in at all, you might or might not be the
 registrant, so the text reflects both possibilities.
@@ -124,11 +108,8 @@ registrant, so the text reflects both possibilities.
     Translation overview
     gnomebaker
     ...
-    This project is not configured to use Launchpad for translations.
-    The gnomebaker project is not set up for translation in Launchpad.
-    If you are Foo Bar, log in to begin the setup process.
-    Otherwise, you might want to talk with Foo Bar, the project registrant,
-    about using Launchpad for translations.
+    This project is not using Launchpad for translations.
+    ...
 
 Finally, if a product states that is not officially using Launchpad
 Translations...
@@ -153,16 +134,9 @@ Translations, there is no language chart shown.
     >>> print find_tag_by_id(anon_browser.contents, 'language-chart')
     None
 
-Even when browsing it as an admin, 'obsolete' translations are not
-shown since it is not marked as using Launchpad for translation.
-
-    >>> admin_browser.open('http://translations.launchpad.dev/netapplet')
-    >>> print find_tag_by_id(admin_browser.contents,
-    ...                      'portlet-obsolete-translatable-series')
-    None
-
 If the netapplet project is updated to use Launchpad for translations...
 
+    >>> admin_browser.open('http://translations.launchpad.dev/netapplet')
     >>> admin_browser.getLink('Overview').click()
     >>> print admin_browser.title
     Network Applet in Launchpad

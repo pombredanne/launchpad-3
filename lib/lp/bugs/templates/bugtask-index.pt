@@ -10,8 +10,6 @@
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
-      <script type="text/javascript"
-        tal:content="string:var subscriber_ids = ${view/subscriber_ids_js};" />
       <tal:devmode condition="devmode">
        <script type="text/javascript"
                 tal:define="lp_js string:${icingroot}/build"
@@ -33,10 +31,18 @@
                 tal:define="lp_js string:${icingroot}/build"
                 tal:attributes="src string:${lp_js}/lp/errors.js">
         </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/code/popupdiff.js">
+        </script>
       </tal:devmode>
       <script type="text/javascript">
-        YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
+        YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index',
+                  'code.branchmergeproposal.popupdiff', function(Y) {
             Y.bugs.setup_bugtask_index();
+            Y.on('load', function(e) {
+              Y.code.branchmergeproposal.popupdiff.connect_diff_links();
+            }, window);
         });
       </script>
       <style type="text/css">
@@ -46,6 +52,7 @@
         #add-comment-form textarea { width: 100%; max-width=60em;}
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
+        .bug-branch-summary dd { font-size: 85% }
       </style>
     </metal:block>
 
@@ -119,7 +126,7 @@
         <tal:description
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
-        <div id="edit-description"
+        <div id="edit-description" class="lazr-multiline-edit"
           tal:content="structure view/bug_description_html"
           />
 
@@ -289,9 +296,9 @@
               </script>
               <script type="text/javascript">
                 YUI().use('lp.comment', function(Y) {
-                var comment = new Y.lp.Comment();
-                comment.render();
-                })
+                    var comment = new Y.lp.Comment();
+                    comment.render();
+                });
               </script>
             </div>
             <tal:attachment-link

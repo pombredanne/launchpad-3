@@ -49,7 +49,7 @@ And verify that it looks like the series we think it should be.
 It's also possible to ask a product for all its associated series.
 
     >>> onedotzero = firefox.getSeries('1.0')
-    >>> list(firefox.serieses) == [onedotzero, trunk]
+    >>> list(firefox.series) == [onedotzero, trunk]
     True
 
 A ProductSeries can also be fetched with the IProductSeriesSet utility.
@@ -73,7 +73,17 @@ owner or driver can call Product.newSeries().
     Unauthorized: (..., 'newSeries', 'launchpad.Driver')
 
     >>> login_person(firefox.owner)
-    >>> emacs_series = firefox.newSeries(firefox.owner , 'emacs', summary)
+    >>> emacs_series = firefox.newSeries(
+    ...     firefox.owner , 'emacs', summary,
+    ...     releasefileglob='ftp://gnu.org/emacs*.gz')
+    >>> print emacs_series.name
+    emacs
+
+    >>> print emacs_series.summary
+    Port of Firefox to the Emacs operating system.
+
+    >>> print emacs_series.releasefileglob
+    ftp://gnu.org/emacs*.gz
 
 When a driver creates a series, he is also the driver of the new series
 to make him the release manager.

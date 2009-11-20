@@ -167,7 +167,8 @@ class DistroSeriesTemplatesView(LaunchpadView):
 
     def iter_templates(self):
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(distroseries=self.context)
+        return potemplateset.getSubset(distroseries=self.context,
+                                       ordered_by_names=True)
 
 
 class DistroSeriesView(LaunchpadView, TranslationsMixin):

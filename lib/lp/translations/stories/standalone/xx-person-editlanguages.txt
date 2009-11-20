@@ -172,8 +172,6 @@ Person's page to do it himself.
     >>> admin_browser.open('http://launchpad.dev/~no-priv')
     >>> admin_browser.title
     'No Privileges Person in Launchpad'
-
-    >>> admin_browser.getLink('Change details').click()
     >>> admin_browser.getLink('Set preferred languages').click()
     >>> print extract_text(
     ...     find_main_content(admin_browser.contents).find('h1'))

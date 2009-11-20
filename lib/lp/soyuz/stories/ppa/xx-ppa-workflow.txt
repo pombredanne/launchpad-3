@@ -354,6 +354,7 @@ The administration procedure allows administrators to:
  * Set a maximum disk size: uploads will be rejected if the resulting
    PPA size is exceeding the authorized size.
  * Set a per-archive build score delta.
+ * Set external archive dependencies
 
 In this case, the administrator may wish to amend the PPA so that it is
 set up like the ubuntu security PPA, which is private but does not
@@ -367,6 +368,8 @@ build on a virtualized builder.
     True
     >>> admin_browser.getControl(name="field.relative_build_score").value
     '0'
+    >>> admin_browser.getControl(name="field.external_dependencies").value
+    ''
 
     >>> admin_browser.getControl(name="field.enabled").value = False
     >>> admin_browser.getControl(name="field.private").value = True
@@ -376,6 +379,9 @@ build on a virtualized builder.
     >>> admin_browser.getControl(name="field.authorized_size").value = '1'
     >>> admin_browser.getControl(
     ...     name="field.relative_build_score").value = '199'
+    >>> admin_browser.getControl(
+    ...     name="field.external_dependencies"
+    ...     ).value = "deb http://my.spethial.repo.com/ %(series)s main"
     >>> admin_browser.getControl("Save").click()
 
 Once confirmed the administrator is sent to the PPA page where he can
@@ -388,16 +394,33 @@ see some of the updated information.
     ...     print msg
     This archive has been disabled.
 
-We need go back to the "Administer archive" page to see the build score change
-that was made:
+We need go back to the "Administer archive" page to see the build score and
+external dependencies changes that were made:
 
     >>> admin_browser.getLink("Administer archive").click()
     >>> admin_browser.getControl(name="field.relative_build_score").value
     '199'
+    >>> admin_browser.getControl(name="field.external_dependencies").value
+    'deb http://my.spethial.repo.com/ %(series)s main'
+
+The external dependencies field is validated to make sure it looks like
+a sources.list entry.  If the field fails validation an error is displayed.
+
+    >>> admin_browser.getControl(
+    ...     name="field.external_dependencies"
+    ...     ).value = "deb not_a_url"
+    >>> admin_browser.getControl("Save").click()
+    >>> for error in get_feedback_messages(admin_browser.contents):
+    ...     print error
+    There is 1 error.
+    'deb not_a_url' is not a complete and valid sources.list entry
+
 
 When the archive is private, the buildd secret must also be set, or an
 error is issued:
 
+    >>> admin_browser.getControl(
+    ...     name="field.external_dependencies").value = ""
     >>> admin_browser.getControl(name="field.private").value = True
     >>> admin_browser.getControl(name="field.buildd_secret").value = ""
     >>> admin_browser.getControl("Save").click()
