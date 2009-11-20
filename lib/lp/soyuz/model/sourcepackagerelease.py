@@ -277,38 +277,6 @@ class SourcePackageRelease(SQLBase):
             filetype=determine_source_file_type(file.filename),
             libraryfile=file)
 
-    def _getPackageSize(self):
-        """Get the size total (in KB) of files comprising this package.
-
-        Please note: empty packages (i.e. ones with no files or with
-        files that are all empty) have a size of zero.
-        """
-        size_query = """
-            SELECT
-                SUM(LibraryFileContent.filesize)/1024.0
-            FROM
-                SourcePackagereLease
-                JOIN SourcePackageReleaseFile ON
-                    SourcePackageReleaseFile.sourcepackagerelease =
-                    SourcePackageRelease.id
-                JOIN LibraryFileAlias ON
-                    SourcePackageReleaseFile.libraryfile =
-                    LibraryFileAlias.id
-                JOIN LibraryFileContent ON
-                    LibraryFileAlias.content = LibraryFileContent.id
-            WHERE
-                SourcePackageRelease.id = %s
-            """ % sqlvalues(self)
-
-        cur = cursor()
-        cur.execute(size_query)
-        results = cur.fetchone()
-
-        if len(results) == 1 and results[0] is not None:
-            return float(results[0])
-        else:
-            return 0.0
-
     def createBuild(self, distroarchseries, pocket, archive, processor=None,
                     status=None):
         """See ISourcePackageRelease."""
@@ -326,58 +294,12 @@ class SourcePackageRelease(SQLBase):
         # same datecreated.
         datecreated = datetime.datetime.now(pytz.timezone('UTC'))
 
-        # Always include the primary archive when looking for
-        # past build times (just in case that none can be found
-        # in a PPA or copy archive).
-        archives = [archive.id]
-        if archive.purpose != ArchivePurpose.PRIMARY:
-            archives.append(distroarchseries.main_archive.id)
-
-        # Look for all sourcepackagerelease instances that match the name
-        # and get the (successfully built) build records for this
-        # package.
-        completed_builds = Build.select("""
-            Build.sourcepackagerelease = SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
-            SourcePackageName.name = %s AND
-            distroarchseries = %s AND
-            archive IN %s AND
-            buildstate = %s
-            """ % sqlvalues(self.name,
-                            distroarchseries, archives,
-                            BuildStatus.FULLYBUILT),
-            orderBy=['-datebuilt', '-id'],
-            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
-
-        if completed_builds.count() > 0:
-            # Historic build data exists, use the most recent value.
-            most_recent_build = completed_builds[0]
-            estimated_build_duration = most_recent_build.buildduration
-        else:
-            # Estimate the build duration based on package size if no
-            # historic build data exists.
-
-            # Get the package size in KB.
-            package_size = self._getPackageSize()
-
-            if package_size > 0:
-                # Analysis of previous build data shows that a build rate
-                # of 6 KB/second is realistic. Furthermore we have to add
-                # another minute for generic build overhead.
-                estimate = int(package_size/6.0/60 + 1)
-            else:
-                # No historic build times and no package size available,
-                # assume a build time of 5 minutes.
-                estimate = 5
-            estimated_build_duration = datetime.timedelta(minutes=estimate)
-
         return Build(distroarchseries=distroarchseries,
                      sourcepackagerelease=self,
                      processor=processor,
                      buildstate=status,
                      datecreated=datecreated,
                      pocket=pocket,
-                     estimated_build_duration=estimated_build_duration,
                      archive=archive)
 
     def getBuildByArch(self, distroarchseries, archive):

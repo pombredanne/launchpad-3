@@ -16,7 +16,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
-    StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
+    StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
 from storm.expr import In, Join, LeftJoin
 
 from canonical import encoding
@@ -46,6 +46,7 @@ class BuildQueue(SQLBase):
     logtail = StringCol(dbName='logtail', default=None)
     lastscore = IntCol(dbName='lastscore', default=0)
     manual = BoolCol(dbName='manual', default=False)
+    estimated_duration = IntervalCol()
 
     @property
     def specific_job(self):
