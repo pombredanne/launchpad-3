@@ -881,7 +881,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin):
         from mercurial.ui import ui
         from mercurial.localrepo import localrepository
         repo = localrepository(ui(), self.source_details.hg_repo_url)
-        repo.commit(text="hello world!", user="Jane Random Hacker")
+        repo.commit(text="hello world!", user="Jane Random Hacker", force=1)
         self.foreign_commit_count += 1
 
     def makeSourceDetails(self, branch_name, files):
