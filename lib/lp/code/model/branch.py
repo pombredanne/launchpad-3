@@ -1186,7 +1186,6 @@ class BranchSet:
 
     def getByUrls(self, urls):
         """See `IBranchSet`."""
-        # XXX: Move this to IBranchLookup
         return getUtility(IBranchLookup).getByUrls(urls)
 
     def getBranches(self, limit=50):

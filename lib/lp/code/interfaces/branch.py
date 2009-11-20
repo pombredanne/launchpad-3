@@ -1191,7 +1191,7 @@ class IBranchSet(Interface):
         """Finds branches by URL.
 
         Either from the external specified in Branch.url, from the URL on
-        http://bazaar.launchpad.net/ or the lp: URL.
+        http://bazaar.launchpad.net/, or from the lp: URL.
 
         This is a frontend shim to `IBranchLookup.getByUrls` to allow it to be
         exported over the API. If you want to call this from within the
