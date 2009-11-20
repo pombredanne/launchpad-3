@@ -4,8 +4,7 @@ Poll views
 The polls portlet shows the state of current polls, and links to past
 polls
 
-    >>> from canonical.launchpad.testing.pages import (
-    ...     extract_text, find_tag_by_id)
+    >>> from canonical.launchpad.testing.pages import extract_text
 
     >>> user = factory.makePerson()
     >>> team = factory.makeTeam(name='team')
