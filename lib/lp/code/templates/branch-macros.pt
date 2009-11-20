@@ -49,10 +49,6 @@
            tal:content="structure mergeproposal/commit_message/fmt:text-to-html">
         The commit message.
       </div>
-      <div tal:condition="mergeproposal/show_registrant|nothing">
-        Merge proposed by
-        <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
-      </div>
       <tal:show-prerequisite condition="prerequisite_branch|nothing">
         <div tal:condition="prerequisite_branch/required:launchpad.View">
           Prerequisite

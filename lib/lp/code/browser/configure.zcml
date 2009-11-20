@@ -166,12 +166,20 @@
     <browser:defaultView
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         name="+index"/>
-    <browser:page
-        name="+heading"
+
+    <!-- No view needed -->
+    <browser:pages
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         facet="branches"
-        permission="launchpad.View"
-        template="../templates/branchmergeproposal-heading.pt"/>
+        permission="launchpad.View">
+      <browser:page
+          name="+heading"
+          template="../templates/branchmergeproposal-heading.pt"/>
+      <browser:page
+          name="+summary-fragment"
+          template="../templates/branchmergeproposal-summary-fragment.pt"/>
+    </browser:pages>
+
     <browser:pages
         for="lp.code.interfaces.branchmergeproposal.IBranchMergeProposal"
         class="lp.code.browser.branchmergeproposal.BranchMergeProposalView"
