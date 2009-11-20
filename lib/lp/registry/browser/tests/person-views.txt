@@ -721,7 +721,8 @@ view property `should_show_ppa_section`.
 
 The property checks two things to decide whether to return True or not:
  * Return True if the current user has launchpad.Edit permission
- * Return True if the person has PPAs and at least one of them is public.
+ * Return True if the person has PPAs and at least one of them is viewable
+   by the current user.
 
 Cprov is a user with a PPA:
 
