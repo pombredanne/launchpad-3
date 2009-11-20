@@ -163,10 +163,9 @@
             <li class="mail">
               <tal:email
                 replace="context/preferredemail/email">foo@bar.com</tal:email>
-              <a
-                tal:condition="context/required:launchpad.Edit"
-                tal:attributes="href overview_menu/editemailaddresses/url"
-              ><img tal:attributes="alt link/text" src="/@@/edit" /></a>
+
+              <a tal:replace="overview_menu/editemailaddresses/fmt:icon" />
+
             </li>
           </ul>
           <tal:editable tal:condition="context/required:launchpad.Edit">
