@@ -25,10 +25,10 @@ The portlet does not render any markup when there are no polls...
 
     >>> login_person(user)
     >>> view = create_team_view(team, name='+portlet-polls', principal=user)
-    >>> view.hasCurrentPolls()
+    >>> view.has_current_polls
     False
 
-    >>> view.should_show_polls_portlet()
+    >>> view.should_show_polls_portlet
     False
 
     >>> print extract_text(view.render())
@@ -38,10 +38,10 @@ Unless the user is a team owner.
 
     >>> login_person(owner)
     >>> view = create_team_view(team, name='+portlet-polls', principal=owner)
-    >>> view.hasCurrentPolls()
+    >>> view.has_current_polls
     False
 
-    >>> view.should_show_polls_portlet()
+    >>> view.should_show_polls_portlet
     True
 
     >>> print extract_text(view.render())
@@ -66,10 +66,10 @@ has not opened
 
     >>> login_person(user)
     >>> view = create_team_view(team, name='+portlet-polls', principal=user)
-    >>> view.hasCurrentPolls()
+    >>> view.has_current_polls
     True
 
-    >>> view.should_show_polls_portlet()
+    >>> view.should_show_polls_portlet
     True
 
     >>> print extract_text(view.render())
@@ -80,10 +80,10 @@ The portlet shows more details to the poll owner.
 
     >>> login_person(owner)
     >>> view = create_team_view(team, name='+portlet-polls', principal=owner)
-    >>> view.hasCurrentPolls()
+    >>> view.has_current_polls
     True
 
-    >>> view.should_show_polls_portlet()
+    >>> view.should_show_polls_portlet
     True
 
     >>> print extract_text(view.render())
