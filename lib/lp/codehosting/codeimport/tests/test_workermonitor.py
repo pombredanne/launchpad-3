@@ -25,6 +25,7 @@ from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
@@ -42,7 +43,7 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, SubversionServer, _make_silent_logger)
+    CVSServer, GitServer, SubversionServer)
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from lp.testing import login, logout
@@ -173,8 +174,7 @@ class TestWorkerMonitorUnit(TestCase):
         getUtility(ICodeImportJobWorkflow).startJob(
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(
-            job.id, _make_silent_logger())
+        self.worker_monitor = self.WorkerMonitor(job.id, QuietFakeLogger())
         self.worker_monitor._failures = []
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
@@ -349,8 +349,7 @@ class TestWorkerMonitorRunNoProcess(TestCase):
         getUtility(ICodeImportJobWorkflow).startJob(
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(
-            job.id, _make_silent_logger())
+        self.worker_monitor = self.WorkerMonitor(job.id, QuietFakeLogger())
         self.worker_monitor.result_status = None
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
@@ -539,7 +538,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         This implementation does it in-process.
         """
         self.layer.switchDbUser('codeimportworker')
-        monitor = CIWorkerMonitorForTesting(job_id, _make_silent_logger())
+        monitor = CIWorkerMonitorForTesting(job_id, QuietFakeLogger())
         deferred = monitor.run()
         def save_protocol_object(result):
             """Save the process protocol object.
