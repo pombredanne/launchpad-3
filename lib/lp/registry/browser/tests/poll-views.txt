@@ -2,7 +2,7 @@ Poll views
 ----------
 
 The polls portlet shows the state of current polls, and links to past
-polls
+polls.
 
     >>> from canonical.launchpad.testing.pages import extract_text
 
@@ -50,7 +50,7 @@ Unless the user is a team owner.
     Create a poll
 
 The portlet shows a link to polls to all users when there is a poll, but it
-has not opened
+has not opened.
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
@@ -60,7 +60,7 @@ has not opened
     >>> close_date = open_date + timedelta(weeks=1)
     >>> poll_subset = IPollSubset(team)
     >>> poll = poll_subset.new(
-    ...     'name', 'title', 'propisition', open_date, close_date,
+    ...     'name', 'title', 'proposition', open_date, close_date,
     ...     PollSecrecy.OPEN, False)
 
     >>> login_person(user)
