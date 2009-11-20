@@ -279,7 +279,7 @@ class CodeImportNewView(CodeImportBaseView):
         fields = soup.findAll('input')
         [cvs_button, svn_button, git_button, hg_button, empty_marker] = [
             field for field in fields
-            if field.get('value') in ['CVS', 'SVN', 'GIT', '1']]
+            if field.get('value') in ['CVS', 'SVN', 'GIT', 'HG', '1']]
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
         git_button['onclick'] = 'updateWidgets()'
