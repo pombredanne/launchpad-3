@@ -353,6 +353,9 @@
     <class
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
         <allow
+            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
+
+        <allow
             attributes="
                 distribution
                 development_version
@@ -631,6 +634,12 @@
                 permission="launchpad.Edit"
                 set_schema="lp.registry.interfaces.poll.IPoll"/>
         </class>
+
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.registry.interfaces.poll.IPoll"
+            factory="lp.registry.browser.poll.PollBreadcrumb"
+            permission="zope.Public"/>
 
         <!-- PollOption -->
 
@@ -1045,6 +1054,8 @@
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
+        <allow
+            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
             permission="launchpad.Driver"
             interface="lp.registry.interfaces.product.IProductDriverRestricted"/>
@@ -1601,6 +1612,12 @@
             attributes="destroySelf" />
     </class>
 
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        factory="lp.registry.browser.distributionmirror.DistributionMirrorBreadcrumb"
+        permission="zope.Public"/>
+
     <!-- DistributionMirrorSet -->
     <class class="lp.registry.model.distributionmirror.DistributionMirrorSet">
         <allow interface="lp.registry.interfaces.distributionmirror.IDistributionMirrorSet"/>
@@ -1661,7 +1678,7 @@
             permission="zope.Public"
             set_schema="lp.registry.interfaces.packaging.IPackaging"/>
     </class>
-    
+
     <!-- PackagingUtil -->
     <class
         class="lp.registry.model.packaging.PackagingUtil">
