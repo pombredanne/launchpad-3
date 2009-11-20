@@ -139,7 +139,9 @@ displays all the official tags and 10 of the unofficial tags.
     unofficial-tag-09
     unofficial-tag-10
 
-The 10 unofficial tags will be the 10 most popular tags.
+The 10 unofficial tags will be the 10 most popular tags.  To demonstrate
+this, two additional bugs are created and unofficial tags 11 and 12 are
+added to those bugs.
 
     >>> login('foo.bar@canonical.com')
     >>> watersocks = factory.makeProduct(name='watersocks')
