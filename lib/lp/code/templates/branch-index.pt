@@ -27,25 +27,20 @@
     }
 
   </style>
-  <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/code/branchlinks.js">
-  </script>
-  <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/code/branchstatus.js">
-  </script>
-  <script type="text/javascript"
-            tal:define="lp_js string:${icingroot}/build"
+  <tal:devmode condition="devmode">
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branchlinks.js">
+    </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/branchstatus.js">
+    </script>
+    <script type="text/javascript"
             tal:attributes="src string:${lp_js}/code/popupdiff.js">
+      </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/subscription.js">
     </script>
   </tal:devmode>
-  <script type="text/javascript"
-          tal:define="lp_js string:${icingroot}/build"
-          tal:attributes="src string:${lp_js}/code/subscription.js">
-  </script>
   <script type="text/javascript"
           tal:content="string:
     YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
