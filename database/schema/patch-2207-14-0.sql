@@ -29,4 +29,4 @@ UPDATE buildqueue
 -- Drop the obsolete 'estimated_build_duration' column from the `Build` table.
 ALTER TABLE ONLY build DROP COLUMN estimated_build_duration;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 13, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 14, 0);
