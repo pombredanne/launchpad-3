@@ -153,25 +153,26 @@ class SanitizeDb(LaunchpadScript):
         # Scrub data after removing all the records we are going to.
         # No point scrubbing data that is going to get removed later.
         columns_to_scrub = [
-            ('account', 'status_comment'),
-            ('distribution', 'reviewer_whiteboard'),
-            ('distributionmirror', 'whiteboard'),
-            ('hwsubmission', 'raw_emailaddress'),
-            ('nameblacklist', 'comment'),
-            ('person', 'personal_standing_reason'),
-            ('person', 'addressline1'),
-            ('person', 'addressline2'),
-            ('person', 'organization'),
-            ('person', 'city'),
-            ('person', 'province'),
-            ('person', 'country'),
-            ('person', 'postcode'),
-            ('person', 'phone'),
-            ('person', 'mail_resumption_date'),
-            ('product', 'reviewer_whiteboard'),
-            ('project', 'reviewer_whiteboard'),
-            ('revisionauthor', 'email'),
-            ('signedcodeofconduct', 'admincomment'),
+            ('account', ['status_comment']),
+            ('distribution', ['reviewer_whiteboard']),
+            ('distributionmirror', ['whiteboard']),
+            ('hwsubmission', ['raw_emailaddress']),
+            ('nameblacklist', ['comment']),
+            ('person', [
+                'personal_standing_reason',
+                'addressline1',
+                'addressline2',
+                'organization',
+                'city',
+                'province',
+                'country',
+                'postcode',
+                'phone',
+                'mail_resumption_date']),
+            ('product', ['reviewer_whiteboard']),
+            ('project', ['reviewer_whiteboard']),
+            ('revisionauthor', ['email']),
+            ('signedcodeofconduct', ['admincomment']),
             ]
         for table, column in columns_to_scrub:
             self.scrubColumn(table, column)
@@ -457,20 +458,40 @@ class SanitizeDb(LaunchpadScript):
 
     def removeUnlinkedAccounts(self):
         """Remove Accounts not linked to a Person."""
-        count = self.store.execute("""
-            DELETE FROM Account
-            WHERE Account.id NOT IN (SELECT account FROM Person)
-            """).rowcount
+        from canonical.launchpad.database.account import Account
+        from lp.registry.model.person import Person
+        all_accounts = self.store.find(Account)
+        linked_accounts = self.store.find(
+            Account, Account.id == Person.accountID)
+        unlinked_accounts = all_accounts.difference(linked_accounts)
+        total_unlinked_accounts = unlinked_accounts.count()
+        count = 0
+        for account in unlinked_accounts:
+            self.store.remove(account)
+            self.store.flush()
+            count += 1
+            self.logger.debug(
+                "Removed %d of %d unlinked accounts."
+                % (count, total_unlinked_accounts))
         self.logger.info("Removed %d accounts not linked to a person", count)
 
-    def scrubColumn(self, table, column):
+    def scrubColumn(self, table, columns):
         """Remove production admin related notes."""
-        count = self.store.execute("""
-            UPDATE %s SET %s = NULL
-            WHERE %s IS NOT NULL
-            """ % (table, column, column)).rowcount
+        query = ["UPDATE %s SET" % table]
+        for column in columns:
+            query.append("%s = NULL" % column)
+            query.append(",")
+        query.pop()
+        query.append("WHERE")
+        for column in columns:
+            query.append("%s IS NOT NULL" % column)
+            query.append("OR")
+        query.pop()
+        self.logger.log(DEBUG3, ' '.join(query))
+        count = self.store.execute(' '.join(query)).rowcount
         self.logger.info(
-            "Scrubbed %d %s.%s entries." % (count, table, column))
+            "Scrubbed %d %s.{%s} entries."
+            % (count, table, ','.join(columns)))
 
     def allForeignKeysCascade(self):
         """Set all foreign key constraints to ON DELETE CASCADE.
