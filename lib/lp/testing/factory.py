@@ -34,17 +34,25 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.autodecorate import AutoDecorate
 from canonical.config import config
+from canonical.database.constants import UTC_NOW
 from lp.codehosting.codeimport.worker import CodeImportSourceDetails
 from canonical.database.sqlbase import flush_database_updates
 from lp.soyuz.adapters.packagelocation import PackageLocation
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.interfaces.section import ISectionSet
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
 from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.publishing import (
+    SecureSourcePackagePublishingHistory,
+    SourcePackagePublishingHistory,
+    )
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
-from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
+from lp.soyuz.interfaces.archive import (
+    default_name_by_purpose, IArchiveSet, ArchivePurpose)
 from lp.blueprints.interfaces.sprint import ISprintSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskStatus
@@ -104,7 +112,8 @@ from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
 from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProjectSet
-from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackage import (
+    ISourcePackage, SourcePackageUrgency)
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
@@ -126,6 +135,7 @@ def default_master_store(func):
     password that needs to happen on the master store and this is forced.
     However, if we then read it back the default Store has to be used.
     """
+
     def with_default_master_store(*args, **kw):
         try:
             store_selector = getUtility(IStoreSelector)
@@ -140,9 +150,9 @@ def default_master_store(func):
     return mergeFunctionMetadata(func, with_default_master_store)
 
 
-# We use this for default paramters where None has a specific meaning.  For
-# example, makeBranch(product=None) means "make a junk branch".
-# None, because None means "junk branch".
+# We use this for default parameters where None has a specific meaning. For
+# example, makeBranch(product=None) means "make a junk branch". None, because
+# None means "junk branch".
 _DEFAULT = object()
 
 
@@ -179,10 +189,9 @@ class ObjectFactory:
         :return: A hexadecimal string, with 'a'-'f' in lower case.
         """
         hex_number = '%x' % self.getUniqueInteger()
-        if digits is None:
-            return hex_number
-        else:
-            return hex_number.zfill(digits)
+        if digits is not None:
+            hex_number = hex_number.zfill(digits)
+        return hex_number
 
     def getUniqueString(self, prefix=None):
         """Return a string unique to this factory instance.
@@ -266,9 +275,10 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
+        key_id = self.getUniqueHexString(digits=8).upper()
         return getUtility(IGPGKeySet).new(
             owner.id,
-            keyid=self.getUniqueHexString(digits=8).upper(),
+            keyid=key_id,
             fingerprint='A' * 40,
             keysize=self.getUniqueInteger(),
             algorithm=GPGKeyAlgorithm.R,
@@ -1470,7 +1480,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IComponentSet).ensure(name)
 
     def makeArchive(self, distribution=None, owner=None, name=None,
-                    purpose = None):
+                    purpose=None):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1484,10 +1494,13 @@ class LaunchpadObjectFactory(ObjectFactory):
             distribution = self.makeDistribution()
         if owner is None:
             owner = self.makePerson()
-        if name is None:
-            name = self.getUniqueString()
         if purpose is None:
             purpose = ArchivePurpose.PPA
+        if name is None:
+            try:
+                name = default_name_by_purpose[purpose]
+            except KeyError:
+                name = self.getUniqueString()
 
         # Making a distribution makes an archive, and there can be only one
         # per distribution.
@@ -1749,6 +1762,111 @@ class LaunchpadObjectFactory(ObjectFactory):
         if distroseries is None:
             distroseries = self.makeDistroRelease()
         return distroseries.getSourcePackage(sourcepackagename)
+
+    def getAnySourcePackageUrgency(self):
+        return SourcePackageUrgency.MEDIUM
+
+    def makeSourcePackagePublishingHistory(self, sourcepackagename=None,
+                                           distroseries=None, maintainer=None,
+                                           creator=None, component=None,
+                                           section=None, urgency=None,
+                                           version=None, archive=None,
+                                           builddepends=None,
+                                           builddependsindep=None,
+                                           build_conflicts=None,
+                                           build_conflicts_indep=None,
+                                           architecturehintlist='all',
+                                           dateremoved=None,
+                                           date_uploaded=UTC_NOW,
+                                           pocket=None,
+                                           status=None,
+                                           scheduleddeletiondate=None,
+                                           dsc_standards_version='3.6.2',
+                                           dsc_format='1.0',
+                                           dsc_binaries='foo-bin',
+                                           ):
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        spn = sourcepackagename
+
+        if distroseries is None:
+            distroseries = self.makeDistroRelease()
+
+        if archive is None:
+            archive = self.makeArchive(
+                distribution=distroseries.distribution,
+                purpose=ArchivePurpose.PRIMARY)
+
+        if component is None:
+            component = self.makeComponent()
+
+        if pocket is None:
+            pocket = self.getAnyPocket()
+
+        if status is None:
+            status = PackagePublishingStatus.PENDING
+
+        if urgency is None:
+            urgency = self.getAnySourcePackageUrgency()
+
+        if section is None:
+            section = self.getUniqueString('section')
+        section = getUtility(ISectionSet).ensure(section)
+
+        if maintainer is None:
+            maintainer = self.makePerson()
+
+        maintainer_email = '%s <%s>' % (
+            maintainer.displayname,
+            maintainer.preferredemail.email)
+
+        if creator is None:
+            creator = self.makePerson()
+
+        if version is None:
+            version = self.getUniqueString('version')
+
+        gpg_key = self.makeGPGKey(creator)
+
+        spr = distroseries.createUploadedSourcePackageRelease(
+            sourcepackagename=spn,
+            maintainer=maintainer,
+            creator=creator,
+            component=component,
+            section=section,
+            urgency=urgency,
+            version=version,
+            builddepends=builddepends,
+            builddependsindep=builddependsindep,
+            build_conflicts=build_conflicts,
+            build_conflicts_indep=build_conflicts_indep,
+            architecturehintlist=architecturehintlist,
+            changelog_entry=None,
+            dsc=None,
+            copyright=self.getUniqueString(),
+            dscsigningkey=gpg_key,
+            dsc_maintainer_rfc822=maintainer_email,
+            dsc_standards_version=dsc_standards_version,
+            dsc_format=dsc_format,
+            dsc_binaries=dsc_binaries,
+            archive=archive, dateuploaded=date_uploaded)
+
+        sspph = SecureSourcePackagePublishingHistory(
+            distroseries=distroseries,
+            sourcepackagerelease=spr,
+            component=spr.component,
+            section=spr.section,
+            status=status,
+            datecreated=date_uploaded,
+            dateremoved=dateremoved,
+            scheduleddeletiondate=scheduleddeletiondate,
+            pocket=pocket,
+            embargo=False,
+            archive=archive)
+
+        # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW
+        # of SSPPH and other useful attributes.
+        return SourcePackagePublishingHistory.get(sspph.id)
 
     def makePackageset(self, name=None, description=None, owner=None,
                        packages=(), distroseries=None):
