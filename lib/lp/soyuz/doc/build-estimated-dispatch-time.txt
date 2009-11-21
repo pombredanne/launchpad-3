@@ -84,8 +84,7 @@ that is currently building.
 Please note that the "estimated build duration" is an internal property
 and not meant to be viewed or modified by an end user.
 
-    >>> naked_build = removeSecurityProxy(cur_build)
-    >>> naked_build.estimated_build_duration = timedelta(minutes=56)
+    >>> removeSecurityProxy(cur_bqueue).estimated_duration = timedelta(minutes=56)
 
 The estimated start time for the pending job is either now or lies
 in the future.
@@ -121,9 +120,8 @@ We first add a build for the 'pmount' source package to cprov's PPA.
     ...     hoary['i386'], PackagePublishingPocket.RELEASE, cprov.archive)
     >>> pmount_bqueue = pmount_build.createBuildQueueEntry()
     >>> pmount_bqueue.lastscore = 66
+    >>> removeSecurityProxy(pmount_bqueue).estimated_duration = timedelta(minutes=12)
     >>> pmount_build.buildstate = BuildStatus.NEEDSBUILD
-    >>> naked_build = removeSecurityProxy(pmount_build)
-    >>> naked_build.estimated_build_duration = timedelta(minutes=12)
 
 Followed by another build for the 'iceweasel' source package that is added
 to mark's PPA.
@@ -138,10 +136,9 @@ to mark's PPA.
     >>> iceweasel_build = iceweasel_spr.createBuild(
     ...     hoary['i386'], PackagePublishingPocket.RELEASE, mark.archive)
     >>> iceweasel_bqueue = iceweasel_build.createBuildQueueEntry()
+    >>> removeSecurityProxy(iceweasel_bqueue).estimated_duration = timedelta(minutes=48)
     >>> iceweasel_bqueue.lastscore = 666
     >>> iceweasel_build.buildstate = BuildStatus.NEEDSBUILD
-    >>> naked_build = removeSecurityProxy(iceweasel_build)
-    >>> naked_build.estimated_build_duration = timedelta(minutes=48)
 
 Since the 'iceweasel' build has a higher score (666) than the 'pmount'
 build (66) its estimated dispatch time is essentially "now".
