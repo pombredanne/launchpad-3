@@ -51,6 +51,7 @@ setup(
         'sourcecodegen',
         'storm',
         'transaction',
+        'Twisted', 
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
