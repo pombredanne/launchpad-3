@@ -43,6 +43,7 @@ setup(
         'mocker',
         'oauth',
         'paramiko',
+        'pyasn1',
         'python-openid',
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
