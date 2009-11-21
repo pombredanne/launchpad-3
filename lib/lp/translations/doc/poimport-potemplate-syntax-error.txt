@@ -7,13 +7,15 @@ In this test, we are going to check that we detect and notify the error.
 
 Here are some imports we need to get this test running.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILaunchpadCelebrities, IPersonSet)
     >>> from lp.translations.interfaces.translationimportqueue import (
     ...     ITranslationImportQueue)
     >>> from lp.translations.model.potemplate import POTemplateSubset
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
     >>> translation_import_queue = getUtility(ITranslationImportQueue)
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
 We need this for the Librarian to work properly.
 
@@ -59,7 +61,7 @@ TranslationFormatSyntaxError
     ...     potemplate.path, potemplate_contents, published, person,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = potemplate.importFromQueue(entry)
 
 The import failed.
@@ -120,7 +122,7 @@ And the code composed email with a notification of the error.
     ...     potemplate.path, potemplate_contents, published, person,
     ...     productseries=series, potemplate=potemplate)
     >>> transaction.commit()
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = potemplate.importFromQueue(entry)
 
 The import failed.

@@ -60,6 +60,8 @@ from canonical.launchpad.interfaces.hwdb import (
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
+from lp.registry.interfaces.distributionmirror import (
+    MirrorContent, MirrorSpeed)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.blueprints.interfaces.specification import (
     ISpecificationSet, SpecificationDefinitionStatus)
@@ -68,6 +70,7 @@ from lp.translations.interfaces.translationgroup import (
 from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
+from lp.services.worlddata.interfaces.country import ICountrySet
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import IStoreSelector
 from lp.code.enums import (
@@ -812,7 +815,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                                 set_state=None, prerequisite_branch=None,
                                 product=None, review_diff=None,
                                 initial_comment=None, source_branch=None,
-                                preview_diff=None):
+                                preview_diff=None, date_created=None):
         """Create a proposal to merge based on anonymous branches."""
         if target_branch is not None:
             target = target_branch.target
@@ -836,7 +839,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         proposal = source_branch.addLandingTarget(
             registrant, target_branch,
             prerequisite_branch=prerequisite_branch, review_diff=review_diff,
-            initial_comment=initial_comment)
+            initial_comment=initial_comment, date_created=date_created)
 
         unsafe_proposal = removeSecurityProxy(proposal)
         if preview_diff is not None:
@@ -1688,6 +1691,29 @@ class LaunchpadObjectFactory(ObjectFactory):
         team_list.startConstructing()
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list
+
+    def makeMirror(self, distribution, displayname, country=None,
+                   http_url=None, ftp_url=None, rsync_url=None):
+        """Create a mirror for the distribution."""
+        # If no URL is specified create an HTTP URL.
+        if http_url is None and ftp_url is None and rsync_url is None:
+            http_url = self.getUniqueURL()
+        # If no country is given use Argentina.
+        if country is None:
+            country = getUtility(ICountrySet)['AR']
+
+        mirror = distribution.newMirror(
+            owner=distribution.owner,
+            speed=MirrorSpeed.S256K,
+            country=country,
+            content=MirrorContent.ARCHIVE,
+            displayname=displayname,
+            description=None,
+            http_base_url=http_url,
+            ftp_base_url=ftp_url,
+            rsync_base_url=rsync_url,
+            official_candidate=False)
+        return mirror
 
     def makeUniqueRFC822MsgId(self):
         """Make a unique RFC 822 message id.
