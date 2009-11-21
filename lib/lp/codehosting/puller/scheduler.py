@@ -336,6 +336,9 @@ class PullerMaster:
         self.logger.debug("executing %s", command)
         env = os.environ.copy()
         env['BZR_EMAIL'] = get_lock_id_for_branch_id(self.branch_id)
+        # XXX this is completely unacceptable:
+        env['BZR_HOME'] = str(env['BZR_HOME'])
+        env['HOME'] = str(env['HOME'])
         reactor.spawnProcess(protocol, interpreter, command, env=env)
         return deferred
 
