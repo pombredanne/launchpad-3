@@ -761,7 +761,26 @@ the possible mirror speeds.
   >>> print view._sum_throughput(mirrors)
   37 Gbps
 
-== Deleting mirrors ==
+
+Changing mirror owners
+----------------------
+
+The mirror owner can change the owner to another user.
+
+    >>> owner = factory.makePerson(name='raccoon')
+    >>> new_owner = factory.makePerson(name='bear')
+    >>> mirror = ubuntu.newMirror(
+    ...     owner, speed, brazil, content, http_base_url='http://a.ab/')
+
+
+    >>> login_person(mirror.owner)
+    >>> mirror.owner = new_owner
+    >>> print mirror.owner.name
+    bear
+
+
+Deleting mirrors
+----------------
 
 Mirrors are sometimes created by spammers hoping that we'll publicize
 whatever links they put there. Although we only publicize mirrors that
@@ -771,7 +790,7 @@ bogus mirrors on their list of unapproved mirrors, so we allow admins
 
 Only mirrors which have never been probed can be deleted this way.
 
-    >>> login(cdimage_mirror.owner.preferredemail.email)
+    >>> login_person(cdimage_mirror.owner)
     >>> cdimage_mirror.destroySelf()
     Traceback (most recent call last):
     ...

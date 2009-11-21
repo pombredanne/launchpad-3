@@ -2857,13 +2857,15 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         else:
             raise AssertionError('Unknown group to contact.')
 
+    @property
     def should_show_polls_portlet(self):
         menu = TeamOverviewMenu(self.context)
         return (
-            self.hasCurrentPolls() or self.closedpolls
+            self.has_current_polls or self.closedpolls
             or menu.add_poll().enabled)
 
-    def hasCurrentPolls(self):
+    @property
+    def has_current_polls(self):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
