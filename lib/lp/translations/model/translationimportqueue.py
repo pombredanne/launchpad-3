@@ -339,11 +339,12 @@ class TranslationImportQueueEntry(SQLBase):
     def _findCustomLanguageCode(self, language_code):
         """Find applicable custom language code, if any."""
         if self.distroseries is not None:
-            return self.distroseries.distribution.getCustomLanguageCode(
-                self.sourcepackagename, language_code)
+            target = self.distroseries.distribution.getSourcePackage(
+                self.sourcepackagename)
         else:
-            return self.productseries.product.getCustomLanguageCode(
-                language_code)
+            target = self.productseries.product
+        
+        return target.getCustomLanguageCode(language_code)
 
     def _guessLanguage(self):
         """See ITranslationImportQueueEntry."""

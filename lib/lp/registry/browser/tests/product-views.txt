@@ -345,6 +345,29 @@ too.
     >>> print view.cancel_url
     http://launchpad.dev/firefox
 
+The view allows the driver to set series name, summary, branch and
+releasefileglob fields.
+
+    >>> view.field_names
+    ['name', 'summary', 'branch', 'releasefileglob']
+
+    >>> form = {
+    ...     'field.name': 'master',
+    ...     'field.summary': 'The primary development series.',
+    ...     'field.releasefileglob': 'ftp://mozilla.org/firefox.*bz2',
+    ...     'field.branch': '',
+    ...     'field.actions.add': 'Register Series',
+    ...     }
+    >>> view = create_initialized_view(firefox, name='+addseries', form=form)
+    >>> print view.series.name
+    master
+
+    >>> print view.series.summary
+    The primary development series.
+
+    >>> print view.series.releasefileglob
+    ftp://mozilla.org/firefox.*bz2
+
 
 Product index view
 ==================
