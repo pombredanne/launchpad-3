@@ -398,12 +398,6 @@
         for="lp.registry.interfaces.project.IProjectSeries"
         name="+specs"
         layer="canonical.launchpad.layers.BlueprintLayer"/>
-    <browser:page
-        for="lp.registry.interfaces.project.IProjectSeries"
-        permission="zope.Public"
-        name="+portlet-details"
-        facet="overview"
-        template="../templates/project-series-portlet-details.pt"/>
     <browser:menus
         classes="
             ProjectActionMenu
