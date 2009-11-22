@@ -86,6 +86,7 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
 
     def setUp(self):
         super(SSHTestCase, self).setUp()
+        self.disable_directory_isolation()
         tac_handler = SSHServerLayer.getTacHandler()
         self.server = SSHCodeHostingServer(self.scheme, tac_handler)
         self.server.setUp()
