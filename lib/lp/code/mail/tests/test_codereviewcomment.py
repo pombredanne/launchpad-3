@@ -212,8 +212,9 @@ class TestCodeReviewComment(TestCaseWithFactory):
         comment = bmp.createCommentFromMessage(message, None, None, msg)
         mailer = CodeReviewCommentMailer.forCreation(comment, msg)
         # The attachments of the mailer should have only the diff.
-        first, diff, image = msg.get_payload()
-        self.assertEqual([diff], mailer.attachments)
+        [outgoing_attachment] = mailer.attachments
+        self.assertEqual('inc.diff', outgoing_attachment[1])
+        self.assertEqual('text/x-diff', outgoing_attachment[2])
 
     def makeCommentAndParticipants(self):
         """Create a merge proposal and comment.

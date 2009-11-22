@@ -1,7 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON_VERSION=2.4
+PYTHON_VERSION=2.5
 PYTHON=python${PYTHON_VERSION}
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
@@ -17,6 +17,9 @@ HERE:=$(shell pwd)
 
 LPCONFIG=development
 
+LP_BUILT_JS_ROOT=lib/canonical/launchpad/icing/build
+LAZR_BUILT_JS_ROOT=lazr-js/build
+
 MINS_TO_SHUTDOWN=15
 
 CODEHOSTING_ROOT=/var/tmp/bazaar.launchpad.dev
@@ -25,10 +28,6 @@ BZR_VERSION_INFO = bzr-version-info.py
 
 WADL_FILE = lib/canonical/launchpad/apidoc/wadl-$(LPCONFIG).xml
 API_INDEX = lib/canonical/launchpad/apidoc/index.html
-
-EXTRA_JS_FILES=lib/canonical/launchpad/icing/MochiKit.js \
-				$(shell $(HERE)/utilities/yui-deps.py) \
-				lib/canonical/launchpad/icing/lazr/build/lazr.js
 
 # DO NOT ALTER : this should just build by default
 default: inplace
@@ -122,7 +121,18 @@ pagetests: build
 
 inplace: build
 
-build: $(BZR_VERSION_INFO) compile apidoc
+build: $(BZR_VERSION_INFO) compile apidoc jsbuild
+
+jsbuild_lazr:
+	${SHHH} bin/jsbuild -b lazr-js/build
+
+jsbuild: jsbuild_lazr
+	${SHHH} bin/jsbuild \
+		-n launchpad -s lib/canonical/launchpad/javascript \
+		-b lib/canonical/launchpad/icing/build \
+		lib/canonical/launchpad/icing/MochiKit.js \
+		$(shell $(HERE)/utilities/yui-deps.py) \
+		lib/canonical/launchpad/icing/lazr/build/lazr.js
 
 eggs:
 	# Usually this is linked via link-external-sourcecode, but in
@@ -150,9 +160,6 @@ compile: $(PY)
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
 	${SHHH} LPCONFIG=${LPCONFIG} ${PY} -t buildmailman.py
-	${SHHH} $(PY) sourcecode/lazr-js/tools/build.py \
-		-n launchpad -s lib/canonical/launchpad/javascript \
-		-b lib/canonical/launchpad/icing/build $(EXTRA_JS_FILES)
 
 test_build: build
 	bin/test $(TESTFLAGS) $(TESTOPTS)
@@ -165,6 +172,10 @@ ftest_build: build
 
 ftest_inplace: inplace
 	bin/test -f $(TESTFLAGS) $(TESTOPTS)
+
+mpcreationjobs:
+	# Handle merge proposal creations.
+	$(PY) cronscripts/mpcreationjobs.py
 
 run: inplace stop
 	$(RM) thread*.request
@@ -202,7 +213,8 @@ scan_branches:
 	# Scan branches from the filesystem into the database.
 	$(PY) cronscripts/branch-scanner.py
 
-sync_branches: pull_branches scan_branches
+
+sync_branches: pull_branches scan_branches mpcreationjobs
 
 $(BZR_VERSION_INFO):
 	scripts/update-bzr-version-info.sh
@@ -250,8 +262,16 @@ rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
-clean:
+clean_js:
+	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
+	$(RM) -r $(LAZR_BUILT_JS_ROOT)
+
+clean: clean_js
 	$(MAKE) -C sourcecode/pygettextpo clean
+	# XXX gary 2009-11-16 bug 483782
+	# The pygettextpo Makefile should have this next line in it for its make
+	# clean, and then we should remove this line.
+	$(RM) sourcecode/pygpgme/gpgme/*.so
 	if test -f sourcecode/mailman/Makefile; then \
 		$(MAKE) -C sourcecode/mailman clean; \
 	fi
@@ -261,6 +281,7 @@ clean:
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r bin
 	$(RM) -r parts
+	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) thread*.request
@@ -347,4 +368,5 @@ ID: compile
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
 	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
-	reload-apache hosted_branches check_db_merge check_mailman check_config
+	reload-apache hosted_branches check_db_merge check_mailman check_config\
+	jsbuild clean_js

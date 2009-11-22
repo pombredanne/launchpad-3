@@ -12,7 +12,8 @@ from zope.security.proxy import removeSecurityProxy
 
 from lp.code.model.branchtarget import (
     check_default_stacked_on,
-    PackageBranchTarget, PersonBranchTarget, ProductBranchTarget)
+    PackageBranchTarget, PersonBranchTarget, ProductBranchTarget,
+    ProductSeriesBranchTarget)
 from lp.code.enums import BranchType
 from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
@@ -362,6 +363,20 @@ class TestProductBranchTarget(TestCaseWithFactory, BaseBranchTargetTests):
             self.original.owner,
             setattr, self.original.development_focus, 'branch', branch)
         self.assertEqual(branch, self.target.default_merge_target)
+
+
+class TestProductSeriesBranchTarget(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.original = self.factory.makeProductSeries()
+        self.target = ProductSeriesBranchTarget(self.original)
+
+    def test_adapter(self):
+        target = IBranchTarget(self.original)
+        self.assertIsInstance(target, ProductSeriesBranchTarget)
 
 
 class TestCheckDefaultStackedOnBranch(TestCaseWithFactory):

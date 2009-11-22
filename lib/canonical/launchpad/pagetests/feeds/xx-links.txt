@@ -131,16 +131,16 @@ it must have quotes and html escaped.
     >>> soup.head.findAll('link', type='application/atom+xml')
     [<link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/bad-displayname/announcements.atom"
-        title="Announcements for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
+        title='Announcements for Bad displayname"&gt;&lt;script&gt;alert("h4x0r")&lt;/script&gt;' />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/bad-displayname/latest-bugs.atom"
-        title="Latest Bugs for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
+        title='Latest Bugs for Bad displayname"&gt;&lt;script&gt;alert("h4x0r")&lt;/script&gt;' />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/bad-displayname/branches.atom"
-        title="Latest Branches for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />,
+        title='Latest Branches for Bad displayname"&gt;&lt;script&gt;alert("h4x0r")&lt;/script&gt;' />,
      <link rel="alternate" type="application/atom+xml"
         href="http://feeds.launchpad.dev/bad-displayname/revisions.atom"
-        title="Latest Revisions for Bad displayname&quot;&gt;&lt;script&gt;alert(&quot;h4x0r&quot;)&lt;/script&gt;" />]
+        title='Latest Revisions for Bad displayname"&gt;&lt;script&gt;alert("h4x0r")&lt;/script&gt;' />]
 
 == Latest Bugs for a Project ==
 

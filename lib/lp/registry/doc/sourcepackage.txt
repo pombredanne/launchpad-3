@@ -341,9 +341,9 @@ julian 2007-09-17 This is duplicating the page test. Instead it should
 be more like the bug number linkification just below.
 
     >>> from zope.component import queryMultiAdapter
-    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> mock_form = {}
-    >>> request = TestRequest(form=mock_form)
+    >>> request = LaunchpadTestRequest(form=mock_form)
     >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
     >>> spr = sp['0.1-2']
     >>> spr_view = queryMultiAdapter((spr, request), name="+changelog")
@@ -370,32 +370,34 @@ _linkify_bug_numbers() to do this.
 
 Zero or more spaces may appear between the ":" and the "#".
 
-    >>> spr_view._linkify_bug_numbers("LP: #10")
+    >>> from lp.soyuz.browser.sourcepackagerelease import (
+    ...     linkify_bug_numbers)
+    >>> linkify_bug_numbers("LP: #10")
     u'LP: <a href="/bugs/10" title="another test bug">#10</a>'
 
-    >>> spr_view._linkify_bug_numbers("LP:         #10")
+    >>> linkify_bug_numbers("LP:         #10")
     u'LP:         <a href="/bugs/10" title="another test bug">#10</a>'
 
-    >>> spr_view._linkify_bug_numbers("LP:#10")
+    >>> linkify_bug_numbers("LP:#10")
     u'LP:<a href="/bugs/10" title="another test bug">#10</a>'
 
-    >>> spr_view._linkify_bug_numbers("LP: #999")
+    >>> linkify_bug_numbers("LP: #999")
     'LP: <a href="/bugs/999" title="No such bug">#999</a>'
 
-    >>> spr_view._linkify_bug_numbers("garbage")
+    >>> linkify_bug_numbers("garbage")
     'garbage'
 
-    >>> spr_view._linkify_bug_numbers("LP: #10, #7")
+    >>> linkify_bug_numbers("LP: #10, #7")
     u'LP: <a href="/bugs/10" title="another test bug">#10</a>,
     <a href="/bugs/7" title="A test bug">#7</a>'
 
-    >>> spr_view._linkify_bug_numbers("LP: #10 LP: #10")
+    >>> linkify_bug_numbers("LP: #10 LP: #10")
     u'LP: <a href="/bugs/10" title="another test bug">#10</a>
       LP: <a href="/bugs/10" title="another test bug">#10</a>'
 
 The regex is case-insensitive, so "lp: #nnn" also works.
 
-    >>> spr_view._linkify_bug_numbers("lp: #10")
+    >>> linkify_bug_numbers("lp: #10")
     u'lp: <a href="/bugs/10" title="another test bug">#10</a>'
 
 

@@ -10,6 +10,7 @@ from unittest import TestLoader
 
 import pytz
 import transaction
+from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -276,6 +277,20 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
         self.assertEqual(
             [bmp3, bmp2, bmp1],
             [item.context for item in view.review_groups[view.OTHER]])
+
+
+class NoActiveReviewsForBranchTest(TestCaseWithFactory):
+    """A branch should not have +activereviews."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_no_active_reviews(self):
+        # 404 is more apt than an oops.
+        branch = self.factory.makeProductBranch()
+        self.assertRaises(
+            NotFound,
+            create_initialized_view,
+            branch, name='+activereviews')
 
 
 def test_suite():

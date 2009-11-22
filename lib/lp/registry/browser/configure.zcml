@@ -830,7 +830,7 @@
             name="+editlocation"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonEditLocationView"
-            permission="launchpad.EditLocation"
+            permission="launchpad.Edit"
             template="../templates/person-editlocation.pt"/>
         <browser:page
             name="+contactuser"
@@ -872,9 +872,6 @@
             <browser:page
                 name="+sshkeys"
                 attribute="showSSHKeys"/>
-            <browser:page
-                name="+portlet-emails"
-                template="../templates/person-portlet-emails.pt"/>
             <browser:page
                 name="+portlet-contact-details"
                 template="../templates/person-portlet-contact-details.pt"/>
@@ -1468,13 +1465,11 @@
         name="+packages"
         facet="overview"
         template="../templates/product-packages.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        permission="zope.Public"
-        class="lp.registry.browser.product.ProductDistributionsView"
+    <browser:renamed-page
         name="+distributions"
-        facet="overview"
-        template="../templates/product-distros.pt"/>
+        for="lp.registry.interfaces.product.IProduct"
+        new_name="+packages"
+        rootsite="mainsite"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
@@ -1655,7 +1650,7 @@
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.packaging.PackagingAddView"
         facet="overview"
-        permission="launchpad.Edit"
+        permission="launchpad.View"
         template="../templates/productseries-packaging.pt"/>
     <browser:page
         name="+ubuntupkg"
@@ -1663,7 +1658,7 @@
         template="../templates/productseries-ubuntupkg.pt"
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesUbuntuPackagingView"
-        permission="zope.Public"/>
+        permission="launchpad.View"/>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
         class="lp.registry.browser.productseries.ProductSeriesView"
@@ -1770,13 +1765,6 @@
             DistributionNavigation"/>
     <browser:page
         for="lp.registry.interfaces.distribution.IDistribution"
-        class="lp.registry.browser.distribution.DistributionAllPackagesView"
-        permission="zope.Public"
-        name="+allpackages"
-        facet="overview"
-        template="../templates/distribution-allpackages.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.distribution.IDistribution"
         facet="overview"
         class="lp.registry.browser.distribution.DistributionArchiveMirrorsView"
         permission="zope.Public"
@@ -1875,9 +1863,6 @@
         <browser:page
             name="+portlet-lifecycle"
             template="../templates/distribution-portlet-lifecycle.pt"/>
-        <browser:page
-            name="+portlet-series"
-            template="../templates/distribution-portlet-series.pt"/>
         <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"/>
@@ -2000,9 +1985,6 @@
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         facet="overview"
         permission="zope.Public">
-        <browser:page
-            name="+portlet-upstream"
-            template="../templates/sourcepackage-portlet-upstream.pt"/>
         <browser:page
             name="+portlet-releases"
             template="../templates/sourcepackage-portlet-releases.pt"/>
@@ -2172,7 +2154,7 @@
     </browser:page>
     <browser:page
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         class="lp.registry.browser.distributionmirror.DistributionMirrorReassignmentView"
         facet="overview"
         name="+reassign"

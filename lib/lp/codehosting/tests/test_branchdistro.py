@@ -25,7 +25,7 @@ from lazr.uri import URI
 import transaction
 
 from canonical.config import config
-from canonical.testing.layers import ZopelessAppServerLayer
+from canonical.testing.layers import LaunchpadZopelessLayer
 from canonical.launchpad.scripts.logger import FakeLogger, QuietFakeLogger
 
 from lp.codehosting.branchdistro import DistroBrancher, switch_branches
@@ -104,11 +104,11 @@ class TestSwitchBranches(TestCaseWithTransport):
 class TestDistroBrancher(TestCaseWithFactory):
     """Tests for `DistroBrancher`."""
 
-    layer = ZopelessAppServerLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         TestCaseWithFactory.setUp(self)
-        self.useBzrBranches(real_server=True)
+        self.useBzrBranches(real_server=True, direct_database=True)
 
     def makeOfficialPackageBranch(self, distroseries=None):
         """Make an official package branch with an underlying bzr branch."""
@@ -137,7 +137,7 @@ class TestDistroBrancher(TestCaseWithFactory):
             distroseries = self.factory.makeDistroRelease()
         self._log_file = StringIO()
         new_distroseries = self.factory.makeDistroRelease(
-            distribution=distroseries.distribution, name='new')
+            distribution=distroseries.distribution)
         transaction.commit()
         self.layer.switchDbUser('branch-distro')
         return DistroBrancher(
@@ -214,11 +214,12 @@ class TestDistroBrancher(TestCaseWithFactory):
             db_branch.sourcepackage.name).getBranch(RELEASE)
 
         self.assertIsNot(None, new_branch)
-        # The branch owner/name/target is the same, apart from the
-        # distroseries.
+        # The branch owner is the same, the source package name is the same,
+        # the distroseries is the new one and the branch name is the name of
+        # the new distroseries.
         self.assertEqual(
             [db_branch.owner, db_branch.distribution,
-             db_branch.sourcepackagename, db_branch.name],
+             db_branch.sourcepackagename, brancher.new_distroseries.name],
             [new_branch.owner, new_branch.distribution,
              new_branch.sourcepackagename, new_branch.name])
 

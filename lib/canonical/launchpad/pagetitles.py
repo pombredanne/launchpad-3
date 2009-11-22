@@ -126,8 +126,6 @@ archive_delete_packages = ContextDisplayName('Delete packages from %s')
 
 archive_edit = ContextDisplayName('Edit %s')
 
-archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
-
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Branches'
@@ -801,8 +799,6 @@ specificationtarget_workload = ContextTitle('Blueprint workload in %s')
 sprint_attend = ContextTitle('Register your attendance at %s')
 
 sprint_edit = ContextTitle(smartquote('Edit "%s" details'))
-
-sprint_index = ContextTitle('%s (sprint or meeting)')
 
 sprint_new = 'Register a meeting or sprint in Launchpad'
 

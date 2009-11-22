@@ -29,11 +29,11 @@
           <a
                 tal:define="link context/menu:navigation/translationupload"
                 tal:attributes="href link/url"
-              >upload</a> templates and translations, or set up
+              >manually upload</a> templates and translations, or set up
               <a
                 tal:define="link context/menu:navigation/settings"
                 tal:attributes="href link/url"
-              >import from branches</a>
+              >automatic import from branches</a>
               (<a href="https://help.launchpad.net/Translations/ImportingFromBazaarBranches">read more</a>).
         </p>
         </div>
@@ -66,10 +66,10 @@
               <a tal:attributes="href context/menu:navigation/imports/url">
                 import queue</a>.
             </p>
-            <p tal:condition="context/required:launchpad.Edit">
-              To manage all the translation templates in
+            <p>
+              To see all the translation templates in
               <tal:series replace="context/displayname">trunk</tal:series>,
-              see the
+              go to the
               <a tal:attributes="href context/menu:navigation/templates/url">
                 full list of templates</a>.
             </p>

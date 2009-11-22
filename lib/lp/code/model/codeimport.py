@@ -33,7 +33,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.enums import (
     BranchType, CodeImportResultStatus, CodeImportReviewStatus,
@@ -238,11 +237,10 @@ class CodeImportSet:
             else:
                 review_status = CodeImportReviewStatus.NEW
         # Create the branch for the CodeImport.
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        namespace = get_branch_namespace(vcs_imports, product)
+        namespace = get_branch_namespace(registrant, product)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
-            registrant=vcs_imports)
+            registrant=registrant)
 
         code_import = CodeImport(
             registrant=registrant, owner=registrant, branch=import_branch,

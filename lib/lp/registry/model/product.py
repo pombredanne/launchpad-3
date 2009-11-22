@@ -1,6 +1,5 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
@@ -45,7 +44,8 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
-from lp.translations.model.customlanguagecode import CustomLanguageCode
+from lp.translations.model.customlanguagecode import (
+    CustomLanguageCode, HasCustomLanguageCodesMixin)
 from lp.translations.model.potemplate import POTemplate
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distribution import Distribution
@@ -63,7 +63,7 @@ from lp.registry.model.person import Person
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
-from lp.services.database.precache import precache
+from lp.services.database.prejoin import prejoin
 from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from lp.blueprints.model.specification import (
@@ -81,6 +81,8 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
     NotFoundError)
+from lp.translations.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from lp.registry.interfaces.person import IPersonSet
@@ -166,13 +168,13 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
-              HasMergeProposalsMixin):
+              HasCustomLanguageCodesMixin, HasMergeProposalsMixin):
 
     """A Product."""
 
     implements(
-        IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
-        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget)
+        IFAQTarget, IHasBugSupervisor, IHasCustomLanguageCodes, IHasIcon,
+        IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget)
 
     _table = 'Product'
 
@@ -507,7 +509,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             for entry in import_queue.getAllEntries(target=self):
                 if entry.importer == old_owner:
                     removeSecurityProxy(entry).importer = new_owner
-            for series in self.serieses:
+            for series in self.series:
                 if series.owner == old_owner:
                     series.owner = new_owner
             for release in self.releases:
@@ -546,7 +548,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
-    serieses = SQLMultipleJoin('ProductSeries', joinColumn='product',
+    series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
     @property
@@ -722,7 +724,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         translatable_product_series = set(
             product_series
-            for product_series in self.serieses
+            for product_series in self.series
             if product_series.has_current_translation_templates)
         return sorted(
             translatable_product_series,
@@ -732,7 +734,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def obsolete_translatable_series(self):
         """See `IProduct`."""
         obsolete_product_series = set(
-            product_series for product_series in self.serieses
+            product_series for product_series in self.series
             if len(product_series.getObsoleteTranslationTemplates()) > 0)
         return sorted(obsolete_product_series, key=lambda s: s.datecreated)
 
@@ -913,12 +915,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         return ProductSeries.selectOneBy(product=self, name=name)
 
-    def newSeries(self, owner, name, summary, branch=None):
+    def newSeries(
+        self, owner, name, summary, branch=None, releasefileglob=None):
         # XXX: jamesh 2008-04-11
         # Set the ID of the new ProductSeries to avoid flush order
         # loops in ProductSet.createProduct()
-        series = ProductSeries(productID=self.id, owner=owner, name=name,
-                             summary=summary, branch=branch)
+        series = ProductSeries(
+            productID=self.id, owner=owner, name=name,
+            summary=summary, branch=branch, releasefileglob=releasefileglob)
         if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
             # The user is a product driver, and should be the driver of this
             # series to make him the release manager.
@@ -964,10 +968,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
 
-    def getCustomLanguageCode(self, language_code):
-        """See `IProduct`."""
-        return CustomLanguageCode.selectOneBy(
-            product=self, language_code=language_code)
+    def composeCustomLanguageCodeMatch(self):
+        """See `HasCustomLanguageCodesMixin`."""
+        return CustomLanguageCode.product == self
+
+    def createCustomLanguageCode(self, language_code, language):
+        """See `IHasCustomLanguageCodes`."""
+        return CustomLanguageCode(
+            product=self, language_code=language_code, language=language)
 
     def userCanEdit(self, user):
         """See `IProduct`."""
@@ -990,7 +998,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getTimeline(self, include_inactive=False):
         """See `IProduct`."""
-        series_list = sorted_version_numbers(self.serieses,
+        series_list = sorted_version_numbers(self.series,
                                              key=operator.attrgetter('name'))
         if self.development_focus in series_list:
             series_list.remove(self.development_focus)
@@ -1293,7 +1301,7 @@ class ProductSet:
 
         # We only want Product - the other tables are just to populate
         # the cache.
-        return precache(results)
+        return prejoin(results)
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""

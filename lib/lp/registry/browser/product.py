@@ -12,7 +12,6 @@ __all__ = [
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
-    'ProductDistributionsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditPeopleView',
@@ -82,13 +81,17 @@ from lp.bugs.browser.bugtask import (
 from lp.registry.browser.distribution import UsesLaunchpadMixin
 from lp.registry.browser.menu import (
     IRegistryCollectionNavigationMenu, RegistryCollectionActionMenuBase)
+from lp.registry.browser.packaging import PackagingDeleteView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
+from lp.translations.browser.customlanguagecode import (
+    HasCustomLanguageCodesTraversalMixin)
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
 from canonical.launchpad.webapp import (
@@ -116,8 +119,8 @@ SPACE = ' '
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
-    FAQTargetNavigationMixin, QuestionTargetTraversalMixin,
-    StructuralSubscriptionTargetTraversalMixin):
+    FAQTargetNavigationMixin, HasCustomLanguageCodesTraversalMixin,
+    QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -311,7 +314,7 @@ class ProductNavigationMenu(NavigationMenu):
         return Link('+branchvisibility', text)
 
 
-class ProductEditLinksMixin:
+class ProductEditLinksMixin(StructuralSubscriptionMenuMixin):
     """A mixin class for menus that need Product edit links."""
 
     @enabled_with_permission('launchpad.Edit')
@@ -338,10 +341,6 @@ class ProductEditLinksMixin:
     def administer(self):
         text = 'Administer'
         return Link('+admin', text, icon='edit')
-
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
 
 
 class IProductEditMenu(Interface):
@@ -373,6 +372,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         'packages',
         'series',
         'series_add',
+        'milestones',
         'downloads',
         'announce',
         'announcements',
@@ -388,7 +388,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         return Link('+topcontributors', text, icon='info')
 
     def distributions(self):
-        text = 'Packaging information'
+        text = 'Distribution packaging information'
         return Link('+distributions', text, icon='info')
 
     def packages(self):
@@ -403,6 +403,10 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
     def series_add(self):
         text = 'Register a series'
         return Link('+addseries', text, icon='add')
+
+    def milestones(self):
+        text = 'View milestones'
+        return Link('+milestones', text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def announce(self):
@@ -431,7 +435,7 @@ class ProductOverviewMenu(ApplicationMenu, ProductEditLinksMixin):
         return Link('+branchvisibility', text, icon='edit')
 
 
-class ProductBugsMenu(ApplicationMenu):
+class ProductBugsMenu(ApplicationMenu, StructuralSubscriptionMenuMixin):
 
     usedfor = IProduct
     facet = 'bugs'
@@ -460,16 +464,12 @@ class ProductBugsMenu(ApplicationMenu):
         text = 'Change security contact'
         return Link('+securitycontact', text, icon='edit')
 
-    def subscribe(self):
-        text = 'Subscribe to bug mail'
-        return Link('+subscribe', text, icon='edit')
-
 
 class ProductSpecificationsMenu(NavigationMenu,
                                 HasSpecificationsMenuMixin):
     usedfor = IProduct
     facet = 'specifications'
-    links = ['listall', 'doc', 'assignments', 'new']
+    links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
 
 
 def _sort_distros(a, b):
@@ -506,7 +506,7 @@ class SortSeriesMixin:
         The development focus is always first in the list.
         """
         series_list = []
-        for series in self.product.serieses:
+        for series in self.product.series:
             if filter is None or filter(series):
                 series_list.append(series)
         # In production data, there exist development focus series that are
@@ -549,26 +549,26 @@ class ProductWithSeries:
     cached locally and simply returned.
     """
 
-    # `serieses` and `development_focus` need to be declared as class
+    # `series` and `development_focus` need to be declared as class
     # attributes so that this class will not delegate the actual instance
     # variables to self.product, which would bypass the caching.
-    serieses = None
+    series = None
     development_focus = None
     delegates(IProduct, 'product')
 
     def __init__(self, product):
         self.product = product
-        self.serieses = []
-        for series in self.product.serieses:
+        self.series = []
+        for series in self.product.series:
             series_with_releases = SeriesWithReleases(series, parent=self)
-            self.serieses.append(series_with_releases)
+            self.series.append(series_with_releases)
             if self.product.development_focus == series:
                 self.development_focus = series_with_releases
 
-        # Get all of the releases for all of the serieses in a single
+        # Get all of the releases for all of the series in a single
         # query.  The query sorts the releases properly so we know the
         # resulting list is sorted correctly.
-        series_by_id = dict((series.id, series) for series in self.serieses)
+        series_by_id = dict((series.id, series) for series in self.series)
         self.release_by_id = {}
         milestones_and_releases = list(
             self.product.getMilestonesAndReleases())
@@ -840,40 +840,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
 
-    def distro_packaging(self):
-        """This method returns a representation of the product packagings
-        for this product, in a special structure used for the
-        product-distros.pt page template.
-
-        Specifically, it is a list of "distro" objects, each of which has a
-        title, and an attribute "packagings" which is a list of the relevant
-        packagings for this distro and product.
-        """
-        distros = {}
-        # first get a list of all relevant packagings
-        all_packagings = []
-        for series in self.context.serieses:
-            for packaging in series.packagings:
-                all_packagings.append(packaging)
-        # we sort it so that the packagings will always be displayed in the
-        # distroseries version, then productseries name order
-        all_packagings.sort(key=lambda a: (a.distroseries.version,
-            a.productseries.name, a.id))
-        for packaging in all_packagings:
-            if distros.has_key(packaging.distroseries.distribution.name):
-                distro = distros[packaging.distroseries.distribution.name]
-            else:
-                distro = {}
-                distro['name'] = packaging.distroseries.distribution.name
-                distro['title'] = packaging.distroseries.distribution.title
-                distro['packagings'] = []
-                distros[packaging.distroseries.distribution.name] = distro
-            distro['packagings'].append(packaging)
-        # now we sort the resulting set of "distro" objects, and return that
-        result = distros.values()
-        result.sort(cmp=_sort_distros)
-        return result
-
     def projproducts(self):
         """Return a list of other products from the same project as this
         product, excluding this product"""
@@ -926,16 +892,84 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
                 check_permission('launchpad.Commercial', self.context))
 
 
-class ProductPackagesView(ProductView):
+class ProductPackagesView(PackagingDeleteView):
     """View for displaying product packaging"""
 
-    label = 'Packages in Launchpad'
+    label = 'Linked packages'
 
+    @property
+    def all_packaging(self):
+        """See `PackagingDeleteView`."""
+        for series in self.context.series:
+            for packaging in series.packagings:
+                yield packaging
 
-class ProductDistributionsView(ProductView):
-    """View for displaying product packaging by distribution"""
+    @cachedproperty
+    def series_packages(self):
+        """A hierarchy of product series, packaging and field data.
 
-    label = 'Package comparison by distribution'
+        A dict of series and packagings. Each packaging is a dict of the
+        packaging and a hidden HTML field for forms:
+           [{series: <hoary>,
+             packagings: {
+                packaging: <packaging>,
+                field: '<input type=''hidden' ...>},
+                }]
+        """
+        # This method is a superset of all_packaging. While all_packaging will
+        # be called several times as data is mutated, series_packages should
+        # only be called during render().
+        packaged_series = []
+        for series in self.context.series:
+            packagings = []
+            for packaging in series.packagings:
+                form_id = 'delete-%s-%s-%s' % (
+                    packaging.distroseries.name,
+                    packaging.sourcepackagename.name,
+                    packaging.productseries.name,
+                    )
+                packaging_field = dict(
+                    packaging=packaging,
+                    form_id=form_id,
+                    field=self._renderHiddenPackagingField(packaging))
+                packagings.append(packaging_field)
+            packaged_series.append(dict(
+                series=series, packagings=packagings))
+        return packaged_series
+
+    @property
+    def distro_packaging(self):
+        """This method returns a representation of the product packagings
+        for this product, in a special structure used for the
+        product-distros.pt page template.
+
+        Specifically, it is a list of "distro" objects, each of which has a
+        title, and an attribute "packagings" which is a list of the relevant
+        packagings for this distro and product.
+        """
+        distros = {}
+        # first get a list of all relevant packagings
+        all_packagings = []
+        for series in self.context.series:
+            for packaging in series.packagings:
+                all_packagings.append(packaging)
+        # we sort it so that the packagings will always be displayed in the
+        # distroseries version, then productseries name order
+        all_packagings.sort(key=lambda a: (a.distroseries.version,
+            a.productseries.name, a.id))
+        for packaging in all_packagings:
+            if distros.has_key(packaging.distroseries.distribution.name):
+                distro = distros[packaging.distroseries.distribution.name]
+            else:
+                distro = {}
+                distro['distribution'] = packaging.distroseries.distribution
+                distro['packagings'] = []
+                distros[packaging.distroseries.distribution.name] = distro
+            distro['packagings'].append(packaging)
+        # now we sort the resulting set of "distro" objects, and return that
+        result = distros.values()
+        result.sort(cmp=_sort_distros)
+        return result
 
 
 class ProductDownloadFilesView(LaunchpadView,
@@ -957,14 +991,14 @@ class ProductDownloadFilesView(LaunchpadView,
     def getReleases(self):
         """See `ProductDownloadFileMixin`."""
         releases = set()
-        for series in self.product.serieses:
+        for series in self.product.series:
             releases.update(series.releases)
         return releases
 
     @cachedproperty
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
-        for series in self.product.serieses:
+        for series in self.product.series:
             if series.has_release_files:
                 return True
         return False
@@ -972,7 +1006,7 @@ class ProductDownloadFilesView(LaunchpadView,
     @cachedproperty
     def any_download_files_with_signatures(self):
         """Do any series or release download files have signatures?"""
-        for series in self.product.serieses:
+        for series in self.product.series:
             for release in series.releases:
                 for file in release.files:
                     if file.signature:
@@ -983,7 +1017,7 @@ class ProductDownloadFilesView(LaunchpadView,
     def milestones(self):
         """A mapping between series and releases that are milestones."""
         result = dict()
-        for series in self.product.serieses:
+        for series in self.product.series:
             result[series.name] = set()
             milestone_list = [m.name for m in series.milestones]
             for release in series.releases:
@@ -1273,7 +1307,8 @@ class ProductAddSeriesView(LaunchpadFormView):
             owner=self.user,
             name=data['name'],
             summary=data['summary'],
-            branch=data['branch'])
+            branch=data['branch'],
+            releasefileglob=data['releasefileglob'])
 
     @property
     def next_url(self):

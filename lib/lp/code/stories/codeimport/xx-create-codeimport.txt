@@ -149,7 +149,7 @@ The error is shown even if the project is different.
     ...     print extract_text(message)
     There is 1 error.
     Those CVS details are already specified for
-    the imported branch ~vcs-imports/firefox/import2.
+    the imported branch ~no-priv/firefox/import2.
 
     >>> browser.getControl('Subversion').click()
     >>> browser.getControl('Branch URL').value = (
@@ -160,7 +160,7 @@ The error is shown even if the project is different.
     ...     print extract_text(message)
     There is 1 error.
     This Subversion branch URL is already specified for
-    the imported branch ~vcs-imports/firefox/imported.
+    the imported branch ~no-priv/firefox/imported.
 
 
 Requesting an import whose name would clash
