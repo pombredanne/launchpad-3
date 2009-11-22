@@ -1796,7 +1796,6 @@
         permission="zope.Public"
         name="+details"
         template="../templates/distribution-details.pt"/>
-    </browser:pages>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"

@@ -2998,10 +2998,10 @@ class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
         view/macro:page
-        view/macro:page/onecolumn
-        view/macro:page/applicationhome
-        view/macro:page/pillarindex
-        view/macro:page/freeform
+        view/macro:page/main_side
+        view/macro:page/main_only
+        view/macro:page/searchless
+        view/macro:page/locationless
 
         view/macro:pagehas/applicationtabs
         view/macro:pagehas/applicationborder
@@ -3017,7 +3017,6 @@ class PageMacroDispatcher:
 
     implements(ITraversable)
 
-    master = ViewPageTemplateFile('../templates/main-template.pt')
     base = ViewPageTemplateFile('../../../lp/app/templates/base-layout.pt')
 
     def __init__(self, context):
@@ -3054,7 +3053,7 @@ class PageMacroDispatcher:
         if pagetype not in self._pagetypes:
             raise TraversalError('unknown pagetype: %s' % pagetype)
         self.context.__pagetype__ = pagetype
-        return self._template.macros['master']
+        return self.base.macros['master']
 
     def haspage(self, layoutelement):
         pagetype = getattr(self.context, '__pagetype__', None)
@@ -3069,15 +3068,9 @@ class PageMacroDispatcher:
 
         def __init__(self,
             applicationtabs=False,
-            applicationborder=False,
-            applicationbuttons=False,
             globalsearch=False,
-            heading=False,
-            pageheading=True,
             portlets=False,
             pagetypewasset=True,
-            actionsmenu=True,
-            navigationtabs=False
             ):
             self.elements = vars()
 
@@ -3085,107 +3078,24 @@ class PageMacroDispatcher:
             return self.elements[name]
 
     _pagetypes = {
-        'unset':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                pagetypewasset=False),
-        'default':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True),
-        'default2.0':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                navigationtabs=True),
-        'onecolumn':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                navigationtabs=True,
-                portlets=False),
-        'applicationhome':
-            LayoutElements(
-                applicationborder=True,
-                applicationbuttons=True,
-                applicationtabs=True,
-                globalsearch=True,
-                pageheading=False,
-                heading=True),
-        'pillarindex':
-            LayoutElements(
-                applicationborder=True,
-                applicationbuttons=True,
-                globalsearch=True,
-                heading=True,
-                pageheading=False,
-                portlets=True),
-        'search':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=False,
-                heading=False,
-                pageheading=False,
-                portlets=False),
-       'freeform':
-            LayoutElements(),
        'main_side':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=True,
-                heading=False,
-                pageheading=False,
                 portlets=True),
        'main_only':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=True,
-                heading=False,
-                pageheading=False,
                 portlets=False),
        'searchless':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=False,
-                heading=False,
-                pageheading=False,
                 portlets=False),
        'locationless':
             LayoutElements(),
         }
-
-    _3_0_pagetypes = [
-        'main_side',
-        'main_only',
-        'searchless',
-        'locationless',
-        ]
-
-    @property
-    def _template(self):
-        """Return the ViewPageTemplateFile used by layout."""
-        if self.context.__pagetype__ in self._3_0_pagetypes:
-            return self.base
-        else:
-            return self.master
 
 
 class TranslationGroupFormatterAPI(ObjectFormatterAPI):
