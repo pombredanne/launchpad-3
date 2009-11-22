@@ -175,12 +175,16 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
     """Tests for `lp.codehosting.bzrutils.get_vfs_format_classes`.
     """
 
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        self.disable_directory_isolation()
+
     def tearDown(self):
         # This makes sure the connections held by the branches opened in the
         # test are dropped, so the daemon threads serving those branches can
         # exit.
         gc.collect()
-        super(TestGetVfsFormatClasses, self).tearDown()
+        TestCaseWithTransport.tearDown(self)
 
     def test_get_vfs_format_classes(self):
         # get_vfs_format_classes for a returns the underlying format classes
