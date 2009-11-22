@@ -92,10 +92,6 @@
             facet="overview"
             template="../templates/distroseries-details.pt"/>
         <browser:page
-            name="+portlet-lifecycle"
-            facet="overview"
-            template="../templates/distroseries-portlet-lifecycle.pt"/>
-        <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"/>
     </browser:pages>
@@ -317,10 +313,6 @@
             name="+details"
             facet="overview"
             template="../templates/project-details.pt"/>
-        <browser:page
-            name="+portlet-lifecycle"
-            facet="overview"
-            template="../templates/project-portlet-lifecycle.pt"/>
         <browser:page
             name="+portlet-milestones"
             facet="overview"
@@ -1860,9 +1852,6 @@
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"
         permission="zope.Public">
-        <browser:page
-            name="+portlet-lifecycle"
-            template="../templates/distribution-portlet-lifecycle.pt"/>
         <browser:page
             name="+portlet-milestones"
             template="../templates/object-portlet-milestones.pt"/>
