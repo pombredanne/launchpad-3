@@ -91,14 +91,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.sourcepackage import ISourcePackageFactory
 from lp.registry.model.sourcepackage import SourcePackage
-
-
-def get_plural_text(count, singular, plural):
-    """Return 'singular' if 'count' is 1, 'plural' otherwise."""
-    if count == 1:
-        return singular
-    else:
-        return plural
+from lp.services.browser_helpers import get_plural_text
 
 
 class CodeVHostBreadcrumb(Breadcrumb):

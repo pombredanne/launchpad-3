@@ -827,12 +827,16 @@ class BugWatchUpdater(object):
                     if new_malone_importance is not None:
                         bug_watch.updateImportance(new_remote_importance,
                             new_malone_importance)
-                    if can_import_comments:
-                        self.importBugComments(remotesystem, bug_watch)
-                    if can_push_comments:
-                        self.pushBugComments(remotesystem, bug_watch)
-                    if ISupportsBackLinking.providedBy(remotesystem):
-                        self.linkLaunchpadBug(remotesystem, bug_watch)
+                    if bug_watch.bug.duplicateof is None:
+                        # Only sync comments and backlink if the local
+                        # bug isn't a duplicate. This helps us to avoid
+                        # spamming upstream.
+                        if can_import_comments:
+                            self.importBugComments(remotesystem, bug_watch)
+                        if can_push_comments:
+                            self.pushBugComments(remotesystem, bug_watch)
+                        if ISupportsBackLinking.providedBy(remotesystem):
+                            self.linkLaunchpadBug(remotesystem, bug_watch)
 
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.

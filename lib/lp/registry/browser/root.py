@@ -54,10 +54,6 @@ shipit_faq_url = 'http://www.ubuntu.com/getubuntu/shipit-faq'
 class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     """An view for the default view of the LaunchpadRoot."""
 
-    # The homepage has two columns to hold featured projects. This
-    # determines the number of projects we display in each column.
-    FEATURED_PROJECT_ROWS = 11
-
     featured_projects = []
     featured_projects_top = None
 
@@ -75,9 +71,8 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
         super(LaunchpadRootIndexView, self).initialize()
         # The maximum number of projects to be displayed as defined by the
         # number of items plus one top featured project.
-        max_projects = self.FEATURED_PROJECT_ROWS + 1
         self.featured_projects = list(
-            getUtility(IPillarNameSet).featured_projects)[:max_projects]
+            getUtility(IPillarNameSet).featured_projects)
         self._setFeaturedProjectsTop()
 
     def _setFeaturedProjectsTop(self):

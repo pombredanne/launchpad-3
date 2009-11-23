@@ -309,6 +309,19 @@ class TestGetByUrl(TestCaseWithFactory):
         branch2 = branch_set.getByUrl('lp://edge/~aa/b/c')
         self.assertEqual(branch, branch2)
 
+    def test_getByUrls(self):
+        # getByUrls returns a dictionary mapping branches to URLs.
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        url3 = 'http://example.com/%s' % self.factory.getUniqueString()
+        branch_set = getUtility(IBranchLookup)
+        branches = branch_set.getByUrls(
+            [branch1.bzr_identity, branch2.bzr_identity, url3])
+        self.assertEqual(
+            {branch1.bzr_identity: branch1,
+             branch2.bzr_identity: branch2,
+             url3: None}, branches)
+
     def test_uriToUniqueName(self):
         """Ensure uriToUniqueName works.
 
