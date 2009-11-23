@@ -948,7 +948,7 @@ div.translation-help-links div {
   and we are unlikely to wrap the text. Not to mention that setting the display
   in this way breaks the icons.
 */
-body.tab-bugs #subscribers-links .sprite {
+body.tab-bugs #portlet-subscribers .sprite {
     display: inline;
 }
 
