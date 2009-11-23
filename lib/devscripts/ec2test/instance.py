@@ -403,7 +403,7 @@ class EC2Instance:
         :param kw: Passed to `func`.
         """
         # We ignore the value of the 'shutdown' argument and always shut down
-        # unless `func` returns nromally.
+        # unless `func` returns normally.
         really_shutdown = True
         try:
             self.start()
