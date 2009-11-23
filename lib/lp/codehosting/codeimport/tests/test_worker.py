@@ -9,6 +9,7 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import unittest
@@ -862,6 +863,14 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
         super(TestBzrSvnImport, self).setUp()
         load_optional_plugin('svn')
         self.setUpImport()
+        # XXX MichaelHudson, 2009-11-24, bug=464174:
+        # TestCaseWithMemoryTransport likes to set these environment variables
+        # to unicode strings and bzr-svn hits an assertion failure in this
+        # case.
+        os.environ['BZR_HOME'] = os.environ['BZR_HOME'].encode(
+            sys.getfilesystemencoding())
+        os.environ['HOME'] = os.environ['HOME'].encode(
+            sys.getfilesystemencoding())
 
     def makeImportWorker(self):
         """Make a new `ImportWorker`."""
