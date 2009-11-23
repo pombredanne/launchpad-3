@@ -596,7 +596,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: UnprintableException\n')
         self.assertEqual(
-            lines[2], 'Exception-Value: <unprintable instance object>\n')
+            lines[2],
+            'Exception-Value: <unprintable UnprintableException object>\n')
         self.assertEqual(lines[3], 'Date: 2006-01-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
@@ -618,7 +619,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise UnprintableException()
         self.assertEqual(
-            lines[17], 'UnprintableException: <unprintable instance object>\n'
+            lines[17],
+            'UnprintableException: <unprintable UnprintableException object>\n'
             )
 
     def test_raising_unauthorized_without_request(self):

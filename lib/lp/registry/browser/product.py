@@ -12,7 +12,6 @@ __all__ = [
     'ProductAdminView',
     'ProductBrandingView',
     'ProductBugsMenu',
-    'ProductDistributionsView',
     'ProductDownloadFileMixin',
     'ProductDownloadFilesView',
     'ProductEditPeopleView',
@@ -86,6 +85,8 @@ from lp.registry.browser.packaging import PackagingDeleteView
 from lp.answers.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.feeds import FeedsMixin
 from lp.registry.browser.productseries import get_series_branch_error
+from lp.translations.browser.customlanguagecode import (
+    HasCustomLanguageCodesTraversalMixin)
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
@@ -118,8 +119,8 @@ SPACE = ' '
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin,
-    FAQTargetNavigationMixin, QuestionTargetTraversalMixin,
-    StructuralSubscriptionTargetTraversalMixin):
+    FAQTargetNavigationMixin, HasCustomLanguageCodesTraversalMixin,
+    QuestionTargetTraversalMixin, StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -839,40 +840,6 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
 
-    def distro_packaging(self):
-        """This method returns a representation of the product packagings
-        for this product, in a special structure used for the
-        product-distros.pt page template.
-
-        Specifically, it is a list of "distro" objects, each of which has a
-        title, and an attribute "packagings" which is a list of the relevant
-        packagings for this distro and product.
-        """
-        distros = {}
-        # first get a list of all relevant packagings
-        all_packagings = []
-        for series in self.context.series:
-            for packaging in series.packagings:
-                all_packagings.append(packaging)
-        # we sort it so that the packagings will always be displayed in the
-        # distroseries version, then productseries name order
-        all_packagings.sort(key=lambda a: (a.distroseries.version,
-            a.productseries.name, a.id))
-        for packaging in all_packagings:
-            if distros.has_key(packaging.distroseries.distribution.name):
-                distro = distros[packaging.distroseries.distribution.name]
-            else:
-                distro = {}
-                distro['name'] = packaging.distroseries.distribution.name
-                distro['title'] = packaging.distroseries.distribution.title
-                distro['packagings'] = []
-                distros[packaging.distroseries.distribution.name] = distro
-            distro['packagings'].append(packaging)
-        # now we sort the resulting set of "distro" objects, and return that
-        result = distros.values()
-        result.sort(cmp=_sort_distros)
-        return result
-
     def projproducts(self):
         """Return a list of other products from the same project as this
         product, excluding this product"""
@@ -970,11 +937,39 @@ class ProductPackagesView(PackagingDeleteView):
                 series=series, packagings=packagings))
         return packaged_series
 
+    @property
+    def distro_packaging(self):
+        """This method returns a representation of the product packagings
+        for this product, in a special structure used for the
+        product-distros.pt page template.
 
-class ProductDistributionsView(ProductView):
-    """View for displaying product packaging by distribution"""
-
-    label = 'Package comparison by distribution'
+        Specifically, it is a list of "distro" objects, each of which has a
+        title, and an attribute "packagings" which is a list of the relevant
+        packagings for this distro and product.
+        """
+        distros = {}
+        # first get a list of all relevant packagings
+        all_packagings = []
+        for series in self.context.series:
+            for packaging in series.packagings:
+                all_packagings.append(packaging)
+        # we sort it so that the packagings will always be displayed in the
+        # distroseries version, then productseries name order
+        all_packagings.sort(key=lambda a: (a.distroseries.version,
+            a.productseries.name, a.id))
+        for packaging in all_packagings:
+            if distros.has_key(packaging.distroseries.distribution.name):
+                distro = distros[packaging.distroseries.distribution.name]
+            else:
+                distro = {}
+                distro['distribution'] = packaging.distroseries.distribution
+                distro['packagings'] = []
+                distros[packaging.distroseries.distribution.name] = distro
+            distro['packagings'].append(packaging)
+        # now we sort the resulting set of "distro" objects, and return that
+        result = distros.values()
+        result.sort(cmp=_sort_distros)
+        return result
 
 
 class ProductDownloadFilesView(LaunchpadView,
@@ -1152,7 +1147,18 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         return self.next_url
 
 
-class ProductAdminView(ProductEditView):
+class EditPrivateBugsMixin:
+
+    def validate_private_bugs(self, data):
+        """Perform validation for the private bugs setting."""
+        if data.get('private_bugs') and self.context.bug_supervisor is None:
+            self.setFieldError('private_bugs',
+                structured(
+                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
+                    'for this project first.',
+                    canonical_url(self.context, rootsite="bugs")))
+
+class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
 
@@ -1206,12 +1212,7 @@ class ProductAdminView(ProductEditView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        if data.get('private_bugs') and self.context.bug_supervisor is None:
-            self.setFieldError('private_bugs',
-                structured(
-                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
-                    'for this project first.',
-                    canonical_url(self.context, rootsite="bugs")))
+        self.validate_private_bugs(data)
 
     @property
     def cancel_url(self):
@@ -1219,7 +1220,7 @@ class ProductAdminView(ProductEditView):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ProductEditView):
+class ProductReviewLicenseView(ProductEditView, EditPrivateBugsMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
@@ -1236,11 +1237,10 @@ class ProductReviewLicenseView(ProductEditView):
         return 'Review %s' % self.context.title
 
     def validate(self, data):
-        """See `LaunchpadFormView`.
+        """See `LaunchpadFormView`."""
 
-        A project can only be approved if it has OTHER_OPEN_SOURCE as one of
-        its licenses and not OTHER_PROPRIETARY.
-        """
+        # A project can only be approved if it has OTHER_OPEN_SOURCE as one of
+        # its licenses and not OTHER_PROPRIETARY.
         licenses = self.context.licenses
         license_approved = data.get('license_approved', False)
         if license_approved:
@@ -1255,6 +1255,10 @@ class ProductReviewLicenseView(ProductEditView):
                 # An Other/Open Source license was specified so it may be
                 # approved.
                 pass
+
+        # Private bugs can only be enabled if the product has a bug
+        # supervisor.
+        self.validate_private_bugs(data)
 
     @property
     def next_url(self):
@@ -1312,7 +1316,8 @@ class ProductAddSeriesView(LaunchpadFormView):
             owner=self.user,
             name=data['name'],
             summary=data['summary'],
-            branch=data['branch'])
+            branch=data['branch'],
+            releasefileglob=data['releasefileglob'])
 
     @property
     def next_url(self):

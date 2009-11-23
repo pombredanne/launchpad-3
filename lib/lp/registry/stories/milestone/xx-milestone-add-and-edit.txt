@@ -75,6 +75,14 @@ can create structural bug subscriptions.
     >>> print user_browser.title
     Subscribe to Bugs in Mozilla Firefox 1.0
 
+But we can't subscribe to project milestones, since they are not real objects.
+
+    >>> user_browser.open('http://launchpad.dev/mozilla/+milestone/1.0')
+    >>> user_browser.getLink('Subscribe to bug mail')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
 
 == Deleting milestones ==
 

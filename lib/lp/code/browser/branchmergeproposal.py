@@ -28,13 +28,14 @@ __all__ = [
     'BranchMergeProposalSubscribersView',
     'BranchMergeProposalView',
     'BranchMergeProposalVoteView',
+    'latest_proposals_for_each_branch',
     ]
 
 import operator
 
 import simplejson
 from zope.app.form.browser import TextAreaWidget
-from zope.component import adapter, getUtility
+from zope.component import adapter, adapts, getMultiAdapter, getUtility
 from zope.event import notify as zope_notify
 from zope.formlib import form
 from zope.interface import Interface, implementer, implements
@@ -60,7 +61,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IPrimaryContext
 from canonical.launchpad.webapp.menu import NavigationMenu
-from canonical.launchpad.webapp.tales import FormattersAPI
+from canonical.launchpad.webapp.tales import (
+    DateTimeFormatterAPI, FormattersAPI)
 from canonical.widgets.lazrjs import (
     TextAreaEditorWidget, vocabulary_to_choice_edit_items)
 
@@ -74,11 +76,34 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
+from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.person import IPersonSet
 from lp.services.comments.interfaces.conversation import IConversation
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
+
+
+def latest_proposals_for_each_branch(proposals):
+    """Returns the most recent merge proposals for any particular branch.
+
+    Also filters out proposals that the logged in user can't see.
+    """
+    targets = {}
+    for proposal in proposals:
+        # Don't show the proposal if the user can't see it.
+        if not check_permission('launchpad.View', proposal):
+            continue
+        # Only show the must recent proposal for any given target.
+        date_created = proposal.date_created
+        target_id = proposal.target_branch.id
+
+        if target_id not in targets or date_created > targets[target_id][1]:
+            targets[target_id] = (proposal, date_created)
+
+    return sorted(
+        [proposal for proposal, date_created in targets.itervalues()],
+        key=operator.attrgetter('date_created'), reverse=True)
 
 
 class BranchMergeProposalPrimaryContext:
@@ -137,6 +162,23 @@ class BranchMergeCandidateView(LaunchpadView):
             BranchMergeProposalStatus.SUPERSEDED : 'Superseded'
             }
         return friendly_texts[self.context.queue_status]
+
+    @property
+    def status_title(self):
+        """The title for the status text.
+
+        Only set if the status is approved or rejected.
+        """
+        result = ''
+        if self.context.queue_status in (
+            BranchMergeProposalStatus.CODE_APPROVED,
+            BranchMergeProposalStatus.REJECTED
+            ):
+            formatter = DateTimeFormatterAPI(self.context.date_reviewed)
+            result = '%s %s' % (
+                self.context.reviewer.displayname,
+                formatter.displaydate())
+        return result
 
 
 class BranchMergeProposalMenuMixin:
@@ -427,10 +469,44 @@ class BranchMergeProposalStatusMixin:
         return SimpleVocabulary(terms)
 
 
+class DiffRenderingMixin:
+    """A mixin class for handling diff text."""
+
+    @cachedproperty
+    def preview_diff_text(self):
+        """Return a (hopefully) intelligently encoded review diff."""
+        preview_diff = self.preview_diff
+        if preview_diff is None:
+            return None
+        try:
+            diff = preview_diff.text.decode('utf-8')
+        except UnicodeDecodeError:
+            diff = preview_diff.text.decode('windows-1252', 'replace')
+        # Strip off the trailing carriage returns.
+        return diff.rstrip('\n')
+
+    @cachedproperty
+    def diff_oversized(self):
+        """Return True if the review_diff is over the configured size limit.
+
+        The diff can be over the limit in two ways.  If the diff is oversized
+        in bytes it will be cut off at the Diff.text method.  If the number of
+        lines is over the max_format_lines, then it is cut off at the fmt:diff
+        processing.
+        """
+        review_diff = self.preview_diff
+        if review_diff is None:
+            return False
+        if review_diff.oversized:
+            return True
+        diff_text = self.preview_diff_text
+        return diff_text.count('\n') >= config.diff.max_format_lines
+
 
 class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin,
-                              BranchMergeProposalStatusMixin):
+                              BranchMergeProposalStatusMixin,
+                              DiffRenderingMixin):
     """A basic view used for the index page."""
 
     implements(IBranchMergeProposalActionMenu)
@@ -495,36 +571,6 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         if self.context.review_diff is not None:
             return self.context.review_diff.diff
         return None
-
-    @cachedproperty
-    def preview_diff_text(self):
-        """Return a (hopefully) intelligently encoded review diff."""
-        preview_diff = self.preview_diff
-        if preview_diff is None:
-            return None
-        try:
-            diff = preview_diff.text.decode('utf-8')
-        except UnicodeDecodeError:
-            diff = preview_diff.text.decode('windows-1252', 'replace')
-        # Strip off the trailing carriage returns.
-        return diff.rstrip('\n')
-
-    @cachedproperty
-    def review_diff_oversized(self):
-        """Return True if the review_diff is over the configured size limit.
-
-        The diff can be over the limit in two ways.  If the diff is oversized
-        in bytes it will be cut off at the Diff.text method.  If the number of
-        lines is over the max_format_lines, then it is cut off at the fmt:diff
-        processing.
-        """
-        review_diff = self.preview_diff
-        if review_diff is None:
-            return False
-        if review_diff.oversized:
-            return True
-        diff_text = self.preview_diff_text
-        return diff_text.count('\n') >= config.diff.max_format_lines
 
     @property
     def has_bug_or_spec(self):
@@ -1290,3 +1336,28 @@ def text_xhtml_representation(context, field, request):
         html    = formatter(nomail).text_to_html()
         return html.encode('utf-8')
     return renderer
+
+
+class FormatPreviewDiffView(LaunchpadView, DiffRenderingMixin):
+    """A simple view to render a diff formatted nicely."""
+
+    __used_for__ = IPreviewDiff
+
+    @property
+    def preview_diff(self):
+        return self.context
+
+
+class PreviewDiffHTMLRepresentation:
+    adapts(IPreviewDiff, IWebServiceClientRequest)
+    implements(Interface)
+
+    def __init__(self, diff, request):
+        self.diff = diff
+        self.request = request
+
+    def __call__(self):
+        """Render `BugBranch` as XHTML using the webservice."""
+        diff_view = getMultiAdapter(
+            (self.diff, self.request), name="+diff")
+        return diff_view()
