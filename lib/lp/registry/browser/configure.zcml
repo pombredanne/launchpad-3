@@ -873,9 +873,6 @@
                 name="+sshkeys"
                 attribute="showSSHKeys"/>
             <browser:page
-                name="+portlet-emails"
-                template="../templates/person-portlet-emails.pt"/>
-            <browser:page
                 name="+portlet-contact-details"
                 template="../templates/person-portlet-contact-details.pt"/>
             <browser:page
@@ -1468,13 +1465,11 @@
         name="+packages"
         facet="overview"
         template="../templates/product-packages.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.product.IProduct"
-        permission="zope.Public"
-        class="lp.registry.browser.product.ProductDistributionsView"
+    <browser:renamed-page
         name="+distributions"
-        facet="overview"
-        template="../templates/product-distros.pt"/>
+        for="lp.registry.interfaces.product.IProduct"
+        new_name="+packages"
+        rootsite="mainsite"/>
     <browser:page
         for="lp.registry.interfaces.product.IProduct"
         permission="zope.Public"
@@ -2159,7 +2154,7 @@
     </browser:page>
     <browser:page
         for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         class="lp.registry.browser.distributionmirror.DistributionMirrorReassignmentView"
         facet="overview"
         name="+reassign"

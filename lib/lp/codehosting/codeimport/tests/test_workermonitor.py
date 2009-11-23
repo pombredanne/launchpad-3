@@ -11,15 +11,14 @@ __all__ = [
 import os
 import shutil
 import StringIO
-import sys
 import tempfile
 import unittest
 
 from bzrlib.branch import Branch
-from bzrlib.tests import TestCaseWithMemoryTransport
+from bzrlib.tests import TestCase as BzrTestCase
 
 from twisted.internet import defer, error, protocol, reactor
-from twisted.trial.unittest import TestCase
+from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
@@ -50,7 +49,7 @@ from lp.testing import login, logout
 from lp.testing.factory import LaunchpadObjectFactory
 
 
-class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
+class TestWorkerMonitorProtocol(ProcessTestsMixin, TrialTestCase):
 
     layer = TwistedLayer
 
@@ -128,13 +127,14 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
             self.protocol._tail, 'line 3\nline 4\nline 5\nline 6\n')
 
 
-class TestWorkerMonitorUnit(TestCase):
+class TestWorkerMonitorUnit(TrialTestCase):
     """Unit tests for most of the `CodeImportWorkerMonitor` class.
 
     We have to pay attention to the fact that several of the methods of the
     `CodeImportWorkerMonitor` class are wrapped in decorators that create and
     commit a transaction, and have to start our own transactions to check what
-    they did."""
+    they did.
+    """
 
     layer = TwistedLaunchpadZopelessLayer
 
@@ -320,7 +320,7 @@ class TestWorkerMonitorUnit(TestCase):
         self.assertEqual(calls, [])
 
 
-class TestWorkerMonitorRunNoProcess(TestCase):
+class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
     """Tests for `CodeImportWorkerMonitor.run` that don't launch a subprocess.
     """
 
@@ -434,21 +434,22 @@ class CIWorkerMonitorForTesting(CodeImportWorkerMonitor):
         return protocol
 
 
-class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
+class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithMemoryTransport.setUp(self)
+        BzrTestCase.setUp(self)
         login('no-priv@canonical.com')
         self.factory = LaunchpadObjectFactory()
         nuke_codeimport_sample_data()
         self.repo_path = tempfile.mkdtemp()
+        self.disable_directory_isolation()
         self.addCleanup(shutil.rmtree, self.repo_path)
         self.foreign_commit_count = 0
 
     def tearDown(self):
-        TestCaseWithMemoryTransport.tearDown(self)
+        BzrTestCase.tearDown(self)
         logout()
 
     def makeCVSCodeImport(self):

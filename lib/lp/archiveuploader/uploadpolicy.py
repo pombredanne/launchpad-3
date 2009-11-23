@@ -130,29 +130,6 @@ class AbstractUploadPolicy:
                 # Buildd binary uploads (resulting from successful builds)
                 # to copy archives may go into *any* pocket.
                 return
-        if upload.is_ppa:
-            if self.pocket != PackagePublishingPocket.RELEASE:
-                upload.reject(
-                    "PPA uploads must be for the RELEASE pocket.")
-        elif (self.archive.purpose == ArchivePurpose.PARTNER and
-              self.pocket != PackagePublishingPocket.RELEASE and
-              self.pocket != PackagePublishingPocket.PROPOSED):
-            # Partner uploads can only go to the release or proposed
-            # pockets.
-            upload.reject(
-                "Partner uploads must be for the RELEASE or PROPOSED pocket.")
-        else:
-            # Uploads to the partner archive are allowed in any distroseries
-            # state.
-            # XXX julian 2005-05-29 bug=117557:
-            # This is a greasy hack until bug #117557 is fixed.
-            if (self.distroseries and
-                self.archive.purpose != ArchivePurpose.PARTNER and
-                not self.distroseries.canUploadToPocket(self.pocket)):
-                upload.reject(
-                    "Not permitted to upload to the %s pocket in a "
-                    "series in the '%s' state." % (
-                    self.pocket.name, self.distroseries.status.name))
 
         # reject PPA uploads by default
         self.rejectPPAUploads(upload)

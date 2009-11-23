@@ -732,6 +732,7 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         self.saved_factory = bzrlib.ui.ui_factory
+        self.disable_directory_isolation()
 
     def tearDown(self):
         TestCaseWithTransport.tearDown(self)

@@ -25,4 +25,11 @@ build:
 		fi;\
 	done
 
-.PHONY: check all build
+clean:
+	@ for subdir in ${build_dirs}; do\
+		if [ -e $$subdir/Makefile ]; then\
+			(cd $$subdir && bzr clean-tree --ignored --force) || exit $$?;\
+		fi;\
+	done
+
+.PHONY: check all build clean

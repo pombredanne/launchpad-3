@@ -54,6 +54,10 @@ class WorkerTest(TestCaseWithTransport):
 
     layer = BaseLayer
 
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        self.disable_directory_isolation()
+
     def assertDirectoryTreesEqual(self, directory1, directory2):
         """Assert that `directory1` has the same structure as `directory2`.
 
