@@ -145,6 +145,9 @@ def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
             PackagePublishingPocket.RELEASE,
             PackagePublishingPocket.PROPOSED):
             return InvalidPocketForPartnerArchive()
+    elif archive.is_ppa:
+        if pocket != PackagePublishingPocket.RELEASE:
+            return InvalidPocketForPPA()
     else:
         # Uploads to the partner archive are allowed in any distroseries
         # state.
@@ -153,8 +156,6 @@ def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
         if not distroseries.canUploadToPocket(pocket):
             return CannotUploadToPocket(distroseries, pocket)
 
-    if archive.is_ppa and pocket != PackagePublishingPocket.RELEASE:
-        return InvalidPocketForPPA()
     return verify_upload(
         person, sourcepackagename, archive, component, distroseries,
         strict_component)

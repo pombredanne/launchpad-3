@@ -873,9 +873,6 @@
                 name="+sshkeys"
                 attribute="showSSHKeys"/>
             <browser:page
-                name="+portlet-emails"
-                template="../templates/person-portlet-emails.pt"/>
-            <browser:page
                 name="+portlet-contact-details"
                 template="../templates/person-portlet-contact-details.pt"/>
             <browser:page
