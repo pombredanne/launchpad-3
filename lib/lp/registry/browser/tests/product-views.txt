@@ -188,6 +188,35 @@ also reactivate the project at the same time.
     ...     }
     >>> view = create_initialized_view(
     ...     firefox, name='+review-license', form=form)
+
+He encounters an error, though, as the project does not have a bug
+supervisor set, which is required for turning on private bugs.
+
+    >>> from canonical.launchpad.testing.pages import extract_text
+    >>> for error in view.errors:
+    ...     print extract_text(error)
+    Set a bug supervisor for this project first.
+
+    >>> firefox.bug_supervisor is None
+    True
+
+After setting the bug supervisor the project can have private bugs enabled.
+
+    >>> login('mark@example.com')
+    >>> firefox.setBugSupervisor(cprov, mark)
+    >>> login('commercial-member@canonical.com')
+
+    >>> firefox.private_bugs
+    False
+
+    >>> form = {
+    ...     'field.active': 'on',
+    ...     'field.private_bugs': 'on',
+    ...     'field.reviewer_whiteboard': 'Reinstated old project',
+    ...     'field.actions.change': 'Change',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     firefox, name='+review-license', form=form)
     >>> view.errors
     []
     >>> firefox.active
