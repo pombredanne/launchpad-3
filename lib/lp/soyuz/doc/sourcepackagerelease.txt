@@ -217,8 +217,9 @@ Let's get a sample SourcePackageRelease:
 
 == Package sizes ==
 
-The size of a package can be obtained via a private SourcePackageRelease
-method.
+The size of a source package can be obtained via the getPackageSize() method.
+It returns the sum of the size of all files comprising the source package (in
+kilo-bytes).
 
     >>> spr = SourcePackageRelease.get(14)
     >>> spr.name
