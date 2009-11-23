@@ -610,7 +610,10 @@ class LaunchpadServer(_BaseLaunchpadServer):
             # parent directories", which is just misleading.
             fault = trap_fault(
                 failure, faults.NotFound, faults.PermissionDenied)
-            raise PermissionDenied(virtual_url_fragment, fault.faultString)
+            faultString = fault.faultString
+            if isinstance(faultString, unicode):
+                faultString = faultString.encode('utf-8')
+            raise PermissionDenied(virtual_url_fragment, faultString)
 
         return deferred.addErrback(translate_fault)
 
