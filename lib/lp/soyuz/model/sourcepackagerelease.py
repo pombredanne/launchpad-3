@@ -277,6 +277,34 @@ class SourcePackageRelease(SQLBase):
             filetype=determine_source_file_type(file.filename),
             libraryfile=file)
 
+    def getPackageSize(self):
+        """See ISourcePackageRelease."""
+        size_query = """
+            SELECT
+                SUM(LibraryFileContent.filesize)/1024.0
+            FROM
+                SourcePackagereLease
+                JOIN SourcePackageReleaseFile ON
+                    SourcePackageReleaseFile.sourcepackagerelease =
+                    SourcePackageRelease.id
+                JOIN LibraryFileAlias ON
+                    SourcePackageReleaseFile.libraryfile =
+                    LibraryFileAlias.id
+                JOIN LibraryFileContent ON
+                    LibraryFileAlias.content = LibraryFileContent.id
+            WHERE
+                SourcePackageRelease.id = %s
+            """ % sqlvalues(self)
+
+        cur = cursor()
+        cur.execute(size_query)
+        results = cur.fetchone()
+
+        if len(results) == 1 and results[0] is not None:
+            return float(results[0])
+        else:
+            return 0.0
+
     def createBuild(self, distroarchseries, pocket, archive, processor=None,
                     status=None):
         """See ISourcePackageRelease."""

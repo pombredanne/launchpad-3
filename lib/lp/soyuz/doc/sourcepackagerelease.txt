@@ -223,7 +223,7 @@ method.
     >>> spr = SourcePackageRelease.get(14)
     >>> spr.name
     u'mozilla-firefox'
-    >>> spr._getPackageSize()
+    >>> spr.getPackageSize()
     9690.0
 
 Verify that empty packages have a size of zero.
@@ -233,7 +233,7 @@ Verify that empty packages have a size of zero.
     ...     name="linux-source-2.6.15")
     >>> spr = SourcePackageRelease.selectOneBy(
     ...     sourcepackagename=linux_src, version='2.6.15.3')
-    >>> spr._getPackageSize()
+    >>> spr.getPackageSize()
     0.0
 
 

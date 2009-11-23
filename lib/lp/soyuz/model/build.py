@@ -618,38 +618,6 @@ class Build(SQLBase):
             breaks=breaks, essential=essential, installedsize=installedsize,
             architecturespecific=architecturespecific)
 
-    def _getPackageSize(self):
-        """Get the size total (in KB) of files comprising this package.
-
-        Please note: empty packages (i.e. ones with no files or with
-        files that are all empty) have a size of zero.
-        """
-        size_query = """
-            SELECT
-                SUM(LibraryFileContent.filesize)/1024.0
-            FROM
-                SourcePackagereLease
-                JOIN SourcePackageReleaseFile ON
-                    SourcePackageReleaseFile.sourcepackagerelease =
-                    SourcePackageRelease.id
-                JOIN LibraryFileAlias ON
-                    SourcePackageReleaseFile.libraryfile =
-                    LibraryFileAlias.id
-                JOIN LibraryFileContent ON
-                    LibraryFileAlias.content = LibraryFileContent.id
-            WHERE
-                SourcePackageRelease.id = %s
-            """ % sqlvalues(self.sourcepackagerelease)
-
-        cur = cursor()
-        cur.execute(size_query)
-        results = cur.fetchone()
-
-        if len(results) == 1 and results[0] is not None:
-            return float(results[0])
-        else:
-            return 0.0
-
     def _estimateDuration(self):
         """Estimate the build duration."""
         # Always include the primary archive when looking for
@@ -685,7 +653,7 @@ class Build(SQLBase):
             # historic build data exists.
 
             # Get the package size in KB.
-            package_size = self._getPackageSize()
+            package_size = self.sourcepackagerelease.getPackageSize()
 
             if package_size > 0:
                 # Analysis of previous build data shows that a build rate
