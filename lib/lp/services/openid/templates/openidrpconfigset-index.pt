@@ -8,8 +8,6 @@
 
   <body>
     <div metal:fill-slot="main">
-      <h1>OpenID Relying Party Configurations</h1>
-
       <table class="listing" tal:condition="context/getAll">
         <thead>
           <tr>

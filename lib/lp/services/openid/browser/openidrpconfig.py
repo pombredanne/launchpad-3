@@ -81,6 +81,8 @@ class OpenIDRPConfigAddView(LaunchpadFormView):
     def next_url(self):
         return canonical_url(getUtility(IOpenIDRPConfigSet))
 
+    cancel_url = next_url
+
 
 class OpenIDRPConfigEditView(LaunchpadEditFormView):
     """View class for editing or removing RP configurations."""
@@ -118,3 +120,5 @@ class OpenIDRPConfigEditView(LaunchpadEditFormView):
     @property
     def next_url(self):
         return canonical_url(getUtility(IOpenIDRPConfigSet))
+
+    cancel_url = next_url
