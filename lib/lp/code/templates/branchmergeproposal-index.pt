@@ -15,11 +15,11 @@
     #code-review-votes {
       margin: 2em 0;
     }
-    #edit-description {
+    #edit-commit-message {
       margin: 1em 0 0 0;
     }
     /* A page-specific fix for inline text are editing to line up box. */
-    #edit-description .yui-ieditor-input { top: 0; }
+    #edit-commit-message .yui-ieditor-input { top: 0; }
   </style>
 </metal:block>
 
@@ -66,15 +66,32 @@
     </p>
   </div>
 
-  <div class="yui-g">
-    <div tal:define="link context/menu:context/add_comment"
+  <div class="yui-g"
+       tal:define="menu context/menu:context">
+    <div tal:define="link menu/add_comment"
          tal:condition="link/enabled"
          tal:content="structure link/render">
          Add comment
     </div>
 
-    <div id="edit-description" class="lazr-multiline-edit"
-         tal:content="structure view/commit_message_html"/>
+    <tal:no-commit-message condition="not: context/commit_message">
+      <div tal:define="link menu/set_commit_message"
+           tal:condition="link/enabled"
+           tal:content="structure link/render">
+        Set commit message
+      </div>
+      <div id="edit-commit-message" class="lazr-multiline-edit unseen"
+           tal:content="structure view/commit_message_html"/>
+    </tal:no-commit-message>
+    <tal:has-commit-message condition="context/commit_message">
+      <div tal:define="link menu/set_commit_message"
+           tal:condition="link/enabled"
+           tal:content="structure link/render" class="unseen">
+        Set commit message
+      </div>
+      <div id="edit-commit-message" class="lazr-multiline-edit"
+           tal:content="structure view/commit_message_html"/>
+    </tal:has-commit-message>
 
     <div id="conversation"
          tal:content="structure view/conversation/@@+render"/>
