@@ -7,7 +7,7 @@ the code from one branch into another.
 In order to test notifications, we need a subscriber for the branch.
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> from zope.component import getUtility
     >>> from lp.code.enums import (
     ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -103,6 +103,16 @@ commit message can be set.
     >>> print_tag_with_id(nopriv_browser.contents, 'edit-description')
     Commit Message
     Add more &lt;b&gt;mojo&lt;/b&gt;
+
+A commit message can be removed deleting the text when editing.
+
+    >>> nopriv_browser.getLink(url='edit-commit-message').click()
+    >>> nopriv_browser.getControl(name='field.commit_message').value = (
+    ...     '')
+    >>> nopriv_browser.getControl('Update').click()
+
+    >>> print_tag_with_id(nopriv_browser.contents, 'edit-description')
+    Commit Message
 
 
 Deleting merge proposals
@@ -642,3 +652,24 @@ access.
     Ready for review for merging into lp://dev/fooix
       Eric the Viking: Pending (code) requested ... ago
       Diff: 47 lines (+7/-0) 2 files modified                api
+
+
+Merge proposal details shown on the bug page
+--------------------------------------------
+
+If a branch with a merge proposal is linked to a bug, the merge proposal
+details are shown on the bug page under the branch link.
+
+    >>> login('admin@canonical.com')
+    >>> bug = factory.makeBug(product=fooix)
+    >>> ignored = bug.linkBranch(proposed, fred)
+    >>> bug_url = canonical_url(bug)
+    >>> logout()
+
+    >>> nopriv_browser.open(bug_url)
+    >>> print_tag_with_id(nopriv_browser.contents, 'bug-branches')
+    Related branches
+    lp://dev/~fred/fooix/proposed
+      Ready for review for merging into lp://dev/fooix
+        Eric the Viking: Pending (code) requested ... ago
+        Diff: 47 lines (+7/-0) 2 files modified              api
