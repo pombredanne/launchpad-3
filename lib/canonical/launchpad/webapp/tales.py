@@ -3004,11 +3004,7 @@ class PageMacroDispatcher:
         view/macro:page/locationless
 
         view/macro:pagehas/applicationtabs
-        view/macro:pagehas/applicationborder
-        view/macro:pagehas/applicationbuttons
         view/macro:pagehas/globalsearch
-        view/macro:pagehas/heading
-        view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
 
         view/macro:pagetype
