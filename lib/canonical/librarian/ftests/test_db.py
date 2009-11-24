@@ -109,12 +109,11 @@ class TestTransactionDecorators(unittest.TestCase):
         # ID.
         library = db.Library(restricted=False)
         aliases = library.getAliases(1)
-        self.assertEqual(
-            [
-                (1, u'netapplet-1.0.0.tar.gz', u'application/x-gtar'),
-                (2, u'netapplet_1.0.0.orig.tar.gz', u'application/x-gtar'),
-                ],
-            aliases)
+        expected_aliases = [
+            (1, u'netapplet-1.0.0.tar.gz', u'application/x-gtar'),
+            (2, u'netapplet_1.0.0.orig.tar.gz', u'application/x-gtar'),
+            ]
+        self.assertEqual(expected_aliases, aliases)
 
     def test_getAliases_content_is_none(self):
         # Library.getAliases() does not return records which do not
@@ -123,11 +122,10 @@ class TestTransactionDecorators(unittest.TestCase):
         alias = library.getAlias(1)
         alias.content = None
         aliases = library.getAliases(1)
-        self.assertEqual(
-            [
-                (2, u'netapplet_1.0.0.orig.tar.gz', u'application/x-gtar'),
-                ],
-            aliases)
+        expected_aliases = [
+            (2, u'netapplet_1.0.0.orig.tar.gz', u'application/x-gtar'),
+            ]
+        self.assertEqual(expected_aliases, aliases)
 
     def test_getAliases_content_wrong_library(self):
         # Library.getAliases() does not return data from restriceded
@@ -138,19 +136,17 @@ class TestTransactionDecorators(unittest.TestCase):
         alias.restricted = True
 
         aliases = unrestricted_library.getAliases(1)
-        self.assertEqual(
-            [
-                (2, u'netapplet_1.0.0.orig.tar.gz', u'application/x-gtar'),
-                ],
-            aliases)
+        expected_aliases = [
+            (2, u'netapplet_1.0.0.orig.tar.gz', u'application/x-gtar'),
+            ]
+        self.assertEqual(expected_aliases, aliases)
 
         restricted_library = db.Library(restricted=True)
         aliases = restricted_library.getAliases(1)
-        self.assertEqual(
-            [
-                (1, u'netapplet-1.0.0.tar.gz', u'application/x-gtar'),
-                ],
-            aliases)
+        expected_aliases = [
+            (1, u'netapplet-1.0.0.tar.gz', u'application/x-gtar'),
+            ]
+        self.assertEqual(expected_aliases, aliases)
 
     def test_read_transaction_reset_store(self):
         """Make sure that the store is reset after the transaction."""
