@@ -502,7 +502,6 @@
 
             <allow
                 attributes="
-                    bugs
                     bug_links"/>
             <require
                 permission="launchpad.AnyPerson"

@@ -745,6 +745,7 @@ class UserCannotUnsubscribePerson(Unauthorized):
 IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug
 IMessage['bugs'].value_type.schema = IBug
+ICve['bugs'].value_type.schema = IBug
 
 # In order to avoid circular dependencies, we only import
 # IBugSubscription (which itself imports IBug) here, and assign it as
