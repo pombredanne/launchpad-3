@@ -48,6 +48,7 @@
     <browser:page
         for="..interfaces.openidrpconfig.IOpenIDRPConfigSet"
         name="+index"
+        class=".openidrpconfig.OpenIDRPConfigSetView"
         permission="launchpad.Admin"
         template="../templates/openidrpconfigset-index.pt"
         />
