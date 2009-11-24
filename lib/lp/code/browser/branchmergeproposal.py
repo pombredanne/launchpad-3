@@ -198,7 +198,7 @@ class BranchMergeProposalMenuMixin:
     def set_commit_message(self):
         text = 'Set commit message'
         enabled = self.context.isMergable()
-        return Link('+edit-commit-message', text, icon='edit',
+        return Link('+edit-commit-message', text, icon='add',
                     enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')

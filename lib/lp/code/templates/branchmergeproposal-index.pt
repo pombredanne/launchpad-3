@@ -12,6 +12,9 @@
 
 <metal:block fill-slot="head_epilogue">
   <style type="text/css">
+    .menu-link-set_commit_message {
+    margin-top: 1em;
+    }
     #code-review-votes {
       margin: 2em 0;
     }
