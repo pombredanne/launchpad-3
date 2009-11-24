@@ -396,9 +396,9 @@ processor queue in the PPA category.
     >>> any_failed_build = cprov.archive.getBuildRecords(
     ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
     >>> one_minute = datetime.timedelta(seconds=60)
-    >>> removeSecurityProxy(
-    ...     any_failed_build).estimated_build_duration = one_minute
     >>> any_failed_build.retry()
+    >>> removeSecurityProxy(
+    ...     any_failed_build.buildqueue_record).estimated_duration = one_minute
     >>> login(ANONYMOUS)
 
 Now the pending build is included in the right category and group.

@@ -1274,8 +1274,9 @@ As a buildd-admin it will work:
 
 == Estimated Build Duration ==
 
-Newly created builds should have their 'estimated_build_duration' times
-set from previous builds' 'buildduration' values.
+Build records will have an 'estimated_duration' time in the associated
+BuildQueue record. The latter is set from a previous builds' 'buildduration'
+value.
 
 We will use SoyuzTestPublisher to generate coherent publications to
 test this behaviour.

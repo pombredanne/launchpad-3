@@ -633,6 +633,7 @@ class Build(SQLBase):
         completed_builds = Build.select("""
             Build.sourcepackagerelease = SourcePackageRelease.id AND
             Build.id != %s AND
+            Build.buildduration IS NOT NULL AND
             SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
             SourcePackageName.name = %s AND
             distroarchseries = %s AND
@@ -677,10 +678,11 @@ class Build(SQLBase):
         specific_job.build = self.id
         specific_job.job = job.id
         store.add(specific_job)
-        queue_entry = BuildQueue()
-        queue_entry.job = job.id
-        queue_entry.job_type = BuildFarmJobType.PACKAGEBUILD
-        queue_entry.estimated_duration = self._estimateDuration()
+        duration_estimate = self._estimateDuration()
+        queue_entry = BuildQueue(
+            estimated_duration=duration_estimate,
+            job_type=BuildFarmJobType.PACKAGEBUILD,
+            job=job.id)
         store.add(queue_entry)
         return queue_entry
 
