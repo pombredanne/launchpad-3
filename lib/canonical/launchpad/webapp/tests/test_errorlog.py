@@ -799,10 +799,22 @@ class TestErrorReportingUtility(unittest.TestCase):
         utility = ErrorReportingUtility()
         with utility.contextErrorVariables(a='b', c='d'):
             try:
-                raise ValueError('foo')
-            except ValueError:
+                raise ArbitraryException('foo')
+            except ArbitraryException:
                 info = sys.exc_info()
                 oops = utility._makeErrorReport(info)
+                self.assertEqual([('a', 'b'), ('c', 'd')], oops.req_vars)
+
+    def test__makeErrorReport_combines_request_and_error_vars(self):
+        """The request and error variables should be combined."""
+        utility = ErrorReportingUtility()
+        request = ScriptRequest([('c', 'd')])
+        with utility.contextErrorVariables(a='b'):
+            try:
+                raise ArbitraryException('foo')
+            except ArbitraryException:
+                info = sys.exc_info()
+                oops = utility._makeErrorReport(info, request)
                 self.assertEqual([('a', 'b'), ('c', 'd')], oops.req_vars)
 
 
