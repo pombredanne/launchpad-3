@@ -504,33 +504,31 @@ class ValidPersonOrTeamVocabulary(
             # the best results. The fti rank will be between 0 and 1.
             # Note we use lower() instead of the non-standard ILIKE because
             # ILIKE doesn't hit the indexes.
-            # The '%%%%' is necessary, since the first variable substitution
-            # converts it to '%%' and the storm variable substitution converts
-            # it to '%'.
+            # The '%%' is necessary because storm variable substitution
+            # converts it to '%'.
             public_inner_textual_select = SQL("""
                 SELECT id FROM (
                     SELECT Person.id, 100 AS rank
                     FROM Person
-                    WHERE name = %(text)s
+                    WHERE name = ?
                     UNION ALL
-                    SELECT Person.id, rank(fti, ftq(%(text)s))
+                    SELECT Person.id, rank(fti, ftq(?))
                     FROM Person
-                    WHERE Person.fti @@ ftq(%(text)s)
+                    WHERE Person.fti @@ ftq(?)
                     UNION ALL
                     SELECT Person.id, 10 AS rank
                     FROM Person, IrcId
                     WHERE IrcId.person = Person.id
-                        AND lower(IrcId.nickname) = %(text)s
+                        AND lower(IrcId.nickname) = ?
                     UNION ALL
                     SELECT Person.id, 1 AS rank
                     FROM Person, EmailAddress
                     WHERE EmailAddress.person = Person.id
-                        AND lower(email) LIKE %(like_text)s || '%%%%'
+                        AND lower(email) LIKE ? || '%%'
                     ) AS public_subquery
                 ORDER BY rank DESC
-                LIMIT %(limit)d
-                """ % dict(text=quote(text), like_text=quote_like(text),
-                           limit=self.LIMIT))
+                LIMIT ?
+                """, (text, text, text, text, text, self.LIMIT))
 
             public_result = self.store.using(*public_tables).find(
                 Person,
@@ -564,9 +562,9 @@ class ValidPersonOrTeamVocabulary(
             private_inner_select = SQL("""
                 SELECT Person.id
                 FROM Person
-                WHERE Person.fti @@ ftq(%s)
-                LIMIT %d
-                """ % (quote(text), self.LIMIT))
+                WHERE Person.fti @@ ftq(?)
+                LIMIT ?
+                """, (text, self.LIMIT))
             private_result = self.store.using(*private_tables).find(
                 Person,
                 And(

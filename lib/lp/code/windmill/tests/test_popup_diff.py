@@ -13,6 +13,7 @@ import windmill
 from windmill.authoring import WindmillTestClient
 
 from canonical.launchpad.windmill.testing.constants import PAGE_LOAD
+from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.bugs.windmill.testing import BugsWindmillLayer
 from lp.code.tests.helpers import make_erics_fooix_project
 from lp.code.windmill.testing import CodeWindmillLayer
@@ -29,6 +30,16 @@ CLOSE_VISIBLE_DIFF = (
     u'//table[contains(@class, "yui-diff-overlay")]'
      '//a[@class="close-button"]')
 JS_ONLOAD_EXECUTE_DELAY = 2000
+ADD_BRANCH_MENU = u'//a[contains(@class, "menu-link-addbranch")]'
+VISIBLE_PICKER_OVERLAY = (
+    u'//table[contains(@class, "yui-picker") and '
+     'not(contains(@class, "yui-picker-hidden"))]')
+BRANCH_SEARCH_FIELD = VISIBLE_PICKER_OVERLAY + u'//input[@name="search"]'
+BRANCH_SEARCH_BUTTON = (
+    VISIBLE_PICKER_OVERLAY + u'//div[@class="yui-picker-search-box"]//button')
+BRANCH_SEARCCH_RESULT = (
+    VISIBLE_PICKER_OVERLAY +
+    u'//ul[@class="yui-picker-results"]//span[@class="yui-picker-result-title"]')
 
 
 class TestPopupOnBranchPage(TestCaseWithFactory):
@@ -80,7 +91,8 @@ class TestPopupOnBugPage(TestCaseWithFactory):
         start_url = (windmill.settings['TEST_URL'] + 'bugs/%d' % bug.id)
         client.open(url=start_url)
         client.waits.forPageLoad(timeout=PAGE_LOAD)
-        # Sleep for a bit to make sure that the JS onload has had time to execute.
+        # Sleep for a bit to make sure that the JS onload has had time to
+        # execute.
         client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)
 
         # Make sure that the link anchor has the js-action class.
@@ -93,6 +105,31 @@ class TestPopupOnBugPage(TestCaseWithFactory):
         client.click(xpath=CLOSE_VISIBLE_DIFF)
         # Make sure that the diff has gone.
         client.asserts.assertNotNode(xpath=VISIBLE_DIFF)
+
+    def test_newly_linked_branch_diff_popup(self):
+        """Make sure a new branch linked has a js-action popup."""
+        client = WindmillTestClient("Bug popup diffs")
+        objs = make_erics_fooix_project(self.factory)
+        bug = self.factory.makeBug(product=objs['fooix'])
+        transaction.commit()
+
+        login_person(objs['eric'], "test", client)
+
+        start_url = (windmill.settings['TEST_URL'] + 'bugs/%d' % bug.id)
+        client.open(url=start_url)
+        client.waits.forPageLoad(timeout=PAGE_LOAD)
+        # Sleep for a bit to make sure that the JS onload has had time to
+        # execute.
+        client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)
+
+        client.click(xpath=ADD_BRANCH_MENU)
+        client.waits.forElement(xpath=BRANCH_SEARCH_FIELD)
+        client.type(text='~fred/fooix/proposed', xpath=BRANCH_SEARCH_FIELD)
+        client.click(xpath=BRANCH_SEARCH_BUTTON)
+
+        client.waits.forElement(xpath=BRANCH_SEARCCH_RESULT)
+        client.click(xpath=BRANCH_SEARCCH_RESULT)
+        client.waits.forElement(xpath=POPUP_DIFF)
 
 
 def test_suite():
