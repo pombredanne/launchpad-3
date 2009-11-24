@@ -63,6 +63,7 @@ class ILibraryFileAlias(Interface):
         required=True, readonly=True,
         description=_('If the file is restricted, it can only be '
                       'retrieved through the restricted librarian.'))
+    deleted = Attribute('Is this file deleted.')
 
     # XXX Guilherme Salgado, 2007-01-18 bug=80487:
     # We can't use TextLine here because they return
@@ -126,9 +127,6 @@ class ILibraryFileContent(Interface):
     datecreated = Datetime(
             title=_('Date created'), required=True, readonly=True
             )
-    datemirrored = Datetime(
-            title=_('Date mirrored'), required=True, readonly=True
-            )
     filesize = Int(
             title=_('File size'), required=True, readonly=True
             )
@@ -138,9 +136,7 @@ class ILibraryFileContent(Interface):
     md5 = TextLine(
             title=_('MD5 hash'), required=True, readonly=True
             )
-    deleted = Bool(
-            title=_('Deleted'), required=True, readonly=True
-            )
+
 
 class ILibraryFileAliasSet(Interface):
     def create(name, size, file, contentType, expires=None, debugID=None,
