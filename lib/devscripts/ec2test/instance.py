@@ -402,6 +402,9 @@ class EC2Instance:
         :param args: Passed to `func`.
         :param kw: Passed to `func`.
         """
+        # We ignore the value of the 'shutdown' argument and always shut down
+        # unless `func` returns normally.
+        really_shutdown = True
         try:
             self.start()
             try:
@@ -412,6 +415,8 @@ class EC2Instance:
                 # (in the finally block), and you can't figure out why it's
                 # broken.
                 traceback.print_exc()
+            else:
+                really_shutdown = shutdown
         finally:
             try:
                 if postmortem:
@@ -420,7 +425,7 @@ class EC2Instance:
                         postmortem_banner % {'dns': self.hostname})
                     print 'Postmortem console closed.'
             finally:
-                if shutdown:
+                if really_shutdown:
                     self.shutdown()
 
     def _copy_single_file(self, sftp, local_path, remote_dir):
