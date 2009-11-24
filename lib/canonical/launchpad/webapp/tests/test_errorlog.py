@@ -3,6 +3,7 @@
 
 """Tests for error logging & OOPS reporting."""
 
+from __future__ import with_statement
 __metaclass__ = type
 
 import datetime
@@ -775,6 +776,34 @@ class TestErrorReportingUtility(unittest.TestCase):
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
         self.assertEqual(lines[17], 'ArbitraryException: xyz\n')
+
+    def test_contextErrorVariables(self):
+        """contextErrorVariables pushes and pops the error variables."""
+        utility = ErrorReportingUtility()
+        with utility.contextErrorVariables(a='b', c='d'):
+            self.assertEqual(
+                [('a', 'b'), ('c', 'd')], utility.error_variables)
+            # additional error variables don't supplant the previous
+            # assignments.
+            with utility.contextErrorVariables(e='f', a='z', c='d'):
+                self.assertEqual(
+                    [('a', 'b'), ('a', 'z'), ('c', 'd'), ('c', 'd'),
+                     ('e', 'f')],
+                    utility.error_variables)
+            # Error variables are removed when out of context.
+            self.assertEqual(
+                [('a', 'b'), ('c', 'd')], utility.error_variables)
+
+    def test__makeErrorReport_includes_error_variables(self):
+        """The error report should include the error variables."""
+        utility = ErrorReportingUtility()
+        with utility.contextErrorVariables(a='b', c='d'):
+            try:
+                raise ValueError('foo')
+            except ValueError:
+                info = sys.exc_info()
+                oops = utility._makeErrorReport(info)
+                self.assertEqual([('a', 'b'), ('c', 'd')], oops.req_vars)
 
 
 class TestSensitiveRequestVariables(unittest.TestCase):
