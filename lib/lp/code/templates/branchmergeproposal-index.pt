@@ -29,8 +29,11 @@
     #add-comment-form .actions {
     float:right;
     }
+    #add-comment-review-fields {
+    padding-bottom: 0.5em;
+    }
     #add-comment-review-fields div {
-    display: inline;
+      display: inline;
     }
     /* A page-specific fix for inline text are editing to line up box. */
     #edit-description .yui-ieditor-input { top: 0; }
@@ -110,6 +113,7 @@
       <div class="actions"
            tal:content="structure comment_form/actions/field.actions.add/render" />
     </form>
+  </div>
 
   <script type="text/javascript">
     YUI().use('lp.comment', function(Y) {
