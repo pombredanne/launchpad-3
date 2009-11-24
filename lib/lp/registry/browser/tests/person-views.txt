@@ -748,7 +748,8 @@ view property `should_show_ppa_section`.
 
 The property checks two things to decide whether to return True or not:
  * Return True if the current user has launchpad.Edit permission
- * Return True if the person has PPAs and at least one of them is public.
+ * Return True if the person has PPAs and at least one of them is viewable
+   by the current user.
 
 Cprov is a user with a PPA:
 
@@ -768,7 +769,8 @@ Cprov himself can see the section:
     >>> view.should_show_ppa_section
     True
 
-If we disable Cprov's PPA, the section is still presented to anyone.
+If we disable Cprov's PPA, the section is not presented to anonymous
+users who cannot view the PPA, but is displayed to Celso.
 
     >>> login("admin@canonical.com")
     >>> cprov.archive.enabled = False
@@ -776,7 +778,7 @@ If we disable Cprov's PPA, the section is still presented to anyone.
     >>> login(ANONYMOUS)
     >>> view = create_initialized_view(cprov, "+index")
     >>> view.should_show_ppa_section
-    True
+    False
 
     >>> login("celso.providelo@canonical.com")
     >>> view = create_initialized_view(cprov, "+index")

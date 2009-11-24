@@ -1,7 +1,7 @@
 = Distribution Source Packages =
 
 A distribution source package represents a named source package in a
-distribution, independant of any particular release of that source
+distribution, independent of any particular release of that source
 package.
 
 This is useful for, among other things, tracking bugs in source
@@ -59,36 +59,53 @@ Current publishing records for 'pmount in Ubuntu':
 
 Current overall publications:
 
-    >>> alsa_utils = ubuntu.getSourcePackage("alsa-utils")
-    >>> pub = alsa_utils.latest_overall_publication
-    >>> (pub.sourcepackagerelease.sourcepackagename.name,
-    ...  pub.sourcepackagerelease.version,
-    ...  pub.distroseries.name,
-    ...  pub.status)
-    (u'alsa-utils',
-     u'1.0.9a-4ubuntu1',
-     u'hoary',
-     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
-    >>> linux_source = ubuntu.getSourcePackage("linux-source-2.6.15")
-    >>> pub = linux_source.latest_overall_publication
-    >>> (pub.sourcepackagerelease.sourcepackagename.name,
-    ...  pub.sourcepackagerelease.version,
-    ...  pub.distroseries.name,
-    ...  pub.status)
-    (u'linux-source-2.6.15',
-     u'2.6.15.3',
-     u'hoary',
-     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
-    >>> commercial = ubuntu.getSourcePackage("commercialpackage")
-    >>> pub = linux_source.latest_overall_publication
-    >>> (pub.sourcepackagerelease.sourcepackagename.name,
-    ...  pub.sourcepackagerelease.version,
-    ...  pub.distroseries.name,
-    ...  pub.status)
-    (u'linux-source-2.6.15',
-     u'2.6.15.3',
-     u'hoary',
-     <DBItem PackagePublishingStatus.PUBLISHED, (2) Published>)
+A DistributionSourcePackage has a property called 'latest_overall_publication'
+which returns the latest overall relevant publication. Relevant is currently
+defined as being either published or obsolete with published being preferred,
+sorted by distroseries and component with publications in proposed and backports
+excluded.
+
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+    >>> publisher = SoyuzTestPublisher()
+    >>> publisher.prepareBreezyAutotest()
+    >>> warty = ubuntu['warty']
+    >>> hoary = ubuntu['hoary']
+
+This demonstrates the scenario where a newer distroseries becomes obsolete 
+before an older distroseries. The latest_overall_publication property will
+return the publication from the older distroseries because a published
+publication is considered more relevant than an obsolete publication.
+
+Note that the component of the package in the newer obsolete distroseries 
+is 'main' and in the older distroseries it is 'universe'.
+
+    >>> compiz_publication_warty = publisher.getPubSource(
+    ...     sourcename='compiz', version='0.01-1ubuntu1', distroseries=warty,
+    ...     status=PackagePublishingStatus.PUBLISHED, component='universe')
+    >>> compiz_publication_hoary = publisher.getPubSource(
+    ...     sourcename='compiz', version='0.01-1ubuntu1', distroseries=hoary,
+    ...     status=PackagePublishingStatus.OBSOLETE, component='main')
+    >>> compiz = ubuntu.getSourcePackage('compiz')
+    >>> print compiz.latest_overall_publication.component.name
+    universe
+
+When more than one published publication exists in a single distroseries, 
+latest_overall_publication will favor updates over security and security over
+release.
+
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+    >>> firefox_publication_warty = publisher.getPubSource(
+    ...     sourcename='firefox', version='0.01-1ubuntu1', distroseries=hoary,
+    ...     status=PackagePublishingStatus.PUBLISHED, component='main',
+    ...     pocket=PackagePublishingPocket.RELEASE)
+    >>> firefox_publication_hoary = publisher.getPubSource(
+    ...     sourcename='firefox', version='0.01-1ubuntu1.1', distroseries=hoary,
+    ...     status=PackagePublishingStatus.PUBLISHED, component='main',
+    ...     pocket=PackagePublishingPocket.SECURITY)
+    >>> firefox = ubuntu.getSourcePackage('firefox')
+    >>> print firefox.latest_overall_publication.pocket.name
+    SECURITY
 
 === Release-related properties ===
 
@@ -164,7 +181,6 @@ archive (bug #60440):
     ...     print pub.distroseries.name, pub.status.name, is_removed
     breezy-autotest DELETED True
 
-
 == __hash__ ==
 
 DistributionSourcePackage defines a custom __hash__ method, so that
@@ -192,7 +208,6 @@ This means that packages can be used as keys in dictionaries.
     >>> mapping[ubuntu.getSourcePackage('mozilla-firefox')] is firefox_marker
     True
 
-
 == Upstream links ==
 
 DistributionSourcePackages can be linked to upstream Products. You can
@@ -208,7 +223,6 @@ will be None.
 
     >>> print pmount.upstream_product
     None
-
 
 == Finding archives where this package is published ==
 

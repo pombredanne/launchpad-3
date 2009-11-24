@@ -27,28 +27,34 @@
     }
 
   </style>
-  <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/code/branchsubscription.js">
-  </script>
-  <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/code/branchlinks.js">
-  </script>
-  <script type="text/javascript"
-      tal:condition="devmode"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/code/branchstatus.js">
-  </script>
+  <tal:devmode condition="devmode">
+    <script type="text/javascript"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/code/branchsubscription.js">
+    </script>
+    <script type="text/javascript"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/code/branchlinks.js">
+    </script>
+    <script type="text/javascript"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/code/branchstatus.js">
+    </script>
+    <script type="text/javascript"
+            tal:define="lp_js string:${icingroot}/build"
+            tal:attributes="src string:${lp_js}/code/popupdiff.js">
+    </script>
+  </tal:devmode>
   <script type="text/javascript"
           tal:content="string:
     YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
-              'lazr.choiceedit', 'code.branchstatus', function(Y) {
+              'lazr.choiceedit', 'code.branchstatus',
+              'code.branchmergeproposal.popupdiff',
+              function(Y) {
         Y.on('load',
              function(e) {
                  Y.branchstatus.connect_status(${view/status_config});
+                 Y.code.branchmergeproposal.popupdiff.connect_diff_links();
              },
              window);
     });

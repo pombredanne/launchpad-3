@@ -27,7 +27,7 @@ sampledata builder.
     >>> build2 = getUtility(IBuildSet).getByQueueEntry(bob_builder.currentjob)
     >>> in_progress_build = removeSecurityProxy(build2)
     >>> one_minute = datetime.timedelta(seconds=60)
-    >>> in_progress_build.estimated_build_duration = one_minute
+    >>> in_progress_build.buildqueue_record.estimated_duration = one_minute
 
     >>> logout()
 
