@@ -1389,6 +1389,31 @@ class Bug(SQLBase):
         """See `IBug`."""
         return getUtility(IHWSubmissionBugSet).submissionsForBug(self, user)
 
+    def personIsDirectSubscriber(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        subscriptions = store.find(
+            BugSubscription,
+            BugSubscription.bug == self,
+            BugSubscription.person == person)
+
+        return subscriptions.count() > 0
+
+    def personIsIndirectSubscriber(self, person):
+        """See `IBug`."""
+
+    def personIsSubscribedToDuplicate(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        duplicates = store.find(Bug, Bug.duplicateof == self)
+        duplicate_ids = [dupe.id for dupe in duplicates]
+
+        subscriptions_from_dupes = store.find(
+            BugSubscription,
+            BugSubscription.bugID.is_in(duplicate_ids))
+
+        return subscriptions_from_dupes.count() > 0
+
 
 class BugSet:
     """See BugSet."""
