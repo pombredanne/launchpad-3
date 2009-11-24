@@ -147,6 +147,10 @@ class TestPlanUpdate(unittest.TestCase):
 class TestFindBranches(TestCase):
     """Tests the way that we find branches."""
 
+    def setUp(self):
+        TestCase.setUp(self)
+        self.disable_directory_isolation()
+
     def makeBranch(self, path):
         transport = get_transport(path)
         transport.ensure_base()

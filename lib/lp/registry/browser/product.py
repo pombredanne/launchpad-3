@@ -1147,7 +1147,18 @@ class ProductEditView(ProductLicenseMixin, LaunchpadEditFormView):
         return self.next_url
 
 
-class ProductAdminView(ProductEditView):
+class EditPrivateBugsMixin:
+
+    def validate_private_bugs(self, data):
+        """Perform validation for the private bugs setting."""
+        if data.get('private_bugs') and self.context.bug_supervisor is None:
+            self.setFieldError('private_bugs',
+                structured(
+                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
+                    'for this project first.',
+                    canonical_url(self.context, rootsite="bugs")))
+
+class ProductAdminView(ProductEditView, EditPrivateBugsMixin):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "private_bugs"]
 
@@ -1201,12 +1212,7 @@ class ProductAdminView(ProductEditView):
 
     def validate(self, data):
         """See `LaunchpadFormView`."""
-        if data.get('private_bugs') and self.context.bug_supervisor is None:
-            self.setFieldError('private_bugs',
-                structured(
-                    'Set a <a href="%s/+bugsupervisor">bug supervisor</a> '
-                    'for this project first.',
-                    canonical_url(self.context, rootsite="bugs")))
+        self.validate_private_bugs(data)
 
     @property
     def cancel_url(self):
@@ -1214,7 +1220,7 @@ class ProductAdminView(ProductEditView):
         return canonical_url(self.context)
 
 
-class ProductReviewLicenseView(ProductEditView):
+class ProductReviewLicenseView(ProductEditView, EditPrivateBugsMixin):
     """A view to review a project and change project privileges."""
     label = "Review project"
     field_names = [
@@ -1231,11 +1237,10 @@ class ProductReviewLicenseView(ProductEditView):
         return 'Review %s' % self.context.title
 
     def validate(self, data):
-        """See `LaunchpadFormView`.
+        """See `LaunchpadFormView`."""
 
-        A project can only be approved if it has OTHER_OPEN_SOURCE as one of
-        its licenses and not OTHER_PROPRIETARY.
-        """
+        # A project can only be approved if it has OTHER_OPEN_SOURCE as one of
+        # its licenses and not OTHER_PROPRIETARY.
         licenses = self.context.licenses
         license_approved = data.get('license_approved', False)
         if license_approved:
@@ -1250,6 +1255,10 @@ class ProductReviewLicenseView(ProductEditView):
                 # An Other/Open Source license was specified so it may be
                 # approved.
                 pass
+
+        # Private bugs can only be enabled if the product has a bug
+        # supervisor.
+        self.validate_private_bugs(data)
 
     @property
     def next_url(self):
@@ -1307,7 +1316,8 @@ class ProductAddSeriesView(LaunchpadFormView):
             owner=self.user,
             name=data['name'],
             summary=data['summary'],
-            branch=data['branch'])
+            branch=data['branch'],
+            releasefileglob=data['releasefileglob'])
 
     @property
     def next_url(self):

@@ -43,7 +43,7 @@ and a packaging contents.
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
     ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Product',
+    ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
@@ -61,7 +61,7 @@ It is an error to link a series to the same package and distro series twice.
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
     ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Product',
+    ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
@@ -78,7 +78,7 @@ product series can link to it.
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
     ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Product',
+    ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
@@ -93,7 +93,7 @@ A source package name must be provided.
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
     ...     'field.sourcepackagename': '',
-    ...     'field.packaging': 'Primary Product',
+    ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
