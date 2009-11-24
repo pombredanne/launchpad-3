@@ -399,7 +399,12 @@ class ErrorReportingUtility:
         return oops, filename
 
     def raising(self, info, request=None, now=None):
-        """See IErrorReportingUtility.raising()"""
+        """See IErrorReportingUtility.raising()
+
+        :param now: The datetime to use as the current time.  Will be
+            determined if not supplied.  Useful for testing.  Not part of
+            IErrorReportingUtility).
+        """
         self._raising(info, request=request, now=now, informational=False)
 
     def _raising(self, info, request=None, now=None, informational=False):
@@ -420,6 +425,17 @@ class ErrorReportingUtility:
 
     def _makeErrorReport(self, info, request=None, now=None,
                          informational=False):
+        """Return an ErrorReport for the supplied data.
+
+        As a side-effect, self.lastid is updated to the integer oops id.
+        :param info: Output of sys.exc_info()
+        :param request: The IErrorReportRequest which provides context to the
+            info.
+        :param now: The datetime to use as the current time.  Will be
+            determined if not supplied.  Useful for testing.
+        :param informational: If true, the report is flagged as informational
+            only.
+        """
         if now is not None:
             now = now.astimezone(UTC)
         else:
@@ -508,7 +524,14 @@ class ErrorReportingUtility:
                            informational)
 
     def handling(self, info, request=None, now=None):
-        """Flag ErrorReport as informational only."""
+        """Flag ErrorReport as informational only.
+
+        :param info: Output of sys.exc_info()
+        :param request: The IErrorReportRequest which provides context to the
+            info.
+        :param now: The datetime to use as the current time.  Will be
+            determined if not supplied.  Useful for testing.
+        """
         self._raising(info, request=request, now=now, informational=True)
 
     def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
