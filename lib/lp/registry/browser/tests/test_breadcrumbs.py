@@ -85,6 +85,42 @@ class TestDistributionMirrorBreadcrumb(BaseBreadcrumbTestCase):
             last_crumb.text, "Example.com-archive")
 
 
+class TestMilestoneBreadcrumb(BaseBreadcrumbTestCase):
+    """Test the breadcrumbs for an `IMilestone`."""
+
+    def setUp(self):
+        super(TestMilestoneBreadcrumb, self).setUp()
+        self.project = self.factory.makeProduct()
+        self.series = self.factory.makeProductSeries(product=self.project)
+        self.milestone = self.factory.makeMilestone(
+            productseries=self.series, name="1.1")
+        self.milestone_url = canonical_url(self.milestone)
+
+    def test_milestone(self):
+        crumbs = self._getBreadcrumbs(
+            self.milestone_url, [self.root, self.project, self.milestone])
+        last_crumb = crumbs[-1]
+        self.assertEquals(last_crumb.text, self.milestone.name)
+
+    def test_milestone_with_code_name(self):
+        self.milestone.code_name = "duck"
+        crumbs = self._getBreadcrumbs(
+            self.milestone_url, [self.root, self.project, self.milestone])
+        last_crumb = crumbs[-1]
+        text = '%s "%s"' % (
+            self.milestone.name, self.milestone.code_name)
+        self.assertEquals(last_crumb.text, text)
+
+    def test_productrelease(self):
+        release = self.factory.makeProductRelease(milestone=self.milestone)
+        self.release_url = canonical_url(release)
+        crumbs = self._getBreadcrumbs(
+            self.release_url,
+            [self.root, self.project, self.series, self.milestone])
+        last_crumb = crumbs[-1]
+        self.assertEquals(last_crumb.text, self.milestone.name)
+
+
 class TestPollBreadcrumb(BaseBreadcrumbTestCase):
     """Test breadcrumbs for an `IPoll`."""
 

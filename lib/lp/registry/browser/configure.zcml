@@ -1270,6 +1270,11 @@
         classes="
             MilestoneSetNavigation
             MilestoneNavigation"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.milestone.IMilestone"
+        factory="lp.registry.browser.milestone.MilestoneBreadcrumb"
+        permission="zope.Public"/>
     <browser:defaultView
         for="lp.registry.interfaces.milestone.IMilestone"
         name="+index"/>
@@ -2027,6 +2032,11 @@
         module="lp.registry.browser.productrelease"
         classes="
             ProductReleaseNavigation"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.productrelease.IProductRelease"
+        factory="lp.registry.browser.milestone.MilestoneBreadcrumb"
+        permission="zope.Public"/>
     <browser:url
         for="lp.registry.interfaces.productrelease.IProductRelease"
         path_expression="version"
