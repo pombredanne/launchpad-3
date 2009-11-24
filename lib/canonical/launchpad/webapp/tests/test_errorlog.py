@@ -621,8 +621,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         #    raise UnprintableException()
         self.assertEqual(
             lines[17],
-            'UnprintableException: <unprintable UnprintableException object>\n'
-            )
+            'UnprintableException:'
+            ' <unprintable UnprintableException object>\n')
 
     def test_raising_unauthorized_without_request(self):
         """Unauthorized exceptions are logged when there's no request."""

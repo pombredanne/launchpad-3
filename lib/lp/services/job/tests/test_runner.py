@@ -135,8 +135,8 @@ class TestJobRunner(TestCaseWithFactory):
         reporter = getUtility(IErrorReportingUtility)
         def handleError():
             try:
-                raise Exception('Fake exception.  Foobar, I say!')
-            except Exception:
+                raise ValueError('Fake exception.  Foobar, I say!')
+            except ValueError:
                 reporter.handling(sys.exc_info())
         job_1.run = handleError
         runner = JobRunner([job_1, job_2])
