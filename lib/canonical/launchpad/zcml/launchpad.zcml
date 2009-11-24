@@ -9,17 +9,6 @@
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   i18n_domain="canonical.launchpad">
 
-  <!--  XXX: Steve Alexander 2004-11-24:
-        yuck... registering a main template as a view for everything.
-        This should be a non-published resource.
-    -->
-  <browser:page
-      name="main_template"
-      for="*"
-      permission="zope.Public"
-      template="../templates/main-template.pt"
-      />
-
   <!-- Error pages -->
   <!-- System Errors -->
   <browser:page
@@ -165,13 +154,6 @@
       name="+maintenancemessage"
       template="../templates/launchpad-maintenance.pt"
       class="canonical.launchpad.browser.MaintenanceMessage"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="*"
-      name="+main-template-macros"
-      template="../templates/main-template-macros.pt"
       permission="zope.Public"
       />
 

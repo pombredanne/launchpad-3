@@ -301,8 +301,7 @@
     devmode modules/canonical.config/config/devmode">
   <tal:comment replace="nothing">
     This macro loads the old stylesheet, then the YUI CSS, and finally
-    the new stylesheet. When no pages use main-template, this can be
-    refactored.
+    the new stylesheet.
   </tal:comment>
   <metal:old-style-sheet use-macro="context/@@+base-layout-macros/launchpad-stylesheet" />
   <link rel="stylesheet" type="text/css"
