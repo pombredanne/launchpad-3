@@ -18,6 +18,20 @@
     #edit-description {
       margin: 1em 0 0 0;
     }
+    #add-comment-form {
+      max-width:60em;
+      padding-bottom: 3em;
+    }
+    #add-comment-form textarea{
+      width: 100%;
+      max-width: inherit;
+    }
+    #add-comment-form .actions {
+    float:right;
+    }
+    #add-comment-review-fields div {
+    display: inline;
+    }
     /* A page-specific fix for inline text are editing to line up box. */
     #edit-description .yui-ieditor-input { top: 0; }
   </style>
@@ -79,13 +93,23 @@
     <div id="conversation"
          tal:content="structure view/conversation/@@+render"/>
   </div>
-  <!-- Hide inline commenting if YUI isn't used. -->
-  <div id="inline-add-comment" style="display: none">
-  <tal:comment replace="structure context/@@+comment/++form++" />
-      <div class="actions" id="launchpad-form-actions">
-        <input type="submit" id="field.actions.add" name="field.actions.add" value="Save Comment" class="button" />
+
+  <div tal:define="comment_form nocall:context/@@+comment;
+                   dummy comment_form/initialize">
+    <h2 id="add-comment">Add comment</h2>
+    <form action="+comment"
+          method="post"
+          enctype="multipart/form-data"
+          accept-charset="UTF-8"
+          id="add-comment-form">
+      <div id="add-comment-review-fields">
+        Review: <tal:review replace="structure comment_form/widgets/vote"/>
+        Review type: <tal:review replace="structure comment_form/widgets/review_type"/>
       </div>
-  </div>
+      <tal:comment-input replace="structure comment_form/widgets/comment"/>
+      <div class="actions"
+           tal:content="structure comment_form/actions/field.actions.add/render" />
+    </form>
 
   <script type="text/javascript">
     YUI().use('lp.comment', function(Y) {
