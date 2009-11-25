@@ -287,6 +287,7 @@ Private teams are indicated as private.
 Private membership teams are also indicated as private.
 
     >>> private_membership_team = factory.makeTeam(
+    ...     owner=sample_person,
     ...     name='private-membership-team',
     ...     displayname='Private Membership Team',
     ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
@@ -305,15 +306,14 @@ team.
     >>> login_person(sample_person)
     >>> view = create_initialized_view(guadamen, '+add-my-teams')
     >>> for candidate in view.candidate_teams:
-    ...     print candidate.name, candidate.visibility.value, candidate.visibility.title
-
-    >>> print 'user:', view.user.name
+    ...     print candidate.name, candidate.visibility.title
+    landscape-developers Public
+    launchpad-users Public
     >>> removeSecurityProxy(private_membership_team).visibility = (
     ...     PersonVisibility.PUBLIC)
-    >>> transaction.commit()
-    >>> login_person(sample_person)
-    >>> no_priv = person_set.getByName('no-priv')
     >>> view = create_initialized_view(guadamen, '+add-my-teams')
-    >>> print 'user:', view.user.name
     >>> for candidate in view.candidate_teams:
     ...     print candidate.name, candidate.visibility.title
+    landscape-developers Public
+    launchpad-users Public
+    private-membership-team Public
