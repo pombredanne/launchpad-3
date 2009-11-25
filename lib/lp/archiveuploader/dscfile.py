@@ -31,9 +31,8 @@ from lp.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
 from lp.archiveuploader.utils import (
     determine_source_file_type, get_source_file_extension,
-    prefix_multi_line_string, ParseMaintError, re_issource,
-    re_is_component_orig_tar_ext, re_valid_pkg_name, re_valid_version,
-    safe_fix_maintainer)
+    ParseMaintError, prefix_multi_line_string, re_is_component_orig_tar_ext,
+    re_issource, re_valid_pkg_name, re_valid_version, safe_fix_maintainer)
 from canonical.encoding import guess as guess_encoding
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
