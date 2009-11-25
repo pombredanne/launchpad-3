@@ -4114,9 +4114,13 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         for team in self.user.getAdministratedTeams():
             if team == self.context:
                 continue
+            elif team.visibility != PersonVisibility.PUBLIC:
+                continue
             elif team in self.context.activemembers:
+                # The team is already a member of the context object.
                 continue
             elif self.context.hasParticipationEntryFor(team):
+                # The context object is a member/submember of the team.
                 continue
             candidates.append(team)
         return candidates
