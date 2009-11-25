@@ -830,3 +830,6 @@ ALTER TABLE ONLY openidrpsummary
 -- PostgreSQL database dump complete
 --
 
+CREATE INDEX emailaddress__account__status__idx
+    ON EmailAddress(account, status);
+

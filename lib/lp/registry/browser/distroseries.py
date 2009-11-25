@@ -272,6 +272,7 @@ class DistroSeriesStatusMixin:
         return form.Fields(
             Choice(__name__='status',
                    title=_('Status'),
+                   default=self.context.status,
                    vocabulary=status_vocabulary,
                    description=_("Select the distroseries status."),
                    required=True))

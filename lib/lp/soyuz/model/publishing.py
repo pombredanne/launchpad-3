@@ -852,6 +852,33 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         self.secure_record.component = component
         Store.of(self).invalidate(self)
 
+    def _proxied_urls(self, files, parent):
+        """Run the files passed through `ProxiedLibraryFileAlias`."""
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+        return [
+            ProxiedLibraryFileAlias(file, parent).http_url for file in files]
+
+    @property
+    def source_file_urls(self):
+        """See `ISourcePackagePublishingHistory`."""
+        source_urls = self._proxied_urls(
+            [file.libraryfile for file in self.sourcepackagerelease.files],
+             self.archive)
+
+        return source_urls
+
+    @property
+    def binary_file_urls(self):
+        """See `ISourcePackagePublishingHistory`."""
+        publishing_set = getUtility(IPublishingSet)
+        binaries = publishing_set.getBinaryFilesForSources(
+            self).config(distinct=True)
+        binary_urls = self._proxied_urls(
+            [binary for _source, binary, _content in binaries], self.archive)
+
+        return binary_urls
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
@@ -1366,6 +1393,38 @@ class PublishingSet:
 
         return unpublished_builds
 
+    def getBinaryFilesForSources(self, one_or_more_source_publications):
+        """See `IPublishingSet`."""
+        # Import Build and BinaryPackageRelease locally to avoid circular
+        # imports, since that Build already imports
+        # SourcePackagePublishingHistory and BinaryPackageRelease imports
+        # Build.
+        from lp.soyuz.model.binarypackagerelease import (
+            BinaryPackageRelease)
+        from lp.soyuz.model.build import Build
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        binary_result = store.find(
+            (SourcePackagePublishingHistory, LibraryFileAlias,
+             LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            BinaryPackageFile.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.buildID == Build.id,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID ==
+                SourcePackagePublishingHistory.archiveID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        return binary_result.order_by(LibraryFileAlias.id)
+
     def getFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
         # Import Build and BinaryPackageRelease locally to avoid circular
@@ -1389,21 +1448,8 @@ class PublishingSet:
                 SourcePackagePublishingHistory.sourcepackagereleaseID,
             In(SourcePackagePublishingHistory.id, source_publication_ids))
 
-        binary_result = store.find(
-            (SourcePackagePublishingHistory, LibraryFileAlias,
-             LibraryFileContent),
-            LibraryFileContent.id == LibraryFileAlias.contentID,
-            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
-            BinaryPackageFile.binarypackagerelease ==
-                BinaryPackageRelease.id,
-            BinaryPackageRelease.buildID == Build.id,
-            SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.archiveID ==
-                SourcePackagePublishingHistory.archiveID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+        binary_result = self.getBinaryFilesForSources(
+            one_or_more_source_publications)
 
         result_set = source_result.union(
             binary_result.config(distinct=True))
