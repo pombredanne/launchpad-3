@@ -66,3 +66,9 @@ longer be visible.
     ----------------------------------------
     <p>Oddly enough the bug system seems only capable...</p>
     ----------------------------------------
+
+XXX Abel Deuring, 2009-11-25: We should check here that attempts to
+access the Librarian file for the deleted bug attachment is indeed
+gone, in order to avoid future misunderstandings about the Librarian
+file deletion process as described in bug 387188. Unfortunately, this
+is at present not possible, see bug 113083.

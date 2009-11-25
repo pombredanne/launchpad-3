@@ -445,9 +445,15 @@ It's also possible to delete attachments.
     ...     print attachment.title
     Attachment to be deleted
 
+    >>> libraryfile = attachment.libraryfile
     >>> attachment.removeFromBug(user=foobar)
     >>> bug_two.attachments.count()
     0
+
+The libraryfile of this bug attachment is marked as "deleted".
+
+    >>> libraryfile.deleted
+    True
 
 Deleting an attachment causes a notification to be sent. It's worth
 noting that the notification still includes the URL to the attachment,
