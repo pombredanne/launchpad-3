@@ -394,8 +394,6 @@ launchpad_feedback = 'Help improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
-launchpad_forgottenpassword = 'Need a new Launchpad password?'
-
 # launchpad_css is a css file
 
 # launchpad_js is standard javascript
@@ -515,13 +513,6 @@ def openid_index(context, view):
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
     return 'Invalid OpenID identity %s' % view.openid_request.identity
-
-openidrpconfig_add = 'Add an OpenID Relying Party Configuration'
-
-openidrpconfig_edit = ContextDisplayName(
-    'Edit Relying Party Configuration for %s')
-
-openidrpconfigset_index = 'OpenID Relying Party Configurations'
 
 def package_bugs(context, view):
     """Return the page title bug in a package."""

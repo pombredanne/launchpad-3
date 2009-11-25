@@ -252,15 +252,17 @@ COMMENT ON FUNCTION valid_cve(text) IS 'validate a common vulnerability number a
 CREATE OR REPLACE FUNCTION valid_absolute_url(text) RETURNS boolean
 LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
-    from urlparse import urlparse
+    from urlparse import urlparse, uses_netloc
+    # Extend list of schemes that specify netloc. We can drop sftp
+    # with Python 2.5 in the DB.
+    if 'git' not in uses_netloc:
+        uses_netloc.insert(0, 'sftp')
+        uses_netloc.insert(0, 'bzr')
+        uses_netloc.insert(0, 'bzr+ssh')
+        uses_netloc.insert(0, 'ssh') # Mercurial
+        uses_netloc.insert(0, 'git')
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
-    # urlparse in the stdlib does not correctly parse the netloc from
-    # sftp and bzr+ssh schemes, so we have to manually check those
-    if scheme in ("sftp", "bzr+ssh"):
-        return 1
-    if not (scheme and netloc):
-        return 0
-    return 1
+    return bool(scheme and netloc)
 $$;
 
 COMMENT ON FUNCTION valid_absolute_url(text) IS 'Ensure the given test is a valid absolute URL, containing both protocol and network location';
