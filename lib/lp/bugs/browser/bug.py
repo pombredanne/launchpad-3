@@ -437,12 +437,13 @@ class BugViewMixin:
 
         For example, "subscribed-false dup-subscribed-true".
         """
-        if subscribed_person in self.duplicate_subscribers:
+        if (self.context.personIsSubscribedToDuplicate(subscribed_person) or
+            self.context.personIsAlsoNotifiedSubscriber(subscribed_person)):
             dup_class = 'dup-subscribed-true'
         else:
             dup_class = 'dup-subscribed-false'
 
-        if subscribed_person in self.direct_subscribers:
+        if self.context.personIsDirectSubscriber(subscribed_person):
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class
