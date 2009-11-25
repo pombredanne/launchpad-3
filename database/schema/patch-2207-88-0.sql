@@ -14,7 +14,7 @@ CREATE TABLE SourcePackageRecipe (
 
 CREATE UNIQUE INDEX sourcepackagerecipe__owner_distroseries_sourcepackagename_name
     ON SourcePackageRecipe
- USING btree(owner, distroseries, sourcepackagename, name);
+ USING btree(distroseries, sourcepackagename, name);
 
 CREATE TABLE SourcePackageRecipeBranch (
     id serial PRIMARY KEY,
