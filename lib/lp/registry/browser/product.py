@@ -472,11 +472,14 @@ class ProductSpecificationsMenu(NavigationMenu,
     links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
 
 
-def _sort_distros(a, b):
+def _cmp_distros(a, b):
     """Put Ubuntu first, otherwise in alpha order."""
     if a == 'ubuntu':
         return -1
-    return cmp(a, b)
+    elif b == 'ubuntu':
+        return 1
+    else:
+        return cmp(a, b)
 
 
 class ProductSetBreadcrumb(Breadcrumb):
@@ -965,13 +968,13 @@ class ProductPackagesView(PackagingDeleteView):
             else:
                 # Create a dictionary for the distribution.
                 distro = dict(
-                    distribution=packaging.distroseries.distribution,
+                    distribution=distribution,
                     packagings=[])
-                distros[packaging.distroseries.distribution.name] = distro
+                distros[distribution.name] = distro
             distro['packagings'].append(packaging)
         # Now we sort the resulting list of "distro" objects, and return that.
         distro_names = distros.keys()
-        distro_names.sort(cmp=_sort_distros)
+        distro_names.sort(cmp=_cmp_distros)
         results = [distros[name] for name in distro_names]
         return results
 
