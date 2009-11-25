@@ -29,8 +29,7 @@ class TestDistroseriesBreadcrumb(BaseBreadcrumbTestCase):
             self.distroseries_url,
             [self.root, self.distribution, self.distroseries])
         last_crumb = crumbs[-1]
-        self.assertEquals(
-            last_crumb.text, self.distroseries.named_version)
+        self.assertEqual(self.distroseries.named_version, last_crumb.text)
 
 
 class TestDistributionMirrorBreadcrumb(BaseBreadcrumbTestCase):
@@ -51,8 +50,7 @@ class TestDistributionMirrorBreadcrumb(BaseBreadcrumbTestCase):
             canonical_url(mirror),
             [self.root, self.distribution, mirror])
         last_crumb = crumbs[-1]
-        self.assertEquals(
-            last_crumb.text, displayname)
+        self.assertEqual(displayname, last_crumb.text)
 
     def test_distributionmirror_withHttpUrl(self):
         # If no displayname, the breadcrumb text will be the mirror name,
@@ -66,8 +64,7 @@ class TestDistributionMirrorBreadcrumb(BaseBreadcrumbTestCase):
             canonical_url(mirror),
             [self.root, self.distribution, mirror])
         last_crumb = crumbs[-1]
-        self.assertEquals(
-            last_crumb.text, "Example.com-archive")
+        self.assertEqual("Example.com-archive", last_crumb.text)
 
     def test_distributionmirror_withFtpUrl(self):
         # If no displayname, the breadcrumb text will be the mirror name,
@@ -81,8 +78,7 @@ class TestDistributionMirrorBreadcrumb(BaseBreadcrumbTestCase):
             canonical_url(mirror),
             [self.root, self.distribution, mirror])
         last_crumb = crumbs[-1]
-        self.assertEquals(
-            last_crumb.text, "Example.com-archive")
+        self.assertEqual("Example.com-archive", last_crumb.text)
 
 
 class TestMilestoneBreadcrumb(BaseBreadcrumbTestCase):
@@ -96,20 +92,20 @@ class TestMilestoneBreadcrumb(BaseBreadcrumbTestCase):
             productseries=self.series, name="1.1")
         self.milestone_url = canonical_url(self.milestone)
 
-    def test_milestone(self):
+    def test_milestone_without_code_name(self):
         crumbs = self._getBreadcrumbs(
             self.milestone_url, [self.root, self.project, self.milestone])
         last_crumb = crumbs[-1]
-        self.assertEquals(last_crumb.text, self.milestone.name)
+        self.assertEqual(self.milestone.name, last_crumb.text)
 
     def test_milestone_with_code_name(self):
         self.milestone.code_name = "duck"
         crumbs = self._getBreadcrumbs(
             self.milestone_url, [self.root, self.project, self.milestone])
         last_crumb = crumbs[-1]
-        text = '%s "%s"' % (
+        expected_text = '%s "%s"' % (
             self.milestone.name, self.milestone.code_name)
-        self.assertEquals(last_crumb.text, text)
+        self.assertEqual(expected_text, last_crumb.text)
 
     def test_productrelease(self):
         release = self.factory.makeProductRelease(milestone=self.milestone)
@@ -118,7 +114,7 @@ class TestMilestoneBreadcrumb(BaseBreadcrumbTestCase):
             self.release_url,
             [self.root, self.project, self.series, self.milestone])
         last_crumb = crumbs[-1]
-        self.assertEquals(last_crumb.text, self.milestone.name)
+        self.assertEqual(self.milestone.name, last_crumb.text)
 
 
 class TestPollBreadcrumb(BaseBreadcrumbTestCase):
@@ -142,8 +138,7 @@ class TestPollBreadcrumb(BaseBreadcrumbTestCase):
             self.poll_url,
             [self.root, self.team, self.poll])
         last_crumb = crumbs[-1]
-        self.assertEquals(
-            last_crumb.text, self.poll.title)
+        self.assertEqual(self.poll.title, last_crumb.text)
 
 
 def test_suite():
