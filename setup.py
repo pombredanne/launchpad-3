@@ -43,6 +43,7 @@ setup(
         'mocker',
         'oauth',
         'paramiko',
+        'pyasn1',
         'python-openid',
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
@@ -51,6 +52,7 @@ setup(
         'sourcecodegen',
         'storm',
         'transaction',
+        'Twisted', 
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',
