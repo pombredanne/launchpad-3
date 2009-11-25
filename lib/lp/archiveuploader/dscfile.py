@@ -378,35 +378,32 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         and checksum.
         """
 
-        diff_count = 0
-        debian_tar_count = 0
-        orig_tar_count = 0
+        file_type_counts = {
+            SourcePackageFileType.DIFF: 0,
+            SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+            SourcePackageFileType.NATIVE_TARBALL: 0,
+            }
         component_orig_tar_counts = {}
-        native_tar_count = 0
-
         bzip2_count = 0
-
         files_missing = False
-        for sub_dsc_file in self.files:
-            filetype = determine_source_file_type(sub_dsc_file.filename)
 
-            if filetype == SourcePackageFileType.DIFF:
-                diff_count += 1
-            elif filetype == SourcePackageFileType.ORIG_TARBALL:
-                orig_tar_count += 1
-            elif filetype == SourcePackageFileType.COMPONENT_ORIG_TARBALL:
+        for sub_dsc_file in self.files:
+            file_type = determine_source_file_type(sub_dsc_file.filename)
+
+            if file_type is None:
+                yield UploadError('Unknown file: ' + sub_dsc_file.filename)
+                continue
+
+            if file_type == SourcePackageFileType.COMPONENT_ORIG_TARBALL:
+                # Split the count by component name.
                 component = re_is_component_orig_tar_ext.match(
                     get_source_file_extension(sub_dsc_file.filename)).group(1)
                 if component not in component_orig_tar_counts:
                     component_orig_tar_counts[component] = 0
                 component_orig_tar_counts[component] += 1
-            elif filetype == SourcePackageFileType.DEBIAN_TARBALL:
-                debian_tar_count += 1
-            elif filetype == SourcePackageFileType.NATIVE_TARBALL:
-                native_tar_count += 1
             else:
-                yield UploadError('Unknown file: ' + sub_dsc_file.filename)
-                continue
+                file_type_counts[file_type] += 1
 
             if sub_dsc_file.filename.endswith('.bz2'):
                 bzip2_count += 1
@@ -455,38 +452,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield error
                 files_missing = True
 
-        # Reject if we have more than one file of any type.
-        if orig_tar_count > 1:
-            yield UploadError(
-                "%s: has more than one orig.tar.*."
-                % self.filename)
-        if debian_tar_count > 1:
-            yield UploadError(
-                "%s: has more than one debian.tar.*."
-                % self.filename)
-        if native_tar_count > 1:
-            yield UploadError(
-                "%s: has more than one tar.*."
-                % self.filename)
-        if diff_count > 1:
-            yield UploadError(
-                "%s: has more than one diff.gz."
-                % self.filename)
-
-        if ((orig_tar_count == 0 and native_tar_count == 0) or
-            (orig_tar_count > 0 and native_tar_count > 0)):
-            yield UploadError(
-                "%s: must have exactly one tar.* or orig.tar.*."
-                % self.filename)
-
-        if native_tar_count > 0 and debian_tar_count > 0:
-            yield UploadError(
-                "%s: must have no more than one tar.* or debian.tar.*."
-                % self.filename)
-
         for error in format_to_file_checker_map[self.format](
-            self.filename, orig_tar_count, debian_tar_count, native_tar_count,
-            diff_count, component_orig_tar_counts, bzip2_count):
+            self.filename, file_type_counts, component_orig_tar_counts,
+            bzip2_count):
             yield error
 
         if files_missing:
@@ -670,9 +638,8 @@ class DSCUploadedFile(NascentUploadFile):
             yield error
 
 
-def check_format_1_0_files(filename, orig_tar_count, debian_tar_count,
-                           native_tar_count, diff_count,
-                           component_orig_tar_counts, bzip2_count):
+def check_format_1_0_files(filename, file_type_counts, component_counts,
+                           bzip2_count):
     """Check that the given counts of each file type suit format 1.0.
 
     A 1.0 source must be native (with only one tar.gz), or have an orig.tar.gz
@@ -683,73 +650,59 @@ def check_format_1_0_files(filename, orig_tar_count, debian_tar_count,
             "%s: is format 1.0 but uses bzip2 compression."
             % filename)
 
-    if ((diff_count == 0 and native_tar_count == 0) or
-        (diff_count > 0 and native_tar_count > 0)):
+    if file_type_counts not in ({
+        SourcePackageFileType.NATIVE_TARBALL: 1,
+        SourcePackageFileType.ORIG_TARBALL: 0,
+        SourcePackageFileType.DEBIAN_TARBALL: 0,
+        SourcePackageFileType.DIFF: 0,
+        }, {
+        SourcePackageFileType.ORIG_TARBALL: 1,
+        SourcePackageFileType.DIFF: 1,
+        SourcePackageFileType.NATIVE_TARBALL: 0,
+        SourcePackageFileType.DEBIAN_TARBALL: 0,
+        }) or len(component_counts) > 0:
         yield UploadError(
-            "%s: must have exactly one diff.gz or tar.gz."
+            "%s: must have exactly one tar.gz, or an orig.tar.gz and diff.gz"
             % filename)
 
-    if debian_tar_count > 0:
-        yield UploadError(
-            "%s: is format 1.0 but has debian.tar.*."
-            % filename)
 
-    if len(component_orig_tar_counts) > 0:
-        yield UploadError(
-            "%s: is format 1.0 but has orig-COMPONENT.tar.*."
-            % filename)
-
-
-def check_format_3_0_native_files(filename, orig_tar_count, debian_tar_count,
-                                  native_tar_count, diff_count,
-                                  component_orig_tar_counts, bzip2_count):
+def check_format_3_0_native_files(filename, file_type_counts,
+                                  component_counts, bzip2_count):
     """Check that the given counts of each file type suit format 3.0 (native).
 
     A 3.0 (native) source must have only one tar.*. Both gzip and bzip2
     compression are permissible.
     """
-    if native_tar_count == 0:
-        yield UploadError(
-            "%s: must have exactly one tar.*."
-            % filename)
 
-    if diff_count > 0:
-        yield UploadError(
-            "%s: is format 3.0 but has diff.gz."
-            % filename)
-
-    if len(component_orig_tar_counts) > 0:
-        yield UploadError(
-            "%s: is native but has orig-COMPONENT.tar.*."
-            % filename)
+    if file_type_counts != {
+        SourcePackageFileType.NATIVE_TARBALL: 1,
+        SourcePackageFileType.ORIG_TARBALL: 0,
+        SourcePackageFileType.DEBIAN_TARBALL: 0,
+        SourcePackageFileType.DIFF: 0,
+        } or len(component_counts) > 0:
+        yield UploadError("%s: must have only a tar.*." % filename)
 
 
-def check_format_3_0_quilt_files(filename, orig_tar_count, debian_tar_count,
-                                 native_tar_count, diff_count,
-                                 component_orig_tar_counts, bzip2_count):
+def check_format_3_0_quilt_files(filename, file_type_counts,
+                                 component_counts, bzip2_count):
     """Check that the given counts of each file type suit format 3.0 (native).
 
     A 3.0 (quilt) source must have exactly one orig.tar.*, one debian.tar.*,
     and at most one orig-COMPONENT.tar.* for each COMPONENT. Both gzip and
     bzip2 compression are permissible.
     """
-    if orig_tar_count == 0:
+    if file_type_counts != {
+        SourcePackageFileType.ORIG_TARBALL: 1,
+        SourcePackageFileType.DEBIAN_TARBALL: 1,
+        SourcePackageFileType.NATIVE_TARBALL: 0,
+        SourcePackageFileType.DIFF: 0,
+        }:
         yield UploadError(
-            "%s: must have exactly one orig.tar.*."
-            % filename)
+            "%s: must have only an orig.tar.*, a debian.tar.*, and "
+            "optionally orig-*.tar.*" % filename)
 
-    if debian_tar_count == 0:
-        yield UploadError(
-            "%s: must have exactly one debian.tar.*."
-            % filename)
-
-    if diff_count > 0:
-        yield UploadError(
-            "%s: is format 3.0 but has a diff.gz."
-            % filename)
-
-    for component in component_orig_tar_counts:
-        if component_orig_tar_counts[component] > 1:
+    for component in component_counts:
+        if component_counts[component] > 1:
             yield UploadError(
                 "%s: has more than one orig-%s.tar.*."
                 % (filename, component))
