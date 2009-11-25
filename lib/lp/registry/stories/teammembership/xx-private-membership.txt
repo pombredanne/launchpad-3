@@ -234,7 +234,8 @@ no user can add that team as a member of a public team.
     >>> admin_browser.url
     'http://launchpad.dev/%7Esimple-team/+addmember'
     >>> get_feedback_messages(admin_browser.contents)
-    [...Constraint not satisfied...
+    [...There is 1 error...
+    ...A private team cannot become a member of another team.']
 
 Anonymous users cannot even know that the private membership team even
 exists.

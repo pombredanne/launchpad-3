@@ -970,10 +970,24 @@ class TeamMemberAddView(LaunchpadFormView):
         """
         newmember = data.get('newmember')
         error = None
-        if newmember is not None:
+        if newmember is None:
+            # The member may not be found because it is not in the
+            # the vocabulary that the interface attribute defines.
+            # Here we provide a clearer error message when the team
+            # is not in the vocabulary because it is private. Changing
+            # the vocabulary that this form uses is not a good idea,
+            # since it will cause invalid members to show up in the
+            # VocabularyPickerWidget results.
+            member_name = self.request.form.get('field.newmember')
+            member = getUtility(IPersonSet).getByName(member_name)
+            if member is not None:
+                if member.visibility != PersonVisibility.PUBLIC:
+                    error = _("A private team cannot become a member of "
+                                "another team.")
+        else:
             if newmember.isTeam() and not newmember.activemembers:
-                error = _("You can't add a team that doesn't have any active"
-                          " members.")
+                error = _("You can't add a team that doesn't have any "
+                            "active members.")
             elif newmember in self.context.activemembers:
                 error = _("%s (%s) is already a member of %s." % (
                     newmember.displayname, newmember.name,
