@@ -81,7 +81,8 @@ from lp.code.browser.branchmergeproposal import (
 from lp.code.enums import (
     BranchLifecycleStatus, BranchType, UICreatableBranchType)
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch)
+    BranchCreationForbidden, BranchExists, IBranch,
+    user_has_special_branch_access)
 from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import CodeImportReviewStatus
@@ -651,7 +652,7 @@ class BranchEditFormView(LaunchpadEditFormView):
             private = data.pop('private')
             if private != self.context.private:
                 # We only want to show notifications if it actually changed.
-                self.context.setPrivate(private)
+                self.context.setPrivate(private, self.user)
                 changed = True
                 if private:
                     self.request.response.addNotification(
@@ -892,8 +893,11 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             show_private_field = policy.canBranchesBePublic()
         else:
             # If the branch is public, and can be made private, show the
-            # field.
-            show_private_field = policy.canBranchesBePrivate()
+            # field.  Users with special access rights to branches can set
+            # public branches as private.
+            show_private_field = (
+                policy.canBranchesBePrivate() or
+                user_has_special_branch_access(self.user))
 
         if not show_private_field:
             self.form_fields = self.form_fields.omit('private')
