@@ -26,9 +26,8 @@ from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
 from canonical.launchpad.interfaces import (
-    BinaryPackageFormat, BinaryPackageFileType, ILaunchBag,
-    IRequestPreferredLanguages, IRequestLocalLanguages,
-    SourcePackageFileType)
+    BinaryPackageFormat, ILaunchBag, IRequestPreferredLanguages,
+    IRequestLocalLanguages)
 
 
 # pylint: disable-msg=W0102
@@ -465,21 +464,6 @@ def get_filename_from_message_id(message_id):
     return '%s.msg' % (
             canonical.base.base(
                 long(sha.new(message_id).hexdigest(), 16), 62))
-
-
-def getFileType(fname):
-    if fname.endswith(".deb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".udeb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".dsc"):
-        return SourcePackageFileType.DSC
-    if fname.endswith(".diff.gz"):
-        return SourcePackageFileType.DIFF
-    if fname.endswith(".orig.tar.gz"):
-        return SourcePackageFileType.ORIG_TARBALL
-    if fname.endswith(".tar.gz"):
-        return SourcePackageFileType.NATIVE_TARBALL
 
 
 BINARYPACKAGE_EXTENSIONS = {

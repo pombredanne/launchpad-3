@@ -29,6 +29,7 @@ from canonical.database.constants import UTC_NOW
 
 from lp.archivepublisher.diskpool import poolify
 from lp.archiveuploader.tagfiles import parse_tagfile
+from lp.archiveuploader.utils import determine_source_file_type
 
 from canonical.database.sqlbase import sqlvalues
 
@@ -46,10 +47,22 @@ from lp.soyuz.model.files import (
 
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.sourcepackage import SourcePackageType
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.soyuz.interfaces.binarypackagename import IBinaryPackageNameSet
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
-from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
+from canonical.launchpad.helpers import getBinaryPackageFormat
+
+
+def determine_binary_file_type(filename):
+    """Determine the BinaryPackageFileType of the given filename."""
+
+    if filename.endswith(".deb"):
+        return BinaryPackageFileType.DEB
+    elif filename.endswith(".udeb"):
+        return BinaryPackageFileType.DEB
+    else:
+        return None
 
 
 def check_not_in_librarian(files, archive_root, directory):
@@ -613,9 +626,10 @@ class SourcePackageHandler:
         # SourcePackageReleaseFile entry on lp db.
         for fname, path in to_upload:
             alias = getLibraryAlias(path, fname)
-            SourcePackageReleaseFile(sourcepackagerelease=spr.id,
-                                     libraryfile=alias,
-                                     filetype=getFileType(fname))
+            SourcePackageReleaseFile(
+                sourcepackagerelease=spr.id,
+                libraryfile=alias,
+                filetype=determine_source_file_type(fname))
             log.info('Package file %s included into library' % fname)
 
         return spr
@@ -805,9 +819,10 @@ class BinaryPackageHandler:
                  (bin_name.name, bin.version))
 
         alias = getLibraryAlias(path, fname)
-        BinaryPackageFile(binarypackagerelease=binpkg.id,
-                          libraryfile=alias,
-                          filetype=getFileType(fname))
+        BinaryPackageFile(
+            binarypackagerelease=binpkg.id,
+            libraryfile=alias,
+            filetype=determine_binary_file_type(fname))
         log.info('Package file %s included into library' % fname)
 
         # Return the binarypackage object.
