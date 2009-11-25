@@ -24,7 +24,6 @@ from lp.translations.interfaces.potmsgset import (
 from lp.translations.interfaces.translationfileformat import (
     TranslationFileFormat)
 from lp.translations.interfaces.translationmessage import TranslationConflict
-from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from lp.translations.model.translationmessage import (
     DummyTranslationMessage)
 
