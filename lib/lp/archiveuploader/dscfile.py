@@ -161,6 +161,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         Can raise UploadError.
         """
+        # Avoid circular imports.
+        from lp.archiveuploader.nascentupload import EarlyReturnUploadError
+
         SourceUploadFile.__init__(
             self, filepath, digest, size, component_and_section, priority,
             package, version, changes, policy, logger)
@@ -187,6 +190,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         if 'format' not in self._dict:
             self._dict['format'] = "1.0"
 
+        if self.format is None:
+            raise EarlyReturnUploadError(
+                "Unsupported source format: %s" % self._dict['format'])
+
         if self.policy.unsigned_dsc_ok:
             self.logger.debug("DSC file can be unsigned.")
         else:
@@ -209,7 +216,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     @property
     def format(self):
         """Return the DSC format."""
-        return self._dict['format']
+        try:
+            return SourcePackageFormat.getTermByToken(
+                self._dict['format']).value
+        except LookupError:
+            return None
 
     @property
     def architecture(self):
@@ -232,8 +243,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         This method is an error generator, i.e, it returns an iterator over all
         exceptions that are generated while processing DSC file checks.
         """
-        # Avoid circular imports.
-        from lp.archiveuploader.nascentupload import EarlyReturnUploadError
 
         for error in SourceUploadFile.verify(self):
             yield error
@@ -272,14 +281,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield UploadError(
                 "%s: invalid version %s" % (self.filename, self.dsc_version))
 
-        try:
-            format_term = SourcePackageFormat.getTermByToken(self.format)
-        except LookupError:
-            raise EarlyReturnUploadError(
-                "Unsupported source format: %s" % self.format)
-
         if not self.policy.distroseries.isSourcePackageFormatPermitted(
-            format_term.value):
+            self.format):
             yield UploadError(
                 "%s: format '%s' is not permitted in %s." %
                 (self.filename, self.format, self.policy.distroseries.name))
@@ -484,7 +487,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # Format 1.0 must be native (exactly one tar.gz), or
         # have an orig.tar.gz and a diff.gz. It cannot have
         # compression types other than 'gz'.
-        if self.format == '1.0':
+        if self.format == SourcePackageFormat.FORMAT_1_0:
             if bzip2_count > 0:
                 yield UploadError(
                     "%s: is format 1.0 but uses bzip2 compression."
@@ -507,7 +510,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     % self.filename)
         # Format 3.0 (native) must have exactly one tar.*.
         # gz and bz2 are valid compression types.
-        elif self.format == '3.0 (native)':
+        elif self.format == SourcePackageFormat.FORMAT_3_0_NATIVE:
             if native_tar_count == 0:
                 yield UploadError(
                     "%s: must have exactly one tar.*."
@@ -522,7 +525,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield UploadError(
                     "%s: is native but has orig-COMPONENT.tar.*."
                     % self.filename)
-        elif self.format == '3.0 (quilt)':
+        # Format 3.0 (quilt) must have exactly one orig.tar.*, one
+        # debian.tar.*, and at most one orig-COMPONENT.tar.* for each
+        # COMPONENT.
+        elif self.format == SourcePackageFormat.FORMAT_3_0_QUILT:
             if orig_tar_count == 0:
                 yield UploadError(
                     "%s: must have exactly one orig.tar.*."
