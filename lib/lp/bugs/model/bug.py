@@ -1389,6 +1389,38 @@ class Bug(SQLBase):
         """See `IBug`."""
         return getUtility(IHWSubmissionBugSet).submissionsForBug(self, user)
 
+    def personIsDirectSubscriber(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        subscriptions = store.find(
+            BugSubscription,
+            BugSubscription.bug == self,
+            BugSubscription.person == person)
+
+        return not subscriptions.is_empty()
+
+    def personIsAlsoNotifiedSubscriber(self, person):
+        """See `IBug`."""
+        # We have to use getAlsoNotifiedSubscribers() here and iterate
+        # over what it returns because "also notified subscribers" is
+        # actually a composite of bug contacts, structural subscribers
+        # and assignees. As such, it's not possible to get them all with
+        # one query.
+        also_notified_subscribers = self.getAlsoNotifiedSubscribers()
+
+        return person in also_notified_subscribers
+
+    def personIsSubscribedToDuplicate(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        subscriptions_from_dupes = store.find(
+            BugSubscription,
+            Bug.duplicateof == self,
+            BugSubscription.bugID == Bug.id,
+            BugSubscription.person == person)
+
+        return not subscriptions_from_dupes.is_empty()
+
 
 class BugSet:
     """See BugSet."""
