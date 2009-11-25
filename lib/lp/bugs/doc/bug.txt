@@ -1410,7 +1410,7 @@ Discovering subscription types
 ------------------------------
 
 It's possible to find out how a person is subscribed to a bug by calling
-the bug's personIsDirectSubscriber(), personIsIndirectSubscriber() or
+the bug's personIsDirectSubscriber(), personIsAlsoNotifiedSubscriber() or
 personIsSubscribedToDuplicate() methods.
 
 If a person isn't subscribed to a bug, all of these methods will return
@@ -1425,6 +1425,9 @@ False.
     >>> bug.personIsSubscribedToDuplicate(person)
     False
 
+    >>> bug.personIsAlsoNotifiedSubscriber(person)
+    False
+
 If our person subscribes to the bug they'll show up as a direct
 subscriber.
 
@@ -1433,6 +1436,9 @@ subscriber.
     True
 
     >>> bug.personIsSubscribedToDuplicate(person)
+    False
+
+    >>> bug.personIsAlsoNotifiedSubscriber(person)
     False
 
 If the user subscribes to a duplicate of the bug,
@@ -1447,7 +1453,32 @@ personIsSubscribedToDuplicate() will return True.
     True
 
 personIsSubscribedToDuplicate() will return True regardless of
-the result of personIsDirectSubscriber().
+the result of personIsDirectSubscriber(). personIsAlsoNotifiedSubscriber()
+will still return False.
 
     >>> bug.personIsDirectSubscriber(person)
+    True
+
+    >>> bug.personIsAlsoNotifiedSubscriber(person)
+    False
+
+If the user is subscribed to the bug for a reason other than a direct
+BugSubscription or a subscription to a duplicate bug,
+personIsAlsoNotifiedSubscriber() will return True, for example if the
+user is the assignee for one of the bug's BugTask.
+
+    >>> new_bug = factory.makeBug()
+    >>> new_bug.bugtasks[0].transitionToAssignee(person)
+    >>> new_bug.personIsAlsoNotifiedSubscriber(person)
+    True
+
+If the person subscribes directly to the bug,
+personIsAlsoNotifiedSubscriber() will return False, since direct
+subscriptions always override indirect ones.
+
+    >>> subscription = new_bug.subscribe(person, person)
+    >>> new_bug.personIsAlsoNotifiedSubscriber(person)
+    False
+
+    >>> new_bug.personIsDirectSubscriber(person)
     True

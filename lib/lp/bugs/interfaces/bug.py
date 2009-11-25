@@ -950,7 +950,7 @@ class IBugSet(Interface):
         Otherwise, return False.
         """
 
-    def personIsIndirectSubscriber(person):
+    def personIsAlsoNotifiedSubscriber(person):
         """Return True if the person is an indirect subscriber to this `IBug`.
 
         Otherwise, return False.

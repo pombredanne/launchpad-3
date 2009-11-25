@@ -1399,8 +1399,16 @@ class Bug(SQLBase):
 
         return subscriptions.count() > 0
 
-    def personIsIndirectSubscriber(self, person):
+    def personIsAlsoNotifiedSubscriber(self, person):
         """See `IBug`."""
+        # We have to use getAlsoNotifiedSubscribers() here and iterate
+        # over what it returns because "also notified subscribers" is
+        # actually a composite of bug contacts, structural subscribers
+        # and assignees. As such, it's not possible to get them all with
+        # one query.
+        also_notified_subscribers = self.getAlsoNotifiedSubscribers()
+
+        return person in also_notified_subscribers
 
     def personIsSubscribedToDuplicate(self, person):
         """See `IBug`."""
@@ -1410,7 +1418,8 @@ class Bug(SQLBase):
 
         subscriptions_from_dupes = store.find(
             BugSubscription,
-            BugSubscription.bugID.is_in(duplicate_ids))
+            BugSubscription.bugID.is_in(duplicate_ids),
+            BugSubscription.person == person)
 
         return subscriptions_from_dupes.count() > 0
 

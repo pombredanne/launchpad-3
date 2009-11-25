@@ -572,7 +572,7 @@
                     date_made_private
                     userCanView
                     personIsDirectSubscriber
-                    personIsIndirectSubscriber
+                    personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate"/>
             <require
                 permission="launchpad.View"
