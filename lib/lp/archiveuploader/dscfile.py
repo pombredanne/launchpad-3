@@ -451,7 +451,13 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield error
                 files_missing = True
 
-        for error in format_to_file_checker_map[self.format](
+        try:
+            file_checker = format_to_file_checker_map[self.format]
+        except KeyError:
+            raise AssertionError(
+                "No file checker for source format %s." % self.format)
+
+        for error in file_checker(
             self.filename, file_type_counts, component_orig_tar_counts,
             bzip2_count):
             yield error
