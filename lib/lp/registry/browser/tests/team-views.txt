@@ -309,6 +309,10 @@ team.
     ...     print candidate.name, candidate.visibility.title
     landscape-developers Public
     launchpad-users Public
+
+Making one of the teams that sample person owns public will cause it
+to show up.
+
     >>> removeSecurityProxy(private_membership_team).visibility = (
     ...     PersonVisibility.PUBLIC)
     >>> view = create_initialized_view(guadamen, '+add-my-teams')
