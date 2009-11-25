@@ -98,16 +98,18 @@ class Branch(SQLBase):
 
     private = BoolCol(default=False, notNull=True)
 
-    def setPrivate(self, private):
+    def setPrivate(self, private, user):
         """See `IBranch`."""
         if private == self.private:
             return
-        policy = IBranchNamespacePolicy(self.namespace)
+        # Only check the privacy if the user is not special.
+        if (not user_has_special_branch_access(user)):
+            policy = IBranchNamespacePolicy(self.namespace)
 
-        if private and not policy.canBranchesBePrivate():
-            raise BranchCannotBePrivate()
-        if not private and not policy.canBranchesBePublic():
-            raise BranchCannotBePublic()
+            if private and not policy.canBranchesBePrivate():
+                raise BranchCannotBePrivate()
+            if not private and not policy.canBranchesBePublic():
+                raise BranchCannotBePublic()
         self.private = private
 
     registrant = ForeignKey(
