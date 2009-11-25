@@ -274,6 +274,7 @@ Private teams are indicated as private.
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> login('admin@canonical.com')
     >>> private_team = factory.makeTeam(
+    ...     owner=sample_person,
     ...     name='private-team', displayname='Private Team',
     ...     visibility=PersonVisibility.PRIVATE)
 
@@ -294,3 +295,25 @@ Private membership teams are also indicated as private.
     Team membership is viewable by team members
     >>> print view.visibility_portlet_class
     portlet private
+
+== +add-my-teams ==
+
+This page lists the teams that you administer and can add as a member
+to the current team. Private teams cannot be added as members to another
+team.
+
+    >>> login_person(sample_person)
+    >>> view = create_initialized_view(guadamen, '+add-my-teams')
+    >>> for candidate in view.candidate_teams:
+    ...     print candidate.name, candidate.visibility.value, candidate.visibility.title
+
+    >>> print 'user:', view.user.name
+    >>> removeSecurityProxy(private_membership_team).visibility = (
+    ...     PersonVisibility.PUBLIC)
+    >>> transaction.commit()
+    >>> login_person(sample_person)
+    >>> no_priv = person_set.getByName('no-priv')
+    >>> view = create_initialized_view(guadamen, '+add-my-teams')
+    >>> print 'user:', view.user.name
+    >>> for candidate in view.candidate_teams:
+    ...     print candidate.name, candidate.visibility.title
