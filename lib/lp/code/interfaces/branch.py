@@ -399,10 +399,11 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             description=_(
                 "Make this branch visible only to its subscribers.")))
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))
     @export_write_operation()
-    def setPrivate(private):
+    def setPrivate(private, user):
         """Set the branch privacy for this branch."""
 
     # People attributes
