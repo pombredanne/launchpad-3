@@ -15,7 +15,7 @@ import os
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.database.postgresql import quoteIdentifier
+from canonical.database.postgresql import drop_tables, quoteIdentifier
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.librarian.storage import _relFileLocation as relative_file_path
@@ -205,7 +205,7 @@ class UnreferencedLibraryFileAliasPruner:
 
         cur = con.cursor()
 
-        cur.execute("DROP TABLE IF EXISTS ReferencedLibraryFileAlias")
+        drop_tables(cur, "ReferencedLibraryFileAlias")
         cur.execute("""
             CREATE TEMPORARY TABLE ReferencedLibraryFileAlias (
                 alias integer)
@@ -239,7 +239,7 @@ class UnreferencedLibraryFileAliasPruner:
             con.commit()
 
         log.debug("Calculating unreferenced LibraryFileAlias set.")
-        cur.execute("DROP TABLE IF EXISTS UnreferencedLibraryFileAlias")
+        drop_tables(cur, "UnreferencedLibraryFileAlias")
         cur.execute("""
             CREATE TEMPORARY TABLE UnreferencedLibraryFileAlias (
                 id serial PRIMARY KEY,
@@ -260,25 +260,23 @@ class UnreferencedLibraryFileAliasPruner:
             SELECT id AS alias FROM LibraryFileAlias
             WHERE
                 content IS NULL
-                OR (
-                       (
-                            expires IS NULL
-                            OR expires <
-                                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
-                                    interval '1 week'
-                            )
-                        AND last_accessed <
-                            CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
-                                interval '1 week'
-                        AND date_created <
-                            CURRENT_TIMESTAMP AT TIME ZONE 'UTC' -
-                                interval '1 week'
-                        )
+                OR ((expires IS NULL OR
+                     expires <
+                         CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                             - interval '1 week'
+                    )
+                    AND last_accessed <
+                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                            - interval '1 week'
+                    AND date_created <
+                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                            - interval '1 week'
+                   )
             EXCEPT
             SELECT alias FROM ReferencedLibraryFileAlias
             """)
         con.commit()
-        cur.execute("DROP TABLE ReferencedLibraryFileAlias")
+        drop_tables(cur, "ReferencedLibraryFileAlias")
         cur.execute(
             "SELECT COALESCE(max(id),0) FROM UnreferencedLibraryFileAlias")
         self.max_id = cur.fetchone()[0]
@@ -332,7 +330,7 @@ class UnreferencedContentPruner:
         self.index = 1
         self.total_deleted = 0
         cur = con.cursor()
-        cur.execute("DROP TABLE IF EXISTS UnreferencedLibraryFileContent")
+        drop_tables(cur, "UnreferencedLibraryFileContent")
         cur.execute("""
             CREATE TEMPORARY TABLE UnreferencedLibraryFileContent (
                 id serial PRIMARY KEY,
