@@ -118,11 +118,27 @@ def find_branches(directory):
 
 
 def get_revision_id(revision, from_branch, tip=False):
-    if not tip and revision is not None:
+    """Return revision id for a revision number and a branch.
+
+    If the revision is empty, the revision_id will be None.
+
+    If ``tip`` is True, the revision value will be ignored.
+    """
+    if not tip and revision:
         spec = RevisionSpec.from_string(revision)
         return spec.as_revision_id(from_branch)
     # else return None
 
+
+def _format_revision_name(revision, tip=False):
+    """Formatting helper to return human-readable identifier for revision.
+
+    If ``tip`` is True, the revision value will be ignored.
+    """
+    if not tip and revision:
+        return 'revision %s' % (revision,)
+    else:
+        return 'tip'
 
 def get_branches(sourcecode_directory, new_branches,
                  possible_transports=None, tip=False):
@@ -140,11 +156,8 @@ def get_branches(sourcecode_directory, new_branches,
                 raise
         possible_transports.append(
             remote_branch.bzrdir.root_transport)
-        if not tip and revision:
-            print 'Getting %s from %s at revision %s' % (
-                project, branch_url, revision)
-        else:
-            print 'Getting %s from %s at tip' % (project, branch_url)
+        print 'Getting %s from %s at %s' % (
+                project, branch_url, _format_revision_name(revision, tip))
         # If the 'optional' flag is set, then it's a branch that shares
         # history with Launchpad, so we should share repositories. Otherwise,
         # we should avoid sharing repositories to avoid format
@@ -168,10 +181,8 @@ def update_branches(sourcecode_directory, update_branches,
         update_branches.iteritems()):
         # Update project from branch_url.
         destination = os.path.join(sourcecode_directory, project)
-        if not tip and revision:
-            print 'Updating %s to revison %s' % (project, revision or 'tip'),
-        else:
-            print 'Updating %s to tip' % (project,),
+        print 'Updating %s to %s' % (
+                project, _format_revision_name(revision, tip)),
         local_tree = WorkingTree.open(destination)
         try:
             remote_branch = Branch.open(
