@@ -1397,7 +1397,7 @@ class Bug(SQLBase):
             BugSubscription.bug == self,
             BugSubscription.person == person)
 
-        return subscriptions.count() > 0
+        return not subscriptions.is_empty()
 
     def personIsAlsoNotifiedSubscriber(self, person):
         """See `IBug`."""
@@ -1413,15 +1413,13 @@ class Bug(SQLBase):
     def personIsSubscribedToDuplicate(self, person):
         """See `IBug`."""
         store = Store.of(self)
-        duplicates = store.find(Bug, Bug.duplicateof == self)
-        duplicate_ids = [dupe.id for dupe in duplicates]
-
         subscriptions_from_dupes = store.find(
             BugSubscription,
-            BugSubscription.bugID.is_in(duplicate_ids),
+            Bug.duplicateof == self,
+            BugSubscription.bugID == Bug.id,
             BugSubscription.person == person)
 
-        return subscriptions_from_dupes.count() > 0
+        return not subscriptions_from_dupes.is_empty()
 
 
 class BugSet:

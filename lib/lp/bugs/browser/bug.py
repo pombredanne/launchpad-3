@@ -432,20 +432,32 @@ class BugViewMixin:
             ids[sub.name] = 'subscriber-%s' % sub.id
         return ids
 
-    def subscription_class(self, subscribed_person):
+    def getSubscriptionClassForUser(self, subscribed_person):
         """Return a set of CSS class names based on subscription status.
 
         For example, "subscribed-false dup-subscribed-true".
         """
-        bug = self.context
-
-        if (bug.personIsSubscribedToDuplicate(subscribed_person) or
-            bug.personIsAlsoNotifiedSubscriber(subscribed_person)):
+        if subscribed_person in self.duplicate_subscribers:
             dup_class = 'dup-subscribed-true'
         else:
             dup_class = 'dup-subscribed-false'
 
-        if bug.personIsDirectSubscriber(subscribed_person):
+        if subscribed_person in self.direct_subscribers:
+            return 'subscribed-true %s' % dup_class
+        else:
+            return 'subscribed-false %s' % dup_class
+
+    @property
+    def current_user_subscription_class(self):
+        bug = self.context
+
+        if (bug.personIsSubscribedToDuplicate(self.user) or
+            bug.personIsAlsoNotifiedSubscriber(self.user)):
+            dup_class = 'dup-subscribed-true'
+        else:
+            dup_class = 'dup-subscribed-false'
+
+        if bug.personIsDirectSubscriber(self.user):
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class

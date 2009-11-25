@@ -1452,6 +1452,9 @@ personIsSubscribedToDuplicate() will return True.
     >>> subscription = dupe.subscribe(person, person)
 
     >>> dupe.duplicateof = bug
+
+    # Re-fetch the bug so that the fact that it's a duplicate definitely
+    # registers.
     >>> bug = getUtility(IBugSet).get(bug.id)
     >>> bug.personIsSubscribedToDuplicate(person)
     True
@@ -1472,7 +1475,7 @@ personIsAlsoNotifiedSubscriber() will return True, for example if the
 user is the assignee for one of the bug's BugTask.
 
     >>> new_bug = factory.makeBug()
-    >>> new_bug.bugtasks[0].transitionToAssignee(person)
+    >>> new_bug.default_bugtask.transitionToAssignee(person)
     >>> new_bug.personIsAlsoNotifiedSubscriber(person)
     True
 
