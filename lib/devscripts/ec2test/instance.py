@@ -392,6 +392,10 @@ class EC2Instance:
         self._ensure_ec2test_user_has_keys()
         return self._connect('ec2test')
 
+    def _report_traceback(self):
+        """Print traceback."""
+        traceback.print_exc()
+
     def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
         """Start, run `func` and then maybe shut down.
 
@@ -420,7 +424,7 @@ class EC2Instance:
                 # if there are any exceptions before it waits in the console
                 # (in the finally block), and you can't figure out why it's
                 # broken.
-                traceback.print_exc()
+                self._report_traceback()
         finally:
             try:
                 if postmortem:
