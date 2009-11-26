@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=E0702
 
 """Test handling of EC2 machine images."""
 
@@ -19,7 +20,8 @@ class Stub:
      - Record whether a method is being called.
     """
     # XXX JeroenVermeulen 2009-11-26: This probably exists somewhere
-    # already.  Or if not, maybe it should.
+    # already.  Or if not, maybe it should.  But with a name that won't
+    # turn Stuart Bishop's IRC client into a disco simulator. 
 
     call_count = 0
 
@@ -45,7 +47,7 @@ class Stub:
         """
         self.call_count += 1
 
-        if self.simulated_failure:
+        if self.simulated_failure is not None:
             raise self.simulated_failure
 
         return self.return_value
