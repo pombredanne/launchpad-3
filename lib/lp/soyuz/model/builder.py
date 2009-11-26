@@ -20,6 +20,8 @@ import tempfile
 import urllib2
 import xmlrpclib
 
+from lazr.delegates import delegates
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -31,6 +33,8 @@ from storm.store import Store
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior)
 from lp.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.soyuz.adapters.archivedependencies import (
@@ -114,6 +118,7 @@ class BuilderSlave(xmlrpclib.Server):
 class Builder(SQLBase):
 
     implements(IBuilder, IHasBuildRecords)
+    delegates(IBuildFarmJobBehavior, context="current_build_behavior")
     _table = 'Builder'
 
     _defaultOrder = ['id']
@@ -351,10 +356,9 @@ class Builder(SQLBase):
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
-        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
-        spr = build.sourcepackagerelease
-        logger.info("startBuild(%s, %s, %s, %s)", self.url,
-                    spr.name, spr.version, build.pocket.title)
+        # TODO: verify builder is idle, throw exception if not.
+        # Set the build behavior depending on the BuildFarmJobType.
+        self.logStartBuild(build_queue_item, logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
         self._verifyBuildRequest(build_queue_item, logger)

@@ -24,6 +24,8 @@ from zope.schema import Choice, TextLine, Text, Bool
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
 from lp.registry.interfaces.role import IHasOwner
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
 
@@ -57,7 +59,7 @@ class BuildSlaveFailure(BuildDaemonError):
     """The build slave has suffered an error and cannot be used."""
 
 
-class IBuilder(IHasOwner):
+class IBuilder(IHasOwner, IBuildFarmJobBehavior):
     """Build-slave information and state.
 
     Builder instance represents a single builder slave machine within the
