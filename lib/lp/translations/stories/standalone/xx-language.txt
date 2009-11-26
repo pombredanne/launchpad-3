@@ -146,7 +146,7 @@ about the selected language.
 Abkhazian is a language that has no information about plural forms and is not registered as being spoken in any country.
 
 We will see a note about missing plural forms and a link to Rosetta
-add question page for informating Rosetta admin about the right plural form 
+add question page for informing Rosetta admin about the right plural form.
 
     >>> browser.open('http://translations.launchpad.dev/+languages/ab')
     >>> print extract_text(find_portlet(browser.contents, 'Plural forms'
@@ -158,9 +158,9 @@ add question page for informating Rosetta admin about the right plural form
     >>> print browser.getLink(id='plural_question').url
     http://answers.launchpad.dev/rosetta/+addquestion
 
-We will see a note that this launguage is not registred as being spoken in any
+We will see a note that this language is not registred as being spoken in any
 country and a link to add question page for informating Rosetta admin about the
-countries where this page is officialy spoken 
+countries where this page is officially spoken.
 
     >>> countries_portlet = find_portlet(browser.contents, 'Countries')
     >>> print countries_portlet
