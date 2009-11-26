@@ -376,9 +376,11 @@ class SanitizeDb(LaunchpadScript):
             if (to_table == table and to_column == 'id'
                 and (from_table, from_column) not in ignores):
                 references.append(
-                    "SELECT %s FROM %s" % (from_column, from_table))
-        subquery = " UNION ".join(references)
-        query = "DELETE FROM %s WHERE id NOT IN (%s)" % (table, subquery)
+                    "EXCEPT SELECT %s FROM %s" % (from_column, from_table))
+        query = (
+            "DELETE FROM %s USING (SELECT id FROM %s %s) AS Unreferenced "
+            "WHERE %s.id = Unreferenced.id"
+            % (table, table, ' '.join(references), table))
         self.logger.log(DEBUG2, query)
         count = self.store.execute(query).rowcount
         self.logger.info("Removed %d unlinked %s rows.", count, table)
