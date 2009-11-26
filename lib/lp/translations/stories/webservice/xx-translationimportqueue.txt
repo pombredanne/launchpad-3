@@ -114,8 +114,23 @@ For now, it is not possible to set an entry's status through the API.
     ...
     status: You tried to modify a read-only attribute.
 
-An attempt to do so will leave the entry's status unchanged.
+But you can set the status using the setStatus method.
+
+    >>> print webservice.named_post(
+    ...     first_entry, 'setStatus', {}, new_status='Approved')
+    HTTP/1.1 200 Ok
+    ...
+
+The entry's status is changed.
 
     >>> queue = webservice.get("/+imports").jsonBody()
     >>> print queue['entries'][0]['status']
-    Imported
+    Approved
+
+Unprivileged users cannot change the status.
+
+    >>> print user_webservice.named_post(
+    ...     first_entry, 'setStatus', {}, new_status='Deleted')
+    HTTP/1.1 401 Unauthorized
+    ...
+

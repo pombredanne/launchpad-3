@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'MilestoneAddView',
+    'MilestoneBreadcrumb',
     'MilestoneContextMenu',
     'MilestoneDeleteView',
     'MilestoneEditView',
@@ -39,6 +40,7 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
     enabled_with_permission, GetitemNavigation, Navigation)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, ContextMenu, Link, NavigationMenu)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -59,6 +61,18 @@ class MilestoneNavigation(Navigation,
     usedfor = IMilestone
 
 
+class MilestoneBreadcrumb(Breadcrumb):
+    """The Breadcrumb for an `IMilestone`."""
+
+    @property
+    def text(self):
+        milestone = IMilestone(self.context)
+        if milestone.code_name:
+            return '%s "%s"' % (milestone.name, milestone.code_name)
+        else:
+            return milestone.name
+
+
 class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
     """The menu for this milestone."""
 
@@ -72,7 +86,6 @@ class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
         summary = "Edit this milestone"
         return Link(
             '+edit', text, icon='edit', summary=summary, enabled=enabled)
-
 
     @enabled_with_permission('launchpad.Edit')
     def create_release(self):

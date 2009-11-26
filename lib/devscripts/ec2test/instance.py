@@ -402,16 +402,22 @@ class EC2Instance:
         :param args: Passed to `func`.
         :param kw: Passed to `func`.
         """
+        # We ignore the value of the 'shutdown' argument and always shut down
+        # unless `func` returns normally.
+        really_shutdown = True
+        retval = None
         try:
             self.start()
             try:
-                return func(*args, **kw)
+                retval = func(*args, **kw)
             except Exception:
                 # When running in postmortem mode, it is really helpful to see
                 # if there are any exceptions before it waits in the console
                 # (in the finally block), and you can't figure out why it's
                 # broken.
                 traceback.print_exc()
+            else:
+                really_shutdown = shutdown
         finally:
             try:
                 if postmortem:
@@ -420,8 +426,9 @@ class EC2Instance:
                         postmortem_banner % {'dns': self.hostname})
                     print 'Postmortem console closed.'
             finally:
-                if shutdown:
+                if really_shutdown:
                     self.shutdown()
+        return retval
 
     def _copy_single_file(self, sftp, local_path, remote_dir):
         """Copy `local_path` to `remote_dir` on this instance.
