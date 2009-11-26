@@ -446,6 +446,8 @@ It's also possible to delete attachments.
     Attachment to be deleted
 
     >>> libraryfile = attachment.libraryfile
+    >>> libraryfile.deleted
+    False
     >>> attachment.removeFromBug(user=foobar)
     >>> bug_two.attachments.count()
     0
@@ -456,10 +458,7 @@ The libraryfile of this bug attachment is marked as "deleted".
     True
 
 Deleting an attachment causes a notification to be sent. It's worth
-noting that the notification still includes the URL to the attachment,
-which will be valid until the Librarian garbage collector kicks in and
-deletes the file entirely. This gives people a chance of undoing an
-incorrect removal by downloading and re-attach the file.
+noting that the notification still includes the URL to the attachment.
 
     >>> from canonical.launchpad.database import BugNotification
     >>> latest_notification = BugNotification

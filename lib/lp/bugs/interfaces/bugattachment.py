@@ -91,7 +91,7 @@ class IBugAttachment(IHasBug):
     def destroySelf():
         """Delete this record.
 
-        The related library file is marked as "deleted".
+        The library file content for this attachment is set to None.
         """
 
 

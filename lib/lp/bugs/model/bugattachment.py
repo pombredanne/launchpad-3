@@ -48,6 +48,9 @@ class BugAttachment(SQLBase):
 
     def destroySelf(self):
         """See IBugAttachment."""
+        # Delete the reference to the LibraryFileContent record right now,
+        # in order to avoid problems with not deleted files as described
+        # in bug 387188.
         self.libraryfile.content = None
         super(BugAttachment, self).destroySelf()
 
