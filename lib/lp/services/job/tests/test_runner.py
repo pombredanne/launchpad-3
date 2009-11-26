@@ -4,6 +4,9 @@
 """Tests for job-running facilities."""
 
 
+from __future__ import with_statement
+
+import contextlib
 import sys
 from unittest import TestLoader
 
@@ -66,6 +69,14 @@ class RaisingJob(NullJob):
         raise RaisingJobException(self.message)
 
 
+@contextlib.contextmanager
+def pristineErrorUtility():
+    old = errorlog.globalErrorUtility
+    errorlog.globalErrorUtility = errorlog.ErrorReportingUtility()
+    yield
+    errorlog.globalErrorUtility = old
+
+
 class TestJobRunner(TestCaseWithFactory):
     """Ensure JobRunner behaves as expected."""
 
@@ -119,7 +130,8 @@ class TestJobRunner(TestCaseWithFactory):
             raise Exception('Fake exception.  Foobar, I say!')
         job_1.run = raiseError
         runner = JobRunner([job_1, job_2])
-        runner.runAll()
+        with pristineErrorUtility():
+            runner.runAll()
         self.assertEqual([], pop_notifications())
         self.assertEqual([job_2], runner.completed_jobs)
         self.assertEqual([job_1], runner.incomplete_jobs)
@@ -128,21 +140,24 @@ class TestJobRunner(TestCaseWithFactory):
         reporter = errorlog.globalErrorUtility
         oops = reporter.getLastOopsReport()
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
-        self.assertEqual([('foo', 'bar')], oops.req_vars)
+        self.assertEqual(
+            [('<oops-message-0>', "{'foo': 'bar'}")], oops.req_vars)
 
     def test_oops_messages_used_when_handling(self):
         """Oops messages should appear even when exceptions are handled."""
         job_1, job_2 = self.makeTwoJobs()
-        reporter = getUtility(IErrorReportingUtility)
         def handleError():
+            reporter = errorlog.globalErrorUtility
             try:
                 raise ValueError('Fake exception.  Foobar, I say!')
             except ValueError:
                 reporter.handling(sys.exc_info())
         job_1.run = handleError
         runner = JobRunner([job_1, job_2])
-        runner.runAll()
-        oops = reporter.getLastOopsReport()
+        with pristineErrorUtility():
+            runner.runAll()
+            reporter = getUtility(IErrorReportingUtility)
+            oops = reporter.getLastOopsReport()
         self.assertEqual(
             [('<oops-message-0>', "{'foo': 'bar'}")], oops.req_vars)
 
