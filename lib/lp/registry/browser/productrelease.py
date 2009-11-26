@@ -185,7 +185,7 @@ class ProductReleaseFromSeriesAddView(ProductReleaseAddViewBase,
 
     def initialize(self):
         # The dynamically loaded milestone form needs this javascript
-        # enabled in the main-template.pt.
+        # enabled in the base-layout.
         self.request.needs_datepicker_iframe = True
         super(ProductReleaseFromSeriesAddView, self).initialize()
 

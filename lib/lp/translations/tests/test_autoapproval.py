@@ -13,6 +13,9 @@ from pytz import UTC
 import transaction
 import unittest
 
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
@@ -86,26 +89,23 @@ class TestCustomLanguageCode(unittest.TestCase):
         self.assertEqual(fresh_product.getCustomLanguageCode('pt_PT'), None)
 
         fresh_distro = Distribution.byName('gentoo')
-        nocode = fresh_distro.getCustomLanguageCode(
-            self.sourcepackagename, 'nocode')
+        gentoo_package = fresh_distro.getSourcePackage(self.sourcepackagename)
+        nocode = gentoo_package.getCustomLanguageCode('nocode')
         self.assertEqual(nocode, None)
-        brazilian = fresh_distro.getCustomLanguageCode(
-            self.sourcepackagename, 'Brazilian')
+        brazilian = gentoo_package.getCustomLanguageCode('Brazilian')
         self.assertEqual(brazilian, None)
 
-        fresh_package = SourcePackageName.byName('cnews')
-        self.assertEqual(self.distro.getCustomLanguageCode(
-            fresh_package, 'nocode'), None)
-        self.assertEqual(self.distro.getCustomLanguageCode(
-            fresh_package, 'Brazilian'), None)
+        cnews = SourcePackageName.byName('cnews')
+        cnews_package = self.distro.getSourcePackage(cnews)
+        self.assertEqual(cnews_package.getCustomLanguageCode('nocode'), None)
+        self.assertEqual(
+            cnews_package.getCustomLanguageCode('Brazilian'), None)
 
     def test_UnsuccessfulCustomLanguageCodeLookup(self):
         # Look up nonexistent custom language code for product.
         self.assertEqual(self.product.getCustomLanguageCode('nocode'), None)
-        self.assertEqual(
-            self.distro.getCustomLanguageCode(
-                self.sourcepackagename, 'nocode'),
-            None)
+        package = self.distro.getSourcePackage(self.sourcepackagename)
+        self.assertEqual(package.getCustomLanguageCode('nocode'), None)
 
     def test_SuccessfulProductCustomLanguageCodeLookup(self):
         # Look up custom language code.
@@ -119,8 +119,8 @@ class TestCustomLanguageCode(unittest.TestCase):
 
     def test_SuccessfulPackageCustomLanguageCodeLookup(self):
         # Look up custom language code.
-        Brazilian_code = self.distro.getCustomLanguageCode(
-            self.sourcepackagename, 'Brazilian')
+        package = self.distro.getSourcePackage(self.sourcepackagename)
+        Brazilian_code = package.getCustomLanguageCode('Brazilian')
         self.assertEqual(Brazilian_code, self.package_codes['Brazilian'])
         self.assertEqual(Brazilian_code.product, None)
         self.assertEqual(Brazilian_code.distribution, self.distro)
@@ -749,7 +749,8 @@ class TestCleanup(TestCaseWithFactory):
 
     def _setStatus(self, entry, status, when=None):
         """Simulate status on queue entry having been set at a given time."""
-        entry.setStatus(status)
+        entry.setStatus(status,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
         if when is not None:
             entry.date_status_changed = when
         entry.syncUpdate()
@@ -760,6 +761,8 @@ class TestCleanup(TestCaseWithFactory):
         # are.
         one_year_ago = datetime.now(UTC) - timedelta(days=366)
         entry = self._makeProductEntry()
+        entry.potemplate = (
+            self.factory.makePOTemplate(productseries=entry.productseries))
         entry_id = entry.id
 
         self._setStatus(entry, RosettaImportStatus.APPROVED, one_year_ago)
