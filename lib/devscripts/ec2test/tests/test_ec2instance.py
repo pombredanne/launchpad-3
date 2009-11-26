@@ -124,7 +124,7 @@ class TestEC2Instance(TestCase):
         # The mock EC2 instances we set up have neither started nor been
         # shut down.  After running, they have started.
         # Not a very useful test, except it establishes the basic
-        # assumptions the other tests.
+        # assumptions for the other tests.
         runnee = Stub()
 
         self.assertEqual(0, runnee.call_count)
