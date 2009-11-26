@@ -3,7 +3,7 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  metal:use-macro="view/macro:page/main_side"
+  metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad"
 >
 
@@ -12,14 +12,6 @@
 <metal:heading fill-slot="heading">
     <h2><tal:heading replace="view/label" /></h2>
 </metal:heading>
-
-<metal:portlets fill-slot="side">
-  <div tal:replace="structure context/@@+global-actions" />
-  <div tal:condition="context/reopenings"
-       tal:replace="structure context/@@+portlet-reopenings" />
-  <div tal:replace="structure context/@@+portlet-subscribers" />
-  <div tal:replace="structure context/@@+portlet-bugs" />
-</metal:portlets>
 
 <div metal:fill-slot="main">
 

@@ -82,10 +82,7 @@ summary.
             Bob                                   None
     Reviews requested or in progress
     Branch Merge Proposal   Requested By          Activity
-    lp://dev/~bob/fooix/review  &rArr; lp://dev/fooix
-            Bob           ...                     None
-    lp://dev/~albert/fooix/review &rArr; lp://dev/fooix
-            Albert        ...                     None
+    ...
 
 
 Listings from the main person code page

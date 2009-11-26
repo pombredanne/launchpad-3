@@ -43,13 +43,15 @@ import re
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Int, Choice, Text, TextLine, Datetime)
+    Bool, Int, Choice, List, Text, TextLine, Datetime)
 
 from lazr.restful.fields import CollectionField, Reference, ReferenceChoice
 from lazr.restful.declarations import (
     call_with, collection_default_content, export_as_webservice_collection,
-    export_as_webservice_entry, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_entry, REQUEST_USER)
+    export_as_webservice_entry, export_factory_operation,
+    export_operation_as, export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_collection_of,
+    operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
 
@@ -68,7 +70,6 @@ from lp.code.enums import (
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.interfaces.hasbranches import IHasMergeProposals
-from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPrivacy)
 from lp.registry.interfaces.role import IHasOwner
@@ -723,13 +724,46 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     def isBranchMergeable(other_branch):
         """Is the other branch mergeable into this branch (or vice versa)."""
 
-    def addLandingTarget(registrant, target_branch, dependent_branch=None,
+    @export_operation_as('createMergeProposal')
+    @operation_parameters(
+        target_branch=Reference(schema=Interface),
+        prerequisite_branch=Reference(schema=Interface),
+        needs_review=Bool(title=_('Needs review'),
+            description=_('If True, set queue_status to NEEDS_REVIEW.'
+            'Otherwise, it will be WORK_IN_PROGRESS.')),
+        initial_comment=Text(
+            title=_('Initial comment'),
+            description=_("Registrant's initial description of proposal.")),
+        commit_message=Text(
+            title=_('Commit message'),
+            description=_('Message to use when committing this merge.')),
+        reviewers=List(value_type=Reference(schema=IPerson)),
+        review_types=List(value_type=TextLine())
+        )
+    # target_branch and prerequisite_branch are actually IBranch, patched in
+    # _schema_circular_imports.
+    @call_with(registrant=REQUEST_USER)
+    # IBranchMergeProposal supplied as Interface to avoid circular imports.
+    @export_factory_operation(Interface, [])
+    def _createMergeProposal(
+        registrant, target_branch, prerequisite_branch=None,
+        needs_review=True, initial_comment=None, commit_message=None,
+        reviewers=None, review_types=None):
+        """API-oriented version of addLandingTarget.
+
+        The parameters are the same as addLandingTarget, except that
+        review_requests is split into a list of reviewers and a list of
+        review types.
+        """
+
+    def addLandingTarget(registrant, target_branch, prerequisite_branch=None,
                          whiteboard=None, date_created=None,
                          needs_review=False, initial_comment=None,
-                         review_requests=None):
+                         review_requests=None, review_diff=None,
+                         commit_message=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
-        Both the target_branch and the dependent_branch, if it is there,
+        Both the target_branch and the prerequisite_branch, if it is there,
         must be branches of the same project as the source branch.
 
         Branches without associated projects, junk branches, cannot
@@ -737,7 +771,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
 
         :param registrant: The person who is adding the landing target.
         :param target_branch: Must be another branch, and different to self.
-        :param dependent_branch: Optional but if it is not None, it must be
+        :param prerequisite_branch: Optional but if it is not None, it must be
             another branch.
         :param whiteboard: Optional.  Just text, notes or instructions
             pertinant to the landing such as testing notes.
@@ -786,6 +820,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         :param extras: Zero or more path segments that will be joined onto the
             end of the URL (with `bzrlib.urlutils.join`).
         """
+
+    browse_source_url = Attribute(
+        "The URL of the source browser for this branch.")
 
     # Don't use Object -- that would cause an import loop with ICodeImport.
     code_import = Attribute("The associated CodeImport, if any.")
@@ -1008,6 +1045,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
 
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
 
+    def requestUpgrade():
+        """Create an IBranchUpgradeJob to upgrade this branch."""
+
     def visibleByUser(user):
         """Can the specified user see this branch?"""
 
@@ -1130,7 +1170,36 @@ class IBranchSet(Interface):
         Either from the external specified in Branch.url, from the URL on
         http://bazaar.launchpad.net/ or the lp: URL.
 
+        This is a frontend shim to `IBranchLookup.getByUrl` to allow it to be
+        exported over the API. If you want to call this from within the
+        Launchpad app, use the `IBranchLookup` version instead.
+
         Return None if no match was found.
+        """
+
+    @operation_parameters(
+        urls=List(
+            title=u'A list of URLs of branches',
+            description=(
+                u'These can be URLs external to '
+                u'Launchpad, lp: URLs, or http://bazaar.launchpad.net/ URLs, '
+                u'or any mix of all these different kinds.'),
+            value_type=TextLine(),
+            required=True))
+    @export_read_operation()
+    def getByUrls(urls):
+        """Finds branches by URL.
+
+        Either from the external specified in Branch.url, from the URL on
+        http://bazaar.launchpad.net/, or from the lp: URL.
+
+        This is a frontend shim to `IBranchLookup.getByUrls` to allow it to be
+        exported over the API. If you want to call this from within the
+        Launchpad app, use the `IBranchLookup` version instead.
+
+        :param urls: An iterable of URLs expressed as strings.
+        :return: A dictionary mapping URLs to branches. If the URL has no
+            associated branch, the URL will map to `None`.
         """
 
     @collection_default_content()
@@ -1227,10 +1296,11 @@ def bazaar_identity(branch, is_dev_focus):
             'series': use_series.name}
 
     if branch.sourcepackage is not None:
-        distro_package = branch.sourcepackage.distribution_sourcepackage
-        linked_branch = ICanHasLinkedBranch(distro_package)
-        if linked_branch.branch == branch:
-            return lp_prefix + linked_branch.bzr_path
+        if is_dev_focus:
+            return "%(prefix)s%(distro)s/%(packagename)s" % {
+            'prefix': lp_prefix,
+            'distro': branch.distroseries.distribution.name,
+            'packagename': branch.sourcepackagename.name}
         suite_sourcepackages = branch.associatedSuiteSourcePackages()
         # Take the first link if there is one.
         if len(suite_sourcepackages) > 0:

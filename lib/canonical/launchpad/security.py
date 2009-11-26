@@ -7,9 +7,11 @@ __metaclass__ = type
 __all__ = ['AuthorizationBase']
 
 from zope.interface import implements, Interface
-from zope.component import getAdapter, getUtility
+from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
+from lp.archiveuploader.permission import can_upload_to_archive
+from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
@@ -47,7 +49,8 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.translations.utilities.permission_helpers import (
+    is_admin_or_rosetta_expert)
 from lp.registry.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
@@ -71,7 +74,7 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
-from canonical.launchpad.interfaces.packaging import IPackaging
+from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
     IPerson, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillar
@@ -83,7 +86,7 @@ from lp.registry.interfaces.productrelease import (
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject, IProjectSet
 from lp.code.interfaces.seriessourcepackagebranch import (
-    ISeriesSourcePackageBranch, IMakeOfficialBranchLinks)
+    IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
@@ -474,10 +477,7 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Allow Launchpad's admins and Rosetta experts edit all fields."""
-        celebrities = getUtility(ILaunchpadCelebrities)
-        return (user.inTeam(celebrities.admin) or
-                user.inTeam(celebrities.rosetta_experts))
-
+        return is_admin_or_rosetta_expert(user)
 
 class AdminProductTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
@@ -489,10 +489,8 @@ class AdminProductTranslations(AuthorizationBase):
         Any Launchpad/Launchpad Translations administrator or owners are
         able to change translation settings for a product.
         """
-        celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.owner) or
-                user.inTeam(celebrities.admin) or
-                user.inTeam(celebrities.rosetta_experts))
+                is_admin_or_rosetta_expert(user))
 
 
 class AdminSeriesByVCSImports(AuthorizationBase):
@@ -621,38 +619,6 @@ class EditTranslationsPersonByPerson(AuthorizationBase):
         person = self.obj.person
         admins = getUtility(ILaunchpadCelebrities).admin
         return person == user or user.inTeam(admins)
-
-
-class EditPersonLocation(AuthorizationBase):
-    permission = 'launchpad.EditLocation'
-    usedfor = IPerson
-
-    def checkAuthenticated(self, user):
-        """Anybody can edit a person's location until that person sets it.
-
-        Once a person sets his own location that information can only be
-        changed by the person himself or admins.
-        """
-        location = self.obj.location
-        if location is None:
-            # No PersonLocation entry exists for this person, so anybody can
-            # change this person's location.
-            return True
-
-        # There is a PersonLocation entry for this person, so we'll check its
-        # details to find out whether or not the user can edit them.
-        if (location.visible
-            and (location.latitude is None
-                 or location.last_modified_by != self.obj)):
-            # No location has been specified yet or it has been specified
-            # by a non-authoritative source (not the person himself), so
-            # anybody can change it.
-            return True
-        else:
-            admins = getUtility(ILaunchpadCelebrities).admin
-            # The person himself and LP admins can always change that person's
-            # location.
-            return user == self.obj or user.inTeam(admins)
 
 
 class ViewPersonLocation(AuthorizationBase):
@@ -1309,10 +1275,8 @@ class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
 
         # As a special case, the Ubuntu translation group owners can
         # manage Ubuntu uploads.
-        if self.obj.is_targeted_to_ubuntu:
-            group = self.obj.distroseries.distribution.translationgroup
-            if group is not None and user.inTeam(group.owner):
-                return True
+        if self.obj.isUbuntuAndIsUserTranslationGroupOwner(user):
+            return True
 
         return False
 
@@ -1322,11 +1286,12 @@ class EditTranslationImportQueueEntry(AdminTranslationImportQueueEntry):
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        """Anyone who can admin an entry, plus its owner, can edit it.
+        """Anyone who can admin an entry, plus its owner or the owner of the
+        product or distribution, can edit it.
         """
         if AdminTranslationImportQueueEntry.checkAuthenticated(self, user):
             return True
-        if user.inTeam(self.obj.importer):
+        if self.obj.isUserUploaderOrOwner(user):
             return True
 
         return False
@@ -1590,8 +1555,45 @@ class EditBranch(AuthorizationBase):
     usedfor = IBranch
 
     def checkAuthenticated(self, user):
-        return (user.inTeam(self.obj.owner) or
-                user_has_special_branch_access(user))
+        can_edit = (
+            user.inTeam(self.obj.owner) or
+            user_has_special_branch_access(user) or
+            can_upload_linked_package(user, self.obj))
+        if can_edit:
+            return True
+        # It used to be the case that all import branches were owned by the
+        # special, restricted team ~vcs-imports. For these legacy code import
+        # branches, we still want the code import registrant to be able to
+        # edit them. Similarly, we still want vcs-imports members to be able
+        # to edit those branches.
+        code_import = self.obj.code_import
+        if code_import is None:
+            return False
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return (
+            user.inTeam(vcs_imports)
+            or (self.obj.owner == vcs_imports
+                and user.inTeam(code_import.registrant)))
+
+
+def can_upload_linked_package(person, branch):
+    """True if person may upload the package linked to `branch`."""
+    # No associated `ISuiteSourcePackage` data -> not an official branch.
+    # Abort.
+    ssp_list = branch.associatedSuiteSourcePackages()
+    if len(ssp_list) < 1:
+        return False
+
+    # XXX al-maisan, 2009-10-20: a branch may currently be associated with a
+    # number of (distroseries, sourcepackagename, pocket) combinations.
+    # This does not seem right. But until the database model is fixed we work
+    # around this by assuming that things are fine as long as we find at least
+    # one combination that allows us to upload the corresponding source
+    # package.
+    for ssp in ssp_list:
+        if can_upload_to_archive(person, ssp):
+            return True
+    return False
 
 
 class AdminBranch(AuthorizationBase):

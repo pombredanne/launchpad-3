@@ -22,6 +22,7 @@ from datetime import datetime
 import operator
 import os
 import pytz
+import re
 from warnings import warn
 
 from zope.component import getUtility
@@ -43,6 +44,7 @@ from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
+from canonical.launchpad.helpers import getFileType
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
@@ -61,6 +63,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
@@ -436,16 +439,30 @@ class IndexStanzaFields:
         for name, value in self.fields:
             if not value:
                 continue
+
             # do not add separation space for the special field 'Files'
             if name != 'Files':
                 value = ' %s' % value
 
             # XXX Michael Nelson 20090930 bug=436182. We have an issue
-            # in the upload parser that has introduced '\n' at the end of
-            # certain dsc_binaries fields. This work-around allows
-            # critical teams to continue, while giving us more
-            # time to fix the actual issue and update the corrupted data.
-            output_lines.append('%s:%s' % (name, value.rstrip()))
+            # in the upload parser that has
+            #   1. introduced '\n' at the end of multiple-line-spanning
+            #      fields, such as dsc_binaries, but potentially others,
+            #   2. stripped the leading space from each subsequent line
+            #      of dsc_binaries values that span multiple lines.
+            # This is causing *incorrect* Source indexes to be created.
+            # This work-around can be removed once the fix for bug 436182
+            # is in place and the tainted data has been cleaned.
+            # First, remove any trailing \n or spaces.
+            value = value.rstrip()
+
+            # Second, as we have corrupt data where subsequent lines
+            # of values spanning multiple lines are not preceded by a
+            # space, we ensure that any \n in the value that is *not*
+            # followed by a white-space character has a space inserted.
+            value = re.sub(r"\n(\S)", r"\n \1", value)
+
+            output_lines.append('%s:%s' % (name, value))
 
         return '\n'.join(output_lines)
 
@@ -837,6 +854,33 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         self.secure_record.component = component
         Store.of(self).invalidate(self)
 
+    def _proxied_urls(self, files, parent):
+        """Run the files passed through `ProxiedLibraryFileAlias`."""
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+        return [
+            ProxiedLibraryFileAlias(file, parent).http_url for file in files]
+
+    @property
+    def source_file_urls(self):
+        """See `ISourcePackagePublishingHistory`."""
+        source_urls = self._proxied_urls(
+            [file.libraryfile for file in self.sourcepackagerelease.files],
+             self.archive)
+
+        return source_urls
+
+    @property
+    def binary_file_urls(self):
+        """See `ISourcePackagePublishingHistory`."""
+        publishing_set = getUtility(IPublishingSet)
+        binaries = publishing_set.getBinaryFilesForSources(
+            self).config(distinct=True)
+        binary_urls = self._proxied_urls(
+            [binary for _source, binary, _content in binaries], self.archive)
+
+        return binary_urls
+
 
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
@@ -1034,32 +1078,9 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
     def copyTo(self, distroseries, pocket, archive):
         """See `BinaryPackagePublishingHistory`."""
-        current = self.secure_record
 
-        if current.binarypackagerelease.architecturespecific:
-            try:
-                target_architecture = distroseries[
-                    current.distroarchseries.architecturetag]
-            except NotFoundError:
-                return []
-            destination_architectures = [target_architecture]
-        else:
-            destination_architectures = distroseries.architectures
-
-        copies = []
-        for architecture in destination_architectures:
-            copy = getUtility(IPublishingSet).newBinaryPublication(
-                archive,
-                self.binarypackagerelease,
-                architecture,
-                current.component,
-                current.section,
-                current.priority,
-                pocket
-                )
-            copies.append(copy)
-
-        return copies
+        return getUtility(IPublishingSet).copyBinariesTo(
+            [self], distroseries, pocket, archive)
 
     def getAncestry(self, archive=None, distroseries=None, pocket=None,
                     status=None):
@@ -1104,6 +1125,72 @@ class PublishingSet:
     """Utilities for manipulating publications in batches."""
 
     implements(IPublishingSet)
+
+    def copyBinariesTo(self, binaries, distroseries, pocket, archive):
+        """See `IPublishingSet`."""
+
+        # If the target archive is a ppa then we will need to override
+        # the component for each copy - so lookup the main component
+        # here once.
+        override_component = None
+        if archive.is_ppa:
+            override_component = getUtility(IComponentSet)['main']
+
+        secure_copies = []
+
+        for binary in binaries:
+            binarypackagerelease = binary.binarypackagerelease
+            target_component = override_component or binary.component
+
+            if binarypackagerelease.architecturespecific:
+                # If the binary is architecture specific and the target
+                # distroseries does not include the architecture then we
+                # skip the binary and continue.
+                try:
+                    # For safety, we use the architecture the binary was
+                    # built, and not the one it is published, coping with
+                    # single arch-indep publications for architectures that
+                    # do not exist in the destination series.
+                    # See #387589 for more information.
+                    target_architecture = distroseries[
+                        binarypackagerelease.build.arch_tag]
+                except NotFoundError:
+                    continue
+                destination_architectures = [target_architecture]
+            else:
+                destination_architectures = distroseries.architectures
+
+            for distroarchseries in destination_architectures:
+
+                # We only copy the binary if it doesn't already exist
+                # in the destination.
+                binary_in_destination = archive.getAllPublishedBinaries(
+                    name=binarypackagerelease.name, exact_match=True,
+                    version=binarypackagerelease.version,
+                    status=active_publishing_status, pocket=pocket,
+                    distroarchseries=distroarchseries)
+
+                if binary_in_destination.count() == 0:
+                    pub = SecureBinaryPackagePublishingHistory(
+                        archive=archive,
+                        binarypackagerelease=binarypackagerelease,
+                        distroarchseries=distroarchseries,
+                        component=target_component,
+                        section=binary.section,
+                        priority=binary.priority,
+                        status=PackagePublishingStatus.PENDING,
+                        datecreated=UTC_NOW,
+                        pocket=pocket,
+                        embargo=False)
+                    secure_copies.append(pub)
+
+        # One day, this will not be necessary when we have time to kill
+        # the Secure* records.
+        copy_ids = [secure_copy.id for secure_copy in secure_copies]
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(BinaryPackagePublishingHistory,
+            BinaryPackagePublishingHistory.id.is_in(copy_ids))
 
     def newBinaryPublication(self, archive, binarypackagerelease,
                              distroarchseries, component, section, priority,
@@ -1308,6 +1395,38 @@ class PublishingSet:
 
         return unpublished_builds
 
+    def getBinaryFilesForSources(self, one_or_more_source_publications):
+        """See `IPublishingSet`."""
+        # Import Build and BinaryPackageRelease locally to avoid circular
+        # imports, since that Build already imports
+        # SourcePackagePublishingHistory and BinaryPackageRelease imports
+        # Build.
+        from lp.soyuz.model.binarypackagerelease import (
+            BinaryPackageRelease)
+        from lp.soyuz.model.build import Build
+
+        source_publication_ids = self._extractIDs(
+            one_or_more_source_publications)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        binary_result = store.find(
+            (SourcePackagePublishingHistory, LibraryFileAlias,
+             LibraryFileContent),
+            LibraryFileContent.id == LibraryFileAlias.contentID,
+            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
+            BinaryPackageFile.binarypackagerelease ==
+                BinaryPackageRelease.id,
+            BinaryPackageRelease.buildID == Build.id,
+            SourcePackagePublishingHistory.sourcepackagereleaseID ==
+                Build.sourcepackagereleaseID,
+            BinaryPackagePublishingHistory.binarypackagereleaseID ==
+                BinaryPackageRelease.id,
+            BinaryPackagePublishingHistory.archiveID ==
+                SourcePackagePublishingHistory.archiveID,
+            In(SourcePackagePublishingHistory.id, source_publication_ids))
+
+        return binary_result.order_by(LibraryFileAlias.id)
+
     def getFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
         # Import Build and BinaryPackageRelease locally to avoid circular
@@ -1331,21 +1450,8 @@ class PublishingSet:
                 SourcePackagePublishingHistory.sourcepackagereleaseID,
             In(SourcePackagePublishingHistory.id, source_publication_ids))
 
-        binary_result = store.find(
-            (SourcePackagePublishingHistory, LibraryFileAlias,
-             LibraryFileContent),
-            LibraryFileContent.id == LibraryFileAlias.contentID,
-            LibraryFileAlias.id == BinaryPackageFile.libraryfileID,
-            BinaryPackageFile.binarypackagerelease ==
-                BinaryPackageRelease.id,
-            BinaryPackageRelease.buildID == Build.id,
-            SourcePackagePublishingHistory.sourcepackagereleaseID ==
-                Build.sourcepackagereleaseID,
-            BinaryPackagePublishingHistory.binarypackagereleaseID ==
-                BinaryPackageRelease.id,
-            BinaryPackagePublishingHistory.archiveID ==
-                SourcePackagePublishingHistory.archiveID,
-            In(SourcePackagePublishingHistory.id, source_publication_ids))
+        binary_result = self.getBinaryFilesForSources(
+            one_or_more_source_publications)
 
         result_set = source_result.union(
             binary_result.config(distinct=True))

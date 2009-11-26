@@ -13,6 +13,9 @@ from pytz import UTC
 import transaction
 import unittest
 
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
@@ -86,26 +89,23 @@ class TestCustomLanguageCode(unittest.TestCase):
         self.assertEqual(fresh_product.getCustomLanguageCode('pt_PT'), None)
 
         fresh_distro = Distribution.byName('gentoo')
-        nocode = fresh_distro.getCustomLanguageCode(
-            self.sourcepackagename, 'nocode')
+        gentoo_package = fresh_distro.getSourcePackage(self.sourcepackagename)
+        nocode = gentoo_package.getCustomLanguageCode('nocode')
         self.assertEqual(nocode, None)
-        brazilian = fresh_distro.getCustomLanguageCode(
-            self.sourcepackagename, 'Brazilian')
+        brazilian = gentoo_package.getCustomLanguageCode('Brazilian')
         self.assertEqual(brazilian, None)
 
-        fresh_package = SourcePackageName.byName('cnews')
-        self.assertEqual(self.distro.getCustomLanguageCode(
-            fresh_package, 'nocode'), None)
-        self.assertEqual(self.distro.getCustomLanguageCode(
-            fresh_package, 'Brazilian'), None)
+        cnews = SourcePackageName.byName('cnews')
+        cnews_package = self.distro.getSourcePackage(cnews)
+        self.assertEqual(cnews_package.getCustomLanguageCode('nocode'), None)
+        self.assertEqual(
+            cnews_package.getCustomLanguageCode('Brazilian'), None)
 
     def test_UnsuccessfulCustomLanguageCodeLookup(self):
         # Look up nonexistent custom language code for product.
         self.assertEqual(self.product.getCustomLanguageCode('nocode'), None)
-        self.assertEqual(
-            self.distro.getCustomLanguageCode(
-                self.sourcepackagename, 'nocode'),
-            None)
+        package = self.distro.getSourcePackage(self.sourcepackagename)
+        self.assertEqual(package.getCustomLanguageCode('nocode'), None)
 
     def test_SuccessfulProductCustomLanguageCodeLookup(self):
         # Look up custom language code.
@@ -119,8 +119,8 @@ class TestCustomLanguageCode(unittest.TestCase):
 
     def test_SuccessfulPackageCustomLanguageCodeLookup(self):
         # Look up custom language code.
-        Brazilian_code = self.distro.getCustomLanguageCode(
-            self.sourcepackagename, 'Brazilian')
+        package = self.distro.getSourcePackage(self.sourcepackagename)
+        Brazilian_code = package.getCustomLanguageCode('Brazilian')
         self.assertEqual(Brazilian_code, self.package_codes['Brazilian'])
         self.assertEqual(Brazilian_code.product, None)
         self.assertEqual(Brazilian_code.distribution, self.distro)
@@ -512,6 +512,70 @@ class TestTemplateGuess(unittest.TestCase):
 
         self.assertEqual(entry1.potemplate, None)
 
+    def test_pathless_template_match(self):
+        # If an uploaded template has no directory component in its
+        # path, and no matching template is found in the database, the
+        # approver also tries if there might be exactly 1 template with
+        # the same base filename.  If so, that's a match.
+        self._setUpProduct()
+        template = self.producttemplate1
+        template.path = 'po/test.pot'
+        self.producttemplate2.path = 'different.pot'
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'test.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(template, entry.guessed_potemplate)
+
+    def test_pathless_template_no_match(self):
+        # The search for a matching filename will still ignore
+        # templates with non-matching paths.
+        self._setUpProduct()
+        template = self.producttemplate1
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'other.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(None, entry.guessed_potemplate)
+
+    def test_pathless_template_multiple_matches(self):
+        # If multiple active templates have matching filenames
+        # (regardless of whether they're in subdirectories or in the
+        # project root directory) then there is no unique match.
+        self._setUpProduct()
+        template = self.producttemplate1
+        template.path = 'here/test.pot'
+        self.producttemplate2.path = 'there/test.pot'
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'test.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(None, entry.guessed_potemplate)
+
+    def test_pathless_template_one_current_match(self):
+        # Deactivated templates are not considered in the match; if one
+        # active and one non-active template both match on filename, the
+        # active one is returned as a unique match.
+        self._setUpProduct()
+        template = self.producttemplate1
+        template.iscurrent = True
+        template.path = 'here/test.pot'
+        self.producttemplate2.iscurrent = False
+        self.producttemplate2.path = 'there/test.pot'
+
+        queue = TranslationImportQueue()
+        entry = queue.addOrUpdateEntry(
+            'test.pot', 'contents', False, template.owner,
+            productseries=template.productseries)
+
+        self.assertEqual(template, entry.guessed_potemplate)
+
 
 class TestKdePOFileGuess(unittest.TestCase):
     """Test auto-approval's `POFile` guessing for KDE uploads.
@@ -627,6 +691,26 @@ class TestGetPOFileFromLanguage(TestCaseWithFactory):
         pofile = entry._get_pofile_from_language('nl', 'domain')
         self.assertEqual(None, pofile)
 
+    def test_get_pofile_from_language_works_with_translation_credits(self):
+        # When the template has translation credits, a new dummy translation
+        # is created in the new POFile. Since this is running with gardener
+        # privileges, we need to check that this works, too.
+        product = self.factory.makeProduct()
+        product.official_rosetta = True
+        trunk = product.getSeries('trunk')
+        template = self.factory.makePOTemplate(
+            productseries=trunk, translation_domain='domain')
+        template.iscurrent = True
+        credits = self.factory.makePOTMsgSet(template, "translator-credits",
+                                             sequence=1)
+        
+        entry = self.queue.addOrUpdateEntry(
+            'nl.po', '# ...', False, template.owner, productseries=trunk)
+
+        become_the_gardener(self.layer)
+        pofile = entry._get_pofile_from_language('nl', 'domain')
+        self.assertNotEqual(None, pofile)
+
 
 class TestCleanup(TestCaseWithFactory):
     """Test `TranslationImportQueueEntry` garbage collection."""
@@ -665,7 +749,8 @@ class TestCleanup(TestCaseWithFactory):
 
     def _setStatus(self, entry, status, when=None):
         """Simulate status on queue entry having been set at a given time."""
-        entry.setStatus(status)
+        entry.setStatus(status,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
         if when is not None:
             entry.date_status_changed = when
         entry.syncUpdate()
@@ -676,6 +761,8 @@ class TestCleanup(TestCaseWithFactory):
         # are.
         one_year_ago = datetime.now(UTC) - timedelta(days=366)
         entry = self._makeProductEntry()
+        entry.potemplate = (
+            self.factory.makePOTemplate(productseries=entry.productseries))
         entry_id = entry.id
 
         self._setStatus(entry, RosettaImportStatus.APPROVED, one_year_ago)

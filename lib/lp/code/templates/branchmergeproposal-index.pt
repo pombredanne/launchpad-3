@@ -15,12 +15,19 @@
     #code-review-votes {
       margin: 2em 0;
     }
+    #edit-description {
+      margin: 1em 0 0 0;
+    }
+    /* A page-specific fix for inline text are editing to line up box. */
+    #edit-description .yui-ieditor-input { top: 0; }
   </style>
-  <script type="text/javascript"
-      tal:define="lp_js string:${icingroot}/build"
-      tal:attributes="src string:${lp_js}/code/codereview.js">
-  </script>
 </metal:block>
+
+<tal:registering metal:fill-slot="registering">
+  Proposed by
+  <tal:registrant replace="structure context/registrant/fmt:link"/>
+  <tal:modified replace="context/date_created/fmt:displaydate" />
+</tal:registering>
 
 
 <metal:side fill-slot="side"
@@ -65,10 +72,27 @@
          tal:content="structure link/render">
          Add comment
     </div>
-    <tal:comments condition="view/conversation"
-                  replace="structure view/conversation/@@+render"/>
+
+    <div id="edit-description" class="lazr-multiline-edit"
+         tal:content="structure view/commit_message_html"/>
+
+    <div id="conversation"
+         tal:content="structure view/conversation/@@+render"/>
+  </div>
+  <!-- Hide inline commenting if YUI isn't used. -->
+  <div id="inline-add-comment" style="display: none">
+  <tal:comment replace="structure context/@@+comment/++form++" />
+      <div class="actions" id="launchpad-form-actions">
+        <input type="submit" id="field.actions.add" name="field.actions.add" value="Save Comment" class="button" />
+      </div>
   </div>
 
+  <script type="text/javascript">
+    YUI().use('lp.comment', function(Y) {
+    var comment = new Y.lp.CodeReviewComment();
+    comment.render();
+    })
+  </script>
   <div class="yui-g">
     <div class="yui-u first">
       <div id="source-revisions"
@@ -104,37 +128,17 @@
   </div>
 
   <div id="review-diff" tal:condition="view/preview_diff">
-  <h2>Preview Diff</h2>
-  <div class="boardComment attachment"
-       tal:define="attachment view/preview_diff/diff_text">
-    <tal:real-diff condition="attachment">
-      <div class="boardCommentDetails filename">
-        <a tal:attributes="href attachment/getURL">
-          <img src="/@@/download"/>
-          Download diff
-        </a>
-      </div>
-      <div class="boardCommentBody attachmentBody">
-        <tal:diff replace="structure view/preview_diff_text/fmt:diff" />
-      </div>
-      <div class="boardCommentFooter"
-           tal:condition="view/review_diff_oversized">
-        The diff has been truncated for viewing.
-      </div>
-    </tal:real-diff>
-    <tal:empty-diff condition="not: attachment">
-      <div class="boardCommentBody attachmentBody">
-        <em>Empty</em>
-      </div>
-    </tal:empty-diff>
-  </div>
+    <h2>Preview Diff</h2>
+    <div tal:replace="structure context/@@++diff"/>
   </div>
 
 <tal:script
   replace="structure
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
+  conf = <tal:status-config replace="view/status_config" />
   <!--
-  YUI().use('io-base', 'code.codereview', function(Y) {
+  YUI().use('io-base', 'code.codereview', 'code.branchmergeproposal',
+            function(Y) {
 
 
   if(Y.UA.ie) {
@@ -143,7 +147,10 @@
 
   Y.on('domready', function() {
       Y.code.codereview.connect_links();
+      Y.code.branchmergeproposal.connect_status(conf);
   });
+
+  (new Y.codereview.NumberToggle()).render();
 
   });
   -->

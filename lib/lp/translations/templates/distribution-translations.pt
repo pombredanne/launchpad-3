@@ -1,3 +1,4 @@
+
 <html
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
@@ -8,14 +9,13 @@
 
   <body>
   <div metal:fill-slot="main">
-    <ul class="helplinks">
-      <li>
-        <a href="https://help.launchpad.net/Translations"
-           id="link-to-translations-help"
-           >Help for translations
-        </a>
-      </li>
-    </ul>
+    <div class="translation-help-links">
+      <a href="https://help.launchpad.net/Translations"
+         id="link-to-translations-help"
+         >Help for translations
+      </a>
+      <div></div><!-- to clear-up all floats -->
+    </div>
     <tal:translation_focus condition="view/translation_focus"
                            define="target view/translation_focus">
 
@@ -65,17 +65,15 @@
       </div>
     </tal:translation_focus>
 
-  <tal:secondary condition="view/secondary_translatable_serieses">
+  <tal:secondary condition="view/secondary_translatable_series">
     <h2 tal:condition="view/translation_focus">
       Other versions of <span tal:replace="context/displayname">Ubuntu</span>
     </h2>
 
     <ul id="distroseries-list">
-      <li tal:repeat="distroseries view/secondary_translatable_serieses">
+      <li tal:repeat="distroseries view/secondary_translatable_series">
         <a tal:attributes="href distroseries/fmt:url"
-                 tal:content=
-                    "string: ${distroseries/version} ${distroseries/title}"
-                >5.04 The Hoary Hedgehog Release</a>
+          tal:content="distroseries/named_version">Hoary (5.04)</a>
       </li>
     </ul>
   </tal:secondary>

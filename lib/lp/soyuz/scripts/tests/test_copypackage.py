@@ -50,24 +50,6 @@ from lp.testing import (
     TestCase, TestCaseWithFactory)
 
 
-def _create_source(test_publisher, archive):
-    """Create source with meaningful '.changes' file."""
-    changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_1.0-2_binary/foocomm_1.0-2_i386.changes'
-
-    changesfile_content = ''
-    handle = open(changesfile_path, 'r')
-    try:
-        changesfile_content = handle.read()
-    finally:
-        handle.close()
-
-    source = test_publisher.getPubSource(
-        sourcename='foocomm', archive=archive, version='1.0-2',
-        changes_file_content=changesfile_content)
-
-    return source
-
-
 class ReUploadFileTestCase(TestCaseWithFactory):
     """Test `ILibraryFileAlias` reupload helper.
 
@@ -152,9 +134,7 @@ class ReUploadFileTestCase(TestCaseWithFactory):
         self.assertFileIsReset(private_file)
 
     def test_re_upload_file_does_not_leak_file_descriptors(self):
-        # Reuploading a library file doesn't leak file descriptors. The
-        # only extra file opened by the end of the process is the socket
-        # with the librarian server.
+        # Reuploading a library file doesn't leak file descriptors.
         private_file = self.factory.makeLibraryFileAlias(restricted=True)
         transaction.commit()
 
@@ -163,9 +143,12 @@ class ReUploadFileTestCase(TestCaseWithFactory):
         previously_open_files = number_of_open_files()
 
         public_file = re_upload_file(private_file)
+        # The above call would've raised an error if the upload failed, but
+        # better safe than sorry.
+        self.assertIsNot(None, public_file)
 
         open_files = number_of_open_files() - previously_open_files
-        self.assertEqual(1, open_files)
+        self.assertEqual(0, open_files)
 
 
 class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
@@ -788,7 +771,8 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             purpose=ArchivePurpose.PPA)
         private_archive.buildd_secret = 'x'
         private_archive.private = True
-        source = _create_source(self.test_publisher, private_archive)
+        source = self.test_publisher.createSource(
+            private_archive, 'foocomm', '1.0-2')
 
         archive = self.test_publisher.ubuntutest.main_archive
         series = source.distroseries
@@ -917,7 +901,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         ppa.buildd_secret = 'x'
         ppa.private = True
 
-        source = _create_source(self.test_publisher, ppa)
+        source = self.test_publisher.createSource(ppa, 'foocomm', '1.0-2')
         self.test_publisher.getPubBinaries(pub_source=source)
 
         [build] = source.getBuilds()

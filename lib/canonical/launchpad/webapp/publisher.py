@@ -430,7 +430,7 @@ class CanonicalAbsoluteURL:
 
 def canonical_url(
     obj, request=None, rootsite=None, path_only_if_possible=False,
-    view_name=None):
+    view_name=None, force_local_path=False):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -455,6 +455,7 @@ def canonical_url(
         for the current request, return a url containing only the path.
     :param view_name: Provide the canonical url for the specified view,
         rather than the default view.
+    :param force_local_path: Strip off the site no matter what.
     :raises: NoCanonicalUrl if a canonical url is not available.
     """
     urlparts = [urldata.path
@@ -517,9 +518,10 @@ def canonical_url(
         root_url = request.getRootURL(rootsite)
 
     path = u'/'.join(reversed(urlparts))
-    if (path_only_if_possible and
-        request is not None and
-        root_url.startswith(request.getApplicationURL())
+    if ((path_only_if_possible and
+         request is not None and
+         root_url.startswith(request.getApplicationURL()))
+        or force_local_path
         ):
         return unicode('/' + path)
     return unicode(root_url + path)

@@ -33,7 +33,7 @@ from sqlobject import BoolCol, IntCol, ForeignKey, StringCol
 from sqlobject import SQLMultipleJoin, SQLRelatedJoin
 from sqlobject import SQLObjectNotFound
 from storm.expr import And, Count, In, LeftJoin, Select, SQLRaw, Func
-from storm.store import Store
+from storm.store import EmptyResultSet, Store
 
 from lazr.lifecycle.event import (
     ObjectCreatedEvent, ObjectDeletedEvent, ObjectModifiedEvent)
@@ -49,6 +49,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.hwdb import IHWSubmissionBugSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
 from canonical.launchpad.interfaces.structuralsubscription import (
@@ -1388,6 +1389,38 @@ class Bug(SQLBase):
         """See `IBug`."""
         return getUtility(IHWSubmissionBugSet).submissionsForBug(self, user)
 
+    def personIsDirectSubscriber(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        subscriptions = store.find(
+            BugSubscription,
+            BugSubscription.bug == self,
+            BugSubscription.person == person)
+
+        return not subscriptions.is_empty()
+
+    def personIsAlsoNotifiedSubscriber(self, person):
+        """See `IBug`."""
+        # We have to use getAlsoNotifiedSubscribers() here and iterate
+        # over what it returns because "also notified subscribers" is
+        # actually a composite of bug contacts, structural subscribers
+        # and assignees. As such, it's not possible to get them all with
+        # one query.
+        also_notified_subscribers = self.getAlsoNotifiedSubscribers()
+
+        return person in also_notified_subscribers
+
+    def personIsSubscribedToDuplicate(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        subscriptions_from_dupes = store.find(
+            BugSubscription,
+            Bug.duplicateof == self,
+            BugSubscription.bugID == Bug.id,
+            BugSubscription.person == person)
+
+        return not subscriptions_from_dupes.is_empty()
+
 
 class BugSet:
     """See BugSet."""
@@ -1626,6 +1659,14 @@ class BugSet:
                     break
 
         return bugs
+
+    def getByNumbers(self, bug_numbers):
+        """see `IBugSet`."""
+        if bug_numbers is None or len(bug_numbers) < 1:
+            return EmptyResultSet()
+        store = IStore(Bug)
+        result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        return result_set.order_by('id')
 
 
 class BugAffectsPerson(SQLBase):

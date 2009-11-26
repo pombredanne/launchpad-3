@@ -15,7 +15,7 @@ the Firefox product which was filed by 'Sample Person'.
     # added and the status of the question.
     >>> def find_request_status(contents):
     ...     print extract_text(
-    ...         find_tag_by_id(contents, 'registration'))
+    ...         find_tag_by_id(contents, 'question-status'))
 
     >>> def  find_last_comment(contents):
     ...     soup = find_main_content(contents)
@@ -61,6 +61,7 @@ question owner, No Privileges Person enters his question in the
     Link existing bug
     Create bug report
     Link to a FAQ
+    Create a new FAQ
 
     >>> support_browser.getControl('Message').value = (
     ...     "Can you provide an example of an URL displaying the problem?")
@@ -70,7 +71,7 @@ The message was added to the question and its status was changed to
 'Needs information':
 
     >>> find_request_status(support_browser.contents)
-    Needs information...
+    Status: Needs information
     >>> print_last_comment(support_browser.contents)
     Can you provide an example of an URL displaying the problem?
 
@@ -87,17 +88,17 @@ you an error.
 
 A comment can be added at any point without altering the status. The
 user simply enters the comment in the 'Message' box and clicks the
-'Add Comment' button.
+'Just Add a Comment' button.
 
     >>> support_browser.getControl('Message').value = (
     ...     "I forgot to mention, in the meantime here is a workaround...")
-    >>> support_browser.getControl('Add Comment').click()
+    >>> support_browser.getControl('Just Add a Comment').click()
 
 This appends the comment to the question and it doesn't change its
 status:
 
     >>> print find_request_status(support_browser.contents)
-    Needs information...
+    Status: Needs information ...
     >>> print_last_comment(support_browser.contents)
     I forgot to mention, in the meantime here is a workaround...
 
@@ -128,7 +129,7 @@ status is changed to Open and his answer appended to the question
 discussion.
 
     >>> print find_request_status(owner_browser.contents)
-    Open...
+    Status: Open ...
     >>> print_last_comment(owner_browser.contents)
     The following SVG doesn't display properly:
     http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg
@@ -151,7 +152,7 @@ This moves the the question to the Answered state and adds the
 answer to the end of the discussion:
 
     >>> print find_request_status(support_browser.contents)
-    Answered...
+    Status: Answered ...
     >>> print_last_comment(support_browser.contents)
     New version of the firefox package are available with SVG support
     enabled. You can use apt-get or adept to upgrade.
@@ -189,7 +190,7 @@ This changes the status of the question to 'Solved' and mark
 'No Privileges Person' as the solver.
 
     >>> print find_request_status(owner_browser.contents)
-    Solved Question #2, solved on ... by No Privileges Person...
+    Status: Solved ...
 
 Since no message can be provided when that button is clicked. A default
 confirmation message was appended to the question discussion:
@@ -216,23 +217,24 @@ The History link should now show up.
     Link existing bug
     Create bug report
     Link to a FAQ
+    Create a new FAQ
 
 
 == Adding another Comment ==
 
 When the question is Solved, it is still possible to add comments to it.
 The user simply enters the comment in the 'Message' box and clicks the
-'Add Comment' button.
+'Just Add a Comment' button.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "The example now displays correctly. Thanks.")
-    >>> owner_browser.getControl('Add Comment').click()
+    >>> owner_browser.getControl('Just Add a Comment').click()
 
 This appends the comment to the question and it doesn't change its
 status:
 
     >>> print find_request_status(owner_browser.contents)
-    Solved...
+    Status: Solved ...
     >>> print_last_comment(owner_browser.contents)
     The example now displays correctly. Thanks.
 
@@ -255,7 +257,7 @@ This appends the new information to the question discussion and changes
 its status back to 'Open'.
 
     >>> print find_request_status(owner_browser.contents)
-    Open...
+    Status: Open ...
     >>> print_last_comment(owner_browser.contents)
     Actually, there are still SVGs that do not display correctly.
     For example, the following
@@ -277,10 +279,9 @@ the answerer back to None.
 In addition, this creates a reopening record that is displayed in the
 reopening portlet.
 
-    >>> portlet = find_portlet(
-    ...     owner_browser.contents, 'This question was reopened')
-    >>> 'Sample Person' in extract_text(portlet.fetch('a')[-1])
-    True
+    >>> print extract_text(
+    ...     find_tag_by_id(owner_browser.contents, 'portlet-reopenings'))
+    This question was reopened ... Sample Person
 
 
 == Self-Answer ==
@@ -299,7 +300,7 @@ This appends the message to the question and sets its status to
 message as the "Best answer".
 
     >>> find_request_status(owner_browser.contents)
-    Solved Question #2, solved on ... by Sample Person...
+    Status: Solved ...
     >>> soup = find_tag_by_id(owner_browser.contents, 'portlet-details')
     >>> soup = find_main_content(owner_browser.contents)
     >>> bestAnswer = soup.first('img', {'title': 'Marked as best answer'})
@@ -320,7 +321,7 @@ is attributed as the answerer.
 
     >>> owner_browser.getControl('This Solved My Problem').click()
     >>> find_request_status(owner_browser.contents)
-    Solved Question #2, solved on ... by No Privileges Person...
+    Status: Solved ...
 
 The answer's message is also highlighted as the best answer.
 
@@ -389,7 +390,7 @@ choosing an answer that helped him solve his problem.
     >>> carlos_browser = setupBrowser(auth='Basic carlos@canonical.com:test')
     >>> carlos_browser.open('http://launchpad.dev/firefox/+question/12')
     >>> print find_request_status(carlos_browser.contents)
-    Open...
+    Status: Open ...
 
     >>> answer_button_paragraph = find_tag_by_id(
     ...     carlos_browser.contents, 'answer-button-hint')
@@ -400,7 +401,7 @@ choosing an answer that helped him solve his problem.
     ...     "There is a bug in that version. SMP is fine after upgrading.")
     >>> carlos_browser.getControl("Problem Solved").click()
     >>> print find_request_status(carlos_browser.contents)
-    Solved...
+    Status: Solved ...
 
     >>> content = find_main_content(carlos_browser.contents)
     >>> messages = content.findAll('div', 'informational message')

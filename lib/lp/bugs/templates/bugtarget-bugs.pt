@@ -49,39 +49,45 @@
 
       <div class="portlet" style="float: right; border: none">
         <ul>
-          <li id="bugtracker">
-            <strong>Bug tracker:</strong>
-            <tal:bugtracker replace="structure view/bugtracker" />
+          <li id="bugtracker" tal:condition="not: view/uses_launchpad_bugtracker">
+            <strong>Bug tracker:</strong><br />
+            <span style="margin-left: 1em">
+              <tal:bugtracker replace="structure view/bugtracker" />
+            </span>
           </li>
           <li tal:define="bug_supervisor context/bug_supervisor">
-            Bug supervisor:
-            <tal:none condition="not:bug_supervisor">None set</tal:none>
-            <a tal:condition="bug_supervisor"
-               tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
-            <tal:edit-bug-supervisor
-                condition="context/menu:bugs/bugsupervisor|nothing">
-              <a tal:define="link context/menu:bugs/bugsupervisor"
-                 tal:condition="link/enabled"
-                 tal:attributes="href link/url; title link/text">
-                <img tal:attributes="alt link/text" src="/@@/edit" />
-              </a>
-            </tal:edit-bug-supervisor>
+            Bug supervisor:<br />
+            <span style="margin-left: 1em">
+              <tal:none condition="not:bug_supervisor">None set</tal:none>
+              <a tal:condition="bug_supervisor"
+                 tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
+              <tal:edit-bug-supervisor
+                  condition="context/menu:bugs/bugsupervisor|nothing">
+                <a tal:define="link context/menu:bugs/bugsupervisor"
+                   tal:condition="link/enabled"
+                   tal:attributes="href link/url; title link/text">
+                  <img tal:attributes="alt link/text" src="/@@/edit" />
+                </a> 
+              </tal:edit-bug-supervisor>
+            </span>
           </li>
           <li tal:define="securitycontact context/security_contact">
-            Security contact:
-            <tal:none condition="not:securitycontact">None set</tal:none>
-            <a tal:condition="securitycontact"
-               tal:replace="structure securitycontact/fmt:link">
-              Billy Anderson
-            </a>
-            <tal:edit-securitycontact
-                condition="context/menu:bugs/securitycontact|nothing">
-              <a tal:define="link context/menu:bugs/securitycontact"
-                 tal:condition="link/enabled"
-                 tal:attributes="href link/url; title link/text">
-                <img tal:attributes="alt link/text" src="/@@/edit" />
+            Security contact:<br />
+            <span style="margin-left: 1em">
+              <tal:none condition="not:securitycontact">None set</tal:none>
+              <a tal:condition="securitycontact"
+                 tal:replace="structure securitycontact/fmt:link">
+                Billy Anderson
               </a>
-            </tal:edit-securitycontact>
+              <tal:edit-securitycontact
+                  condition="context/menu:bugs/securitycontact|nothing">
+                <a tal:define="link context/menu:bugs/securitycontact"
+                   tal:condition="link/enabled"
+                   tal:attributes="href link/url; title link/text">
+                  <img tal:attributes="alt link/text" src="/@@/edit" />
+                </a>
+              </tal:edit-securitycontact>
+            </span>
           </li>
           <li>
           </li>

@@ -442,7 +442,7 @@ class IBuildSet(Interface):
         """
 
     def getPendingBuildsForArchSet(archseries):
-        """Return all pending build records within a group of ArchSerieses
+        """Return all pending build records within a group of ArchSeries
 
         Pending means that buildstate is NEEDSBUILD.
         """

@@ -214,18 +214,6 @@
         classes="MaloneRelatedPages"
         module="lp.bugs.browser.malone"/>
     <browser:page
-        name="+filebug"
-        for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FrontPageFileBugGuidedView"
-        facet="bugs"
-        permission="launchpad.AnyPerson"/>
-    <browser:page
-        name="+filebug-advanced"
-        for="lp.bugs.interfaces.malone.IMaloneApplication"
-        class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
-        facet="bugs"
-        permission="launchpad.AnyPerson"/>
-    <browser:page
         for="lp.bugs.interfaces.malone.IMaloneApplication"
         class="lp.bugs.browser.bugtask.BugsBugTaskSearchListingView"
         permission="zope.Public"
@@ -505,8 +493,8 @@
             template="../templates/bugtask-tasks-and-nominations-table-row.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtask.IBugTask"
-            name="+listing-detailed"
-            template="../templates/bugtask-listing-detailed.pt"
+            name="+bugtask-macros-listing"
+            template="../templates/bugtask-macros-listing.pt"
             permission="zope.Public"/>
         <browser:page
             name="+edit"
@@ -835,6 +823,16 @@
         facet="branches"
         permission="launchpad.Edit"
         template="../templates/bugbranch-delete.pt"/>
+    <browser:page
+        name="+bug-branch"
+        for="lp.bugs.interfaces.bugbranch.IBugBranch"
+        class="lp.bugs.browser.bugbranch.BugBranchView"
+        permission="launchpad.View"
+        template="../templates/bug-branch.pt"/>
+    <adapter
+         factory="lp.bugs.browser.bugbranch.BugBranchXHTMLRepresentation"
+         name="lazr.restful.EntryResource"
+        />
     <facet
         facet="bugs">
         <browser:menus
@@ -1006,6 +1004,17 @@
             name="+bug-portlet-subscribers-content"
             class="lp.bugs.browser.bugsubscription.BugPortletSubcribersContents"
             template="../templates/bug-portlet-subscribers-content.pt"
+            permission="zope.Public"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            name="+bug-portlet-dupe-subscribers-content"
+            class="lp.bugs.browser.bugsubscription.BugPortletDuplicateSubcribersContents"
+            template="../templates/bug-portlet-dupe-subscribers-content.pt"
+            permission="zope.Public"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            name="+bug-portlet-subscribers-ids"
+            class="lp.bugs.browser.bugsubscription.BugPortletSubcribersIds"
             permission="zope.Public"/>
         <browser:navigation
             module="lp.bugs.browser.bug"

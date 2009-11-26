@@ -1,10 +1,12 @@
-= Bugs in Malone =
+Bugs in Malone
+==============
 
 This document describes what a Bug is in Malone, and provides some (currently
 rather incomplete) info on how to poke at bugs through the Component
 Architecture.
 
-== Working with Bugs ==
+Working with Bugs
+-----------------
 
 Bugs are created and retrieved via IBugSet.
 
@@ -37,7 +39,39 @@ raised:
       ...
     NotFoundError: 'Unable to locate bug with nickname +bugs.'
 
-== Bug creation events ==
+It is also possible to retrieve a number of bugs by specifying the bug numbers
+of interest.
+
+The method ignores bug numbers not found in the database. That's why the
+result set below has only one element.
+
+    >>> result_set = bugset.getByNumbers([6, 1234])
+    >>> print result_set.count()
+    1
+
+    >>> [the_bug_found] = result_set
+    >>> print the_bug_found.title
+    Firefox crashes when Save As dialog for a nonexistent window is closed
+
+    >>> result_set = bugset.getByNumbers([6, 1])
+    >>> print result_set.count()
+    2
+
+    >>> print [(bug.id, bug.title[:40]) for bug in result_set]
+    [(1, u'Firefox does not support SVG'),
+     (6, u'Firefox crashes when Save As dialog for ')]
+
+If no bug numbers are specified an empty result set is returned.
+
+    >>> result_set = bugset.getByNumbers(None)
+    >>> print result_set.count()
+    0
+    >>> result_set = bugset.getByNumbers([])
+    >>> print result_set.count()
+    0
+
+Bug creation events
+-------------------
 
 IObjectCreatedEvent events are fired off when a bug is created. First
 we will register a handler to observe the event.
@@ -124,7 +158,8 @@ We must unregister the handler.
     True
 
 
-== Interface check ==
+Interface check
+---------------
 
 It is guaranteed to implement the correct interface, too:
 
@@ -135,7 +170,9 @@ It is guaranteed to implement the correct interface, too:
 (We grab the object directly from the database here to avoid it being
 security proxied, which doesn't make sense to test here.)
 
-== Searching for Bugs ==
+
+Searching for Bugs
+------------------
 
 To search for bugs matching specific criteria, use IBugSet.searchAsUser:
 
@@ -167,7 +204,9 @@ To search for bugs matching specific criteria, use IBugSet.searchAsUser:
 
     >>> login(ANONYMOUS)
 
-== Absolute URLs ==
+
+Absolute URLs
+-------------
 
 For things like bug notification emails, it's handy to be able to
 include a URL to the bug inside the email.
@@ -176,7 +215,9 @@ include a URL to the bug inside the email.
     >>> print canonical_url(firefox_crashes)
     http://.../bugs/6
 
-== Bug Privacy ==
+
+Bug Privacy
+-----------
 
 A Bug has a "private" field. If Bug.private is False, the bug is
 publicly visible. If Bug.private is True, only people who are directly
@@ -472,7 +513,8 @@ sourcepackage. E.g.
     []
 
 
-== Prevent reporter from being subscribed to filed bugs ==
+Prevent reporter from being subscribed to filed bugs
+----------------------------------------------------
 
 If necessary, subscriber_reporter may be specified when creating a bug,
 to prevent the reporter from being subscribed to the bug. This is useful
@@ -486,7 +528,8 @@ when importing bugs.
     []
 
 
-== Date Last Updated ==
+Date Last Updated
+-----------------
 
 Malone tracks the last time a change was made to a
 bug. IBug.date_last_updated stores the date when anything is changed or
@@ -925,7 +968,8 @@ IBug.date_last_updated.
     True
 
 
-== Bug Completeness ==
+Bug Completeness
+----------------
 
 A bug is considered "complete" iff all of its bugtasks are themselves
 complete. The definition of completeness for a bugtask is that the bug
@@ -956,7 +1000,8 @@ incomplete, and show the status of each of the tasts:
     mozilla-firefox (Debian) True
 
 
-== Bug Tasks ==
+Bug Tasks
+---------
 
 A bug can be targeted to more than one product, distribution, or source
 package. A BugTask is used to represent a target, which has its own
@@ -1018,7 +1063,8 @@ If the bug isn't targeted to the target, None is returned.
     True
 
 
-== Bug Expiration ==
+Bug Expiration
+--------------
 
 Incomplete bug reports may expire when they become inactive. Expiration
 is only available to projects that use Launchpad to track bugs. There
@@ -1097,7 +1143,8 @@ See `bugtask-expiration.txt` for a more comprehensive set of bugs
 that can or cannot expire.
 
 
-== Bug Comments ==
+Bug Comments
+------------
 
 A bug comment is actually made up of a number of chunks. The
 IBug.getMessageChunks() method allows you to retreive these chunks in a
@@ -1135,7 +1182,8 @@ exported using the webservice API.
     2 Strange bug with duplicate messages.        Bug #2 in Tomcat: "Blackhole Trash folder"
 
 
-== Affected users ==
+Affected users
+--------------
 
 Users can mark bugs as affecting or not affecting them. For each bug we
 then keep a count of the number of users affected by it, as well as the
@@ -1204,7 +1252,8 @@ We can also get the collection of users affected by a bug.
     [<Person at ...>]
 
 
-== Getting the distinct set of Bugs for a set of BugTasks ==
+Getting the distinct set of Bugs for a set of BugTasks
+------------------------------------------------------
 
 Sometimes we have a set of BugTasks for which we want to get only the
 distinct set of bugs, i.e. there are several BugTasks in our set which
@@ -1308,7 +1357,8 @@ altered by setting its limit parameter, which defaults to 10.
     New bug 0
 
 
-== Links to HWDB submissions ==
+Links to HWDB submissions
+-------------------------
 
 We can link a HWDB submission to a bug, indicating that the
 submission contains information that could help developers
@@ -1358,3 +1408,84 @@ We can also delete links between a HWDB submission and a bug.
     >>> test_bug.unlinkHWSubmission(submission)
     >>> print test_bug.getHWSubmissions().count()
     0
+
+
+Discovering subscription types
+------------------------------
+
+It's possible to find out how a person is subscribed to a bug by calling
+the bug's personIsDirectSubscriber(), personIsAlsoNotifiedSubscriber() or
+personIsSubscribedToDuplicate() methods.
+
+If a person isn't subscribed to a bug, all of these methods will return
+False.
+
+    >>> person = factory.makePerson()
+    >>> bug = factory.makeBug()
+
+    >>> bug.personIsDirectSubscriber(person)
+    False
+
+    >>> bug.personIsSubscribedToDuplicate(person)
+    False
+
+    >>> bug.personIsAlsoNotifiedSubscriber(person)
+    False
+
+If our person subscribes to the bug they'll show up as a direct
+subscriber.
+
+    >>> subscription = bug.subscribe(person, person)
+    >>> bug.personIsDirectSubscriber(person)
+    True
+
+    >>> bug.personIsSubscribedToDuplicate(person)
+    False
+
+    >>> bug.personIsAlsoNotifiedSubscriber(person)
+    False
+
+If the user subscribes to a duplicate of the bug,
+personIsSubscribedToDuplicate() will return True.
+
+    >>> dupe = factory.makeBug()
+    >>> subscription = dupe.subscribe(person, person)
+
+    >>> dupe.duplicateof = bug
+
+    # Re-fetch the bug so that the fact that it's a duplicate definitely
+    # registers.
+    >>> bug = getUtility(IBugSet).get(bug.id)
+    >>> bug.personIsSubscribedToDuplicate(person)
+    True
+
+personIsSubscribedToDuplicate() will return True regardless of
+the result of personIsDirectSubscriber(). personIsAlsoNotifiedSubscriber()
+will still return False.
+
+    >>> bug.personIsDirectSubscriber(person)
+    True
+
+    >>> bug.personIsAlsoNotifiedSubscriber(person)
+    False
+
+If the user is subscribed to the bug for a reason other than a direct
+BugSubscription or a subscription to a duplicate bug,
+personIsAlsoNotifiedSubscriber() will return True, for example if the
+user is the assignee for one of the bug's BugTask.
+
+    >>> new_bug = factory.makeBug()
+    >>> new_bug.default_bugtask.transitionToAssignee(person)
+    >>> new_bug.personIsAlsoNotifiedSubscriber(person)
+    True
+
+If the person subscribes directly to the bug,
+personIsAlsoNotifiedSubscriber() will return False, since direct
+subscriptions always override indirect ones.
+
+    >>> subscription = new_bug.subscribe(person, person)
+    >>> new_bug.personIsAlsoNotifiedSubscriber(person)
+    False
+
+    >>> new_bug.personIsDirectSubscriber(person)
+    True

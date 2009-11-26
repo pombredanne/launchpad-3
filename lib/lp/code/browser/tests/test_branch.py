@@ -25,6 +25,7 @@ from lp.code.browser.branch import (
     BranchAddView, BranchMirrorStatusView, BranchReviewerEditView,
     BranchSparkView, BranchView)
 from lp.code.browser.branchlisting import PersonOwnedBranchesView
+from lp.code.interfaces.branchtarget import IBranchTarget
 from canonical.launchpad.helpers import truncate_text
 from lp.code.enums import BranchLifecycleStatus, BranchType
 from lp.registry.interfaces.person import IPersonSet
@@ -229,6 +230,41 @@ class TestBranchView(TestCaseWithFactory):
         view = BranchView(branch, self.request)
         view.initialize()
         self.assertEqual(list(view.translations_sources()), [trunk])
+
+
+class TestBranchAddView(TestCaseWithFactory):
+    """Test the BranchAddView view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        TestCaseWithFactory.setUp(self)
+        self.person = self.factory.makePerson()
+        login_person(self.person)
+        self.request = LaunchpadTestRequest()
+
+    def tearDown(self):
+        logout()
+
+    def get_view(self, context):
+        view = BranchAddView(context, self.request)
+        view.initialize()
+        return view
+
+    def test_target_person(self):
+        add_view = self.get_view(self.person)
+        self.assertTrue(IBranchTarget.providedBy(add_view.target))
+
+    def test_target_product(self):
+        product = self.factory.makeProduct()
+        add_view = self.get_view(product)
+        self.assertTrue(IBranchTarget.providedBy(add_view.target))
+
+    def test_target_productseries(self):
+        product = self.factory.makeProduct()
+        series = self.factory.makeProductSeries(product=product)
+        add_view = self.get_view(series)
+        self.assertTrue(IBranchTarget.providedBy(add_view.target))
 
 
 class TestBranchReviewerEditView(TestCaseWithFactory):
@@ -445,21 +481,21 @@ class TestBranchProposalsVisible(TestCaseWithFactory):
         self.assertTrue(view.no_merges)
         self.assertEqual([], view.landing_candidates)
 
-    def test_dependent_public(self):
-        # If the branch is a dependent branch for a public proposals, then
+    def test_prerequisite_public(self):
+        # If the branch is a prerequisite branch for a public proposals, then
         # there are merges.
         branch = self.factory.makeProductBranch()
-        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
+        bmp = self.factory.makeBranchMergeProposal(prerequisite_branch=branch)
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertFalse(view.no_merges)
         [proposal] = view.dependent_branches
         self.assertEqual(bmp, proposal)
 
-    def test_dependent_private(self):
-        # If the branch is a dependent branch where either the source or the
-        # target is private, then the dependent_branches are not shown.
+    def test_prerequisite_private(self):
+        # If the branch is a prerequisite branch where either the source or
+        # the target is private, then the dependent_branches are not shown.
         branch = self.factory.makeProductBranch()
-        bmp = self.factory.makeBranchMergeProposal(dependent_branch=branch)
+        bmp = self.factory.makeBranchMergeProposal(prerequisite_branch=branch)
         removeSecurityProxy(bmp.source_branch).private = True
         view = BranchView(branch, LaunchpadTestRequest())
         self.assertTrue(view.no_merges)

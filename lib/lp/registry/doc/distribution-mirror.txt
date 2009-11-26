@@ -51,9 +51,9 @@ MirrorDistroArchSeriess and MirrorDistroSeriesSources. This data is
 updated at least once a day by the distributionmirror-prober cronscript,
 to make sure the information we have is always up to date.
 
-    >>> new_mirror.source_serieses.count()
+    >>> new_mirror.source_series.count()
     0
-    >>> new_mirror.arch_serieses.count()
+    >>> new_mirror.arch_series.count()
     0
 
 To create a new MirrorDistroArchSeries (or MirrorDistroSeriesSource)
@@ -70,9 +70,9 @@ associated with a given mirror, we use the ensureMirrorDistroArchSeries
     >>> warty_mirror = new_mirror.ensureMirrorDistroSeriesSource(
     ...     warty, pocket, warty_component)
 
-    >>> new_mirror.source_serieses.count()
+    >>> new_mirror.source_series.count()
     1
-    >>> new_mirror.arch_serieses.count()
+    >>> new_mirror.arch_series.count()
     1
 
 If we try to create another MirrorDistroArchSeries with the same arch
@@ -97,9 +97,9 @@ contents are not in a mirror where they used to be.
     >>> new_mirror.deleteMirrorDistroArchSeries(
     ...     warty_i386, pocket, warty_component)
 
-    >>> new_mirror.source_serieses.count()
+    >>> new_mirror.source_series.count()
     0
-    >>> new_mirror.arch_serieses.count()
+    >>> new_mirror.arch_series.count()
     0
 
 From every distribution, you can easily get a list with its official
@@ -675,19 +675,19 @@ First, let's check the source and arch series of one archive mirror.
     >>> archive_mirror.name
     u'archive-mirror'
 
-    >>> mirror_arch_serieses = (
-    ...     archive_mirror.getSummarizedMirroredArchSerieses())
+    >>> mirror_arch_series = (
+    ...     archive_mirror.getSummarizedMirroredArchSeries())
 
     # We only have a few publishing records, so most of the cdimage mirrors
     # will have Unknown as their freshness.
-    >>> for mirror_arch_series in mirror_arch_serieses:
+    >>> for mirror_arch_series in mirror_arch_series:
     ...     print (mirror_arch_series.distro_arch_series.displayname,
     ...            mirror_arch_series.freshness.title)
     (u'Ubuntu Warty i386', 'Up to date')
 
-    >>> mirror_source_serieses = (
-    ...     archive_mirror.getSummarizedMirroredSourceSerieses())
-    >>> for mirror_source_series in mirror_source_serieses:
+    >>> mirror_source_series = (
+    ...     archive_mirror.getSummarizedMirroredSourceSeries())
+    >>> for mirror_source_series in mirror_source_series:
     ...     print (mirror_source_series.distroseries.displayname,
     ...            mirror_source_series.freshness.title)
     (u'Warty', 'Up to date')
@@ -707,12 +707,12 @@ Now we check the MirrorCDImageDistroSeriess of a cdimage mirror.
     >>> cdimage_mirror.name
     u'releases-mirror'
 
-    >>> mirrored_serieses = []
-    >>> for mirror_cdimage_series in cdimage_mirror.cdimage_serieses:
-    ...     mirrored_serieses.append(
+    >>> mirrored_series = []
+    >>> for mirror_cdimage_series in cdimage_mirror.cdimage_series:
+    ...     mirrored_series.append(
     ...         (mirror_cdimage_series.distroseries.displayname,
     ...          mirror_cdimage_series.flavour))
-    >>> [series for series in sorted(mirrored_serieses)]
+    >>> [series for series in sorted(mirrored_series)]
     [(u'Hoary', u'kubuntu'), (u'Hoary', u'ubuntu'), (u'Warty', u'ubuntu')]
 
 
@@ -761,7 +761,26 @@ the possible mirror speeds.
   >>> print view._sum_throughput(mirrors)
   37 Gbps
 
-== Deleting mirrors ==
+
+Changing mirror owners
+----------------------
+
+The mirror owner can change the owner to another user.
+
+    >>> owner = factory.makePerson(name='raccoon')
+    >>> new_owner = factory.makePerson(name='bear')
+    >>> mirror = ubuntu.newMirror(
+    ...     owner, speed, brazil, content, http_base_url='http://a.ab/')
+
+
+    >>> login_person(mirror.owner)
+    >>> mirror.owner = new_owner
+    >>> print mirror.owner.name
+    bear
+
+
+Deleting mirrors
+----------------
 
 Mirrors are sometimes created by spammers hoping that we'll publicize
 whatever links they put there. Although we only publicize mirrors that
@@ -771,7 +790,7 @@ bogus mirrors on their list of unapproved mirrors, so we allow admins
 
 Only mirrors which have never been probed can be deleted this way.
 
-    >>> login(cdimage_mirror.owner.preferredemail.email)
+    >>> login_person(cdimage_mirror.owner)
     >>> cdimage_mirror.destroySelf()
     Traceback (most recent call last):
     ...

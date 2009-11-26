@@ -28,7 +28,7 @@ __all__ = [
     'name_priority_map',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
+from zope.schema import Bool, Choice, Datetime, Int, List, TextLine, Text
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -508,7 +508,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "Return an ISourcePackage meta object correspondent to the "
         "sourcepackagerelease attribute inside a specific distroseries")
     meta_sourcepackagerelease = Attribute(
-        "Return an IDistribuitionSourcePackageRelease meta object "
+        "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute")
     meta_supersededby = Attribute(
         "Return an IDistribuitionSourcePackageRelease meta object "
@@ -533,6 +533,20 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             title=_("Changes File URL"),
             description=_("A URL for this source publication's changes file "
                           "for the source upload.")))
+
+    source_file_urls = exported(
+        List(
+            value_type=Text(),
+            title=_("Source File URLs"),
+            description=_("URL list for this source publication's "
+                          "files from the source upload.")))
+
+    binary_file_urls = exported(
+        List(
+            value_type=Text(),
+            title=_("Binary File URLs"),
+            description=_("URL list for this source publication's "
+                          "files resulting from the build.")))
 
     package_creator = exported(
         Reference(
@@ -856,6 +870,23 @@ class IBinaryPackagePublishingHistory(ISecureBinaryPackagePublishingHistory):
 class IPublishingSet(Interface):
     """Auxiliary methods for dealing with sets of publications."""
 
+    def copyBinariesTo(binaries, distroseries, pocket, archive):
+        """Copy multiple binaries to a given destination.
+
+        Processing multiple binaries in a batch allows certain
+        performance optimisations such as looking up the main
+        component once only, and getting all the BPPH records
+        with one query.
+
+        :param binaries: A list of binaries to copy.
+        :param distroseries: The target distroseries.
+        :param pocket: The target pocket.
+        :param archive: The target archive.
+
+        :return: A result set of the created binary package
+            publishing histories.
+        """
+
     def newBinaryPublication(archive, binarypackagerelease, distroarchseries,
                              component, section, priority, pocket):
         """Create a new `BinaryPackagePublishingHistory`.
@@ -946,8 +977,25 @@ class IPublishingSet(Interface):
             (`SourcePackagePublishingHistory`, `Build`)
         """
 
+    def getBinaryFilesForSources(one_or_more_source_publication):
+        """Return binary files related to each given source publication.
+
+        The returned ResultSet contains entries with the wanted
+        `LibraryFileAlias`s (binaries only) associated with the
+        corresponding source publication and its `LibraryFileContent`
+        in a 3-element tuple. This way the extra information will be
+        cached and the callsites can group files in any convenient form.
+
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
+
+        :return: a storm ResultSet containing triples as follows:
+            (`SourcePackagePublishingHistory`, `LibraryFileAlias`,
+             `LibraryFileContent`)
+        """
+
     def getFilesForSources(one_or_more_source_publication):
-        """Return all files related with each given source publication.
+        """Return all files related to each given source publication.
 
         The returned ResultSet contains entries with the wanted
         `LibraryFileAlias`s (source and binaries) associated with the

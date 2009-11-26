@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'SearchAllQuestionsView',
     'QuestionAddView',
+    'QuestionBreadcrumb',
     'QuestionChangeStatusView',
     'QuestionConfirmAnswerView',
     'QuestionCreateFAQView',
@@ -65,6 +66,7 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView, custom_widget, redirection,
     safe_action, NavigationMenu)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import LaunchpadRadioWidget, TokensTextWidget
@@ -87,6 +89,11 @@ class QuestionLinksMixin:
             icon = 'mail'
         return Link('+subscribe', text, icon=icon)
 
+    def edit(self):
+        """Return a Link to the edit view."""
+        text = 'Edit question'
+        return Link('+edit', text, icon='edit')
+
 
 class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
     """A menu for different aspects of editing a object."""
@@ -94,17 +101,7 @@ class QuestionEditMenu(NavigationMenu, QuestionLinksMixin):
     usedfor = IQuestion
     facet = 'answers'
     title = 'Edit question'
-    links = ['edit', 'changestatus', 'reject', 'subscription']
-
-    def edit(self):
-        """Return a Link to the edit view."""
-        text = 'Edit question'
-        return Link('+edit', text, icon='edit')
-
-    @enabled_with_permission('launchpad.Admin')
-    def changestatus(self):
-        """Return a Link to the change status view."""
-        return Link('+change-status', _('Change status'), icon='edit')
+    links = ['edit', 'reject', 'subscription']
 
     def reject(self):
         """Return a Link to the reject view."""
@@ -117,12 +114,18 @@ class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
     """Context menu of actions that can be performed upon a Question."""
     usedfor = IQuestion
     facet = 'answers'
-    links = ['history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
-        'createfaq']
+    links = [
+        'history', 'linkbug', 'unlinkbug', 'makebug', 'linkfaq',
+        'createfaq', 'edit', 'changestatus']
 
     def initialize(self):
         """Initialize the menu from the Question's state."""
         self.has_bugs = bool(self.context.bugs)
+
+    @enabled_with_permission('launchpad.Admin')
+    def changestatus(self):
+        """Return a Link to the change status view."""
+        return Link('+change-status', _('Change status'), icon='edit')
 
     def history(self):
         """Return a Link to the history view."""
@@ -151,7 +154,11 @@ class QuestionExtrasMenu(ApplicationMenu, QuestionLinksMixin):
         """Link for linking to a FAQ."""
         text = 'Link to a FAQ'
         summary = 'Link this question to a FAQ.'
-        return Link('+linkfaq', text, summary, icon='add')
+        if self.context.faq is None:
+            icon = 'add'
+        else:
+            icon = 'edit'
+        return Link('+linkfaq', text, summary, icon=icon)
 
     def createfaq(self):
         """LInk for creating a FAQ."""
@@ -189,6 +196,14 @@ class QuestionSetNavigation(Navigation):
         if question is None:
             raise NotFoundError(name)
         return redirection(canonical_url(question), status=301)
+
+
+class QuestionBreadcrumb(Breadcrumb):
+    """Builds a breadcrumb for an `IQuestion`."""
+
+    @property
+    def text(self):
+        return 'Question #%d' % self.context.id
 
 
 class QuestionSetView(LaunchpadFormView):
@@ -592,10 +607,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             return self.search_template()
         return self.continue_action.success(data)
 
-    # XXX flacoste 2006-07-26: We use the method here instead of
-    # using the method name 'handleAddError' because of Zope issue 573
-    # which is fixed in 3.3.0b1 and 3.2.1
-    @action(_('Add'), failure=handleAddError)
+    @action(_('Post Question'), name='add', failure='handleAddError')
     def add_action(self, action, data):
         """Add a Question to an `IQuestionTarget`."""
         if self.shouldWarnAboutUnsupportedLanguage():
@@ -832,7 +844,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
         """
         return self.user is not None
 
-    @action(_('Add Comment'), name='comment', condition=canAddComment)
+    @action(_('Just Add a Comment'), name='comment', condition=canAddComment)
     def comment_action(self, action, data):
         """Add a comment to a resolved question."""
         self.context.addComment(self.user, data['message'])

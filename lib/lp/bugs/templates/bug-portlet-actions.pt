@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   id="portlet-actions"
-  class="portlet"
+  class="portlet vertical"
   tal:define="context_menu context/menu:context"
 >
   <div id="duplicate-actions">

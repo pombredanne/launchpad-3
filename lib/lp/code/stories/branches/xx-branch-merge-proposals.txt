@@ -7,7 +7,7 @@ the code from one branch into another.
 In order to test notifications, we need a subscriber for the branch.
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> from zope.component import getUtility
     >>> from lp.code.enums import (
     ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -29,6 +29,8 @@ Gnome Terminal tests.
     >>> _unused = branch.subscribe(subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
     ...     CodeReviewNotificationLevel.FULL)
+    >>> from lp.code.tests.helpers import make_erics_fooix_project
+    >>> locals().update(make_erics_fooix_project(factory))
     >>> logout()
 
 Any logged in user can register a merge proposal.  Registering
@@ -57,6 +59,9 @@ Logged in users can.
     >>> nopriv_browser.getControl(
     ...     name='field.target_branch.target_branch').value = (
     ...         '~name12/gnome-terminal/main')
+    >>> nopriv_browser.getControl(
+    ...     name='field.prerequisite_branch').value = (
+    ...         '~name12/gnome-terminal/pushed')
 
 There is a cancel link shown with the buttons.
 
@@ -65,8 +70,23 @@ There is a cancel link shown with the buttons.
 
 Registering the merge proposal takes the user to the new merge proposal.
 
-    >>> print nopriv_browser.url
+    >>> klingon_proposal = nopriv_browser.url
+    >>> print klingon_proposal
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/...
+
+The summary reflects the selected target and prerequisite.
+
+    >>> def print_summary(browser):
+    ...     print extract_text(find_tag_by_id(
+    ...         browser.contents, 'proposal-summary'))
+    >>> print_summary(nopriv_browser)
+    Status:...
+    Proposed branch:
+    lp://dev/~name12/gnome-terminal/klingon
+    Merge into:
+    lp://dev/~name12/gnome-terminal/main
+    Prerequisite:
+    lp://dev/~name12/gnome-terminal/pushed
 
 
 Editing a commit message
@@ -75,23 +95,24 @@ Editing a commit message
 Since the plan is to merge a branch into another branch, it makes sense that a
 commit message can be set.
 
-    >>> nopriv_browser.getLink('Edit commit message').click()
+    >>> nopriv_browser.getLink(url='edit-commit-message').click()
     >>> nopriv_browser.getControl(name='field.commit_message').value = (
-    ...     'Add more mojo')
+    ...     'Add more <b>mojo</b>')
     >>> nopriv_browser.getControl('Update').click()
 
-    >>> print nopriv_browser.url
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
+    >>> print_tag_with_id(nopriv_browser.contents, 'edit-description')
+    Commit Message
+    Add more &lt;b&gt;mojo&lt;/b&gt;
 
-    >>> def print_summary(browser):
-    ...     print extract_text(find_tag_by_id(
-    ...         browser.contents, 'proposal-summary'))
-    >>> print_summary(nopriv_browser)
-    Status: Needs review
-    Proposed by: No Privileges Person ...
-    Proposed branch: lp://dev/~name12/gnome-terminal/klingon
-    Merge into: lp://dev/~name12/gnome-terminal/main
-    Commit message: Add more mojo
+A commit message can be removed deleting the text when editing.
+
+    >>> nopriv_browser.getLink(url='edit-commit-message').click()
+    >>> nopriv_browser.getControl(name='field.commit_message').value = (
+    ...     '')
+    >>> nopriv_browser.getControl('Update').click()
+
+    >>> print_tag_with_id(nopriv_browser.contents, 'edit-description')
+    Commit Message
 
 
 Deleting merge proposals
@@ -102,7 +123,6 @@ When a merge proposal is deleted, the user is taken back to the main page
 for the source_branch.
 
     >>> login('foo.bar@canonical.com')
-    >>> eric = factory.makePerson(email="eric@example.com", password="test")
     >>> bmp = factory.makeBranchMergeProposal(registrant=eric)
     >>> bmp_url = canonical_url(bmp)
     >>> branch_url = canonical_url(bmp.source_branch)
@@ -117,14 +137,13 @@ for the source_branch.
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
 
+
 Requesting reviews
 ------------------
 
 You can request a review of a merge proposal.
 
-    >>> sample_browser.open(
-    ...    'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1'
-    ...    )
+    >>> sample_browser.open(klingon_proposal)
     >>> sample_browser.getLink('Request a review').click()
     >>> sample_browser.getControl('Reviewer').value = 'mark'
     >>> sample_browser.getControl('Review type').value = 'first'
@@ -134,10 +153,7 @@ The status of the merge proposal is updated to "Needs review".
 
     >>> print_summary(sample_browser)
     Status: Needs review
-    Proposed ...
-    Proposed branch: lp://dev/~name12/gnome-terminal/klingon
-    Merge into: lp://dev/~name12/gnome-terminal/main
-    Commit message: Add more mojo
+    ...
 
 Additional reviews can be requested.
 
@@ -161,7 +177,7 @@ Only the last request is listed, showing the last review type.
     Reviewer          Review Type    Date Requested    Status
     Sample Person                                      Pending [Review]
     Mark Shuttleworth second         ... ago           Pending
-    Review via email: mp+1@code.launchpad.dev
+    Review via email: mp+...@code.launchpad.dev
                                                  Request another review
 
 
@@ -170,16 +186,14 @@ Reviewing
 
 People not logged in cannot perform reviews.
 
-    >>> anon_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> anon_browser.open(klingon_proposal)
     >>> link = anon_browser.getLink('[Review]')
     Traceback (most recent call last):
     LinkNotFoundError
 
 People who are logged in can perform reviews.
 
-    >>> nopriv_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> nopriv_browser.open(klingon_proposal)
     >>> nopriv_browser.getLink('Add a review or comment').click()
     >>> nopriv_browser.getControl(name='field.comment').value = "Don't like it"
     >>> nopriv_browser.getControl(name='field.vote').getControl(
@@ -193,8 +207,7 @@ People who are logged in can perform reviews.
 
 People can claim reviews for teams of which they are a member.
 
-    >>> sample_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> sample_browser.open(klingon_proposal)
     >>> sample_browser.getLink('Request another review').click()
     >>> sample_browser.getControl('Reviewer').value = 'hwdb-team'
     >>> sample_browser.getControl('Review type').value = 'claimable'
@@ -205,8 +218,7 @@ People can claim reviews for teams of which they are a member.
     Reviewer                         Review Type  Date Requested Status...
     HWDB Team                        claimable    ... ago        Pending ...
     >>> foobar_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
-    >>> foobar_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> foobar_browser.open(klingon_proposal)
     >>> foobar_browser.getControl('Claim review').click()
     >>> pending = find_tag_by_id(
     ...     foobar_browser.contents, 'code-review-votes')
@@ -222,8 +234,7 @@ The claimant can reassign the review to someone else.
     >>> foobar_browser.getLink('Reassign').click()
     >>> foobar_browser.getControl('Reviewer').value = 'hwdb-team'
     >>> foobar_browser.getControl('Reassign').click()
-    >>> foobar_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> foobar_browser.open(klingon_proposal)
     >>> pending = find_tag_by_id(
     ...     foobar_browser.contents, 'code-review-votes')
 
@@ -240,12 +251,11 @@ Marking as merged
 When a branch has been merged into the target branch, the proposal should
 be marked as merged.
 
-    >>> nopriv_browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1')
+    >>> nopriv_browser.open(klingon_proposal)
 
 The edit icon at the end of the status allows the user to edit the status.
 
-    >>> nopriv_browser.getLink('Change status').click()
+    >>> nopriv_browser.getLink('Edit status').click()
 
 When marking a proposal as merged there is an optional revision number.
 If this is set then the when setting the merge proposal as merged the
@@ -256,8 +266,6 @@ find one, then the current time is used as the date merged.
     >>> nopriv_browser.getControl(name='field.queue_status').displayValue = (
     ...     ['Merged'])
     >>> nopriv_browser.getControl('Change Status').click()
-    >>> print nopriv_browser.url
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
 
 The proposal is now shown as have being merged.
 
@@ -274,6 +282,7 @@ next to the heading "Merged at revision".
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'landing-targets'))
     Merged into lp://dev/~name12/gnome-terminal/main
+    ...
     >>> sample_browser.getLink('Merged').click()
     >>> print_summary(sample_browser)
     Status: Merged
@@ -289,13 +298,13 @@ next to the heading "Merged at revision".
     The proposal's merged revision has been updated.
     >>> print_summary(sample_browser)
     Status: Merged
-    ...
     Merged at revision: 42
     ...
     >>> sample_browser.getLink('~name12/gnome-terminal/klingon').click()
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'landing-targets'))
     Merged into lp://dev/~name12/gnome-terminal/main at revision 42
+    ...
 
 
 Resubmitting proposals
@@ -308,9 +317,7 @@ resubmitted, a new proposal is registered with the same source and target
 branches but with the state set to work-in-progress.
 
     >>> login('foo.bar@canonical.com')
-    >>> fooix = factory.makeProduct(name='fooix')
-    >>> target = factory.makeProductBranch(product=fooix, owner=eric)
-    >>> bmp = factory.makeBranchMergeProposal(target_branch=target)
+    >>> bmp = factory.makeBranchMergeProposal(target_branch=trunk)
     >>> bmp_url = canonical_url(bmp)
     >>> logout()
     >>> eric_browser.open(bmp_url)
@@ -347,7 +354,7 @@ The superseded proposal can't be made active because of the duplicate
 proposal.  It can only be set to another inactive state like "rejected" or
 "merged".
 
-    >>> eric_browser.getLink('Change status').click()
+    >>> eric_browser.getLink('Edit status').click()
     >>> def print_options(field):
     ...     for option in field.options:
     ...         print option
@@ -359,7 +366,7 @@ If we make the superseding proposal inactive, we can set the original back to
 work-in-progress.
 
     >>> eric_browser.open(superseding_url)
-    >>> eric_browser.getLink('Change status').click()
+    >>> eric_browser.getLink('Edit status').click()
     >>> eric_browser.getControl(name='field.queue_status').displayValue = (
     ...     ['Merged'])
     >>> eric_browser.getControl('Change Status').click()
@@ -370,7 +377,7 @@ work-in-progress.
     >>> print_summary(eric_browser)
     Status: Superseded
     ...
-    >>> eric_browser.getLink('Change status').click()
+    >>> eric_browser.getLink('Edit status').click()
     >>> print_options(eric_browser.getControl(name='field.queue_status'))
     WORK_IN_PROGRESS
     NEEDS_REVIEW
@@ -387,7 +394,7 @@ marked merged by mistake, in the UI.
     >>> print_summary(eric_browser)
     Status: Merged
     ...
-    >>> eric_browser.getLink('Change status').click()
+    >>> eric_browser.getLink('Edit status').click()
     >>> print_options(eric_browser.getControl(name='field.queue_status'))
     WORK_IN_PROGRESS
     NEEDS_REVIEW
@@ -531,7 +538,6 @@ The section is shown if there are links.
     Bug #...: Bug for linking (Undecided &ndash; New)
 
 
-
 Target branch edge cases
 ------------------------
 
@@ -619,3 +625,51 @@ If the review diff is empty, then we say it is empty.
     >>> print extract_text(get_review_diff())
     Preview Diff
     Empty
+
+
+Merge proposal details shown on the branch page
+-----------------------------------------------
+
+A branch that has a merge proposal, but no requested reviews shows this on the
+branch page.
+
+    >>> nopriv_browser.open('http://code.launchpad.dev/~fred/fooix/feature')
+    >>> nopriv_browser.getLink('Propose for merging').click()
+    >>> nopriv_browser.getControl('Reviewer').value = ''
+    >>> nopriv_browser.getControl('Propose Merge').click()
+    >>> nopriv_browser.getLink('lp://dev/~fred/fooix/feature').click()
+    >>> print_tag_with_id(nopriv_browser.contents, 'landing-targets')
+    Ready for review for merging into lp://dev/fooix
+      No reviews requested
+
+If there are reviews either pending or completed these are also shown.
+
+The api tag is a hidden anchor that holds the URL for the merge proposal api
+access.
+
+    >>> nopriv_browser.open('http://code.launchpad.dev/~fred/fooix/proposed')
+    >>> print_tag_with_id(nopriv_browser.contents, 'landing-targets')
+    Ready for review for merging into lp://dev/fooix
+      Eric the Viking: Pending (code) requested ... ago
+      Diff: 47 lines (+7/-0) 2 files modified                api
+
+
+Merge proposal details shown on the bug page
+--------------------------------------------
+
+If a branch with a merge proposal is linked to a bug, the merge proposal
+details are shown on the bug page under the branch link.
+
+    >>> login('admin@canonical.com')
+    >>> bug = factory.makeBug(product=fooix)
+    >>> ignored = bug.linkBranch(proposed, fred)
+    >>> bug_url = canonical_url(bug)
+    >>> logout()
+
+    >>> nopriv_browser.open(bug_url)
+    >>> print_tag_with_id(nopriv_browser.contents, 'bug-branches')
+    Related branches
+    lp://dev/~fred/fooix/proposed
+      Ready for review for merging into lp://dev/fooix
+        Eric the Viking: Pending (code) requested ... ago
+        Diff: 47 lines (+7/-0) 2 files modified              api

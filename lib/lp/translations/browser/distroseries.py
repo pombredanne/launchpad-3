@@ -167,10 +167,8 @@ class DistroSeriesTemplatesView(LaunchpadView):
 
     def iter_templates(self):
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(distroseries=self.context)
-
-    def can_administer(self, template):
-        return check_permission('launchpad.Admin', template)
+        return potemplateset.getSubset(distroseries=self.context,
+                                       ordered_by_names=True)
 
 
 class DistroSeriesView(LaunchpadView, TranslationsMixin):

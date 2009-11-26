@@ -126,8 +126,6 @@ archive_delete_packages = ContextDisplayName('Delete packages from %s')
 
 archive_edit = ContextDisplayName('Edit %s')
 
-archive_edit_dependencies = ContextDisplayName('Edit dependencies for %s')
-
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Branches'
@@ -396,8 +394,6 @@ launchpad_feedback = 'Help improve Launchpad'
 
 launchpad_forbidden = 'Forbidden'
 
-launchpad_forgottenpassword = 'Need a new Launchpad password?'
-
 # launchpad_css is a css file
 
 # launchpad_js is standard javascript
@@ -487,23 +483,6 @@ milestone_edit = ContextTitle('Edit %s')
 
 milestone_delete = ContextTitle('Delete %s')
 
-announcement_add = 'Make an announcement'
-
-announcement_delete = 'Permanently delete this announcement'
-
-announcement_edit = 'Modify this announcement'
-
-def announcement_index(context, view):
-    return '%s announcement' % context.target.displayname
-
-announcement_publish = 'Publish this announcement'
-
-announcement_retarget = 'Move this announcement to a different project'
-
-announcement_retract = 'Retract this announcement'
-
-announcements_all = 'Announcements from all projects hosted in Launchpad'
-
 oauth_authorize = 'Authorize application to access Launchpad on your behalf'
 
 def object_driver(context, view):
@@ -534,13 +513,6 @@ def openid_index(context, view):
 def openid_invalid_identity(context, view):
     """Return the page title to the invalid identity page."""
     return 'Invalid OpenID identity %s' % view.openid_request.identity
-
-openidrpconfig_add = 'Add an OpenID Relying Party Configuration'
-
-openidrpconfig_edit = ContextDisplayName(
-    'Edit Relying Party Configuration for %s')
-
-openidrpconfigset_index = 'OpenID Relying Party Configurations'
 
 def package_bugs(context, view):
     """Return the page title bug in a package."""
@@ -818,8 +790,6 @@ specificationtarget_workload = ContextTitle('Blueprint workload in %s')
 sprint_attend = ContextTitle('Register your attendance at %s')
 
 sprint_edit = ContextTitle(smartquote('Edit "%s" details'))
-
-sprint_index = ContextTitle('%s (sprint or meeting)')
 
 sprint_new = 'Register a meeting or sprint in Launchpad'
 

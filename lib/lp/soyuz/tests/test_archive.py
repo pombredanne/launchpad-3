@@ -8,11 +8,13 @@ import pytz
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.soyuz.interfaces.archive import IArchiveSet
+from lp.registry.interfaces.person import IPersonSet
+from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -219,8 +221,8 @@ class TestSeriesWithSources(TestCaseWithFactory):
         # Create three sources for the two different distroseries.
         breezy_autotest = self.publisher.distroseries
         ubuntu_test = breezy_autotest.distribution
-        self.serieses = [breezy_autotest]
-        self.serieses.append(self.factory.makeDistroRelease(
+        self.series = [breezy_autotest]
+        self.series.append(self.factory.makeDistroRelease(
             distribution=ubuntu_test, name="foo-series"))
 
         self.sources = []
@@ -230,26 +232,26 @@ class TestSeriesWithSources(TestCaseWithFactory):
 
         firefox_src_hist = self.publisher.getPubSource(
             sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
-            distroseries=self.serieses[1])
+            distroseries=self.series[1])
         self.sources.append(firefox_src_hist)
 
         gtg_src_hist = self.publisher.getPubSource(
             sourcename="getting-things-gnome",
             status=PackagePublishingStatus.PUBLISHED,
-            distroseries=self.serieses[1])
+            distroseries=self.series[1])
         self.sources.append(gtg_src_hist)
 
         # Shortcuts for test readability.
-        self.archive = self.serieses[0].main_archive
+        self.archive = self.series[0].main_archive
 
     def test_series_with_sources_returns_all_series(self):
         # Calling series_with_sources returns all series with publishings.
-        serieses = self.archive.series_with_sources
-        serieses_names = [series.displayname for series in serieses]
+        series = self.archive.series_with_sources
+        series_names = [s.displayname for s in series]
 
         self.assertContentEqual(
             [u'Breezy Badger Autotest', u'Foo-series'],
-            serieses_names)
+            series_names)
 
     def test_series_with_sources_ignore_non_published_records(self):
         # If all publishings in a series are deleted or superseded
@@ -257,15 +259,15 @@ class TestSeriesWithSources(TestCaseWithFactory):
         self.sources[0].secure_record.status = (
             PackagePublishingStatus.DELETED)
 
-        serieses = self.archive.series_with_sources
-        serieses_names = [series.displayname for series in serieses]
+        series = self.archive.series_with_sources
+        series_names = [s.displayname for s in series]
 
-        self.assertContentEqual([u'Foo-series'], serieses_names)
+        self.assertContentEqual([u'Foo-series'], series_names)
 
     def test_series_with_sources_ordered_by_version(self):
         # The returned series are ordered by the distroseries version.
-        serieses = self.archive.series_with_sources
-        versions = [series.version for series in serieses]
+        series = self.archive.series_with_sources
+        versions = [s.version for s in series]
 
         # Latest version should be first
         self.assertEqual(
@@ -274,9 +276,9 @@ class TestSeriesWithSources(TestCaseWithFactory):
 
         # Update the version of breezyautotest and ensure that the
         # latest version is still first.
-        self.serieses[0].version = u'0.5'
-        serieses = self.archive.series_with_sources
-        versions = [series.version for series in serieses]
+        self.series[0].version = u'0.5'
+        series = self.archive.series_with_sources
+        versions = [s.version for s in series]
         self.assertEqual(
             [u'1.0', u'0.5'], versions,
             "The latest version was not first.")
@@ -329,6 +331,56 @@ class TestGetSourcePackageReleases(TestCaseWithFactory):
         self.failUnlessEqual(1, result.count())
         self.failUnlessEqual(
             self.sourcepackagereleases[0], result[0])
+
+class TestCorrespondingDebugArchive(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestCorrespondingDebugArchive, self).setUp()
+
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+
+        # Create a debug archive, as there isn't one in the sample data.
+        self.debug_archive = getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.DEBUG,
+            distribution=self.ubuntutest,
+            owner=self.ubuntutest.owner)
+
+        # Retrieve sample data archives of each type.
+        self.primary_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PRIMARY)
+        self.partner_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PARTNER)
+        self.copy_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PARTNER)
+        self.ppa = getUtility(IPersonSet).getByName('cprov').archive
+
+    def testPrimaryDebugArchiveIsDebug(self):
+        self.assertEquals(
+            self.primary_archive.debug_archive, self.debug_archive)
+
+    def testPartnerDebugArchiveIsSelf(self):
+        self.assertEquals(
+            self.partner_archive.debug_archive, self.partner_archive)
+
+    def testCopyDebugArchiveIsSelf(self):
+        self.assertEquals(
+            self.copy_archive.debug_archive, self.copy_archive)
+
+    def testDebugDebugArchiveIsSelf(self):
+        self.assertEquals(
+            self.debug_archive.debug_archive, self.debug_archive)
+
+    def testPPADebugArchiveIsSelf(self):
+        self.assertEquals(self.ppa.debug_archive, self.ppa)
+
+    def testMissingPrimaryDebugArchiveIsNone(self):
+        # Turn the DEBUG archive into a COPY archive to hide it.
+        removeSecurityProxy(self.debug_archive).purpose = ArchivePurpose.COPY
+
+        self.assertIs(
+            self.primary_archive.debug_archive, None)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

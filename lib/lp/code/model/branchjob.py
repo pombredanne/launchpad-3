@@ -3,6 +3,7 @@
 
 __all__ = [
     'BranchJob',
+    'BranchUpgradeJob',
     'RevisionsAddedJob',
     'RevisionMailJob',
     'RosettaUploadJob',
@@ -11,12 +12,15 @@ __all__ = [
 import os
 import shutil
 from StringIO import StringIO
+import tempfile
 
+from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
+from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 
 from lazr.enum import DBEnumeratedType, DBItem
@@ -51,7 +55,8 @@ from lp.registry.model.productseries import ProductSeries
 from lp.translations.model.translationbranchapprover import (
     TranslationBranchApprover)
 from lp.code.enums import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    BranchMergeProposalStatus, BranchSubscriptionDiffSize,
+    BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
     IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
     IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
@@ -243,17 +248,46 @@ class BranchUpgradeJob(BranchJobDerived):
     implements(IBranchUpgradeJob)
 
     classProvides(IBranchUpgradeJobSource)
+    class_job_type = BranchJobType.UPGRADE_BRANCH
+
     @classmethod
     def create(cls, branch):
         """See `IBranchUpgradeJobSource`."""
+        if not branch.needs_upgrading:
+            raise AssertionError('Branch does not need upgrading.')
         branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
         return cls(branch_job)
 
     def run(self):
         """See `IBranchUpgradeJob`."""
-        branch = self.branch.getBzrBranch()
-        to_format = self.upgrade_format
-        upgrade(branch.base, to_format)
+        # Set up the new branch structure
+        upgrade_branch_path = tempfile.mkdtemp()
+        try:
+            upgrade_transport = get_transport(upgrade_branch_path)
+            source_branch_transport = get_transport(self.branch.getPullURL())
+            source_branch_transport.copy_tree_to_transport(upgrade_transport)
+            upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
+
+            # Perform the upgrade.
+            upgrade(upgrade_branch.base, self.upgrade_format)
+
+            # Re-open the branch, since its format has changed.
+            upgrade_branch = BzrBranch.open_from_transport(
+                upgrade_transport)
+            source_branch = BzrBranch.open_from_transport(
+                source_branch_transport)
+
+            source_branch.lock_write()
+            upgrade_branch.pull(source_branch)
+            upgrade_branch.fetch(source_branch)
+            source_branch.unlock()
+
+            # Move the branch in the old format to backup.bzr
+            upgrade_transport.delete_tree('backup.bzr')
+            source_branch_transport.rename('.bzr', 'backup.bzr')
+            upgrade_transport.copy_tree_to_transport(source_branch_transport)
+        finally:
+            shutil.rmtree(upgrade_branch_path)
 
     @property
     def upgrade_format(self):
@@ -264,7 +298,7 @@ class BranchUpgradeJob(BranchJobDerived):
         repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
             self.branch.repository_format)
         if branch_format is None or repository_format is None:
-            branch = self.branch.getBzrBranch()
+            branch = BzrBranch.open(self.branch.getPullURL())
             if branch_format is None:
                 branch_format = type(branch._format)
             if repository_format is None:
@@ -508,18 +542,27 @@ class RevisionsAddedJob(BranchJobDerived):
             authors.update(revision.get_apparent_authors())
         return authors
 
-    def findRelatedBMP(self, revision_ids):
+    def findRelatedBMP(self, revision_ids, include_superseded=True):
         """Find merge proposals related to the revision-ids and branch.
 
         Only proposals whose source branch last-scanned-id is in the set of
         revision-ids and whose target_branch is the BranchJob branch are
         returned.
+
+        :param revision_ids: A list of revision-ids to look for.
+        :param include_superseded: If true, include merge proposals that are
+            superseded in the results.
         """
         store = Store.of(self.branch)
-        result = store.find(BranchMergeProposal,
-                            BranchMergeProposal.target_branch==self.branch.id,
-                            BranchMergeProposal.source_branch==Branch.id,
-                            Branch.last_scanned_id.is_in(revision_ids))
+        conditions = [
+            BranchMergeProposal.target_branch == self.branch.id,
+            BranchMergeProposal.source_branch == Branch.id,
+            Branch.last_scanned_id.is_in(revision_ids)]
+        if not include_superseded:
+            conditions.append(
+                BranchMergeProposal.queue_status !=
+                BranchMergeProposalStatus.SUPERSEDED)
+        result = store.find(BranchMergeProposal, *conditions)
         return result
 
     def getRevisionMessage(self, revision_id, revno):
@@ -553,7 +596,9 @@ class RevisionsAddedJob(BranchJobDerived):
                 if len(pretty_authors) > 5:
                     outf.write('...\n')
                 outf.write('\n')
-            bmps = list(self.findRelatedBMP(merged_revisions))
+            bmps = list(
+                self.findRelatedBMP(merged_revisions,
+                include_superseded=False))
             if len(bmps) > 0:
                 outf.write('Related merge proposals:\n')
             for bmp in bmps:
@@ -824,15 +869,18 @@ class RosettaUploadJob(BranchJobDerived):
         return (RosettaUploadJob(job) for job in jobs)
 
     @staticmethod
-    def findUnfinishedJobs(branch):
+    def findUnfinishedJobs(branch, since=None):
         """See `IRosettaUploadJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.using(BranchJob, Job).find((BranchJob), And(
+        match = And(
             Job.id == BranchJob.jobID,
             BranchJob.branch == branch,
             BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
             Job._status != JobStatus.COMPLETED,
-            Job._status != JobStatus.FAILED))
+            Job._status != JobStatus.FAILED)
+        if since is not None:
+            match = And(match, Job.date_created > since)
+        jobs = store.using(BranchJob, Job).find((BranchJob), match)
         return jobs
 
 

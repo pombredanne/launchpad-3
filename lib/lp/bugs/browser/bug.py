@@ -30,7 +30,6 @@ from email.MIMEText import MIMEText
 import re
 
 import pytz
-from simplejson import dumps
 
 from zope.app.form.browser import TextWidget
 from zope.component import adapter, getUtility
@@ -239,10 +238,7 @@ class BugContextMenu(ContextMenu):
 
     def addbranch(self):
         """Return the 'Add branch' Link."""
-        if self.context.bug.linked_branches.count() > 0:
-            text = 'Link another branch'
-        else:
-            text = 'Link a related branch'
+        text = 'Link a related branch'
         return Link('+addbranch', text, icon='add')
 
     def linktocve(self):
@@ -293,7 +289,7 @@ class BugContextMenu(ContextMenu):
 
     def activitylog(self):
         """Return the 'Activity log' Link."""
-        text = 'Activity log'
+        text = 'See full activity log'
         return Link('+activity', text)
 
     def affectsmetoo(self):
@@ -436,12 +432,7 @@ class BugViewMixin:
             ids[sub.name] = 'subscriber-%s' % sub.id
         return ids
 
-    @property
-    def subscriber_ids_js(self):
-        """Return subscriber_ids in a form suitable for JavaScript use."""
-        return dumps(self.subscriber_ids)
-
-    def subscription_class(self, subscribed_person):
+    def getSubscriptionClassForUser(self, subscribed_person):
         """Return a set of CSS class names based on subscription status.
 
         For example, "subscribed-false dup-subscribed-true".
@@ -452,6 +443,20 @@ class BugViewMixin:
             dup_class = 'dup-subscribed-false'
 
         if subscribed_person in self.direct_subscribers:
+            return 'subscribed-true %s' % dup_class
+        else:
+            return 'subscribed-false %s' % dup_class
+
+    @property
+    def current_user_subscription_class(self):
+        bug = self.context
+
+        if bug.personIsSubscribedToDuplicate(self.user):
+            dup_class = 'dup-subscribed-true'
+        else:
+            dup_class = 'dup-subscribed-false'
+
+        if bug.personIsDirectSubscriber(self.user):
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class
@@ -563,13 +568,14 @@ class BugEditView(BugEditViewBase):
     _confirm_new_tags = False
 
     def __init__(self, context, request):
+        """context is always an IBugTask."""
         BugEditViewBase.__init__(self, context, request)
         self.notifications = []
 
     @property
     def label(self):
         """The form label."""
-        return 'Edit details for bug #%d' % self.context.id
+        return 'Edit details for bug #%d' % self.context.bug.id
 
     @property
     def page_title(self):
@@ -936,5 +942,5 @@ def bug_description_xhtml_representation(context, field, request):
     def renderer(value):
         nomail  = formatter(value).obfuscate_email()
         html    = formatter(nomail).text_to_html()
-        return html
+        return html.encode('utf-8')
     return renderer

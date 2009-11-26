@@ -190,7 +190,7 @@ Sometimes, the vocabulary search doesn't return any active lists.
 
 === DistroSeriesVocabulary ===
 
-Reflects the available distribution serieses.  Results are ordered by
+Reflects the available distribution series.  Results are ordered by
 `name`
 
     >>> distroseries_vocabulary = vocabulary_registry.get(
@@ -445,7 +445,7 @@ it'll still show up on the vocabulary so that users can change it.
     2
 
 This is true for inactive milestones used in bugtasks for products and
-product serieses as well.
+product series as well.
 
     >>> product_bugtask = factory.makeBugTask(target=firefox)
     >>> product_bugtask.milestone = firefox_milestone
@@ -906,8 +906,29 @@ displayname and the first set of those are the ones returned
     >>> [person.displayname for person in vocab.search('team')]
     [u'HWDB Team', u'No Team Memberships', u'testing Spanish team']
 
+Search for names with '%' and '?' is supported.
 
-=== ValidOwner ===
+    >>> from lp.registry.interfaces.irc import IIrcIDSet
+
+    >>> symbolic_person = factory.makePerson(name='symbolic')
+    >>> ircid_set = getUtility(IIrcIDSet)
+    >>> irc_id = ircid_set.new(
+    ...     symbolic_person, 'irc.freenode.net', '%percent')
+    >>> irc_id =ircid_set.new(
+    ...     symbolic_person, 'irc.fnord.net', 'question?')
+    >>> transaction.commit()
+
+    >>> for person in vocab.search('%percent'):
+    ...     print person.name
+    symbolic
+
+    >>> for person in vocab.search('question?'):
+    ...     print person.name
+    symbolic
+
+
+ValidOwner
+..........
 
 All valid persons and teams are also valid owners.
 

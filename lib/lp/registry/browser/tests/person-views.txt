@@ -226,7 +226,7 @@ The map_portlet_html property that creates the map cannot be called.
     AssertionError: Can't generate the map for a person who hasn't set
                     a visible location.
 
-If the user set's his location, but does not make it visible, needs_gmap2
+If the user sets his location, but does not make it visible, needs_gmap2
 will still be False and the map_portlet_html property cannot be called.
 
     >>> login_person(sample_person)
@@ -271,6 +271,33 @@ the 'Show maps' checkbox.
     <script type="text/javascript">
       YUI().use('node', 'lp.mapping', function(Y) { ...
 
+The map portlet is shown if the user has not set his location and is
+viewing his own page.
+
+    >>> user = factory.makePerson()
+    >>> user.latitude is None
+    True
+    >>> login_person(user)
+    >>> person_view = create_initialized_view(
+    ...     user, '+index')
+    >>> person_view.should_show_map_portlet
+    True
+
+However another user will not be shown the portlet.
+
+    >>> login('foo.bar@canonical.com')
+    >>> person_view = create_initialized_view(
+    ...     user, '+index')
+    >>> person_view.should_show_map_portlet
+    False
+
+If a user has a location set and it is visibible then the portlet is shown.
+
+    >>> person_view = create_initialized_view(
+    ...     sample_person, '+index')
+    >>> person_view.should_show_map_portlet
+    True
+
 
 == Things a person is working on ==
 
@@ -291,8 +318,8 @@ that are not in progress.
     >>> len(view.assigned_specs_in_progress)
     0
     >>> from canonical.launchpad.testing.pages import extract_text
-    >>> extract_text(view.render())
-    ''
+    >>> len(extract_text(view.render()))
+    0
 
 Assigned specifications that do not display when they are not in an
 in progress state.
@@ -721,7 +748,8 @@ view property `should_show_ppa_section`.
 
 The property checks two things to decide whether to return True or not:
  * Return True if the current user has launchpad.Edit permission
- * Return True if the person has PPAs and at least one of them is public.
+ * Return True if the person has PPAs and at least one of them is viewable
+   by the current user.
 
 Cprov is a user with a PPA:
 
@@ -741,7 +769,8 @@ Cprov himself can see the section:
     >>> view.should_show_ppa_section
     True
 
-If we disable Cprov's PPA, the section is still presented to anyone.
+If we disable Cprov's PPA, the section is not presented to anonymous
+users who cannot view the PPA, but is displayed to Celso.
 
     >>> login("admin@canonical.com")
     >>> cprov.archive.enabled = False
@@ -749,7 +778,7 @@ If we disable Cprov's PPA, the section is still presented to anyone.
     >>> login(ANONYMOUS)
     >>> view = create_initialized_view(cprov, "+index")
     >>> view.should_show_ppa_section
-    True
+    False
 
     >>> login("celso.providelo@canonical.com")
     >>> view = create_initialized_view(cprov, "+index")
@@ -802,4 +831,3 @@ section will still not appear for anyone but people with lp.edit.
     >>> view = create_initialized_view(sample_person, "+index")
     >>> view.should_show_ppa_section
     False
-

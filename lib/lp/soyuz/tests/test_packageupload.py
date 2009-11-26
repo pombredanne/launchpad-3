@@ -89,7 +89,9 @@ class PackageUploadTestCase(TestCaseWithFactory):
         ppa.buildd_secret = 'x'
         ppa.private = True
 
-        changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_1.0-2_binary/foocomm_1.0-2_i386.changes'
+        changesfile_path = (
+            'lib/lp/archiveuploader/tests/data/suite/'
+            'foocomm_1.0-2_binary/foocomm_1.0-2_i386.changes')
 
         changesfile_content = ''
         handle = open(changesfile_path, 'r')
@@ -198,11 +200,21 @@ class PackageUploadTestCase(TestCaseWithFactory):
         self.assertEquals(
             PackageUploadStatus.ACCEPTED, delayed_copy.status)
 
+        # Make sure no announcement email was sent at this point.
+        self.assertEquals(len(stub.test_emails), 0)
+
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
 
         logger = BufferLogger()
-        pub_records = delayed_copy.realiseUpload(logger=logger)
+        # realiseUpload() assumes a umask of 022, which is normally true in
+        # production.  The user's environment might have a different umask, so
+        # just force it to what the test expects.
+        old_umask = os.umask(022)
+        try:
+            pub_records = delayed_copy.realiseUpload(logger=logger)
+        finally:
+            os.umask(old_umask)
         self.assertEquals(
             PackageUploadStatus.DONE, delayed_copy.status)
 
@@ -210,21 +222,27 @@ class PackageUploadTestCase(TestCaseWithFactory):
 
         # Check the announcement email.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
-        # This is now a MIMEMultipart message.
         msg = message_from_string(raw_msg)
         body = msg.get_payload(0)
         body = body.get_payload(decode=True)
 
-        self.assertEquals(from_addr, 'bounces@canonical.com')
         self.assertEquals(
-            to_addrs, ['breezy-autotest-changes@lists.ubuntu.com'])
+            str(to_addrs), "['breezy-autotest-changes@lists.ubuntu.com']")
 
         expected_subject = (
             '[ubuntutest/breezy-autotest-security]\n\t'
-            'dist-upgrader_20060302.0120_all.tar.gz, foocomm 1.0-2 (Accepted)')
+            'dist-upgrader_20060302.0120_all.tar.gz, '
+            'foocomm 1.0-2 (Accepted)')
         self.assertEquals(msg['Subject'], expected_subject)
 
-        self.assertTrue(body.startswith('foocomm (1.0-2) breezy; urgency=low'))
+        self.assertEquals(body,
+            'foocomm (1.0-2) breezy; urgency=low\n\n'
+            '  * Initial version\n\n'
+            'Date: Thu, 16 Feb 2006 15:34:09 +0000\n'
+            'Changed-By: Foo Bar <foo.bar@canonical.com>\n'
+            'Maintainer: Launchpad team <launchpad@lists.canonical.com>\n'
+            'http://launchpad.dev/ubuntutest/breezy-autotest/+source/'
+            'foocomm/1.0-2\n')
 
         self.layer.switchDbUser('launchpad')
 

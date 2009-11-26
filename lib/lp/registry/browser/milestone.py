@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'MilestoneAddView',
+    'MilestoneBreadcrumb',
     'MilestoneContextMenu',
     'MilestoneDeleteView',
     'MilestoneEditView',
@@ -33,11 +34,13 @@ from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
 from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.browser.structuralsubscription import (
+    StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
     enabled_with_permission, GetitemNavigation, Navigation)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, ContextMenu, Link, NavigationMenu)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -58,7 +61,19 @@ class MilestoneNavigation(Navigation,
     usedfor = IMilestone
 
 
-class MilestoneLinkMixin:
+class MilestoneBreadcrumb(Breadcrumb):
+    """The Breadcrumb for an `IMilestone`."""
+
+    @property
+    def text(self):
+        milestone = IMilestone(self.context)
+        if milestone.code_name:
+            return '%s "%s"' % (milestone.name, milestone.code_name)
+        else:
+            return milestone.name
+
+
+class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
     """The menu for this milestone."""
 
     @enabled_with_permission('launchpad.Edit')
@@ -71,12 +86,6 @@ class MilestoneLinkMixin:
         summary = "Edit this milestone"
         return Link(
             '+edit', text, icon='edit', summary=summary, enabled=enabled)
-
-    def subscribe(self):
-        """The link to subscribe to bug mail."""
-        enabled = not IProjectMilestone.providedBy(self.context)
-        return Link('+subscribe', 'Subscribe to bug mail',
-                    icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def create_release(self):
