@@ -550,6 +550,7 @@ class ForgottenPasswordPage(CaptchaMixin):
     submitted = False
     captcha_submission = 'captcha_submission'
     captcha_hash = 'captcha_hash'
+    page_title = 'Need a new Launchpad password?'
 
     def process_form(self):
         request = self.request
