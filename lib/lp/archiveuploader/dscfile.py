@@ -655,17 +655,23 @@ def check_format_1_0_files(filename, file_type_counts, component_counts,
             "%s: is format 1.0 but uses bzip2 compression."
             % filename)
 
-    if file_type_counts not in ({
-        SourcePackageFileType.NATIVE_TARBALL: 1,
-        SourcePackageFileType.ORIG_TARBALL: 0,
-        SourcePackageFileType.DEBIAN_TARBALL: 0,
-        SourcePackageFileType.DIFF: 0,
-        }, {
-        SourcePackageFileType.ORIG_TARBALL: 1,
-        SourcePackageFileType.DIFF: 1,
-        SourcePackageFileType.NATIVE_TARBALL: 0,
-        SourcePackageFileType.DEBIAN_TARBALL: 0,
-        }) or len(component_counts) > 0:
+    valid_file_type_counts = [
+        {
+            SourcePackageFileType.NATIVE_TARBALL: 1,
+            SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+            SourcePackageFileType.DIFF: 0,
+        },
+        {
+            SourcePackageFileType.ORIG_TARBALL: 1,
+            SourcePackageFileType.DIFF: 1,
+            SourcePackageFileType.NATIVE_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+        },
+    ]
+
+    if (file_type_counts not in valid_file_type_counts or
+        len(component_counts) > 0):
         yield UploadError(
             "%s: must have exactly one tar.gz, or an orig.tar.gz and diff.gz"
             % filename)
@@ -679,12 +685,17 @@ def check_format_3_0_native_files(filename, file_type_counts,
     compression are permissible.
     """
 
-    if file_type_counts != {
-        SourcePackageFileType.NATIVE_TARBALL: 1,
-        SourcePackageFileType.ORIG_TARBALL: 0,
-        SourcePackageFileType.DEBIAN_TARBALL: 0,
-        SourcePackageFileType.DIFF: 0,
-        } or len(component_counts) > 0:
+    valid_file_type_counts = [
+        {
+            SourcePackageFileType.NATIVE_TARBALL: 1,
+            SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+            SourcePackageFileType.DIFF: 0,
+        },
+    ]
+
+    if (file_type_counts not in valid_file_type_counts or
+        len(component_counts) > 0):
         yield UploadError("%s: must have only a tar.*." % filename)
 
 
@@ -696,12 +707,17 @@ def check_format_3_0_quilt_files(filename, file_type_counts,
     and at most one orig-COMPONENT.tar.* for each COMPONENT. Both gzip and
     bzip2 compression are permissible.
     """
-    if file_type_counts != {
-        SourcePackageFileType.ORIG_TARBALL: 1,
-        SourcePackageFileType.DEBIAN_TARBALL: 1,
-        SourcePackageFileType.NATIVE_TARBALL: 0,
-        SourcePackageFileType.DIFF: 0,
-        }:
+
+    valid_file_type_counts = [
+        {
+            SourcePackageFileType.ORIG_TARBALL: 1,
+            SourcePackageFileType.DEBIAN_TARBALL: 1,
+            SourcePackageFileType.NATIVE_TARBALL: 0,
+            SourcePackageFileType.DIFF: 0,
+        },
+    ]
+
+    if file_type_counts not in valid_file_type_counts:
         yield UploadError(
             "%s: must have only an orig.tar.*, a debian.tar.*, and "
             "optionally orig-*.tar.*" % filename)
