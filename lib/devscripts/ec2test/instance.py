@@ -412,15 +412,15 @@ class EC2Instance:
         try:
             self.start()
             try:
-                return func(*args, **kw)
+                result = func(*args, **kw)
+                really_shutdown = shutdown
+                return result
             except Exception:
                 # When running in postmortem mode, it is really helpful to see
                 # if there are any exceptions before it waits in the console
                 # (in the finally block), and you can't figure out why it's
                 # broken.
                 traceback.print_exc()
-            else:
-                really_shutdown = shutdown
         finally:
             try:
                 if postmortem:

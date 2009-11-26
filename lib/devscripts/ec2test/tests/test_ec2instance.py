@@ -8,7 +8,6 @@ __metaclass__ = type
 from unittest import TestCase, TestLoader
 
 from devscripts.ec2test.instance import EC2Instance
-from devscripts.ec2test.session import EC2SessionName
 
 
 class MockAccount:
