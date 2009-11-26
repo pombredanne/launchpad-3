@@ -55,40 +55,40 @@ class Stub:
         return self.return_value
 
 
-class MockAccount:
+class FakeAccount:
     """Helper for setting up an `EC2Instance` without EC2."""
     acquire_private_key = Stub()
     acquire_security_group = Stub()
 
 
-class MockOutput:
-    """Mock stdout/stderr output from EC2 instance."""
-    output = "Mock output."
+class FakeOutput:
+    """Pretend stdout/stderr output from EC2 instance."""
+    output = "Fake output."
 
 
-class MockBotoInstance:
+class FakeBotoInstance:
     """Helper for setting up an `EC2Instance` without EC2."""
     id = 0
     state = 'running'
-    public_dns_name = 'mock-instance'
+    public_dns_name = 'fake-instance'
 
     update = Stub()
     stop = Stub()
-    get_console_output = MockOutput
+    get_console_output = FakeOutput
 
 
-class MockReservation:
+class FakeReservation:
     """Helper for setting up an `EC2Instance` without EC2."""
     def __init__(self):
-        self.instances = [MockBotoInstance()]
+        self.instances = [FakeBotoInstance()]
 
 
-class MockImage:
+class FakeImage:
     """Helper for setting up an `EC2Instance` without EC2."""
-    run = Stub(return_value=MockReservation())
+    run = Stub(return_value=FakeReservation())
 
 
-class MockFailure(Exception):
+class FakeFailure(Exception):
     """A pretend failure from the test runner."""
 
 
@@ -96,11 +96,16 @@ class TestEC2Instance(TestCase):
     """Test running of an `EC2Instance` without EC2."""
 
     def _makeInstance(self):
+        """Set up an `EC2Instance`, with stubbing where needed.
+
+        `EC2Instance.shutdown` is replaced with a `Stub`, so check its
+        call_count to see whether it's been invoked.
+        """
         session_name = None
-        image = MockImage()
+        image = FakeImage()
         instance_type = 'c1.xlarge'
         demo_networks = None
-        account = MockAccount()
+        account = FakeAccount()
         from_scratch = None
         user_key = None
         login = None
@@ -159,7 +164,7 @@ class TestEC2Instance(TestCase):
         # If the test runner barfs, the instance swallows the exception
         # and shuts down.
         instance = self._makeInstance()
-        runnee = Stub(simulated_failure=MockFailure("Headful barfage."))
+        runnee = Stub(simulated_failure=FakeFailure("Headful barfage."))
 
         self._runInstance(instance, runnee=runnee, headless=False)
 
@@ -169,7 +174,7 @@ class TestEC2Instance(TestCase):
         # If the instance's test runner fails to set up for a headless
         # run, the instance swallows the exception and shuts down.
         instance = self._makeInstance()
-        runnee = Stub(simulated_failure=MockFailure("Headless boom."))
+        runnee = Stub(simulated_failure=FakeFailure("Headless boom."))
 
         self._runInstance(instance, runnee=runnee, headless=True)
 
