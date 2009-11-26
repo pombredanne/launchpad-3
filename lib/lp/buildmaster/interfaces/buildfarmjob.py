@@ -10,10 +10,14 @@ __metaclass__ = type
 __all__ = [
     'IBuildFarmJob',
     'BuildFarmJobType',
+    'get_behavior_for_job_type',
     ]
 
 from zope.interface import Interface
 from lazr.enum import DBEnumeratedType, DBItem
+
+from lp.soyuz.model.binarypackagebuildbehavior import (
+    BinaryPackageBuildBehavior)
 
 
 class BuildFarmJobType(DBEnumeratedType):
@@ -46,6 +50,27 @@ class BuildFarmJobType(DBEnumeratedType):
 
         Perform a translation job.
         """)
+
+# We define the corresponding build farm job behaviors for each
+# job type here so that all the knowledge of the different types
+# is in the one place.
+job_type_behaviors = {
+    BuildFarmJobType.PACKAGEBUILD: BinaryPackageBuildBehavior(),
+    }
+
+def get_behavior_for_job_type(job_type):
+    """A factory for creating build farm job behaviors.
+
+    Is there a better way to do this - registering a factory for each job_type
+    in zcml or something?
+
+    :param job_type: A BuildFarmJobType enum.
+    :return: An implementation of IBuildFarmJobBehavior corresponding to
+        the job_type, or None if no corresponding behavior is found.
+
+    TODO: update to allow an idle builder as well.
+    """
+    return job_type_behaviors.get(job_type, None)
 
 
 class IBuildFarmJob(Interface):
