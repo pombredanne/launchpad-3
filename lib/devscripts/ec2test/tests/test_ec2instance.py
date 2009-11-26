@@ -31,6 +31,8 @@ class Stub:
         :param return_value: Something to return from the invocation.
         :parma simulated_failure: Something to raise in the invocation.
         """
+        assert return_value is None or simulated_failure is None, (
+            "Stub can raise an exception or return a value, but not both.")
         self.return_value = return_value
         self.simulated_failure = simulated_failure
 
@@ -38,7 +40,7 @@ class Stub:
         """Catch a call.
 
         Records the fact that an invocation was made in
-        `has_been_called`.
+        `call_count`.
 
         If you passed a `simulated_failure` to the constructor, that
         object is raised.
