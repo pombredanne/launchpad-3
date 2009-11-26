@@ -451,8 +451,7 @@ class BugViewMixin:
     def current_user_subscription_class(self):
         bug = self.context
 
-        if (bug.personIsSubscribedToDuplicate(self.user) or
-            bug.personIsAlsoNotifiedSubscriber(self.user)):
+        if bug.personIsSubscribedToDuplicate(self.user):
             dup_class = 'dup-subscribed-true'
         else:
             dup_class = 'dup-subscribed-false'
