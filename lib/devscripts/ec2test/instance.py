@@ -405,10 +405,11 @@ class EC2Instance:
         # We ignore the value of the 'shutdown' argument and always shut down
         # unless `func` returns normally.
         really_shutdown = True
+        retval = None
         try:
             self.start()
             try:
-                return func(*args, **kw)
+                retval = func(*args, **kw)
             except Exception:
                 # When running in postmortem mode, it is really helpful to see
                 # if there are any exceptions before it waits in the console
@@ -427,6 +428,7 @@ class EC2Instance:
             finally:
                 if really_shutdown:
                     self.shutdown()
+        return retval
 
     def _copy_single_file(self, sftp, local_path, remote_dir):
         """Copy `local_path` to `remote_dir` on this instance.
