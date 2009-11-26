@@ -206,7 +206,10 @@ class LanguageView(TranslationsMixin, LaunchpadView):
     @property
     def add_question_url(self):
         rosetta = getUtility(IProductSet).getByName('rosetta')
-        return canonical_url(rosetta, view_name='+addquestion', rootsite='answers')
+        return canonical_url(
+            rosetta,
+            view_name='+addquestion',
+            rootsite='answers')
 
 class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""
