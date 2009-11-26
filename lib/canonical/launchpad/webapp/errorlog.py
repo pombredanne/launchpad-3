@@ -509,6 +509,8 @@ class ErrorReportingUtility:
             if IXMLRPCRequest.providedBy(request):
                 args = request.getPositionalArguments()
                 req_vars.append(('xmlrpc args', _safestr(args)))
+        # XXX AaronBentley 2009-11-26 bug=488950: There should be separate
+        # storage for oops messages.
         req_vars.extend(
             ('<oops-message-%d>' % key, str(message)) for key, message
              in self._oops_messages.iteritems())
