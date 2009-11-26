@@ -140,6 +140,30 @@ specified subversion branch url.
     >>> svn_import == existing_import
     True
 
+
+=== Import from Subversion via bzr-svn ===
+
+Code imports from Subversion can also specify that they should be
+imported with 'bzr-svn' rather than cscvs.  In most respects these
+imports are similar to the Subversion via cscvs imports.
+
+    >>> bzr_svn = RevisionControlSystems.BZR_SVN
+    >>> bzr_svn_url = 'svn://svn.example.com/for-bzr-svn/trunk'
+    >>> bzr_svn_import = code_import_set.new(
+    ...     registrant=nopriv, product=product, branch_name='trunk-bzr-svn',
+    ...     rcs_type=bzr_svn, svn_branch_url=bzr_svn_url)
+    >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
+    True
+
+The CodeImportSet.getBySVNDetails is also able to find bzr-svn
+imports.
+
+    >>> existing_bzr_svn_import = code_import_set.getBySVNDetails(
+    ...     svn_branch_url=bzr_svn_url)
+    >>> bzr_svn_import == existing_bzr_svn_import
+    True
+
+
 === Import from Git ===
 
 Code imports from Git specify the URL used with "git clone" to
@@ -166,6 +190,7 @@ specified git repo url.
     ...     git_repo_url=git_url)
     >>> git_import == existing_import
     True
+
 
 == Updating code import details ==
 
@@ -304,6 +329,8 @@ appropriate default value for the RCS type.
     datetime.timedelta(0, 21600)
     >>> svn_import.effective_update_interval
     datetime.timedelta(0, 21600)
+    >>> bzr_svn_import.effective_update_interval
+    datetime.timedelta(0, 21600)
 
     >>> default_interval_git
     datetime.timedelta(0, 21600)
@@ -324,6 +351,7 @@ direct attribute modification. So we use removeSecurityProxy in this example.
     ...     timedelta(seconds=3600))
     >>> svn_import.effective_update_interval
     datetime.timedelta(0, 3600)
+
 
 == Retreiving CodeImports ==
 
@@ -448,6 +476,18 @@ And for Git.
         git://git.example.com/goodbye.git
     instead of:
         git://git.example.com/hello.git
+
+Imports via bzr-svn are also similar.
+
+    >>> data = {'svn_branch_url': 'http://svn.example.com/for-bzr-svn/trunk'}
+    >>> modify_event = bzr_svn_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(
+    ...     bzr_svn_import, modify_event, None)
+    ~no-priv/firefox/trunk-bzr-svn is now being imported from:
+        http://svn.example.com/for-bzr-svn/trunk
+    instead of:
+        svn://svn.example.com/for-bzr-svn/trunk
+
 
 In addition, updateFromData can be used to set the branch whiteboard,
 which is also described in the email that is sent.

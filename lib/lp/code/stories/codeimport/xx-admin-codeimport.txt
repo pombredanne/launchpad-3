@@ -14,6 +14,12 @@ to edit the details.
     >>> svn_import_location = str(canonical_url(svn_import.branch))
     >>> svn_import_branch_unique_name = svn_import.branch.unique_name
 
+    >>> bzr_svn_import = factory.makeCodeImport(
+    ...     svn_branch_url='svn://svn.example.com/bzr-svn/trunk')
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> bzr_svn_import_location = str(canonical_url(bzr_svn_import.branch))
+    >>> bzr_svn_import_branch_unique_name = bzr_svn_import.branch.unique_name
+
     >>> cvs_import = factory.makeCodeImport(
     ...     cvs_root=":pserver:anonymous@cvs.example.com:/fooix",
     ...     cvs_module="fooix")
@@ -97,6 +103,17 @@ This is true for Subversion imports,
     >>> import_browser.open(svn_import_location + '/+edit-import')
     >>> import_browser.getControl('Branch URL').value = \
     ...     'svn://svn-new.example.com/fooix/trunk'
+    >>> import_browser.getControl('Update').click()
+    >>> for message in get_feedback_messages(import_browser.contents):
+    ...     print extract_text(message)
+    The code import has been updated.
+
+bzr-svn imports,
+
+
+    >>> import_browser.open(bzr_svn_import_location + '/+edit-import')
+    >>> import_browser.getControl('Branch URL').value = \
+    ...     'svn://svn-new.example.com/bzr-svn/trunk'
     >>> import_browser.getControl('Update').click()
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)

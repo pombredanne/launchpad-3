@@ -29,7 +29,8 @@ from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
-from lp.code.enums import CodeImportResultStatus, CodeImportReviewStatus
+from lp.code.enums import (
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -476,6 +477,19 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         return self.factory.makeCodeImport(
             svn_branch_url=svn_branch_url)
 
+    def makeBzrSvnCodeImport(self):
+        """Make a `CodeImport` that points to a real Subversion repository."""
+        self.subversion_server = SubversionServer(self.repo_path)
+        self.subversion_server.setUp()
+        self.addCleanup(self.subversion_server.tearDown)
+        svn_branch_url = self.subversion_server.makeBranch(
+            'trunk', [('README', 'contents')])
+        self.foreign_commit_count = 2
+
+        return self.factory.makeCodeImport(
+            svn_branch_url=svn_branch_url,
+            rcs_type=RevisionControlSystems.BZR_SVN)
+
     def makeGitCodeImport(self):
         """Make a `CodeImport` that points to a real Git repository."""
         load_optional_plugin('git')
@@ -573,6 +587,15 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
     def test_import_git(self):
         # Create a Git CodeImport and import it.
         job = self.getStartedJobForImport(self.makeGitCodeImport())
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        result = self.performImport(job_id)
+        return result.addCallback(self.assertImported, code_import_id)
+
+    def test_import_bzrsvn(self):
+        # Create a Subversion-via-bzr-svn CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeBzrSvnCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()
