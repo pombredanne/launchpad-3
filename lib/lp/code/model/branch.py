@@ -102,7 +102,7 @@ class Branch(SQLBase):
         """See `IBranch`."""
         if private == self.private:
             return
-        # Only check the privacy if the user is not special.
+        # Only check the privacy policy if the user is not special.
         if (not user_has_special_branch_access(user)):
             policy = IBranchNamespacePolicy(self.namespace)
 

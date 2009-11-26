@@ -35,7 +35,7 @@ of the branch.
     ...
     LookupError: label 'Keep branch confidential'
 
-However admin's can.
+However an admin can.
 
     >>> admin_browser.open('http://code.launchpad.dev/~eric/fooix/trunk')
     >>> admin_browser.getLink('Change branch details').click()
