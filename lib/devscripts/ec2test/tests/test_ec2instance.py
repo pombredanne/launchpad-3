@@ -11,10 +11,6 @@ from devscripts.ec2test.instance import EC2Instance
 from devscripts.ec2test.session import EC2SessionName
 
 
-class MockSessionName:
-    pass
-
-
 class MockAccount:
     def acquire_private_key(self):
         return None
@@ -77,7 +73,7 @@ class Runnee:
 
 class TestEC2Instance(TestCase):
     def setUp(self):
-        session_name = MockSessionName()
+        session_name = None
         image = MockImage()
         instance_type = 'c1.xlarge'
         demo_networks = None
