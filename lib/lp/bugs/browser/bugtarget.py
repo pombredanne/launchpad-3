@@ -26,7 +26,6 @@ import tempfile
 import urllib
 
 from z3c.ptcompat import ViewPageTemplateFile
-from zope import formlib
 from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.component import getUtility
