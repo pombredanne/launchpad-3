@@ -140,6 +140,23 @@ class Builder(SQLBase):
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
 
+    @property
+    def current_build_behavior(self):
+        """Return the current build behavior."""
+        if self._current_build_behavior is not None:
+            return self._current_build_behavior
+
+        # If we don't currently have a current build behavior set,
+        # we'll set it based on our current job.
+        currentjob = self.currentjob
+        if currentjob is not None:
+            self._current_build_behavior = get_behavior_for_job_type(
+                currentjob.job_type)
+            return self._current_build_behavior
+
+        # Apparently we're currently idle
+        assert(False, "Create an Idle behavior and return it here.")
+
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See `IBuilder`."""
         url = libraryfilealias.http_url
@@ -356,8 +373,14 @@ class Builder(SQLBase):
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
-        # TODO: verify builder is idle, throw exception if not.
+        # TODO: Move the following to a setter that will verify builder
+        # is idle, throw exception if not. Actually, is this even necessary?
+        # if the build_queue_item already has the builder set, we shouldn't
+        # even need to set the behavior here.
         # Set the build behavior depending on the BuildFarmJobType.
+        self._current_build_behavior = get_behavior_for_job_type(
+            build_queue_item.job_type)
+
         self.logStartBuild(build_queue_item, logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
