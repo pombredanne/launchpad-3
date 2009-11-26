@@ -61,7 +61,7 @@ class TextLineEditorWidget:
     # Template for the activation script.
     ACTIVATION_TEMPLATE = dedent(u"""\
         <script>
-        YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
+        LPS.use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
                 accept_empty: %(accept_empty)s,
@@ -198,7 +198,7 @@ class TextAreaEditorWidget(TextLineEditorWidget):
 
     ACTIVATION_TEMPLATE = dedent(u"""\
         <script>
-        YUI().use('lazr.editor', 'lp.client.plugins', function (Y) {
+        LPS.use('lazr.editor', 'lp.client.plugins', function (Y) {
             var widget = new Y.EditableText({
                 contentBox: '#%(id)s',
                 accept_empty: %(accept_empty)s,
@@ -215,6 +215,10 @@ class TextAreaEditorWidget(TextLineEditorWidget):
             if (!Y.UA.opera) {
                 widget.render();
             }
+            if (Y.lp_widgets === undefined) {
+                Y.lp_widgets = {};
+            }
+            Y.lp_widgets['%(id)s'] = widget;
         });
         </script>
         """)

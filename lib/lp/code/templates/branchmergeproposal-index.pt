@@ -108,7 +108,7 @@
   </div>
 
   <script type="text/javascript">
-    YUI().use('lp.comment', function(Y) {
+    LPS.use('lp.comment', function(Y) {
     var comment = new Y.lp.CodeReviewComment();
     comment.render();
     })
@@ -157,7 +157,7 @@
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
   conf = <tal:status-config replace="view/status_config" />
   <!--
-  YUI().use('io-base', 'code.codereview', 'code.branchmergeproposal',
+  LPS.use('io-base', 'code.codereview', 'code.branchmergeproposal',
             function(Y) {
 
 
