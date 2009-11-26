@@ -19,7 +19,6 @@ import time
 import traceback
 
 from bzrlib.errors import BzrCommandError
-from bzrlib.plugins.launchpad.account import get_lp_login
 
 import paramiko
 
@@ -194,6 +193,11 @@ class EC2Instance:
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
         """
+        # XXX JeroenVermeulen 2009-11-26: This import fails when
+        # testing without a real EC2 instance.  Do it here so the test
+        # can still import this class.
+        from bzrlib.plugins.launchpad.account import get_lp_login
+
         assert isinstance(name, EC2SessionName)
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
             raise ValueError('unknown instance_type %s' % (instance_type,))
@@ -388,6 +392,10 @@ class EC2Instance:
         self._ensure_ec2test_user_has_keys()
         return self._connect('ec2test')
 
+    def _report_traceback(self):
+        """Print traceback."""
+        traceback.print_exc()
+
     def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
         """Start, run `func` and then maybe shut down.
 
@@ -415,7 +423,7 @@ class EC2Instance:
                 # if there are any exceptions before it waits in the console
                 # (in the finally block), and you can't figure out why it's
                 # broken.
-                traceback.print_exc()
+                self._report_traceback()
             else:
                 really_shutdown = shutdown
         finally:
