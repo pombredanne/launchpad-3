@@ -130,7 +130,8 @@ class TestJobRunner(TestCaseWithFactory):
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
         self.assertEqual([('foo', 'bar')], oops.req_vars)
 
-    def test_oops_vars_used_when_handling(self):
+    def test_oops_messages_used_when_handling(self):
+        """Oops messages should appear even when exceptions are handled."""
         job_1, job_2 = self.makeTwoJobs()
         reporter = getUtility(IErrorReportingUtility)
         def handleError():
@@ -142,7 +143,8 @@ class TestJobRunner(TestCaseWithFactory):
         runner = JobRunner([job_1, job_2])
         runner.runAll()
         oops = reporter.getLastOopsReport()
-        self.assertEqual([('foo', 'bar')], oops.req_vars)
+        self.assertEqual(
+            [('<oops-message-0>', "{'foo': 'bar'}")], oops.req_vars)
 
     def test_runAll_aborts_transaction_on_error(self):
         """runAll should abort the transaction on oops."""

@@ -139,8 +139,8 @@ class JobRunner(object):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
             job = IRunnableJob(job)
-            with errorlog.globalErrorUtility.contextErrorVariables(
-                **dict(job.getOopsVars())):
+            with errorlog.globalErrorUtility.oopsMessage(
+                dict(job.getOopsVars())):
                 try:
                     self.runJob(job)
                 except LeaseHeld:

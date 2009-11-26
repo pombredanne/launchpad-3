@@ -10,6 +10,7 @@ __metaclass__ = type
 import contextlib
 import datetime
 import errno
+from itertools import repeat
 import logging
 import os
 import re
@@ -237,11 +238,12 @@ class ErrorReportingUtility:
     lasterrordir = None
     lastid = 0
 
-
     def __init__(self):
         self.lastid_lock = threading.Lock()
         self.configure()
-        self._error_variables = set()
+        self._oops_messages = {}
+        self._oops_message_key_iter = (
+            index for index, _ignored in enumerate(repeat(None)))
 
     def configure(self, section_name=None):
         """Configure the utility using the named section form the config.
@@ -507,7 +509,9 @@ class ErrorReportingUtility:
             if IXMLRPCRequest.providedBy(request):
                 args = request.getPositionalArguments()
                 req_vars.append(('xmlrpc args', _safestr(args)))
-        req_vars.extend(self.error_variables)
+        req_vars.extend(
+            ('<oops-message-%d>' % key, str(message)) for key, message
+             in self._oops_messages.iteritems())
         req_vars.sort()
         strv = _safestr(info[1])
 
@@ -561,19 +565,12 @@ class ErrorReportingUtility:
                     '%s (%s)' % (url, oopsid))
 
     @contextlib.contextmanager
-    def contextErrorVariables(self, **kwargs):
-        items = tuple(kwargs.items())
-        self._error_variables.add(items)
+    def oopsMessage(self, message):
+        """Add an oops message to be included in oopses from this context."""
+        key = self._oops_message_key_iter.next()
+        self._oops_messages[key] = message
         yield
-        self._error_variables.remove(items)
-
-    @property
-    def error_variables(self):
-        flattened = []
-        for vars in self._error_variables:
-            flattened.extend(vars)
-        flattened.sort()
-        return flattened
+        del self._oops_messages[key]
 
 
 globalErrorUtility = ErrorReportingUtility()

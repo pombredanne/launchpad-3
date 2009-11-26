@@ -777,45 +777,49 @@ class TestErrorReportingUtility(unittest.TestCase):
         #    raise ArbitraryException(\'xyz\')
         self.assertEqual(lines[17], 'ArbitraryException: xyz\n')
 
-    def test_contextErrorVariables(self):
-        """contextErrorVariables pushes and pops the error variables."""
+    def test_oopsMessage(self):
+        """oopsMessage pushes and pops the messages."""
         utility = ErrorReportingUtility()
-        with utility.contextErrorVariables(a='b', c='d'):
+        with utility.oopsMessage({'a':'b', 'c':'d'}):
             self.assertEqual(
-                [('a', 'b'), ('c', 'd')], utility.error_variables)
-            # additional error variables don't supplant the previous
-            # assignments.
-            with utility.contextErrorVariables(e='f', a='z', c='d'):
-                self.assertEqual(
-                    [('a', 'b'), ('a', 'z'), ('c', 'd'), ('c', 'd'),
-                     ('e', 'f')],
-                    utility.error_variables)
-            # Error variables are removed when out of context.
+                {0: {'a':'b', 'c':'d'}}, utility._oops_messages)
+            # An additional message doesn't supplant the original message.
+            with utility.oopsMessage(dict(e='f', a='z', c='d')):
+                self.assertEqual({
+                    0: {'a':'b', 'c':'d'},
+                    1: {'a': 'z', 'e': 'f', 'c': 'd'},
+                    }, utility._oops_messages)
+            # Messages are removed when out of context.
             self.assertEqual(
-                [('a', 'b'), ('c', 'd')], utility.error_variables)
+                {0: {'a':'b', 'c':'d'}},
+                utility._oops_messages)
 
-    def test__makeErrorReport_includes_error_variables(self):
-        """The error report should include the error variables."""
+    def test__makeErrorReport_includes_oops_messages(self):
+        """The error report should include the oops messages."""
         utility = ErrorReportingUtility()
-        with utility.contextErrorVariables(a='b', c='d'):
+        with utility.oopsMessage(dict(a='b', c='d')):
             try:
                 raise ArbitraryException('foo')
             except ArbitraryException:
                 info = sys.exc_info()
                 oops = utility._makeErrorReport(info)
-                self.assertEqual([('a', 'b'), ('c', 'd')], oops.req_vars)
+                self.assertEqual(
+                    [('<oops-message-0>', "{'a': 'b', 'c': 'd'}")],
+                    oops.req_vars)
 
     def test__makeErrorReport_combines_request_and_error_vars(self):
-        """The request and error variables should be combined."""
+        """The oops messages should be distinct from real request vars."""
         utility = ErrorReportingUtility()
         request = ScriptRequest([('c', 'd')])
-        with utility.contextErrorVariables(a='b'):
+        with utility.oopsMessage(dict(a='b')):
             try:
                 raise ArbitraryException('foo')
             except ArbitraryException:
                 info = sys.exc_info()
                 oops = utility._makeErrorReport(info, request)
-                self.assertEqual([('a', 'b'), ('c', 'd')], oops.req_vars)
+                self.assertEqual(
+                    [('<oops-message-0>', "{'a': 'b'}"), ('c', 'd')],
+                    oops.req_vars)
 
 
 class TestSensitiveRequestVariables(unittest.TestCase):
