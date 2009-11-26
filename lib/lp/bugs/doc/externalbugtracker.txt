@@ -1079,18 +1079,22 @@ external_bugtracker.
 
     >>> bug_watch_updater = NonConnectingBugWatchUpdater(
     ...     transaction, QuietFakeLogger())
-    >>> success = bug_watch_updater.updateBugTracker(
+    >>> bug_watch_updater._updateBugTracker(
     ...     standard_bugzilla, batch_size=2)
     initializeRemoteBugDB() called: [u'5', u'6']
     getRemoteStatus() called: u'5'
     getRemoteStatus() called: u'6'
-    >>> success
-    True
 
 The default entry point into BugWatchUpdater for the checkwatches script is
 the updateBugTrackers() method. This, too, takes a batch_size parameter, which
 allows it to be passed as a command-line option when the checkwatches script
 is run.
+
+Before going further, we must abort the current transaction to avoid
+deadlock; updateBugTrackers() runs updateBugTracker() in a different
+thread.
+
+    >>> transaction.abort()
 
     >>> from canonical.launchpad.scripts.logger import FakeLogger
     >>> bug_watch_updater = NonConnectingBugWatchUpdater(
