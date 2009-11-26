@@ -502,7 +502,6 @@
 
             <allow
                 attributes="
-                    bugs
                     bug_links"/>
             <require
                 permission="launchpad.AnyPerson"
@@ -570,7 +569,10 @@
                     is_complete
                     who_made_private
                     date_made_private
-                    userCanView"/>
+                    userCanView
+                    personIsDirectSubscriber
+                    personIsAlsoNotifiedSubscriber
+                    personIsSubscribedToDuplicate"/>
             <require
                 permission="launchpad.View"
                 attributes="

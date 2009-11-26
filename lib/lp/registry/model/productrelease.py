@@ -4,7 +4,12 @@
 # pylint: disable-msg=E0611,W0212
 
 __metaclass__ = type
-__all__ = ['ProductRelease', 'ProductReleaseSet', 'ProductReleaseFile']
+__all__ = [
+    'ProductRelease',
+    'ProductReleaseFile',
+    'ProductReleaseSet',
+    'productrelease_to_milestone',
+    ]
 
 from StringIO import StringIO
 
@@ -252,3 +257,8 @@ class ProductReleaseSet(object):
             sqlvalues([release.id for release in releases])),
             orderBy='-date_uploaded',
             prejoins=['libraryfile', 'libraryfile.content', 'productrelease'])
+
+
+def productrelease_to_milestone(productrelease):
+    """Adapt an `IProductRelease` to an `IMilestone`."""
+    return productrelease.milestone
