@@ -28,7 +28,8 @@ __all__ = [
 
 from lazr.restful.declarations import (
     REQUEST_USER, call_with, export_as_webservice_entry,
-    export_write_operation, operation_parameters, operation_returns_entry)
+    exported, export_write_operation, operation_parameters,
+    operation_returns_entry)
 from lazr.restful.fields import Reference
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
@@ -571,32 +572,37 @@ class INewSpecification(Interface):
         description=_(
             "The URL of the specification. This is usually a wiki page."),
         constraint=valid_webref)
-    summary = Summary(
-        title=_('Summary'), required=True, description=_(
-            "A single-paragraph description of the feature. "
-            "This will also be displayed in most feature listings."))
-    definition_status = Choice(
-        title=_('Definition Status'),
-        vocabulary=SpecificationDefinitionStatus,
-        default=SpecificationDefinitionStatus.NEW,
-        description=_(
-            "The current status of the process to define the "
-            "feature and get approval for the implementation plan."))
-    assignee = PublicPersonChoice(
-        title=_('Assignee'), required=False,
-        description=_("The person responsible for implementing the feature."),
-        vocabulary='ValidPersonOrTeam')
-    drafter = PublicPersonChoice(
-        title=_('Drafter'), required=False,
-        description=_(
-                "The person responsible for drafting the specification."),
-        vocabulary='ValidPersonOrTeam')
-    approver = PublicPersonChoice(
-        title=_('Approver'), required=False,
-        description=_(
-            "The person responsible for approving the specification, "
-            "and for reviewing the code when it's ready to be landed."),
-        vocabulary='ValidPersonOrTeam')
+    summary = exported(
+        Summary(
+            title=_('Summary'), required=True, description=_(
+                "A single-paragraph description of the feature. "
+                "This will also be displayed in most feature listings.")))
+    definition_status = exported(
+        Choice(
+            title=_('Definition Status'),
+            vocabulary=SpecificationDefinitionStatus,
+            default=SpecificationDefinitionStatus.NEW,
+            description=_(
+                "The current status of the process to define the "
+                "feature and get approval for the implementation plan.")))
+    assignee = exported(
+        PublicPersonChoice(
+            title=_('Assignee'), required=False,
+            description=_("The person responsible for implementing the feature."),
+            vocabulary='ValidPersonOrTeam'))
+    drafter = exported(
+        PublicPersonChoice(
+            title=_('Drafter'), required=False,
+            description=_(
+                    "The person responsible for drafting the specification."),
+            vocabulary='ValidPersonOrTeam'))
+    approver = exported(
+        PublicPersonChoice(
+            title=_('Approver'), required=False,
+            description=_(
+                "The person responsible for approving the specification, "
+                "and for reviewing the code when it's ready to be landed."),
+            vocabulary='ValidPersonOrTeam'))
 
 
 class INewSpecificationProjectTarget(Interface):
@@ -655,46 +661,54 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     #      referencing it.
     id = Int(title=_("Database ID"), required=True, readonly=True)
 
-    priority = Choice(
-        title=_('Priority'), vocabulary=SpecificationPriority,
-        default=SpecificationPriority.UNDEFINED, required=True)
-    datecreated = Datetime(
-        title=_('Date Created'), required=True, readonly=True)
-    owner = PublicPersonChoice(
-        title=_('Owner'), required=True, readonly=True,
-        vocabulary='ValidPersonOrTeam')
+    priority = exported(
+        Choice(
+            title=_('Priority'), vocabulary=SpecificationPriority,
+            default=SpecificationPriority.UNDEFINED, required=True))
+    datecreated = exported(
+        Datetime(
+            title=_('Date Created'), required=True, readonly=True))
+    owner = exported(PublicPersonChoice(
+            title=_('Owner'), required=True, readonly=True,
+            vocabulary='ValidPersonOrTeam'))
     # target
-    product = Choice(title=_('Project'), required=False,
-        vocabulary='Product')
-    distribution = Choice(title=_('Distribution'), required=False,
-        vocabulary='Distribution')
+    product = exported(
+        Choice(title=_('Project'), required=False,
+               vocabulary='Product'))
+    distribution = exported(
+        Choice(title=_('Distribution'), required=False,
+               vocabulary='Distribution'))
 
     # series
-    productseries = Choice(title=_('Series Goal'), required=False,
-        vocabulary='FilteredProductSeries',
-        description=_(
-            "Choose a series in which you would like to deliver "
-            "this feature. Selecting '(no value)' will clear the goal."))
-    distroseries = Choice(title=_('Series Goal'), required=False,
-        vocabulary='FilteredDistroSeries',
-        description=_(
-            "Choose a series in which you would like to deliver "
-            "this feature. Selecting '(no value)' will clear the goal."))
+    productseries = exported(
+        Choice(title=_('Series Goal'), required=False,
+               vocabulary='FilteredProductSeries',
+               description=_(
+                "Choose a series in which you would like to deliver "
+                "this feature. Selecting '(no value)' will clear the goal.")))
+    distroseries = exported(
+        Choice(title=_('Series Goal'), required=False,
+               vocabulary='FilteredDistroSeries',
+               description=_(
+                "Choose a series in which you would like to deliver "
+                "this feature. Selecting '(no value)' will clear the goal.")))
 
     # milestone
-    milestone = Choice(
-        title=_('Milestone'), required=False, vocabulary='Milestone',
-        description=_(
-            "The milestone in which we would like this feature to be "
-            "delivered."))
+    milestone = exported(
+        Choice(
+            title=_('Milestone'), required=False, vocabulary='Milestone',
+            description=_(
+                "The milestone in which we would like this feature to be "
+                "delivered.")))
 
     # nomination to a series for release management
-    goal = Attribute("The series for which this feature is a goal.")
-    goalstatus = Choice(
-        title=_('Goal Acceptance'), vocabulary=SpecificationGoalStatus,
-        default=SpecificationGoalStatus.PROPOSED, description=_(
-            "Whether or not the drivers have accepted this feature as "
-            "a goal for the targeted series."))
+    goal = exported(Attribute("The series for which this feature is a goal."))
+    goalstatus = exported(
+        Choice(
+            title=_('Goal Acceptance'), vocabulary=SpecificationGoalStatus,
+            default=SpecificationGoalStatus.PROPOSED, description=_(
+                "Whether or not the drivers have accepted this feature as "
+                "a goal for the targeted series.")))
     goal_proposer = Attribute("The person who nominated the spec for "
         "this series.")
     date_goal_proposed = Attribute("The date of the nomination.")
@@ -703,10 +717,11 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     date_goal_decided = Attribute("The date the spec was approved "
         "or declined as a goal.")
 
-    whiteboard = Text(title=_('Status Whiteboard'), required=False,
-        description=_(
-            "Any notes on the status of this spec you would like to make. "
-            "Your changes will override the current text."))
+    whiteboard = exported(
+        Text(title=_('Status Whiteboard'), required=False,
+             description=_(
+                "Any notes on the status of this spec you would like to make. "
+                "Your changes will override the current text.")))
     direction_approved = Bool(title=_('Basic direction approved?'),
         required=False, default=False, description=_("Check this to "
         "indicate that the drafter and assignee have satisfied the "
