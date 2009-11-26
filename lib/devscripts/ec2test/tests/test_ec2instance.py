@@ -95,7 +95,7 @@ class MockFailure(Exception):
 class TestEC2Instance(TestCase):
     """Test running of an `EC2Instance` without EC2."""
 
-    def setUp(self):
+    def _makeInstance(self):
         session_name = None
         image = MockImage()
         instance_type = 'c1.xlarge'
@@ -105,68 +105,75 @@ class TestEC2Instance(TestCase):
         user_key = None
         login = None
 
-        self.shutdown_watcher = Stub()
-
-        self.instance = EC2Instance(
+        instance = EC2Instance(
             session_name, image, instance_type, demo_networks, account,
             from_scratch, user_key, login)
 
-        self.instance.shutdown = self.shutdown_watcher
-        self.instance._report_traceback = Stub()
-        self.instance.log = Stub()
+        instance.shutdown = Stub()
+        instance._report_traceback = Stub()
+        instance.log = Stub()
 
-    def _runInstance(self, runnee=None, headless=False):
-        """Set up and run a mock EC2 instance."""
+        return instance
+
+    def _runInstance(self, instance, runnee=None, headless=False):
+        """Set up and run an `EC2Instance` (but without EC2)."""
         if runnee is None:
             runnee = Stub()
 
-        self.instance.set_up_and_run(False, not headless, runnee)
+        instance.set_up_and_run(False, not headless, runnee)
 
     def test_EC2Instance_test_baseline(self):
-        # The mock EC2 instances we set up have neither started nor been
-        # shut down.  After running, they have started.
+        # The EC2 instances we set up have neither started nor been shut
+        # down.  After running, they have started.
         # Not a very useful test, except it establishes the basic
         # assumptions for the other tests.
+        instance = self._makeInstance()
         runnee = Stub()
 
         self.assertEqual(0, runnee.call_count)
-        self.assertEqual(0, self.shutdown_watcher.call_count)
+        self.assertEqual(0, instance.shutdown.call_count)
 
-        self._runInstance(runnee)
+        self._runInstance(instance, runnee=runnee)
 
         self.assertEqual(1, runnee.call_count)
 
     def test_set_up_and_run_headful(self):
         # A non-headless run executes all tests in the instance, then
         # shuts down.
-        self._runInstance(headless=False)
+        instance = self._makeInstance()
 
-        self.assertEqual(1, self.shutdown_watcher.call_count)
+        self._runInstance(instance, headless=False)
+
+        self.assertEqual(1, instance.shutdown.call_count)
 
     def test_set_up_and_run_headless(self):
         # An asynchronous, headless run kicks off the tests on the
         # instance but does not shut it down.
-        self._runInstance(headless=True)
+        instance = self._makeInstance()
 
-        self.assertEqual(0, self.shutdown_watcher.call_count)
+        self._runInstance(instance, headless=True)
+
+        self.assertEqual(0, instance.shutdown.call_count)
 
     def test_set_up_and_run_headful_failure(self):
         # If the test runner barfs, the instance swallows the exception
         # and shuts down.
+        instance = self._makeInstance()
         runnee = Stub(simulated_failure=MockFailure("Headful barfage."))
 
-        self._runInstance(runnee, headless=False)
+        self._runInstance(instance, runnee=runnee, headless=False)
 
-        self.assertEqual(1, self.shutdown_watcher.call_count)
+        self.assertEqual(1, instance.shutdown.call_count)
 
     def test_set_up_and_run_headless_failure(self):
         # If the instance's test runner fails to set up for a headless
         # run, the instance swallows the exception and shuts down.
+        instance = self._makeInstance()
         runnee = Stub(simulated_failure=MockFailure("Headless boom."))
 
-        self._runInstance(runnee, headless=True)
+        self._runInstance(instance, runnee=runnee, headless=True)
 
-        self.assertEqual(1, self.shutdown_watcher.call_count)
+        self.assertEqual(1, instance.shutdown.call_count)
 
 
 def test_suite():
