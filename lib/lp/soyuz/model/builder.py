@@ -33,6 +33,7 @@ from storm.store import Store
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
+from lp.buildmaster.interfaces.buildfarmjob import get_behavior_for_job_type
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.master import BuilddMaster
@@ -58,6 +59,7 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus)
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp import urlappend
+from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
 
 
@@ -140,9 +142,11 @@ class Builder(SQLBase):
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
 
-    @property
-    def current_build_behavior(self):
+    def get_current_build_behavior(self):
         """Return the current build behavior."""
+        if not safe_hasattr(self, '_current_build_behavior'):
+            self._current_build_behavior = None
+
         if self._current_build_behavior is not None:
             return self._current_build_behavior
 
@@ -156,6 +160,27 @@ class Builder(SQLBase):
 
         # Apparently we're currently idle
         assert(False, "Create an Idle behavior and return it here.")
+
+    def set_current_build_behavior(self, new_behavior): # Change to BFJType?
+        """Set the current build behavior."""
+        if self.current_build_behavior == new_behavior:
+            return
+ 
+        if self.current_build_behavior == None: # TODO: will be idle
+            # If we are currently idle, then we can accept the new behavior.
+            self._current_build_behavior = new_behavior
+
+        # But otherwise, if we already have a behavior specified (ie.
+        # we're not idle, due to a current build), then the only transition
+        # possible is to go back to an idling behavior.
+        assert(
+            new_behavior is None, # TODO: will be idle
+            "Builder already has a behavior.") # TODO: raise exception instead.
+
+        self._current_build_behavior = None
+
+    current_build_behavior = property(
+        get_current_build_behavior, set_current_build_behavior)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See `IBuilder`."""
@@ -373,12 +398,8 @@ class Builder(SQLBase):
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
-        # TODO: Move the following to a setter that will verify builder
-        # is idle, throw exception if not. Actually, is this even necessary?
-        # if the build_queue_item already has the builder set, we shouldn't
-        # even need to set the behavior here.
         # Set the build behavior depending on the BuildFarmJobType.
-        self._current_build_behavior = get_behavior_for_job_type(
+        self.current_build_behavior = get_behavior_for_job_type(
             build_queue_item.job_type)
 
         self.logStartBuild(build_queue_item, logger)

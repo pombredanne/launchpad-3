@@ -140,6 +140,10 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
                 "new jobs. "),
         required=False)
 
+    # TODO: hrm, need to ensure this is writable.
+    current_build_behavior = Attribute(
+        "The current behavior of the builder for the current job.")
+
     def cacheFileOnSlave(logger, libraryfilealias):
         """Ask the slave to cache a librarian file to its local disk.
 
