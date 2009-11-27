@@ -22,7 +22,7 @@ from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 from bzrlib.urlutils import join as urljoin
 
-from CVS import Repository, tree
+from CVS import Repository, tree as CVSTree
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -111,7 +111,7 @@ class TestBazaarBranchStore(WorkerTest):
         # After we've pushed up a branch to the store, we can then pull it
         # from the store.
         store = self.makeBranchStore()
-        create_branch_with_one_revision('original')
+        tree = create_branch_with_one_revision('original')
         store.push(self.arbitrary_branch_id, tree, default_format)
         new_tree = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
@@ -705,7 +705,7 @@ class TestActualImportMixin:
         self.addCleanup(lambda: shutil.rmtree(tree_path))
 
         branch_url = get_default_bazaar_branch_store()._getMirrorURL(
-            self.source_details.branch_id)
+            source_details.branch_id)
         branch = Branch.open(branch_url)
 
         self.assertEqual(
@@ -742,7 +742,7 @@ class TestCVSImport(WorkerTest, CSCVSActualImportMixin):
         time.sleep(1)
         repo = Repository(source_details.cvs_root, QuietFakeLogger())
         repo.get(source_details.cvs_module, 'working_dir')
-        wt = tree('working_dir')
+        wt = CVSTree('working_dir')
         self.build_tree_contents([('working_dir/README', 'New content')])
         wt.commit(log='Log message')
         self.foreign_commit_count += 1
@@ -805,7 +805,7 @@ class TestSubversionImport(WorkerTest, SubversionImportHelpers,
 
 
 class TestRejectBranchReference:
-
+    """XXX."""
 
     def createBranchReference(self, url):
         """Create a pure branch reference that points to the specified URL.
@@ -836,7 +836,7 @@ class TestRejectBranchReference:
         elif self.rcstype == 'bzr-svn':
             args['svn_branch_url'] = reference_url
         else:
-            1/0
+            raise AssertionError("unexpected rcs_type %r" % self.rcs_type)
         source_details = self.factory.makeCodeImportSourceDetails(**args)
 
         worker = self.makeImportWorker(source_details)

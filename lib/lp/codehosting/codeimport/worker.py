@@ -79,6 +79,7 @@ class BazaarBranchStore:
     def push(self, db_branch_id, bzr_tree, required_format):
         """Push up `bzr_tree` as the Bazaar branch for `code_import`."""
         ensure_base(self.transport)
+        print bzr_tree
         branch_from = bzr_tree.branch
         target_url = self._getMirrorURL(db_branch_id)
         try:
@@ -489,11 +490,16 @@ class CSCVSImportWorker(ImportWorker):
 class PullingImportWorker(ImportWorker):
     """An import worker for imports that can be done by a bzr plugin.
 
-    Subclasses need to implement `pull_url`.
+    Subclasses need to implement `pull_url` and `opening_format`.
     """
     @property
     def pull_url(self):
         """Return the URL that should be pulled from."""
+        raise NotImplementedError
+
+    @property
+    def opening_format(self):
+        """XXX."""
         raise NotImplementedError
 
     def _doImport(self):
@@ -504,8 +510,10 @@ class PullingImportWorker(ImportWorker):
         bzrlib.ui.ui_factory = LoggingUIFactory(
             writer=lambda m: self._logger.info('%s', m))
         try:
-            bazaar_tree.branch.pull(
-                Branch.open(self.pull_url), overwrite=True)
+            transport = get_transport(self.pull_url)
+            format = self.opening_format.probe_transport(transport)
+            foreign_branch = format.open(transport).open_branch()
+            bazaar_tree.branch.pull(foreign_branch, overwrite=True)
         finally:
             bzrlib.ui.ui_factory = saved_factory
         self.pushBazaarWorkingTree(bazaar_tree)
@@ -521,6 +529,12 @@ class GitImportWorker(PullingImportWorker):
     def pull_url(self):
         """See `PullingImportWorker.pull_url`."""
         return self.source_details.git_repo_url
+
+    @property
+    def opening_format(self):
+        """See `PullingImportWorker.opening_format`."""
+        from bzrlib.plugins.git import LocalGitBzrDirFormat
+        return LocalGitBzrDirFormat
 
     def getBazaarWorkingTree(self):
         """See `ImportWorker.getBazaarWorkingTree`.
@@ -553,3 +567,9 @@ class BzrSvnImportWorker(PullingImportWorker):
     def pull_url(self):
         """See `PullingImportWorker.pull_url`."""
         return self.source_details.svn_branch_url
+
+    @property
+    def opening_format(self):
+        """See `PullingImportWorker.opening_format`."""
+        from bzrlib.plugins.svn.format import SvnRemoteFormat
+        return SvnRemoteFormat
