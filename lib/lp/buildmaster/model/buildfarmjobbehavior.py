@@ -23,12 +23,19 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
 
-# We define the corresponding build farm job behaviors for each
-# job type here so that all the knowledge of the different types
-# is in the one place.
-#    Is there a better way to do this - registering a factory for each job_type
-#    in zcml or something? Perhaps register adapters from BuildFarmJobType->
-#    BuildBehaviors? Check with BjornT.
+# I've linked the job types to builder behaviors here temporarily
+# via a factory, but there must be a better way.
+# We could register a factory for each job_type like this
+#
+#    <adapter
+#        for="lp.buildmaster.interfaces.IBinaryPackageJobType"
+#        provides="lp.buildmaster.interfaces.IBuildFarmJobBehavior"
+#        factory="lp.soyuz.model.BinaryPackageBuildBehavior"
+#        permission="zope.Public" />
+# but that requires creating a marker interface+class for each
+# BuildFarmJobType DBItem or is there a better way? Perhaps
+# just defining the marker interface and adding it at run-time?
+
 job_type_behaviors = {
     BuildFarmJobType.PACKAGEBUILD: BinaryPackageBuildBehavior,
     }
