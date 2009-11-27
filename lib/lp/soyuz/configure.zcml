@@ -544,6 +544,13 @@
             set_schema="lp.soyuz.interfaces.builder.IBuilder"/>
     </class>
 
+    <!-- BinaryPackageBuildBehavior -->
+    <adapter
+        for="lp.buildmaster.interfaces.buildfarmjob.IBinaryPackageJobType"
+        provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
+        factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
+        permission="zope.Public" />
+
     <!-- BuildQueue -->
 
     <class

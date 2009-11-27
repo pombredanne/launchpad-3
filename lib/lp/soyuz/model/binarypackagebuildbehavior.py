@@ -13,13 +13,15 @@ __all__ = [
 
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.model.buildfarmjobbehavior import (
+    BuildFarmJobBehaviorBase)
 from lp.soyuz.interfaces.build import IBuildSet
 
 from zope.component import getUtility
 from zope.interface import implements
 
 
-class BinaryPackageBuildBehavior:
+class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
     """Define the behavior of binary package builds."""
 
     implements(IBuildFarmJobBehavior)

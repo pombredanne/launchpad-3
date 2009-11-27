@@ -36,8 +36,7 @@ from canonical.buildd.slave import BuilderStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch, IBuildFarmJobBehavior)
 from lp.buildmaster.master import BuilddMaster
-from lp.buildmaster.model.buildfarmjobbehavior import (
-    get_behavior_for_job_type, IdleBuildBehavior)
+from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
@@ -155,10 +154,11 @@ class Builder(SQLBase):
         # we'll set it based on our current job.
         currentjob = self.currentjob
         if currentjob is not None:
-            self._current_build_behavior = get_behavior_for_job_type(
+            self._current_build_behavior = IBuildFarmJobBehavior(
                 currentjob.job_type)
             return self._current_build_behavior
 
+        # Otherwise, we'll use the idle behavior.
         self._current_build_behavior = IdleBuildBehavior()
         return self._current_build_behavior 
 
@@ -398,7 +398,7 @@ class Builder(SQLBase):
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
         # Set the build behavior depending on the BuildFarmJobType.
-        self.current_build_behavior = get_behavior_for_job_type(
+        self.current_build_behavior = IBuildFarmJobBehavior(
             build_queue_item.job_type)
         self.logStartBuild(build_queue_item, logger)
 

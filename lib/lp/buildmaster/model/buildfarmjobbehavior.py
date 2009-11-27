@@ -19,62 +19,21 @@ from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch, IBuildFarmJobBehavior)
 
-# TODO: this should not need to be here... register adapters instead.
-from lp.soyuz.model.binarypackagebuildbehavior import (
-    BinaryPackageBuildBehavior)
 
-# I've linked the job types to builder behaviors here temporarily
-# via a factory, but there must be a better way.
-# We could register a factory for each job_type like this
-#
-#    <adapter
-#        for="lp.buildmaster.interfaces.IBinaryPackageJobType"
-#        provides="lp.buildmaster.interfaces.IBuildFarmJobBehavior"
-#        factory="lp.soyuz.model.BinaryPackageBuildBehavior"
-#        permission="zope.Public" />
-# but that requires creating a marker interface+class for each
-# BuildFarmJobType DBItem or is there a better way? Perhaps
-# just defining the marker interface and adding it at run-time?
+class BuildFarmJobBehaviorBase:
+    """Ensures that all behaviors inherit the same initialisation.
 
-job_type_behaviors = {
-    BuildFarmJobType.PACKAGEBUILD: BinaryPackageBuildBehavior,
-    }
-
-def get_behavior_for_job_type(job_type):
-    """A factory for creating build farm job behaviors.
-
-
-    :param job_type: A BuildFarmJobType enum.
-    :return: An implementation of IBuildFarmJobBehavior corresponding to
-        the job_type, or None if no corresponding behavior is found.
-    :raises BuildBehaviorMismatch: If a behavior matching the type was not
-        found.
+    All build-farm job behaviors should inherit from this.
     """
-    behavior_cls = job_type_behaviors.get(job_type, None)
 
-    if behavior_cls is None:
-        raise BuildBehaviorMismatch(
-            "No matching behavior found for build farm job type '%s'" % (
-                job_type.title))
-
-    return behavior_cls()
+    def __init__(self, job_type):
+        """
+        Store a reference to the job_type with which we were created.
+        """
+        self._job_type = job_type
 
 
-#class BuildFarmJobBehaviorBase:
-#    """Ensures that all behaviors inherit the same initialisation.
-#
-#    All build-farm job behaviors should inherit from this.
-#    """
-#
-#    def __init__(self):
-#        """
-#        Store a reference to the builder as we'll need to access builder
-#        attributes.
-#        """
-#        self._builder = builder
-
-
-class IdleBuildBehavior:
+class IdleBuildBehavior(BuildFarmJobBehaviorBase):
 
     implements(IBuildFarmJobBehavior)
 
