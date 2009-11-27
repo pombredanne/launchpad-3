@@ -1551,6 +1551,11 @@
             permission="zope.Public"
             set_schema="lp.registry.interfaces.productrelease.IProductRelease"/>
     </class>
+    <adapter
+        provides="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.productrelease.IProductRelease"
+        factory="lp.registry.model.productrelease.productrelease_to_milestone"
+        permission="zope.Public"/>
 
     <!-- This is class ProductReleaseFile -->
 

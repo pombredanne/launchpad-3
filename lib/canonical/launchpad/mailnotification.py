@@ -1077,7 +1077,7 @@ def notify_specification_subscription_created(specsub, event):
     body = mailwrapper.format(
         'You are now subscribed to the blueprint '
         '%(blueprint_name)s - %(blueprint_title)s.\n\n'
-        '--\n  %(blueprint_url)s' %
+        '-- \n%(blueprint_url)s' %
         {'blueprint_name': spec.name,
          'blueprint_title': spec.title,
          'blueprint_url': canonical_url(spec)})

@@ -945,6 +945,24 @@ class IBugSet(Interface):
             return Bugs.
         """
 
+    def personIsDirectSubscriber(person):
+        """Return True if the person is a direct subscriber to this `IBug`.
+
+        Otherwise, return False.
+        """
+
+    def personIsAlsoNotifiedSubscriber(person):
+        """Return True if the person is an indirect subscriber to this `IBug`.
+
+        Otherwise, return False.
+        """
+
+    def personIsSubscribedToDuplicate(person):
+        """Return True if the person subscribed to a duplicate of this `IBug`.
+
+        Otherwise, return False.
+        """
+
 
 class InvalidBugTargetType(Exception):
     """Bug target's type is not valid."""
