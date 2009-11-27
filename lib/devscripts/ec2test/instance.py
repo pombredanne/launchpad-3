@@ -22,7 +22,6 @@ from bzrlib.errors import BzrCommandError
 
 import paramiko
 
-from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.session import EC2SessionName
 
 
@@ -193,10 +192,16 @@ class EC2Instance:
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
         """
-        # XXX JeroenVermeulen 2009-11-26: This import fails when
-        # testing without a real EC2 instance.  Do it here so the test
-        # can still import this class.
+        # This import breaks in the test environment.  Do it here so
+        # that unit tests (which don't use this factory) can still
+        # import EC2Instance.
         from bzrlib.plugins.launchpad.account import get_lp_login
+
+        # XXX JeroenVermeulen 2009-11-27 bug=489073: EC2Credentials
+        # imports boto, which isn't necessarily installed in our test
+        # environment.  Doing the import here so that unit tests (which
+        # don't use this factory) can still import EC2Instance.
+        from devscripts.ec2test.credentials import EC2Credentials
 
         assert isinstance(name, EC2SessionName)
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
