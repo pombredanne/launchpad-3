@@ -26,7 +26,7 @@ class IBuildFarmJobBehavior(Interface):
     def set_builder(builder):
         """Sets the associated builder reference for this instance."""
 
-    def logStartBuild(build_queue_item, logger):
+    def log_start_build(build_queue_item, logger):
         """Log the start of a specific build queue item.
 
         The form of the log message will vary depending on the type of build.
