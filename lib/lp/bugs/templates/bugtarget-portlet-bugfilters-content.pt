@@ -1,6 +1,11 @@
 <tal:portlet-bug-filters-content
     xmlns:tal="http://xml.zope.org/namespaces/tal"
     xmlns:metal="http://xml.zope.org/namespaces/metal">
+  <tal:comment condition="nothing">
+    The view/*_count|nothing expressions below are so that this
+    template can be rendered by a view that does not have count
+    information available.
+  </tal:comment>
   <tr>
     <td class="bugs-count" tal:content="view/open_bugs_count|nothing" />
     <td class="bugs-link">
