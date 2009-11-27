@@ -69,14 +69,6 @@ class RaisingJob(NullJob):
         raise RaisingJobException(self.message)
 
 
-@contextlib.contextmanager
-def pristineErrorUtility():
-    old = errorlog.globalErrorUtility
-    errorlog.globalErrorUtility = errorlog.ErrorReportingUtility()
-    yield
-    errorlog.globalErrorUtility = old
-
-
 class TestJobRunner(TestCaseWithFactory):
     """Ensure JobRunner behaves as expected."""
 
@@ -130,8 +122,7 @@ class TestJobRunner(TestCaseWithFactory):
             raise Exception('Fake exception.  Foobar, I say!')
         job_1.run = raiseError
         runner = JobRunner([job_1, job_2])
-        with pristineErrorUtility():
-            runner.runAll()
+        runner.runAll()
         self.assertEqual([], pop_notifications())
         self.assertEqual([job_2], runner.completed_jobs)
         self.assertEqual([job_1], runner.incomplete_jobs)
@@ -140,8 +131,8 @@ class TestJobRunner(TestCaseWithFactory):
         reporter = errorlog.globalErrorUtility
         oops = reporter.getLastOopsReport()
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
-        self.assertEqual(
-            [('<oops-message-0>', "{'foo': 'bar'}")], oops.req_vars)
+        self.assertEqual(1, len(oops.req_vars))
+        self.assertEqual("{'foo': 'bar'}", oops.req_vars[0][1])
 
     def test_oops_messages_used_when_handling(self):
         """Oops messages should appear even when exceptions are handled."""
@@ -154,12 +145,11 @@ class TestJobRunner(TestCaseWithFactory):
                 reporter.handling(sys.exc_info())
         job_1.run = handleError
         runner = JobRunner([job_1, job_2])
-        with pristineErrorUtility():
-            runner.runAll()
-            reporter = getUtility(IErrorReportingUtility)
-            oops = reporter.getLastOopsReport()
-        self.assertEqual(
-            [('<oops-message-0>', "{'foo': 'bar'}")], oops.req_vars)
+        runner.runAll()
+        reporter = getUtility(IErrorReportingUtility)
+        oops = reporter.getLastOopsReport()
+        self.assertEqual(1, len(oops.req_vars))
+        self.assertEqual("{'foo': 'bar'}", oops.req_vars[0][1])
 
     def test_runAll_aborts_transaction_on_error(self):
         """runAll should abort the transaction on oops."""
