@@ -807,30 +807,23 @@ class TestSubversionImport(WorkerTest, SubversionImportHelpers,
 class TestRejectBranchReference:
     """XXX."""
 
-    def createBranchReference(self, url):
-        """Create a pure branch reference that points to the specified URL.
-
-        :param url: target of the branch reference.
-        :return: file url to the created pure branch reference.
+    def createBranchReference(self):
+        """Create a pure branch reference that points to a branch.
         """
         # XXX DavidAllouche 2007-09-12 bug=139109:
         # We do this manually because the bzrlib API does not support creating
         # a branch reference without opening it.
+        branch = self.make_branch('branch')
         t = get_transport(self.get_url('.'))
         t.mkdir('reference')
         a_bzrdir = BzrDir.create(self.get_url('reference'))
-        branch_reference_format = BranchReferenceFormat()
-        branch_transport = a_bzrdir.get_branch_transport(
-            branch_reference_format)
-        branch_transport.put_bytes('location', url)
-        branch_transport.put_bytes(
-            'format', branch_reference_format.get_format_string())
+        BranchReferenceFormat().initialize(a_bzrdir, branch)
         return a_bzrdir.root_transport.base
 
     def test_reject_branch_reference(self):
         # XXX
         args = {'rcstype': self.rcstype}
-        reference_url = self.createBranchReference('http://example.invalid')
+        reference_url = self.createBranchReference()
         if self.rcstype == 'git':
             args['git_repo_url'] = reference_url
         elif self.rcstype == 'bzr-svn':
