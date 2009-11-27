@@ -353,11 +353,15 @@ Check what milestones are displayed on the advanced search form:
 Bug Filters Portlet
 -------------------
 
-The bug filters portlet has links to various "canned" searches, and
-shows the number of bugs matching that filter beside each. The counts
-are (mostly) gotten from the context object itself. Since these URLs and
-counts are dependant on the current user, we will log in as Sample
-Person.
+The bug filters portlet has links to various "canned" searches. By
+default there is no count of the number of bugs matching that search
+beside each link. However, an alternative view can be requested that
+does provide this information, and is intended to be requested
+asynchronously by the user agent so that the initial page load is
+quick and less likely to time-out.
+
+These URLs and counts are dependent on the current user, we will log
+in as Sample Person.
 
     >>> from canonical.launchpad.interfaces import IProductSet
 
@@ -370,14 +374,16 @@ Person.
     >>> bugfilters_portlet_view = create_view(firefox, '+portlet-bugfilters')
 
     >>> print bugfilters_portlet_view.open_bugs_url
-    +bugs?search=Search&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed
-    >>> print bugfilters_portlet_view.context.open_bugtasks.count()
-    3
-
+    http://launchpad.dev/firefox/+bugs
     >>> print bugfilters_portlet_view.my_bugs_url
     +bugs?search=Search&field.assignee=name12
 
-    >>> print bugfilters_portlet_view.my_bugs_count
+    >>> bugfilters_stats_portlet_view = create_view(
+    ...     firefox, '+bugtarget-portlet-bugfilters-stats')
+
+    >>> print bugfilters_stats_portlet_view.open_bugs_count
+    3
+    >>> print bugfilters_stats_portlet_view.my_bugs_count
     1
 
 If Sample Person were assigned to second bug, but that bug was a dupe,
@@ -395,7 +401,7 @@ it would not be included in the counts.
     ...     bugfilters_portlet_view.user)
     >>> flush_database_updates()
 
-    >>> print bugfilters_portlet_view.my_bugs_count
+    >>> print bugfilters_stats_portlet_view.my_bugs_count
     1
 
 The critical bugs link and counts consider only unresolved bugs.
@@ -403,7 +409,7 @@ The critical bugs link and counts consider only unresolved bugs.
     >>> print bugfilters_portlet_view.critical_bugs_url
     +bugs?search=Search&field.importance=Critical&field.status=New&field.status=Incomplete&field.status=Confirmed&field.status=Triaged&field.status=In+Progress&field.status=Fix+Committed
 
-    >>> bugfilters_portlet_view.context.critical_bugtasks.count()
+    >>> bugfilters_stats_portlet_view.critical_bugs_count
     1
 
     >>> critical_task = bugfilters_portlet_view.context.critical_bugtasks[0]
@@ -412,7 +418,7 @@ The critical bugs link and counts consider only unresolved bugs.
     ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> flush_database_updates()
 
-    >>> print bugfilters_portlet_view.context.critical_bugtasks.count()
+    >>> print bugfilters_stats_portlet_view.critical_bugs_count
     0
 
     >>> critical_task.transitionToStatus(
@@ -424,7 +430,7 @@ Moving along...
     >>> print bugfilters_portlet_view.new_bugs_url
     +bugs?search=Search&field.status=New
 
-    >>> print bugfilters_portlet_view.context.new_bugtasks.count()
+    >>> print bugfilters_stats_portlet_view.new_bugs_count
     3
 
 All counts ignore bugtasks with status Unknown. Let's set bug four's
@@ -442,16 +448,12 @@ counts.
 We'll examine the counts once more, to verify they are what we think
 they are.
 
-    >>> print bugfilters_portlet_view.context.open_bugtasks.count()
+    >>> print bugfilters_stats_portlet_view.open_bugs_count
     3
-    >>> print bugfilters_portlet_view.context.critical_bugtasks.count()
+    >>> print bugfilters_stats_portlet_view.critical_bugs_count
     1
-    >>> print bugfilters_portlet_view.context.new_bugtasks.count()
+    >>> print bugfilters_stats_portlet_view.new_bugs_count
     3
-    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
-    1
-    >>> print bugfilters_portlet_view.context.all_bugtasks.count()
-    4
 
 Then change the status.
 
@@ -461,32 +463,12 @@ Then change the status.
 
 And the affected counts have been decremented.
 
-    >>> print bugfilters_portlet_view.context.open_bugtasks.count()
+    >>> print bugfilters_stats_portlet_view.open_bugs_count
     2
-    >>> print bugfilters_portlet_view.context.critical_bugtasks.count()
+    >>> print bugfilters_stats_portlet_view.critical_bugs_count
     1
-    >>> print bugfilters_portlet_view.context.new_bugtasks.count()
+    >>> print bugfilters_stats_portlet_view.new_bugs_count
     2
-    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
-    0
-    >>> print bugfilters_portlet_view.context.all_bugtasks.count()
-    3
-
-The unassigned bug counts consider only bugs with an unresolved status.
-
-    >>> bug_four_in_firefox.transitionToStatus(
-    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
-    >>> flush_database_updates()
-
-    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
-    0
-
-    >>> bug_four_in_firefox.transitionToStatus(
-    ...     BugTaskStatus.FIXCOMMITTED, getUtility(ILaunchBag).user)
-    >>> flush_database_updates()
-
-    >>> print bugfilters_portlet_view.context.unassigned_bugtasks.count()
-    1
 
 
 == Constructing search filter urls ==
