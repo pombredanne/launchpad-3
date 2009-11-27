@@ -941,6 +941,17 @@ div.translation-help-links div {
 .vertical .sprite:first-line {
     line-height: 12px;
 }
+
+/* XXX: mars 2009-11-22 bug=484848
+  Override the styling in the Bug Subscribers portlet.  Trying to display
+  as inline-block is of little use, as the maximum name width is 20 characters,
+  and we are unlikely to wrap the text. Not to mention that setting the display
+  in this way breaks the icons.
+*/
+body.tab-bugs #portlet-subscribers .sprite {
+    display: inline;
+}
+
 .sprite-after {padding: 2px 18px 0 0;}
 
 /* XXX: EdwinGrubbs 2009-07-27 bug=405476
