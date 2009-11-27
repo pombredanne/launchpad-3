@@ -56,6 +56,7 @@ from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import (
@@ -368,7 +369,6 @@ class FileBugViewBase(LaunchpadFormView):
 
     def validate(self, data):
         """Make sure the package name, if provided, exists in the distro."""
-
         # The comment field is only required if filing a new bug.
         if self.submit_bug_action.submitted():
             comment = data.get('comment')
@@ -700,6 +700,26 @@ class FileBugViewBase(LaunchpadFormView):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
 
+    @property
+    def inline_filebug_form_url(self):
+        """The URL to the inline filebug form.
+
+        If a token was passed to this view, it will be be passed through
+        to the inline bug filing form via the returned URL.
+        """
+        url = urlappend(canonical_url(self.context), '+filebug-inline-form')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
+    @property
+    def duplicate_search_url(self):
+        """The URL to the inline duplicate search view."""
+        url = urlappend(canonical_url(self.context), '+filebug-show-similar')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
         if self.extra_data_token is not None:
@@ -831,6 +851,11 @@ class FileBugViewBase(LaunchpadFormView):
         return guidelines
 
 
+class FileBugInlineFormView(FileBugViewBase):
+    """A browser view for displaying the inline filebug form."""
+    schema = IBugAddForm
+
+
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
 
@@ -850,6 +875,12 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
     of a page.
     """
     schema = IBugAddForm
+
+    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across inheritance.
+    actions = FileBugViewBase.actions
+    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
 
     _MATCHING_BUGS_LIMIT = 10
 
@@ -894,19 +925,33 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
 
         return matching_bugs
 
+    @property
+    def show_duplicate_list(self):
+        """Return whether or not to show the duplicate list.
+
+        We only show the dupes if:
+          - The context uses Malone AND
+          - There are dupes to show AND
+          - There are no widget errors.
+        """
+        return (
+            self.contextUsesMalone and
+            len(self.similar_bugs) > 0 and
+            len(self.widget_errors) == 0)
+
 
 class FileBugGuidedView(FilebugShowSimilarBugsView):
-    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
-    # hack to make the action decorator Just Work across inheritance.
-    actions = FileBugViewBase.actions
-    custom_widget('title', TextWidget, displayWidth=65)
-    custom_widget('tags', BugTagsWidget)
 
     _SEARCH_FOR_DUPES = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-search.pt")
     _FILEBUG_FORM = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-submit-bug.pt")
 
+    # XXX 2009-07-17 Graham Binns
+    #     As above, this assignment to actions is to make sure that the
+    #     actions from the ancestor views are preserved, otherwise they
+    #     get nuked.
+    actions = FilebugShowSimilarBugsView.actions
     template = _SEARCH_FOR_DUPES
 
     focused_element_id = 'field.title'
@@ -947,20 +992,6 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
             return self.widgets['title'].getInputValue()
         except InputErrors:
             return None
-
-    @property
-    def show_duplicate_list(self):
-        """Return whether or not to show the duplicate list.
-
-        We only show the dupes if:
-          - The context uses Malone AND
-          - There are dupes to show AND
-          - There are no widget errors.
-        """
-        return (
-            self.contextUsesMalone and
-            len(self.similar_bugs) > 0 and
-            len(self.widget_errors) == 0)
 
     def validate_search(self, action, data):
         """Make sure some keywords are provided."""
