@@ -510,6 +510,7 @@ class BranchMergeProposal(SQLBase):
         None.
         """
         if review_type is not None:
+            review_type = review_type.strip()
             if review_type == '':
                 review_type = None
             else:
