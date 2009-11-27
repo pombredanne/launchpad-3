@@ -66,11 +66,9 @@ span.invisible {left:-9999em;display:block;}
 /* End hiding from MSIE for Mac */
 a {outline: none;}
 abbr[title], acronym[title] {border-bottom: 1px dotted black; cursor: help;}
-address {font-style: inherit;}
 * html body {word-wrap: break-word;} /* stops floats dropping in IE 5.5/6 */
 caption {caption-side: bottom; text-align: left;}
 dt dfn {font-style: normal; font-weight: bold;}
-dd {margin-bottom: 1em;}
 input {visibility:inherit;}
 input[type=radio] {margin-left: 1em;}
 kbd {
@@ -97,38 +95,20 @@ legend {font-weight: bold;}
   border-width: 0 0 1px 0;
   display: block;
 }
-div.section {display: block; margin-bottom: 1em;}
-table {border-collapse: collapse;}
 textarea {display: block;}
-thead {vertical-align: bottom;}
 th, td {vertical-align: baseline;}
-th {text-align: right;}
-thead th, tr.thead th {text-align: center;}
-/* make <wbr> work with Opera */
-/* XXX: 20061026 jamesh Disabled since BjornT reported display problems */
-/* wbr:after {content: "\00200B"} */
 
 /* Opera doesn't use the general tr above for the radio button table */
 table.radio-button-widget tr td {vertical-align: top;}
-
-/* For readability, paragraphs and other potentially-long text blocks should
-have a maximum width: */
-label, p {max-width: 60em;}
 
 /* == Overall presentation == */
 /* These styles apply to pages regardless of layout or application. */
 
 /* === Fonts and colors === */
 
-/* Launchpad uses a white background with small, mostly black, text: */
-html {
-    background: #fff;
-    color: #000;
-    font-size: 83.33%;
-    font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;}
 /* Monospace text uses the reciprocal of this percentage, so that it
 exactly obeys your preferred monospace font size: */
-code, pre, samp, tt, #bug-description, .bug-comment, .bug-activity {
+.bug-comment, .bug-activity {
   font: 120% monospace;
 }
 
@@ -162,23 +142,6 @@ a.help:hover, a.help:hover {
 h1, h2, h3, h4, h5, h6 {
   background: none;
   clear: left;
-  padding: 0;
-  margin: 0 0 0.5em;
-  /* Content headings are highlighted using a different color (the color is
-     overriden per-application in subsequent rules) instead of bold text. */
-  font-weight: normal;
-}
-h1 {font-size: 2em;}
-h2 {font-size: 1.2em;}
-h3, h4, h5, h6 {font-size: 1em;}
-/* H1 is only used at the top the maincontent, maybe below a short description
-   of the displayed object. It must have zero margin-top. */
-h2, h3, h4, h5, h6 { margin-top: 1em; }
-/* Browsers indent lists inconsistently, so we override them completely: */
-ul {
-  margin-left: 0;
-  padding-left: 0;
-  list-style-type: none;
 }
 
 .exception {color: #cc0000;}
@@ -188,10 +151,6 @@ ul {
 .unavailable {color: #999; background: none;}
 
 .duplicate-details p { padding: 0em; margin-top: 0em; margin-bottom: 0.2em; }
-
-/* Blank space at the top of the page makes the location bar more noticable.
-Ideally page margins would scale non-linearly, but absolute is next best: */
-body {margin: 0; padding: 10px 20px;}
 
 /* Using colored text as you wish. */
 .green {color: green;}
@@ -262,21 +221,8 @@ dd .whiteboard {
 
 /* === Forms === */
 
-form {border: 0; margin: 0; padding: 0;}
 form table label {font-weight: bold;}
 fieldset {border-width: 2px 0 0; margin: 1em 0; padding: 1em 0 0;}
-input[type="text"], input[type="search"], input[type="password"], textarea {
-  font-family: bitstream vera sans, dejavu sans, verdana, sans-serif;
-  margin: 0;
-}
-input[type="text"], input[type="search"], input[type="submit"],
-input[type="reset"], textarea {
-  font-size: 1em; /* Forces a readable font size in Safari */
-}
-form button, form input[type="button"], form input[type="file"], form input[type="password"],
-form input[type="submit"], form input[type="text"], form select, form textarea {
-  margin-right: 0.5em;
-}
 button{padding:0;}
 input.urlTextType {width: 40em;}
 .fieldRequired, .fieldOptional {color: #999;}
@@ -298,9 +244,6 @@ table.form th, table.form td {padding-bottom: 1em;}
 table.form td td {padding-bottom: 0;}
 
 /* === Tables === */
-/* All table cells have horizontal padding between their contents: */
-th, td {padding: 0 0.5em 0 0;} /* http://launchpad.dev/ubuntu "Officers" */
-
 table.latest th, table.latest td {padding-bottom: 2em;}
 
 th.icon, td.icon {vertical-align: top; white-space: nowrap; width: 1px;}
@@ -1138,7 +1081,6 @@ div.ppa-packaging-tmp-actions .portlet {
 
 /* --- Code --- */
 
-body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
 body.tab-branches #actions, body.tab-branches .results {background-color: #ffc;}
 body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   background-color: #d18b39;
@@ -1259,7 +1201,6 @@ dl.reviews dd {
 
 /* === Bugs === */
 /* The Launchpad Bugs application uses a maroon color: */
-body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}
 body.tab-bugs #actions, body.tab-bugs .results {background-color: #fee;}
 body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   background-color: #9f2b33;
@@ -1306,9 +1247,6 @@ div#sub-unsub-spinner {
 
 /* --- Blueprints --- */
 
-body.tab-specifications #applications {
-  background: url(app-blueprints-wm.gif) no-repeat;
-}
 body.tab-specifications #actions, body.tab-specifications .results {
   background-color: #eff;
 }
@@ -1351,9 +1289,6 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 
 /* === Translations === */
 
-body.tab-translations #applications {
-  background: url(app-translations-wm.gif) no-repeat;
-}
 body.tab-translations #actions, body.tab-translations .results {
   background-color: #f1d7e6;
 }
@@ -1378,7 +1313,6 @@ input.translate {width: 90%; max-width: 60em;}
 
 /* === Answers === */
 
-body.tab-answers #applications {background: url(app-answers-wm.gif) no-repeat;}
 body.tab-answers #actions, body.tab-answers .results {background-color: #eef;}
 body.tab-answers #actions h2, body.tab-answers #actions h2:hover {
   background-color: #3840be;
