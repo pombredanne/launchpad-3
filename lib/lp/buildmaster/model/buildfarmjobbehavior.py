@@ -31,6 +31,11 @@ class BuildFarmJobBehaviorBase:
         Store a reference to the job_type with which we were created.
         """
         self._job_type = job_type
+        self._builder = None
+
+    def set_builder(self, builder):
+        """The builder should be set once and not changed."""
+        self._builder = builder
 
 
 class IdleBuildBehavior(BuildFarmJobBehaviorBase):

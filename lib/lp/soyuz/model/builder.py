@@ -400,6 +400,7 @@ class Builder(SQLBase):
         # Set the build behavior depending on the BuildFarmJobType.
         self.current_build_behavior = IBuildFarmJobBehavior(
             build_queue_item.job_type)
+        self.current_build_behavior.set_builder(self)
         self.logStartBuild(build_queue_item, logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
