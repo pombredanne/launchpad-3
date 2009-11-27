@@ -84,7 +84,7 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
         login_person(branch.owner)
         branch.product.setBranchVisibilityTeamPolicy(
             branch.owner, BranchVisibilityRule.PRIVATE)
-        branch.setPrivate(True)
+        branch.setPrivate(True, branch.owner)
 
     def test_private(self):
         """Private flag should be True if True for any involved branch."""
@@ -92,10 +92,10 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
         self.assertFalse(bmp.private)
         self.setPrivate(bmp.source_branch)
         self.assertTrue(bmp.private)
-        bmp.source_branch.setPrivate(False)
+        bmp.source_branch.setPrivate(False, bmp.source_branch.owner)
         self.setPrivate(bmp.target_branch)
         self.assertTrue(bmp.private)
-        bmp.target_branch.setPrivate(False)
+        bmp.target_branch.setPrivate(False, bmp.target_branch.owner)
         removeSecurityProxy(bmp).prerequisite_branch = (
             self.factory.makeBranch(product=bmp.source_branch.product))
         self.setPrivate(bmp.prerequisite_branch)
