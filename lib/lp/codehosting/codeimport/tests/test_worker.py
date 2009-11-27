@@ -16,7 +16,7 @@ import unittest
 
 from bzrlib.branch import Branch, BranchReferenceFormat
 from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
-from bzrlib.errors import NoSuchFile
+from bzrlib.errors import NoSuchFile, NotBranchError
 from bzrlib.tests import TestCaseWithTransport
 from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
@@ -803,7 +803,50 @@ class TestSubversionImport(WorkerTest, SubversionImportHelpers,
         WorkerTest.setUp(self)
         self.setUpImport()
 
-class TestGitImport(WorkerTest, TestActualImportMixin):
+
+class TestRejectBranchReference:
+
+
+    def createBranchReference(self, url):
+        """Create a pure branch reference that points to the specified URL.
+
+        :param url: target of the branch reference.
+        :return: file url to the created pure branch reference.
+        """
+        # XXX DavidAllouche 2007-09-12 bug=139109:
+        # We do this manually because the bzrlib API does not support creating
+        # a branch reference without opening it.
+        t = get_transport(self.get_url('.'))
+        t.mkdir('reference')
+        a_bzrdir = BzrDir.create(self.get_url('reference'))
+        branch_reference_format = BranchReferenceFormat()
+        branch_transport = a_bzrdir.get_branch_transport(
+            branch_reference_format)
+        branch_transport.put_bytes('location', url)
+        branch_transport.put_bytes(
+            'format', branch_reference_format.get_format_string())
+        return a_bzrdir.root_transport.base
+
+    def test_reject_branch_reference(self):
+        # XXX
+        args = {'rcstype': self.rcstype}
+        reference_url = self.createBranchReference('http://example.invalid')
+        if self.rcstype == 'git':
+            args['git_repo_url'] = reference_url
+        elif self.rcstype == 'bzr-svn':
+            args['svn_branch_url'] = reference_url
+        else:
+            1/0
+        source_details = self.factory.makeCodeImportSourceDetails(**args)
+
+        worker = self.makeImportWorker(source_details)
+        self.assertRaises(NotBranchError, worker.run)
+
+
+class TestGitImport(WorkerTest, TestActualImportMixin,
+                    TestRejectBranchReference):
+
+    rcstype = 'git'
 
     def setUp(self):
         super(TestGitImport, self).setUp()
@@ -856,7 +899,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin):
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
-                       TestActualImportMixin):
+                       TestActualImportMixin, TestRejectBranchReference):
 
     rcstype = 'bzr-svn'
 
@@ -878,35 +921,6 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
         return BzrSvnImportWorker(
             source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger())
-
-    def createBranchReference(self, url):
-        """Create a pure branch reference that points to the specified URL.
-
-        :param url: target of the branch reference.
-        :return: file url to the created pure branch reference.
-        """
-        # XXX DavidAllouche 2007-09-12 bug=139109:
-        # We do this manually because the bzrlib API does not support creating
-        # a branch reference without opening it.
-        t = get_transport(self.get_url('.'))
-        t.mkdir('reference')
-        a_bzrdir = BzrDir.create(self.get_url('reference'))
-        branch_reference_format = BranchReferenceFormat()
-        branch_transport = a_bzrdir.get_branch_transport(
-            branch_reference_format)
-        branch_transport.put_bytes('location', url)
-        branch_transport.put_bytes(
-            'format', branch_reference_format.get_format_string())
-        return a_bzrdir.root_transport.base
-
-    def test_bails_on_branch_reference(self):
-        # XXX
-        source_details = self.factory.makeCodeImportSourceDetails(
-            rcstype=self.rcstype, svn_branch_url=self.createBranchReference(
-            'http://example.invalid'))
-
-        worker = self.makeImportWorker(source_details)
-        worker.run()
 
 
 def test_suite():
