@@ -14,7 +14,7 @@ import tempfile
 import time
 import unittest
 
-from bzrlib.branch import Branch
+from bzrlib.branch import Branch, BranchReferenceFormat
 from bzrlib.bzrdir import BzrDir, BzrDirFormat, format_registry
 from bzrlib.errors import NoSuchFile
 from bzrlib.tests import TestCaseWithTransport
@@ -111,7 +111,7 @@ class TestBazaarBranchStore(WorkerTest):
         # After we've pushed up a branch to the store, we can then pull it
         # from the store.
         store = self.makeBranchStore()
-        tree = create_branch_with_one_revision('original')
+        create_branch_with_one_revision('original')
         store.push(self.arbitrary_branch_id, tree, default_format)
         new_tree = store.pull(
             self.arbitrary_branch_id, self.temp_dir, default_format)
@@ -801,7 +801,6 @@ class TestSubversionImport(WorkerTest, SubversionImportHelpers,
         WorkerTest.setUp(self)
         self.setUpImport()
 
-
 class TestGitImport(WorkerTest, TestActualImportMixin):
 
     def setUp(self):
@@ -877,6 +876,33 @@ class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
         return BzrSvnImportWorker(
             self.source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger())
+
+    def createBranchReference(self, url):
+        """Create a pure branch reference that points to the specified URL.
+
+        :param url: target of the branch reference.
+        :return: file url to the created pure branch reference.
+        """
+        # XXX DavidAllouche 2007-09-12 bug=139109:
+        # We do this manually because the bzrlib API does not support creating
+        # a branch reference without opening it.
+        t = get_transport(self.get_url('.'))
+        t.mkdir('reference')
+        a_bzrdir = BzrDir.create(self.get_url('reference'))
+        branch_reference_format = BranchReferenceFormat()
+        branch_transport = a_bzrdir.get_branch_transport(
+            branch_reference_format)
+        branch_transport.put_bytes('location', url)
+        branch_transport.put_bytes(
+            'format', branch_reference_format.get_format_string())
+        return a_bzrdir.root_transport.base
+
+    def test_bails_on_branch_reference(self):
+        # XXX
+        self.source_details.svn_branch_url = self.createBranchReference(
+            'http://example.invalid')
+        worker = self.makeImportWorker()
+        worker.run()
 
 
 def test_suite():
