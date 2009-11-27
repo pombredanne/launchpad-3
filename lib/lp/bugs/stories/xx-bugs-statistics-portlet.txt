@@ -50,7 +50,7 @@ general stats.
     1 New bugs
     2 Open CVE bugs - CVE reports
 
-One the user has identified him or herself, information on assigned
+Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
     >>> print_portlet(user_browser, path)
@@ -102,7 +102,7 @@ link to review nominations.
     2 New bugs
     1 Open CVE bugs - CVE reports
 
-One the user has identified him or herself, information on assigned
+Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
     >>> print_portlet(user_browser, path)
@@ -153,7 +153,7 @@ If the user is not logged-in general stats are shown.
     1 New bugs
     2 Open CVE bugs
 
-One the user has identified him or herself, information on assigned
+Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
     >>> print_portlet(user_browser, path)
@@ -204,7 +204,7 @@ option to subscribe to bug mail.
     2 New bugs
     1 Open CVE bugs
 
-One the user has identified him or herself, information on assigned
+Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
     >>> print_portlet(user_browser, path)
@@ -254,7 +254,7 @@ If the user is not logged-in general stats are shown.
     4 New bugs
     1 Open CVE bugs
 
-One the user has identified him or herself, information on assigned
+Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
     >>> print_portlet(user_browser, path)
@@ -306,7 +306,7 @@ If the user is not logged-in general stats are shown.
     3 New bugs
     1 Open CVE bugs - CVE reports
 
-One the user has identified him or herself, information on assigned
+Once the user has identified him or herself, information on assigned
 bugs is also shown.
 
     >>> print_portlet(user_browser, path)
