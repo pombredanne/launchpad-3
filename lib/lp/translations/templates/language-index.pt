@@ -44,11 +44,9 @@
               Unfortunately, Launchpad doesn't know the plural form
               information for this language. If you know it, please open a
               <a id='plural_question'
-                 tal:attributes="href view/add_question_url">
-                question
-              </a>
-              with that information,
-              so we can add it to Launchpad.
+                 tal:attributes="href view/add_question_url"
+                 >question</a>
+              with that information, so we can add it to Launchpad.
             </p>
           </tal:has_not_pluralforms>
         </div>
@@ -130,9 +128,8 @@
               about a country that officially speaks this language, please
               open a
               <a id='country_question' 
-                 tal:attributes="href view/add_question_url">
-                question 
-              </a> 
+                 tal:attributes="href view/add_question_url"
+                 >question</a>
               with that information, so we can add it to Launchpad.
             </p>
           </tal:has_not_countries>

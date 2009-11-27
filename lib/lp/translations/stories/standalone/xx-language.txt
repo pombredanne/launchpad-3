@@ -1,8 +1,14 @@
-= Languages view =
+
+
+Languages view
+==============
+
 Here is the tale of languages. We will see how to create, find and edit
 them.
 
-== Getting there ==
+
+Getting there
+-------------
 
 Launchpad Translations has a main page.
 
@@ -14,10 +20,12 @@ There we can find a link to browse and manage languages.
     >>> print admin_browser.url
     http://translations.launchpad.dev/+languages
 
-== Adding new languages ==
 
-Following the link from the translations main page, there is a form to add new
-languages.
+Adding new languages
+--------------------
+
+Following the link from the translations main page, there is a form to
+add new languages.
 
     >>> admin_browser.getLink('Add new language').click()
     >>> print admin_browser.url
@@ -71,12 +79,15 @@ A normal user will not be able to see or use the url to add languages.
     ...
     LinkNotFoundError
 
-    >>> user_browser.open('http://translations.launchpad.dev/+languages/+add')
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/+languages/+add')
     Traceback (most recent call last):
     ...
     Unauthorized:...
 
-== Searching for a language ==
+
+Searching for a language
+------------------------
 
 From the top languages page, anyone can find languages.
 
@@ -90,7 +101,9 @@ From the top languages page, anyone can find languages.
     >>> print browser.url
     http://translations.launchpad.dev/+languages/+index?find=Spanish
 
-== Read language information ==
+
+Read language information
+-------------------------
 
 Following one of the found languages, we can see a brief information
 about the selected language.
@@ -138,15 +151,18 @@ about the selected language.
     ...Uruguay...
     ...Venezuela...
 
-    >>> topcontributors_portlet = find_portlet(browser.contents, 'Top contributors')
+    >>> topcontributors_portlet = find_portlet(
+    ...     browser.contents, 'Top contributors')
     >>> print topcontributors_portlet
     <...
     ...Carlos Perelló Marín...
 
-Abkhazian is a language that has no information about plural forms and is not registered as being spoken in any country.
+Our test sample data does not know about plural forms of
+Abkhazian and about countries where this language is spoken.
 
 We will see a note about missing plural forms and a link to Rosetta
-add question page for informing Rosetta admin about the right plural form.
+add question page for informing Rosetta admin about the right plural
+form.
 
     >>> browser.open('http://translations.launchpad.dev/+languages/ab')
     >>> print extract_text(find_portlet(browser.contents, 'Plural forms'
@@ -158,9 +174,9 @@ add question page for informing Rosetta admin about the right plural form.
     >>> print browser.getLink(id='plural_question').url
     http://answers.launchpad.dev/rosetta/+addquestion
 
-We will see a note that this language is not registred as being spoken in any
-country and a link to add question page for informating Rosetta admin about the
-countries where this page is officially spoken.
+We will see a note that Launchpad does not know in which countries
+this language is spoken and a link to add question page for informing
+Rosetta admin about the countries where this page is officially spoken.
 
     >>> countries_portlet = find_portlet(browser.contents, 'Countries')
     >>> print countries_portlet
@@ -171,11 +187,14 @@ countries where this page is officially spoken.
     >>> print browser.getLink(id='country_question').url
     http://answers.launchpad.dev/rosetta/+addquestion
 
-== Edit language information ==
+
+Edit language information
+-------------------------
 
 Finally, there is the edit form to change language basic information.
 
-    >>> user_browser.open('http://translations.launchpad.dev/+languages/es')
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/+languages/es')
     >>> print user_browser.url
     http://translations.launchpad.dev/+languages/es
 
@@ -186,7 +205,8 @@ A plain user is not able to reach it.
     ...
     LinkNotFoundError
 
-    >>> user_browser.open('http://translations.launchpad.dev/+languages/es/+admin')
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/+languages/es/+admin')
     Traceback (most recent call last):
     ...
     Unauthorized:...
@@ -195,7 +215,8 @@ An admin, though, will see the link and will be able to edit it.
 
     >>> from canonical.launchpad.testing.pages import strip_label
 
-    >>> admin_browser.open('http://translations.launchpad.dev/+languages/es')
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/+languages/es')
     >>> print admin_browser.url
     http://translations.launchpad.dev/+languages/es
 

@@ -29,7 +29,7 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, NavigationMenu)
 from lp.translations.utilities.pluralforms import make_friendly_plural_forms
-from lp.registry.interfaces.product import IProductSet
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -205,7 +205,7 @@ class LanguageView(TranslationsMixin, LaunchpadView):
 
     @property
     def add_question_url(self):
-        rosetta = getUtility(IProductSet).getByName('rosetta')
+        rosetta = getUtility(ILaunchpadCelebrities).lp_translations
         return canonical_url(
             rosetta,
             view_name='+addquestion',
