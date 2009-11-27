@@ -851,16 +851,19 @@ class TestAutoApprovalNewPOFile(TestCaseWithFactory):
 
     def test_getGuessedPOFile_creates_POFile(self):
         # Auto-approval may involve creating POFiles.  The queue
-        # gardener has permissions to do this.
+        # gardener has permissions to do this.  The POFile's owner is
+        # the rosetta_experts team.
         trunk = self.product.getSeries('trunk')
         template = self._makeTemplate(trunk)
         entry = self._makeQueueEntry(trunk)
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         become_the_gardener(self.layer)
 
         pofile = entry.getGuessedPOFile()
 
         self.assertIsInstance(pofile, POFile)
+        self.assertNotEqual(rosetta_experts, pofile.owner)
 
     def test_getGuessedPOFile_creates_POFile_with_credits(self):
         # When the approver creates a POFile for a template that
