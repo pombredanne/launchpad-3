@@ -36,7 +36,6 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.model.person import Person
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.interfaces.pofile import IPOFile, IPOFileSet
 from lp.translations.interfaces.potmsgset import (
