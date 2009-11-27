@@ -33,4 +33,6 @@ class IBuildFarmJobBehavior(Interface):
         :param build_queue_item: A BuildQueueItem to build.
         :param logger: A logger to be used to log diagnostic information.
         """
-
+    # A number of other methods to go here that can be customised for each of
+    # the different build types (branch build, recipe build, translation
+    # build etc.)

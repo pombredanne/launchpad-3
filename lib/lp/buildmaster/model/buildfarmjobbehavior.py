@@ -8,7 +8,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'get_behavior_for_job_type',
     'BuildFarmJobBehaviorBase',
     'IdleBuildBehavior'
     ]

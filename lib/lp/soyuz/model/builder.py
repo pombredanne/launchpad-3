@@ -394,7 +394,7 @@ class Builder(SQLBase):
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
-        # Set the build behavior depending on the BuildFarmJobType.
+        # Set the build behavior depending on the provided build queue item. 
         self.current_build_behavior = build_queue_item.required_build_behavior
         self.log_start_build(build_queue_item, logger)
 
