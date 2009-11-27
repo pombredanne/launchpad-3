@@ -1454,6 +1454,23 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
                          vote_reference.registrant)
         self.assertEqual('general', vote_reference.review_type)
 
+    def test_nominate_with_empty_review_type(self):
+        # Reviews nominated with an em
+        merge_proposal = self.factory.makeBranchMergeProposal()
+        login_person(merge_proposal.source_branch.owner)
+        reviewer = self.factory.makePerson()
+        merge_proposal.nominateReviewer(
+            reviewer=reviewer,
+            registrant=merge_proposal.source_branch.owner,
+            review_type='General')
+        votes = list(merge_proposal.votes)
+        self.assertEqual(1, len(votes))
+        vote_reference = votes[0]
+        self.assertEqual(reviewer, vote_reference.reviewer)
+        self.assertEqual(merge_proposal.source_branch.owner,
+                         vote_reference.registrant)
+        self.assertEqual('general', vote_reference.review_type)
+
     def test_nominate_multiple_with_different_types(self):
         # While an individual can only be requested to do one review
         # (test_nominate_updates_reference) a team can have multiple
