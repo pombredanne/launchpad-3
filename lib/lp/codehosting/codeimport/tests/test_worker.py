@@ -804,8 +804,8 @@ class TestSubversionImport(WorkerTest, SubversionImportHelpers,
         self.setUpImport()
 
 
-class TestRejectBranchReference:
-    """XXX."""
+class PullingImportWorkerTests:
+    """Tests for the PullingImportWorker subclasses."""
 
     def createBranchReference(self):
         """Create a pure branch reference that points to a branch.
@@ -821,7 +821,8 @@ class TestRejectBranchReference:
         return a_bzrdir.root_transport.base
 
     def test_reject_branch_reference(self):
-        # XXX
+        # URLs that point to other branch types than that expected by the
+        # import should be rejected.
         args = {'rcstype': self.rcstype}
         reference_url = self.createBranchReference()
         if self.rcstype == 'git':
@@ -837,7 +838,7 @@ class TestRejectBranchReference:
 
 
 class TestGitImport(WorkerTest, TestActualImportMixin,
-                    TestRejectBranchReference):
+                    PullingImportWorkerTests):
 
     rcstype = 'git'
 
@@ -892,7 +893,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
-                       TestActualImportMixin, TestRejectBranchReference):
+                       TestActualImportMixin, PullingImportWorkerTests):
 
     rcstype = 'bzr-svn'
 

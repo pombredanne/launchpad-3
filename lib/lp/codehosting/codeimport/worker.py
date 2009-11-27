@@ -489,7 +489,7 @@ class CSCVSImportWorker(ImportWorker):
 class PullingImportWorker(ImportWorker):
     """An import worker for imports that can be done by a bzr plugin.
 
-    Subclasses need to implement `pull_url` and `opening_format`.
+    Subclasses need to implement `pull_url` and `format_classes`.
     """
     @property
     def pull_url(self):
@@ -498,7 +498,7 @@ class PullingImportWorker(ImportWorker):
 
     @property
     def format_classes(self):
-        """XXX."""
+        """The format classes that should be tried for this import."""
         raise NotImplementedError
 
     def _doImport(self):
