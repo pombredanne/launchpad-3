@@ -502,13 +502,26 @@ class BranchMergeProposal(SQLBase):
         self.syncUpdate()
         return proposal
 
+    def _normalizeReviewType(self, review_type):
+        """Normalse the review type.
+
+        If review_type is None, it stays None.  Otherwise the review_type is
+        converted to lower case, and if the string is empty is gets changed to
+        None.
+        """
+        if review_type is not None:
+            if review_type == '':
+                review_type = None
+            else:
+                review_type = review_type.lower()
+        return review_type
+
     def nominateReviewer(self, reviewer, registrant, review_type=None,
                          _date_created=DEFAULT, _notify_listeners=True):
         """See `IBranchMergeProposal`."""
         # Return the existing vote reference or create a new one.
         # Lower case the review type.
-        if review_type is not None:
-            review_type = review_type.lower()
+        review_type = self._normalizeReviewType(review_type)
         vote_reference = self.getUsersVoteReference(reviewer, review_type)
         if vote_reference is None:
             vote_reference = CodeReviewVoteReference(
@@ -559,6 +572,7 @@ class BranchMergeProposal(SQLBase):
         #:param _date_created: The date the message was created.  Provided
         #    only for testing purposes, as it can break
         # BranchMergeProposal.root_message.
+        review_type = self._normalizeReviewType(review_type)
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
         if parent is not None:
@@ -590,8 +604,7 @@ class BranchMergeProposal(SQLBase):
     def getUsersVoteReference(self, user, review_type=None):
         """Get the existing vote reference for the given user."""
         # Lower case the review type.
-        if review_type is not None:
-            review_type = review_type.lower()
+        review_type = self._normalizeReviewType(review_type)
         if user is None:
             return None
         if user.is_team:
@@ -656,9 +669,7 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         if _validate:
             validate_message(original_email)
-        # Lower case the review type.
-        if review_type is not None:
-            review_type = review_type.lower()
+        review_type = self._normalizeReviewType(review_type)
         code_review_message = CodeReviewComment(
             branch_merge_proposal=self, message=message, vote=vote,
             vote_tag=review_type)
