@@ -1437,7 +1437,8 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         merge_proposal = self.factory.makeBranchMergeProposal()
         self.assertEqual([], list(merge_proposal.votes))
 
-    def makeProposalWithReviewer(self, reviewer=None, review_type=None):
+    def makeProposalWithReviewer(self, reviewer=None, review_type=None,
+                                 registrant=None):
         """Make a proposal and request a review from reviewer.
 
         If no reviewer is passed in, make a reviewer.
@@ -1445,19 +1446,21 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         if reviewer is None:
             reviewer = self.factory.makePerson()
         merge_proposal = self.factory.makeBranchMergeProposal()
+        if registrant is None:
+            registrant = merge_proposal.registrant
         login_person(merge_proposal.source_branch.owner)
         merge_proposal.nominateReviewer(
-            reviewer=reviewer,
-            registrant=merge_proposal.registrant,
-            review_type=review_type)
+            reviewer=reviewer, registrant=registrant, review_type=review_type)
         return merge_proposal, reviewer
 
     def test_pending_review_registrant(self):
         # The registrant passed into the nominateReviewer call is the
         # registrant of the vote reference.
-        merge_proposal, reviewer = self.makeProposalWithReviewer()
+        registrant = self.factory.makePerson()
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            registrant=registrant)
         vote_reference = list(merge_proposal.votes)[0]
-        self.assertEqual(merge_proposal.registrant, vote_reference.registrant)
+        self.assertEqual(registrant, vote_reference.registrant)
 
     def assertOneReviewPending(self, merge_proposal, reviewer, review_type):
         # Check that there is one and only one review pending with the
