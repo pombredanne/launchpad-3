@@ -65,7 +65,7 @@ class TestMergeProposalCommenting(TestCaseWithFactory):
         client.click(xpath=REPLY_LINK_XPATH)
         client.waits.sleep(milliseconds=10)
         client.asserts.assertValue(id="field.comment", validator="> content")
-        new_comment_text = generate_uuid()
+        new_comment_text = "My reply"
         client.type(text=new_comment_text, id="field.comment")
         client.click(xpath=ADD_COMMENT_BUTTON)
         client.waits.forElement(
