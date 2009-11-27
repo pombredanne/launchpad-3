@@ -14,7 +14,16 @@ __all__ = [
 from zope.interface import Interface
 
 
+class BuildBehaviorMismatch(Exception):
+    """
+    A general exception that can be raised when the builder's current behavior
+    does not match the expected behavior.
+    """
+
+
 class IBuildFarmJobBehavior(Interface):
+
+    # TODO: figure out what to do about setting the builder attribute.
 
     def logStartBuild(build_queue_item, logger):
         """Log the start of a specific build queue item.

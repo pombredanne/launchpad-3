@@ -33,10 +33,11 @@ from storm.store import Store
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
-from lp.buildmaster.interfaces.buildfarmjob import get_behavior_for_job_type
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
+    BuildBehaviorMismatch, IBuildFarmJobBehavior)
 from lp.buildmaster.master import BuilddMaster
+from lp.buildmaster.model.buildfarmjobbehavior import (
+    get_behavior_for_job_type, IdleBuildBehavior)
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
@@ -52,8 +53,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.builder import (
-    BuildBehaviorMismatch, BuildDaemonError, BuildSlaveFailure, CannotBuild,
-    CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
+    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotResumeHost,
+    IBuilder, IBuilderSet, ProtocolVersionMismatch)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus)
@@ -158,10 +159,8 @@ class Builder(SQLBase):
                 currentjob.job_type)
             return self._current_build_behavior
 
-        # Apparently we're currently idle - TODO: return an idle behavior.
-        #raise BuildBehaviorMismatch(
-        #    "Need to create an idle behavior and return it here.")
-        return None
+        self._current_build_behavior = IdleBuildBehavior()
+        return self._current_build_behavior 
 
     def _set_current_build_behavior(self, new_behavior):
         """Set the current build behavior."""
@@ -177,12 +176,12 @@ class Builder(SQLBase):
             # an idle behavior.
             raise BuildBehaviorMismatch(
                 "Attempt to set builder behavior when it is already set.")
-        elif self.current_job is not None:
+        elif self.currentjob is not None:
             # We do not allow the current build behavior to be reset back
             # to an idle behavior if we still have a current job.
             raise BuildBehaviorMismatch(
                 "Attempt to reset builder behavior while a current build"
-                "exists")
+                "exists.")
         else:
             self._current_build_behavior = None
 

@@ -59,12 +59,6 @@ class BuildSlaveFailure(BuildDaemonError):
     """The build slave has suffered an error and cannot be used."""
 
 
-class BuildBehaviorMismatch(BuildDaemonError):
-    """
-    The builder's current behavior does not match the expected behavior.
-    """
-
-
 class IBuilder(IHasOwner, IBuildFarmJobBehavior):
     """Build-slave information and state.
 

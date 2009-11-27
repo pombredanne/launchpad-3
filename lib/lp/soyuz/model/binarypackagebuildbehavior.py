@@ -31,5 +31,5 @@ class BinaryPackageBuildBehavior:
 
         # Gar - need a reference back to the builder for self.url
 
-        logger.info("startBuild(%s, %s, %s, %s)", self.url,
+        logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
                     spr.name, spr.version, build.pocket.title)
