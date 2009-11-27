@@ -2,9 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-Scenarios that might trigger permissions hazards:
- * Approval of new POFile with product, distro, and project translation groups.
- -> Problem disappears with canEditTranslations. 
- * Approval of new POFile inheriting a shared credits message.
- -> Not sure whether this can really happen.
