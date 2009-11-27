@@ -1,6 +1,3 @@
-ABORT;
-BEGIN;
-
 SET client_min_messages=ERROR;
 
 CREATE TABLE lp_TeamParticipation AS SELECT * FROM TeamParticipation;
