@@ -23,7 +23,8 @@ class BuildBehaviorMismatch(Exception):
 
 class IBuildFarmJobBehavior(Interface):
 
-    # TODO: figure out what to do about setting the builder attribute.
+    def set_builder(builder):
+        """Sets the associated builder reference for this instance."""
 
     def logStartBuild(build_queue_item, logger):
         """Log the start of a specific build queue item.

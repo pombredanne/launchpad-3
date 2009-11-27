@@ -154,8 +154,8 @@ class Builder(SQLBase):
         # we'll set it based on our current job.
         currentjob = self.currentjob
         if currentjob is not None:
-            self._current_build_behavior = IBuildFarmJobBehavior(
-                currentjob.job_type)
+            self._current_build_behavior = currentjob.required_build_behavior
+            self._current_build_behavior.set_builder(self)
             return self._current_build_behavior
 
         # Otherwise, we'll use the idle behavior.
@@ -173,10 +173,7 @@ class Builder(SQLBase):
                 "exists.")
         else:
             self._current_build_behavior = new_behavior
-
-            # TODO: find a proper way to give the behavior an association
-            # with the builder.
-            new_behavior._builder = self
+            self._current_build_behavior.set_builder(self)
 
     current_build_behavior = property(
         _get_current_build_behavior, _set_current_build_behavior)
@@ -398,9 +395,7 @@ class Builder(SQLBase):
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
         # Set the build behavior depending on the BuildFarmJobType.
-        self.current_build_behavior = IBuildFarmJobBehavior(
-            build_queue_item.job_type)
-        self.current_build_behavior.set_builder(self)
+        self.current_build_behavior = build_queue_item.required_build_behavior
         self.logStartBuild(build_queue_item, logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
