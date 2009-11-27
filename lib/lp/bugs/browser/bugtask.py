@@ -109,8 +109,7 @@ from lp.bugs.interfaces.bugtask import (
     IDistroSeriesBugTask, IFrontPageBugTaskSearch,
     INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
     IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
-    IUpstreamProductBugTaskSearch, RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES)
+    IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -3667,7 +3666,7 @@ class BugTaskBreadcrumb(Breadcrumb):
         # If the user does not have permission to view the bug for
         # whatever reason, raise ComponentLookupError.
         try:
-            name = context.bug.displayname
+            context.bug.displayname
         except Unauthorized:
             raise ComponentLookupError()
 
