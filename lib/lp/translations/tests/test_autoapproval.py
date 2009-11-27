@@ -152,8 +152,7 @@ class TestGuessPOFileCustomLanguageCode(unittest.TestCase):
 
     def _makePOFile(self, language_code):
         """Create a translation file."""
-        file = self.template.newPOFile(
-            language_code, requester=self.product.owner)
+        file = self.template.newPOFile(language_code)
         file.syncUpdate()
         return file
 

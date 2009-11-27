@@ -36,6 +36,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.registry.interfaces.person import validate_public_person
+from lp.registry.model.person import Person
 from lp.translations.utilities.rosettastats import RosettaStats
 from lp.translations.interfaces.pofile import IPOFile, IPOFileSet
 from lp.translations.interfaces.potmsgset import (
@@ -243,6 +244,19 @@ class POFileMixIn(RosettaStats):
             # language, fallback to the most common case, 2.
             forms = 2
         return forms
+
+    def canEditTranslations(self, person):
+        """See `IPOFile`."""
+        return _can_edit_translations(self, person)
+
+    def canAddSuggestions(self, person):
+        """See `IPOFile`."""
+        return _can_add_suggestions(self, person)
+
+    def setOwnerIfPrivileged(self, person):
+        """See `IPOFile`."""
+        if self.canEditTranslations(person):
+            self.owner = person
 
     def getHeader(self):
         """See `IPOFile`."""
@@ -585,14 +599,6 @@ class POFile(SQLBase, POFileMixIn):
             raise AssertionError(
                 "Calling prepareTranslationCredits on a message with "
                 "unknown credits type '%s'." % credits_type.title)
-
-    def canEditTranslations(self, person):
-        """See `IPOFile`."""
-        return _can_edit_translations(self, person)
-
-    def canAddSuggestions(self, person):
-        """See `IPOFile`."""
-        return _can_add_suggestions(self, person)
 
     def translated(self):
         """See `IPOFile`."""
@@ -1364,14 +1370,6 @@ class DummyPOFile(POFileMixIn):
     def translationpermission(self):
         """See `IPOFile`."""
         return self.potemplate.translationpermission
-
-    def canEditTranslations(self, person):
-        """See `IPOFile`."""
-        return _can_edit_translations(self, person)
-
-    def canAddSuggestions(self, person):
-        """See `IPOFile`."""
-        return _can_add_suggestions(self, person)
 
     def emptySelectResults(self):
         return POFile.select("1=2")

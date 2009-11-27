@@ -2,3 +2,21 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+Scenarios that might trigger permissions hazards:
+ * Approval of new POTemplate.
+ * Approval of new POFile with product, distro, and project translation groups.
+ -> Problem disappears with canEditTranslations. 
+ * Approval of new POFile inheriting a shared credits message.
+ -> Not sure whether this can really happen.
+
+Other change: the new system of keeping translation credits "translated" was
+producing TranslationMessages that were credited to the last translator if
+availabler, or the POFile owner otherwise.  That in turn triggered the creation
+of POFileTranslator records for these "contributions."  This means that the
+Rosetta Experts team (as the default POFile owner) was showing up in credits
+messages, which I think is inappropriate and brittle.  It may also have been why
+I kept seeing fresh "contributions" from myself to lots of POFiles I hadn't
+touched in ages.  My solution: ignore Rosetta Experts in contributors lists, and
+always produce the automatic "translations" of credits messages with Rosetta
+Experts set as the translator.
