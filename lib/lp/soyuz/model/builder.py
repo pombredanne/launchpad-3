@@ -164,30 +164,19 @@ class Builder(SQLBase):
 
     def _set_current_build_behavior(self, new_behavior):
         """Set the current build behavior."""
-        # It is only possible to go from IdleBehavior to a particular behavior
-        # or from a particular behavior back to IdleBehavior.
-        if self.current_build_behavior == None:
-            # If we are currently idle, then we can accept the new behavior.
-            self._current_build_behavior = new_behavior
 
-        #elif new_behavior is not None:
-        #    # If we already have a behavior then no-one should be trying
-        #    # to set the behavior, unless it's setting it back to
-        #    # an idle behavior.
-        #    raise BuildBehaviorMismatch(
-        #        "Attempt to set builder behavior when it is already set.")
-        elif self.currentjob is not None:
-            # We do not allow the current build behavior to be reset back
-            # to an idle behavior if we still have a current job.
+        if self.currentjob is not None:
+            # We do not allow the current build behavior to be reset if we
+            # have a current job.
             raise BuildBehaviorMismatch(
                 "Attempt to reset builder behavior while a current build"
                 "exists.")
         else:
             self._current_build_behavior = new_behavior
 
-        # TODO: find a proper way to give the behavior an association
-        # with the builder.
-        new_behavior._builder = self
+            # TODO: find a proper way to give the behavior an association
+            # with the builder.
+            new_behavior._builder = self
 
     current_build_behavior = property(
         _get_current_build_behavior, _set_current_build_behavior)
