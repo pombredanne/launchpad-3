@@ -55,17 +55,11 @@ class TestTranslationImportQueueEntryStatus(TestCaseWithFactory):
                  for status in possible_statuses])
 
     def test_canSetStatus_non_admin(self):
-        # A non-privileged users cannot set any status except for retaining
-        # the current status of an entry.
+        # A non-privileged users cannot set any status.
         some_user = self.factory.makePerson()
         self._assertCanSetStatus(some_user, self.entry,
             #  A      B      D      F      I     NR
-            [False, False, False, False, False, True])
-        self.entry.setStatus(
-            RosettaImportStatus.DELETED, self.rosetta_experts)
-        self._assertCanSetStatus(some_user, self.entry,
-            #  A      B      D     F      I     NR
-            [False, False, True, False, False, False])
+            [False, False, False, False, False, False])
 
     def test_canSetStatus_rosetta_expert(self):
         # Rosetta experts are all-powerful, didn't you know that?
@@ -75,23 +69,23 @@ class TestTranslationImportQueueEntryStatus(TestCaseWithFactory):
 
     def test_canSetStatus_rosetta_expert_no_target(self):
         # If the entry has no import target set, even Rosetta experts
-        # cannot set it to approved.
+        # cannot set it to approved or imported.
         self.entry.potemplate = None
         self._assertCanSetStatus(self.rosetta_experts, self.entry,
             #  A      B     D     F     I    NR
-            [False, True, True, True, True, True])
+            [False, True, True, True, False, True])
 
     def test_canSetStatus_uploader(self):
         # The uploader can set some statuses.
         self._assertCanSetStatus(self.uploaderperson, self.entry,
             #  A      B     D     F      I     NR
-            [False, False, True, False, False, True])
+            [False, True, True, False, False, True])
 
     def test_canSetStatus_owner(self):
         # The owner gets the same permissions.
         self._assertCanSetStatus(self.productseries.product.owner, self.entry,
             #  A      B     D     F      I     NR
-            [False, False, True, False, False, True])
+            [False, True, True, False, False, True])
 
     def _setUpUbuntu(self):
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -118,7 +112,7 @@ class TestTranslationImportQueueEntryStatus(TestCaseWithFactory):
         self._setUpUbuntu()
         self._assertCanSetStatus(self.ubuntu_group_owner, self.entry,
             #  A      B      D      F      I     NR
-            [False, False, False, False, False, True])
+            [False, False, False, False, False, False])
 
 
 def test_suite():
