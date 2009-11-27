@@ -498,7 +498,7 @@ class PullingImportWorker(ImportWorker):
         raise NotImplementedError
 
     @property
-    def opening_format(self):
+    def opening_formats(self):
         """XXX."""
         raise NotImplementedError
 
@@ -511,7 +511,13 @@ class PullingImportWorker(ImportWorker):
             writer=lambda m: self._logger.info('%s', m))
         try:
             transport = get_transport(self.pull_url)
-            format = self.opening_format.probe_transport(transport)
+            for format in self.opening_formats:
+                try:
+                    format = self.opening_format.probe_transport(transport)
+                except NotBranchError:
+                    pass
+            else:
+                raise NotBranchError(self.pull_url)
             foreign_branch = format.open(transport).open_branch()
             bazaar_tree.branch.pull(foreign_branch, overwrite=True)
         finally:
@@ -531,10 +537,11 @@ class GitImportWorker(PullingImportWorker):
         return self.source_details.git_repo_url
 
     @property
-    def opening_format(self):
+    def opening_formats(self):
         """See `PullingImportWorker.opening_format`."""
-        from bzrlib.plugins.git import LocalGitBzrDirFormat
-        return LocalGitBzrDirFormat
+        from bzrlib.plugins.git import (
+            LocalGitBzrDirFormat, RemoteGitBzrDirFormat)
+        return [LocalGitBzrDirFormat, RemoteGitBzrDirFormat]
 
     def getBazaarWorkingTree(self):
         """See `ImportWorker.getBazaarWorkingTree`.
@@ -569,7 +576,7 @@ class BzrSvnImportWorker(PullingImportWorker):
         return self.source_details.svn_branch_url
 
     @property
-    def opening_format(self):
+    def opening_formats(self):
         """See `PullingImportWorker.opening_format`."""
         from bzrlib.plugins.svn.format import SvnRemoteFormat
-        return SvnRemoteFormat
+        return [SvnRemoteFormat]
