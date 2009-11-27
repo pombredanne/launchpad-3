@@ -166,6 +166,18 @@ class BugWatchUpdater(object):
     LOGIN = 'bugwatch@bugs.launchpad.net'
 
     def __init__(self, txn, log=default_log, syncable_gnome_products=None):
+        """Initialize a BugWatchUpdater.
+
+        :param txn: A transaction manager on which `begin()`,
+            `abort()` and `commit()` can be called. Additionally, it
+            should be safe for different threads to use its methods to
+            manage their own transactions (i.e. with thread-local
+            storage).
+
+        :param log: An instance of `logging.Logger`, or something that
+            provides a similar interface.
+
+        """
         self.txn = txn
         self.log = log
 
