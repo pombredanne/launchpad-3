@@ -23,11 +23,10 @@ from lp.registry.model.distribution import Distribution
 from lp.registry.model.sourcepackagename import (
     SourcePackageName,
     SourcePackageNameSet)
-from lp.services.worlddata.model.language import Language
+from lp.services.worlddata.model.language import Language, LanguageSet
 from lp.translations.model.customlanguagecode import CustomLanguageCode
-from lp.translations.model.potemplate import (
-    POTemplateSet,
-    POTemplateSubset)
+from lp.translations.model.pofile import POFile
+from lp.translations.model.potemplate import POTemplateSet, POTemplateSubset
 from lp.translations.model.translationimportqueue import (
     TranslationImportQueue, TranslationImportQueueEntry)
 from lp.translations.interfaces.customlanguagecode import ICustomLanguageCode
@@ -826,6 +825,60 @@ class TestCleanup(TestCaseWithFactory):
         become_the_gardener(self.layer)
         self.queue._cleanUpObsoleteDistroEntries(self.store)
         self.assertFalse(self._exists(entry_id))
+
+
+class TestAutoApprovalNewPOFile(TestCaseWithFactory):
+    """Test creation of new `POFile`s in approval."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestAutoApprovalNewPOFile, self).setUp()
+        self.product = self.factory.makeProduct()
+        self.queue = TranslationImportQueue()
+        self.language = LanguageSet().getLanguageByCode('nl')
+
+    def _makeTemplate(self, series):
+        """Create a template."""
+        return POTemplateSubset(productseries=series).new(
+            'test', 'test', 'test.pot', self.product.owner)
+
+    def _makeQueueEntry(self, series):
+        """Create translation import queue entry."""
+        return self.queue.addOrUpdateEntry(
+            "%s.po" % self.language.code, 'contents', True,
+            self.product.owner, productseries=series)
+
+    def test_getGuessedPOFile_creates_POFile(self):
+        # Auto-approval may involve creating POFiles.  The queue
+        # gardener has permissions to do this.
+        trunk = self.product.getSeries('trunk')
+        template = self._makeTemplate(trunk)
+        entry = self._makeQueueEntry(trunk)
+
+        become_the_gardener(self.layer)
+
+        pofile = entry.getGuessedPOFile()
+
+        self.assertIsInstance(pofile, POFile)
+
+    def test_getGuessedPOFile_creates_POFile_with_credits(self):
+        # When the approver creates a POFile for a template that
+        # has a translation credits message, it also includes a
+        # "translation" for the credits message.
+        trunk = self.product.getSeries('trunk')
+        template = self._makeTemplate(trunk)
+        credits = self.factory.makePOTMsgSet(
+            template, singular='translation-credits', sequence=1)
+
+        entry = self._makeQueueEntry(trunk)
+
+        become_the_gardener(self.layer)
+
+        pofile = entry.getGuessedPOFile()
+
+        credits.getCurrentTranslationMessage(template, self.language)
+        self.assertNotEqual(None, credits)
 
 
 def test_suite():
