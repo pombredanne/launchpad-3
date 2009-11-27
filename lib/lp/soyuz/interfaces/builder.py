@@ -19,7 +19,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, TextLine, Text, Bool
+from zope.schema import Bool, Choice, Field, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
@@ -57,6 +57,12 @@ class CannotBuild(BuildDaemonError):
 
 class BuildSlaveFailure(BuildDaemonError):
     """The build slave has suffered an error and cannot be used."""
+
+
+class BuildBehaviorMismatch(BuildDaemonError):
+    """
+    The builder's current behavior does not match the expected behavior.
+    """
 
 
 class IBuilder(IHasOwner, IBuildFarmJobBehavior):
@@ -140,9 +146,9 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
                 "new jobs. "),
         required=False)
 
-    # TODO: hrm, need to ensure this is writable.
-    current_build_behavior = Attribute(
-        "The current behavior of the builder for the current job.")
+    current_build_behavior = Field(
+        title=u"The current behavior of the builder for the current job.",
+        required=False)
 
     def cacheFileOnSlave(logger, libraryfilealias):
         """Ask the slave to cache a librarian file to its local disk.

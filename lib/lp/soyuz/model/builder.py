@@ -52,8 +52,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.builder import (
-    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotResumeHost,
-    IBuilder, IBuilderSet, ProtocolVersionMismatch)
+    BuildBehaviorMismatch, BuildDaemonError, BuildSlaveFailure, CannotBuild,
+    CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus)
@@ -142,7 +142,7 @@ class Builder(SQLBase):
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
 
-    def get_current_build_behavior(self):
+    def _get_current_build_behavior(self):
         """Return the current build behavior."""
         if not safe_hasattr(self, '_current_build_behavior'):
             self._current_build_behavior = None
@@ -158,29 +158,36 @@ class Builder(SQLBase):
                 currentjob.job_type)
             return self._current_build_behavior
 
-        # Apparently we're currently idle
-        assert(False, "Create an Idle behavior and return it here.")
+        # Apparently we're currently idle - TODO: return an idle behavior.
+        #raise BuildBehaviorMismatch(
+        #    "Need to create an idle behavior and return it here.")
+        return None
 
-    def set_current_build_behavior(self, new_behavior): # Change to BFJType?
+    def _set_current_build_behavior(self, new_behavior):
         """Set the current build behavior."""
-        if self.current_build_behavior == new_behavior:
-            return
- 
-        if self.current_build_behavior == None: # TODO: will be idle
+        # It is only possible to go from IdleBehavior to a particular behavior
+        # or from a particular behavior back to IdleBehavior.
+        if self.current_build_behavior == None:
             # If we are currently idle, then we can accept the new behavior.
             self._current_build_behavior = new_behavior
 
-        # But otherwise, if we already have a behavior specified (ie.
-        # we're not idle, due to a current build), then the only transition
-        # possible is to go back to an idling behavior.
-        assert(
-            new_behavior is None, # TODO: will be idle
-            "Builder already has a behavior.") # TODO: raise exception instead.
-
-        self._current_build_behavior = None
+        elif new_behavior is not None:
+            # If we already have a behavior then no-one should be trying
+            # to set the behavior, unless it's setting it back to
+            # an idle behavior.
+            raise BuildBehaviorMismatch(
+                "Attempt to set builder behavior when it is already set.")
+        elif self.current_job is not None:
+            # We do not allow the current build behavior to be reset back
+            # to an idle behavior if we still have a current job.
+            raise BuildBehaviorMismatch(
+                "Attempt to reset builder behavior while a current build"
+                "exists")
+        else:
+            self._current_build_behavior = None
 
     current_build_behavior = property(
-        get_current_build_behavior, set_current_build_behavior)
+        _get_current_build_behavior, _set_current_build_behavior)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See `IBuilder`."""
