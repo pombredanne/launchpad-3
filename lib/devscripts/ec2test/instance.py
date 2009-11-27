@@ -192,7 +192,7 @@ class EC2Instance:
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
         """
-        # XXX JeroenVermeulen 2009-11-26: These import fail when
+        # XXX JeroenVermeulen 2009-11-26: These imports fail when
         # testing without a real EC2 instance.  Do them here so the test
         # (which doesn't use this factory) can still import this class.
         from bzrlib.plugins.launchpad.account import get_lp_login
