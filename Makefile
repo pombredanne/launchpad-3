@@ -329,6 +329,8 @@ potemplates: launchpad.pot
 launchpad.pot:
 	bin/i18nextract.py
 
+# Called by the rocketfuel-setup script. You probably don't want to run this
+# on its own.
 install: reload-apache
 
 copy-certificates:
@@ -347,7 +349,7 @@ enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
 
 reload-apache: enable-apache-launchpad
-	/etc/init.d/apache2 reload
+	/etc/init.d/apache2 restart
 
 static:
 	$(PY) scripts/make-static.py
