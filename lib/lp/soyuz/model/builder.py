@@ -170,12 +170,12 @@ class Builder(SQLBase):
             # If we are currently idle, then we can accept the new behavior.
             self._current_build_behavior = new_behavior
 
-        elif new_behavior is not None:
-            # If we already have a behavior then no-one should be trying
-            # to set the behavior, unless it's setting it back to
-            # an idle behavior.
-            raise BuildBehaviorMismatch(
-                "Attempt to set builder behavior when it is already set.")
+        #elif new_behavior is not None:
+        #    # If we already have a behavior then no-one should be trying
+        #    # to set the behavior, unless it's setting it back to
+        #    # an idle behavior.
+        #    raise BuildBehaviorMismatch(
+        #        "Attempt to set builder behavior when it is already set.")
         elif self.currentjob is not None:
             # We do not allow the current build behavior to be reset back
             # to an idle behavior if we still have a current job.
@@ -183,7 +183,11 @@ class Builder(SQLBase):
                 "Attempt to reset builder behavior while a current build"
                 "exists.")
         else:
-            self._current_build_behavior = None
+            self._current_build_behavior = new_behavior
+
+        # TODO: find a proper way to give the behavior an association
+        # with the builder.
+        new_behavior._builder = self
 
     current_build_behavior = property(
         _get_current_build_behavior, _set_current_build_behavior)
@@ -407,7 +411,6 @@ class Builder(SQLBase):
         # Set the build behavior depending on the BuildFarmJobType.
         self.current_build_behavior = get_behavior_for_job_type(
             build_queue_item.job_type)
-
         self.logStartBuild(build_queue_item, logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
