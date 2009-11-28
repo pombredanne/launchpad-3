@@ -43,7 +43,7 @@ and a packaging contents.
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
     ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Product',
+    ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
@@ -61,7 +61,7 @@ It is an error to link a series to the same package and distro series twice.
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
     ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Product',
+    ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
@@ -78,7 +78,7 @@ product series can link to it.
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
     ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Product',
+    ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
@@ -93,7 +93,7 @@ A source package name must be provided.
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
     ...     'field.sourcepackagename': '',
-    ...     'field.packaging': 'Primary Product',
+    ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
@@ -274,6 +274,40 @@ contains the package and field for form actions.
         <input type="hidden" name="field.packaging" .../>
     trunk
 
+The view provides the distro_packaging property that is a list of
+dictionaries for the distributions and their packaging.  The list is
+sorted by distribution with Ubuntu first and the rest in alphabetic
+order.
+
+    >>> form = {
+    ...     'field.distroseries': 'redhat/7.0',
+    ...     'field.sourcepackagename': 'hot',
+    ...     'field.packaging': 'Primary Project',
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+
+    >>> view = create_initialized_view(
+    ...     productseries, '+addpackage', form=form)
+    >>> view.errors
+    []
+    >>> form = {
+    ...     'field.distroseries': 'debian/sarge',
+    ...     'field.sourcepackagename': 'hot',
+    ...     'field.packaging': 'Primary Project',
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+
+    >>> view = create_initialized_view(
+    ...     productseries, '+addpackage', form=form)
+    >>> view.errors
+    []
+    >>> view = create_initialized_view(product, name='+packages')
+    >>> for distro_dict in view.distro_packaging:
+    ...     print distro_dict['distribution'].name
+    ubuntu
+    debian
+    redhat
+
 The +packages named view descends from PackagingDeleteView to provide remove
 link actions for the product's linked packages.
 
@@ -284,6 +318,14 @@ link actions for the product's linked packages.
 
 A packaging link can be deleted if the owner believes it is an error. The
 package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
+
+    >>> view = create_initialized_view(product, name='+packages')
+    >>> for package in view.all_packaging:
+    ...     print package.distroseries.name, package.productseries.name
+    sarge hotter
+    7.0 hotter
+    grumpy hotter
+    hoary hotter
 
     >>> [hoary_package] = [package for package in view.all_packaging
     ...                     if package.distroseries.name == 'hoary']
@@ -296,4 +338,6 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     []
     >>> for package in view.all_packaging:
     ...     print package.distroseries.name, package.productseries.name
+    sarge hotter
+    7.0 hotter
     grumpy hotter

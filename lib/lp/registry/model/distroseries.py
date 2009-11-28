@@ -1507,6 +1507,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Now copy source and binary packages.
         self._copy_publishing_records(distroarchseries_list)
         self._copy_lucille_config(cur)
+        self._copy_packaging_links(cur)
 
         # Finally, flush the caches because we've altered stuff behind the
         # back of sqlobject.
@@ -1573,6 +1574,49 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SELECT %s as distroseries, ss.section AS section
             FROM SectionSelection AS ss WHERE ss.distroseries = %s
             ''' % sqlvalues(self.id, self.parent_series.id))
+
+    def _copy_packaging_links(self, cur):
+        """Copy the packaging links from the parent series to this one."""
+        cur.execute("""
+            INSERT INTO
+                Packaging(
+                    distroseries, sourcepackagename, productseries,
+                    packaging, owner)
+            SELECT
+                ChildSeries.id,
+                Packaging.sourcepackagename,
+                Packaging.productseries,
+                Packaging.packaging,
+                Packaging.owner
+            FROM
+                Packaging
+                -- Joining the parent distroseries permits the query to build
+                -- the data set for the series being updated, yet results are
+                -- in fact the data from the original series.
+                JOIN Distroseries ChildSeries
+                    ON Packaging.distroseries = ChildSeries.parent_series
+            WHERE
+                -- Select only the packaging links that are in the parent
+                -- that are not in the child.
+                ChildSeries.id = %s
+                AND Packaging.sourcepackagename in (
+                    SELECT sourcepackagename
+                    FROM Packaging
+                    WHERE distroseries in (
+                        SELECT id
+                        FROM Distroseries
+                        WHERE id = ChildSeries.parent_series
+                        )
+                    EXCEPT
+                    SELECT sourcepackagename
+                    FROM Packaging
+                    WHERE distroseries in (
+                        SELECT id
+                        FROM Distroseries
+                        WHERE id = ChildSeries.id
+                        )
+                    )
+            """ % self.id)
 
     def copyTranslationsFromParent(self, transaction, logger=None):
         """See `IDistroSeries`."""
