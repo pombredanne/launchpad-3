@@ -1120,13 +1120,13 @@ spawn as many as required.
     ...         self.output = {}
     ...         self.lock = threading.Lock()
     ...     def write(self, data):
-    ...         thread_id = id(threading.currentThread())
+    ...         thread_name = threading.currentThread().getName()
     ...         self.lock.acquire()
     ...         try:
-    ...             if thread_id in self.output:
-    ...                 self.output[thread_id].append(data)
+    ...             if thread_name in self.output:
+    ...                 self.output[thread_name].append(data)
     ...             else:
-    ...                 self.output[thread_id] = [data]
+    ...                 self.output[thread_name] = [data]
     ...         finally:
     ...             self.lock.release()
 
@@ -1156,42 +1156,43 @@ spawn as many as required.
     >>> threaded_bug_watch_updater.updateBugTrackers(
     ...     batch_size=5, num_threads=10)
 
-    >>> for output in sorted(output_file.output.itervalues()):
-    ...     print "".join(output),
-    ...     print '--'
-    DEBUG No watches to update on http://bugs.example.com
-    --
-    DEBUG No watches to update on http://bugzilla.gnome.org/
-    --
-    DEBUG No watches to update on http://savannah.gnu.org/
-    --
-    DEBUG No watches to update on http://sourceforge.net/
-    --
-    DEBUG No watches to update on mailto:bugs@example.com
-    --
+
+    >>> for thread_name in sorted(output_file.output):
+    ...     print '== %s ==' % thread_name
+    ...     print "".join(output_file.output[thread_name]),
+    == MainThread ==
     DEBUG Using a global batch size of 5
     DEBUG Skipping updating Ubuntu Bugzilla watches.
-    --
-    INFO Updating 2 watches for 2 bugs on http://example.com
-    getRemoteStatus(bug_id=u'304070')
-    getRemoteStatus(bug_id=u'3224')
-    --
-    INFO Updating 4 watches for 3 bugs on http://example.com
-    getRemoteStatus(bug_id=u'123543')
-    getRemoteStatus(bug_id=u'2000')
-    getRemoteStatus(bug_id=u'42')
-    --
+    == auto-generic-string4.example.com ==
     INFO Updating 5 watches for 5 bugs on http://example.com
     getRemoteStatus(bug_id=u'1')
     getRemoteStatus(bug_id=u'101')
     getRemoteStatus(bug_id=u'5')
     getRemoteStatus(bug_id=u'6')
     getRemoteStatus(bug_id=u'7')
-    --
+    == debbugs ==
     INFO Updating 5 watches for 5 bugs on http://example.com
     getRemoteStatus(bug_id=u'280883')
     getRemoteStatus(bug_id=u'304014')
     getRemoteStatus(bug_id=u'308994')
     getRemoteStatus(bug_id=u'327452')
     getRemoteStatus(bug_id=u'327549')
-    --
+    == email ==
+    DEBUG No watches to update on mailto:bugs@example.com
+    == example-bugs ==
+    DEBUG No watches to update on http://bugs.example.com
+    == gnome-bugs ==
+    DEBUG No watches to update on http://bugzilla.gnome.org/
+    == gnome-bugzilla ==
+    INFO Updating 2 watches for 2 bugs on http://example.com
+    getRemoteStatus(bug_id=u'304070')
+    getRemoteStatus(bug_id=u'3224')
+    == mozilla.org ==
+    INFO Updating 4 watches for 3 bugs on http://example.com
+    getRemoteStatus(bug_id=u'123543')
+    getRemoteStatus(bug_id=u'2000')
+    getRemoteStatus(bug_id=u'42')
+    == savannah ==
+    DEBUG No watches to update on http://savannah.gnu.org/
+    == sf ==
+    DEBUG No watches to update on http://sourceforge.net/
