@@ -234,11 +234,17 @@ class BugWatchUpdater(object):
             bug_tracker_names = [
                 bugtracker.name for bugtracker in getUtility(IBugTrackerSet)]
 
-        def make_updater(bug_tracker_id):
+        def make_updater(bug_tracker_name, bug_tracker_id):
             """Returns a function that can update the given bug tracker."""
             def updater(batch_size=None):
-                run = self._interactionDecorator(self.updateBugTracker)
-                return run(bug_tracker_id, batch_size)
+                thread = threading.currentThread()
+                thread_name = thread.getName()
+                thread.setName(bug_tracker_name)
+                try:
+                    run = self._interactionDecorator(self.updateBugTracker)
+                    return run(bug_tracker_id, batch_size)
+                finally:
+                    thread.setName(thread_name)
             return updater
 
         for bug_tracker_name in bug_tracker_names:
@@ -256,7 +262,7 @@ class BugWatchUpdater(object):
                 bug_tracker = getUtility(IBugTrackerSet).getByName(
                     bug_tracker_name)
                 if bug_tracker.active:
-                    yield make_updater(bug_tracker.id)
+                    yield make_updater(bug_tracker.name, bug_tracker.id)
                 else:
                     self.log.debug(
                         "Updates are disabled for bug tracker at %s" %
