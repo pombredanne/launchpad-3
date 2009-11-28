@@ -303,8 +303,8 @@ def get_default_search_params(user):
     it may be a good idea to set the orderby attribute using
     get_sortorder_from_request():
 
-      >>> params = get_default_search_params(user)
-      >>> params.orderby = get_sortorder_from_request(request)
+      params = get_default_search_params(user)
+      params.orderby = get_sortorder_from_request(request)
 
     """
     return BugTaskSearchParams(
