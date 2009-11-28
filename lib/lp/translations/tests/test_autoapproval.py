@@ -783,6 +783,7 @@ class TestCleanup(TestCaseWithFactory):
         # (Imported, Failed, Deleted) after a few days.  The exact
         # period depends on the state.
         entry = self._makeProductEntry()
+        entry.potemplate = self.factory.makePOTemplate()
         self._setStatus(entry, RosettaImportStatus.IMPORTED, None)
         entry_id = entry.id
 
