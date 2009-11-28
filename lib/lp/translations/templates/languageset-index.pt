@@ -33,13 +33,20 @@
                 Language name/code contains:
               </label>
               <input
-                 name="find" size="30"
-                 tal:attributes="value view/language_search" />
+                size="30"
+                tal:replace="structure view/widgets/search_lang"
+              />
               <input
                  type="submit"
                  value="Find language"
                  />
             </p>
+            <span tal:condition="not:view/search_requested">
+                <script type="text/javascript"
+                    tal:define="script view/focusedElementScript"
+                    tal:condition="script"
+                    tal:content="structure script" />
+            </span>
           </form>
           <div tal:condition="context/required:launchpad.Admin">
             <a tal:attributes="href context/fmt:url/+add"

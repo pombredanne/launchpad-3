@@ -17,6 +17,7 @@ __all__ = [
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
+from zope.app.form.browser import TextWidget
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -79,16 +80,27 @@ class LanguageNavigationMenu(NavigationMenu):
         return Link('+admin', text, icon='edit')
 
 
-class LanguageSetView:
+class LanguageSetView(LaunchpadFormView):
     """View class to render main ILanguageSet page."""
     label = "Languages in Launchpad"
     page_title = "Languages"
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        form = self.request.form
-        self.language_search = form.get('find')
+    schema = ILanguageSet
+
+    custom_widget('search_lang', TextWidget, displayWidth=30)
+
+    field_names = ['search_lang']
+
+    def initialize(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.initialize(self)
+
+        self.language_search = None
+
+        search_lang_widget = self.widgets.get('search_lang')
+        if (search_lang_widget is not None and
+            search_lang_widget.hasValidInput()):
+            self.language_search = search_lang_widget.getInputValue()
         self.search_requested = self.language_search is not None
 
     @cachedproperty

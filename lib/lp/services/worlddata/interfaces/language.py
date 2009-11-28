@@ -138,6 +138,10 @@ class ILanguageSet(Interface):
     common_languages = Attribute("An iterator over languages that are "
         "not hidden.")
 
+    search_lang = TextLine(
+        title=u'Name of the language to search for.',
+        required=True)
+
     def __iter__():
         """Returns an iterator over all languages."""
 
