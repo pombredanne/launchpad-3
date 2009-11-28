@@ -41,12 +41,12 @@
                  value="Find language"
                  />
             </p>
-            <span tal:condition="not:view/search_requested">
+            <tal:none condition="not: view/search_matches">
                 <script type="text/javascript"
                     tal:define="script view/focusedElementScript"
                     tal:condition="script"
                     tal:content="structure script" />
-            </span>
+            </tal:none>
           </form>
           <div tal:condition="context/required:launchpad.Admin">
             <a tal:attributes="href context/fmt:url/+add"
