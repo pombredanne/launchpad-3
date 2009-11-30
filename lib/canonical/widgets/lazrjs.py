@@ -215,10 +215,11 @@ class TextAreaEditorWidget(TextLineEditorWidget):
             if (!Y.UA.opera) {
                 widget.render();
             }
-            if (Y.lp_widgets === undefined) {
-                Y.lp_widgets = {};
+            var lpns = Y.namespace('lp');
+            if (!lpns.widgets) {
+                lpns.widgets = {};
             }
-            Y.lp_widgets['%(id)s'] = widget;
+            lpns.widgets['%(id)s'] = widget;
         });
         </script>
         """)
