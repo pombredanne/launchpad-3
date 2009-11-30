@@ -1304,7 +1304,7 @@ COMMENT ON FUNCTION mv_branch_distribution_update() IS
 -- in a seperate replication set.
 -- Insert triggers
 CREATE OR REPLACE FUNCTION lp_mirror_teamparticipation_ins() RETURNS trigger
-LANGUAGE plpgsql AS
+SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
     INSERT INTO lp_TeamParticipation SELECT NEW.*;
@@ -1313,7 +1313,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_personlocation_ins() RETURNS trigger
-LANGUAGE plpgsql AS
+SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
     INSERT INTO lp_PersonLocation SELECT NEW.*;
@@ -1322,7 +1322,7 @@ END;
 $$;
 
 CREATE OR REPLACE FUNCTION lp_mirror_person_ins() RETURNS trigger
-LANGUAGE plpgsql AS
+SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
     INSERT INTO lp_Person SELECT NEW.*;
@@ -1332,7 +1332,7 @@ $$;
 
 -- UPDATE triggers
 CREATE  OR REPLACE FUNCTION lp_mirror_teamparticipation_upd() RETURNS trigger
-LANGUAGE plpgsql AS
+SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
     UPDATE lp_TeamParticipation
@@ -1345,7 +1345,7 @@ END;
 $$;
 
 CREATE  OR REPLACE FUNCTION lp_mirror_personlocation_upd() RETURNS trigger
-LANGUAGE plpgsql AS
+SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
     UPDATE lp_PersonLocation
@@ -1365,7 +1365,7 @@ END;
 $$;
 
 CREATE  OR REPLACE FUNCTION lp_mirror_person_upd() RETURNS trigger
-LANGUAGE plpgsql AS
+SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
     UPDATE lp_Person
@@ -1414,7 +1414,7 @@ $$;
 
 -- Delete triggers
 CREATE OR REPLACE FUNCTION lp_mirror_del() RETURNS trigger
-LANGUAGE plpgsql AS
+SECURITY DEFINER LANGUAGE plpgsql AS
 $$
 BEGIN
     EXECUTE 'DELETE FROM lp_' || TG_TABLE_NAME || ' WHERE id=' || OLD.id;
