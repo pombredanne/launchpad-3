@@ -763,9 +763,11 @@ class BugzillaAPI(Bugzilla):
         """Return the Launchpad bug ID for the remote bug.
 
         See `ISupportsBackLinking`.
-
-        In fact, this method always returns None due to bug 490267.
         """
+        # XXX gmb 2009-11-30 bug=490267
+        #     In fact, this method always returns None due to bug
+        #     490267. Once the bug is fixed in Bugzilla we should update
+        #     this method.
         return None
 
     @needs_authentication
