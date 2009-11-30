@@ -189,7 +189,3 @@ class ILanguageSet(Interface):
 
     def search(text):
         """Return a result set of ILanguage that match the search."""
-
-class ILanguageSetSearch(Interface):
-    """The collection of languages."""
-
