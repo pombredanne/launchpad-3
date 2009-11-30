@@ -1,11 +1,15 @@
-= Templates view for DistroSeries =
+
+
+Templates view for DistroSeries
+===============================
 
 The +templates view for DistroSeries gives an overview of the translation
 templates in this series and provides easy access to the various subpages of
 each template.
 
 
-== Getting there ==
+Getting there
+-------------
 
 To get to the listing of all templates, one needs to use the link
 from the distribution series translations page.
@@ -16,15 +20,18 @@ from the distribution series translations page.
     >>> print user_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+templates
 
-== The templates table ==
+The templates table
+-------------------
 
-Anonymous users will see a link from distro series
+Full template listing for a distribution series is reached by following
+a link from the distribution series translations page.
+
     >>> anon_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary')
     >>> anon_browser.getLink('full list of templates').click()
 
-The anon page shows a table with only source package, template name and last
-update.
+Full listing of templates shows source package name, template name and
+the date of last update for this distribution series.
 
     >>> table = find_tag_by_id(anon_browser.contents, 'templates_table')
     >>> print extract_text(table)
@@ -37,24 +44,21 @@ update.
     pmount         pmount             2005-05-06
 
 
-Normal users will see a link from distro series
+Logged-in users will see a link from distro series
     >>> user_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary')
     >>> user_browser.getLink('full list of templates').click()
 
-The normal user page shows a table with only source package, template name, last
-update and a link to download the template.
+Logged-in users can also choose to download all translations for each
+of the templates.
 
     >>> table = find_tag_by_id(user_browser.contents, 'templates_table')
     >>> print extract_text(table)
     Source package Template name     Last update  Actions
     evolution      disabled-template 2007-01-05   Download
-    evolution      evolution-2.2     2005-05-06   Download
-    evolution      man               2006-08-14   Download
+    ...
     mozilla        pkgconf-mozilla   2005-05-06   Download
-    pmount         man               2006-08-14   Download
-    pmount         pmount            2005-05-06   Download
-
+    ...
 
 Administrator can see all editing options.
 
@@ -75,7 +79,8 @@ The page shows a table of all templates and links to their subpages.
     pmount         pmount            2005-05-06   Edit Upload Download Administer
 
 
-== Links to the templates ==
+Links to the templates
+----------------------
 
 Clicking on a template name will take the user to that template's overview
 page.
