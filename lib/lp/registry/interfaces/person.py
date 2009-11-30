@@ -1076,7 +1076,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
         This includes teams for which the person is the owner, a direct
         member with admin privilege, or member of a team with such
-        privileges.
+        privileges.  It excludes teams which have been merged.
         """
 
     def getTeamAdminsEmailAddresses():
