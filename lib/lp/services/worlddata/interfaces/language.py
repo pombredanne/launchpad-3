@@ -138,10 +138,6 @@ class ILanguageSet(Interface):
     common_languages = Attribute("An iterator over languages that are "
         "not hidden.")
 
-    search_lang = TextLine(
-        title=u'Name of the language to search for.',
-        required=True)
-
     def __iter__():
         """Returns an iterator over all languages."""
 
@@ -193,3 +189,7 @@ class ILanguageSet(Interface):
 
     def search(text):
         """Return a result set of ILanguage that match the search."""
+
+class ILanguageSetSearch(Interface):
+    """The collection of languages."""
+
