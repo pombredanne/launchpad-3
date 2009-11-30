@@ -1037,7 +1037,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
                     # Ignore existing urls.
                     continue
 
-                if ('launchpad.net' not in url and
+                if ('launchpad' not in url and
                     'show_bug.cgi' not in url):
                     raise xmlrpclib.Fault(
                         112, "Bug URL %s is invalid." % url)

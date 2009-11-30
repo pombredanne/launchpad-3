@@ -27,6 +27,7 @@ from canonical import encoding
 from canonical.config import config
 from canonical.launchpad.interfaces.message import IMessageSet
 from canonical.launchpad.webapp.url import urlappend, urlparse
+from canonical.launchpad.webapp.publisher import canonical_url
 
 from lp.bugs.externalbugtracker.base import (
     BugNotFound, BugTrackerAuthenticationError, BugTrackerConnectError,
@@ -35,6 +36,7 @@ from lp.bugs.externalbugtracker.base import (
     UnparseableBugTrackerVersion)
 from lp.bugs.externalbugtracker.xmlrpc import (
     UrlLib2Transport)
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import BugTaskImportance, BugTaskStatus
 from lp.bugs.interfaces.externalbugtracker import UNKNOWN_REMOTE_IMPORTANCE
 from lp.bugs.interfaces.externalbugtracker import (
@@ -425,7 +427,8 @@ def needs_authentication(func):
 class BugzillaAPI(Bugzilla):
     """An `ExternalBugTracker` to handle Bugzillas that offer an API."""
 
-    implements(ISupportsCommentImport, ISupportsCommentPushing)
+    implements(
+        ISupportsBackLinking, ISupportsCommentImport, ISupportsCommentPushing)
 
     def __init__(self, baseurl, xmlrpc_transport=None,
                  internal_xmlrpc_transport=None):
@@ -755,6 +758,34 @@ class BugzillaAPI(Bugzilla):
         # We cast the return value to string, since that's what
         # BugWatchUpdater will expect (see bug 248938).
         return str(return_dict['id'])
+
+    def getLaunchpadBugId(self, remote_bug):
+        """Return the Launchpad bug ID for the remote bug.
+
+        See `ISupportsBackLinking`.
+
+        In fact, this method always returns None due to bug 490267.
+        """
+        return None
+
+    @needs_authentication
+    def setLaunchpadBugId(self, remote_bug, launchpad_bug_id):
+        """Set the Launchpad bug for a given remote bug.
+
+        See `ISupportsBackLinking`.
+        """
+        actual_bug_id = self._getActualBugId(remote_bug)
+
+        # Grab the bug from the database and get its canonical URL.
+        launchpad_bug = getUtility(IBugSet).get(launchpad_bug_id)
+        launchpad_bug_url = canonical_url(launchpad_bug)
+
+        request_params = {
+            'ids': [actual_bug_id],
+            'add': [launchpad_bug_url],
+            }
+
+        self.xmlrpc_proxy.Bug.update_see_also(request_params)
 
 
 class BugzillaLPPlugin(BugzillaAPI):
