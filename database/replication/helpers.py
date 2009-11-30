@@ -114,7 +114,7 @@ class TableReplicationInfo:
 
 def sync(timeout):
     """Generate a sync event and wait for it to complete on all nodes.
-   
+
     This means that all pending events have propagated and are in sync
     to the point in time this method was called. This might take several
     hours if there is a large backlog of work to replicate.
