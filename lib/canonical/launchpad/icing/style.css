@@ -607,7 +607,6 @@ ol.breadcrumbs li:last-child {
   float: left;
   width: 16.16%; /* = (100% / 6) - 0.5% left over */
   margin: 0 0.25%; /* = the leftover 0.5%, half each on the left and right */
-    /* This is overridden in main-template.pt for Internet Explorer */
   padding: 0;
   text-align: center;
   color: #333;

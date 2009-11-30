@@ -84,7 +84,7 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
         login_person(branch.owner)
         branch.product.setBranchVisibilityTeamPolicy(
             branch.owner, BranchVisibilityRule.PRIVATE)
-        branch.setPrivate(True)
+        branch.setPrivate(True, branch.owner)
 
     def test_private(self):
         """Private flag should be True if True for any involved branch."""
@@ -92,10 +92,10 @@ class TestBranchMergeProposalPrivacy(TestCaseWithFactory):
         self.assertFalse(bmp.private)
         self.setPrivate(bmp.source_branch)
         self.assertTrue(bmp.private)
-        bmp.source_branch.setPrivate(False)
+        bmp.source_branch.setPrivate(False, bmp.source_branch.owner)
         self.setPrivate(bmp.target_branch)
         self.assertTrue(bmp.private)
-        bmp.target_branch.setPrivate(False)
+        bmp.target_branch.setPrivate(False, bmp.target_branch.owner)
         removeSecurityProxy(bmp).prerequisite_branch = (
             self.factory.makeBranch(product=bmp.source_branch.product))
         self.setPrivate(bmp.prerequisite_branch)
@@ -1437,39 +1437,82 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         merge_proposal = self.factory.makeBranchMergeProposal()
         self.assertEqual([], list(merge_proposal.votes))
 
-    def test_nominate_creates_reference(self):
-        """A new vote reference is created when a reviewer is nominated."""
+    def makeProposalWithReviewer(self, reviewer=None, review_type=None,
+                                 registrant=None):
+        """Make a proposal and request a review from reviewer.
+
+        If no reviewer is passed in, make a reviewer.
+        """
+        if reviewer is None:
+            reviewer = self.factory.makePerson()
         merge_proposal = self.factory.makeBranchMergeProposal()
+        if registrant is None:
+            registrant = merge_proposal.registrant
         login_person(merge_proposal.source_branch.owner)
-        reviewer = self.factory.makePerson()
         merge_proposal.nominateReviewer(
-            reviewer=reviewer,
-            registrant=merge_proposal.source_branch.owner,
-            review_type='General')
+            reviewer=reviewer, registrant=registrant, review_type=review_type)
+        return merge_proposal, reviewer
+
+    def test_pending_review_registrant(self):
+        # The registrant passed into the nominateReviewer call is the
+        # registrant of the vote reference.
+        registrant = self.factory.makePerson()
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            registrant=registrant)
+        vote_reference = list(merge_proposal.votes)[0]
+        self.assertEqual(registrant, vote_reference.registrant)
+
+    def assertOneReviewPending(self, merge_proposal, reviewer, review_type):
+        # Check that there is one and only one review pending with the
+        # specified reviewer and review_type.
         votes = list(merge_proposal.votes)
         self.assertEqual(1, len(votes))
         vote_reference = votes[0]
         self.assertEqual(reviewer, vote_reference.reviewer)
-        self.assertEqual(merge_proposal.source_branch.owner,
-                         vote_reference.registrant)
-        self.assertEqual('general', vote_reference.review_type)
+        if review_type is None:
+            self.assertIs(None, vote_reference.review_type)
+        else:
+            self.assertEqual(review_type, vote_reference.review_type)
+        self.assertIs(None, vote_reference.comment)
+
+    def test_nominate_creates_reference(self):
+        # A new vote reference is created when a reviewer is nominated.
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            review_type='General')
+        self.assertOneReviewPending(merge_proposal, reviewer, 'general')
+
+    def test_nominate_with_None_review_type(self):
+        # Reviews nominated with a review type of None, make vote references
+        # with a review_type of None.
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            review_type=None)
+        self.assertOneReviewPending(merge_proposal, reviewer, None)
+
+    def test_nominate_with_whitespace_review_type(self):
+        # A review nominated with a review type that just contains whitespace
+        # or the empty string, makes a vote reference with a review_type of
+        # None.
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            review_type='')
+        self.assertOneReviewPending(merge_proposal, reviewer, None)
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            review_type='    ')
+        self.assertOneReviewPending(merge_proposal, reviewer, None)
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            review_type='\t')
+        self.assertOneReviewPending(merge_proposal, reviewer, None)
 
     def test_nominate_multiple_with_different_types(self):
         # While an individual can only be requested to do one review
         # (test_nominate_updates_reference) a team can have multiple
         # nominations for different review types.
-        merge_proposal = self.factory.makeBranchMergeProposal()
-        login_person(merge_proposal.source_branch.owner)
         reviewer = self.factory.makePerson()
         review_team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            reviewer=review_team, review_type='general-1')
         merge_proposal.nominateReviewer(
             reviewer=review_team,
-            registrant=merge_proposal.source_branch.owner,
-            review_type='general-1')
-        # Second nomination of the same type fails.
-        merge_proposal.nominateReviewer(
-            reviewer=review_team,
-            registrant=merge_proposal.source_branch.owner,
+            registrant=merge_proposal.registrant,
             review_type='general-2')
 
         votes = list(merge_proposal.votes)

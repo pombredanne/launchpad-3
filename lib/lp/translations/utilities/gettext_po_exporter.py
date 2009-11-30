@@ -14,6 +14,7 @@ __all__ = [
     'GettextPOExporter',
     ]
 
+import logging
 import os
 
 from zope.interface import implements
@@ -344,8 +345,20 @@ class GettextPOExporterBase:
                         raise UnicodeEncodeError(
                             '%s:\n%s' % (file_path, str(error)))
 
-                    # This message cannot be represented in current encoding,
-                    # change to UTF-8 and try again.
+                    # This message cannot be represented in the current
+                    # encoding.
+                    if translation_file.path:
+                        file_description = translation_file.path
+                    elif translation_file.language_code:
+                        file_description = (
+                            "%s translation" % translation_file.language_code)
+                    else:
+                        file_description = "template"
+                    logging.info(
+                        "Can't represent %s as %s; using UTF-8 instead." % (
+                            file_description,
+                            translation_file.header.charset.upper()))
+
                     old_charset = translation_file.header.charset
                     translation_file.header.charset = 'UTF-8'
                     # We need to update the header too.
