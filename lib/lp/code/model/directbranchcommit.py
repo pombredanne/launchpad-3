@@ -74,6 +74,8 @@ class DirectBranchCommit:
         self.db_branch = db_branch
         self.to_mirror = to_mirror
 
+        self.last_scanned_id = self.db_branch.last_scanned_id
+
         if committer is None:
             committer = db_branch.owner
         self.committer = committer
@@ -172,18 +174,27 @@ class DirectBranchCommit:
         assert self.is_locked, "Getting revision on un-locked branch."
         last_revision = None
         last_revision = self.bzrbranch.last_revision()
-        if last_revision != self.db_branch.last_scanned_id:
+        if last_revision != self.last_scanned_id:
             raise ConcurrentUpdateError(
                 "Branch has been changed.  Not committing.")
 
-    def commit(self, commit_message):
-        """Commit to branch."""
+    def commit(self, commit_message, txn=None):
+        """Commit to branch.
+
+        :param commit_message: Message for branch's commit log.
+        :param txn: Transaction to commit.  Can be helpful in avoiding
+            long idle times in database transactions.  May be committed
+            more than once.
+        """
         assert self.is_open, "Committing closed DirectBranchCommit."
         assert self.is_locked, "Not locked at commit time."
 
         builder = None
         try:
             self._checkForRace()
+
+            if txn:
+                txn.commit()
 
             rev_id = self.revision_tree.get_revision_id()
             if rev_id == NULL_REVISION:
@@ -192,6 +203,9 @@ class DirectBranchCommit:
             new_rev_id = self.transform_preview.commit(
                 self.bzrbranch, commit_message)
             IMasterObject(self.db_branch).requestMirror()
+
+            if txn:
+                txn.commit()
 
         finally:
             self.unlock()
