@@ -226,7 +226,7 @@ class StrippableText(Text):
 
     def set(self, object, value):
         """Strip the value and pass up."""
-        if self.strip_text:
+        if self.strip_text and value is not None:
             value = value.strip()
         super(StrippableText, self).set(object, value)
 

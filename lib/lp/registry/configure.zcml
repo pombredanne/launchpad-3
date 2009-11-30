@@ -1551,6 +1551,11 @@
             permission="zope.Public"
             set_schema="lp.registry.interfaces.productrelease.IProductRelease"/>
     </class>
+    <adapter
+        provides="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.productrelease.IProductRelease"
+        factory="lp.registry.model.productrelease.productrelease_to_milestone"
+        permission="zope.Public"/>
 
     <!-- This is class ProductReleaseFile -->
 
@@ -1603,12 +1608,10 @@
             permission="launchpad.Edit"
             set_attributes="name displayname description http_base_url
                             ftp_base_url rsync_base_url enabled speed
-                            country content official_candidate" />
+                            country content official_candidate owner" />
         <require
             permission="launchpad.Admin"
-            set_attributes="status owner whiteboard reviewer date_reviewed" />
-        <require
-            permission="launchpad.Admin"
+            set_attributes="status whiteboard reviewer date_reviewed"
             attributes="destroySelf" />
     </class>
 

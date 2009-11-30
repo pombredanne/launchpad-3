@@ -345,6 +345,7 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
 
     def setUp(self):
         BzrTestCase.setUp(self)
+        self.disable_directory_isolation()
         MixinBaseLaunchpadServerTests.setUp(self)
 
     def getLaunchpadServer(self, authserver, user_id):

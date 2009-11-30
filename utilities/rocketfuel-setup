@@ -7,7 +7,7 @@
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
 
-# We require Bazaar 1.16.1 or higher.  
+# We require Bazaar 1.16.1 or higher.
 # So first, grab the output of 'bzr --version' and transform the
 # version line, like "Bazaar (bzr) 1.16.1", into "1 16 1":
 VER_RAW=`bzr --version | head -1 | sed -e 's/Bazaar (bzr) //g'`
@@ -315,6 +315,8 @@ if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
   fi
 fi
 
+# Call the newly minted Launchpad branch's 'make install' target to do some
+# more apache setup.
 sudo make install > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to install apache config appropriately"

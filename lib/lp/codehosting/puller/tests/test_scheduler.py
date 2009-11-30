@@ -8,6 +8,7 @@ __metaclass__ = type
 from datetime import datetime
 import logging
 import os
+import sys
 import textwrap
 import unittest
 
@@ -16,7 +17,7 @@ import pytz
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 
-from twisted.internet import defer, error
+from twisted.internet import defer, error, reactor, task
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -641,6 +642,14 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
     def setUp(self):
         TrialTestCase.setUp(self)
         PullerBranchTestCase.setUp(self)
+        # XXX MichaelHudson, 2009-11-21, bug=464174:
+        # TestCaseWithMemoryTransport likes to set these environment variables
+        # to unicode strings and Twisted's spawnProcess doesn't like that
+        # (reasonably enough).
+        os.environ['BZR_HOME'] = os.environ['BZR_HOME'].encode(
+            sys.getfilesystemencoding())
+        os.environ['HOME'] = os.environ['HOME'].encode(
+            sys.getfilesystemencoding())
         self.makeCleanDirectory(config.codehosting.hosted_branches_root)
         self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
         branch_id = self.factory.makeAnyBranch(
@@ -651,6 +660,11 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         self.bzr_tree.commit('rev1')
         self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakePullerEndpointProxy()
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.
