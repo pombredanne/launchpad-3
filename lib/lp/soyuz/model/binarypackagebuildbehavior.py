@@ -24,7 +24,7 @@ from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.builder import BuildSlaveFailure
+from lp.soyuz.interfaces.builder import BuildSlaveFailure, CannotBuild
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -42,6 +42,18 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
                     spr.name, spr.version, build.pocket.title)
+
+    @property
+    def status(self):
+        """See `IBuildFarmJobBehavior`."""
+        build = getUtility(IBuildSet).getByQueueEntry(
+            self._builder.currentjob)
+        msg = 'Building %s' % build.title
+        archive = build.archive
+        if not archive.owner.private and (archive.is_ppa or archive.is_copy):
+            return '%s [%s/%s]' % (msg, archive.owner.name, archive.name)
+        else:
+            return msg
 
     def dispatch_build_to_slave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""

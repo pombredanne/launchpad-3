@@ -57,5 +57,11 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
             "Builder was idle when asked to log the start of a build.")
 
     def dispatch_build_to_slave(self, build_queue_item, logger):
+        """See `IBuildFarmJobBehavior`."""
         raise BuildBehaviorMismatch(
             "Builder was idle when asked to dispatch a build to the slave.")
+
+    @property
+    def status(self):
+        """See `IBuildFarmJobBehavior`."""
+        return "Idle"

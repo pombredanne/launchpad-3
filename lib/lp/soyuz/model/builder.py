@@ -312,19 +312,10 @@ class Builder(SQLBase):
             if self.failnotes is not None:
                 return self.failnotes
             return 'Disabled'
-        # Cache the 'currentjob', so we don't have to hit the database
-        # more than once.
-        currentjob = self.currentjob
-        if currentjob is None:
-            return 'Idle'
 
-        build = getUtility(IBuildSet).getByQueueEntry(currentjob)
-        msg = 'Building %s' % build.title
-        archive = build.archive
-        if not archive.owner.private and (archive.is_ppa or archive.is_copy):
-            return '%s [%s/%s]' % (msg, archive.owner.name, archive.name)
-        else:
-            return msg
+        # If the builder is OK then we delegate the status
+        # to our current behavior.
+        return self.current_build_behavior.status
 
     def failbuilder(self, reason):
         """See IBuilder"""
@@ -565,7 +556,7 @@ class Builder(SQLBase):
         logger = self._getSlaveScannerLogger()
         try:
             self.startBuild(candidate, logger)
-        except (BuildSlaveFailure, CannotBuild), err:
+        except (BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch), err:
             logger.warn('Could not build: %s' % err)
 
     def handleTimeout(self, logger, error_message):
