@@ -38,8 +38,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.buildmaster.master import BuilddMaster
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from lp.soyuz.adapters.archivedependencies import (
-    get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -116,6 +114,7 @@ class BuilderSlave(xmlrpclib.Server):
         stdout, stderr = resume_process.communicate()
 
         return (stdout, stderr, resume_process.returncode)
+
 
 class Builder(SQLBase):
 
@@ -194,30 +193,6 @@ class Builder(SQLBase):
                      "(%s, %s)" % (self.url, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
         self._sendFileToSlave(url, libraryfilealias.content.sha1)
-
-    def cachePrivateSourceOnSlave(self, logger, build_queue_item):
-        """See `IBuilder`."""
-        # The URL to the file in the archive consists of these parts:
-        # archive_url / makePoolPath() / filename
-        # Once this is constructed we add the http basic auth info.
-
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import makePoolPath
-
-        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
-        archive = build.archive
-        archive_url = archive.archive_url
-        component_name = build.current_component.name
-        for source_file in build.sourcepackagerelease.files:
-            file_name = source_file.libraryfile.filename
-            sha1 = source_file.libraryfile.content.sha1
-            source_name = build.sourcepackagerelease.sourcepackagename.name
-            poolpath = makePoolPath(source_name, component_name)
-            url = urlappend(archive_url, poolpath)
-            url = urlappend(url, file_name)
-            logger.debug("Asking builder on %s to ensure it has file %s "
-                         "(%s, %s)" % (self.url, file_name, url, sha1))
-            self._sendFileToSlave(url, sha1, "buildd", archive.buildd_secret)
 
     def _sendFileToSlave(self, url, sha1, username="", password=""):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
@@ -356,51 +331,6 @@ class Builder(SQLBase):
                 % (build.title, build.id, build.pocket.name,
                    build.distroseries.name))
 
-    def _dispatchBuildToSlave(self, build_queue_item, args, buildid, logger):
-        """Start the build on the slave builder."""
-        # Send chroot.
-        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
-        chroot = build.distroarchseries.getChroot()
-        self.cacheFileOnSlave(logger, chroot)
-
-        # Build filemap structure with the files required in this build
-        # and send them to the slave.
-        # If the build is private we tell the slave to get the files from the
-        # archive instead of the librarian because the slaves cannot
-        # access the restricted librarian.
-        private = build.archive.private
-        if private:
-            self.cachePrivateSourceOnSlave(logger, build_queue_item)
-        filemap = {}
-        for source_file in build.sourcepackagerelease.files:
-            lfa = source_file.libraryfile
-            filemap[lfa.filename] = lfa.content.sha1
-            if not private:
-                self.cacheFileOnSlave(logger, source_file.libraryfile)
-
-        chroot_sha1 = chroot.content.sha1
-        try:
-            status, info = self.slave.build(
-                buildid, "debian", chroot_sha1, filemap, args)
-            message = """%s (%s):
-            ***** RESULT *****
-            %s
-            %s
-            %s: %s
-            ******************
-            """ % (self.name, self.url, filemap, args, status, info)
-            logger.info(message)
-        except xmlrpclib.Fault, info:
-            # Mark builder as 'failed'.
-            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
-            self.failbuilder(
-                "Exception (%s) when setting up to new job" % info)
-            raise BuildSlaveFailure
-        except socket.error, info:
-            error_message = "Exception (%s) when setting up new job" % info
-            self.handleTimeout(logger, error_message)
-            raise BuildSlaveFailure
-
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
         # Set the build behavior depending on the provided build queue item. 
@@ -414,49 +344,10 @@ class Builder(SQLBase):
         if self.virtualized:
             self.resumeSlaveHost()
 
-        # Build extra arguments.
-        args = {}
-        # turn 'arch_indep' ON only if build is archindep or if
-        # the specific architecture is the nominatedarchindep for
-        # this distroseries (in case it requires any archindep source)
-        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
-        args['arch_indep'] = build.distroarchseries.isNominatedArchIndep
-
-        suite = build.distroarchseries.distroseries.name
-        if build.pocket != PackagePublishingPocket.RELEASE:
-            suite += "-%s" % (build.pocket.name.lower())
-        args['suite'] = suite
-
-        archive_purpose = build.archive.purpose
-        if (archive_purpose == ArchivePurpose.PPA and
-            not build.archive.require_virtualized):
-            # If we're building a non-virtual PPA, override the purpose
-            # to PRIMARY and use the primary component override.
-            # This ensures that the package mangling tools will run over
-            # the built packages.
-            args['archive_purpose'] = ArchivePurpose.PRIMARY.name
-            args["ogrecomponent"] = (
-                get_primary_current_component(build))
-        else:
-            args['archive_purpose'] = archive_purpose.name
-            args["ogrecomponent"] = (
-                build.current_component.name)
-
-        args['archives'] = get_sources_list_for_building(build)
-
-        # Let the build slave know whether this is a build in a private
-        # archive.
-        args['archive_private'] = build.archive.private
-
-        # Generate a string which can be used to cross-check when obtaining
-        # results so we know we are referring to the right database object in
-        # subsequent runs.
-        buildid = "%s-%s" % (build.id, build_queue_item.id)
-        logger.debug("Initiating build %s on %s" % (buildid, self.url))
-
         # Do it.
         build_queue_item.markAsBuilding(self)
-        self._dispatchBuildToSlave(build_queue_item, args, buildid, logger)
+        self.current_build_behavior.dispatch_build_to_slave(
+            build_queue_item, logger)
 
     # XXX cprov 2009-06-24: This code does not belong to the content
     # class domain. Here we cannot make sensible decisions about what
