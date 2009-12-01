@@ -107,6 +107,53 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             self._builder.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
+    def verify_build_request(self, build_queue_item, logger):
+        """Assert some pre-build checks.
+
+        The build request is checked:
+         * Virtualized builds can't build on a non-virtual builder
+         * Ensure that we have a chroot
+         * Ensure that the build pocket allows builds for the current
+           distroseries state.
+        """
+        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        assert not (not self._builder.virtualized and build.is_virtualized), (
+            "Attempt to build non-virtual item on a virtual builder.")
+
+        # Assert that we are not silently building SECURITY jobs.
+        # See findBuildCandidates. Once we start building SECURITY
+        # correctly from EMBARGOED archive this assertion can be removed.
+        # XXX Julian 2007-12-18 spec=security-in-soyuz: This is being
+        # addressed in the work on the blueprint:
+        # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
+        target_pocket = build.pocket
+        assert target_pocket != PackagePublishingPocket.SECURITY, (
+            "Soyuz is not yet capable of building SECURITY uploads.")
+
+        # Ensure build has the needed chroot
+        chroot = build.distroarchseries.getChroot()
+        if chroot is None:
+            raise CannotBuild(
+                "Missing CHROOT for %s/%s/%s" % (
+                    build.distroseries.distribution.name,
+                    build.distroseries.name,
+                    build.distroarchseries.architecturetag)
+                )
+
+        # The main distribution has policies to prevent uploads to some
+        # pockets (e.g. security) during different parts of the distribution
+        # series lifecycle. These do not apply to PPA builds nor any archive
+        # that allows release pocket updates.
+        if (build.archive.purpose != ArchivePurpose.PPA and
+            not build.archive.allowUpdatesToReleasePocket()):
+            # XXX Robert Collins 2007-05-26: not an explicit CannotBuild
+            # exception yet because the callers have not been audited
+            assert build.distroseries.canUploadToPocket(build.pocket), (
+                "%s (%s) can not be built for pocket %s: invalid pocket due "
+                "to the series status of %s."
+                % (build.title, build.id, build.pocket.name,
+                   build.distroseries.name))
+
     def _cache_private_source_on_slave(self, build_queue_item, logger):
         """Ask the slave to download source files for a private build.
 

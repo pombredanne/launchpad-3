@@ -40,3 +40,11 @@ class IBuildFarmJobBehavior(Interface):
         :param build_queue_item: The `BuildQueueItem` that will be built.
         :logger: A logger to be used to log diagnostic information.
         """
+
+    def verify_build_request(build_queue_item, logger):
+        """Carry out any pre-build checks.
+
+        :param build_queue_item: The `BuildQueueItem` that is to be built.
+        :logger: A logger to be used to log diagnostic information.
+        """
+
