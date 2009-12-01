@@ -97,6 +97,19 @@ class BranchMergeProposalListingItem:
         """A vote from the specified reviewer."""
         return self.context.getUsersVoteReference(self.proposal_reviewer)
 
+    @property
+    def sort_order(self):
+        """The value to order by.
+
+        This defaults to date_review_requested, but there are occasions where
+        this is not set if the proposal went directly from work in progress to
+        approved.  In this case the date_reviewed is used.
+        """
+        if self.context.date_review_requested is not None:
+            return self.context.date_review_requested
+        else:
+            return self.context.date_reviewed
+
 
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
@@ -330,7 +343,7 @@ class ActiveReviewsView(BranchMergeProposalListingView):
                 self.show_diffs = True
         # Sort each collection...
         for group in self.review_groups.values():
-            group.sort(key=attrgetter('date_review_requested'))
+            group.sort(key=attrgetter('sort_order'))
         self.proposal_count = len(proposals)
 
     @cachedproperty

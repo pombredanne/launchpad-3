@@ -16,7 +16,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.testing import DatabaseFunctionalLayer
 from lp.code.browser.branchmergeproposallisting import (
-    ActiveReviewsView, BranchMergeProposalListingView)
+    ActiveReviewsView, BranchMergeProposalListingItem,
+    BranchMergeProposalListingView)
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.testing import ANONYMOUS, login, login_person, TestCaseWithFactory
 from lp.testing.views import create_initialized_view
@@ -253,6 +254,49 @@ class ActiveReviewGroupsTest(TestCaseWithFactory):
             reviewer, 'subject', vote=CodeReviewVote.APPROVE)
         self.assertReviewGroupForReviewer(
             reviewer, ActiveReviewsView.ARE_DOING)
+
+
+class TestBranchMergeProposalListingItem(TestCaseWithFactory):
+    """Tests specifically relating to the BranchMergeProposalListingItem."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_sort_order_needs_review(self):
+        # If the proposal is in needs review, the sort_order will be the
+        # date_review_requested.
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+        login_person(bmp.registrant)
+        request_date = datetime(2009,7,1,tzinfo=pytz.UTC)
+        bmp.requestReview(request_date)
+        item = BranchMergeProposalListingItem(bmp, None, None)
+        self.assertEqual(request_date, item.sort_order)
+
+    def test_sort_order_approved(self):
+        # If the proposal is approved, the sort_order will default to the
+        # date_review_requested.
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+        login_person(bmp.target_branch.owner)
+        request_date = datetime(2009,7,1,tzinfo=pytz.UTC)
+        bmp.requestReview(request_date)
+        bmp.approveBranch(
+            bmp.target_branch.owner, 'rev-id',
+            datetime(2009,8,1,tzinfo=pytz.UTC))
+        item = BranchMergeProposalListingItem(bmp, None, None)
+        self.assertEqual(request_date, item.sort_order)
+
+    def test_sort_order_approved_from_wip(self):
+        # If the proposal is approved and the review has been bypassed, the
+        # date_reviewed is used.
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+        login_person(bmp.target_branch.owner)
+        review_date = datetime(2009,8,1,tzinfo=pytz.UTC)
+        bmp.approveBranch(
+            bmp.target_branch.owner, 'rev-id', review_date)
+        item = BranchMergeProposalListingItem(bmp, None, None)
+        self.assertEqual(review_date, item.sort_order)
 
 
 class ActiveReviewSortingTest(TestCaseWithFactory):
