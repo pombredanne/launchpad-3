@@ -78,10 +78,12 @@ class TestDetectIntltool(TestCase):
         self._prepare_package("intltool_single_ok")
         self.assertFalse(detect_intltool.check_potfiles_in("./foo")) 
 
-    def disabled_test_find_intltool_dirs():
+    def test_find_intltool_dirs(self):
         # Complete run: find all directories with intltool structure.
         self._prepare_package("intltool_full_ok")
-#        self.assert
+        self.assertContentEqual(
+            ["./po-module1", "./po-module2"],
+            detect_intltool.find_intltool_dirs())
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
