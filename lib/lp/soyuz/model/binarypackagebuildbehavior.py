@@ -31,7 +31,5 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
         spr = build.sourcepackagerelease
 
-        # Gar - need a reference back to the builder for self.url
-
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
                     spr.name, spr.version, build.pocket.title)

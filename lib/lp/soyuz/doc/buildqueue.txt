@@ -101,8 +101,11 @@ set 'manual' attribute atomically. For this we use manualScore:
 The BuildQueue item is responsible for providing the required build behavior
 for the item.
 
-    >>> bq.required_build_behavior
-    <lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior...
+    >>> from zope.security.proxy import isinstance
+    >>> from lp.soyuz.model.binarypackagebuildbehavior import (
+    ...     BinaryPackageBuildBehavior)
+    >>> isinstance(bq.required_build_behavior, BinaryPackageBuildBehavior)
+    True
 
 
 == Dispatching and Reseting jobs ==
