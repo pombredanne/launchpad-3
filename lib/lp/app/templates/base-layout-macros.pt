@@ -222,7 +222,9 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
   <script type="text/javascript">
-    YUI().use('node', 'lp', function(Y) {
+    // Define a global YUI sandbox that should be used by everyone.
+    var LPS = YUI();
+    LPS.use('node', 'lp', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
