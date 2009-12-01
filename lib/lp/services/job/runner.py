@@ -13,7 +13,7 @@ __all__ = ['JobRunner']
 
 import sys
 
-from ampoule import child, pool
+from ampoule import child, pool, main
 
 from twisted.internet import reactor, defer
 from twisted.protocols import amp
@@ -196,9 +196,13 @@ class JobRunnerProto(child.AMPChild):
 class TwistedJobRunner(BaseJobRunner):
 
     def __init__(self, job_source, logger=None):
+        import os
+        starter = main.ProcessStarter(packages=('twisted', 'ampoule'),
+            env={'PYTHONPATH': os.environ['PYTHONPATH']})
         BaseJobRunner.__init__(self, logger=logger)
         self.job_source = job_source
-        self.pp = pool.ProcessPool(JobRunnerProto, min=1, max=1)
+        self.pp = pool.ProcessPool(
+            JobRunnerProto, min=1, max=1, starter=starter)
 
     def runJobInSubprocess(self, job):
         job_id = removeSecurityProxy(job).context.id
