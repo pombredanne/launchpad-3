@@ -339,6 +339,9 @@ h2 {
     font-size: 123.1%;
     color: #5a5a5a;
     }
+h3 {
+    font-size: 108%;
+    }
 p {
     width: auto;
     margin-bottom: 0.8em;
@@ -471,12 +474,17 @@ span.see-all {
 ol.subordinate {
     margin-left: 4em;
     }
-.two-column-list li,
 .two-column-list dl {
     width: 48%;
     float: left;
     display: inline;
     margin: 0 0.25em 0.75em 0;
+    }
+.two-column-list li {
+    width: 48%;
+    float: left;
+    display: inline;
+    margin: 0 0.25em 0 0;
     }
 .two-column-list:after {
     content: ".";
@@ -786,6 +794,21 @@ ul.language, li.language             {
   background: inherit;
 }
 
+/* ==== Translations styles ==== */
+
+.translationimportstatusAPPROVED,
+.translationimportstatusAPPROVED a {color: #050;}
+.translationimportstatusIMPORTED,
+.translationimportstatusIMPORTED a {color: green;}
+.translationimportstatusDELETED,
+.translationimportstatusDELETED a {color: black;}
+.translationimportstatusFAILED,
+.translationimportstatusFAILED a {color: red;}
+.translationimportstatusNEEDS_REVIEW,
+.translationimportstatusNEEDS_REVIEW a {color: #f60;}
+.translationimportstatusBLOCKED,
+.translationimportstatusBLOCKED a {color: blue;}
+
 /* ==== Translations hand-made forms ==== */
 
 form.translations div.fields {
@@ -933,6 +956,17 @@ div.translation-help-links div {
 .vertical .sprite:first-line {
     line-height: 12px;
 }
+
+/* XXX: mars 2009-11-22 bug=484848
+  Override the styling in the Bug Subscribers portlet.  Trying to display
+  as inline-block is of little use, as the maximum name width is 20 characters,
+  and we are unlikely to wrap the text. Not to mention that setting the display
+  in this way breaks the icons.
+*/
+body.tab-bugs #portlet-subscribers .sprite {
+    display: inline;
+}
+
 .sprite-after {padding: 2px 18px 0 0;}
 
 /* XXX: EdwinGrubbs 2009-07-27 bug=405476

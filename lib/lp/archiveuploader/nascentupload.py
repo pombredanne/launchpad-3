@@ -28,8 +28,10 @@ from lp.archiveuploader.dscfile import DSCFile
 from lp.archiveuploader.nascentuploadfile import (
     UploadError, UploadWarning, CustomUploadFile, SourceUploadFile,
     BaseBinaryUploadFile)
-from lp.archiveuploader.permission import verify_upload
+from lp.archiveuploader.permission import check_upload_to_archive
+from lp.archiveuploader.utils import determine_source_file_type
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.archive import ArchivePurpose, MAIN_ARCHIVE_PURPOSES
 from canonical.launchpad.interfaces import (
     IBinaryPackageNameSet, IDistributionSet, ILibraryFileAliasSet,
@@ -302,53 +304,35 @@ class NascentUpload:
         """Heuristic checks on a sourceful upload.
 
         Raises AssertionError when called for a non-sourceful upload.
-        Ensures a sourceful upload has, at least:
-
-         * One DSC
-         * One or none DIFF
-         * One or none ORIG
-         * One or none TAR
-         * If no DIFF is present it must have a TAR (native)
-
-        'hasorig' and 'native' attributes are set when an ORIG and/or an
-        TAR file, respectively, are present.
+        Ensures a sourceful upload has exactly one DSC.
         """
         assert self.sourceful, (
             "Source consistency check called for a non-source upload")
 
         dsc = 0
-        diff = 0
-        orig = 0
-        tar = 0
+        native_tarball = 0
+        orig_tarball = 0
 
         for uploaded_file in self.changes.files:
-            if uploaded_file.filename.endswith(".dsc"):
+            filetype = determine_source_file_type(uploaded_file.filename)
+            if filetype == SourcePackageFileType.DSC:
                 dsc += 1
-            elif uploaded_file.filename.endswith(".diff.gz"):
-                diff += 1
-            elif uploaded_file.filename.endswith(".orig.tar.gz"):
-                orig += 1
-            elif (uploaded_file.filename.endswith(".tar.gz")
+            elif (filetype == SourcePackageFileType.NATIVE_TARBALL
                   and not isinstance(uploaded_file, CustomUploadFile)):
-                tar += 1
+                native_tarball += 1
+            elif filetype == SourcePackageFileType.ORIG_TARBALL:
+                orig_tarball += 1
 
-        # Okay, let's check the sanity of the upload.
+
+        # It is never sane to upload more than one source at a time.
         if dsc > 1:
             self.reject("Changes file lists more than one .dsc")
-        if diff > 1:
-            self.reject("Changes file lists more than one .diff.gz")
-        if orig > 1:
-            self.reject("Changes file lists more than one orig.tar.gz")
-        if tar > 1:
-            self.reject("Changes file lists more than one native tar.gz")
 
         if dsc == 0:
             self.reject("Sourceful upload without a .dsc")
-        if diff == 0 and tar == 0:
-            self.reject("Sourceful upload without a diff or native tar")
 
-        self.native = bool(tar)
-        self.hasorig = bool(orig)
+        self.native = bool(native_tarball)
+        self.hasorig = bool(orig_tarball)
 
     def _check_binaryful_consistency(self):
         """Heuristic checks on a binaryful upload.
@@ -504,9 +488,10 @@ class NascentUpload:
         source_name = getUtility(
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
 
-        rejection_reason = verify_upload(
-            signer, source_name, archive, self.changes.dsc.component,
-            self.policy.distroseries, not self.is_new)
+        rejection_reason = check_upload_to_archive(
+            signer, self.policy.distroseries, source_name, archive,
+            self.changes.dsc.component, self.policy.pocket, not self.is_new)
+
         if rejection_reason is not None:
             self.reject(str(rejection_reason))
 
@@ -1012,6 +997,11 @@ class NascentUpload:
             if self.is_ppa:
                 return
 
+            # XXX: JonathanLange 2009-09-16: It would be nice to use
+            # ISourcePackage.get_default_archive here, since it has the same
+            # logic. However, I'm not sure whether we can get a SourcePackage
+            # object.
+
             # See if there is an archive to override with.
             distribution = self.policy.distroseries.distribution
             archive = distribution.getArchiveByComponent(
@@ -1027,4 +1017,3 @@ class NascentUpload:
             else:
                 # Reset the archive in the policy to the partner archive.
                 self.policy.archive = archive
-

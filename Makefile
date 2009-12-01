@@ -17,6 +17,7 @@ HERE:=$(shell pwd)
 
 LPCONFIG=development
 
+JSFLAGS=
 LP_BUILT_JS_ROOT=lib/canonical/launchpad/icing/build
 LAZR_BUILT_JS_ROOT=lazr-js/build
 
@@ -124,12 +125,17 @@ inplace: build
 build: $(BZR_VERSION_INFO) compile apidoc jsbuild
 
 jsbuild_lazr:
-	${SHHH} bin/jsbuild -b lazr-js/build
+	# We absolutely do not want to include the lazr.testing module and its
+	# jsTestDriver test harness modifications in the lazr.js and launchpad.js
+	# roll-up files.  They fiddle with built-in functions!  See Bug 482340.
+	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/
 
 jsbuild: jsbuild_lazr
 	${SHHH} bin/jsbuild \
-		-n launchpad -s lib/canonical/launchpad/javascript \
-		-b lib/canonical/launchpad/icing/build \
+		$(JSFLAGS) \
+		-n launchpad \
+		-s lib/canonical/launchpad/javascript \
+		-b $(LP_BUILT_JS_ROOT) \
 		lib/canonical/launchpad/icing/MochiKit.js \
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
@@ -281,6 +287,7 @@ clean: clean_js
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r bin
 	$(RM) -r parts
+	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) thread*.request
@@ -328,6 +335,8 @@ potemplates: launchpad.pot
 launchpad.pot:
 	bin/i18nextract.py
 
+# Called by the rocketfuel-setup script. You probably don't want to run this
+# on its own.
 install: reload-apache
 
 copy-certificates:
@@ -346,7 +355,7 @@ enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
 
 reload-apache: enable-apache-launchpad
-	/etc/init.d/apache2 reload
+	/etc/init.d/apache2 restart
 
 static:
 	$(PY) scripts/make-static.py

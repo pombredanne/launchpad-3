@@ -29,7 +29,7 @@
         function getElemById(elem_id) {
             // XXX 'elem_id' is a Zope form field, and triggers
             // YUI bug #2423101.  We'll work around it.
-            return Y.get(Y.DOM.byId(elem_id));
+            return Y.one(Y.DOM.byId(elem_id));
         }
 
         function getEnclosingTR(fieldname) {

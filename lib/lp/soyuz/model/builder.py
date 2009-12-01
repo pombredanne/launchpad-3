@@ -777,7 +777,7 @@ class BuilderSet(object):
             Archive.require_virtualized == virtualized,
             )
 
-        return (queue.count(), queue.sum(Build.estimated_build_duration))
+        return (queue.count(), queue.sum(BuildQueue.estimated_duration))
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""

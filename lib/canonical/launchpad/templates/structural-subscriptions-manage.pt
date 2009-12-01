@@ -22,8 +22,6 @@
   </div>
   <div metal:fill-slot="side">
     <div tal:replace="structure context/@@+portlet-malone-bugmail-filtering-faq"/>
-    <div tal:condition="view/show_details_portlet"
-         tal:replace="structure context/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-structural-subscribers" />
   </div>
 </body>

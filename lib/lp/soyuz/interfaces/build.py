@@ -174,11 +174,6 @@ class IBuildView(Interface):
             title=_('State'), required=True, vocabulary=BuildStatus,
             description=_("The current build state.")))
 
-    estimated_build_duration = Timedelta(
-        title=_("Estimated Build Duration"), required=False,
-        description=_("Estimated build duration interval. Optionally "
-                      "set during build creation time."))
-
     date_first_dispatched = exported(
         Datetime(
             title=_('Date first dispatched'), required=False,
