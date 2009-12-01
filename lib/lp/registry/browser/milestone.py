@@ -11,6 +11,7 @@ __all__ = [
     'MilestoneContextMenu',
     'MilestoneDeleteView',
     'MilestoneEditView',
+    'MilestoneInlineNavigationMenu',
     'MilestoneNavigation',
     'MilestoneOverviewNavigationMenu',
     'MilestoneSetNavigation',
@@ -22,6 +23,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import implements, Interface
 from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
@@ -131,11 +133,22 @@ class MilestoneOverviewMenu(ApplicationMenu, MilestoneLinkMixin):
     links = ('create_release', )
 
 
+class IMilestoneInline(Interface):
+    """A marker interface for views that show a milestone inline."""
+
+
+class MilestoneInlineNavigationMenu(NavigationMenu, MilestoneLinkMixin):
+    """An inline navigation menus for milestone views."""
+    usedfor = IMilestoneInline
+    facet = 'overview'
+    links = ('edit', )
+
+
 class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     """A View for listing milestones and releases."""
     # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
     # to a mixin so that MilestoneView and others can use it.
-
+    implements(IMilestoneInline)
     show_series_context = False
 
     def __init__(self, context, request):
