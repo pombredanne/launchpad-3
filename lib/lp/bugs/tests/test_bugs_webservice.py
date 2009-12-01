@@ -134,5 +134,25 @@ class TestBugCommentRepresentation(TestCaseWithFactory):
             rendered_comment, self.expected_comment_html)
 
 
+class TestBugMessages(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugMessages, self).setUp('test@canonical.com')
+        self.bug = self.factory.makeBug()
+        self.message1 = self.factory.makeMessage()
+        self.message2 = self.factory.makeMessage(parent=self.message1)
+        # Only link message2 to the bug.
+        self.bug.linkMessage(self.message2)
+        self.webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+
+    def test_messages(self):
+        response = self.webservice.get('/bugs/%d/messages' % self.bug.id)
+        import pdb; pdb.set_trace()
+        self.failUnlessEqual(response.status, 200)
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
