@@ -147,22 +147,29 @@ class Builder(SQLBase):
         if not safe_hasattr(self, '_current_build_behavior'):
             self._current_build_behavior = None
 
-        if not (self._current_build_behavior is None or
+        if (self._current_build_behavior is None or
             isinstance(self._current_build_behavior, IdleBuildBehavior)):
+            # If we don't currently have a current build behavior set,
+            # or we are currently idle, then...
+            currentjob = self.currentjob
+            if currentjob is not None:
+                # ...we'll set it based on our current job.
+                self._current_build_behavior = (
+                    currentjob.required_build_behavior)
+                self._current_build_behavior.set_builder(self)
+                return self._current_build_behavior
+            elif self._current_build_behavior is None:
+                # If we don't have a current job or an idle behavior
+                # already set, then we just set the idle behavior
+                # before returning.
+                self._current_build_behavior = IdleBuildBehavior()
+            return self._current_build_behavior 
+
+        else:
+            # We did have a current non-idle build behavior set, so
+            # we just return it.
             return self._current_build_behavior
 
-        # If we don't currently have a current build behavior set,
-        # or we are currently idle, we'll set it based on our current job.
-        currentjob = self.currentjob
-        if currentjob is not None:
-            self._current_build_behavior = currentjob.required_build_behavior
-            self._current_build_behavior.set_builder(self)
-            return self._current_build_behavior
-
-        # Otherwise, we'll use the idle behavior.
-        # TODO: need a factory for idle behavior - get_idle_behavior()
-        self._current_build_behavior = IdleBuildBehavior()
-        return self._current_build_behavior 
 
     def _set_current_build_behavior(self, new_behavior):
         """Set the current build behavior."""
