@@ -14,7 +14,7 @@ from zope.interface import implements
 from canonical.launchpad.ftests import login
 from canonical.launchpad.interfaces.message import IndexedMessage
 from canonical.launchpad.webapp.testing import verifyObject
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 
 from lp.testing import TestCaseWithFactory
 
@@ -22,7 +22,7 @@ from lp.testing import TestCaseWithFactory
 class TestBugIndexedMessages(TestCaseWithFactory):
     """Test ways of interacting with Bug webservice representations."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = DatabaseFunctionalLayer
 
     def setUp(self):
         super(TestBugIndexedMessages, self).setUp()
