@@ -85,6 +85,15 @@ class TestDetectIntltool(TestCase):
             ["./po-module1", "./po-module2"],
             detect_intltool.find_intltool_dirs())
 
+    def test_find_intltool_dirs_broken(self):
+        # Complete run: part of the intltool structure is broken.
+        self._prepare_package("intltool_full_ok")
+        os.remove("./src/module1/sourcefile1.c")
+        self.assertContentEqual(
+            ["./po-module2"],
+            detect_intltool.find_intltool_dirs())
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 
