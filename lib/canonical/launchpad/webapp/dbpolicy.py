@@ -165,6 +165,13 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         # Detect if this is a read only request or not.
         self.read_only = self.request.method in ['GET', 'HEAD']
 
+    def _hasSession(self):
+        "Is there is already a session cookie hanging around?"
+        cookie_name = getUtility(IClientIdManager).namespace
+        return (
+            cookie_name in self.request.cookies or
+            self.request.response.getCookie(cookie_name) is not None)
+
     def install(self):
         """See `IDatabasePolicy`."""
         default_flavor = None
@@ -189,8 +196,15 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
                 # slave allowing it to catch up quicker.
                 default_flavor = MASTER_FLAVOR
             else:
-                session_data = ISession(self.request)['lp.dbpolicy']
-                last_write = session_data.get('last_write', None)
+                # We don't want to even make a DB query to read the session
+                # if we can tell that it is not around.  This can be
+                # important for fast and reliable performance for pages like
+                # +opstats.
+                if self._hasSession():
+                    session_data = ISession(self.request)['lp.dbpolicy']
+                    last_write = session_data.get('last_write', None)
+                else:
+                    last_write = None
                 now = _now()
                 # 'recently' is  2 minutes plus the replication lag.
                 recently = timedelta(minutes=2)
@@ -218,18 +232,12 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
         made have been propagated.
         """
         if not self.read_only:
-            # We need to further distinguish whether it's safe to write to
-            # the session, which will be true if the principal is
-            # authenticated or if there is already a session cookie hanging
-            # around.
-            if IUnauthenticatedPrincipal.providedBy(self.request.principal):
-                cookie_name = getUtility(IClientIdManager).namespace
-                session_available = (
-                    cookie_name in self.request.cookies or
-                    self.request.response.getCookie(cookie_name) is not None)
-            else:
-                session_available = True
-            if session_available:
+            # We need to further distinguish whether it's safe to write
+            # to the session. This will be true if the principal is
+            # authenticated or if there is already a session cookie
+            # hanging around.
+            if not IUnauthenticatedPrincipal.providedBy(
+                self.request.principal) or self._hasSession():
                 # A non-readonly request has been made. Store this fact
                 # in the session. Precision is hard coded at 1 minute
                 # (so we don't update the timestamp if it is no more
