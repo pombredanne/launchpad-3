@@ -68,4 +68,4 @@ def find_intltool_dirs():
     """Search the current directory and its subdiretories for intltool
     structure.
     """
-    return find_potfiles_in()
+    return filter(check_potfiles_in, find_potfiles_in())
