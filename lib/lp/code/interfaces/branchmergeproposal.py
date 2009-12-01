@@ -301,7 +301,7 @@ class IBranchMergeProposal(IPrivacy):
         """True if it is valid for user update the proposal to next_state."""
 
     @call_with(user=REQUEST_USER)
-    @rename_parameters_as(revision_id='revno')
+    @rename_parameters_as(revision_id='revid')
     @operation_parameters(
         status=Choice(
             title=_("The new status of the merge proposal."),
@@ -316,8 +316,8 @@ class IBranchMergeProposal(IPrivacy):
 
         :param status: The new status of the merge proposal.
         :param user: The user making the change.
-        :param revision_id: The revno to provide to the underlying status
-            change method.
+        :param revision_id: The revision id to provide to the underlying
+            status change method.
         """
 
     def setAsWorkInProgress():

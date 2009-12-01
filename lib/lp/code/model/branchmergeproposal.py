@@ -315,8 +315,6 @@ class BranchMergeProposal(SQLBase):
             self.setAsWorkInProgress()
         elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
             self.requestReview()
-        elif status == BranchMergeProposalStatus.NEEDS_REVIEW:
-            self.requestReview()
         elif status == BranchMergeProposalStatus.CODE_APPROVED:
             # Other half of the edge case.  If the status is currently queued,
             # we need to dequeue, otherwise we just approve the branch.

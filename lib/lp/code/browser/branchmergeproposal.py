@@ -613,6 +613,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                 self._createStatusVocabulary(),
                 css_class_prefix='mergestatus'),
             'status_value': self.context.queue_status.title,
+            'source_revid': self.context.source_branch.last_scanned_id,
             'user_can_edit_status': check_permission(
                 'launchpad.Edit', self.context),
             })
