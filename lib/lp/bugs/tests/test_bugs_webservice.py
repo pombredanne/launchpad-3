@@ -154,6 +154,12 @@ class TestBugMessages(TestCaseWithFactory):
         # the correct collection link for the bug's messages.
         response = self.webservice.get('/bugs/%d/messages' % self.bug.id)
         self.failUnlessEqual(response.status, 200)
+        # The parent_link for the latest message should be None
+        # because the parent is not a member of this bug's messages
+        # collection itself.
+        latest_message = response.jsonBody()['entries'][-1]
+        self.failUnlessEqual(self.message2.subject, latest_message['subject'])
+        self.failUnlessEqual(None, latest_message['parent_link'])
 
 
 def test_suite():
