@@ -224,6 +224,20 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
 
+    def get_default_archive(component=None):
+        """Get the default archive of this package.
+
+        If 'component' is a partner component, then the default archive is the
+        partner archive. Otherwise, the primary archive of the associated
+        distribution.
+
+        :param component: The `IComponent` to base the default archive
+            decision on. If None, defaults to the last published component.
+        :raise NoPartnerArchive: If returning the partner archive is
+            appropriate, but no partner archive exists.
+        :return: `IArchive`.
+        """
+
     def getLatestTranslationsUploads():
         """Find latest Translations tarballs as produced by Soyuz.
 

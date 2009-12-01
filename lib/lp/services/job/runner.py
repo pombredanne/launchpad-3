@@ -4,6 +4,7 @@
 """Facilities for running Jobs."""
 
 
+from __future__ import with_statement
 __metaclass__ = type
 
 
@@ -133,20 +134,21 @@ class BaseJobRunner(object):
 
     def runJobHandleError(self, job):
         job = IRunnableJob(job)
-        try:
-            self.runJob(job)
-        except LeaseHeld:
-            self.incomplete_jobs.append(job)
-        except job.user_error_types, e:
-            job.notifyUserError(e)
-        except Exception:
-            info = sys.exc_info()
-            request = errorlog.ScriptRequest(job.getOopsVars())
-            errorlog.globalErrorUtility.raising(info, request)
-            oops = errorlog.globalErrorUtility.getLastOopsReport()
-            job.notifyOops(oops)
-            if self.logger is not None:
-                self.logger.info('Job resulted in OOPS: %s' % oops.id)
+        with errorlog.globalErrorUtility.oopsMessage(
+            dict(job.getOopsVars())):
+            try:
+                self.runJob(job)
+            except LeaseHeld:
+                self.incomplete_jobs.append(job)
+            except job.user_error_types, e:
+                job.notifyUserError(e)
+            except Exception:
+                info = sys.exc_info()
+                errorlog.globalErrorUtility.raising(info)
+                oops = errorlog.globalErrorUtility.getLastOopsReport()
+                job.notifyOops(oops)
+                if self.logger is not None:
+                    self.logger.info('Job resulted in OOPS: %s' % oops.id)
 
 
 class JobRunner(BaseJobRunner):

@@ -133,6 +133,11 @@
             <div id="homepage-blogposts" class="homepage-portlet">
               <h2>Recent Launchpad blog posts</h2>
               <ul>
+              <li class="news">
+                  <a href="http://blog.launchpad.net/?p=1178">
+                  Working with bug mail</a><span class="registered"> &ndash; 02 Dec 2009</span><br />
+                  Get the most from Launchpad's bug notifications.
+                </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/bazaar/accessing-git-subversion-and-mercurial-from-bazaar">
                   Git and Subversion from Bazaar</a><span class="registered"> &ndash; 29 Oct 2009</span><br />
