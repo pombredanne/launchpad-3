@@ -31,6 +31,27 @@ from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
 from canonical.launchpad.webapp import errorlog
 
+BOOTSTRAP = """\
+import sys
+
+def main(reactor, ampChildPath):
+    from twisted.application import reactors
+    reactors.installReactor(reactor)
+    
+    from twisted.python import log
+    log.startLogging(sys.stderr)
+
+    from twisted.internet import reactor, stdio
+    from twisted.python import reflect
+
+    ampChild = reflect.namedAny(ampChildPath)
+    stdio.StandardIO(ampChild(), 3, 4)
+    from canonical.launchpad import scripts
+    scripts.execute_zcml_for_scripts(use_web_security=False)
+    reactor.run()
+main(sys.argv[-2], sys.argv[-1])
+"""
+
 
 class BaseRunnableJob:
     """Base class for jobs to be run via JobRunner.
@@ -197,8 +218,11 @@ class TwistedJobRunner(BaseJobRunner):
 
     def __init__(self, job_source, logger=None):
         import os
-        starter = main.ProcessStarter(packages=('twisted', 'ampoule'),
-            env={'PYTHONPATH': os.environ['PYTHONPATH']})
+        starter = main.ProcessStarter(
+            bootstrap=BOOTSTRAP, packages=('twisted', 'ampoule'),
+            env={'PYTHONPATH': os.environ['PYTHONPATH'],
+            'PATH': os.environ['PATH'],
+            'LPCONFIG': os.environ['LPCONFIG']})
         BaseJobRunner.__init__(self, logger=logger)
         self.job_source = job_source
         self.pp = pool.ProcessPool(
