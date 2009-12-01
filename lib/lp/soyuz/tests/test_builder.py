@@ -8,7 +8,6 @@ import unittest
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch, IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
