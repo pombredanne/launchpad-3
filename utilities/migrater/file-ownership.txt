@@ -1771,6 +1771,7 @@ reg ./emailtemplates/membership-member-renewed.txt
     ./emailtemplates/upload-rejection.txt
     ./emailtemplates/bug-notification-verbose.txt
 reg ./codesofconduct
+reg ./codesofconduct/1.1.txt
 reg ./codesofconduct/1.0.1.txt
 reg ./codesofconduct/1.0.txt
 reg ./codesofconduct/README

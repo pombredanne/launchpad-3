@@ -34,7 +34,7 @@ Code of Conduct registration problems
 Sample Person tries unsuccessfully to register a truncated code of conduct.
 
     >>> truncated_coc = read_file('truncated_coc.asc')
-    >>> browser.open('http://launchpad.dev/codeofconduct/1.0.1/+sign')
+    >>> browser.open('http://launchpad.dev/codeofconduct/1.1/+sign')
     >>> browser.getControl('Signed Code').value = truncated_coc
     >>> browser.getControl('Continue').click()
     >>> print_errors(browser.contents)
@@ -56,14 +56,14 @@ Sample Person tries unsuccessfully to register an old version of the code.
 Sample Person tries to access the old version page to sign it, and is informed
 that there is a new version available.
 
-    >>> browser.open('http://launchpad.dev/codeofconduct/1.0/+sign')
+    >>> browser.open('http://launchpad.dev/codeofconduct/1.1/+sign')
     >>> browser.getLink('the current version').click()
     >>> print browser.url
-    http://launchpad.dev/codeofconduct/1.0.1
+    http://launchpad.dev/codeofconduct/1.1
 
     >>> browser.getLink('Sign it').click()
     >>> print browser.url
-    http://launchpad.dev/codeofconduct/1.0.1/+sign
+    http://launchpad.dev/codeofconduct/1.1/+sign
 
 
 Code of Conduct registration
