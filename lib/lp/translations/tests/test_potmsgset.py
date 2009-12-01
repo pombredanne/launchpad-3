@@ -15,6 +15,7 @@ from zope.component import getUtility
 from zope.security.proxy import isinstance as zope_isinstance
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -673,6 +674,21 @@ class TestTranslationSharedPOTMsgSets(TestCaseWithFactory):
             es_pofile.language)
         self.assertNotEqual(None, current_shared)
         self.assertEqual(None, current_shared.potemplate)
+
+    def test_setTranslationCreditsToTranslated_submitter(self):
+        # Submitter on the automated translation message is always
+        # the rosetta_experts team.
+        sr_pofile = self.factory.makePOFile('sr', self.devel_potemplate)
+        translator = self.factory.makePerson()
+        sr_pofile.lasttranslator = translator
+        sr_pofile.owner = translator
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            self.devel_potemplate, singular=u'translator-credits')
+        current = credits_potmsgset.getCurrentTranslationMessage(
+            self.devel_potemplate, sr_pofile.language)
+
+        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
+        self.assertEqual(rosetta_experts, current.submitter)
 
 
 class TestPOTMsgSetSuggestions(TestCaseWithFactory):

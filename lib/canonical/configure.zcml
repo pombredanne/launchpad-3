@@ -47,6 +47,17 @@
         factory="zope.app.publication.traversers.SimpleComponentTraverser"
         permission="zope.Public"
         />
+    <!-- We don't include zope.app.publication (see zopeapp.zcml in the
+         top level), so we lose the default registration that makes our
+         private XMLRPC server work.  Copy that from Zope into here.
+         -->
+    <view
+        for="zope.interface.Interface"
+        type="zope.publisher.interfaces.xmlrpc.IXMLRPCRequest"
+        provides="zope.publisher.interfaces.xmlrpc.IXMLRPCPublisher"
+        factory="zope.app.publication.traversers.SimpleComponentTraverser"
+        permission="zope.Public"
+        />
 
     <!-- Protocol errors (eg. HTTP 405 or 415 errors) should be published
          with a minimalist template. -->

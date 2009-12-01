@@ -11,7 +11,6 @@ __all__ = [
 
 __metaclass__ = type
 
-import logging
 import os
 import shutil
 import tempfile
@@ -24,6 +23,7 @@ from bzrlib.urlutils import escape, join as urljoin
 from bzrlib.transport import Server
 from bzrlib.tests.treeshape import build_tree_contents
 
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 
 def local_path_to_url(local_path):
     """Return a file:// URL to `local_path`.
@@ -33,19 +33,6 @@ def local_path_to_url(local_path):
     """
     return 'file://localhost' + escape(
         os.path.normpath(os.path.abspath(local_path)))
-
-
-def _make_silent_logger():
-    """Create a logger that prints nothing."""
-
-    class SilentLogHandler(logging.Handler):
-        def emit(self, record):
-            pass
-
-    logger = logging.Logger("collector")
-    handler = SilentLogHandler()
-    logger.addHandler(handler)
-    return logger
 
 
 def run_in_temporary_directory(function):
@@ -79,7 +66,7 @@ class SubversionServer(Server):
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        svn_oo.Repository.Create(path, _make_silent_logger())
+        svn_oo.Repository.Create(path, QuietFakeLogger())
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
@@ -139,7 +126,7 @@ class CVSServer(Server):
         :param path: The local path to create a repository in.
         :return: A CVS.Repository`.
         """
-        return CVS.init(path, _make_silent_logger())
+        return CVS.init(path, QuietFakeLogger())
 
     def getRoot(self):
         """Return the CVS root for this server."""

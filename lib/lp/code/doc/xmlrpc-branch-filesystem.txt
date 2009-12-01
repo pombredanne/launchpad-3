@@ -20,12 +20,12 @@ instance.
 The end point is implemented by the BranchFileSystem, which implements
 the IBranchFileSystem class.
 
-    >>> from zope.publisher.xmlrpc import TestRequest
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from lp.code.interfaces.codehosting import IBranchFileSystem
     >>> from lp.code.xmlrpc.codehosting import (
     ...     BranchFileSystem)
 
     >>> branchfs_api = BranchFileSystem(
-    ...     private_root.branchfilesystem, TestRequest())
+    ...     private_root.branchfilesystem, LaunchpadTestRequest())
     >>> verifyObject(IBranchFileSystem, branchfs_api)
     True

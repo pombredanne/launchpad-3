@@ -1,3 +1,9 @@
+launchpad-buildd (52) dapper-cat; urgency=low
+
+  * Depends: apt-transport-https
+
+ -- LaMont Jones <lamont@canonical.com>  Fri, 09 Oct 2009 11:00:50 -0600
+
 launchpad-buildd (50) dapper-cat; urgency=low
 
   * sbuild: Change all invocations of apt and dpkg to occur inside

@@ -101,13 +101,13 @@ page.
     >>> for tr in question_portlet.findAll('tr'):
     ...     tr['title']
     u'I am not able to ... if i click on a
-      mailto:&lt;email address hidden&gt; ...'
+      mailto:<email address hidden> ...'
 
     >>> question_portlet = find_tag_by_id(
     ...     anon_browser.contents, 'latest-questions-asked')
     >>> for tr in question_portlet.findAll('tr'):
     ...     tr['title']
-    u'The clicking mailto:&lt;email address hidden&gt; crashes the browser.'
+    u'The clicking mailto:<email address hidden> crashes the browser.'
      ...
 
 Nor can he see it in the question listings for the project.
@@ -125,7 +125,7 @@ He cannot see the address reading the question either.
     ...     anon_browser.contents, 'question-listing')
     >>> for tr in question_listing.tbody.findAll('tr'):
     ...     tr['title']
-    u'I am not able to ... if i click on a mailto:&lt;email address hidden&gt;
+    u'I am not able to ... if i click on a mailto:<email address hidden>
       link ...'
 
     >>> anon_browser.getLink('mailto: problem in webpage').click()
@@ -149,4 +149,4 @@ questions portlet on a FAQ page.
     >>> portlet = find_portlet(anon_browser.contents, 'Related questions')
     >>> portlet.a['title']
     u'I am not able to open my email client if i click on a
-      mailto:&lt;email address hidden&gt; link in a web...'
+      mailto:<email address hidden> link in a web...'

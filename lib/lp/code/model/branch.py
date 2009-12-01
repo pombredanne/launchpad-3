@@ -98,16 +98,18 @@ class Branch(SQLBase):
 
     private = BoolCol(default=False, notNull=True)
 
-    def setPrivate(self, private):
+    def setPrivate(self, private, user):
         """See `IBranch`."""
         if private == self.private:
             return
-        policy = IBranchNamespacePolicy(self.namespace)
+        # Only check the privacy policy if the user is not special.
+        if (not user_has_special_branch_access(user)):
+            policy = IBranchNamespacePolicy(self.namespace)
 
-        if private and not policy.canBranchesBePrivate():
-            raise BranchCannotBePrivate()
-        if not private and not policy.canBranchesBePublic():
-            raise BranchCannotBePublic()
+            if private and not policy.canBranchesBePrivate():
+                raise BranchCannotBePrivate()
+            if not private and not policy.canBranchesBePublic():
+                raise BranchCannotBePublic()
         self.private = private
 
     registrant = ForeignKey(
@@ -591,8 +593,6 @@ class Branch(SQLBase):
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
-        if self.code_import is not None:
-            deletion_operations.append(DeleteCodeImport(self.code_import))
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -623,6 +623,12 @@ class Branch(SQLBase):
             operation()
         for operation in deletion_operations:
             operation()
+        # Special-case code import, since users don't have lp.Edit on them,
+        # since if you can delete a branch you should be able to delete the
+        # code import and since deleting the code import object itself isn't
+        # actually a very interesting thing to tell the user about.
+        if self.code_import is not None:
+            DeleteCodeImport(self.code_import)()
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -1179,6 +1185,10 @@ class BranchSet:
     def getByUrl(self, url):
         """See `IBranchSet`."""
         return getUtility(IBranchLookup).getByUrl(url)
+
+    def getByUrls(self, urls):
+        """See `IBranchSet`."""
+        return getUtility(IBranchLookup).getByUrls(urls)
 
     def getBranches(self, limit=50):
         """See `IBranchSet`."""

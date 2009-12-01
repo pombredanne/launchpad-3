@@ -149,6 +149,10 @@ class SprintView(HasSpecificationsView, LaunchpadView):
     # a second h1 to display. But as this view implements IMajorHeadingView
     # it should not include an h1 below the app buttons.
     label = None
+    
+    @property
+    def page_title(self):
+        return '%s (sprint or meeting)' % self.context.title
 
     def initialize(self):
         self.notices = []
@@ -340,6 +344,8 @@ class SprintTopicSetView(HasSpecificationsView, LaunchpadView):
         return smartquote(
             'Review discussion topics for "%s" sprint' % self.context.title)
 
+    page_title = label
+
     def initialize(self):
         self.status_message = None
         self.process_form()
@@ -470,15 +476,22 @@ class SprintMeetingExportView(LaunchpadView):
 class SprintSetNavigationMenu(RegistryCollectionActionMenuBase):
     """Action menu for sprints index."""
     usedfor = ISprintSet
-    links = [
+    links = (
         'register_team',
         'register_project',
+        'register_sprint',
         'create_account',
         'view_all_sprints',
-        ]
+        )
+
+    @enabled_with_permission('launchpad.View')
+    def register_sprint(self):
+        text = 'Register a meeting'
+        summary = 'Register a developer sprint, summit, or gathering'
+        return Link('+new', text, summary=summary, icon='add')
 
     def view_all_sprints(self):
-        text = 'Show all sprints'
+        text = 'Show all meetings'
         return Link('+all', text, icon='list')
 
 

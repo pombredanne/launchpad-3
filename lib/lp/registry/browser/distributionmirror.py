@@ -12,6 +12,7 @@ __all__ = [
     'DistributionMirrorReassignmentView',
     'DistributionMirrorDeleteView',
     'DistributionMirrorProberLogView',
+    'DistributionMirrorBreadcrumb',
     ]
 
 from datetime import datetime
@@ -37,6 +38,7 @@ from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, Link, NavigationMenu, action,
     canonical_url, enabled_with_permission)
+from canonical.launchpad.webapp.breadcrumb import TitleBreadcrumb
 
 
 class DistributionMirrorOverviewMenu(NavigationMenu):
@@ -62,7 +64,7 @@ class DistributionMirrorOverviewMenu(NavigationMenu):
         text = 'Delete this mirror'
         return Link('+delete', text, icon='remove', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.Edit')
     def reassign(self):
         text = 'Change owner'
         return Link('+reassign', text, icon='edit')
@@ -81,6 +83,10 @@ class _FlavoursByDistroSeries:
     def __init__(self, distroseries, flavours):
         self.distroseries = distroseries
         self.flavours = flavours
+
+
+class DistributionMirrorBreadcrumb(TitleBreadcrumb):
+    """Breadcrumb for distribution mirrors."""
 
 
 class DistributionMirrorView(LaunchpadView):

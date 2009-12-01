@@ -414,7 +414,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         # Store the associated IPOTemplate.
         self.context.potemplate = potemplate
 
-        self.context.setStatus(RosettaImportStatus.APPROVED)
+        self.context.setStatus(RosettaImportStatus.APPROVED, self.user)
         self.context.date_status_changed = UTC_NOW
 
 

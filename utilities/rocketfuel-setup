@@ -7,7 +7,7 @@
 # workstation, from scratch. The script lives in the LP codebase itself,
 # as utilities/rocketfuel-setup
 
-# We require Bazaar 1.16.1 or higher.  
+# We require Bazaar 1.16.1 or higher.
 # So first, grab the output of 'bzr --version' and transform the
 # version line, like "Bazaar (bzr) 1.16.1", into "1 16 1":
 VER_RAW=`bzr --version | head -1 | sed -e 's/Bazaar (bzr) //g'`
@@ -165,77 +165,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-if [ ! -e ~/.ssh/config ]; then
-    touch ~/.ssh/config
-fi
-
-ssh_config_mod=0
-grep -q "^GSSAPIAuthentication" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  ssh_config_mod=1
-  echo "Please add the following directive to your ~/.ssh/config:
-------------------------------------------------------------
-GSSAPIAuthentication no
-------------------------------------------------------------
-
-  (Hit Return when done...)
-"
-fi
-if [ "$whoami" != "$lpusername" ]; then
-  if [ "$ssh_config_mod" -ne "0" ]
-  then
-    intro="Also ensure"
-  else
-    ssh_config_mod=1
-    intro="Ensure"
-  fi
-  echo "$intro the following directive is in your ~/.ssh/config:
-------------------------------------------------------------
-Host bazaar.launchpad.net
-    User $lpusername
-------------------------------------------------------------
-
-  (Hit Return when done...)
-"
-fi
-
-if [ "$ssh_config_mod" -ne "0" ]; then
-  read
-fi
-
-grep -q "^Host .*bazaar.launchpad.dev" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  echo "Please add the following directives to your ~/.ssh/config:
-------------------------------------------------------------
-Host bazaar.launchpad.dev
-    Hostname launchpad.dev
-    HostKeyAlias bazaar.launchpad.dev
-    User mark
-    Port 5022
-    IdentityFile ~/.ssh/launchpad_id_dsa
-------------------------------------------------------------
-
-  (Hit Return when done...)
-"
-  read
-fi
-
-# This is not strictly needed for bzr versions >= 1.9 but it's included
-# here for backwards compatibility.
-grep -q "^Host .*bazaar.launchpad.net" ~/.ssh/config
-if [ $? -ne 0 ]; then
-  echo "Please add the following directives to your ~/.ssh/config:
-------------------------------------------------------------
-Host bazaar.launchpad.net
-    User ${lpusername}
-------------------------------------------------------------
-
-  (Hit Return when done...)
-"
-  read
-fi
-
-
 LPDEV_SOURCES="/etc/apt/sources.list.d/launchpad-dev.list"
 if [ ! -e $LPDEV_SOURCES ]; then
   sudo touch $LPDEV_SOURCES
@@ -386,6 +315,8 @@ if [ ! `bzr info | grep -i "parent branch" | cut -d: -f3` = \
   fi
 fi
 
+# Call the newly minted Launchpad branch's 'make install' target to do some
+# more apache setup.
 sudo make install > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to install apache config appropriately"
@@ -429,13 +360,6 @@ fi
 
 echo "Bazaar branch configuration updated."
 
-fi
-
-# Set up access to the local supermirror
-if [ ! -e ~/.ssh/launchpad_id_dsa ]; then
-  cp $LP_TRUNK_PATH/lib/lp/codehosting/tests/id_dsa ~/.ssh/launchpad_id_dsa
-  chmod 600 ~/.ssh/launchpad_id_dsa
-  echo "Set up ssh key for local supermirror ssh access."
 fi
 
 # Set up scripts in /usr/local/bin

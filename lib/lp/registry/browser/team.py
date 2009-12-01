@@ -253,11 +253,7 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
                     reason = 'has a mailing list'
                 else:
                     reason = 'has a mailing list and a PPA'
-
-            # We can't change the widget's .hint directly because that's a
-            # read-only property.  But that property just delegates to the
-            # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = _(
+            self.widgets['name'].hint = _(
                 'This team cannot be renamed because it %s.' % reason)
 
 
@@ -1017,7 +1013,7 @@ class TeamMapView(LaunchpadView):
     limit = None
 
     def initialize(self):
-        # Tell our main-template to include Google's gmap2 javascript so that
+        # Tell our base-layout to include Google's gmap2 javascript so that
         # we can render the map.
         if self.mapped_participants_count > 0:
             self.request.needs_gmap2 = True

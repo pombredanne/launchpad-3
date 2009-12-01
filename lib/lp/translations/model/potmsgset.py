@@ -1053,13 +1053,20 @@ class POTMsgSet(SQLBase):
 
     def setTranslationCreditsToTranslated(self, pofile):
         """See `IPOTMsgSet`."""
-        if self.is_translation_credit:
-            translation = self.getSharedTranslationMessage(pofile.language)
-            if translation is None:
-                message = self.updateTranslation(
-                    pofile, pofile.owner, [credits_message_str],
-                    is_imported=False, allow_credits=True, force_shared=True,
-                    lock_timestamp=datetime.datetime.now(pytz.UTC))
+        if not self.is_translation_credit:
+            return
+
+        if self.getSharedTranslationMessage(pofile.language) is not None:
+            return
+
+        # The credits message has a fixed "translator."
+        translator = getUtility(ILaunchpadCelebrities).rosetta_experts
+
+        message = self.updateTranslation(
+            pofile, translator, [credits_message_str],
+            is_imported=False, allow_credits=True,
+            force_shared=True, force_edition_rights=True,
+            lock_timestamp=datetime.datetime.now(pytz.UTC))
 
     def setSequence(self, potemplate, sequence):
         """See `IPOTMsgSet`."""

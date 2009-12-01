@@ -27,6 +27,7 @@ class TestFilesystem(TestCaseWithTransport):
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)
+        self.disable_directory_isolation()
         frontend = InMemoryFrontend()
         self.factory = frontend.getLaunchpadObjectFactory()
         endpoint = XMLRPCWrapper(frontend.getFilesystemEndpoint())
