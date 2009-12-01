@@ -60,7 +60,18 @@ class BinaryPackageFileSet:
                       "binarypackagerelease.binarypackagename"])
 
 
-class SourcePackageReleaseFile(SQLBase):
+class SourceFileMixin:
+    """Mix-in class for common functionality between source file classes."""
+
+    @property
+    def is_orig(self):
+        return self.filetype in (
+            SourcePackageFileType.ORIG_TARBALL,
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL
+            )
+
+
+class SourcePackageReleaseFile(SourceFileMixin, SQLBase):
     """See ISourcePackageFile"""
 
     implements(ISourcePackageReleaseFile)
@@ -90,4 +101,3 @@ class SourcePackageReleaseFileSet:
             prejoins=["libraryfile", "libraryfile.content",
                       "sourcepackagerelease",
                       "sourcepackagerelease.sourcepackagename"])
-
