@@ -15,7 +15,7 @@ from lp.testing import TestCaseWithFactory
 
 
 class TestBugIndexedMessages(TestCaseWithFactory):
-    """Test ways of interacting with Bug webservice representations."""
+    """Test the workings of IBug.indexed_messages."""
 
     layer = DatabaseFunctionalLayer
 
