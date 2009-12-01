@@ -53,7 +53,7 @@ class BuildQueue(SQLBase):
     @property
     def required_build_behavior(self):
         """See `IBuildQueue`."""
-        return IBuildFarmJobBehavior(self.job_type)
+        return IBuildFarmJobBehavior(self.specific_job)
 
     @property
     def specific_job(self):

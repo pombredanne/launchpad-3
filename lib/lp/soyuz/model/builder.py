@@ -147,11 +147,12 @@ class Builder(SQLBase):
         if not safe_hasattr(self, '_current_build_behavior'):
             self._current_build_behavior = None
 
-        if self._current_build_behavior is not None:
+        if not (self._current_build_behavior is None or
+            isinstance(self._current_build_behavior, IdleBuildBehavior)):
             return self._current_build_behavior
 
         # If we don't currently have a current build behavior set,
-        # we'll set it based on our current job.
+        # or we are currently idle, we'll set it based on our current job.
         currentjob = self.currentjob
         if currentjob is not None:
             self._current_build_behavior = currentjob.required_build_behavior
@@ -159,6 +160,7 @@ class Builder(SQLBase):
             return self._current_build_behavior
 
         # Otherwise, we'll use the idle behavior.
+        # TODO: need a factory for idle behavior - get_idle_behavior()
         self._current_build_behavior = IdleBuildBehavior()
         return self._current_build_behavior 
 
@@ -169,7 +171,7 @@ class Builder(SQLBase):
             # We do not allow the current build behavior to be reset if we
             # have a current job.
             raise BuildBehaviorMismatch(
-                "Attempt to reset builder behavior while a current build"
+                "Attempt to reset builder behavior while a current build "
                 "exists.")
         else:
             self._current_build_behavior = new_behavior

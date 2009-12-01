@@ -40,6 +40,18 @@ Test 'status' property:
     >>> builder.builderok = True
     >>> builder.failnotes = None
 
+A builder provides a current_build_behavior attribute to which all the
+build-type specific behavior for the current build is delegated. For
+our sample data, the behavior is specifically a behavior for dealing
+with binary packages
+
+    >>> from zope.security.proxy import isinstance
+    >>> from lp.soyuz.model.binarypackagebuildbehavior import (
+    ...     BinaryPackageBuildBehavior)
+    >>> isinstance(
+    ...     builder.current_build_behavior, BinaryPackageBuildBehavior)
+    True
+
 In case of copy archives the status string will show both the copy
 archive owner as well as the copy archive name.
 

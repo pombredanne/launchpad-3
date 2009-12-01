@@ -8,10 +8,16 @@ import unittest
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    BuildBehaviorMismatch, IBuildFarmJobBehavior)
+from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.binarypackagebuildbehavior import (
+    BinaryPackageBuildBehavior)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -213,6 +219,73 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('primary', build.archive.name)
         self.failUnlessEqual('firefox', build.sourcepackagerelease.name)
+
+
+class TestCurrentBuildBehavior(TestCaseWithFactory):
+    """
+    This test ensures the get/set behavior of Builder.current_build_behavior.
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Create a new builder ready for testing."""
+        super(TestCurrentBuildBehavior, self).setUp()
+        self.builder = self.factory.makeBuilder(name='builder')
+        
+        # Have a publisher and a ppa handy for some of the tests below.
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+        self.ppa_joe = self.factory.makeArchive(name="joesppa")
+
+        self.build = self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+            archive=self.ppa_joe).createMissingBuilds()[0]
+
+        self.buildfarmjob = self.build.buildqueue_record.specific_job
+
+    def test_idle_behavior_when_no_current_build(self):
+        """
+        We return an idle behavior when there is no behavior specified
+        nor a current build.
+        """
+        self.assertIsInstance(
+            self.builder.current_build_behavior, IdleBuildBehavior)
+
+    def test_set_behavior_when_no_current_job(self):
+        """If a builder is idle then it is possible to set the behavior."""
+        self.builder.current_build_behavior = IBuildFarmJobBehavior(
+            self.buildfarmjob) 
+
+        self.assertIsInstance(
+            self.builder.current_build_behavior, BinaryPackageBuildBehavior)
+
+    def test_current_job_behavior(self):
+        """The current behavior is set automatically from the current job."""
+        # Set the builder attribute on the buildqueue record so that our
+        # builder will think it has a current build.
+        self.build.buildqueue_record.builder = self.builder
+
+        self.assertIsInstance(
+            self.builder.current_build_behavior, BinaryPackageBuildBehavior)
+
+    def test_set_behavior_when_current_job(self):
+        """
+        If a builder has a current job then it's behavior cannot be
+        set.
+        """
+        self.build.buildqueue_record.builder = self.builder
+
+        # As we can't use assertRaises for a property, we use a try-except
+        # instead.
+        assertion_raised = False
+        try:
+            self.builder.current_build_behavior = IBuildFarmJobBehavior(
+                self.buildfarmjob) 
+        except BuildBehaviorMismatch, e:
+            assertion_raised = True
+
+        self.failUnless(assertion_raised)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

@@ -25,11 +25,11 @@ class BuildFarmJobBehaviorBase:
     All build-farm job behaviors should inherit from this.
     """
 
-    def __init__(self, job_type):
+    def __init__(self, buildfarmjob):
         """
         Store a reference to the job_type with which we were created.
         """
-        self._job_type = job_type
+        self.buildfarmjob = buildfarmjob
         self._builder = None
 
     def set_builder(self, builder):
@@ -40,6 +40,13 @@ class BuildFarmJobBehaviorBase:
 class IdleBuildBehavior(BuildFarmJobBehaviorBase):
 
     implements(IBuildFarmJobBehavior)
+
+    def __init__(self):
+        """
+        The idle behavior is special in that a buildfarmjob is not specified
+        during initialisation.
+        """
+        super(IdleBuildBehavior, self).__init__(None)
 
     def logStartBuild(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""

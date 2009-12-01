@@ -12,16 +12,8 @@ __all__ = [
     'BuildFarmJobType',
     ]
 
-from zope.interface import alsoProvides, Interface
+from zope.interface import Interface
 from lazr.enum import DBEnumeratedType, DBItem
-
-
-class IBinaryPackageJobType(Interface):
-    """
-    Marker interface to be able to adapt individual job types
-    to behaviors. Note: there is probably a better way to do
-    this?
-    """
 
 
 class BuildFarmJobType(DBEnumeratedType):
@@ -54,11 +46,6 @@ class BuildFarmJobType(DBEnumeratedType):
 
         Perform a translation job.
         """)
-
-# Ensure the binary package build job type implements our
-# marker interface. We could instead create a new class
-# inheriting from DBItem - not sure what's preferred.
-alsoProvides(BuildFarmJobType.PACKAGEBUILD, IBinaryPackageJobType)
 
 
 class IBuildFarmJob(Interface):
