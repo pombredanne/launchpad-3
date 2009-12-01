@@ -1512,7 +1512,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         # Setting a public branch to be public is a no-op.
         branch = self.factory.makeProductBranch()
         self.assertFalse(branch.private)
-        branch.setPrivate(False)
+        branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
 
     def test_public_to_private_allowed(self):
@@ -1521,7 +1521,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         branch.product.setBranchVisibilityTeamPolicy(
             branch.owner, BranchVisibilityRule.PRIVATE)
-        branch.setPrivate(True)
+        branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
 
     def test_public_to_private_not_allowed(self):
@@ -1531,20 +1531,29 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertRaises(
             BranchCannotBePrivate,
             branch.setPrivate,
-            True)
+            True, branch.owner)
+
+    def test_public_to_private_for_admins(self):
+        # Admins can override the default behaviour and make any public branch
+        # private.
+        branch = self.factory.makeProductBranch()
+        # Grab a random admin, the teamowner is good enough here.
+        admins = getUtility(ILaunchpadCelebrities).admin
+        branch.setPrivate(True, admins.teamowner)
+        self.assertTrue(branch.private)
 
     def test_private_to_private(self):
         # Setting a private branch to be private is a no-op.
         branch = self.factory.makeProductBranch(private=True)
         self.assertTrue(branch.private)
-        branch.setPrivate(True)
+        branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
 
     def test_private_to_public_allowed(self):
         # If the namespace policy allows public branches, then changing from
         # private to public is allowed.
         branch = self.factory.makeProductBranch(private=True)
-        branch.setPrivate(False)
+        branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
 
     def test_private_to_public_not_allowed(self):
@@ -1558,7 +1567,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertRaises(
             BranchCannotBePublic,
             branch.setPrivate,
-            False)
+            False, branch.owner)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
