@@ -479,6 +479,28 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
         """Allow Launchpad's admins and Rosetta experts edit all fields."""
         return is_admin_or_rosetta_expert(user)
 
+
+class AdminDistroTranslations(OnlyRosettaExpertsAndAdmins):
+    """LP/Translations admins, distro owners and distro translations
+    group owners have administrative rights over templates.
+    """
+
+    def checkAuthenticated(self, user):
+        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
+            return True
+
+        template = self.obj
+        if template.distroseries is not None:
+            distro = template.distroseries.distribution
+            if user.inTeam(distro.owner):
+                return True
+            translation_group = distro.translationgroup
+            if translation_group and user.inTeam(translation_group.owner):
+                return True
+
+        return False
+
+
 class AdminProductTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IProduct
@@ -1103,27 +1125,9 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
+class AdminPOTemplateDetails(AdminDistroTranslations):
     permission = 'launchpad.Admin'
     usedfor = IPOTemplate
-
-    def checkAuthenticated(self, user):
-        """Allow LP/Translations admins, and for distros, owners and
-        translation group owners.
-        """
-        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
-            return True
-
-        template = self.obj
-        if template.distroseries is not None:
-            distro = template.distroseries.distribution
-            if user.inTeam(distro.owner):
-                return True
-            translation_group = distro.translationgroup
-            if translation_group and user.inTeam(translation_group.owner):
-                return True
-
-        return False
 
 
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
@@ -1607,7 +1611,7 @@ class AdminBranch(AuthorizationBase):
                 user.inTeam(celebs.bazaar_experts))
 
 
-class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
+class AdminPOTemplateSubset(AdminDistroTranslations):
     permission = 'launchpad.Admin'
     usedfor = IPOTemplateSubset
 
