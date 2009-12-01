@@ -538,6 +538,7 @@ class GitImportWorker(PullingImportWorker):
     @property
     def format_classes(self):
         """See `PullingImportWorker.opening_format`."""
+        # We only return LocalGitBzrDirFormat for tests.
         from bzrlib.plugins.git import (
             LocalGitBzrDirFormat, RemoteGitBzrDirFormat)
         return [LocalGitBzrDirFormat, RemoteGitBzrDirFormat]

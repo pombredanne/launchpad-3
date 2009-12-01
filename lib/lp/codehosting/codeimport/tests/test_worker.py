@@ -810,9 +810,6 @@ class PullingImportWorkerTests:
     def createBranchReference(self):
         """Create a pure branch reference that points to a branch.
         """
-        # XXX DavidAllouche 2007-09-12 bug=139109:
-        # We do this manually because the bzrlib API does not support creating
-        # a branch reference without opening it.
         branch = self.make_branch('branch')
         t = get_transport(self.get_url('.'))
         t.mkdir('reference')
