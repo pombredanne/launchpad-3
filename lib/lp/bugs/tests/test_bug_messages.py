@@ -8,12 +8,7 @@ __metaclass__ = type
 
 import unittest
 
-from zope.component import getMultiAdapter
-from zope.interface import implements
-
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces.message import IndexedMessage
-from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.testing import TestCaseWithFactory
