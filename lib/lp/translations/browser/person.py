@@ -215,6 +215,8 @@ class PersonTranslationView(LaunchpadView):
     @property
     def person_is_translator(self):
         """Is this person active in translations?"""
+        if self.context.isTeam():
+            return False
         person = ITranslationsPerson(self.context)
         history = person.getTranslationHistory(self.history_horizon).any()
         return history is not None

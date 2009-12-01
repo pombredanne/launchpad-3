@@ -514,12 +514,14 @@ class TestTranslationMessageMerging(TestCaseWithFactory,
         poftset = getUtility(IPOFileTranslatorSet)
 
         translator = self.trunk_template.owner
+        self.trunk_pofile.owner = translator
+        self.stable_pofile.owner = translator
 
         contented_potmsgset = self.factory.makePOTMsgSet(
             self.trunk_template, singular='snut', sequence=2)
         contented_message = self._makeTranslationMessage(
             self.trunk_pofile, contented_potmsgset, 'druf', False)
-        self.assertEqual(contented_message.submitter, translator)
+        self.assertEqual(translator, contented_message.submitter)
         poft = poftset.getForPersonPOFile(translator, self.trunk_pofile)
         self.assertEqual(poft.latest_message, contented_message)
 
