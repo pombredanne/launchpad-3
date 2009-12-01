@@ -73,7 +73,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # subsequent runs.
         buildid = "%s-%s" % (build.id, build_queue_item.id)
         chroot_sha1 = chroot.content.sha1
-        logger.debug("Initiating build %s on %s" % (buildid, self.url))
+        logger.debug(
+            "Initiating build %s on %s" % (buildid, self._builder.url))
 
         try:
             args = self._extra_build_args(build)
@@ -85,11 +86,19 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             %s
             %s: %s
             ******************
-            """ % (self.name, self.url, filemap, args, status, info)
+            """ % (
+                self._builder.name,
+                self._builder.url,
+                filemap,
+                args,
+                status,
+                info,
+                )
             logger.info(message)
         except xmlrpclib.Fault, info:
             # Mark builder as 'failed'.
-            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
+            logger.debug(
+                "Disabling builder: %s" % self._builder.url, exc_info=1)
             self._builder.failbuilder(
                 "Exception (%s) when setting up to new job" % info)
             raise BuildSlaveFailure
@@ -129,7 +138,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             url = urlappend(archive_url, poolpath)
             url = urlappend(url, file_name)
             logger.debug("Asking builder on %s to ensure it has file %s "
-                         "(%s, %s)" % (self.url, file_name, url, sha1))
+                         "(%s, %s)" % (
+                            self._builder.url, file_name, url, sha1))
             self._builder._sendFileToSlave(
                 url, sha1, "buildd", archive.buildd_secret)
 
