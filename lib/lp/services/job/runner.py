@@ -13,8 +13,12 @@ __all__ = ['JobRunner']
 
 import sys
 
+from ampoule import child, pool
+
 from twisted.internet import reactor, defer
+from twisted.protocols import amp
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.twistedsupport.task import (
@@ -175,17 +179,36 @@ class JobRunner(BaseJobRunner):
             self.runJobHandleError(job)
 
 
+class RunAmpouleJob(amp.Command):
+    arguments = [('job_id', amp.Integer())]
+
+
+class JobRunnerProto(child.AMPChild):
+    @RunAmpouleJob.responder
+    def runAmpouleJob(self, job_id):
+        runner = BaseJobRunner()
+        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
+        job = UpdatePreviewDiffJob.get(job_id)
+        runner.runJobHandleError(job)
+        return {}
+
+
 class TwistedJobRunner(BaseJobRunner):
 
     def __init__(self, job_source, logger=None):
         BaseJobRunner.__init__(self, logger=logger)
         self.job_source = job_source
+        self.pp = pool.ProcessPool(JobRunnerProto, min=1, max=1)
+
+    def runJobInSubprocess(self, job):
+        job_id = removeSecurityProxy(job).context.id
+        return self.pp.doWork(RunAmpouleJob, job_id = job_id)
 
     def getTaskSource(self):
         def producer():
             while True:
                 for job in self.job_source.iterReady():
-                    yield lambda: self.runJobHandleError(job)
+                    yield lambda: self.runJobInSubprocess(job)
                 yield None
         return PollingTaskSource(5, producer().next)
 
@@ -194,13 +217,17 @@ class TwistedJobRunner(BaseJobRunner):
         return consumer.consume(self.getTaskSource())
 
     def runAll(self):
+        self.pp.start()
         d = defer.maybeDeferred(self.doConsumer)
-        d.addCallbacks(lambda ignored: reactor.stop(), self.failed)
+        d.addCallbacks(self.terminated, self.failed)
 
-    @staticmethod
-    def failed(failure):
+    def terminated(self, ignored=None):
+        deferred = self.pp.stop()
+        deferred.addBoth(lambda ignored: reactor.stop())
+
+    def failed(self, failure):
         failure.printTraceback()
-        reactor.stop()
+        self.terminated()
 
     @classmethod
     def runFromSource(cls, job_source, logger):
