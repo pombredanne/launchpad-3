@@ -250,13 +250,14 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         self.assertIsInstance(
             self.builder.current_build_behavior, IdleBuildBehavior)
 
-    def test_set_behavior_when_no_current_job(self):
-        """If a builder is idle then it is possible to set the behavior."""
-        self.builder.current_build_behavior = IBuildFarmJobBehavior(
-            self.buildfarmjob)
+    def test_set_behavior_sets_builder(self):
+        """Setting a builder's behavior also associates the behavior with the
+        builder."""
+        behavior = IBuildFarmJobBehavior(self.buildfarmjob)
+        self.builder.current_build_behavior = behavior
 
-        self.assertIsInstance(
-            self.builder.current_build_behavior, BinaryPackageBuildBehavior)
+        self.assertEqual(behavior, self.builder.current_build_behavior)
+        self.assertEqual(behavior._builder, self.builder)
 
     def test_current_job_behavior(self):
         """The current behavior is set automatically from the current job."""
@@ -266,22 +267,6 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
 
         self.assertIsInstance(
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
-
-    def test_set_behavior_when_current_job(self):
-        """If a builder has a current job then it's behavior cannot be set.
-        """
-        self.build.buildqueue_record.builder = self.builder
-
-        # As we can't use assertRaises for a property, we use a try-except
-        # instead.
-        assertion_raised = False
-        try:
-            self.builder.current_build_behavior = IBuildFarmJobBehavior(
-                self.buildfarmjob)
-        except BuildBehaviorMismatch, e:
-            assertion_raised = True
-
-        self.failUnless(assertion_raised)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

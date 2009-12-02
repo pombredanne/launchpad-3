@@ -172,16 +172,8 @@ class Builder(SQLBase):
 
     def _setCurrentBuildBehavior(self, new_behavior):
         """Set the current build behavior."""
-
-        if self.currentjob is not None:
-            # We do not allow the current build behavior to be reset if we
-            # have a current job.
-            raise BuildBehaviorMismatch(
-                "Attempt to reset builder behavior while a current build "
-                "exists.")
-        else:
-            self._current_build_behavior = new_behavior
-            self._current_build_behavior.setBuilder(self)
+        self._current_build_behavior = new_behavior
+        self._current_build_behavior.setBuilder(self)
 
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
