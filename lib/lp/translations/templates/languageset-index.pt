@@ -7,6 +7,20 @@
 >
 
   <body>
+    <div metal:fill-slot="head_epiplogue">
+      <script
+        type="text/javascript"
+        tal:condition="devmode"
+        tal:attributes="src string:${icingroot}/build/worlddata/languages.js">
+      </script>
+      <script type="text/javascript">
+          YUI().use( 'translations', 'event', function(Y) {
+              Y.on('domready', function(e) {
+                  Y.languages.initialize_languages_page(Y);
+              });
+          });
+      </script>
+    </div>
     <div metal:fill-slot="main">
       <div class="yui-b top-portlet">
         <p>
@@ -34,7 +48,7 @@
               English
           </dd>
         </dl>
-        <div class="portlet">
+        <div class="portlet searchform">
           <h2>Find a language in Launchpad</h2>
           <form method="get">
             <p>
