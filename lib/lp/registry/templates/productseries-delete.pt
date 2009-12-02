@@ -9,10 +9,17 @@
     <div metal:fill-slot="main">
       <div metal:use-macro="context/@@launchpad_form/form">
         <div metal:fill-slot="extra_info" class="documentDescription">
-          <p tal:condition="not: view/can_delete">
-            You cannot delete a series that is the focus of development. Make
-            another series the focus of development before deleting this one.
-          </p>
+          <div id="cannot-delete"
+            tal:condition="not: view/can_delete">
+            <p tal:condition="view/context/is_development_focus"
+              tal:content="view/development_focus_message">
+              You cannot delete the focus of development
+            </p>
+            <p tal:condition="view/has_linked_packages"
+              tal:content="structure view/linked_packages_message">
+              You cannot delete a series with packaging links
+            </p>
+          </div>
           <tal:can-delete condition="view/can_delete">
             <p>
               Are you sure you want to delete series

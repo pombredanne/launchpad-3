@@ -19,9 +19,12 @@ The trunk series is the focus of development. It cannot be deleted.
 The owner learns that he must make another series the focus of development
 first. There is no delete button on the page.
 
-    >>> print extract_text(find_main_content(owner_browser.contents).p)
+    >>> print extract_text(
+    ...     find_tag_by_id(owner_browser.contents, 'cannot-delete'))
     You cannot delete a series that is the focus of development. Make
     another series the focus of development before deleting this one.
+    You cannot delete a series that is linked to packages in distributions.
+    You can remove the links from the project packaging page.
 
     >>> owner_browser.getControl('Delete this Series')
     Traceback (most recent call last):
@@ -29,7 +32,8 @@ first. There is no delete button on the page.
     LookupError: ...
 
 Sample person chooses to cancel the action and make the 1.0 series the focus
-of development.
+of development. He then removes the linked package which he beleives is
+bogus.
 
     >>> owner_browser.getLink('Cancel').click()
     >>> owner_browser.open('http://launchpad.dev/firefox/+edit')
@@ -41,12 +45,15 @@ of development.
     >>> print owner_browser.title
     Mozilla Firefox in Launchpad
 
+    >>> owner_browser.getLink('All packages').click()
+    >>> owner_browser.getControl(
+    ...     name='field.actions.delete_packaging', index=1).click()
+
 Then he returns to delete trunk. He is informed that deletion is permanent,
 and that the milestones, releases, and files will also be deleted. The
 milestones and releases are linked.
 
-    >>> owner_browser.getLink('View full history').click()
-    >>> owner_browser.getLink('trunk').click()
+    >>> owner_browser.getLink('trunk series').click()
     >>> owner_browser.getLink('Delete series').click()
     >>> print owner_browser.title
     Delete Mozilla Firefox trunk series...
