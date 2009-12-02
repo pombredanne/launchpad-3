@@ -261,8 +261,8 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def test_sort_order_needs_review(self):
-        # If the proposal is in needs review, the sort_order will be the
+    def test_sort_key_needs_review(self):
+        # If the proposal is in needs review, the sort_key will be the
         # date_review_requested.
         bmp = self.factory.makeBranchMergeProposal(
             date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
@@ -270,10 +270,10 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
         request_date = datetime(2009,7,1,tzinfo=pytz.UTC)
         bmp.requestReview(request_date)
         item = BranchMergeProposalListingItem(bmp, None, None)
-        self.assertEqual(request_date, item.sort_order)
+        self.assertEqual(request_date, item.sort_key)
 
-    def test_sort_order_approved(self):
-        # If the proposal is approved, the sort_order will default to the
+    def test_sort_key_approved(self):
+        # If the proposal is approved, the sort_key will default to the
         # date_review_requested.
         bmp = self.factory.makeBranchMergeProposal(
             date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
@@ -284,9 +284,9 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
             bmp.target_branch.owner, 'rev-id',
             datetime(2009,8,1,tzinfo=pytz.UTC))
         item = BranchMergeProposalListingItem(bmp, None, None)
-        self.assertEqual(request_date, item.sort_order)
+        self.assertEqual(request_date, item.sort_key)
 
-    def test_sort_order_approved_from_wip(self):
+    def test_sort_key_approved_from_wip(self):
         # If the proposal is approved and the review has been bypassed, the
         # date_reviewed is used.
         bmp = self.factory.makeBranchMergeProposal(
@@ -296,7 +296,7 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
         bmp.approveBranch(
             bmp.target_branch.owner, 'rev-id', review_date)
         item = BranchMergeProposalListingItem(bmp, None, None)
-        self.assertEqual(review_date, item.sort_order)
+        self.assertEqual(review_date, item.sort_key)
 
 
 class ActiveReviewSortingTest(TestCaseWithFactory):
