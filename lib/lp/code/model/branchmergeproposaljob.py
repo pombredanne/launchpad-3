@@ -44,10 +44,10 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import PreviewDiff, StaticDiff
-from lp.codehosting.vfs import get_multi_server
+from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
-from lp.services.job.runner import BaseRunnableJob
+from lp.services.job.runner import BaseRunnableJob, JobRunnerProto
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -277,11 +277,24 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 
+    @staticmethod
+    def setUp():
+        server = get_scanner_server()
+        server.setUp()
+        return [server.tearDown]
+
     def run(self):
         """See `IRunnableJob`"""
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
         self.branch_merge_proposal.preview_diff = preview
+
+
+class UpdatePreviewDiffAmp(JobRunnerProto):
+    job_class = UpdatePreviewDiffJob
+
+
+UpdatePreviewDiffJob.amp = UpdatePreviewDiffAmp
 
 
 class CreateMergeProposalJob(BaseRunnableJob):

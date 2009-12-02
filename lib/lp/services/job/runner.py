@@ -26,7 +26,6 @@ from canonical.twistedsupport.task import (
 from lazr.delegates import delegates
 import transaction
 
-from lp.codehosting.vfs import get_scanner_server
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
@@ -208,23 +207,31 @@ class RunAmpouleJob(amp.Command):
 
 
 class JobRunnerProto(child.AMPChild):
+
+    def __init__(self):
+        child.AMPChild.__init__(self)
+        self.cleanups = []
+
+    def makeConnection(self, transport):
+        child.AMPChild.makeConnection(self, transport)
+        self.cleanups.extend(self.job_class.setUp())
+
+    def connectionLost(self, reason):
+        for cleanup in reversed(self.cleanups):
+            cleanup()
+        child.AMPChild.connectionLost(self, reason)
+
     @RunAmpouleJob.responder
     def runAmpouleJob(self, job_id):
         runner = BaseJobRunner()
-        from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
-        job = UpdatePreviewDiffJob.get(job_id)
-        server = get_scanner_server()
-        server.setUp()
-        try:
-            runner.runJobHandleError(job)
-        finally:
-            server.tearDown()
+        job = self.job_class.get(job_id)
+        runner.runJobHandleError(job)
         return {'success': len(runner.completed_jobs)}
 
 
 class TwistedJobRunner(BaseJobRunner):
 
-    def __init__(self, job_source, logger=None):
+    def __init__(self, job_source, job_amp, logger=None):
         import os
         starter = main.ProcessStarter(
             bootstrap=BOOTSTRAP, packages=('twisted', 'ampoule'),
@@ -233,8 +240,9 @@ class TwistedJobRunner(BaseJobRunner):
             'LPCONFIG': os.environ['LPCONFIG']})
         BaseJobRunner.__init__(self, logger=logger)
         self.job_source = job_source
+        self.job_amp = job_amp
         self.pp = pool.ProcessPool(
-            JobRunnerProto, min=1, max=1, starter=starter)
+            job_amp, min=1, max=1, starter=starter)
 
     def runJobInSubprocess(self, job):
         job_id = removeSecurityProxy(job).context.id
@@ -275,7 +283,7 @@ class TwistedJobRunner(BaseJobRunner):
     @classmethod
     def runFromSource(cls, job_source, logger):
         logger.info("Running through Twisted.")
-        runner = cls(job_source, logger)
+        runner = cls(job_source, removeSecurityProxy(job_source).amp, logger)
         reactor.callWhenRunning(runner.runAll)
         reactor.run()
         return runner
