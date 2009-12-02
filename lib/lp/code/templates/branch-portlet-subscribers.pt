@@ -44,7 +44,7 @@
     YUI().use('io-base', 'node', 'code.branchsubscription', function(Y) {
 
     if(Y.UA.ie) {
-        Y.get('#subscriber-list').set('innerHTML',
+        Y.one('#subscriber-list').set('innerHTML',
             'Could not load subscribers, javascript is disabled.');
         return;
     }

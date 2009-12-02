@@ -280,7 +280,7 @@ class TestPublisher(TestPublisherBase):
             owner=ubuntu_team, purpose=ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
 
         publisher.A_publish(False)
@@ -290,7 +290,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
 
         # nothing got published
-        foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        foo_path = "%s/main/f/foo/foo_1.dsc" % self.pool_dir
         self.assertEqual(os.path.exists(foo_path), False)
 
     def testPublishingWorksForOtherArchives(self):
@@ -309,7 +309,7 @@ class TestPublisher(TestPublisherBase):
             test_archive)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc",
+            sourcename="foo", filename="foo_1.dsc",
             filecontent='I am supposed to be a embargoed archive',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
 
@@ -322,7 +322,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
         # nothing got published
-        foo_path = "%s/main/f/foo/foo.dsc" % test_pool_dir
+        foo_path = "%s/main/f/foo/foo_1.dsc" % test_pool_dir
         self.assertEqual(
             open(foo_path).read().strip(),
             'I am supposed to be a embargoed archive',)
@@ -401,11 +401,11 @@ class TestPublisher(TestPublisherBase):
             owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=spiv.archive)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PUBLISHED, archive=name16.archive)
 
         self.assertEqual(4, ubuntu.getAllPPAs().count())
@@ -465,7 +465,7 @@ class TestPublisher(TestPublisherBase):
         # Pending source and binary publications.
         # The binary description explores index formatting properties.
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=cprov.archive)
         pub_bin = self.getPubBinaries(
             pub_source=pub_source,
@@ -507,7 +507,7 @@ class TestPublisher(TestPublisherBase):
              'Format: 1.0',
              'Directory: pool/main/f/foo',
              'Files:',
-             ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo.dsc',
+             ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo_1.dsc',
              ''],
             index_contents)
 
