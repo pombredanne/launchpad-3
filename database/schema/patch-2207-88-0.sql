@@ -2,9 +2,6 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE SourcePackageRecipeData (
     id serial PRIMARY KEY,
-    date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
-    distroseries integer NOT NULL REFERENCES DistroSeries,
-    sourcepackagename integer NOT NULL REFERENCES SourcePackageName,
     recipe text NOT NULL
 );
 
@@ -41,11 +38,10 @@ CREATE TABLE SourcePackageBuild (
     id serial PRIMARY KEY,
     -- most of this is just copied from Build
 
-    -- I've dropped: processor, sourcepackagerelease, pocket
+    -- I've dropped: processor, sourcepackagerelease, pocket, dependencies
     -- changed: distroarchseries to distroseries
     -- add: recipe and manifest
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    processor integer NOT NULL,
     distroseries integer NOT NULL REFERENCES distroseries,
     archive integer NOT NULL REFERENCES Archive,
     buildstate integer NOT NULL,
@@ -53,10 +49,10 @@ CREATE TABLE SourcePackageBuild (
     buildduration interval,
     build_log integer REFERENCES libraryfilealias,
     builder integer REFERENCES builder,
-    dependencies text, -- do we want that?
     estimated_build_duration interval,
     build_warnings text,
     date_first_dispatched timestamp without time zone,
+    upload_log integer REFERENCES LibraryFileAlias,
     requester integer REFERENCES Person,
     recipe integer REFERENCES SourcePackageRecipe,
     manifest integer REFERENCES SourcePackageRecipeData
