@@ -50,19 +50,20 @@
                  />
             </p>
           </form>
-          <div tal:condition="context/required:launchpad.Admin">
-            <a tal:attributes="href context/fmt:url/+add"
-               class="add sprite">Add new language</a>
-          </div>
         </div>
       </div>
-      <div id="all-languages" class="three-column-list"
-           tal:condition="not:view/search_requested">
-         <ul>
-           <li tal:repeat="language context/common_languages">
-             <a tal:replace="structure language/fmt:link">English</a>
-           </li>
-         </ul>
+      <div tal:condition="not:view/search_requested"
+           class="portlet">
+        <h2>Available languages in Launchpad</h2>
+        <p tal:condition="context/required:launchpad.Admin">
+          <a tal:attributes="href context/fmt:url/+add"
+               class="add sprite">Add new language</a>
+        </p>
+        <ul id="all-languages" class="three-column-list">
+          <li tal:repeat="language context/common_languages">
+            <a tal:replace="structure language/fmt:link">English</a>
+          </li>
+        </ul>
       </div>
       <div tal:condition="view/search_requested" class="yui-b portlet">
         <tal:block tal:define="results view/search_results">
@@ -83,14 +84,12 @@
               matching languages
             </h2>
           </tal:more>
-          <ul condition="view/search_matches" class="languages">
-            <tal:language repeat="language results">
-              <li>
-                <a tal:replace="structure language/fmt:link">
-                  Serbian (sr)
-                </a>
-              </li>
-            </tal:language>
+          <ul condition="view/search_matches" class="three-column-list">
+            <li language tal:repeat="language results">
+              <a tal:replace="structure language/fmt:link">
+                Serbian (sr)
+              </a>
+            </li>
           </ul>
         </tal:block>
       </div>
