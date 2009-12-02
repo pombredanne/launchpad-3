@@ -80,7 +80,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 
 
 def quote(text):
-    """Escape and quite text."""
+    """Escape and quote text."""
     return cgi.escape(text, quote=True)
 
 
@@ -557,13 +557,10 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         """Is the delete action available."""
         if self.context.is_development_focus:
             self.addError(self.development_focus_message)
-        elif self.has_linked_packages:
+        if self.has_linked_packages:
             self.addError(structured(self.linked_packages_message))
-        elif self.has_translations:
+        if self.has_translations:
             self.addError(self.translations_message)
-        else:
-            # This series can be deleted.
-            pass
         return self.can_delete
 
     @action('Delete this Series', name='delete', condition=canDeleteAction)
