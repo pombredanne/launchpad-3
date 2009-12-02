@@ -171,7 +171,7 @@ class MailingList(SQLBase):
     date_activated = UtcDateTimeCol(notNull=False, default=None)
 
     status = EnumCol(enum=MailingListStatus,
-                     default=MailingListStatus.REGISTERED,
+                     default=MailingListStatus.APPROVED,
                      notNull=True)
 
     # Use a trailing underscore because SQLObject/importfascist doesn't like

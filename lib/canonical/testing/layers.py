@@ -113,7 +113,8 @@ from canonical.testing.smtpd import SMTPController
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
 COMMA = ','
-WAIT_INTERVAL = datetime.timedelta(seconds=180)
+#WAIT_INTERVAL = datetime.timedelta(seconds=180)
+WAIT_INTERVAL = datetime.timedelta(seconds=10)
 
 
 class LayerError(Exception):
