@@ -59,6 +59,7 @@
                  name="find" size="30"
                  tal:attributes="value view/language_search" />
               <input
+                 class="submit"
                  type="submit"
                  value="Find language"
                  />
