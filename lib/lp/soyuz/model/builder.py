@@ -321,6 +321,10 @@ class Builder(SQLBase):
         self.builderok = False
         self.failnotes = reason
 
+    # XXX Michael Nelson 20091202 bug=491330. The current UI assumes
+    # that the builder history will display binary build records, as
+    # returned by getBuildRecords() below. See the bug for a discussion
+    # of the options.
     def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
                         user=None):
         """See IHasBuildRecords."""
