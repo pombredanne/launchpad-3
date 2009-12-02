@@ -49,7 +49,7 @@
         /* A page-specific fix for inline text are editing to line up box. */
         #edit-description .yui-ieditor-input { top: 0; }
         /* Align the 'add comment' link to the right of the comment box. */
-        #add-comment-form textarea { width: 100%; max-width=60em;}
+        #add-comment-form textarea { width: 100%; }
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
         .bug-branch-summary dd { font-size: 85% }

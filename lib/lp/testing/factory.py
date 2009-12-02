@@ -1587,7 +1587,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
         return potemplate.newPOFile(language_code, variant,
-                                    requester=potemplate.owner,
                                     create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,

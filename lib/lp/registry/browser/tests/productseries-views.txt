@@ -61,7 +61,13 @@ The view also sets the class of the milestone and releases table which can
 be removed by the in-page script. If the product series has no milestones,
 the class table is 'listing unseen'.
 
+    >>> login_person(product.owner)
+    >>> view = create_view(series, '+index', principal=product.owner)
     >>> print view.milestone_table_class
+    listing unseen
+
+    >>> table = find_tag_by_id(view.render(), 'series-simple')
+    >>> print table['class']
     listing unseen
 
 When the product series has milestones, the class is just 'listing'.
