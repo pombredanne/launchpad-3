@@ -56,10 +56,11 @@
                 Language name/code contains:
               </label>
               <input
+                 id="find"
                  name="find" size="30"
                  tal:attributes="value view/language_search" />
               <input
-                 class="submit"
+                 id="submit"
                  type="submit"
                  value="Find language"
                  />
