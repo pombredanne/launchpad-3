@@ -26,6 +26,7 @@ from canonical.twistedsupport.task import (
 from lazr.delegates import delegates
 import transaction
 
+from lp.codehosting.vfs import get_scanner_server
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
@@ -201,7 +202,9 @@ class JobRunner(BaseJobRunner):
 
 
 class RunAmpouleJob(amp.Command):
+
     arguments = [('job_id', amp.Integer())]
+    response = [('success', amp.Integer())]
 
 
 class JobRunnerProto(child.AMPChild):
@@ -210,8 +213,13 @@ class JobRunnerProto(child.AMPChild):
         runner = BaseJobRunner()
         from lp.code.model.branchmergeproposaljob import UpdatePreviewDiffJob
         job = UpdatePreviewDiffJob.get(job_id)
-        runner.runJobHandleError(job)
-        return {}
+        server = get_scanner_server()
+        server.setUp()
+        try:
+            runner.runJobHandleError(job)
+        finally:
+            server.tearDown()
+        return {'success': len(runner.completed_jobs)}
 
 
 class TwistedJobRunner(BaseJobRunner):
@@ -230,7 +238,14 @@ class TwistedJobRunner(BaseJobRunner):
 
     def runJobInSubprocess(self, job):
         job_id = removeSecurityProxy(job).context.id
-        return self.pp.doWork(RunAmpouleJob, job_id = job_id)
+        deferred = self.pp.doWork(RunAmpouleJob, job_id = job_id)
+        def update(response):
+            if response['success']:
+                self.completed_jobs.append(job)
+            else:
+                self.incomplete_jobs.append(job)
+        deferred.addCallback(update)
+        return deferred
 
     def getTaskSource(self):
         def producer():
@@ -286,3 +301,6 @@ class JobCronScript(LaunchpadCronScript):
         self.logger.info(
             'Ran %d %s jobs.',
             len(runner.completed_jobs), self.source_interface.__name__)
+        self.logger.info(
+            '%d %s jobs did not complete.',
+            len(runner.incomplete_jobs), self.source_interface.__name__)
