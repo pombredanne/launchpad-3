@@ -24,13 +24,14 @@
           </a>
           FAQ entry.
         </p>
-        <dl id="preferred_languages">
-          <dt>Languages:
+        <dl id="preferred_languages"
+            tal:condition="view/user">
+          <dt>Your preferred languages:
+            <a tal:attributes="href string:${view/user/fmt:url}/+editlanguages"
+               class="edit sprite"></a>
           </dt>
-          <dd>
-            <tal:languages replace="structure view/user_languages">
+          <dd tal:content="structure view/user_languages">
               English
-            </tal:languages>
           </dd>
         </dl>
         <div class="portlet">
