@@ -56,7 +56,7 @@ Sample Person tries unsuccessfully to register an old version of the code.
 Sample Person tries to access the old version page to sign it, and is informed
 that there is a new version available.
 
-    >>> browser.open('http://launchpad.dev/codeofconduct/1.1/+sign')
+    >>> browser.open('http://launchpad.dev/codeofconduct/1.0/+sign')
     >>> browser.getLink('the current version').click()
     >>> print browser.url
     http://launchpad.dev/codeofconduct/1.1
@@ -73,7 +73,7 @@ Sample Person registers the code of conduct, using a reformatted copy which
 has leading spaces removed.  This succeeds because the words the same and
 appear in the same order.
 
-    >>> reformatted_coc = read_file('reformatted_101_coc.asc')
+    >>> reformatted_coc = read_file('reformatted_11_coc.asc')
     >>> browser.getControl('Signed Code').value = reformatted_coc
     >>> browser.getControl('Continue').click()
     >>> print browser.url
