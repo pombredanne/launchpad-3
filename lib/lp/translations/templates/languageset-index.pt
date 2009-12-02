@@ -24,7 +24,15 @@
           </a>
           FAQ entry.
         </p>
-
+        <dl id="preferred_languages">
+          <dt>Languages:
+          </dt>
+          <dd>
+            <tal:languages replace="structure view/user_languages">
+              English
+            </tal:languages>
+          </dd>
+        </dl>
         <div class="portlet">
           <h2>Find a language in Launchpad</h2>
           <form method="get">

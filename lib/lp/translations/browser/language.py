@@ -19,6 +19,7 @@ from zope.component import getUtility
 from zope.event import notify
 
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.translationsperson import (
@@ -79,7 +80,14 @@ class LanguageNavigationMenu(NavigationMenu):
         return Link('+admin', text, icon='edit')
 
 
-class LanguageSetView:
+def _format_language(language):
+    """Format a language as a link."""
+    return '<a href="%(url)s">%(englishname)s</a>' % {
+        'url': canonical_url(language),
+        'englishname': language.englishname}
+
+
+class LanguageSetView(LaunchpadView):
     """View class to render main ILanguageSet page."""
     label = "Languages in Launchpad"
     page_title = "Languages"
@@ -101,6 +109,14 @@ class LanguageSetView:
             return self.search_results.count()
         else:
             return 0
+
+    @cachedproperty
+    def user_languages(self):
+        """The user's preferred languages, or English if none are set."""
+        languages = list(self.user.languages)
+        if len(languages) == 0:
+            languages = [getUtility(ILaunchpadCelebrities).english]
+        return ", ".join(map(_format_language, languages))
 
 
 # There is no easy way to remove an ILanguage from the database due all the
