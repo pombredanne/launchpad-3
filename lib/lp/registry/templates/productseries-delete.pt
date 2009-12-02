@@ -13,11 +13,15 @@
             tal:condition="not: view/can_delete">
             <p tal:condition="view/context/is_development_focus"
               tal:content="view/development_focus_message">
-              You cannot delete the focus of development
+              You cannot delete the focus of development.
             </p>
             <p tal:condition="view/has_linked_packages"
               tal:content="structure view/linked_packages_message">
-              You cannot delete a series with packaging links
+              You cannot delete a series with packaging links.
+            </p>
+            <p tal:condition="view/has_translations"
+              tal:content="view/translations_message">
+              A series with translations cannot be deleted.
             </p>
           </div>
           <tal:can-delete condition="view/can_delete">

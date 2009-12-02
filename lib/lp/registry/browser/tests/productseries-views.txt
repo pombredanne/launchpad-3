@@ -396,3 +396,26 @@ avoid conflicts. The linked branch is removed.
     True
     >>> print productseries.name
     field-rabbit-20090501-193424
+
+A series cannot be deleted if it is has translation templates.
+
+    >>> translated_series = factory.makeProductSeries(product=product)
+    >>> product.official_rosetta = True
+    >>> po_template = factory.makePOTemplate(
+    ...     name='gibberish', productseries=translated_series)
+    >>> translated_view = create_initialized_view(
+    ...     translated_series, '+delete')
+    >>> translated_view.has_translations
+    True
+
+    >>> translated_view.can_delete
+    False
+
+    >>> form = {
+    ...     'field.actions.delete': 'Delete this Series',
+    ...     }
+    >>> translated_view = create_initialized_view(
+    ...     translated_series, '+delete', form=form)
+    >>> for error in translated_view.errors:
+    ...     print error
+    This series cannot be deleted because it has translations.

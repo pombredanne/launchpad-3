@@ -94,3 +94,16 @@ that the series was deleted, and can not see a link to it anymore.
     Traceback (most recent call last):
      ...
     LinkNotFoundError
+
+A series with translations can never be deleted. The project owner or
+release manager sees the explaination when he tries to delete the series.
+
+    >>> owner_browser.open('http://launchpad.dev/evolution/trunk')
+    >>> owner_browser.getLink('Delete series').click()
+    >>> print owner_browser.title
+    Delete Evolution trunk series ...
+
+    >>> print extract_text(
+    ...     find_tag_by_id(owner_browser.contents, 'cannot-delete'))
+    You ...
+    This series cannot be deleted because it has translations.

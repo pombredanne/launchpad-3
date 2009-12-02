@@ -520,12 +520,12 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
             all_files.extend(self._getProductReleaseFiles(milestone))
         return all_files
 
-    @property
+    @cachedproperty
     def has_linked_packages(self):
         """Is the series linked to source packages."""
         return self.context.packagings.count() > 0
 
-    @property
+    @cachedproperty
     def linked_packages_message(self):
         url = canonical_url(self.context.product, view_name="+packages")
         return (
@@ -539,10 +539,19 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         "before deleting this one.")
 
     @cachedproperty
+    def has_translations(self):
+        """Does the series have translations?"""
+        return self.context.potemplate_count > 0
+
+    translations_message = (
+        "This series cannot be deleted because it has translations.")
+
+    @cachedproperty
     def can_delete(self):
         """Can this series be delete."""
         return not (
-            self.context.is_development_focus or self.has_linked_packages)
+            self.context.is_development_focus
+            or self.has_linked_packages or self.has_translations)
 
     def canDeleteAction(self, action):
         """Is the delete action available."""
@@ -550,6 +559,8 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
             self.addError(self.development_focus_message)
         elif self.has_linked_packages:
             self.addError(structured(self.linked_packages_message))
+        elif self.has_translations:
+            self.addError(self.translations_message)
         else:
             # This series can be deleted.
             pass
