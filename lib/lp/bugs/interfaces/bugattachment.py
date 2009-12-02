@@ -88,6 +88,12 @@ class IBugAttachment(IHasBug):
     def removeFromBug(user):
         """Remove the attachment from the bug."""
 
+    def destroySelf():
+        """Delete this record.
+
+        The library file content for this attachment is set to None.
+        """
+
 
 # Need to do this here because of circular imports.
 IMessage['bugattachments'].value_type.schema = IBugAttachment

@@ -294,7 +294,7 @@ class FileDownloadClient:
         if self.restricted != lfa.restricted:
             raise DownloadFailed(
                 'Alias %d cannot be downloaded from this client.' % aliasID)
-        if lfa.content.deleted:
+        if lfa.deleted:
             return None
         return '/%d/%s' % (aliasID, quote(lfa.filename.encode('utf-8')))
 
