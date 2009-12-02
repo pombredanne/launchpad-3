@@ -6,3 +6,11 @@
 __metaclass__ = type
 __all__ = []
 
+from zope.interface import Interface
+
+
+class ISourcePackageBuildView(Interface):
+
+    pass
+
+
