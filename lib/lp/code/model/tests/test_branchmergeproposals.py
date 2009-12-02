@@ -1520,6 +1520,38 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             ['general-1', 'general-2'],
             sorted([review.review_type for review in votes]))
 
+    def test_nominate_multiple_with_same_types(self):
+        # There can be multiple reviews for a team with the same review_type.
+        reviewer = self.factory.makePerson()
+        review_team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            reviewer=review_team, review_type='general')
+        merge_proposal.nominateReviewer(
+            reviewer=review_team,
+            registrant=merge_proposal.registrant,
+            review_type='general')
+
+        votes = list(merge_proposal.votes)
+        self.assertEqual(
+            [(review_team, 'general'), (review_team, 'general')],
+            [(review.reviewer, review.review_type) for review in votes])
+
+    def test_nominate_multiple_team_reviews_with_no_type(self):
+        # There can be multiple reviews for a team with no review type set.
+        reviewer = self.factory.makePerson()
+        review_team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            reviewer=review_team, review_type=None)
+        merge_proposal.nominateReviewer(
+            reviewer=review_team,
+            registrant=merge_proposal.registrant,
+            review_type=None)
+
+        votes = list(merge_proposal.votes)
+        self.assertEqual(
+            [(review_team, None), (review_team, None)],
+            [(review.reviewer, review.review_type) for review in votes])
+
     def test_nominate_updates_reference(self):
         """The existing reference is updated on re-nomination."""
         merge_proposal = self.factory.makeBranchMergeProposal()
