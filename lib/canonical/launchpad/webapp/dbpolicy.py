@@ -110,6 +110,13 @@ class BaseDatabasePolicy:
         pass
 
 
+class DatabaseBlockedPolicy(BaseDatabasePolicy):
+    """`IDatabasePolicy` that blocks all access to the database."""
+    def getStore(self, name, flavor):
+        """Raises `DisallowedStore`. No Database access is allowed."""
+        raise DisallowedStore(name, flavor)
+
+
 class MasterDatabasePolicy(BaseDatabasePolicy):
     """`IDatabasePolicy` that selects the MASTER_FLAVOR by default.
 
@@ -147,7 +154,13 @@ class SlaveOnlyDatabasePolicy(BaseDatabasePolicy):
 def LaunchpadDatabasePolicyFactory(request):
     """Return the Launchpad IDatabasePolicy for the current appserver state.
     """
-    if config.launchpad.read_only:
+    # We need to select a non-load balancing DB policy for +opstats so
+    # it doesn't query the DB for lag information (this page should not
+    # hit the database at all). We haven't traversed yet, so we have
+    # to sniff the request this way.
+    if request['PATH_INFO'] == u'/+opstats':
+        return DatabaseBlockedPolicy(request)
+    elif config.launchpad.read_only:
         return ReadOnlyLaunchpadDatabasePolicy(request)
     else:
         return LaunchpadDatabasePolicy(request)
