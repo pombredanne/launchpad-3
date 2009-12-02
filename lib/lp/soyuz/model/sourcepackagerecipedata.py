@@ -9,8 +9,6 @@ __all__ = []
 
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
-from canonical.database.datetimecol import UtcDateTimeCol
 
 from lp.soyuz.interfaces.sourcepackagerecipedata import (
     ISourcePackageRecipeData)
@@ -39,16 +37,10 @@ class SourcePackageRecipeData:
     __storm_table__ = "SourcePackageRecipeData"
 
     id = Int(primary=True)
-    date_created = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-
-    distroseries_id = Int(name='distroseries', allow_none=False)
-    distroseries = Reference(distroseries_id, 'DistroSeries.id')
-
-    sourcepackagename_id = Int(name='sourcepackagename', allow_none=False)
-    sourcepackagename = Reference(
-        sourcepackagename_id, 'SourcePackageName.id')
 
     _recipe = Unicode(name='recipe')
+
+    # Maybe all this stuff should just be on the containing object...
 
     def _get_recipe(self):
         # Read recipe text out, rewrite branch references.

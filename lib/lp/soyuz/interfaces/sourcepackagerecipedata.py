@@ -8,19 +8,14 @@ __all__ = ['ISourcePackageRecipeData']
 
 
 from zope.interface import Attribute, Interface
-from zope.schema import Datetime, Int, Object, Text
+from zope.schema import Int, Text
 
-from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.sourcepackagename import ISourcePackageName
-
+# Not sure this will end up being public at all, actually...
 
 class ISourcePackageRecipeData(Interface):
     """ """
 
     id = Int(required=True, readonly=True)
-    date_created = Datetime(required=True, readonly=True)
-    distroseries = Object(schema=IDistroSeries)
-    sourcepackagename = Object(schema=ISourcePackageName)
     recipe = Text(required=True)
 
     referenced_branches = Attribute() # Probably shouldn't be Attribute...
