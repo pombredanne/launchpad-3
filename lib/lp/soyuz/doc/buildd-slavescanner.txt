@@ -1504,24 +1504,38 @@ the current slave state. This tuple should contain, in this order:
  * result file list: {'foo.deb', 'foo.changes'} or None
  * dependencies string: 'bar baz zaz' or None
 
+    # Define a helper to convert the dict to the old tuple format
+    # so that we can verify this test doesn't change.
+    # XXX So it's easier to review, I'll remove this and update the
+    # test in a subsequent branch where the related code doesn't
+    # change.
+    >>> def slaveStatusToTuple(status_dict):
+    ...     return (
+    ...         status_dict['builder_status'],
+    ...         status_dict['build_id'],
+    ...         status_dict['build_status'],
+    ...         status_dict['logtail'],
+    ...         status_dict['filemap'],
+    ...         status_dict['dependencies'],
+    ...         )
 
     >>> a_builder.setSlaveForTesting(OkSlave())
-    >>> a_builder.slaveStatus()
+    >>> slaveStatusToTuple(a_builder.slaveStatus())
     ('BuilderStatus.IDLE', '', None, None, None, None)
 
     >>> a_builder.setSlaveForTesting(BuildingSlave())
-    >>> a_builder.slaveStatus()
+    >>> slaveStatusToTuple(a_builder.slaveStatus())
     ('BuilderStatus.BUILDING', '1-1', None, <xmlrpclib.Binary ...>, None, None)
 
     >>> a_builder.setSlaveForTesting(WaitingSlave(state='BuildStatus.OK'))
-    >>> a_builder.slaveStatus()
+    >>> slaveStatusToTuple(a_builder.slaveStatus())
     ('BuilderStatus.WAITING', '1-1', 'BuildStatus.OK', None, {}, None)
 
     >>> a_builder.setSlaveForTesting(AbortingSlave())
-    >>> a_builder.slaveStatus()
+    >>> slaveStatusToTuple(a_builder.slaveStatus())
     ('BuilderStatus.ABORTING', '1-1', None, None, None, None)
 
     >>> a_builder.setSlaveForTesting(AbortedSlave())
-    >>> a_builder.slaveStatus()
+    >>> slaveStatusToTuple(a_builder.slaveStatus())
     ('BuilderStatus.ABORTED', '1-1', None, None, None, None)
 

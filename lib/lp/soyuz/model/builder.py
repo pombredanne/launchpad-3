@@ -348,8 +348,14 @@ class Builder(SQLBase):
             build_id = status_sentence[1]
             build_status = logtail = filemap = dependencies = None
 
-        return (builder_status, build_id, build_status, logtail, filemap,
-                dependencies)
+        return {
+            'builder_status': builder_status,
+            'build_id': build_id,
+            'build_status': build_status,
+            'logtail': logtail,
+            'filemap': filemap,
+            'dependencies': dependencies,
+            }
 
     def slaveStatusSentence(self):
         """See IBuilder."""

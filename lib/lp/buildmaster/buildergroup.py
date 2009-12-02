@@ -171,8 +171,17 @@ class BuilderGroup:
         Perform the required actions for each state.
         """
         try:
+            slave_status = queueItem.builder.slaveStatus()
             (builder_status, build_id, build_status, logtail, filemap,
-             dependencies) = queueItem.builder.slaveStatus()
+             dependencies) = (
+                slave_status['builder_status'],
+                slave_status['build_id'],
+                slave_status['build_status'],
+                slave_status['logtail'],
+                slave_status['filemap'],
+                slave_status['dependencies'],
+                )
+
         except (xmlrpclib.Fault, socket.error), info:
             # XXX cprov 2005-06-29:
             # Hmm, a problem with the xmlrpc interface,
