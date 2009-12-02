@@ -120,7 +120,7 @@ class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
-    """Overview navigation menus for `IMilestone` objects."""
+    """Overview navigation menu for `IMilestone` objects."""
     usedfor = IMilestone
     facet = 'overview'
     links = ('edit', 'delete', 'subscribe')

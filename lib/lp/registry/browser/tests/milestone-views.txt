@@ -34,6 +34,15 @@ Milestone defines several menus.
     >>> check_menu_links(MilestoneInlineNavigationMenu(milestone))
     True
 
+The MilestoneView used can be adapted to a MilestoneInlineNavigationMenu
+for use with inline presentation of milestones.
+
+    >>> from canonical.lazr.canonicalurl import nearest_adapter
+    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
+
+    >>> view = create_view(milestone, name='+productseries-table-row')
+    >>> nearest_adapter(view, INavigationMenu, name='overview')
+    <lp.registry.browser.milestone.MilestoneInlineNavigationMenu ...>
 
 The MilestoneView provides access to the milestone and to its release if
 it has one.
