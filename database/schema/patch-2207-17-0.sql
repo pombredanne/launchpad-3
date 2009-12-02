@@ -10,17 +10,4 @@ SET client_min_messages=ERROR;
 DROP INDEX codereviewvote__branch_merge_proposal__reviewer__key;
 DROP INDEX codereviewvote__branch_merge_proposal__reviewer__review_type__k;
 
--- Create a non-unique indices
-CREATE INDEX codereviewvote__branch_merge_proposal__reviewer__key
-  ON codereviewvote
-  USING btree
-  (branch_merge_proposal, reviewer)
-  WHERE review_type IS NULL;
-
-CREATE INDEX codereviewvote__branch_merge_proposal__reviewer__review_type__k
-  ON codereviewvote
-  USING btree
-  (branch_merge_proposal, reviewer, review_type)
-  WHERE review_type IS NOT NULL;
-
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 17, 0);
