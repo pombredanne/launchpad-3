@@ -55,7 +55,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         else:
             return msg
 
-    def dispatch_build_to_slave(self, build_queue_item, logger):
+    def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
 
         # Start the binary package build on the slave builder. First
@@ -71,7 +71,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # access the restricted librarian.
         private = build.archive.private
         if private:
-            self._cache_private_source_on_slave(build_queue_item, logger)
+            self._cachePrivateSourceOnSlave(build_queue_item, logger)
         filemap = {}
         for source_file in build.sourcepackagerelease.files:
             lfa = source_file.libraryfile
@@ -89,7 +89,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
         try:
-            args = self._extra_build_args(build)
+            args = self._extraBuildArgs(build)
             status, info = self._builder.slave.build(
                 buildid, "debian", chroot_sha1, filemap, args)
             message = """%s (%s):
@@ -119,7 +119,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             self._builder.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
-    def verify_build_request(self, build_queue_item, logger):
+    def verifyBuildRequest(self, build_queue_item, logger):
         """Assert some pre-build checks.
 
         The build request is checked:
@@ -166,7 +166,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                 % (build.title, build.id, build.pocket.name,
                    build.distroseries.name))
 
-    def _cache_private_source_on_slave(self, build_queue_item, logger):
+    def _cachePrivateSourceOnSlave(self, build_queue_item, logger):
         """Ask the slave to download source files for a private build.
 
         The slave will cache the files for the source in build_queue_item
@@ -202,7 +202,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             self._builder._sendFileToSlave(
                 url, sha1, "buildd", archive.buildd_secret)
 
-    def _extra_build_args(self, build):
+    def _extraBuildArgs(self, build):
         """
         Return the extra arguments required by the slave for the given build.
         """

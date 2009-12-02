@@ -290,7 +290,7 @@ class Builder(SQLBase):
         self.logStartBuild(build_queue_item, logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
-        self.verify_build_request(build_queue_item, logger)
+        self.verifyBuildRequest(build_queue_item, logger)
 
         # If we are building a virtual build, resume the virtual machine.
         if self.virtualized:
@@ -298,8 +298,7 @@ class Builder(SQLBase):
 
         # Do it.
         build_queue_item.markAsBuilding(self)
-        self.current_build_behavior.dispatch_build_to_slave(
-            build_queue_item, logger)
+        self.dispatchBuildToSlave(build_queue_item, logger)
 
     # XXX cprov 2009-06-24: This code does not belong to the content
     # class domain. Here we cannot make sensible decisions about what
