@@ -801,6 +801,21 @@ ul.language, li.language             {
   background: inherit;
 }
 
+/* ==== Translations styles ==== */
+
+.translationimportstatusAPPROVED,
+.translationimportstatusAPPROVED a {color: #050;}
+.translationimportstatusIMPORTED,
+.translationimportstatusIMPORTED a {color: green;}
+.translationimportstatusDELETED,
+.translationimportstatusDELETED a {color: black;}
+.translationimportstatusFAILED,
+.translationimportstatusFAILED a {color: red;}
+.translationimportstatusNEEDS_REVIEW,
+.translationimportstatusNEEDS_REVIEW a {color: #f60;}
+.translationimportstatusBLOCKED,
+.translationimportstatusBLOCKED a {color: blue;}
+
 /* ==== Translations hand-made forms ==== */
 
 form.translations div.fields {

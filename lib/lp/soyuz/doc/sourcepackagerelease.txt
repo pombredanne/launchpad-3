@@ -217,13 +217,14 @@ Let's get a sample SourcePackageRelease:
 
 == Package sizes ==
 
-The size of a package can be obtained via a private SourcePackageRelease
-method.
+The size of a source package can be obtained via the getPackageSize() method.
+It returns the sum of the size of all files comprising the source package (in
+kilo-bytes).
 
     >>> spr = SourcePackageRelease.get(14)
     >>> spr.name
     u'mozilla-firefox'
-    >>> spr._getPackageSize()
+    >>> spr.getPackageSize()
     9690.0
 
 Verify that empty packages have a size of zero.
@@ -233,7 +234,7 @@ Verify that empty packages have a size of zero.
     ...     name="linux-source-2.6.15")
     >>> spr = SourcePackageRelease.selectOneBy(
     ...     sourcepackagename=linux_src, version='2.6.15.3')
-    >>> spr._getPackageSize()
+    >>> spr.getPackageSize()
     0.0
 
 
