@@ -56,6 +56,14 @@
           </div>
         </div>
       </div>
+      <div id="all-languages" class="three-column-list"
+           tal:condition="not:view/search_requested">
+         <ul tal:repeat="language context/common_languages">
+           <li>
+             <a tal:replace="structure language/fmt:link">English</a>
+           </li>
+         </ul>
+      </div>
       <div tal:condition="view/search_requested" class="yui-b portlet">
         <tal:block tal:define="results view/search_results">
           <tal:none condition="not: view/search_matches">

@@ -486,7 +486,14 @@ ol.subordinate {
     display: inline;
     margin: 0 0.25em 0 0;
     }
-.two-column-list:after {
+.three-column-list li {
+    width: 31%;
+    float: left;
+    display: inline;
+    margin: 0 0.25em 0 0;
+    }
+.two-column-list:after,
+.three-column-list:after {
     content: ".";
     display: block;
     height: 0;
