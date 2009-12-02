@@ -45,5 +45,7 @@ class TestUpdatePreviewDiffs(TestCaseWithFactory):
         self.assertEqual(
             'INFO    creating lockfile\n'
             'INFO    Running through Twisted.\n'
-            'INFO    Ran 1 IUpdatePreviewDiffJobSource jobs.\n', stderr)
+            'INFO    Ran 1 IUpdatePreviewDiffJobSource jobs.\n'
+            'INFO    0 IUpdatePreviewDiffJobSource jobs did not complete.\n',
+            stderr)
         self.assertIsNot(None, bmp.preview_diff)
