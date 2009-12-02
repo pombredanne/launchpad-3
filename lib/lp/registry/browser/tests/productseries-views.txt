@@ -419,3 +419,23 @@ A series cannot be deleted if it is has translation templates.
     >>> for error in translated_view.errors:
     ...     print error
     This series cannot be deleted because it has translations.
+
+The view reports all the reason why a series cannot be deleted.
+
+    >>> sourcepackagename = factory.makeSourcePackageName('tomato')
+    >>> getUtility(IPackagingUtil).createPackaging(
+    ...     active_series, sourcepackagename, distro_series,
+    ...     PackagingType.PRIME, owner=owner)
+    >>> po_template = factory.makePOTemplate(
+    ...     name='gibberish', productseries=active_series)
+    >>> form = {
+    ...     'field.actions.delete': 'Delete this Series',
+    ...     }
+    >>> view = create_initialized_view(active_series, '+delete', form=form)
+    >>> for error in view.errors:
+    ...     print error
+    You cannot delete a series that is the focus of development. Make another
+    series the focus of development before deleting this one.
+    You cannot delete a series that is linked to packages in distributions.
+    You can remove the links from the <a ...>project packaging</a> page.
+    This series cannot be deleted because it has translations.
