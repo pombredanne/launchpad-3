@@ -511,7 +511,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute")
     meta_supersededby = Attribute(
-        "Return an IDistribuitionSourcePackageRelease meta object "
+        "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the supersededby attribute. if supersededby "
         "is None return None.")
     meta_distroseriessourcepackagerelease = Attribute(
