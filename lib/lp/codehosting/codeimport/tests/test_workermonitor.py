@@ -17,13 +17,14 @@ import unittest
 from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
 
-from twisted.internet import defer, error, protocol, reactor
+from twisted.internet import defer, error, protocol, reactor, task
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
@@ -41,7 +42,7 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, SubversionServer, _make_silent_logger)
+    CVSServer, GitServer, SubversionServer)
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from lp.testing import login, logout
@@ -173,8 +174,7 @@ class TestWorkerMonitorUnit(TrialTestCase):
         getUtility(ICodeImportJobWorkflow).startJob(
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(
-            job.id, _make_silent_logger())
+        self.worker_monitor = self.WorkerMonitor(job.id, QuietFakeLogger())
         self.worker_monitor._failures = []
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
@@ -349,8 +349,7 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
         getUtility(ICodeImportJobWorkflow).startJob(
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(
-            job.id, _make_silent_logger())
+        self.worker_monitor = self.WorkerMonitor(job.id, QuietFakeLogger())
         self.worker_monitor.result_status = None
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
@@ -540,7 +539,7 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         This implementation does it in-process.
         """
         self.layer.switchDbUser('codeimportworker')
-        monitor = CIWorkerMonitorForTesting(job_id, _make_silent_logger())
+        monitor = CIWorkerMonitorForTesting(job_id, QuietFakeLogger())
         deferred = monitor.run()
         def save_protocol_object(result):
             """Save the process protocol object.
@@ -598,6 +597,11 @@ class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
     def setUp(self):
         TestWorkerMonitorIntegration.setUp(self)
         self._protocol = None
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
 
     def performImport(self, job_id):
         """Perform the import job with ID job_id.

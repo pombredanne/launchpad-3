@@ -222,7 +222,9 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
   <script type="text/javascript">
-    YUI().use('node', 'lp', function(Y) {
+    // Define a global YUI sandbox that should be used by everyone.
+    var LPS = YUI();
+    LPS.use('node', 'lp', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
@@ -301,8 +303,7 @@
     devmode modules/canonical.config/config/devmode">
   <tal:comment replace="nothing">
     This macro loads the old stylesheet, then the YUI CSS, and finally
-    the new stylesheet. When no pages use main-template, this can be
-    refactored.
+    the new stylesheet.
   </tal:comment>
   <metal:old-style-sheet use-macro="context/@@+base-layout-macros/launchpad-stylesheet" />
   <link rel="stylesheet" type="text/css"

@@ -1201,7 +1201,7 @@ class BugTargetBugTagsView(LaunchpadView):
         tags = self.getUsedBugTagsWithURLs()
         other_tags = [tag for tag in tags if tag['tag'] not in official_tags]
         popular_tags = [tag['tag'] for tag in sorted(
-            other_tags, key=itemgetter('count'))[:10]]
+            other_tags, key=itemgetter('count'), reverse=True)[:10]]
         tags = [
             tag for tag in tags
             if tag['tag'] in official_tags + popular_tags]

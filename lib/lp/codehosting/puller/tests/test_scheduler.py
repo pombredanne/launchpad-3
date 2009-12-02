@@ -17,7 +17,7 @@ import pytz
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 
-from twisted.internet import defer, error
+from twisted.internet import defer, error, reactor, task
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -660,6 +660,11 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         self.bzr_tree.commit('rev1')
         self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakePullerEndpointProxy()
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.

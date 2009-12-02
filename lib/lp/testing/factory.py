@@ -1311,7 +1311,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             branch_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'svn'
-        if rcstype == 'svn':
+        if rcstype in ['svn', 'bzr-svn']:
             assert cvs_root is cvs_module is git_repo_url is None
             if svn_branch_url is None:
                 svn_branch_url = self.getUniqueURL()
@@ -1587,7 +1587,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         if potemplate is None:
             potemplate = self.makePOTemplate(owner=owner)
         return potemplate.newPOFile(language_code, variant,
-                                    requester=potemplate.owner,
                                     create_sharing=create_sharing)
 
     def makePOTMsgSet(self, potemplate, singular=None, plural=None,
