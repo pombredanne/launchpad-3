@@ -43,7 +43,6 @@ CREATE TABLE SourcePackageBuild (
     -- add: recipe and manifest
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     distroseries integer NOT NULL REFERENCES distroseries,
-    archive integer NOT NULL REFERENCES Archive,
     buildstate integer NOT NULL,
     date_built timestamp without time zone,
     buildduration interval,
@@ -52,11 +51,21 @@ CREATE TABLE SourcePackageBuild (
     estimated_build_duration interval,
     build_warnings text,
     date_first_dispatched timestamp without time zone,
-    upload_log integer REFERENCES LibraryFileAlias,
     requester integer REFERENCES Person,
     recipe integer REFERENCES SourcePackageRecipe,
     manifest integer REFERENCES SourcePackageRecipeData
 );
+
+CREATE TABLE SourcePackageBuildUpload (
+    id serial PRIMARY KEY,
+    date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    source_package_build integer NOT NULL REFERENCES SourcePackageBuild,
+    archive integer NOT NULL REFERENCES Archive,
+    upload_log integer REFERENCES LibraryFileAlias,
+    state integer NOT NULL -- an enum, WAITING/UPLOADED/FAILED or something like that.
+);
+
+-- indexes for SourcePackageBuildUpload I guess
 
 ALTER TABLE SourcePackageRelease
   ADD COLUMN source_package_build integer REFERENCES SourcePackageBuild;
