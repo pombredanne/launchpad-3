@@ -141,7 +141,7 @@ class Builder(SQLBase):
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
 
-    def _get_current_build_behavior(self):
+    def _getCurrentBuildBehavior(self):
         """Return the current build behavior."""
         if not safe_hasattr(self, '_current_build_behavior'):
             self._current_build_behavior = None
@@ -155,14 +155,14 @@ class Builder(SQLBase):
                 # ...we'll set it based on our current job.
                 self._current_build_behavior = (
                     currentjob.required_build_behavior)
-                self._current_build_behavior.set_builder(self)
+                self._current_build_behavior.setBuilder(self)
                 return self._current_build_behavior
             elif self._current_build_behavior is None:
                 # If we don't have a current job or an idle behavior
                 # already set, then we just set the idle behavior
                 # before returning.
                 self._current_build_behavior = IdleBuildBehavior()
-            return self._current_build_behavior 
+            return self._current_build_behavior
 
         else:
             # We did have a current non-idle build behavior set, so
@@ -170,7 +170,7 @@ class Builder(SQLBase):
             return self._current_build_behavior
 
 
-    def _set_current_build_behavior(self, new_behavior):
+    def _setCurrentBuildBehavior(self, new_behavior):
         """Set the current build behavior."""
 
         if self.currentjob is not None:
@@ -181,10 +181,10 @@ class Builder(SQLBase):
                 "exists.")
         else:
             self._current_build_behavior = new_behavior
-            self._current_build_behavior.set_builder(self)
+            self._current_build_behavior.setBuilder(self)
 
     current_build_behavior = property(
-        _get_current_build_behavior, _set_current_build_behavior)
+        _getCurrentBuildBehavior, _setCurrentBuildBehavior)
 
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See `IBuilder`."""
@@ -285,9 +285,9 @@ class Builder(SQLBase):
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
-        # Set the build behavior depending on the provided build queue item. 
+        # Set the build behavior depending on the provided build queue item.
         self.current_build_behavior = build_queue_item.required_build_behavior
-        self.log_start_build(build_queue_item, logger)
+        self.logStartBuild(build_queue_item, logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
         self.verify_build_request(build_queue_item, logger)

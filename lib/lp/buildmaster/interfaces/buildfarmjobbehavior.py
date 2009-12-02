@@ -26,10 +26,10 @@ class IBuildFarmJobBehavior(Interface):
     status = Attribute(
         "Generated status information for this particular job.")
 
-    def set_builder(builder):
+    def setBuilder(builder):
         """Sets the associated builder reference for this instance."""
 
-    def log_start_build(build_queue_item, logger):
+    def logStartBuild(build_queue_item, logger):
         """Log the start of a specific build queue item.
 
         The form of the log message will vary depending on the type of build.

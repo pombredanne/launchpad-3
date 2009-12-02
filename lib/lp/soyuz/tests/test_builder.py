@@ -221,8 +221,8 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
 
 
 class TestCurrentBuildBehavior(TestCaseWithFactory):
-    """
-    This test ensures the get/set behavior of Builder.current_build_behavior.
+    """This test ensures the get/set behavior of IBuilder's
+    current_build_behavior property.
     """
 
     layer = LaunchpadZopelessLayer
@@ -231,7 +231,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         """Create a new builder ready for testing."""
         super(TestCurrentBuildBehavior, self).setUp()
         self.builder = self.factory.makeBuilder(name='builder')
-        
+
         # Have a publisher and a ppa handy for some of the tests below.
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
@@ -244,8 +244,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         self.buildfarmjob = self.build.buildqueue_record.specific_job
 
     def test_idle_behavior_when_no_current_build(self):
-        """
-        We return an idle behavior when there is no behavior specified
+        """We return an idle behavior when there is no behavior specified
         nor a current build.
         """
         self.assertIsInstance(
@@ -254,7 +253,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
     def test_set_behavior_when_no_current_job(self):
         """If a builder is idle then it is possible to set the behavior."""
         self.builder.current_build_behavior = IBuildFarmJobBehavior(
-            self.buildfarmjob) 
+            self.buildfarmjob)
 
         self.assertIsInstance(
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
@@ -269,9 +268,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
             self.builder.current_build_behavior, BinaryPackageBuildBehavior)
 
     def test_set_behavior_when_current_job(self):
-        """
-        If a builder has a current job then it's behavior cannot be
-        set.
+        """If a builder has a current job then it's behavior cannot be set.
         """
         self.build.buildqueue_record.builder = self.builder
 
@@ -280,7 +277,7 @@ class TestCurrentBuildBehavior(TestCaseWithFactory):
         assertion_raised = False
         try:
             self.builder.current_build_behavior = IBuildFarmJobBehavior(
-                self.buildfarmjob) 
+                self.buildfarmjob)
         except BuildBehaviorMismatch, e:
             assertion_raised = True
 

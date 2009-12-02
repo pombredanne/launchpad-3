@@ -35,8 +35,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
     implements(IBuildFarmJobBehavior)
 
-    def log_start_build(self, build_queue_item, logger):
-        """See `IBuildFarmJobBehavior`.""" 
+    def logStartBuild(self, build_queue_item, logger):
+        """See `IBuildFarmJobBehavior`."""
         build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
         spr = build.sourcepackagerelease
 

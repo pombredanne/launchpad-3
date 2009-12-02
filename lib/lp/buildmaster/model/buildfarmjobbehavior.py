@@ -25,13 +25,11 @@ class BuildFarmJobBehaviorBase:
     """
 
     def __init__(self, buildfarmjob):
-        """
-        Store a reference to the job_type with which we were created.
-        """
+        """Store a reference to the job_type with which we were created."""
         self.buildfarmjob = buildfarmjob
         self._builder = None
 
-    def set_builder(self, builder):
+    def setBuilder(self, builder):
         """The builder should be set once and not changed."""
         self._builder = builder
 
@@ -45,9 +43,8 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
     implements(IBuildFarmJobBehavior)
 
     def __init__(self):
-        """
-        The idle behavior is special in that a buildfarmjob is not specified
-        during initialisation.
+        """The idle behavior is special in that a buildfarmjob is not
+        specified during initialisation.
         """
         super(IdleBuildBehavior, self).__init__(None)
 
