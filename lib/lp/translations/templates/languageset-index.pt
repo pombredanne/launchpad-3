@@ -58,8 +58,8 @@
       </div>
       <div id="all-languages" class="three-column-list"
            tal:condition="not:view/search_requested">
-         <ul tal:repeat="language context/common_languages">
-           <li>
+         <ul>
+           <li tal:repeat="language context/common_languages">
              <a tal:replace="structure language/fmt:link">English</a>
            </li>
          </ul>
