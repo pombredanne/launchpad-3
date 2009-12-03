@@ -289,16 +289,6 @@ class SourcePackageView:
         return list(self.context.getCurrentTranslationTemplates())
 
 
-class SourcePackagePackaging(SourcePackageView):
-    """A View to show where the package is packged."""
-
-    page_title = 'Upstream links'
-
-    @property
-    def label(self):
-        return "Upstream links for %s" % self.context.title
-
-
 class SourcePackageHelpView:
     """A View to show Answers help."""
 
