@@ -106,9 +106,9 @@ The user_languages property contains a list of the current user's preferred
 languages formated as links.
 
     >>> print languageset_view.user_languages
-    <a href=".../ca">Catalan</a>,
-    <a href=".../en">English</a>,
-    <a href=".../es">Spanish</a>
+    <a href=".../ca" ...>Catalan</a>,
+    <a href=".../en" ...>English</a>,
+    <a href=".../es" ...>Spanish</a>
 
 For s user without any preferred languages, English will be returned. 
 
@@ -119,5 +119,5 @@ For s user without any preferred languages, English will be returned.
     >>> languageset_view = create_initialized_view(language_set, '+index',
     ...     layer=TranslationsLayer)
     >>> print languageset_view.user_languages
-    <a href=".../en">English</a>
+    <a href=".../en" ...>English</a>
 
