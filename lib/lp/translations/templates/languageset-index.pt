@@ -74,6 +74,9 @@
             <a tal:attributes="href context/fmt:url/+add"
                  class="add sprite">Add new language</a>
           </p>
+          <p id="no_filter_matches" style="display:none">
+            No languages are matching your filter.
+          </p>
           <ul id="all-languages" class="three-column-list">
             <li tal:repeat="language context/common_languages">
               <a tal:replace="structure language/fmt:link">English</a>
