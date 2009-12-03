@@ -31,14 +31,13 @@
       <dt>For:</dt>
       <dd>
         <a tal:condition="context/product"
-          tal:replace="structure context/product/fmt:link">Firefox</a>
+          tal:replace="structure context/product/fmt:link">UFOs</a>
         <a tal:condition="context/distribution"
-          tal:replace="structure context/distribution/fmt:link">ubuntu</a>
+          tal:replace="structure context/distribution/fmt:link">Illumanati</a>
         <a tal:condition="context/sourcepackagename"
           tal:attributes="href
           string:${context/distribution/fmt:url}/+source/${context/sourcepackagename/name}"
-          tal:content="context/sourcepackagename/name">
-          mozilla-firefox</a>
+          tal:content="context/sourcepackagename/name">fnord</a>
         <a tal:replace="structure context/menu:answers/edit/fmt:icon" />
       </dd>
     </dl>
