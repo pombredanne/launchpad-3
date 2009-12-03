@@ -110,7 +110,7 @@ languages formated as links.
     <a href=".../en" ...>English</a>,
     <a href=".../es" ...>Spanish</a>
 
-For s user without any preferred languages, English will be returned. 
+For a user without any preferred languages, English will be returned. 
 
     >>> person = factory.makePerson()
     >>> print person.languages
