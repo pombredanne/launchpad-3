@@ -36,7 +36,8 @@
           tal:replace="structure context/distribution/fmt:link">ubuntu</a>
         <a tal:condition="context/sourcepackagename"
           tal:attributes="href
-          string:${context/distribution/fmt:url}/+source/${context/sourcepackagename/name}">
+          string:${context/distribution/fmt:url}/+source/${context/sourcepackagename/name}"
+          tal:content="context/sourcepackagename/name">
           mozilla-firefox</a>
         <a tal:replace="structure context/menu:answers/edit/fmt:icon" />
       </dd>
