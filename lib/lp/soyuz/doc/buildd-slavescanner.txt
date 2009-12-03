@@ -1505,7 +1505,9 @@ items:
  * dependencies string: 'bar baz zaz' or None
 
     # Define a helper to print the slave status dict.
+    >>> from collections import defaultdict
     >>> def printSlaveStatus(status_dict):
+    ...     status_dict = defaultdict(lambda:None, status_dict)
     ...     print (
     ...         "builder_status: %(builder_status)s\n"
     ...         "build_id: %(build_id)s\n"

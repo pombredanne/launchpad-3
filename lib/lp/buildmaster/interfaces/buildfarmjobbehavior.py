@@ -51,3 +51,11 @@ class IBuildFarmJobBehavior(Interface):
         :logger: A logger to be used to log diagnostic information.
         """
 
+    def slaveStatus(self, raw_slave_status):
+        """Return a dict of custom slave status values for this behavior.
+
+        :param raw_slave_status: The value returned by the build slave's
+           status() method.
+        :return: a dict of extra key/values to be included in the result
+            of IBuilder.slaveStatus().
+        """

@@ -327,35 +327,11 @@ class Builder(SQLBase):
         """See IBuilder."""
         builder_version, builder_arch, mechanisms = self.slave.info()
         status_sentence = self.slave.status()
-        builder_status = status_sentence[0]
 
-        if builder_status == 'BuilderStatus.WAITING':
-            (build_status, build_id) = status_sentence[1:3]
-            build_status_with_files = [
-                'BuildStatus.OK',
-                'BuildStatus.PACKAGEFAIL',
-                'BuildStatus.DEPFAIL',
-                ]
-            if build_status in build_status_with_files:
-                (filemap, dependencies) = status_sentence[3:]
-            else:
-                filemap = dependencies = None
-            logtail = None
-        elif builder_status == 'BuilderStatus.BUILDING':
-            (build_id, logtail) = status_sentence[1:]
-            build_status = filemap = dependencies = None
-        else:
-            build_id = status_sentence[1]
-            build_status = logtail = filemap = dependencies = None
-
-        return {
-            'builder_status': builder_status,
-            'build_id': build_id,
-            'build_status': build_status,
-            'logtail': logtail,
-            'filemap': filemap,
-            'dependencies': dependencies,
-            }
+        status = {'builder_status': status_sentence[0]}
+        status.update(
+            self.current_build_behavior.slaveStatus(status_sentence))
+        return status
 
     def slaveStatusSentence(self):
         """See IBuilder."""

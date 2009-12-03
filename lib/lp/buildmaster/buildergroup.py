@@ -8,6 +8,7 @@ Implement methods to deal with builder and their results.
 
 __metaclass__ = type
 
+from collections import defaultdict
 import datetime
 import os
 import pytz
@@ -172,6 +173,9 @@ class BuilderGroup:
         """
         try:
             slave_status = queueItem.builder.slaveStatus()
+            # The code below expects to receive values of None
+            # for values that are not present in the status, so:
+            slave_status = defaultdict(lambda: None, slave_status)
             (builder_status, build_id, build_status, logtail, filemap,
              dependencies) = (
                 slave_status['builder_status'],

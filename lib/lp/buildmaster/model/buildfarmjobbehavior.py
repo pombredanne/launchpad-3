@@ -37,6 +37,12 @@ class BuildFarmJobBehaviorBase:
         """The default behavior is a no-op."""
         pass
 
+    def slaveStatus(self, raw_slave_status):
+        """See `IBuildFarmJobBehavior`.
+
+        The default behavior is that we don't add any extra values."""
+        return {}
+
 
 class IdleBuildBehavior(BuildFarmJobBehaviorBase):
 

@@ -208,16 +208,8 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
     def slaveStatus():
         """Get the slave status for this builder.
 
-        * builder_status => string
-        * build_id => string
-        * build_status => string or None
-        * logtail => string or None
-        * filename => dictionary or None
-        * dependencies => string or None
-
-        :return: a tuple containing (
-            builder_status, build_id, build_status, logtail, filemap,
-            dependencies)
+        :return: a dict containing at least builder_status, but potentially
+            other values included by the current build behavior.
         """
 
     def slaveStatusSentence():
