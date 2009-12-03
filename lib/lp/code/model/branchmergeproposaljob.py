@@ -164,6 +164,12 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         return cls(job)
 
     @classmethod
+    def get(cls, job_id):
+        job = BranchMergeProposalJob.get(job_id)
+        assert job.job_type == cls.class_job_type
+        return cls(job)
+
+    @classmethod
     def iterReady(klass):
         """Iterate through all ready BranchMergeProposalJobs."""
         from lp.code.model.branch import Branch
