@@ -193,10 +193,6 @@ class SanitizeDb(LaunchpadScript):
 
         Launchpad celebrities are ignored.
         """
-        # Deactivated accounts we don't want to remove.
-        people_whitelist = [
-            'janitor', 'bug-importer', 'bug-watch-updater',
-            ]
         from canonical.launchpad.database.account import Account
         from canonical.launchpad.database.emailaddress import EmailAddress
         from canonical.launchpad.interfaces.account import AccountStatus
@@ -211,14 +207,12 @@ class SanitizeDb(LaunchpadScript):
             Person,
             Person.account == Account.id,
             Account.status != AccountStatus.ACTIVE)
-        #, Not(Person.name.is_in(people_whitelist)))
         total_deactivated_count = deactivated_people.count()
         deactivated_count = 0
         for person in deactivated_people:
             # Ignore celebrities
             if celebrities.isCelebrityPerson(person.name):
                 continue
-            assert str(person.name) not in people_whitelist
             deactivated_count += 1
             self.logger.debug(
                 "Removing %d of %d deactivated people (%s)",

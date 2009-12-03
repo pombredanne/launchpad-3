@@ -136,7 +136,6 @@ class ILaunchpadCelebrities(Interface):
     def isCelebrityPerson(name):
         """Return true if there is an IPerson celebrity with the given name.
         """
-        pass
 
 
 class ICrowd(Interface):
