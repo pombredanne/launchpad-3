@@ -9,6 +9,7 @@ __all__ = [
     'RosettaUploadJob',
 ]
 
+import contextlib
 import os
 import shutil
 from StringIO import StringIO
@@ -40,14 +41,14 @@ from zope.interface import classProvides, implements
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, errorlog
 from lp.code.bzr import (
     BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
-from lp.codehosting.vfs import branch_id_to_path
+from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
@@ -257,6 +258,15 @@ class BranchUpgradeJob(BranchJobDerived):
             raise AssertionError('Branch does not need upgrading.')
         branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
         return cls(branch_job)
+
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        errorlog.globalErrorUtility.configure('upgrade_branches')
+        server = get_multi_server(write_hosted=True)
+        server.setUp()
+        yield
+        server.tearDown()
 
     def run(self):
         """See `IBranchUpgradeJob`."""

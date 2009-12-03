@@ -20,11 +20,6 @@ class RunUpgradeBranches(JobCronScript):
     config_name = 'upgrade_branches'
     source_interface = IBranchUpgradeJobSource
 
-    def setUp(self):
-        server = get_multi_server(write_hosted=True)
-        server.setUp()
-        return [server.tearDown]
-
 
 if __name__ == '__main__':
     script = RunUpgradeBranches()

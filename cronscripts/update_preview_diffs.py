@@ -23,11 +23,6 @@ class RunUpdatePreviewDiffJobs(JobCronScript):
     config_name = 'update_preview_diffs'
     source_interface = IUpdatePreviewDiffJobSource
 
-    def setUp(self):
-        server = get_scanner_server()
-        server.setUp()
-        return [server.tearDown]
-
 
 if __name__ == '__main__':
     script = RunUpdatePreviewDiffJobs(TwistedJobRunner)

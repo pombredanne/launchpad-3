@@ -14,6 +14,7 @@ __all__ = [
     'MergeProposalCreatedJob',
     ]
 
+import contextlib
 from email.Utils import parseaddr
 import transaction
 
@@ -282,11 +283,13 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 
     @staticmethod
-    def setUp():
+    @contextlib.contextmanager
+    def contextManager():
         errorlog.globalErrorUtility.configure('update_preview_diffs')
         server = get_scanner_server()
         server.setUp()
-        return [server.tearDown]
+        yield
+        server.tearDown()
 
     def run(self):
         """See `IRunnableJob`"""

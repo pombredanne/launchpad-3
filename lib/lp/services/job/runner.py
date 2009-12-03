@@ -192,9 +192,10 @@ class JobRunner(BaseJobRunner):
 
     @classmethod
     def runFromSource(cls, job_source, logger):
-        logger.info("Running synchronously.")
-        runner = cls.fromReady(job_source, logger)
-        runner.runAll()
+        with removeSecurityProxy(job_source.contextManager()):
+            logger.info("Running synchronously.")
+            runner = cls.fromReady(job_source, logger)
+            runner.runAll()
         return runner
 
     def runAll(self):
@@ -215,15 +216,14 @@ class JobRunnerProto(child.AMPChild):
 
     def __init__(self):
         child.AMPChild.__init__(self)
-        self.cleanups = []
+        self.context_manager = self.job_class.contextManager()
 
     def makeConnection(self, transport):
         child.AMPChild.makeConnection(self, transport)
-        self.cleanups.extend(self.job_class.setUp())
+        self.context_manager.__enter__()
 
     def connectionLost(self, reason):
-        for cleanup in reversed(self.cleanups):
-            cleanup()
+        self.context_manager.__exit__(None, None, None)
         child.AMPChild.connectionLost(self, reason)
 
     @RunAmpouleJob.responder
@@ -309,14 +309,8 @@ class JobCronScript(LaunchpadCronScript):
         self.runner_class = runner_class
 
     def main(self):
-        errorlog.globalErrorUtility.configure(self.config_name)
-        cleanups = self.setUp()
-        try:
-            job_source = getUtility(self.source_interface)
-            runner = self.runner_class.runFromSource(job_source, self.logger)
-        finally:
-            for cleanup in reversed(cleanups):
-                cleanup()
+        job_source = getUtility(self.source_interface)
+        runner = self.runner_class.runFromSource(job_source, self.logger)
         self.logger.info(
             'Ran %d %s jobs.',
             len(runner.completed_jobs), self.source_interface.__name__)

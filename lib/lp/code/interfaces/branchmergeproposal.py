@@ -634,6 +634,9 @@ class IUpdatePreviewDiffJobSource(Interface):
     def iterReady():
         """Iterate through jobs ready to update preview diffs."""
 
+    def contextManager():
+        """Get a context for running this kind of job in."""
+
 
 def notify_modified(proposal, func, *args, **kwargs):
     """Call func, then notify about the changes it made.
