@@ -11,8 +11,8 @@ see if there is any work for Mailman to do.
     >>> # providing `mailinglist_api` and `commit` for impedance matching.
 
 
-Registered lists
-================
+Constructing the mailing lists
+==============================
 
 When there's nothing for Mailman to do, we'll just get an empty dictionary
 back from the XMLRPC call.
@@ -32,55 +32,35 @@ Mailing lists are always tied -- one-to-one -- to teams.
     >>> team_two = factory.makeTeam(no_priv, name='team-two')
     >>> commit()
 
-A team owner must register the mailing list for team, but Mailman will not be
-told to create mailing lists in the REGISTERED state.  We'll register one of
-the lists with a custom welcome message.
+A team owner must request that a mailing list be created for their team.  When
+Mailman polls for actions, there will be mailing lists to create.
 
     >>> from canonical.launchpad.interfaces import IMailingListSet
     >>> list_set = getUtility(IMailingListSet)
     >>> list_one = list_set.new(team_one)
-    >>> list_one.welcome_message = u'Welcome to Team One'
     >>> list_two = list_set.new(team_two)
     >>> commit()
-    >>> list_one.status.name
-    'REGISTERED'
-    >>> list_two.status.name
-    'REGISTERED'
-    >>> mailinglist_api.getPendingActions()
-    {}
+    >>> print list_one.status.name
+    APPROVED
+    >>> print list_two.status.name
+    APPROVED
 
-A mailing list in the REGISTERED state must be reviewed and approved by a
-Launchpad administrator before Mailman will be told to create it.
-
-    >>> carlos = person_set.getByName('carlos')
-    >>> list_one.review(carlos, MailingListStatus.APPROVED)
-    >>> list_two.review(carlos, MailingListStatus.APPROVED)
-    >>> commit()
-    >>> list_one.status.name
-    'APPROVED'
-    >>> list_two.status.name
-    'APPROVED'
-
-The next time Mailman polls the XMLRPC interface, there will be mailing lists
-for it to create.
-
-    >>> pending_actions = mailinglist_api.getPendingActions()
-    >>> commit()
     >>> from lp.registry.tests.mailinglists_helper import (
     ...     print_actions)
+    >>> pending_actions = mailinglist_api.getPendingActions()
     >>> print_actions(pending_actions)
-    team-one --> create {'welcome_message': u'Welcome to Team One'}
+    team-one --> create {}
     team-two --> create {}
 
 In the database, the state of both lists should now be CONSTRUCTING to
 indicate that Mailman is in the process of creating the lists.
 
     >>> list_one = list_set.get('team-one')
-    >>> list_one.status.name
-    'CONSTRUCTING'
+    >>> print list_one.status.name
+    CONSTRUCTING
     >>> list_two = list_set.get('team-two')
-    >>> list_two.status.name
-    'CONSTRUCTING'
+    >>> print list_two.status.name
+    CONSTRUCTING
 
 Should Mailman poll the actions again before it completes creating these
 lists, there will be nothing to do because lists in the CONSTRUCTING state
@@ -136,17 +116,8 @@ mailing lists.
     >>> list_private = list_set.new(team_private)
     >>> commit()
 
-The private membership team is in the REGISTERED state, and since it is
-unreviewed, there is nothing to do.
+Now there is another mailing list for Mailman to create.
 
-    >>> mailinglist_api.getPendingActions()
-    {}
-
-Once the list is approved, there will be another mailing list for Mailman to
-create.
-
-    >>> list_private.review(carlos, MailingListStatus.APPROVED)
-    >>> commit()
     >>> pending_actions = mailinglist_api.getPendingActions()
     >>> print_actions(pending_actions)
     team-private --> create {}
@@ -183,7 +154,6 @@ scenes.
     >>> ddaa = person_set.getByName('ddaa')
     >>> team_three = person_set.newTeam(ddaa, 'team-three', 'Team Three')
     >>> list_three = list_set.new(team_three)
-    >>> list_three.review(carlos, MailingListStatus.APPROVED)
     >>> commit()
 
     >>> pending_actions = mailinglist_api.getPendingActions()
@@ -213,11 +183,11 @@ deactivation failed for some reason.
     ...     })
     True
     >>> list_one = list_set.get('team-one')
-    >>> list_one.status.name
-    'INACTIVE'
+    >>> print list_one.status.name
+    INACTIVE
     >>> list_three = list_set.get('team-three')
-    >>> list_three.status.name
-    'MOD_FAILED'
+    >>> print list_three.status.name
+    MOD_FAILED
 
 
 Modifying mailing lists
@@ -230,10 +200,8 @@ create a couple more teams and mailing lists.
 
     >>> team_four = person_set.newTeam(ddaa, 'team-four', 'Team Four')
     >>> list_four = list_set.new(team_four)
-    >>> list_four.review(carlos, MailingListStatus.APPROVED)
     >>> team_five = person_set.newTeam(ddaa, 'team-five', 'Team Five')
     >>> list_five = list_set.new(team_five)
-    >>> list_five.review(carlos, MailingListStatus.APPROVED)
     >>> commit()
     >>> pending_actions = mailinglist_api.getPendingActions()
     >>> print_actions(pending_actions)
@@ -264,11 +232,11 @@ And at this point, the lists are in the MODIFIED state, awaiting a status
 report from Mailman.
 
     >>> list_four = list_set.get('team-four')
-    >>> list_four.status.name
-    'UPDATING'
+    >>> print list_four.status.name
+    UPDATING
     >>> list_five = list_set.get('team-five')
-    >>> list_five.status.name
-    'UPDATING'
+    >>> print list_five.status.name
+    UPDATING
 
 Let's say that the change was successful for one of the lists, but failed for
 the other...
@@ -282,11 +250,11 @@ the other...
 ...this is reflected in the status of the mailing lists in the database.
 
     >>> list_four = list_set.get('team-four')
-    >>> list_four.status.name
-    'ACTIVE'
+    >>> print list_four.status.name
+    ACTIVE
     >>> list_five = list_set.get('team-five')
-    >>> list_five.status.name
-    'MOD_FAILED'
+    >>> print list_five.status.name
+    MOD_FAILED
 
 
 Error conditions
@@ -316,8 +284,8 @@ We could also pass in a success or failure status to a list that is not
 expecting it.  In this case, list_four is active so it is not expecting a
 status report, either success...
 
-    >>> list_four.status.name
-    'ACTIVE'
+    >>> print list_four.status.name
+    ACTIVE
     >>> mailinglist_api.reportStatus({'team-four': 'success'})
     Traceback (most recent call last):
     ...
@@ -334,8 +302,8 @@ status report, either success...
 
 This is also true of lists in the failed state.
 
-    >>> list_two.status.name
-    'FAILED'
+    >>> print list_two.status.name
+    FAILED
     >>> mailinglist_api.reportStatus({'team-two': 'success'})
     Traceback (most recent call last):
     ...
@@ -350,8 +318,8 @@ This is also true of lists in the failed state.
 
 And of lists in the modification-failed state.
 
-    >>> list_five.status.name
-    'MOD_FAILED'
+    >>> print list_five.status.name
+    MOD_FAILED
     >>> mailinglist_api.reportStatus({'team-five': 'success'})
     Traceback (most recent call last):
     ...

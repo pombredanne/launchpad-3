@@ -333,8 +333,7 @@ class MailingList(SQLBase):
             # been changed on an active list.
             self.status = MailingListStatus.MODIFIED
         else:
-            raise AssertionError(
-                'Only registered or usable mailing lists may be modified')
+            raise AssertionError('Only usable mailing lists may be modified')
         self.welcome_message_ = text
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)

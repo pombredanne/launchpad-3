@@ -360,13 +360,13 @@ the ACTIVE status.
     ... This list has been declined."""
     Traceback (most recent call last):
     ...
-    AssertionError: Only registered or usable mailing lists may be modified
+    AssertionError: Only usable mailing lists may be modified
 
     >>> list_three.welcome_message = """\
     ... This list has been deactivated."""
     Traceback (most recent call last):
     ...
-    AssertionError: Only registered or usable mailing lists may be modified
+    AssertionError: Only usable mailing lists may be modified
 
 
 Renaming teams with mailing lists
