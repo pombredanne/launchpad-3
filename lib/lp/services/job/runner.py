@@ -172,8 +172,11 @@ class BaseJobRunner(object):
                 errorlog.globalErrorUtility.raising(info)
                 oops = errorlog.globalErrorUtility.getLastOopsReport()
                 job.notifyOops(oops)
-                if self.logger is not None:
-                    self.logger.info('Job resulted in OOPS: %s' % oops.id)
+                return oops
+
+    def logOopsId(self, oops_id):
+        if self.logger is not None:
+            self.logger.info('Job resulted in OOPS: %s' % oops_id)
 
 
 class JobRunner(BaseJobRunner):
@@ -197,13 +200,15 @@ class JobRunner(BaseJobRunner):
     def runAll(self):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
-            self.runJobHandleError(job)
+            oops = self.runJobHandleError(job)
+            if oops is not None:
+                self.logOopsId(oops.id)
 
 
 class RunAmpouleJob(amp.Command):
 
     arguments = [('job_id', amp.Integer())]
-    response = [('success', amp.Integer())]
+    response = [('success', amp.Integer()), ('oops_id', amp.String())]
 
 
 class JobRunnerProto(child.AMPChild):
@@ -225,8 +230,12 @@ class JobRunnerProto(child.AMPChild):
     def runAmpouleJob(self, job_id):
         runner = BaseJobRunner()
         job = self.job_class.get(job_id)
-        runner.runJobHandleError(job)
-        return {'success': len(runner.completed_jobs)}
+        oops = runner.runJobHandleError(job)
+        if oops is None:
+            oops_id = ''
+        else:
+            oops_id = oops.id
+        return {'success': len(runner.completed_jobs), 'oops_id': oops_id}
 
 
 class TwistedJobRunner(BaseJobRunner):
@@ -252,6 +261,9 @@ class TwistedJobRunner(BaseJobRunner):
                 self.completed_jobs.append(job)
             else:
                 self.incomplete_jobs.append(job)
+            if response['oops_id'] != '':
+                oops = errorlog.globalErrorUtility.getLastOopsReport()
+                self.logOopsId(response['oops_id'])
         deferred.addCallback(update)
         return deferred
 

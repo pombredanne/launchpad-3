@@ -31,6 +31,7 @@ from zope.interface import classProvides, implements
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import MessageJob, MessageJobAction
 from canonical.launchpad.interfaces.message import IMessageJob
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
@@ -279,6 +280,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     @staticmethod
     def setUp():
+        errorlog.globalErrorUtility.configure('update_preview_diffs')
         server = get_scanner_server()
         server.setUp()
         return [server.tearDown]
