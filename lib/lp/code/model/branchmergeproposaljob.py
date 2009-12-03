@@ -166,7 +166,10 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
     @classmethod
     def get(cls, job_id):
         job = BranchMergeProposalJob.get(job_id)
-        assert job.job_type == cls.class_job_type
+        if job.job_type != cls.class_job_type:
+            raise SQLObjectNotFound(
+                'No object found with id %d and type %s' % (job_id,
+                cls.class_job_type.title))
         return cls(job)
 
     @classmethod

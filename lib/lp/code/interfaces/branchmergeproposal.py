@@ -511,6 +511,10 @@ class IBranchMergeProposal(IPrivacy):
 class IBranchMergeProposalJob(Interface):
     """A Job related to a Branch Merge Proposal."""
 
+    id = Int(
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The tracking number for this job."))
+
     branch_merge_proposal = Object(
         title=_('The BranchMergeProposal this job is about'),
         schema=IBranchMergeProposal, required=True)
