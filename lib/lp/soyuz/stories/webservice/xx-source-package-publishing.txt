@@ -175,20 +175,20 @@ A user can request a package to be deleted:
     >>> print pubs['total_size']
     1
     >>> package = pubs['entries'][0]['self_link']
-    >>> login("foo.bar@canonical.com")
-    >>> webservice.named_get(
+    >>> response = webservice.named_post(
     ...     package, 'requestDeletion', removed_by=cprov['self_link'],
     ...     removal_comment="No longer needed")
-    >>> logout()
+    >>> print response 
+    HTTP/1.1 200 Ok
 
-After removal, the package should no longer show up:
+After removal, the package is marked as such:
 
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
     ...     source_name="testwebservice", version="666",
     ...     exact_match=True).jsonBody()
-    >>> print pubs['total_size']
-    0
+    >>> print pubs['entries'][0]['removal_comment']
+    No longer needed
 
 Privacy
 =======

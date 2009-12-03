@@ -33,15 +33,17 @@ from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
+from canonical.launchpad.components.apihelpers import (
+    patch_entry_return_type)
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_returns_collection_of)
-
+    export_as_webservice_entry, export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_collection_of,
+    operation_returns_entry)
 
 #
 # Exceptions
@@ -283,6 +285,11 @@ class IPublishing(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
+    @operation_parameters(
+        removed_by=Reference(schema=IPerson, title=_("Removed by")),
+        removal_comment=TextLine(title=_("Removal comment"), required=False))
+    @operation_returns_entry(Interface) # Really IPublishing, see below
+    @export_write_operation()
     def requestDeletion(removed_by, removal_comment=None):
         """Delete this publication.
 
@@ -374,6 +381,8 @@ class IFilePublishing(Interface):
         or add file from librarian if it's not present. Update the database
         to represent the current archive state.
         """
+
+patch_entry_return_type(IPublishing, "requestDeletion", IPublishing)
 
 #
 # Source package publishing
