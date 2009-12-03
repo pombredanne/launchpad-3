@@ -628,6 +628,9 @@ class IUpdatePreviewDiffJobSource(Interface):
     def create(bmp):
         """Create a job to update the diff for this merge proposal."""
 
+    def get(id):
+        """Return the UpdatePreviewDiffJob with this id."""
+
     def iterReady():
         """Iterate through jobs ready to update preview diffs."""
 

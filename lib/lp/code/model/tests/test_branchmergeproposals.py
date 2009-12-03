@@ -40,7 +40,8 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
-    IMergeProposalCreatedJob, notify_modified, WrongBranchMergeProposal)
+    IMergeProposalCreatedJob, IUpdatePreviewDiffJobSource, notify_modified,
+    WrongBranchMergeProposal)
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobDerived,
     BranchMergeProposalJobType, CreateMergeProposalJob,
@@ -1832,6 +1833,10 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
 class TestUpdatePreviewDiffJob(DiffTestCase):
 
     layer = LaunchpadZopelessLayer
+
+    def test_implement_interface(self):
+        verifyObject(IUpdatePreviewDiffJobSource, UpdatePreviewDiffJob)
+        bmp = self.factory.makeBranchMergeProposal()
 
     def test_run(self):
         self.useBzrBranches()
