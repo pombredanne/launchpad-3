@@ -174,7 +174,7 @@ class BaseJobRunner(object):
                 job.notifyOops(oops)
                 return oops
 
-    def logOopsId(self, oops_id):
+    def _logOopsId(self, oops_id):
         if self.logger is not None:
             self.logger.info('Job resulted in OOPS: %s' % oops_id)
 
@@ -202,7 +202,7 @@ class JobRunner(BaseJobRunner):
         for job in self.jobs:
             oops = self.runJobHandleError(job)
             if oops is not None:
-                self.logOopsId(oops.id)
+                self._logOopsId(oops.id)
 
 
 class RunAmpouleJob(amp.Command):
@@ -262,8 +262,7 @@ class TwistedJobRunner(BaseJobRunner):
             else:
                 self.incomplete_jobs.append(job)
             if response['oops_id'] != '':
-                oops = errorlog.globalErrorUtility.getLastOopsReport()
-                self.logOopsId(response['oops_id'])
+                self._logOopsId(response['oops_id'])
         deferred.addCallback(update)
         return deferred
 
