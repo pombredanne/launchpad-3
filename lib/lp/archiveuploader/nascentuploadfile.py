@@ -688,7 +688,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                             tar_checker.ancient_files[first_file])
                         yield UploadError(
                             "%s: has %s file(s) with a time stamp too "
-                            "far into the future (e.g. %s [%s])."
+                            "far in the past (e.g. %s [%s])."
                              % (self.filename, len(ancient_files), first_file,
                                 timestamp))
                     return
