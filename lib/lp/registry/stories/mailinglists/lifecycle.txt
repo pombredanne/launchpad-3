@@ -18,6 +18,14 @@ The owner of Landscape Developers applies for a mailing list.
     >>> print backslashreplace(browser.title)
     Mailing list configuration...
 
+He thinks for a second whether his mailing list is for Ubuntu or not.
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'ubuntu-notice'))
+    Ubuntu mailing lists should not be created here. Create them
+    at lists.ubuntu.com instead.
+    >>> print browser.getLink('lists.ubuntu.com')
+    <Link text='lists.ubuntu.com' url='https://lists.ubuntu.com'>
+
     >>> browser.getControl('Apply for Mailing List').click()
     >>> print browser.title
     Landscape Developers in Launchpad
