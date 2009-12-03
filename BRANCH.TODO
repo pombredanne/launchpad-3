@@ -2,3 +2,7 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+
+lots of our .js files use YUI.add but the one I updated uses YUI().add. this
+is weird; need to clarify.
