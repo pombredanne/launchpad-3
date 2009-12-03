@@ -539,6 +539,76 @@ The DSCUploadedFile also inherit the ability to verify file sanity:
 
 == DebBinaryUploadFile ==
 
+DebBinaryUploadFile models a binary .deb file. 
+
+   >>> from lp.archiveuploader.nascentuploadfile import (
+   ...    DebBinaryUploadFile)
+   >>> ed_deb_path = datadir('ed_0.2-20_i386.deb')
+   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
+   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
+   ...                     15, 'main/editors', 'important', 'foo', '1.2',
+   ...                     ed_mixed_changes, modified_insecure_policy,
+   ...                     mock_logger_quiet)
+
+Like the other files it can be verified:
+
+   >>> list(ed_binary_deb.verify())
+   []
+
+Verification checks that the specified section matches the section in the
+changes file:
+
+   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
+   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
+   ...                     15, 'main/net', 'important', 'foo', '1.2',
+   ...                     ed_mixed_changes, modified_insecure_policy,
+   ...                     mock_logger_quiet)
+   >>> list(ed_binary_deb.verify())
+   [UploadError('ed_0.2-20_i386.deb control file lists section as 
+                main/editors but changes file has main/net.',)]
+
+It also checks the priority against the changes file:
+
+   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
+   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
+   ...                     15, 'main/editors', 'extra', 'foo', '1.2',
+   ...                     ed_mixed_changes, modified_insecure_policy,
+   ...                     mock_logger_quiet)
+   >>> list(ed_binary_deb.verify())
+   [UploadError('ed_0.2-20_i386.deb control file lists priority as important 
+                 but changes file has extra.',)]
+
+The timestamp of the file on disk should not be too far in the future:
+
+   >>> old_only_policy = getPolicy(
+   ...     name='insecure', distro='ubuntu', distroseries='hoary')
+   >>> old_only_policy.can_upload_binaries = True
+   >>> old_only_policy.future_time_grace = -5 * 365 * 24 * 60 * 60
+
+   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
+   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
+   ...                     15, 'main/editors', 'important', 'foo', '1.2',
+   ...                     ed_mixed_changes, old_only_policy,
+   ...                     mock_logger_quiet)
+   >>> list(ed_binary_deb.verifyDebTimestamp())
+   [UploadError('ed_0.2-20_i386.deb: has 26 file(s) with a time stamp too 
+    	far into the future (e.g. control [Thu Jan  3 19:29:01 2008]).',)]
+
+... nor too far in the past:
+
+   >>> new_only_policy = getPolicy(
+   ...     name='insecure', distro='ubuntu', distroseries='hoary')
+   >>> new_only_policy.can_upload_binaries = True
+   >>> new_only_policy.earliest_year = 2010
+   >>> ed_binary_deb = DebBinaryUploadFile(ed_deb_path,
+   ...                     'e31eeb0b6b3b87e1ea79378df864ffff',
+   ...                     15, 'main/editors', 'important', 'foo', '1.2',
+   ...                     ed_mixed_changes, new_only_policy,
+   ...                     mock_logger_quiet)
+   >>> list(ed_binary_deb.verify())
+   [UploadError('ed_0.2-20_i386.deb: has 26 file(s) with a time stamp too
+                 far in the past (e.g. control [Thu Jan  3 19:29:01 2008]).',)]
+
 
 == UDebBinaryUploadFile ==
 
