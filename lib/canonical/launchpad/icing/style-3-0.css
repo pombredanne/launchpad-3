@@ -480,6 +480,12 @@ ol.subordinate {
     display: inline;
     margin: 0 0.25em 0.75em 0;
     }
+.three-column-list dl {
+    width: 31%;
+    float: left;
+    display: inline;
+    margin: 0 0.25em 0.75em 0;
+    }
 .two-column-list li {
     width: 48%;
     float: left;
@@ -491,6 +497,13 @@ ol.subordinate {
     float: left;
     display: inline;
     margin: 0 0.25em 0 0;
+    }
+/* Keep the abilty to hide list entries. */
+.two-column-list dl.unseen,
+.two-column-list li.unseen,
+.three-column-list dl.unseen,
+.three-column-list li.unseen {
+    display: none;
     }
 .two-column-list:after,
 .three-column-list:after {
