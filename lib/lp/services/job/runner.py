@@ -231,3 +231,6 @@ class JobCronScript(LaunchpadCronScript):
         self.logger.info(
             'Ran %d %s jobs.',
             len(runner.completed_jobs), self.source_interface.__name__)
+        self.logger.info(
+            '%d %s jobs did not complete.',
+            len(runner.incomplete_jobs), self.source_interface.__name__)
