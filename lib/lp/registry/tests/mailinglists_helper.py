@@ -14,7 +14,6 @@ __all__ = [
     'print_actions',
     'print_dispositions',
     'print_info',
-    'print_review_table',
     'review_list',
     ]
 
@@ -124,37 +123,6 @@ def print_info(info, full=False):
                 pass
             else:
                 print '    %-25s %-15s' % (address, realname), flags, status
-
-
-def print_review_table(content):
-    """Print a +mailinglists table in a nice format."""
-    table = BeautifulSoup(
-        content,
-        parseOnlyThese=SoupStrainer(attrs=dict(id='mailing-lists')))
-    for tr in table.findAll('tr'):
-        for index, thtd in enumerate(tr.findAll(['th', 'td'])):
-            if thtd.name == 'th':
-                # This is a heading.  To enable the page test to keep
-                # everything on one line with no wrapping, we'll abbreviate
-                # the first three headings.
-                if index < 3:
-                    print thtd.string[:3],
-                else:
-                    print thtd.string,
-            else:
-                # Either there's a radio button here, or a team name, or a
-                # person name.  In the former two cases, print a
-                # representation of whether the button is checked or not.  In
-                # the latter two cases, just print the text.
-                if thtd.input is None:
-                    text = thtd.a.contents[0]
-                    print '%s <%s>' % (text, thtd.a.get('href')),
-                else:
-                    if thtd.input.get('checked', None):
-                        print '(*)',
-                    else:
-                        print '( )',
-        print
 
 
 def print_dispositions(dispositions):
