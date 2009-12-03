@@ -1934,13 +1934,6 @@
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
-        class="lp.registry.browser.sourcepackage.SourcePackagePackaging"
-        name="+packaging"
-        facet="overview"
-        template="../templates/sourcepackage-packaging.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        permission="zope.Public"
         class="lp.registry.browser.sourcepackage.SourcePackageHelpView"
         name="+gethelp"
         facet="answers"

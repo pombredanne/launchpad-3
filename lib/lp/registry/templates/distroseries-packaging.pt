@@ -9,6 +9,7 @@
     <div metal:fill-slot="main"
          tal:define="packagings view/cached_packagings;
                      unlinked_translatables view/unlinked_translatables">
+      <div class="top-portlet">
       <p>Links from distribution packages to upstream project series let
         distribution and upstream maintainers share bugs, patches, and translations
         efficiently.</p>
@@ -21,13 +22,18 @@
       </p>
 
       <tal:unlinked_translatables condition="unlinked_translatables">
-        <h2>Unlinked translatable packages</h2>
+        <div id="unlinked-translatables">
+          <h2>Unlinked translatable packages</h2>
 
-          <a tal:repeat="sp unlinked_translatables"
-                tal:content="sp/sourcepackagename/name"
-                tal:attributes="href string:${sp/fmt:url}/+packaging">evolution</a>
-
+          <ul class="horizontal">
+            <li tal:repeat="sp unlinked_translatables">
+              <a tal:content="sp/sourcepackagename/name"
+                tal:attributes="href sp/fmt:url">evolution</a>
+            </li>
+          </ul>
+        </div>
       </tal:unlinked_translatables>
+      </div>
 
       <tal:known_links condition="packagings">
         <h2>Upstream links</h2>
@@ -45,10 +51,9 @@
 
           <tbody>
             <tr tal:repeat="packaging packagings">
-              <td><a tal:attributes="href
-                         string:${packaging/sourcepackage/fmt:url}/+packaging"
-                     tal:content="packaging/sourcepackagename/name">
-                evolution</a>
+              <td>
+                <a tal:attributes="href packaging/sourcepackage/fmt:url"
+                  tal:content="packaging/sourcepackagename/name">evolution</a>
               </td>
               <td>
                 <a tal:replace="structure packaging/productseries/fmt:link" />
