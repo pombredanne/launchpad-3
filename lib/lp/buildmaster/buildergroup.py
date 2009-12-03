@@ -8,7 +8,6 @@ Implement methods to deal with builder and their results.
 
 __metaclass__ = type
 
-from collections import defaultdict
 import datetime
 import os
 import pytz
@@ -173,18 +172,6 @@ class BuilderGroup:
         """
         try:
             slave_status = queueItem.builder.slaveStatus()
-            # The code below expects to receive values of None
-            # for values that are not present in the status, so:
-            slave_status = defaultdict(lambda: None, slave_status)
-            (builder_status, build_id, build_status, logtail, filemap,
-             dependencies) = (
-                slave_status['builder_status'],
-                slave_status['build_id'],
-                slave_status['build_status'],
-                slave_status['logtail'],
-                slave_status['filemap'],
-                slave_status['dependencies'],
-                )
 
         except (xmlrpclib.Fault, socket.error), info:
             # XXX cprov 2005-06-29:
@@ -205,6 +192,7 @@ class BuilderGroup:
             'BuilderStatus.WAITING': self.updateBuild_WAITING,
             }
 
+        builder_status = slave_status['builder_status']
         if builder_status not in builder_status_handlers:
             self.logger.critical(
                 "Builder on %s returned unknown status %s, failing it"
@@ -222,7 +210,11 @@ class BuilderGroup:
         # from the IBuilder content class, it arrives protected by a Zope
         # Security Proxy, which is not declared, thus empty. Before passing
         # it to the status handlers we will simply remove the proxy.
-        logtail = removeSecurityProxy(logtail)
+        logtail = removeSecurityProxy(slave_status.get('logtail'))
+        build_id = slave_status.get('build_id')
+        build_status = slave_status.get('build_status')
+        filemap = slave_status.get('filemap')
+        dependencies = slave_status.get('dependencies')
 
         method = builder_status_handlers[builder_status]
         try:
