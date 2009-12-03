@@ -552,7 +552,6 @@ class LaunchpadRootNavigation(Navigation):
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
-        '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
         'package-sets': IPackagesetSet,
         'people': IPersonSet,

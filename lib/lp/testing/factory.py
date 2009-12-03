@@ -1694,12 +1694,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
                 subscription_policy=subscription_policy)
-        # Any member of the mailing-list-experts team can review a list
-        # registration.  It doesn't matter which one.
-        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-        reviewer = list(experts.allmembers)[0]
         team_list = getUtility(IMailingListSet).new(team, owner)
-        team_list.review(reviewer, MailingListStatus.APPROVED)
         team_list.startConstructing()
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list

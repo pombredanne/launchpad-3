@@ -210,7 +210,6 @@ def new_list_for_team(team):
     reviewer = list(experts.allmembers)[0]
     list_set = getUtility(IMailingListSet)
     team_list = list_set.new(team)
-    team_list.review(reviewer, MailingListStatus.APPROVED)
     team_list.startConstructing()
     team_list.transitionToStatus(MailingListStatus.ACTIVE)
     flush_database_updates()
@@ -264,14 +263,8 @@ def review_list(list_name, status=None):
     """
     if status is None:
         status = MailingListStatus.APPROVED
-    # Any Mailing List Expert will suffice for approving the registration.
-    experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-    lpadmin = list(experts.allmembers)[0]
-    # Review and approve the mailing list registration.
     list_set = getUtility(IMailingListSet)
-    mailing_list = list_set.get(list_name)
-    mailing_list.review(lpadmin, status)
-    return mailing_list
+    return list_set.get(list_name)
 
 
 class MailmanStub:
