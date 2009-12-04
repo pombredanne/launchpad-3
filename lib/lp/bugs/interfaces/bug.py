@@ -745,6 +745,7 @@ class UserCannotUnsubscribePerson(Unauthorized):
 IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug
 IMessage['bugs'].value_type.schema = IBug
+ICve['bugs'].value_type.schema = IBug
 
 # In order to avoid circular dependencies, we only import
 # IBugSubscription (which itself imports IBug) here, and assign it as
@@ -942,6 +943,24 @@ class IBugSet(Interface):
 
         :param bug_numbers: An iterable of bug numbers for which we should
             return Bugs.
+        """
+
+    def personIsDirectSubscriber(person):
+        """Return True if the person is a direct subscriber to this `IBug`.
+
+        Otherwise, return False.
+        """
+
+    def personIsAlsoNotifiedSubscriber(person):
+        """Return True if the person is an indirect subscriber to this `IBug`.
+
+        Otherwise, return False.
+        """
+
+    def personIsSubscribedToDuplicate(person):
+        """Return True if the person subscribed to a duplicate of this `IBug`.
+
+        Otherwise, return False.
         """
 
 

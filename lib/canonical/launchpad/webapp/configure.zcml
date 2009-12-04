@@ -20,8 +20,6 @@
           canonical.launchpad.webapp.interfaces.ILaunchpadBrowserApplicationRequest"
         attributes="response locale __str__"
         />
-      <allow
-        interface="zope.component.interfaces.IPresentationRequest" />
     </class>
 
     <class class="canonical.launchpad.webapp.publisher.RedirectionView">
@@ -417,13 +415,6 @@
         for="lp.code.interfaces.seriessourcepackagebranch.ISeriesSourcePackageBranch"
         provides="zope.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.SeriesSourcePackageBranchFormatter"
-        name="fmt"
-        />
-
-    <adapter
-        for="lp.code.interfaces.diff.IPreviewDiff"
-        provides="zope.traversing.interfaces.IPathAdapter"
-        factory="canonical.launchpad.webapp.tales.PreviewDiffFormatterAPI"
         name="fmt"
         />
 

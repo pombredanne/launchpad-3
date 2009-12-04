@@ -1,7 +1,7 @@
 # This file modified from Zope3/Makefile
 # Licensed under the ZPL, (c) Zope Corporation and contributors.
 
-PYTHON_VERSION=2.4
+PYTHON_VERSION=2.5
 PYTHON=python${PYTHON_VERSION}
 WD:=$(shell pwd)
 PY=$(WD)/bin/py
@@ -16,6 +16,9 @@ SHHH=utilities/shhh.py
 HERE:=$(shell pwd)
 
 LPCONFIG=development
+
+LP_BUILT_JS_ROOT=lib/canonical/launchpad/icing/build
+LAZR_BUILT_JS_ROOT=lazr-js/build
 
 MINS_TO_SHUTDOWN=15
 
@@ -49,12 +52,6 @@ $(API_INDEX): $(WADL_FILE)
 
 apidoc: compile $(API_INDEX)
 
-check_loggerhead_on_merge:
-	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
-	# depends on it (yet).
-	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
-
 check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
@@ -62,13 +59,6 @@ check_merge: $(PY)
 
 check_db_merge: $(PY)
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
-
-# This can be removed once we move to zc.buildout and we have versioned
-# dependencies, but for now we run both Launchpad and all other
-# dependencies tests for any merge to sourcecode.
-check_sourcecode_merge: check
-	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
@@ -259,8 +249,16 @@ rebuildfti:
 	@echo Rebuilding FTI indexes on launchpad_dev database
 	$(PY) database/schema/fti.py -d launchpad_dev --force
 
-clean:
+clean_js:
+	$(RM) $(LP_BUILT_JS_ROOT)/launchpad.js
+	$(RM) -r $(LAZR_BUILT_JS_ROOT)
+
+clean: clean_js
 	$(MAKE) -C sourcecode/pygettextpo clean
+	# XXX gary 2009-11-16 bug 483782
+	# The pygettextpo Makefile should have this next line in it for its make
+	# clean, and then we should remove this line.
+	$(RM) sourcecode/pygpgme/gpgme/*.so
 	if test -f sourcecode/mailman/Makefile; then \
 		$(MAKE) -C sourcecode/mailman clean; \
 	fi
@@ -270,6 +268,7 @@ clean:
 	    -print0 | xargs -r0 $(RM)
 	$(RM) -r bin
 	$(RM) -r parts
+	$(RM) -r develop-eggs
 	$(RM) .installed.cfg
 	$(RM) -r build
 	$(RM) thread*.request
@@ -317,6 +316,8 @@ potemplates: launchpad.pot
 launchpad.pot:
 	bin/i18nextract.py
 
+# Called by the rocketfuel-setup script. You probably don't want to run this
+# on its own.
 install: reload-apache
 
 copy-certificates:
@@ -335,7 +336,7 @@ enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
 
 reload-apache: enable-apache-launchpad
-	/etc/init.d/apache2 reload
+	/etc/init.d/apache2 restart
 
 static:
 	$(PY) scripts/make-static.py
@@ -354,7 +355,7 @@ ID: compile
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
+	check check_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild
+	jsbuild clean_js

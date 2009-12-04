@@ -1202,6 +1202,27 @@ check that they unpack as specified, a 3-element tuple.
     >>> print ordered_filenames[-1]
     firefox_0.9.2.orig.tar.gz
 
+We can also retrieve just the binary files related with Celso's PPA
+publications.
+
+    >>> binary_files = publishing_set.getBinaryFilesForSources(
+    ...     cprov_sources)
+    >>> binary_files = binary_files.config(distinct=True)
+    >>> binary_files.count()
+    6
+
+Please note how the result set is ordered by the id of `LibraryFileAlias`
+(second element of the triple):
+
+    >>> for source, file, content in binary_files:
+    ...     print file.id, file.filename
+    40 mozilla-firefox_0.9_i386.deb
+    124 foo-bin_666_all.deb
+    124 foo-bin_666_all.deb
+    130 foo-bin_999_all.deb
+    130 foo-bin_999_all.deb
+    135 foo-bin_666_all.deb
+
 getPackageDiffsForSources() is also provided by `IPublishingSet`, it
 allows callsites to retrieve all related `PackageDiff` records based
 on a collection of source publications.

@@ -23,10 +23,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import flush_database_updates, sqlvalues
 from canonical.lazr.utils import smartquote
 from lp.code.model.branch import Branch
+from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
 from lp.bugs.model.bug import get_bug_tags_open_count
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
-from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
+from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.model.build import Build, BuildSet
 from lp.soyuz.model.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
@@ -52,6 +53,7 @@ from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.registry.interfaces.packaging import PackagingType
 from lp.translations.interfaces.potemplate import IHasTranslationTemplates
+from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import PackageUploadCustomFormat
@@ -579,6 +581,21 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
         else:
             return None
 
+    def get_default_archive(self, component=None):
+        """See `ISourcePackage`."""
+        if component is None:
+            component = self.latest_published_component
+        distribution = self.distribution
+        if component is not None and component.name == 'partner':
+            archive = getUtility(IArchiveSet).getByDistroPurpose(
+                distribution, ArchivePurpose.PARTNER)
+            if archive is None:
+                raise NoPartnerArchive(distribution)
+            else:
+                return archive
+        else:
+            return distribution.main_archive
+
     def getTranslationTemplates(self):
         """See `IHasTranslationTemplates`."""
         result = POTemplate.selectBy(
@@ -688,3 +705,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin,
 
         custom_files.sort(key=attrgetter('id'))
         return [custom.libraryfilealias for custom in custom_files]
+
+    def linkedBranches(self):
+        """See `ISourcePackage`."""
+        return dict((p.name,b) for (p,b) in self.linked_branches)

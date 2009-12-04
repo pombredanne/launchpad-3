@@ -15,10 +15,19 @@ tests that shows a pretty-printed representation of the actions.
 We have to add the 'kw' arg for the EditFormDirective tests, but it isn't
 important, so we just discard it.
 
-    >>> import zope.app.component.tests.test_directives
-    >>> class Context(zope.app.component.tests.test_directives.Context):
-    ...     def action(self, discriminator, callable, args, kw=None):
-    ...         super(Context, self).action(discriminator, callable, args)
+
+    >>> import re, pprint
+    >>> atre = re.compile(' at [0-9a-fA-Fx]+')
+    >>> class Context(object):
+    ...    actions = ()
+    ...    def action(self, discriminator, callable, args, kw=None):
+    ...        self.actions += ((discriminator, callable, args), )
+    ...    def __repr__(self):
+    ...        stream = StringIO()
+    ...        pprinter = pprint.PrettyPrinter(stream=stream, width=60)
+    ...        pprinter.pprint(self.actions)
+    ...        r = stream.getvalue()
+    ...        return (''.join(atre.split(r))).strip()
 
 The code to this is actually repeated all through the Zope 3 unit tests for
 zcml directives. :-(
@@ -113,7 +122,7 @@ its __launchpad_facetname__ attribute.
     ...     return None
     >>> cls = get_simplelaunchpadviewclass(context.actions)
     >>> cls
-    <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>
+    <class 'zope.browserpage.metaconfigure.SimpleLaunchpadViewClass'>
     >>> cls.__launchpad_facetname__
     'FACET'
 
@@ -142,7 +151,7 @@ Next, a functional/integration test of the overridden directive.
     ...     for="canonical.launchpad.ftests.IFoo"
     ...     name="+mandrill"
     ...     permission="zope.Public"
-    ...     template="templates/main-template.pt"
+    ...     template="../../lp/app/templates/base-layout.pt"
     ...     facet="another-mister-lizard"
     ...     layer="canonical.launchpad.ftests.IFooLayer"
     ...     />
@@ -160,7 +169,7 @@ Next, a functional/integration test of the overridden directive.
     ...     (fooobject, request), name='+mandrill')
 
     >>> print mandrill_view.__class__.__name__
-    SimpleViewClass from ...main-template.pt
+    SimpleViewClass from ...base-layout.pt
     >>> print mandrill_view.__launchpad_facetname__
     another-mister-lizard
 
@@ -187,7 +196,7 @@ Name some variables to mirror the names used as arguments.
 The facet specified for the outer pages element will be used only when a
 facet is not specified for the inner page.
 
-    >>> P = pages(context, for_, permission, facet="OUTERFACET")
+    >>> P = pages(context, permission, for_, facet="OUTERFACET")
     >>> P.page(context, name, facet=facet)
     >>> P.page(context, "OTHER NAME")
 
@@ -235,12 +244,12 @@ its __launchpad_facetname__ attribute.
 
     >>> cls = get_simplelaunchpadviewclass(context.actions)
     >>> cls
-    <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>
+    <class 'zope.browserpage.metaconfigure.SimpleLaunchpadViewClass'>
     >>> cls.__launchpad_facetname__
     'FACET'
     >>> cls2 = context.actions[3][2][1]
     >>> cls2
-    <class 'zope.app.publisher.browser.viewmeta.SimpleLaunchpadViewClass'>
+    <class 'zope.browserpage.metaconfigure.SimpleLaunchpadViewClass'>
     >>> cls2.__launchpad_facetname__
     'OUTERFACET'
 
