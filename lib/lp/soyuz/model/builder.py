@@ -173,7 +173,8 @@ class Builder(SQLBase):
     def _setCurrentBuildBehavior(self, new_behavior):
         """Set the current build behavior."""
         self._current_build_behavior = new_behavior
-        self._current_build_behavior.setBuilder(self)
+        if self._current_build_behavior is not None:
+            self._current_build_behavior.setBuilder(self)
 
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)

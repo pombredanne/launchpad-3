@@ -50,7 +50,8 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
 
     def __init__(self):
         """The idle behavior is special in that a buildfarmjob is not
-        specified during initialisation.
+        specified during initialisation as it is not the result of an
+        adaption.
         """
         super(IdleBuildBehavior, self).__init__(None)
 
