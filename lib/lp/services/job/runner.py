@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = ['JobRunner']
 
 
+from signal import getsignal, SIGCHLD, signal
 import sys
 
 from ampoule import child, pool, main
@@ -169,10 +170,14 @@ class BaseJobRunner(object):
                 job.notifyUserError(e)
             except Exception:
                 info = sys.exc_info()
-                errorlog.globalErrorUtility.raising(info)
-                oops = errorlog.globalErrorUtility.getLastOopsReport()
-                job.notifyOops(oops)
-                return oops
+                return self._doOops(job, info)
+
+    @staticmethod
+    def _doOops(job, info):
+        errorlog.globalErrorUtility.raising(info)
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        job.notifyOops(oops)
+        return oops
 
     def _logOopsId(self, oops_id):
         if self.logger is not None:
@@ -262,7 +267,12 @@ class TwistedJobRunner(BaseJobRunner):
                 self.incomplete_jobs.append(job)
             if response['oops_id'] != '':
                 self._logOopsId(response['oops_id'])
-        deferred.addCallback(update)
+        def job_raised(failure):
+            self.incomplete_jobs.append(job)
+            info = (failure.value, failure.type, failure.tb)
+            oops = self._doOops(job, info)
+            self._logOopsId(oops.id)
+        deferred.addCallbacks(update, job_raised)
         return deferred
 
     def getTaskSource(self):
@@ -295,7 +305,11 @@ class TwistedJobRunner(BaseJobRunner):
         logger.info("Running through Twisted.")
         runner = cls(job_source, removeSecurityProxy(job_source).amp, logger)
         reactor.callWhenRunning(runner.runAll)
-        reactor.run()
+        handler = getsignal(SIGCHLD)
+        try:
+            reactor.run()
+        finally:
+            signal(SIGCHLD, handler)
         return runner
 
 
