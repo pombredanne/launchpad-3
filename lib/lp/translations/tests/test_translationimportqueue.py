@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import transaction
 import unittest
 
 from zope.component import getUtility
@@ -124,7 +125,7 @@ class TestTranslationUpload(TestCaseWithFactory):
 
     def setUp(self):
         """Set up context to test in."""
-        super(TestTranslationImportQueueEntryStatus, self).setUp()
+        super(TestTranslationUpload, self).setUp()
 
         self.queue = getUtility(ITranslationImportQueue)
         self.rosetta_experts = (
@@ -143,15 +144,19 @@ class TestTranslationUpload(TestCaseWithFactory):
         # archive uploader when uploading sourcepackages that provide
         # translations. The uploader uses a different db user (queued) and
         # the method must work within the permissions of that user.
-        self.layer.switchDbUser('queued')
+        uploader_person = self.factory.makePerson()
         distroseries = self.factory.makeDistroRelease()
         sourcepackagename = self.factory.makeSourcePackageName()
         sourcepackage = self.factory.makeSourcePackage(sourcepackagename,
                                                        distroseries)
+        transaction.commit()
+        self.assertEqual(2, self.queue.countEntries())
+        self.layer.switchDbUser('queued')
         self.queue.addOrUpdateEntriesFromTarball(
             self._make_tarball(), True, self.rosetta_experts,
             sourcepackagename=sourcepackagename,
             distroseries=distroseries)
+        self.assertEqual(5, self.queue.countEntries())
 
 
 def test_suite():
