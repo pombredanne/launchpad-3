@@ -343,7 +343,6 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
     layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestWorkerMonitorRunNoProcess, self).setUp()
         self.factory = LaunchpadObjectFactory()
         login('no-priv@canonical.com')
         job = self.factory.makeCodeImportJob()
@@ -357,7 +356,6 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
         self.layer.switchDbUser('codeimportworker')
 
     def tearDown(self):
-        super(TestWorkerMonitorRunNoProcess, self).tearDown()
         logout()
 
     @read_only_transaction
