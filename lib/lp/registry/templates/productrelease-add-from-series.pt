@@ -29,12 +29,12 @@
         // to be escaped.
 
         var get_by_id = function(id) {
-            return Y.get(Y.DOM.byId(id));
+            return Y.one(Y.DOM.byId(id));
         };
 
         var add_milestone_to_menu = function(parameters) {
             var select_menu = get_by_id('field.milestone_for_release');
-            var new_milestone_option = Y.get(
+            var new_milestone_option = Y.one(
                 new Option(parameters.name + '*', parameters.name));
             select_menu.appendChild(new_milestone_option);
             var children = select_menu.get('children');

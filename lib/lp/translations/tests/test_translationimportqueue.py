@@ -55,17 +55,11 @@ class TestTranslationImportQueueEntryStatus(TestCaseWithFactory):
                  for status in possible_statuses])
 
     def test_canSetStatus_non_admin(self):
-        # A non-privileged users cannot set any status except for retaining
-        # the current status of an entry.
+        # A non-privileged users cannot set any status.
         some_user = self.factory.makePerson()
         self._assertCanSetStatus(some_user, self.entry,
             #  A      B      D      F      I     NR
-            [False, False, False, False, False, True])
-        self.entry.setStatus(
-            RosettaImportStatus.DELETED, self.rosetta_experts)
-        self._assertCanSetStatus(some_user, self.entry,
-            #  A      B      D     F      I     NR
-            [False, False, True, False, False, False])
+            [False, False, False, False, False, False])
 
     def test_canSetStatus_rosetta_expert(self):
         # Rosetta experts are all-powerful, didn't you know that?
@@ -118,7 +112,7 @@ class TestTranslationImportQueueEntryStatus(TestCaseWithFactory):
         self._setUpUbuntu()
         self._assertCanSetStatus(self.ubuntu_group_owner, self.entry,
             #  A      B      D      F      I     NR
-            [False, False, False, False, False, True])
+            [False, False, False, False, False, False])
 
 
 def test_suite():

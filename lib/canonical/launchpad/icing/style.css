@@ -27,7 +27,10 @@
  * Use absolute units (e.g. px, pt) only when image sizes or CSS limitations
    demand it. Otherwise, use relative units (%, em).
 */
-.yui-ieditor {padding-right: 288px};
+.yui-ieditor {padding-right: 288px;}
+.lazr-multiline-edit .yui-ieditor {padding-right: 0;}
+.lazr-multiline-edit textarea {max-width: inherit;}
+.lazr-multiline-edit .yui-ieditor-input {padding-right: 5px !important;}
 
 .demo {background-color: #fee;}
 

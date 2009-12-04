@@ -123,8 +123,7 @@
           This DIV is necessary for the table-actions:nth-child stylesheet.
         </tal:comment>
         <div>
-          <table tal:condition="context/all_milestones"
-                tal:replace="structure context/@@+table-releases" />
+          <table tal:replace="structure context/@@+table-releases" />
 
           <ul class="table-actions" style="margin-bottom: 1em;">
             <li>
