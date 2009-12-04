@@ -208,6 +208,17 @@ class TestReadiness(TestCase):
         job.acquireLease(-1)
         job.acquireLease()
 
+    def test_acquireLeaseTimeout(self):
+        job = Job()
+        job.acquireLease(300)
+        self.assertTrue(job.getTimeout() > 0)
+        self.assertTrue(job.getTimeout() <= 300)
+
+    def test_acquireLeaseTimeoutExpired(self):
+        job = Job()
+        job.acquireLease(-300)
+        self.assertEqual(0, job.getTimeout())
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

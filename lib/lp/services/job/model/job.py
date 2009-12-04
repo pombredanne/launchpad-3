@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = ['InvalidTransition', 'Job', 'JobStatus']
 
 
+from calendar import timegm
 import datetime
 import time
 
@@ -83,6 +84,10 @@ class Job(SQLBase):
         expiry = datetime.datetime.fromtimestamp(time.time() + duration,
             UTC)
         self.lease_expires = expiry
+
+    def getTimeout(self):
+        expiry = timegm(self.lease_expires.timetuple())
+        return max(0,  expiry - time.time())
 
     def start(self):
         """See `IJob`."""
