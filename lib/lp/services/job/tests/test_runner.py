@@ -270,6 +270,9 @@ class StuckJob(BaseRunnableJob):
         self.id = 1
         self.job = Job()
 
+    def acquireLease(self):
+        return self.job.acquireLease(0)
+
     def run(self):
         sleep(30)
 

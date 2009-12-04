@@ -142,9 +142,6 @@ class BaseJobRunner(object):
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
         job = IRunnableJob(job)
-        job.acquireLease()
-        # Commit transaction to clear the row lock.
-        transaction.commit()
         try:
             job.start()
             transaction.commit()
@@ -170,8 +167,6 @@ class BaseJobRunner(object):
             dict(job.getOopsVars())):
             try:
                 self.runJob(job)
-            except LeaseHeld:
-                self.incomplete_jobs.append(job)
             except job.user_error_types, e:
                 job.notifyUserError(e)
             except Exception:
@@ -212,6 +207,13 @@ class JobRunner(BaseJobRunner):
     def runAll(self):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
+            try:
+                job.acquireLease()
+            except LeaseHeld:
+                self.incomplete_jobs.append(job)
+                continue
+            # Commit transaction to clear the row lock.
+            transaction.commit()
             oops = self.runJobHandleError(job)
             if oops is not None:
                 self._logOopsId(oops.id)
@@ -264,8 +266,17 @@ class TwistedJobRunner(BaseJobRunner):
         self.pp = pool.ProcessPool(job_amp, starter=starter)
 
     def runJobInSubprocess(self, job):
+        try:
+            job.acquireLease()
+        except LeaseHeld:
+            self.incomplete_jobs.append(job)
+            return
         job_id = job.id
-        deferred = self.pp.doWork(RunAmpouleJob, job_id = job_id, _timeout=0.1)
+        timeout = job.getTimeout()
+        if timeout == 0:
+            timeout = 0.0000000000001
+        deferred = self.pp.doWork(
+            RunAmpouleJob, job_id = job_id, _timeout=timeout)
         def update(response):
             if response['success']:
                 self.completed_jobs.append(job)
