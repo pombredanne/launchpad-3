@@ -1021,7 +1021,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         raise LookupError(token)
 
     def search(self, query):
-        """Return terms where query is a substring of the name"""
+        """Return terms where query is a substring of the name."""
         if not query:
             return self.emptySelectResults()
 
