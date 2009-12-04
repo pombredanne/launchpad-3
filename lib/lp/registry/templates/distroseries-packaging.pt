@@ -57,8 +57,7 @@
             <tr tal:repeat="packaging packagings/batch">
               <td>
                 <a class="sprite package-source"
-                  tal:attributes="href
-                  string:${packaging/sourcepackage/fmt:url}/+packaging"
+                  tal:attributes="href packaging/sourcepackage/fmt:url"
                   tal:content="packaging/sourcepackagename/name">evolution</a>
               </td>
               <td>

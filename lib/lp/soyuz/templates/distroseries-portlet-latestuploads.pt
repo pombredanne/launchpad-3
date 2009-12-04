@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   class="portlet"
-  tal:condition="context/getLatestUploads">
+  tal:define="latest_uploads context/getLatestUploads">
   <h2>
     <span class="see-all"><a
       tal:attributes="href context/menu:overview/queue/fmt:url">All
@@ -11,7 +11,8 @@
     Latest uploads
   </h2>
 
-  <ul id="latest-uploads" class="binary package">
+  <ul id="latest-uploads" class="binary package"
+    tal:condition="latest_uploads">
     <li tal:repeat="source context/getLatestUploads">
       <a
        tal:attributes="href source/fmt:url"
@@ -22,6 +23,10 @@
       </span>
     </li>
   </ul>
+
+  <p tal:condition="not: latest_uploads">
+    There are no recent source package uploads.
+  </p>
 
   <ul class="horizontal">
     <li>
