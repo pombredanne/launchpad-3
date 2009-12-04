@@ -305,6 +305,7 @@ class TestTwistedJobRunner(TestCaseWithFactory):
             'Running through Twisted.', 'Job resulted in OOPS: %s' % oops.id]
         self.assertEqual(expected, logger.entries)
         self.assertEqual('ProcessTerminated', oops.type)
+        self.assertIn('ended by signal 9', oops.value)
 
 
 def test_suite():
