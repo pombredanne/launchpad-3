@@ -16,6 +16,7 @@ import shutil
 import signal
 import subprocess
 import tempfile
+import time
 
 import CVS
 import pysvn
@@ -91,8 +92,18 @@ class SubversionServer(Server):
             self._svnserve = subprocess.Popen(
                 ['svnserve', '--daemon', '--foreground', '--root',
                  self.repository_path])
-            import time
-            time.sleep(2)
+            delay = 0.1
+            for i in range(10):
+                try:
+                    client = pysvn.Client()
+                    client.ls(self.get_url())
+                except pysvn.ClientError, e:
+                    if 'Connection refused' in str(e):
+                        time.sleep(delay)
+                        delay *= 1.5
+                        continue
+                else:
+                    break
 
     def tearDown(self):
         super(SubversionServer, self).tearDown()
