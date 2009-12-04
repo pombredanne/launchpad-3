@@ -357,7 +357,11 @@ are linked to upstream projects.
     Upstream packaging links
 
 The view provides a property to get the source packages that have
-translations, but are not linked to an upstream project.
+translations, but are not linked to an upstream project. The view filters
+unpublished versions from full functionality distributions like Ubuntu.
+
+    >>> hoary.getUnlinkedTranslatableSourcePackages()
+    [<SourcePackage .../hoary/pmount>, <SourcePackage .../hoary/mozilla>]
 
     >>> view.show_unlinked_translatables
     True
@@ -367,7 +371,14 @@ translations, but are not linked to an upstream project.
 
 A distro series can have thousands of upstream packaging links. The view
 provides a batch navigator to access the packagings. The default batch size
-is 200.
+is 200. The view filters unpublished versions from full functionality
+distributions like Ubuntu.
+
+    >>> for packaging in hoary.packagings:
+    ...     print packaging.sourcepackagename.name
+    evolution
+    mozilla-firefox
+    netapplet
 
     >>> batch_navigator = view.cached_packagings
     >>> batch_navigator.default_size
