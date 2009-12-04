@@ -13,6 +13,8 @@ __metaclass__ = type
 
 import os
 import shutil
+import signal
+import subprocess
 import tempfile
 
 import CVS
@@ -60,9 +62,10 @@ def run_in_temporary_directory(function):
 class SubversionServer(Server):
     """A controller for an Subversion repository, used for testing."""
 
-    def __init__(self, repository_path):
+    def __init__(self, repository_path, use_svn_serve=False):
         super(SubversionServer, self).__init__()
         self.repository_path = os.path.abspath(repository_path)
+        self._use_svn_serve = use_svn_serve
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
@@ -70,11 +73,32 @@ class SubversionServer(Server):
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
-        return local_path_to_url(self.repository_path)
+        if self._use_svn_serve:
+            return 'svn://localhost/'
+        else:
+            return local_path_to_url(self.repository_path)
 
     def setUp(self):
         super(SubversionServer, self).setUp()
         self.createRepository(self.repository_path)
+        if self._use_svn_serve:
+            conf_file = open(
+                os.path.join(self.repository_path, 'conf/svnserve.conf'), 'w')
+            try:
+                conf_file.write('[general]\nanon-access = write\n')
+            finally:
+                conf_file.close()
+            self._svnserve = subprocess.Popen(
+                ['svnserve', '--daemon', '--foreground', '--root',
+                 self.repository_path])
+            import time
+            time.sleep(2)
+
+    def tearDown(self):
+        super(SubversionServer, self).tearDown()
+        if self._use_svn_serve:
+            os.kill(self._svnserve.pid, signal.SIGINT)
+            self._svnserve.communicate()
 
     @run_in_temporary_directory
     def makeBranch(self, branch_name, tree_contents):
