@@ -12,6 +12,8 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue, RosettaImportStatus)
+from lp.translations.utilities.translation_export import (
+    LaunchpadWriteTarFile)
 
 from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
@@ -113,6 +115,43 @@ class TestTranslationImportQueueEntryStatus(TestCaseWithFactory):
         self._assertCanSetStatus(self.ubuntu_group_owner, self.entry,
             #  A      B      D      F      I     NR
             [False, False, False, False, False, False])
+
+
+class TestTranslationUpload(TestCaseWithFactory):
+    """Test uploading of translations to the queue."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Set up context to test in."""
+        super(TestTranslationImportQueueEntryStatus, self).setUp()
+
+        self.queue = getUtility(ITranslationImportQueue)
+        self.rosetta_experts = (
+            getUtility(ILaunchpadCelebrities).rosetta_experts)
+
+    def _make_tarball(self):
+        tarball_content = {
+            'foo.pot': 'Foo template',
+            'es.po': 'Spanish translation',
+            'fr.po': 'French translation',
+            }
+        return LaunchpadWriteTarFile.files_to_string(tarball_content)
+
+    def test_addOrUpdateEntriesFromTarball_queued_user(self):
+        # The method addOrUpdateEntriesFromTarball is called by the
+        # archive uploader when uploading sourcepackages that provide
+        # translations. The uploader uses a different db user (queued) and
+        # the method must work within the permissions of that user.
+        self.layer.switchDbUser('queued')
+        distroseries = self.factory.makeDistroRelease()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        sourcepackage = self.factory.makeSourcePackage(sourcepackagename,
+                                                       distroseries)
+        self.queue.addOrUpdateEntriesFromTarball(
+            self._make_tarball(), True, self.rosetta_experts,
+            sourcepackagename=sourcepackagename,
+            distroseries=distroseries)
 
 
 def test_suite():
