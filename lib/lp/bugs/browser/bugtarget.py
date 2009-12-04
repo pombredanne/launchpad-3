@@ -883,6 +883,7 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
     custom_widget('tags', BugTagsWidget)
 
     _MATCHING_BUGS_LIMIT = 10
+    show_summary_in_results = False
 
     @property
     def search_context(self):
@@ -955,6 +956,7 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
     template = _SEARCH_FOR_DUPES
 
     focused_element_id = 'field.title'
+    show_summary_in_results = True
 
     @safe_action
     @action("Continue", name="search", validator="validate_search")

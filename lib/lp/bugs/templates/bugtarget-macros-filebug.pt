@@ -361,8 +361,19 @@
 </metal:bug_reporting_guidelines>
 
 <metal:similar-bugs define-macro="display-similar-bugs">
-  <p id="filebug-query-heading">Is "<strong><span tal:replace="view/search_text">my submitted bug
-    summary</span></strong>" one of these bugs?</p>
+  <tal:results-intro-with-summary condition="view/show_summary_in_results">
+    <p id="filebug-query-heading">
+      Is "<strong><span tal:replace="view/search_text">my submitted bug summary</span></strong>"
+      one of these bugs?
+    </p>
+  </tal:results-intro-with-summary>
+  <tal:results-intro-without-summary
+      condition="not: view/show_summary_in_results">
+    <p id="filebug-query-heading">
+      Do any of the following bugs describe the bug you're trying to
+      report?
+    </p>
+  </tal:results-intro-without-summary>
   <ul id="similar-bugs">
     <li tal:repeat="bug view/similar_bugs" class="similar-bug">
       <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
