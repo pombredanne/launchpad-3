@@ -104,6 +104,9 @@ class SubversionServer(Server):
                         continue
                 else:
                     break
+            else:
+                raise AssertionError(
+                    "svnserve didn't start accepting connections")
 
     def tearDown(self):
         super(SubversionServer, self).tearDown()
