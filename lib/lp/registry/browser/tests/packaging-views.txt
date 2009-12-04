@@ -341,3 +341,48 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     sarge hotter
     7.0 hotter
     grumpy hotter
+
+
+Distro series +packaging view
+-----------------------------
+
+The DistroSeriesPackagesView shows the packages in a distro series that
+are linked to upstream projects.
+
+    >>> view = create_initialized_view(hoary, name='+packaging')
+    >>> print view.label
+    Mapping series packages to upstream project series
+
+    >>> print view.page_title
+    Upstream packaging links
+
+The view provides a property to get the source packages that have
+translations, but are not linked to an upstream project.
+
+    >>> view.show_unlinked_translatables
+    True
+
+    >>> view.unlinked_translatables
+    [<SourcePackage ubuntu/hoary/pmount>, <SourcePackage .../hoary/mozilla>]
+
+A distro series can have thousands of upstream packaging links. The view
+provides a batch navigator to access the packagings. The default batch size
+is 200.
+
+    >>> batch_navigator = view.cached_packagings
+    >>> batch_navigator.default_size
+    200
+
+    >>> for packaging in batch_navigator.batch:
+    ...     print packaging.sourcepackagename.name
+    evolution
+    mozilla-firefox
+    netapplet
+
+The show_unlinked_translatables property is False when the batch is after the
+first batch.
+
+    >>> view = create_initialized_view(
+    ...     hoary, name='+packaging', query_string='start=2')
+    >>> view.show_unlinked_translatables
+    False
