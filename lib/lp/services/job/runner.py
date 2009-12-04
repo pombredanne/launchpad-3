@@ -259,7 +259,7 @@ class TwistedJobRunner(BaseJobRunner):
 
     def runJobInSubprocess(self, job):
         job_id = job.id
-        deferred = self.pp.doWork(RunAmpouleJob, job_id = job_id)
+        deferred = self.pp.doWork(RunAmpouleJob, job_id = job_id, _timeout=0.1)
         def update(response):
             if response['success']:
                 self.completed_jobs.append(job)

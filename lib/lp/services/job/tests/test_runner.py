@@ -8,6 +8,7 @@ from __future__ import with_statement
 
 import contextlib
 import sys
+from time import sleep
 from unittest import TestLoader
 
 import transaction
@@ -17,7 +18,9 @@ from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
 from lp.testing.mail_helpers import pop_notifications
-from lp.services.job.runner import JobRunner, BaseRunnableJob
+from lp.services.job.runner import (
+    JobRunner, BaseRunnableJob, JobRunnerProto, TwistedJobRunner
+)
 from lp.services.job.interfaces.job import JobStatus, IRunnableJob
 from lp.services.job.model.job import Job
 from lp.testing import TestCaseWithFactory
@@ -246,6 +249,61 @@ class TestJobRunner(TestCaseWithFactory):
         # has been committed.
         transaction.abort()
         self.assertEqual(JobStatus.FAILED, job.job.status)
+
+
+class StuckJob(BaseRunnableJob):
+    implements(IRunnableJob)
+
+    done = False
+
+    @classmethod
+    def iterReady(cls):
+        if not cls.done:
+            yield StuckJob()
+        cls.done = True
+
+    @staticmethod
+    def get(id):
+        return StuckJob()
+
+    def __init__(self):
+        self.id = 1
+        self.job = Job()
+
+    def run(self):
+        sleep(30)
+
+
+class StuckJobAmp(JobRunnerProto):
+
+    job_class = StuckJob
+
+
+StuckJob.amp = StuckJobAmp
+
+
+class ListLogger:
+
+    def __init__(self):
+        self.entries = []
+
+    def info(self, input):
+        self.entries.append(input)
+
+
+class TestTwistedJobRunner(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_timeout(self):
+        logger = ListLogger()
+        runner = TwistedJobRunner.runFromSource(StuckJob, logger)
+        self.assertEqual([], runner.completed_jobs)
+        self.assertEqual(1, len(runner.incomplete_jobs))
+        oops = errorlog.globalErrorUtility.getLastOopsReport()
+        expected = [
+            'Running through Twisted.', 'Job resulted in OOPS: %s' % oops.id]
+        self.assertEqual(expected, logger.entries)
 
 
 def test_suite():
