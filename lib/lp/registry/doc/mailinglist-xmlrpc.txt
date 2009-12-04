@@ -24,8 +24,7 @@ back from the XMLRPC call.
 
 Mailing lists are always tied -- one-to-one -- to teams.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, MailingListStatus)
+    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> person_set = getUtility(IPersonSet)
     >>> no_priv = person_set.getByName('no-priv')
     >>> team_one = factory.makeTeam(no_priv, name='team-one')

@@ -20,7 +20,6 @@ __all__ = [
 
 import xmlrpclib
 
-from BeautifulSoup import BeautifulSoup, SoupStrainer
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
