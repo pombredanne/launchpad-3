@@ -250,8 +250,7 @@ class TwistedJobRunner(BaseJobRunner):
         BaseJobRunner.__init__(self, logger=logger)
         self.job_source = job_source
         self.job_amp = job_amp
-        self.pp = pool.ProcessPool(
-            job_amp, min=1, max=1, starter=starter)
+        self.pp = pool.ProcessPool(job_amp, starter=starter)
 
     def runJobInSubprocess(self, job):
         job_id = job.id
