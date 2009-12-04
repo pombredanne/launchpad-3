@@ -254,7 +254,7 @@ class TwistedJobRunner(BaseJobRunner):
             job_amp, min=1, max=1, starter=starter)
 
     def runJobInSubprocess(self, job):
-        job_id = removeSecurityProxy(job).context.id
+        job_id = job.id
         deferred = self.pp.doWork(RunAmpouleJob, job_id = job_id)
         def update(response):
             if response['success']:
