@@ -273,6 +273,7 @@ class TwistedJobRunner(BaseJobRunner):
             return
         job_id = job.id
         timeout = job.getTimeout()
+        # work around ampoule bug
         if timeout == 0:
             timeout = 0.0000000000001
         deferred = self.pp.doWork(
