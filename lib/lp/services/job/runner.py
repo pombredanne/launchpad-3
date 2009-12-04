@@ -269,7 +269,7 @@ class TwistedJobRunner(BaseJobRunner):
                 self._logOopsId(response['oops_id'])
         def job_raised(failure):
             self.incomplete_jobs.append(job)
-            info = (failure.value, failure.type, failure.tb)
+            info = (failure.type, failure.value, failure.tb)
             oops = self._doOops(job, info)
             self._logOopsId(oops.id)
         deferred.addCallbacks(update, job_raised)
