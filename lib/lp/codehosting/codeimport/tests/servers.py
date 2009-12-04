@@ -83,12 +83,10 @@ class SubversionServer(Server):
         super(SubversionServer, self).setUp()
         self.createRepository(self.repository_path)
         if self._use_svn_serve:
-            conf_file = open(
-                os.path.join(self.repository_path, 'conf/svnserve.conf'), 'w')
-            try:
+            conf_path = os.path.join(
+                self.repository_path, 'conf/svnserve.conf')
+            with open(conf_path , 'w') as conf_file:
                 conf_file.write('[general]\nanon-access = write\n')
-            finally:
-                conf_file.close()
             self._svnserve = subprocess.Popen(
                 ['svnserve', '--daemon', '--foreground', '--root',
                  self.repository_path])
