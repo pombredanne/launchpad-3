@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = ['JobRunner']
 
 
+import contextlib
 from signal import getsignal, SIGCHLD, signal
 import sys
 
@@ -123,6 +124,11 @@ class BaseRunnableJob:
         if ctrl is None:
             return
         ctrl.send()
+
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        yield
 
 
 class BaseJobRunner(object):
