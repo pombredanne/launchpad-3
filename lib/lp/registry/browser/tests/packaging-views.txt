@@ -363,7 +363,7 @@ translations, but are not linked to an upstream project.
     True
 
     >>> view.unlinked_translatables
-    [<SourcePackage ubuntu/hoary/pmount>, <SourcePackage .../hoary/mozilla>]
+    [<SourcePackage ubuntu/hoary/pmount>]
 
 A distro series can have thousands of upstream packaging links. The view
 provides a batch navigator to access the packagings. The default batch size
@@ -376,7 +376,6 @@ is 200.
     >>> for packaging in batch_navigator.batch:
     ...     print packaging.sourcepackagename.name
     evolution
-    mozilla-firefox
     netapplet
 
 The show_unlinked_translatables property is False when the batch is after the

@@ -467,7 +467,10 @@ class DistroSeriesPackagesView(DistroSeriesView):
     @cachedproperty
     def unlinked_translatables(self):
         """The sourcepackages that lack a link to a productseries."""
-        return self.context.getUnlinkedTranslatableSourcePackages()
+        packages = self.context.getUnlinkedTranslatableSourcePackages()
+        packages = [package for package in packages
+                    if package.currentrelease is not None]
+        return packages
 
     @cachedproperty
     def show_unlinked_translatables(self):
@@ -479,5 +482,6 @@ class DistroSeriesPackagesView(DistroSeriesView):
     @cachedproperty
     def cached_packagings(self):
         """The batched upstream packaging links."""
-        return BatchNavigator(
-            list(self.context.packagings), self.request, size=200)
+        packagings = [packaging for packaging in self.context.packagings
+                      if packaging.sourcepackage.currentrelease is not None]
+        return BatchNavigator(packagings, self.request, size=200)
