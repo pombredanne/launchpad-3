@@ -170,6 +170,7 @@ from canonical.testing.customresult import (
     list_tests,
     patch_find_tests,
     patch_zope_testresult,
+    replace_list_of_tests,
     )
 from subunit import TestProtocolClient
 
@@ -199,6 +200,13 @@ if __name__ == '__main__':
         patch_find_tests(list_tests)
     options.parser.add_option(
         '--list', action='callback', callback=list_test_option)
+
+    def save_list_test_option(option, opt, value, parser):
+        replace_list_of_tests(open(value, 'wb'))
+        args.append('--list-tests')
+    options.parser.add_option(
+        '--save-list', action='callback',
+        callback=save_list_test_option, type="str")
 
     def use_subunit(option, opt, value, parser):
         patch_zope_testresult(TestProtocolClient(sys.stdout))
