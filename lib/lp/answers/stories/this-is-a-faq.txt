@@ -361,8 +361,7 @@ information.
     >>> user_browser.getControl(name='field.faq-query').value = 'flash'
     >>> user_browser.getControl('Search', index=0).click()
     >>> user_browser.getControl('6').selected = True
-    >>> user_browser.getControl('Message').value = (
-    ...     "The FAQ mentions this:")
+    >>> user_browser.getControl('Message').value = "The FAQ mentions this:"
     >>> user_browser.getControl('Link to FAQ').click()
 
 The question is still solved. No Privileges Person sees the FAQ was
