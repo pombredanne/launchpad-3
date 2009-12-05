@@ -26,8 +26,8 @@ from lazr.delegates import delegates
 
 from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import smartquote
-from canonical.launchpad.interfaces import IBugSet
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.bugs.interfaces.bug import IBugSet
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadView, Navigation, StandardLaunchpadFacets,

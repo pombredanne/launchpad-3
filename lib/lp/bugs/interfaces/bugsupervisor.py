@@ -15,7 +15,7 @@ from zope.schema import Choice
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 
 

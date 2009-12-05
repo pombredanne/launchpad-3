@@ -18,7 +18,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Date, Int, TextLine
 
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.registry.interfaces.productrelease import IProductRelease
 from lp.bugs.interfaces.bugtarget import IHasBugs
