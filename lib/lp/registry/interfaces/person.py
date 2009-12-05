@@ -50,7 +50,7 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
-
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
@@ -1198,75 +1198,92 @@ class IPersonViewRestricted(Interface):
     # activemembers.value_type.schema will be set to IPerson once
     # IPerson is defined.
     activemembers = exported(
-        CollectionField(
-            title=_("List of members with ADMIN or APPROVED status"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("List of members with ADMIN or APPROVED status"),
+                value_type=Reference(schema=Interface))),
         exported_as='members')
     adminmembers = exported(
-        CollectionField(
-            title=_("List of this team's admins."),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("List of this team's admins."),
+                value_type=Reference(schema=Interface))),
         exported_as='admins')
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
     allmembers = exported(
-        CollectionField(
-            title=_("All participants of this team."),
-            description=_(
-                "List of all direct and indirect people and teams who, one "
-                "way or another, are a part of this team. If you want a "
-                "method to check if a given person is a member of a team, "
-                "you should probably look at IPerson.inTeam()."),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All participants of this team."),
+                description=_(
+                    "List of all direct and indirect people and teams who, "
+                    "one way or another, are a part of this team. If you "
+                    "want a method to check if a given person is a member "
+                    "of a team, you should probably look at "
+                    "IPerson.inTeam()."),
+                value_type=Reference(schema=Interface))),
         exported_as='participants')
-    approvedmembers = Attribute("List of members with APPROVED status")
+    approvedmembers = doNotSnapshot(
+        Attribute("List of members with APPROVED status"))
     deactivated_member_count = Attribute("Number of deactivated members")
-    deactivatedmembers = Attribute("List of members with DEACTIVATED status")
     deactivatedmembers = exported(
-        CollectionField(
-            title=_(
-                "All members whose membership is in the DEACTIVATED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_(
+                    "All members whose membership is in the "
+                    "DEACTIVATED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='deactivated_members')
     expired_member_count = Attribute("Number of EXPIRED members.")
     expiredmembers = exported(
-        CollectionField(
-            title=_("All members whose membership is in the EXPIRED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is in the "
+                        "EXPIRED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='expired_members')
-    inactivemembers = Attribute(
-        "List of members with EXPIRED or DEACTIVATED status")
+    inactivemembers = doNotSnapshot(
+        Attribute(
+            "List of members with EXPIRED or DEACTIVATED status"))
     inactive_member_count = Attribute("Number of inactive members")
     invited_members = exported(
-        CollectionField(
-            title=_("All members whose membership is in the INVITED state"),
-            value_type=Reference(schema=Interface)))
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is "
+                        "in the INVITED state"),
+                value_type=Reference(schema=Interface))))
+
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
-        CollectionField(
-            title=_("Active TeamMemberships for this object's members."),
-            description=_(
-                "Active TeamMemberships are the ones with the ADMIN or "
-                "APPROVED status.  The results are ordered using "
-                "Person.sortingColumns."),
-            readonly=True, required=False,
-            value_type=Reference(schema=ITeamMembership)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("Active TeamMemberships for this object's members."),
+                description=_(
+                    "Active TeamMemberships are the ones with the ADMIN or "
+                    "APPROVED status.  The results are ordered using "
+                    "Person.sortingColumns."),
+                readonly=True, required=False,
+                value_type=Reference(schema=ITeamMembership))),
         exported_as='members_details')
-    pendingmembers = Attribute(
-        "List of members with INVITED or PROPOSED status")
+    pendingmembers = doNotSnapshot(
+        Attribute(
+            "List of members with INVITED or PROPOSED status"))
     proposedmembers = exported(
-        CollectionField(
-            title=_("All members whose membership is in the PROPOSED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is in the "
+                        "PROPOSED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
     mapped_participants_count = Attribute(
         "The number of mapped participants")
-    unmapped_participants = CollectionField(
-        title=_("List of participants with no coordinates recorded."),
-        value_type=Reference(schema=Interface))
+    unmapped_participants = doNotSnapshot(
+        CollectionField(
+            title=_("List of participants with no coordinates recorded."),
+            value_type=Reference(schema=Interface)))
     unmapped_participants_count = Attribute(
         "The number of unmapped participants")
 
