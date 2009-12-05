@@ -244,9 +244,13 @@ He can also enter keywords describing the FAQ:
 There is a 'Message' field that will be used to answer the question.
 It is pre-filled, but he can change its value:
 
-    >>> print owner_browser.getControl('Message').value
+    >>> print owner_browser.getControl(
+    ...     'Additional comment for question #2').value
     Sample Person suggests this article as an answer to your question:
-    >>> owner_browser.getControl('Message').value = 'Read the Fine Answer:'
+
+    >>> owner_browser.getControl(
+    ...     'Additional comment for question #2').value = (
+    ...     'Read the Fine Answer:')
 
 After clicking the 'Create' button, the FAQ is created and the user is
 returned to the question page.
@@ -357,7 +361,8 @@ information.
     >>> user_browser.getControl(name='field.faq-query').value = 'flash'
     >>> user_browser.getControl('Search', index=0).click()
     >>> user_browser.getControl('6').selected = True
-    >>> user_browser.getControl('Message').value = "The FAQ mentions this:"
+    >>> user_browser.getControl('Message').value = (
+    ...     "The FAQ mentions this:")
     >>> user_browser.getControl('Link to FAQ').click()
 
 The question is still solved. No Privileges Person sees the FAQ was

@@ -38,7 +38,7 @@ class IFAQ(IHasOwner):
 
     title = Title(
         title=_('Title'),
-        description=_('The title describing the FAQ, often a question.'),
+        description=_('The title describing this FAQ, often a question.'),
         required=True)
 
     keywords = TextLine(
@@ -49,7 +49,7 @@ class IFAQ(IHasOwner):
     content = Text(
         title=_('Content'),
         description=_(
-            'The answer to the question in plain text. You may choose to '
+            'The answer for this FAQ in plain text. You may choose to '
             'include a URL to an external FAQ.'),
         required=True)
 

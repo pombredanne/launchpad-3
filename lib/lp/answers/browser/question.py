@@ -46,6 +46,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import copy_field
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -1135,7 +1136,10 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
         Adds a message field to the form.
         """
         super(QuestionCreateFAQView, self).setUpFields()
-        self.form_fields += form.Fields(IQuestionLinkFAQForm['message'])
+        self.form_fields += form.Fields(
+            copy_field(IQuestionLinkFAQForm['message']))
+        self.form_fields['message'].field.title = _(
+            'Additional comment for question #%s' % self.context.id)
         self.form_fields['message'].custom_widget = (
             self.custom_widgets['message'])
 
