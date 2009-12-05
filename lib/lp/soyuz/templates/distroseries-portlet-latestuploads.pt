@@ -24,7 +24,7 @@
     </li>
   </ul>
 
-  <p tal:condition="not: latest_uploads">
+  <p id="no-latest-uploads" tal:condition="not: latest_uploads">
     There are no recent source package uploads.
   </p>
 
