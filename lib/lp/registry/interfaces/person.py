@@ -333,7 +333,7 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
     MODERATED = DBItem(1, """
         Moderated Team
 
-        All subscriptions for this team are subject to approval by one of
+        All subscriptions for this team are subject to approval by one of 
         the team's administrators.
         """)
 
@@ -366,17 +366,17 @@ class PersonVisibility(DBEnumeratedType):
     PRIVATE_MEMBERSHIP = DBItem(20, """
         Private Membership
 
-        Only Launchpad admins and team members can view the
-        membership list for this team.  The team is severely restricted in the
+        Only Launchpad admins and team members can view the 
+        membership list for this team. The team is severely restricted in the 
         roles it can assume.
         """)
 
     PRIVATE = DBItem(30, """
         Private
 
-        Only Launchpad admins and team members can view the membership list
-        for this team or its name.  The team roles are restricted to
-        subscribing to bugs, being bug supervisor, owning code branches, and
+        Only Launchpad admins and team members can view the membership list 
+        for this team or its name.  The team roles are restricted to 
+        subscribing to bugs, being bug supervisor, owning code branches, and 
         having a PPA.
         """)
 
