@@ -103,9 +103,8 @@ def replace_list_of_tests(out_file):
     thinks should be run, after considering layers, etc. It also
     prints test.id() rather than str(test).
 
-    :param file_name: A file in which to save the list of
-        tests. Something make stdout noisy with warnings and whatnot,
-        so this is one way of getting a clean list.
+    :param out_file: A writeable file where the list IDs can be
+        written to.
     """
     def list_of_tests(formatter, tests, layer_name):
         """Report a list of test ids."""
