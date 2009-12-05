@@ -321,7 +321,7 @@ class QuestionSubscriptionView(LaunchpadView):
 
     @property
     def page_title(self):
-        return 'Subscription to question #%s' % self.context.id
+        return 'Subscription'
 
     @property
     def label(self):
