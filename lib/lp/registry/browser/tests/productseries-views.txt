@@ -330,6 +330,36 @@ development.
     >>> print active_series.product.name
     field
 
+The delete action will not delete a series that is linked to a package.
+
+    >>> from lp.registry.interfaces.packaging import (
+    ...     IPackagingUtil, PackagingType)
+
+    >>> sourcepackagename = factory.makeSourcePackageName('sausage')
+    >>> distro_series = factory.makeDistroRelease()
+    >>> linked_series = factory.makeProductSeries(product=product)
+    >>> getUtility(IPackagingUtil).createPackaging(
+    ...     linked_series, sourcepackagename, distro_series,
+    ...     PackagingType.PRIME, owner=owner)
+    >>> linked_view = create_initialized_view(linked_series, '+delete')
+
+    >>> linked_view.has_linked_packages
+    True
+
+    >>> linked_view.can_delete
+    False
+
+    >>> form = {
+    ...     'field.actions.delete': 'Delete this Series',
+    ...     }
+    >>> linked_view = create_initialized_view(
+    ...     linked_series, '+delete', form=form)
+    >>> for error in linked_view.errors:
+    ...     print error
+    You cannot delete a series that is linked to packages in distributions.
+    You can remove the links from the <a ...>project packaging</a> page.
+
+
 Calling the view's delete action on a series that can be deleted will
 untarget the bugtasks and specifications that are targeted to the
 series' milestones. The milestones, releases, and release files are
@@ -372,3 +402,46 @@ avoid conflicts. The linked branch is removed.
     True
     >>> print productseries.name
     field-rabbit-20090501-193424
+
+A series cannot be deleted if it is has translation templates.
+
+    >>> translated_series = factory.makeProductSeries(product=product)
+    >>> product.official_rosetta = True
+    >>> po_template = factory.makePOTemplate(
+    ...     name='gibberish', productseries=translated_series)
+    >>> translated_view = create_initialized_view(
+    ...     translated_series, '+delete')
+    >>> translated_view.has_translations
+    True
+
+    >>> translated_view.can_delete
+    False
+
+    >>> form = {
+    ...     'field.actions.delete': 'Delete this Series',
+    ...     }
+    >>> translated_view = create_initialized_view(
+    ...     translated_series, '+delete', form=form)
+    >>> for error in translated_view.errors:
+    ...     print error
+    This series cannot be deleted because it has translations.
+
+The view reports all the reason why a series cannot be deleted.
+
+    >>> sourcepackagename = factory.makeSourcePackageName('tomato')
+    >>> getUtility(IPackagingUtil).createPackaging(
+    ...     active_series, sourcepackagename, distro_series,
+    ...     PackagingType.PRIME, owner=owner)
+    >>> po_template = factory.makePOTemplate(
+    ...     name='gibberish', productseries=active_series)
+    >>> form = {
+    ...     'field.actions.delete': 'Delete this Series',
+    ...     }
+    >>> view = create_initialized_view(active_series, '+delete', form=form)
+    >>> for error in view.errors:
+    ...     print error
+    You cannot delete a series that is the focus of development. Make another
+    series the focus of development before deleting this one.
+    You cannot delete a series that is linked to packages in distributions.
+    You can remove the links from the <a ...>project packaging</a> page.
+    This series cannot be deleted because it has translations.
