@@ -69,10 +69,11 @@
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="*"
-        name="+translationmessage-macros"
+        name="+macros"
         facet="translations"
         permission="zope.Public"
-        template="../templates/translationmessage-macros.pt"/>
+        template="../templates/translations-macros.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.translations.interfaces.translationgroup.IHasTranslationGroup"
         facet="translations"

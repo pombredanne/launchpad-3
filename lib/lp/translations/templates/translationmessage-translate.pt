@@ -29,21 +29,8 @@
       <tal:havepluralforms condition="view/has_plural_form_information">
 
       <!--  Navigation -->
-      <ul class="horizontal" style="margin-top: 1em; margin-bottom: 1em;"
-           tal:define="navigation_menu context/menu:navigation">
-        <li
-            tal:define="link navigation_menu/download"
-            tal:condition="link/enabled"
-            tal:content="structure link/render"></li>
-        <li
-            tal:define="link navigation_menu/upload"
-            tal:condition="link/enabled"
-            tal:content="structure link/render"></li>
-        <li
-            tal:define="link navigation_menu/details"
-            tal:condition="link/enabled"
-            tal:content="structure link/render"></li>
-        </ul>
+      <metal:nav-pofile-subpages 
+        use-macro="context/@@+macros/nav-pofile-subpages" />
 
         <!-- Alternative suggestions. -->
         <div metal:define-macro="editform">
