@@ -26,6 +26,9 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.launchpad.interfaces import IPrivacy
 from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp.testing import verifyObject
+from lp.code.errors import (
+    BadStateTransition, ClaimantHasPersonalReview, ClaimantNotInReviewerTeam,
+    NoSuchReview, WrongBranchMergeProposal)
 from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -36,13 +39,10 @@ from lp.code.enums import (
     BranchType, CodeReviewNotificationLevel, CodeReviewVote,
     BranchVisibilityRule)
 from lp.code.interfaces.branchmergeproposal import (
-    BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    ClaimantHasPersonalReview, ClaimantNotInReviewerTeam,
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
-    IMergeProposalCreatedJob, NoSuchReview, notify_modified,
-    WrongBranchMergeProposal)
+    IMergeProposalCreatedJob, notify_modified)
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobType,
     CreateMergeProposalJob, MergeProposalCreatedJob, UpdatePreviewDiffJob)
