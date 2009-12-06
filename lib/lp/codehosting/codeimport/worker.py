@@ -513,6 +513,7 @@ class PullingImportWorker(ImportWorker):
             for format_class in self.format_classes:
                 try:
                     format = format_class.probe_transport(transport)
+                    break
                 except NotBranchError:
                     pass
             else:
