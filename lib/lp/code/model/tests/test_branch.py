@@ -37,6 +37,7 @@ from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.enums import (
     BranchLifecycleStatus, BranchSubscriptionNotificationLevel, BranchType,
     BranchVisibilityRule, CodeReviewNotificationLevel)
+from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
@@ -45,8 +46,7 @@ from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import (
-    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    InvalidBranchMergeProposal)
+    BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
