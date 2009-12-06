@@ -19,11 +19,9 @@ import time
 import traceback
 
 from bzrlib.errors import BzrCommandError
-from bzrlib.plugins.launchpad.account import get_lp_login
 
 import paramiko
 
-from devscripts.ec2test.credentials import EC2Credentials
 from devscripts.ec2test.session import EC2SessionName
 
 
@@ -194,6 +192,17 @@ class EC2Instance:
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
         """
+        # This import breaks in the test environment.  Do it here so
+        # that unit tests (which don't use this factory) can still
+        # import EC2Instance.
+        from bzrlib.plugins.launchpad.account import get_lp_login
+
+        # XXX JeroenVermeulen 2009-11-27 bug=489073: EC2Credentials
+        # imports boto, which isn't necessarily installed in our test
+        # environment.  Doing the import here so that unit tests (which
+        # don't use this factory) can still import EC2Instance.
+        from devscripts.ec2test.credentials import EC2Credentials
+
         assert isinstance(name, EC2SessionName)
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
             raise ValueError('unknown instance_type %s' % (instance_type,))
@@ -388,6 +397,10 @@ class EC2Instance:
         self._ensure_ec2test_user_has_keys()
         return self._connect('ec2test')
 
+    def _report_traceback(self):
+        """Print traceback."""
+        traceback.print_exc()
+
     def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
         """Start, run `func` and then maybe shut down.
 
@@ -405,16 +418,17 @@ class EC2Instance:
         # We ignore the value of the 'shutdown' argument and always shut down
         # unless `func` returns normally.
         really_shutdown = True
+        retval = None
         try:
             self.start()
             try:
-                return func(*args, **kw)
+                retval = func(*args, **kw)
             except Exception:
                 # When running in postmortem mode, it is really helpful to see
                 # if there are any exceptions before it waits in the console
                 # (in the finally block), and you can't figure out why it's
                 # broken.
-                traceback.print_exc()
+                self._report_traceback()
             else:
                 really_shutdown = shutdown
         finally:
@@ -427,6 +441,7 @@ class EC2Instance:
             finally:
                 if really_shutdown:
                     self.shutdown()
+        return retval
 
     def _copy_single_file(self, sftp, local_path, remote_dir):
         """Copy `local_path` to `remote_dir` on this instance.

@@ -415,7 +415,7 @@ LibrarianGarbageCollection. If you request the URL of a deleted file, you
 will be given None
 
     >>> alias = lfas[36]
-    >>> alias.content.deleted
+    >>> alias.deleted
     True
     >>> alias.http_url is None
     True
@@ -567,24 +567,21 @@ public `LibraryFileAlias` the traversal chain is extended with a
 Files in this condition cannot be handled by the view and it raises an
 appropriate AssertionError when it gets traversed.
 
-    # Create a new LibraryFileAlias pointing to a deleted content.
-    >>> from canonical.launchpad.database import (
-    ...     LibraryFileAlias, LibraryFileContent)
+    # Create a new LibraryFileAlias not referencing any LibraryFileContent
+    # record. Such records are considered as being deleted.
+    >>> from canonical.launchpad.database import LibraryFileAlias
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    >>> deleted_content = LibraryFileContent(
-    ...     filesize=1, sha1='f00', md5='f00', deleted=True)
-    >>> ignore = store.add(deleted_content)
     >>> deleted_file = LibraryFileAlias(
-    ...     content=deleted_content, filename='deleted.txt',
+    ...     content=None, filename='deleted.txt',
     ...     mimetype='text/plain')
     >>> ignore = store.add(deleted_file)
     >>> store.commit()
 
     >>> deleted_file = getUtility(ILibraryFileAliasSet)[deleted_file.id]
-    >>> print deleted_file.content.deleted
+    >>> print deleted_file.deleted
     True
 
     >>> deleted_view = StreamOrRedirectLibraryFileAliasView(
