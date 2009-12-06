@@ -36,3 +36,9 @@ class CodeReviewVoteReference(SQLBase):
     review_type = StringCol(default=None)
     comment = ForeignKey(
         dbName='vote_message', foreignKey='CodeReviewComment', default=None)
+
+    @property
+    def is_pending(self):
+        """See `ICodeReviewVote`"""
+        # Reviews are pending if there is no associated comment.
+        return self.comment is None

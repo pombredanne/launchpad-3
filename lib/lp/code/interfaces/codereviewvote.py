@@ -9,7 +9,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Datetime, Int, TextLine
+from zope.schema import Bool, Datetime, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
@@ -66,3 +66,6 @@ class ICodeReviewVoteReference(Interface):
                 "The code review comment that contains the most recent vote."
                 ),
             required=True, schema=ICodeReviewComment))
+
+    is_pending = exported(
+        Bool(title=_("Is the pending?"), required=True, readonly=True))
