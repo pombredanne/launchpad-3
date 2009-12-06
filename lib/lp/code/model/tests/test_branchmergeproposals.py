@@ -38,9 +38,11 @@ from lp.code.enums import (
 from lp.code.interfaces.branchmergeproposal import (
     BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
+    ClaimantHasPersonalReview, ClaimantNotInReviewerTeam,
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
-    IMergeProposalCreatedJob, notify_modified, WrongBranchMergeProposal)
+    IMergeProposalCreatedJob, NoSuchReview, notify_modified,
+    WrongBranchMergeProposal)
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobType,
     CreateMergeProposalJob, MergeProposalCreatedJob, UpdatePreviewDiffJob)
@@ -1674,6 +1676,82 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(comment, vote.comment)
         # Still only one vote.
         self.assertEqual(1, len(list(merge_proposal.votes)))
+
+
+class TestBranchMergeProposalClaimReview(TestCaseWithFactory):
+    """Tests for BranchMergeProposal.claimReview."""
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        # Setup the proposal, claimant and team reviewer.
+        self.bmp = self.factory.makeBranchMergeProposal()
+        self.claimant = self.factory.makePerson()
+        self.review_team = self.factory.makeTeam()
+
+    def test_missing_review(self):
+        # If no matching review is found, an exception is raised.
+        self.assertRaises(
+            NoSuchReview,
+            self.bmp.claimReview,
+            self.claimant, self.review_team)
+
+    def _addPendingReview(self, review_type=None):
+        """Add a pending review for the review_team."""
+        login_person(self.bmp.registrant)
+        self.bmp.nominateReviewer(
+            reviewer=self.review_team,
+            registrant=self.bmp.registrant,
+            review_type=review_type)
+
+    def test_personal_completed_review(self):
+        # If the claimant has a personal review already, then they can't claim
+        # a pending team review.
+        self._addPendingReview()
+        # Make sure that the claimant is otherwise valid.
+        self.review_team.addMember(
+            person=self.claimant, reviewer=self.review_team.owner)
+        login_person(self.claimant)
+        self.bmp.createComment(
+            self.claimant, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE)
+        self.assertRaises(
+            ClaimantHasPersonalReview,
+            self.bmp.claimReview,
+            self.claimant, self.review_team)
+
+    def test_personal_pending_review(self):
+        # If the claimant has a pending review already, then they can't claim
+        # a pending team review.
+        self._addPendingReview()
+        # Make sure that the claimant is otherwise valid.
+        self.review_team.addMember(
+            person=self.claimant, reviewer=self.review_team.owner)
+        self.bmp.nominateReviewer(
+            reviewer=self.claimant,
+            registrant=self.bmp.registrant)
+        self.assertRaises(
+            ClaimantHasPersonalReview,
+            self.bmp.claimReview,
+            self.claimant, self.review_team)
+
+    def test_personal_not_in_review_team(self):
+        # If the claimant is not in the review team, an error is raised.
+        self._addPendingReview()
+        self.assertRaises(
+            ClaimantNotInReviewerTeam,
+            self.bmp.claimReview,
+            self.claimant, self.review_team)
+
+    def test_success(self):
+        # If the claimant is in the review team, and does not have a personal
+        # review, pending or completed, then they can claim the team review.
+        self._addPendingReview()
+        self.review_team.addMember(
+            person=self.claimant, reviewer=self.review_team.owner)
+        result = self.bmp.claimReview(self.claimant, self.review_team)
+        self.assertEqual(self.claimant, result.reviewer)
+
 
 class TestBranchMergeProposalResubmit(TestCaseWithFactory):
 

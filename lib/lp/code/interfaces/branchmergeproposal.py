@@ -11,6 +11,8 @@ __all__ = [
     'BadStateTransition',
     'BranchMergeProposalExists',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
+    'ClaimantHasPersonalReview',
+    'ClaimantNotInReviewerTeam',
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
@@ -20,9 +22,11 @@ __all__ = [
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
+    'NoSuchReview',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
     ]
+
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from zope.event import notify
@@ -77,6 +81,18 @@ class WrongBranchMergeProposal(Exception):
 
 class BadBranchMergeProposalSearchContext(Exception):
     """The context is not valid for a branch merge proposal search."""
+
+
+class ClaimantHasPersonalReview(Exception):
+    """The claimant already has a personal review. """
+
+
+class ClaimantNotInReviewerTeam(Exception):
+    """The claimant is not in the reviewer team."""
+
+
+class NoSuchReview(Exception):
+    """There is no review found for the reviewer."""
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
@@ -443,6 +459,33 @@ class IBranchMergeProposal(IPrivacy):
 
         If they are not already a reviewer, a vote is created.  Otherwise,
         the details are updated.
+        """
+
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("A team with an existing pending review."),
+            schema=IPerson),
+        review_type=Text())
+    @call_with(claimant=REQUEST_USER)
+    @operation_returns_entry(Interface) # Really ICodeReviewVoteReference
+    @export_write_operation()
+    def claimReview(claimant, reviewer, review_type=None):
+        """Change a pending review for reviewer into a review for claimant.
+
+        Pending team reviews can be claimed by members of that team.  This
+        allows reviews to be moved of the general team todo list, and onto a
+        personal todo list.
+
+        :param claimant: The person claiming the team review.
+        :param reviewer: The team with a pending review.
+        :param review_type: The review_type of the pending review.
+        :return: The updated `CodeReviewVoteReference`.
+        :raises ClaimantHasPersonalReview: If the claimant already has a
+            personal review.
+        :raises ClaimantNotInReviewerTeam: If the claimant is not in the
+            reviewer team.
+        :raises NoSuchReview: If there is no review found for the reviewer
+            with the specified review_type.
         """
 
     def getUsersVoteReference(user):
