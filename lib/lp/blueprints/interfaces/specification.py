@@ -705,7 +705,7 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
                 "delivered.")))
 
     # nomination to a series for release management
-    goal = exported(Attribute("The series for which this feature is a goal."))
+    goal = Attribute("The series for which this feature is a goal.")
     goalstatus = exported(
         Choice(
             title=_('Goal Acceptance'), vocabulary=SpecificationGoalStatus,

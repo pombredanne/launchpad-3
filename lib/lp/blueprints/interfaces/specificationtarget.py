@@ -13,8 +13,18 @@ __all__ = [
     'ISpecificationGoal',
     ]
 
+from zope.schema import Bool, Choice, Datetime, List, Text, TextLine
 from zope.interface import Interface, Attribute
+from lazr.restful.declarations import (
+   collection_default_content, export_as_webservice_collection,
+   export_as_webservice_entry, export_operation_as,
+   export_read_operation, exported, operation_parameters,
+   operation_returns_collection_of, operation_returns_entry,
+   rename_parameters_as)
 
+from lp.blueprints.interfaces.specification import ISpecification
+
+from canonical.launchpad import _
 
 class IHasSpecifications(Interface):
     """An object that has specifications attached to it.
@@ -22,6 +32,8 @@ class IHasSpecifications(Interface):
     For example, people, products and distributions have specifications
     associated with them, and you can use this interface to query those.
     """
+
+    export_as_webservice_entry()
 
     all_specifications = Attribute(
         'A list of all specifications, regardless of status or approval '
@@ -66,6 +78,10 @@ class ISpecificationTarget(IHasSpecifications):
     specifications directly attached to them.
     """
 
+    @operation_parameters(
+        name=TextLine(title=_("Name"), required=True))
+    @operation_returns_entry(ISpecification)
+    @export_read_operation()
     def getSpecification(name):
         """Returns the specification with the given name, for this target,
         or None.
