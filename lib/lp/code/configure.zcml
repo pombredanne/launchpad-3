@@ -257,7 +257,7 @@
                     updatePreviewDiff"/>
     <require
         permission="launchpad.AnyPerson"
-        attributes="
+        attributes="claimReview
                     createComment
                     createCommentFromMessage"/>
   </class>
