@@ -524,6 +524,10 @@ class BranchMergeProposal(SQLBase):
         # Lower case the review type.
         review_type = self._normalizeReviewType(review_type)
         vote_reference = self.getUsersVoteReference(reviewer, review_type)
+        # If there is no existing review for the reviewer, then create a new
+        # one.  If the reviewer is a team, then we don't care if there is
+        # already an existing pending review, as some projects expect multiple
+        # reviews from a team.
         if vote_reference is None or reviewer.is_team:
             vote_reference = CodeReviewVoteReference(
                 branch_merge_proposal=self,
