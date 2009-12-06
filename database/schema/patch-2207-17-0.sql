@@ -6,7 +6,7 @@ SET client_min_messages=ERROR;
 -- There is no real reason to have limits on review_type, and it is just
 -- adding an artificial constraint that just gets in the way.
 
--- Drop the UNQIUE indices
+-- Drop the UNIQUE indices
 DROP INDEX codereviewvote__branch_merge_proposal__reviewer__key;
 DROP INDEX codereviewvote__branch_merge_proposal__reviewer__review_type__k;
 
