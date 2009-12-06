@@ -279,9 +279,19 @@ class Bug(SQLBase):
     def indexed_messages(self):
         """See `IMessageTarget`."""
         inside = self.default_bugtask
-        return [
-            IndexedMessage(message, inside, index)
-            for index, message in enumerate(self.messages)]
+        message_set = set(self.messages)
+
+        indexed_messages = []
+        for index, message in enumerate(message_set):
+            if message.parent not in message_set:
+                parent = None
+            else:
+                parent = message.parent
+
+            indexed_message = IndexedMessage(message, inside, index, parent)
+            indexed_messages.append(indexed_message)
+
+        return indexed_messages
 
     @property
     def displayname(self):

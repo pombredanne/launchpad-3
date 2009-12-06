@@ -691,6 +691,7 @@ class TestBugChanges(unittest.TestCase):
         attachment = self.factory.makeBugAttachment(
             bug=self.bug, owner=self.user)
         self.saveOldChanges()
+        download_url = attachment.libraryfile.http_url
         attachment.removeFromBug(user=self.user)
 
         attachment_removed_activity = {
@@ -698,13 +699,13 @@ class TestBugChanges(unittest.TestCase):
             'whatchanged': 'attachment removed',
             'newvalue': None,
             'oldvalue': '%s %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title, download_url),
             }
 
         attachment_removed_notification = {
             'person': self.user,
             'text': '** Attachment removed: "%s"\n   %s' % (
-                attachment.title, attachment.libraryfile.http_url),
+                attachment.title, download_url),
             }
 
         self.assertRecordedChange(
