@@ -1,4 +1,5 @@
-= Code Imports =
+Code Imports
+============
 
 CodeImport objects model the process surrounding the code import
 service of Launchpad. A CodeImport object is created by a user
@@ -14,7 +15,8 @@ of the vcs-imports team.
     >>> login('david.allouche@canonical.com')
 
 
-== Code import set utility ==
+Code import set utility
+-----------------------
 
 CodeImports are created and found using the ICodeImportSet interface,
 which is registered as a utility.
@@ -34,7 +36,8 @@ this is done by 'No Privileges Person'.
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
 
 
-== CodeImport events ==
+CodeImport events
+-----------------
 
 Most mutating operations affecting code imports should create
 CodeImportEvent objects in the database to provide an audit trail.
@@ -43,7 +46,8 @@ CodeImportEvent objects in the database to provide an audit trail.
     >>> event_set = getUtility(ICodeImportEventSet)
 
 
-== Supported source systems ==
+Supported source systems
+------------------------
 
 The rcs_type field, which indicates whether the import is from CVS or
 Subversion, takes values from the 'RevisionControlSystems' vocabulary.
@@ -57,7 +61,8 @@ Subversion, takes values from the 'RevisionControlSystems' vocabulary.
     Git
 
 
-=== Import from CVS ===
+Import from CVS
++++++++++++++++
 
 Code imports from CVS specify the CVSROOT value, and the path to import
 in the repository, known as the "module".
@@ -113,7 +118,8 @@ specified root and module.
     True
 
 
-=== Import from Subversion ===
+Import from Subversion
+++++++++++++++++++++++
 
 Code imports from Subversion specify the URL used with "svn checkout" to
 retrieve the tree to import.
@@ -141,7 +147,8 @@ specified subversion branch url.
     True
 
 
-=== Import from Subversion via bzr-svn ===
+Import from Subversion via bzr-svn
+++++++++++++++++++++++++++++++++++
 
 Code imports from Subversion can also specify that they should be
 imported with 'bzr-svn' rather than cscvs.  In most respects these
@@ -164,7 +171,8 @@ imports.
     True
 
 
-=== Import from Git ===
+Import from Git
++++++++++++++++
 
 Code imports from Git specify the URL used with "git clone" to
 retrieve the branch to import.
@@ -192,7 +200,8 @@ specified git repo url.
     True
 
 
-== Updating code import details ==
+Updating code import details
+----------------------------
 
 Members of the VCS Imports team (import operators), or Launchpad
 administrators can update the details of the code import, including
@@ -292,7 +301,8 @@ from a 'noreply' address.
     ...
 
 
-== Update intervals ==
+Update intervals
+----------------
 
 After an import is initially completed, it must be updated regularly. Each
 code import can specify a custom update interval, or use a default value.
@@ -353,7 +363,8 @@ direct attribute modification. So we use removeSecurityProxy in this example.
     datetime.timedelta(0, 3600)
 
 
-== Retreiving CodeImports ==
+Retrieving CodeImports
+----------------------
 
 You can retrieve all imports with the `getAll` method of ICodeImport.
 
@@ -389,7 +400,8 @@ internal database exception.
     NotFoundError: -10
 
 
-== Canonical URLs ==
+Canonical URLs
+--------------
 
 We've registered the ICodeImportSet utility on the 'code' part of the
 site:
@@ -408,7 +420,8 @@ and are not traversable in themselves.
     NoCanonicalUrl: ...
 
 
-== Modifying CodeImports ==
+Modifying CodeImports
+---------------------
 
 Modifications to CodeImport objects must be done using setter methods
 that create CodeImportEvent objects when appropriate. This is enforced
