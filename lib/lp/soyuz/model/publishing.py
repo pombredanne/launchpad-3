@@ -594,7 +594,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             # not blow up because of bad data.
             return None
         source, packageupload, spr, changesfile, lfc = result
-        
+
         # Return a webapp-proxied LibraryFileAlias so that restricted
         # librarian files are accessible.  Non-restricted files will get
         # a 302 so that webapp threads are not tied up.
@@ -1290,7 +1290,8 @@ class PublishingSet:
             Build,
             builds_for_distroseries_expr,
             SourcePackagePublishingHistory.archiveID != Build.archiveID,
-            BinaryPackagePublishingHistory.archive == Build.archiveID,
+            BinaryPackagePublishingHistory.archive ==
+                SourcePackagePublishingHistory.archiveID,
             BinaryPackagePublishingHistory.binarypackagerelease ==
                 BinaryPackageRelease.id,
             BinaryPackageRelease.build == Build.id,
