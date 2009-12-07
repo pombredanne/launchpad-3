@@ -39,9 +39,9 @@
           if (Y.UA.ie) {
               return;
           }
-          var loading_el = Y.get('#timeline-loading');
+          var loading_el = Y.one('#timeline-loading');
           loading_el.setStyle('display', 'block');
-          var iframe = Y.get('#timeline-iframe');
+          var iframe = Y.one('#timeline-iframe');
           iframe.set('src', timeline_url);
           Y.on('load', function(e) {
               loading_el.setStyle('display', 'none');

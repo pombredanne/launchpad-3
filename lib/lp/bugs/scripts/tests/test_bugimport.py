@@ -400,12 +400,14 @@ Another paragraph
     </text>
     <attachment>
       <mimetype>application/octet-stream;key=value</mimetype>
-      <contents>PGh0bWw+</contents>
+      <!-- contents ('<html><body></body></html>') is base64-encoded. -->
+      <contents>PGh0bWw+PGJvZHk+PC9ib2R5PjwvaHRtbD4=</contents>
     </attachment>
     <attachment>
       <type>PATCH</type>
       <filename>foo.patch</filename>
       <mimetype>text/html</mimetype>
+      <!-- contents ('A patch') is base64-encoded. -->
       <contents>QSBwYXRjaA==</contents>
     </attachment>
   </comment>
@@ -881,10 +883,10 @@ class TestExternalBugTracker(ExternalBugTracker):
 class TestBugWatchUpdater(BugWatchUpdater):
     """A mock `BugWatchUpdater` object."""
 
-    def updateBugTracker(self, bug_tracker):
+    def _updateBugTracker(self, bug_tracker):
         # Save the current bug tracker, so _getBugWatch can reference it.
         self.bugtracker = bug_tracker
-        super(TestBugWatchUpdater, self).updateBugTracker(bug_tracker)
+        super(TestBugWatchUpdater, self)._updateBugTracker(bug_tracker)
 
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """See `BugWatchUpdater`."""
@@ -926,7 +928,7 @@ class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):
         # trigger a DB error, the second updates successfully.
         bug_tracker = TestBugTracker(test_bug_one, test_bug_two)
         bug_watch_updater = TestBugWatchUpdater(self.layer.txn)
-        bug_watch_updater.updateBugTracker(bug_tracker)
+        bug_watch_updater._updateBugTracker(bug_tracker)
         # We verify that the first bug watch didn't update the status,
         # and the second did.
         for bugtask in test_bug_one.bugtasks:

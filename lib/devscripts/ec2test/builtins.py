@@ -324,15 +324,20 @@ class cmd_land(EC2Command):
         Option(
             'force',
             help="Land the branch even if the proposal is not approved."),
+        Option(
+            'attached',
+            help="Remain attached, i.e. do not go headless."),
         ]
 
     takes_args = ['merge_proposal?']
 
     def _get_landing_command(self, source_url, target_url, commit_message,
-                             emails):
+                             emails, attached):
         """Return the command that would need to be run to submit with ec2."""
         ec2_path = os.path.join(get_launchpad_root(), 'utilities', 'ec2')
-        command = [ec2_path, 'test', '--headless']
+        command = [ec2_path, 'test']
+        if not attached:
+            command.extend(['--headless'])
         command.extend(['--email=%s' % email for email in emails])
         # 'ec2 test' has a bug where you cannot pass full URLs to branches to
         # the -b option. It has special logic for 'launchpad' branches, so we
@@ -346,7 +351,7 @@ class cmd_land(EC2Command):
     def run(self, merge_proposal=None, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE, postmortem=False,
             debug=False, commit_text=None, dry_run=False, testfix=False,
-            print_commit=False, force=False):
+            print_commit=False, force=False, attached=False):
         try:
             from devscripts.autoland import (
                 LaunchpadBranchLander, MissingReviewError)
@@ -399,7 +404,7 @@ class cmd_land(EC2Command):
 
         landing_command = self._get_landing_command(
             mp.source_branch, mp.target_branch, commit_message,
-            mp.get_stakeholder_emails())
+            mp.get_stakeholder_emails(), attached)
         if dry_run:
             print landing_command
         else:
@@ -557,7 +562,7 @@ class cmd_update_image(EC2Command):
             'bzr pull -d /var/launchpad/download-cache '
             'lp:lp-source-dependencies')
         if public:
-            update_sourcecode_options = '--public-only'
+            update_sourcecode_options = ' --public-only'
         else:
             update_sourcecode_options = ''
         user_connection.run_with_ssh_agent(

@@ -37,7 +37,6 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.build import Build
-from lp.translations.model.customlanguagecode import CustomLanguageCode
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
@@ -1457,12 +1456,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 (dsp, product, open_bugs, bugs_triaged,
                  bugs_affecting_upstream, bugs_with_upstream_bugwatch))
         return results
-
-    def getCustomLanguageCode(self, sourcepackagename, language_code):
-        """See `IDistribution`."""
-        return CustomLanguageCode.selectOneBy(
-            distribution=self, sourcepackagename=sourcepackagename,
-            language_code=language_code)
 
     def setBugSupervisor(self, bug_supervisor, user):
         """See `IHasBugSupervisor`."""

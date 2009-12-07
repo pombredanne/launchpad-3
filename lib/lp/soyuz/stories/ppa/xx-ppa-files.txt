@@ -399,12 +399,9 @@ immediately deleted in case of reported ToS violation.
     ...     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
     >>> login('foo.bar@canonical.com')
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-    >>> deleted_content = LibraryFileContent(
-    ...     filesize=1, sha1='f00', md5='f00', deleted=True)
-    >>> ignore = store.add(deleted_content)
     >>> store.commit()
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> removeSecurityProxy(dsc_file).content = deleted_content
+    >>> removeSecurityProxy(dsc_file).content = None
     >>> commit()
 
 The librarian URL for a deleted file is None, by convention. See

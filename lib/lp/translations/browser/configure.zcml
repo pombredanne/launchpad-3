@@ -977,5 +977,50 @@
         name="+language-packs"
         template="../templates/distroseries-language-packs.pt"/>
 
+
+<!-- CustomLanguageCode -->
+
+    <browser:defaultView
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:url
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        path_expression="string:+customcode/${language_code}"
+        attribute_to_parent="translation_target"
+        />
+    <browser:page
+        name="+index"
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        permission="zope.Public"
+        class="lp.translations.browser.customlanguagecode.CustomLanguageCodeView"
+        template="../templates/customlanguagecode-index.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+
+    <browser:page
+        name="+remove"
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        permission="launchpad.Admin"
+        class="lp.translations.browser.customlanguagecode.CustomLanguageCodeRemoveView"
+        template="../../app/templates/generic-edit.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+
+<!-- IHasCustomLanguageCodes -->
+
+    <browser:page
+        name="+custom-language-codes"
+        for="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        class="lp.translations.browser.customlanguagecode.CustomLanguageCodesIndexView"
+        template="../templates/customlanguagecodes-index.pt"
+        permission="zope.Public"/>
+    <browser:page
+        name="+add-custom-language-code"
+        for="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        class="lp.translations.browser.customlanguagecode.CustomLanguageCodeAddView"
+        template="../templates/customlanguagecode-add.pt"
+        permission="launchpad.Admin"/>
+
     </facet>
 </configure>
