@@ -111,5 +111,5 @@ def replace_list_of_tests(out_file):
         """Report a list of test ids."""
         print "Saving %s tests." % layer_name
         for test in tests:
-            print >> out_file, test.id()
+            out_file.write(test.id() + "\n")
     formatter.OutputFormatter.list_of_tests = list_of_tests
