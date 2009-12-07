@@ -10,11 +10,12 @@
 >
 <body>
   <metal:translation-import-queue define-macro="translation-import-queue-content">
-    <script
-      type="text/javascript"
-      tal:condition="devmode"
-      tal:attributes="src string:${icingroot}/build/translations/translations.js">
-    </script>
+      <script type="text/javascript" tal:content="view/choice_confs_js" />
+      <script
+        type="text/javascript"
+        tal:condition="devmode"
+        tal:attributes="src string:${icingroot}/build/translations/translations.js">
+      </script>
 
       <script type="text/javascript">
           YUI().use( 'translations', 'event', function(Y) {
@@ -72,7 +73,7 @@
 
             <table id="import-entries-list" class="listing" width="100%">
               <tal:loop repeat="entry view/batchnav/currentBatch">
-                <tr tal:attributes="id entry/id">
+                <tr class="import_entry_row" tal:attributes="id entry/id">
                   <tal:XXX replace="nothing">
                     # XXX: CarlosPerelloMarin 2006-03-09 bug=34213
                     # We are using here
@@ -80,13 +81,10 @@
                     # sometimes, entry/import_into evaluates as false because
                     # __len__ method returns 0.
                   </tal:XXX>
-                  <td tal:condition="entry/import_into/title|nothing" rowspan="3">
+                  <td rowspan="3">
                     <span class="download sprite"></span>
                   </td>
-                  <td tal:condition="not: entry/import_into/title|nothing" rowspan="2">
-                    <span class="download sprite"></span>
-                  </td>
-                  <td>
+                  <td class="import_source">
                     <a tal:attributes="href entry/content/http_url"
                        tal:content="entry/path">po/foo.pot</a> in
                     <a tal:condition="entry/sourcepackage"
@@ -96,21 +94,29 @@
                        tal:replace="structure entry/productseries/fmt:link">
                        Evolution Series: MAIN</a>
                   </td>
-                  <td tal:condition="entry/required:launchpad.Edit">
-                    <tal:status define="name string:status_${entry/id}"
-                                replace="structure view/widgets/?name" />
-                  </td>
-                  <td tal:condition="not: entry/required:launchpad.Edit"
-                      tal:content="entry/status/title">Needs Review
-                  </td>
-                  <td>
-                    <tal:block condition="entry/required:launchpad.Admin">
-                      <a class="sprite edit"
-                         tal:attributes="href entry/fmt:url">
-                        <span class="invisible-link">Change this entry</span>
-                      </a>
-                    </tal:block>
-                  </td>
+                  <tal:status define="css_status string:translationimportstatus${entry/status/name}"
+                              omit-tag="">
+                    <td class="import_status"
+                        tal:condition="entry/required:launchpad.Edit">
+                      <noscript>
+                        <tal:status define="name string:status_${entry/id}"
+                                    replace="structure view/widgets/?name" />
+                      </noscript>
+                      <span class="status-choice" style="display:none">
+                        <span tal:attributes="class string:value ${css_status}"
+                              tal:content="entry/status/title">
+                          Needs review</span>
+                        <img class="editicon" src="/@@/edit" />
+                      </span>
+                    </td>
+                    <td tal:condition="not: entry/required:launchpad.Edit"
+                        class="import_status">
+                        <span tal:attributes="class css_status"
+                               tal:content="entry/status/title">
+                            Needs Review
+                        </span>
+                    </td>
+                  </tal:status>
                   <td>
                     <tal:block condition="view/user">
                       <tal:comment replace="nothing">
@@ -140,12 +146,25 @@
                   # sometimes, entry/import_into evaluates as false because
                   # __len__ method returns 0.
                 </tal:XXX>
-                <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
+                <tr class="discreet secondary">
                   <td colspan="3">
-                    Will be imported into 
-                    <a tal:content="entry/import_into/title"
-                       tal:attributes="href entry/import_into/fmt:url"
-                       >Foo</a>
+                    <span style="margin-right: 0.5em"
+                          tal:condition="entry/import_into/title|nothing" >
+                      Will be imported into 
+                      <a tal:content="entry/import_into/title"
+                         tal:attributes="href entry/import_into/fmt:url"
+                         >Foo</a>
+                    </span>
+                    <span style="margin-right: 0.5em"
+                          tal:condition="not:entry/import_into/title|nothing">
+                      No import target selected yet.
+                    </span>
+                    <tal:block condition="entry/required:launchpad.Admin">
+                      <a class="sprite edit"
+                         tal:attributes="href entry/fmt:url">
+                        <span class="invisible-link">Change this entry</span>
+                      </a>
+                    </tal:block>
                   </td>
                 </tr>
               </tal:loop>
@@ -158,10 +177,12 @@
                     tal:condition="script"
                     tal:content="structure script" />
             <tal:block define="user request/lp:person" condition="user">
-              <div class="actions">
-                <input
-                  tal:replace="structure view/change_status_action/render" />
-              </div>
+              <noscript>
+                <div class="actions">
+                  <input
+                    tal:replace="structure view/change_status_action/render" />
+                </div>
+              </noscript>
             </tal:block>
           </form>
         </tal:block>

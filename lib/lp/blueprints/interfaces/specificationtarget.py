@@ -22,8 +22,6 @@ from lazr.restful.declarations import (
    operation_returns_collection_of, operation_returns_entry,
    rename_parameters_as)
 
-from lp.blueprints.interfaces.specification import ISpecification
-
 from canonical.launchpad import _
 
 class IHasSpecifications(Interface):
@@ -78,10 +76,10 @@ class ISpecificationTarget(IHasSpecifications):
     specifications directly attached to them.
     """
 
-    @operation_parameters(
-        name=TextLine(title=_("Name"), required=True))
-    @operation_returns_entry(ISpecification)
-    @export_read_operation()
+    #@operation_parameters(
+    #    name=TextLine(title=_("Name"), required=True))
+    #@operation_returns_entry(Interface)
+    #@export_read_operation()
     def getSpecification(name):
         """Returns the specification with the given name, for this target,
         or None.

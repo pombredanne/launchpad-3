@@ -1,129 +1,52 @@
 = Packaging =
 
-The Packaging records of a source package can be via the source
-package's +packaging page:
+No Privileges Person visit the distroseries upstream linkes page for Hoary
+and sees that pmount is not linked.
 
-  >>> user_browser.open(
-  ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+packaging")
+    >>> user_browser.open('http://launchpad.dev/ubuntu/hoary/+packaging')
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'unlinked-translatables'))
+    Unlinked translatable packages
+    pmount  mozilla
 
-  >>> print_location(user_browser.contents)
-  Hierarchy: Ubuntu > Warty (4.10) >
-    ...mozilla... source package > Upstream links
-  Tabs:
-  * Overview (selected) - http://launchpad.dev/ubuntu/warty/+source/mozilla
-  * Branches - http://code.launchpad.dev/ubuntu/warty/+source/mozilla
-  * Bugs - http://bugs.launchpad.dev/ubuntu/warty/+source/mozilla
-  * Blueprints - not linked
-  * Translations - http://translations.launchpad.dev/ubuntu/warty/+source/mozilla
-  * Answers - http://answers.launchpad.dev/ubuntu/warty/+source/mozilla
-  Main heading: Upstream links for ...mozilla... source package in Warty
+He looks at the pmount source package page in Hoary and reads that the
+upstream project is not set.
 
-  >>> print extract_text(
-  ...     find_tags_by_class(user_browser.contents, 'informational')[0])
-  Launchpad doesn&#8217;t know which project and series this package
-  belongs to.
-  If you can, please let us know.
+    >>> user_browser.getLink('pmount').click()
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'no-upstreams'))
+    Launchpad doesn&#8217;t know which project and series this package
+    belongs to. ... Can you set the upstream project in Launchpad?
 
-As we could see 'mozilla' sourcepackage has no established Packaging
-records. We can add or edit the Packaging information for a specific
-distroseries context. Let's try it for "grumpy":
+No Privileges Person knows that the pmount package comes from the thunderbird
+project. He sets the upstream packaging link and sees that it is set.
 
-  >>> user_browser.open(
-  ...     "http://launchpad.dev/ubuntu/grumpy/+source/mozilla/+edit-packaging")
-  >>> user_browser.getControl(name="field.productseries").value = 'firefox/trunk'
-  >>> user_browser.getControl("Change").click()
+    >>> user_browser.getLink('set the upstream project in Launchpad').click()
+    >>> user_browser.getControl(
+    ...     name="field.productseries").value = 'thunderbird/trunk'
+    >>> user_browser.getControl("Change").click()
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'upstreams'))
+    Project Group: the Mozilla Project
+    Project: Mozilla Thunderbird  ...
+    Series: trunk ...
 
+He see the "Show upstream links" link and takes a look at the project's
+packaging in distributions.
 
-Now we can check if the Packaging record for "grumpy" is annotated:
+    >>> user_browser.getLink('Show upstream links').click()
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'distribution-series'))
+    Distribution series  Source package  Version  Project series
+    Hoary (5.04)         pmount          0.1-2    Mozilla Thunderbird trunk...
 
-  >>> user_browser.open(
-  ...     "http://launchpad.dev/ubuntu/grumpy/+source/mozilla/+packaging")
-  >>> print extract_text(
-  ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
-  Upstream links for all source packages called
-  "mozilla"
-  Distribution
-  Version
-  Upstream Project Series
-  Ubuntu
-  Grumpy
-  Mozilla Firefox trunk series
+No Privileges Person returns to the pmount source package page, sees the
+link to all versions and follows it to the distro source package page.
 
-
-The same Packaging record is also presented in "warty", because the
-list of Packaging records depends only on the source package name:
-
-  >>> user_browser.open(
-  ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+packaging")
-  >>> print extract_text(
-  ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
-  Upstream links for all source packages called
-  "mozilla"
-  Distribution
-  Version
-  Upstream Project Series
-  Ubuntu
-  Grumpy
-  Mozilla Firefox trunk series
-
-
-Now, let's add a Packaging record to the warty context:
-
-  >>> user_browser.open(
-  ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+edit-packaging")
-  >>> user_browser.getControl(name="field.productseries").value = 'firefox/1.0'
-  >>> user_browser.getControl("Change").click()
-
-
-Now in the "warty" context both Packaging records are presented:
-
-  >>> user_browser.open(
-  ...     "http://launchpad.dev/ubuntu/warty/+source/mozilla/+packaging")
-  >>> print extract_text(
-  ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
-  Upstream links for all source packages called
-  "mozilla"
-  Distribution
-  Version
-  Upstream Project Series
-  Ubuntu
-  Grumpy
-  Mozilla Firefox trunk series
-  Ubuntu
-  Warty
-  Mozilla Firefox 1.0 series
-
-And the Packaging record for "warty" context is highlighted:
-
-  >>> print extract_text(
-  ...    find_tags_by_class(user_browser.contents, 'highlight')[0])
-  Ubuntu
-  Warty
-  Mozilla Firefox 1.0 series
-
-In the same way when we are back to the "grumpy" context the both
-stored Packaging records are presented but now, the "grumpy" Packaging
-record is highlighted.
-
-  >>> user_browser.open(
-  ...     "http://launchpad.dev/ubuntu/grumpy/+source/mozilla/+packaging")
-
-  >>> print extract_text(
-  ...     find_tag_by_id(user_browser.contents, 'packaging-table'))
-  Upstream links for all source packages called
-  "mozilla"
-  Distribution
-  Version
-  Upstream Project Series
-  Ubuntu
-  Grumpy
-  Mozilla Firefox trunk series
-  Ubuntu
-  Warty
-  Mozilla Firefox 1.0 series
-
-  >>> print extract_text(
-  ...     find_tags_by_class(user_browser.contents, 'highlight')[0])
-  Ubuntu
-  Grumpy
-  Mozilla Firefox trunk series
+    >>> user_browser.getLink('pmount').click()
+    >>> user_browser.getLink(
+    ...     'All versions of pmount source in Ubuntu').click()
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'packages_list'))
+    The Hoary Hedgehog Release (active development) ...
+      0.1-2  release (main) ... weeks ago
