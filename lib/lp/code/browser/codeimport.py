@@ -360,7 +360,7 @@ class CodeImportNewView(CodeImportBaseView):
             data['svn_branch_url'] = None
             data['git_repo_url'] = None
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
-        elif rcs_type in RevisionControlSystems.SVN:
+        elif rcs_type == RevisionControlSystems.SVN:
             data['cvs_root'] = None
             data['cvs_module'] = None
             data['git_repo_url'] = None
