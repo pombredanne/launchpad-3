@@ -419,7 +419,7 @@
             name="+admin"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateAdminView"
-            permission="launchpad.Admin"
+            permission="launchpad.TranslationsAdmin"
             template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page

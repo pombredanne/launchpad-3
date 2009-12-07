@@ -102,7 +102,7 @@
               <a tal:attributes="href string:${template/fmt:url}/+export;
                    title string:Download translations from ${template/name}">
                 <img src="/@@/download" />&nbsp;Download</a>
-              <tal:admin condition="template/required:launchpad.Admin">
+              <tal:admin condition="template/required:launchpad.TranslationsAdmin">
                 <a tal:attributes="href string:${template/fmt:url}/+admin;
                                    title string:Administer ${template/name}">
                    <img src="/@@/edit" />&nbsp;Administer</a>

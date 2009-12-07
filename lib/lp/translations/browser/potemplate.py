@@ -184,7 +184,7 @@ class POTemplateMenu(NavigationMenu):
         text = 'Settings'
         return Link('+edit', text)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def administer(self):
         text = 'Administer'
         return Link('+admin', text)

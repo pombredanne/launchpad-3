@@ -1126,7 +1126,7 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
 
 
 class AdminPOTemplateDetails(AdminDistroTranslations):
-    permission = 'launchpad.Admin'
+    permission = 'launchpad.TranslationsAdmin'
     usedfor = IPOTemplate
 
 
