@@ -10,7 +10,7 @@ __metaclass__ = type
 
 import unittest
 
-from twisted.internet import defer, error, task
+from twisted.internet import defer, error, reactor, task
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
 
@@ -317,6 +317,13 @@ class TestRunProcessWithTimeout(TrialTestCase):
     """Tests for `run_process_with_timeout`."""
 
     layer = TwistedLayer
+
+    def setUp(self):
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
 
     def test_run_process_with_timeout_invalid_args(self):
         # `run_process_with_timeout` expects the process 'args' to be a

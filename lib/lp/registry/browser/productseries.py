@@ -78,8 +78,9 @@ from lp.registry.browser.packaging import PackagingAddView
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
 
+
 def quote(text):
-    """Escape and quite text."""
+    """Escape and quote text."""
     return cgi.escape(text, quote=True)
 
 
@@ -128,6 +129,7 @@ class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin,
 
 class ProductSeriesBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `IProductSeries`."""
+
     @property
     def text(self):
         """See `IBreadcrumb`."""
@@ -157,7 +159,7 @@ class ProductSeriesOverviewMenu(
     links = [
         'edit', 'delete', 'driver', 'link_branch', 'branch_add', 'ubuntupkg',
         'add_package', 'create_milestone', 'create_release',
-        'rdf', 'subscribe'
+        'rdf', 'subscribe',
         ]
 
     @enabled_with_permission('launchpad.Edit')
@@ -519,17 +521,46 @@ class ProductSeriesDeleteView(RegistryDeleteViewMixin, LaunchpadEditFormView):
         return all_files
 
     @cachedproperty
+    def has_linked_packages(self):
+        """Is the series linked to source packages."""
+        return self.context.packagings.count() > 0
+
+    @cachedproperty
+    def linked_packages_message(self):
+        url = canonical_url(self.context.product, view_name="+packages")
+        return (
+            "You cannot delete a series that is linked to packages in "
+            "distributions. You can remove the links from the "
+            '<a href="%s">project packaging</a> page.' % url)
+
+    development_focus_message = _(
+        "You cannot delete a series that is the focus of "
+        "development. Make another series the focus of development "
+        "before deleting this one.")
+
+    @cachedproperty
+    def has_translations(self):
+        """Does the series have translations?"""
+        return self.context.potemplate_count > 0
+
+    translations_message = (
+        "This series cannot be deleted because it has translations.")
+
+    @cachedproperty
     def can_delete(self):
         """Can this series be delete."""
-        return not self.context.is_development_focus
+        return not (
+            self.context.is_development_focus
+            or self.has_linked_packages or self.has_translations)
 
     def canDeleteAction(self, action):
         """Is the delete action available."""
-        if not self.can_delete:
-            self.addError(
-                "You cannot delete a series that is the focus of "
-                "development. Make another series the focus of development "
-                "before deleting this one.")
+        if self.context.is_development_focus:
+            self.addError(self.development_focus_message)
+        if self.has_linked_packages:
+            self.addError(structured(self.linked_packages_message))
+        if self.has_translations:
+            self.addError(self.translations_message)
         return self.can_delete
 
     @action('Delete this Series', name='delete', condition=canDeleteAction)
