@@ -62,6 +62,11 @@ class TestProductSeriesVocabulary(TestCaseWithFactory):
         self.assertEqual(token, term.token)
         self.assertEqual(self.series, term.value)
 
+    def test_getTermByToken_LookupError(self):
+        self.assertRaises(
+            LookupError,
+            self.vocabulary.getTermByToken, 'does/notexist')
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

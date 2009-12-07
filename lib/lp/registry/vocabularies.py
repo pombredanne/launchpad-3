@@ -1015,9 +1015,9 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
             self._table,
             ProductSeries.product == Product.id,
             Product.name == productname,
-            ProductSeries.name == productseriesname)
+            ProductSeries.name == productseriesname).one()
         if result is not None:
-            return self.toTerm(result.one())
+            return self.toTerm(result)
         raise LookupError(token)
 
     def search(self, query):
