@@ -7,6 +7,7 @@ imported branches.  If the logged in user is an import operator
 to edit the details.
 
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.code.enums import RevisionControlSystems
     >>> login('test@canonical.com')
 
     >>> svn_import = factory.makeCodeImport(
@@ -16,8 +17,8 @@ to edit the details.
     >>> svn_import_branch_unique_name = svn_import.branch.unique_name
 
     >>> bzr_svn_import = factory.makeCodeImport(
-    ...     svn_branch_url='svn://svn.example.com/bzr-svn/trunk')
-    >>> from canonical.launchpad.webapp import canonical_url
+    ...     svn_branch_url='svn://svn.example.com/bzr-svn/trunk',
+    ...     rcs_type=RevisionControlSystems.BZR_SVN)
     >>> bzr_svn_import_location = str(canonical_url(bzr_svn_import.branch))
     >>> bzr_svn_import_branch_unique_name = bzr_svn_import.branch.unique_name
 

@@ -360,7 +360,7 @@ class CodeImportNewView(CodeImportBaseView):
             data['svn_branch_url'] = None
             data['git_repo_url'] = None
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
-        elif rcs_type == RevisionControlSystems.SVN:
+        elif rcs_type in RevisionControlSystems.SVN:
             data['cvs_root'] = None
             data['cvs_module'] = None
             data['git_repo_url'] = None
@@ -458,7 +458,8 @@ class CodeImportEditView(CodeImportBaseView):
         if self.code_import.rcs_type == RevisionControlSystems.CVS:
             self.form_fields = self.form_fields.omit(
                 'svn_branch_url', 'git_repo_url')
-        elif self.code_import.rcs_type == RevisionControlSystems.SVN:
+        elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
+                                           RevisionControlSystems.BZR_SVN):
             self.form_fields = self.form_fields.omit(
                 'cvs_root', 'cvs_module', 'git_repo_url')
         elif self.code_import.rcs_type == RevisionControlSystems.GIT:
@@ -493,7 +494,8 @@ class CodeImportEditView(CodeImportBaseView):
             self._validateCVS(
                 data.get('cvs_root'), data.get('cvs_module'),
                 self.code_import)
-        elif self.code_import.rcs_type == RevisionControlSystems.SVN:
+        elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
+                                           RevisionControlSystems.BZR_SVN):
             self._validateSVN(
                 data.get('svn_branch_url'), self.code_import)
         elif self.code_import.rcs_type == RevisionControlSystems.GIT:
