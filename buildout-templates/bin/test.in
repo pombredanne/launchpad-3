@@ -202,7 +202,12 @@ if __name__ == '__main__':
         '--list', action='callback', callback=list_test_option)
 
     def save_list_test_option(option, opt, value, parser):
+        # Replace zope.testing's list_of_tests() method with our own
+        # that prints test IDs to the file given at the command line.
         replace_list_of_tests(open(value, 'wb'))
+        # Get zope.testing to produce a listing. This works because
+        # this option parser is actually called twice, once here and
+        # once again within zope.testing.
         args.append('--list-tests')
     options.parser.add_option(
         '--save-list', action='callback',
