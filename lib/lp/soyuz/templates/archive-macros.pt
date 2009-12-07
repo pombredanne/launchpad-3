@@ -88,14 +88,14 @@ function startUpdate(container) {
  * the expander itself.
  */
 function toggleExpandableRow(expander) {
-    var row = Y.get('#' + expander.get('id').replace('-expander', ''));
-    var icon = expander.query('img');
+    var row = Y.one('#' + expander.get('id').replace('-expander', ''));
+    var icon = expander.one('img');
 
     var row_display = row.getStyle('display');
     if (row_display == 'none') {
         row.setStyle('display', 'table-row');
         icon.set('src', '/@@/treeExpanded');
-        var container = Y.get('#' + row.get('id') + '-container');
+        var container = Y.one('#' + row.get('id') + '-container');
         if (trim(container.get('innerHTML')) == ''){
             startUpdate(container);
         }
