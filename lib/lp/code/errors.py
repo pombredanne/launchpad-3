@@ -59,5 +59,3 @@ class UserNotBranchReviewer(Exception):
 
 class WrongBranchMergeProposal(Exception):
     """The comment requested is not associated with this merge proposal."""
-
-
