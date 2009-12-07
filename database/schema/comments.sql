@@ -1430,11 +1430,9 @@ COMMENT ON COLUMN DIstroComponentUploader.uploader IS 'The uploader(s) permitted
 
 COMMENT ON TABLE LibraryFileContent IS 'LibraryFileContent: A librarian file''s contents. The librarian stores files in a safe and transactional way. This table represents the contents of those files within the database.';
 COMMENT ON COLUMN LibraryFileContent.datecreated IS 'The date on which this librarian file was created';
-COMMENT ON COLUMN LibraryFileContent.datemirrored IS 'When the file was mirrored from the librarian onto the backup server';
 COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file''s contents';
-COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
 COMMENT ON COLUMN LibraryFileContent.sha256 IS 'The SHA256 sum of the file''s contents';
 
 -- LibraryFileAlias

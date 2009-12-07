@@ -195,10 +195,10 @@ class BranchMergeProposalMenuMixin:
         return Link('+edit', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
-    def edit_commit_message(self):
-        text = 'Edit commit message'
+    def set_commit_message(self):
+        text = 'Set commit message'
         enabled = self.context.isMergable()
-        return Link('+edit-commit-message', text, icon='edit',
+        return Link('+edit-commit-message', text, icon='add',
                     enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -292,7 +292,7 @@ class BranchMergeProposalContextMenu(ContextMenu,
     links = [
         'add_comment',
         'dequeue',
-        'edit_commit_message',
+        'set_commit_message',
         'edit_status',
         'enqueue',
         'merge',
@@ -600,7 +600,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             self.context,
             'commit_message',
             canonical_url(self.context, view_name='+edit-commit-message'),
-            id="edit-description",
+            id="edit-commit-message",
             title="Commit Message",
             value=commit_message,
             accept_empty=True)
