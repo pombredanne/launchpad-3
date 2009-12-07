@@ -37,20 +37,20 @@
     </tbody>
   </table>
   <script type="text/javascript">
-    YUI().use('io-base', 'node', function(Y) {
+    LPS.use('io-base', 'node', function(Y) {
         Y.on('domready', function() {
-            var url = Y.get('#bugtarget-bugfilters-link').getAttribute('href');
+            var url = Y.one('#bugtarget-bugfilters-link').getAttribute('href');
             var handlers = {
                 success: function(transactionid, response, arguments) {
-                    Y.get('#bugfilters-portlet-content').set(
+                    Y.one('#bugfilters-portlet-content').set(
                         'innerHTML', response.responseText);
                 },
                 failure: function() {
-                    Y.get('#bugfilters-portlet-content').set('innerHTML', '');
+                    Y.one('#bugfilters-portlet-content').set('innerHTML', '');
                 }
             };
             var request = Y.io(url, {on: handlers});
-            Y.get('#bugfilters-portlet-spinner').setStyle('display', 'block');
+            Y.one('#bugfilters-portlet-spinner').setStyle('display', 'block');
         });
     });
   </script>
