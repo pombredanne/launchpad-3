@@ -109,8 +109,11 @@
 
 
 <metal:nav-pofile-subpages define-macro="nav-pofile-subpages">
-      <ul class="horizontal" style="margin-top: 1em; margin-bottom: 1em;"
-           tal:define="navigation_menu context/menu:navigation">
+      <ul
+          class="horizontal"
+          id="nav-pofile-subpages"
+          style="margin-top: 1em; margin-bottom: 1em;"
+          tal:define="navigation_menu context/menu:navigation">
         <li
             tal:define="link navigation_menu/download"
             tal:condition="link/enabled"
