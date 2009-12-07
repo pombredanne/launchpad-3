@@ -10,7 +10,7 @@
   </tal:comment>
 
 <script type="text/javascript">
-YUI().use('node', 'io-base', 'lazr.anim', 'soyuz-base', function(Y) {
+LPS.use('node', 'io-base', 'lazr.anim', 'soyuz-base', function(Y) {
 
 
 /*
