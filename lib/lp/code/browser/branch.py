@@ -79,7 +79,8 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType, UICreatableBranchType)
+    BranchLifecycleStatus, BranchType, RevisionControlSystems,
+    UICreatableBranchType)
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch,
     user_has_special_branch_access)
@@ -499,6 +500,14 @@ class BranchView(LaunchpadView, FeedsMixin):
     def latest_code_import_results(self):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
+
+    @property
+    def is_svn_import(self):
+        """True if an imported branch is a SVN import."""
+        # You should only be calling this if it's an SVN code import
+        assert self.context.code_import
+        return self.context.code_import.rcs_type in \
+               (RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN)
 
     @property
     def svn_url_is_web(self):
