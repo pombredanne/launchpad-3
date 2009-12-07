@@ -32,7 +32,6 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.errors import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
-    ClaimantHasPersonalReview, ClaimantNotInReviewerTeam, NoSuchReview,
     UserNotBranchReviewer, WrongBranchMergeProposal)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
@@ -539,37 +538,6 @@ class BranchMergeProposal(SQLBase):
         vote_reference.review_type = review_type
         if _notify_listeners:
             notify(ReviewerNominatedEvent(vote_reference))
-        return vote_reference
-
-    def claimReview(self, claimant, reviewer, review_type=None):
-        """See `IBranchMergeProposal`."""
-        review_type = self._normalizeReviewType(review_type)
-        vote_reference = self.getUsersVoteReference(reviewer, review_type)
-        if vote_reference is None:
-            if review_type is None:
-                error_str = 'No review found for %(reviewer)s'
-            else:
-                error_str = (
-                    'No "%(review_type)s" review found for %(reviewer)s')
-            raise NoSuchReview(
-                error_str % {
-                    'reviewer': reviewer.unique_displayname,
-                    'review_type': review_type})
-        claimant_review = self.getUsersVoteReference(claimant)
-        if claimant_review is not None:
-            if claimant_review.is_pending:
-                error_str = '%s has an existing pending review'
-            else:
-                error_str = '%s has an existing personal review'
-            raise ClaimantHasPersonalReview(
-                error_str % claimant.unique_displayname)
-        if not claimant.inTeam(reviewer):
-            raise ClaimantNotInReviewerTeam(
-                '%s is not a member of %s' %
-                (claimant.unique_displayname, reviewer.unique_displayname))
-        # If we get to here then the claimant is allowed to claim the team
-        # review.
-        vote_reference.reviewer = claimant
         return vote_reference
 
     def deleteProposal(self):
