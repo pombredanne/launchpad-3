@@ -63,7 +63,15 @@ LPMAIN_SEED = frozenset([
 # session tables, as these might exist in developer databases but will not
 # exist in the production launchpad database.
 IGNORED_TABLES = set([
-    'public.secret', 'public.sessiondata', 'public.sessionpkgdata'])
+    # Session tables that in some situations will exist in the main lp
+    # database.
+    'public.secret', 'public.sessiondata', 'public.sessionpkgdata',
+    # Mirror tables, per Bug #489078. These tables have their own private
+    # replication set that is setup manually.
+    'public.lp_person',
+    'public.lp_personlocation',
+    'public.lp_teamparticipation',
+    ])
 
 
 def slony_installed(con):
@@ -106,7 +114,7 @@ class TableReplicationInfo:
 
 def sync(timeout):
     """Generate a sync event and wait for it to complete on all nodes.
-   
+
     This means that all pending events have propagated and are in sync
     to the point in time this method was called. This might take several
     hours if there is a large backlog of work to replicate.
