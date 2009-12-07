@@ -20,6 +20,7 @@ from the distribution series translations page.
     >>> print user_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+templates
 
+
 The templates table
 -------------------
 
@@ -35,7 +36,7 @@ the date of last update for this distribution series.
 
     >>> table = find_tag_by_id(anon_browser.contents, 'templates_table')
     >>> print extract_text(table)
-    Source package Template name      Last update             
+    Source package Template name      Last update
     evolution      disabled-template  2007-01-05
     evolution      evolution-2.2      2005-05-06
     evolution      man                2006-08-14
@@ -78,6 +79,21 @@ The page shows a table of all templates and links to their subpages.
     pmount         man               2006-08-14   Edit Upload Download Administer
     pmount         pmount            2005-05-06   Edit Upload Download Administer
 
+Logging in as an Ubuntu Translations Coordinator, you should be able to
+admin all templates, including those that are currently disabled
+
+    >>> utc_member = factory.makePerson(email='utc-member@example.com',
+    ...     name='utc-member', password='test', displayname='Some Guy')
+    >>> utc_team = personset.getByName('rosetta-admins')
+    >>> utc_team.addMember(utc_member)
+
+    >>> browser = setupBrowser(auth='Basic utc-member@example.com:test')
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
+    >>> browser.getLink('Edit').click()
+    >>> print admin_browser.url
+    http://translations.../evolution/+pots/disabled-template/+edit
+
 
 Links to the templates
 ----------------------
@@ -97,3 +113,4 @@ details. Likewise for the other links for each template.
     >>> admin_browser.getLink('Edit').click()
     >>> print admin_browser.url
     http://translations.../evolution/+pots/disabled-template/+edit
+
