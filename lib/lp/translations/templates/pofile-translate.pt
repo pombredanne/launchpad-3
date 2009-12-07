@@ -20,7 +20,7 @@
     <script type="text/javascript">
       registerLaunchpadFunction(insertAllExpansionButtons);
 
-      YUI().use('node', 'cookie', 'anim', 'lp.pofile', function(Y) {
+      LPS.use('node', 'cookie', 'anim', 'lp.pofile', function(Y) {
 
           var hide_notification = function(node) {
               var hide_anim = new Y.Anim({
