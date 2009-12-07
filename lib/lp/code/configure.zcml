@@ -33,8 +33,7 @@
     <allow interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferencePublic"/>
     <require 
         permission="launchpad.Edit"
-        interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferenceEdit"
-        set_attributes="reviewer" />
+        interface="lp.code.interfaces.codereviewvote.ICodeReviewVoteReferenceEdit"/>
   </class>
   <subscriber
       for="lp.code.interfaces.codereviewvote.ICodeReviewVoteReference
