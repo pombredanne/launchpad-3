@@ -32,7 +32,6 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
 from lp.code.errors import (
     BadBranchMergeProposalSearchContext, BadStateTransition,
-    ClaimantHasPersonalReview, ClaimantNotInReviewerTeam, NoSuchReview,
     UserNotBranchReviewer, WrongBranchMergeProposal)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment

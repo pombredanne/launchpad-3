@@ -8,10 +8,7 @@ __all__ = [
     'BadBranchMergeProposalSearchContext',
     'BadStateTransition',
     'BranchMergeProposalExists',
-    'ClaimantHasPersonalReview',
-    'ClaimantNotInReviewerTeam',
     'InvalidBranchMergeProposal',
-    'NoSuchReview',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
 ]
@@ -25,14 +22,6 @@ class BadStateTransition(Exception):
     """The user requested a state transition that is not possible."""
 
 
-class ClaimantHasPersonalReview(Exception):
-    """The claimant already has a personal review. """
-
-
-class ClaimantNotInReviewerTeam(Exception):
-    """The claimant is not in the reviewer team."""
-
-
 class InvalidBranchMergeProposal(Exception):
     """Raised during the creation of a new branch merge proposal.
 
@@ -42,10 +31,6 @@ class InvalidBranchMergeProposal(Exception):
 
 class BranchMergeProposalExists(InvalidBranchMergeProposal):
     """Raised if there is already a matching BranchMergeProposal."""
-
-
-class NoSuchReview(Exception):
-    """There is no review found for the reviewer."""
 
 
 class UserNotBranchReviewer(Exception):

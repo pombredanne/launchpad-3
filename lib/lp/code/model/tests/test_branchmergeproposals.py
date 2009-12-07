@@ -27,8 +27,7 @@ from canonical.launchpad.interfaces import IPrivacy
 from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp.testing import verifyObject
 from lp.code.errors import (
-    BadStateTransition, ClaimantHasPersonalReview, ClaimantNotInReviewerTeam,
-    NoSuchReview, WrongBranchMergeProposal)
+    BadStateTransition, WrongBranchMergeProposal)
 from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
