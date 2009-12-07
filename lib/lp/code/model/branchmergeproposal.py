@@ -30,6 +30,10 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.code.errors import (
+    BadBranchMergeProposalSearchContext, BadStateTransition,
+    ClaimantHasPersonalReview, ClaimantNotInReviewerTeam, NoSuchReview,
+    UserNotBranchReviewer, WrongBranchMergeProposal)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
@@ -42,10 +46,8 @@ from lp.code.event.branchmergeproposal import (
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
-    BadBranchMergeProposalSearchContext, BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter, UserNotBranchReviewer,
-    WrongBranchMergeProposal)
+    IBranchMergeProposal, IBranchMergeProposalGetter)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
