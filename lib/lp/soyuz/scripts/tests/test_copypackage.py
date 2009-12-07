@@ -702,9 +702,9 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # distribution.
 
         # Create a testing source in ubuntu.
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        source = self.test_publisher.getPubSource(distroseries=hoary)
+        ubuntu = getUtility(IDistributionSet).getByName('debian')
+        sid = ubuntu.getSeries('sid')
+        source = self.test_publisher.getPubSource(distroseries=sid)
 
         # Create a fresh PPA for ubuntutest, which will be the copy
         # destination.
@@ -726,9 +726,9 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         # resources.
 
         # Create a testing source in ubuntu.
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        source = self.test_publisher.getPubSource(distroseries=hoary)
+        ubuntu = getUtility(IDistributionSet).getByName('debian')
+        sid = ubuntu.getSeries('sid')
+        source = self.test_publisher.getPubSource(distroseries=sid)
 
         # Create a fresh PPA for ubuntutest, which will be the copy
         # destination.
@@ -742,8 +742,8 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertRaisesWithContent(
             CannotCopy,
-            'No such distro series hoary in distribution ubuntu.',
-            copy_checker.checkCopy, source, hoary, pocket)
+            'No such distro series sid in distribution debian.',
+            copy_checker.checkCopy, source, sid, pocket)
 
     def test_checkCopy_respects_sourceformatselection(self):
         # A source copy should be denied if the source's dsc_format is
