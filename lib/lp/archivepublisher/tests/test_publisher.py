@@ -855,8 +855,8 @@ class TestPublisher(TestPublisherBase):
         first_md5_line = release_contents[md5_header_index + 17]
         self.assertEqual(
             first_md5_line,
-            (' 0c62b1baaf49dd4540bacea455bdb757              '
-             '135 main/source/Release'))
+            (' a5e5742a193740f17705c998206e18b6              '
+             '114 main/source/Release'))
 
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
@@ -864,8 +864,8 @@ class TestPublisher(TestPublisherBase):
         first_sha1_line = release_contents[sha1_header_index + 17]
         self.assertEqual(
             first_sha1_line,
-            (' 9df1c50f859196a9ac71c1565448465681ceff78              '
-             '135 main/source/Release'))
+            (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
+             '114 main/source/Release'))
 
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
@@ -873,12 +873,11 @@ class TestPublisher(TestPublisherBase):
         first_sha256_line = release_contents[sha256_header_index + 17]
         self.assertEqual(
             first_sha256_line,
-            (' bc1ffed4dc1cf676e6e2f50e96b97f755c24b40e0272fd0517d915'
-             '37c4ba30b2              135 main/source/Release'))
+            (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
+             '8d106a6338              114 main/source/Release'))
 
         # The Label: field should be set to the archive displayname
-        self.assertEqual(release_contents[1],
-            'Label: Primary Archive for Ubuntu Test')
+        self.assertEqual(release_contents[1], 'Label: ubuntutest')
 
         # Primary archive architecture Release files 'Origin' contain
         # the distribution displayname.
@@ -989,6 +988,9 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
         gz_sources_sha256_line = release_contents[sha256_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
+
+        # The Label: field should be set to the archive displayname
+        self.assertEqual(release_contents[1], 'Label: PPA for Celso Providelo')
 
         # Architecture Release files also have a distinct Origin: for PPAs.
         arch_release_file = os.path.join(
