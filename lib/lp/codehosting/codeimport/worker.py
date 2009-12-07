@@ -152,6 +152,10 @@ class CodeImportSourceDetails:
             rcstype = 'svn'
             svn_branch_url = str(code_import.svn_branch_url)
             cvs_root = cvs_module = git_repo_url = None
+        elif code_import.rcs_type == RevisionControlSystems.BZR_SVN:
+            rcstype = 'bzr-svn'
+            svn_branch_url = str(code_import.svn_branch_url)
+            cvs_root = cvs_module = git_repo_url = None
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             rcstype = 'cvs'
             svn_branch_url = git_repo_url = None
@@ -162,7 +166,7 @@ class CodeImportSourceDetails:
             svn_branch_url = cvs_root = cvs_module = None
             git_repo_url = str(code_import.git_repo_url)
         else:
-            raise AssertionError("Unknown rcstype %r." % rcstype)
+            raise AssertionError("Unknown rcstype %r." % code_import.rcs_type)
         return cls(
             code_import.branch.id, rcstype, svn_branch_url,
             cvs_root, cvs_module, git_repo_url)
