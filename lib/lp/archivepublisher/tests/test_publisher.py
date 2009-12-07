@@ -990,7 +990,8 @@ class TestPublisher(TestPublisherBase):
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
 
         # The Label: field should be set to the archive displayname
-        self.assertEqual(release_contents[1], 'Label: PPA for Celso Providelo')
+        self.assertEqual(release_contents[1],
+            'Label: PPA for Celso Providelo')
 
         # Architecture Release files also have a distinct Origin: for PPAs.
         arch_release_file = os.path.join(
