@@ -11,15 +11,15 @@
   <script type="text/javascript">
     YUI().use('io-base', 'node', function(Y) {
       Y.on('domready', function() {
-        Y.get('#tags-portlet-spinner').setStyle('display', 'block');
+        Y.one('#tags-portlet-spinner').setStyle('display', 'block');
 
         function hide_spinner() {
-          Y.get('#tags-portlet-spinner').setStyle('display', 'none');
+          Y.one('#tags-portlet-spinner').setStyle('display', 'none');
         }
 
         function on_success(transactionid, response, arguments) {
           hide_spinner();
-          var portlet = Y.get('#portlet-tags');
+          var portlet = Y.one('#portlet-tags');
           if (Y.Lang.trim(response.responseText).length == 0) {
             portlet.setStyle('display', 'none')
           }
@@ -31,7 +31,7 @@
 
         var config = {on: {success: on_success,
                            failure: hide_spinner}};
-        var url = Y.get('#tags-content-link').getAttribute('href').replace('bugs.', '');
+        var url = Y.one('#tags-content-link').getAttribute('href').replace('bugs.', '');
         Y.io(url, config);
       });
     });

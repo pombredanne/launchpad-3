@@ -296,9 +296,6 @@ class TranslationImportQueueEntry(SQLBase):
 
     def canSetStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
-        if new_status == self.status:
-            # Leaving status as it is is always allowed.
-            return True
         if user is None:
             # Anonymous user cannot do anything.
             return False
@@ -444,8 +441,9 @@ class TranslationImportQueueEntry(SQLBase):
         # Get or create an IPOFile based on the info we guess.
         pofile = potemplate.getPOFileByLang(language.code, variant=variant)
         if pofile is None:
-            pofile = potemplate.newPOFile(
-                language.code, variant=variant, requester=self.importer)
+            pofile = potemplate.newPOFile(language.code, variant=variant)
+            if pofile.canEditTranslations(self.importer):
+                pofile.owner = self.importer
 
         if self.is_published:
             # This entry comes from upstream, which means that the path we got
