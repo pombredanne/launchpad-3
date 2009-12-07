@@ -52,7 +52,8 @@ class ListTeamMembersScript(LaunchpadScript):
                 print "Error, no such team: %s" % teamname
                 return 1
         # We don't want duplicates, so use "set" get unique only
-        print "\n".join(sorted(list(set(member_details))))
+        print "\n".join(detail.encode('utf-8') for detail in
+                        sorted(list(set(member_details))))
         return 0
 
 if __name__ == '__main__':
