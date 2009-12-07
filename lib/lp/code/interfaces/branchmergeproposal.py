@@ -408,33 +408,6 @@ class IBranchMergeProposal(IPrivacy):
         the details are updated.
         """
 
-    @operation_parameters(
-        reviewer=Reference(
-            title=_("A team with an existing pending review."),
-            schema=IPerson),
-        review_type=Text())
-    @call_with(claimant=REQUEST_USER)
-    @operation_returns_entry(Interface) # Really ICodeReviewVoteReference
-    @export_write_operation()
-    def claimReview(claimant, reviewer, review_type=None):
-        """Change a pending review for reviewer into a review for claimant.
-
-        Pending team reviews can be claimed by members of that team.  This
-        allows reviews to be moved of the general team todo list, and onto a
-        personal todo list.
-
-        :param claimant: The person claiming the team review.
-        :param reviewer: The team with a pending review.
-        :param review_type: The review_type of the pending review.
-        :return: The updated `CodeReviewVoteReference`.
-        :raises ClaimantHasPersonalReview: If the claimant already has a
-            personal review.
-        :raises ClaimantNotInReviewerTeam: If the claimant is not in the
-            reviewer team.
-        :raises NoSuchReview: If there is no review found for the reviewer
-            with the specified review_type.
-        """
-
     def getUsersVoteReference(user):
         """Get the existing vote reference for the given user.
 

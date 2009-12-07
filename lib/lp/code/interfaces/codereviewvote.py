@@ -19,16 +19,12 @@ from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment)
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, exported)
+    call_with, export_as_webservice_entry, export_write_operation, exported,
+    REQUEST_USER)
 
 
-class ICodeReviewVoteReference(Interface):
-    """A reference to a vote on a IBranchMergeProposal.
-
-    There is at most one reference to a vote for each reviewer on a given
-    branch merge proposal.
-    """
-    export_as_webservice_entry()
+class ICodeReviewVoteReferencePublic(Interface):
+    """The public attributes for code review vote references."""
 
     id = Int(
         title=_("The ID of the vote reference"))
@@ -69,3 +65,34 @@ class ICodeReviewVoteReference(Interface):
 
     is_pending = exported(
         Bool(title=_("Is the pending?"), required=True, readonly=True))
+
+
+class ICodeReviewVoteReferenceEdit(Interface):
+    """Method that require edit permissions."""
+
+    @call_with(claimant=REQUEST_USER)
+    @export_write_operation()
+    def claimReview(claimant):
+        """Change a pending review into a review for claimant.
+
+        Pending team reviews can be claimed by members of that team.  This
+        allows reviews to be moved of the general team todo list, and onto a
+        personal todo list.
+
+        :param claimant: The person claiming the team review.
+        :raises ClaimReviewFailed: If the claimant already has a
+            personal review, if the reviewer is not a team, if the
+            claimant is not in the reviewer team, or if the review is
+            not pending.
+        """
+
+
+class ICodeReviewVoteReference(ICodeReviewVoteReferencePublic,
+                               ICodeReviewVoteReferenceEdit):
+    """A reference to a vote on a IBranchMergeProposal.
+
+    There is at most one reference to a vote for each reviewer on a given
+    branch merge proposal.
+    """
+
+    export_as_webservice_entry()
