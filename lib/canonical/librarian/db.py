@@ -96,14 +96,16 @@ class Library:
     # The following methods are read-only queries.
 
     def lookupBySHA1(self, digest):
-        return [fc.id for fc in
-                LibraryFileContent.selectBy(sha1=digest, deleted=False)]
+        return [fc.id for fc in LibraryFileContent.selectBy(sha1=digest)]
 
     def getAlias(self, aliasid):
-        """Returns a LibraryFileAlias, or raises LookupError."""
+        """Returns a LibraryFileAlias, or raises LookupError.
+
+        A LookupError is raised if no record with the given ID exists
+        or if not related LibraryFileContent exists.
+        """
         alias = LibraryFileAlias.selectOne(AND(
             LibraryFileAlias.q.id==aliasid,
-            LibraryFileContent.q.deleted==False,
             LibraryFileAlias.q.contentID==LibraryFileContent.q.id,
             LibraryFileAlias.q.restricted==self.restricted,
             ))
@@ -115,7 +117,6 @@ class Library:
         results = LibraryFileAlias.select(AND(
                 LibraryFileAlias.q.contentID==LibraryFileContent.q.id,
                 LibraryFileContent.q.id==fileid,
-                LibraryFileContent.q.deleted==False,
                 LibraryFileAlias.q.restricted==self.restricted,
                 ))
         return [(a.id, a.filename, a.mimetype) for a in results]
