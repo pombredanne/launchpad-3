@@ -7,14 +7,17 @@ __metaclass__ = type
 __all__ = [
     'CannotUploadToArchive',
     'CannotUploadToPPA',
+    'can_upload_to_archive',
+    'check_upload_to_archive',
     'components_valid_for',
     'verify_upload',
     ]
 
 from zope.component import getUtility
 
-from lp.registry.interfaces.distribution import IDistributionSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
+from lp.soyuz.interfaces.archive import ArchivePurpose
 
 
 class CannotUploadToArchive:
@@ -28,6 +31,15 @@ class CannotUploadToArchive:
 
     def __str__(self):
         return self._message
+
+
+class CannotUploadToPocket:
+    """Returned when a pocket is closed for uploads."""
+
+    def __init__(self, distroseries, pocket):
+        super(CannotUploadToPocket, self).__init__(
+            "Not permitted to upload to the %s pocket in a series in the "
+            "'%s' state." % (pocket.name, distroseries.status.name))
 
 
 class CannotUploadToPPA(CannotUploadToArchive):
@@ -63,6 +75,18 @@ class NoRightsForComponent(CannotUploadToArchive):
         super(NoRightsForComponent, self).__init__(component=component.name)
 
 
+class InvalidPocketForPPA(CannotUploadToArchive):
+    """PPAs only support some pockets."""
+
+    _fmt = "PPA uploads must be for the RELEASE pocket."
+
+
+class InvalidPocketForPartnerArchive(CannotUploadToArchive):
+    """Partner archives only support some pockets."""
+
+    _fmt = "Partner uploads must be for the RELEASE or PROPOSED pocket."
+
+
 def components_valid_for(archive, person):
     """Return the components that 'person' can upload to 'archive'.
 
@@ -73,6 +97,68 @@ def components_valid_for(archive, person):
     permission_set = getUtility(IArchivePermissionSet)
     permissions = permission_set.componentsForUploader(archive, person)
     return set(permission.component for permission in permissions)
+
+
+def can_upload_to_archive(person, suitesourcepackage, archive=None):
+    """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+
+    :param person: An `IPerson` who might be uploading.
+    :param suitesourcepackage: An `ISuiteSourcePackage` to be uploaded.
+    :param archive: The `IArchive` to upload to. If not provided, defaults
+        to the default archive for the source package. (See
+        `ISourcePackage.get_default_archive`).
+    :return: True if they can, False if they cannot.
+    """
+    sourcepackage = suitesourcepackage.sourcepackage
+    if archive is None:
+        archive = sourcepackage.get_default_archive()
+    pocket = suitesourcepackage.pocket
+    distroseries = sourcepackage.distroseries
+    sourcepackagename = sourcepackage.sourcepackagename
+    component = sourcepackage.latest_published_component
+    # strict_component is True because the source package already exists
+    # (otherwise we couldn't have a suitesourcepackage object) and
+    # nascentupload passes True as a matter of policy when the package exists.
+    reason = check_upload_to_archive(
+        person, distroseries, sourcepackagename, archive, component, pocket,
+        strict_component=True)
+    return reason is None
+
+
+def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
+                            component, pocket, strict_component=True):
+    """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+
+    :param person: An `IPerson` who might be uploading.
+    :param distroseries: The `IDistroSeries` being uploaded to.
+    :param sourcepackagename: The `ISourcePackageName` being uploaded.
+    :param archive: The `IArchive` to upload to. If not provided, defaults
+        to the default archive for the source package. (See
+        `ISourcePackage.get_default_archive`).
+    :param component: The `Component` being uploaded to.
+    :param pocket: The `PackagePublishingPocket` of 'distroseries' being
+        uploaded to.
+    :return: The reason for not being able to upload, None otherwise.
+    """
+    if archive.purpose == ArchivePurpose.PARTNER:
+        if pocket not in (
+            PackagePublishingPocket.RELEASE,
+            PackagePublishingPocket.PROPOSED):
+            return InvalidPocketForPartnerArchive()
+    elif archive.is_ppa:
+        if pocket != PackagePublishingPocket.RELEASE:
+            return InvalidPocketForPPA()
+    else:
+        # Uploads to the partner archive are allowed in any distroseries
+        # state.
+        # XXX julian 2005-05-29 bug=117557:
+        # This is a greasy hack until bug #117557 is fixed.
+        if not distroseries.canUploadToPocket(pocket):
+            return CannotUploadToPocket(distroseries, pocket)
+
+    return verify_upload(
+        person, sourcepackagename, archive, component, distroseries,
+        strict_component)
 
 
 def packagesets_valid_for(archive, person):

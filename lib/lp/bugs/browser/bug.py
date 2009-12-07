@@ -30,7 +30,6 @@ from email.MIMEText import MIMEText
 import re
 
 import pytz
-from simplejson import dumps
 
 from zope.app.form.browser import TextWidget
 from zope.component import adapter, getUtility
@@ -433,12 +432,7 @@ class BugViewMixin:
             ids[sub.name] = 'subscriber-%s' % sub.id
         return ids
 
-    @property
-    def subscriber_ids_js(self):
-        """Return subscriber_ids in a form suitable for JavaScript use."""
-        return dumps(self.subscriber_ids)
-
-    def subscription_class(self, subscribed_person):
+    def getSubscriptionClassForUser(self, subscribed_person):
         """Return a set of CSS class names based on subscription status.
 
         For example, "subscribed-false dup-subscribed-true".
@@ -449,6 +443,20 @@ class BugViewMixin:
             dup_class = 'dup-subscribed-false'
 
         if subscribed_person in self.direct_subscribers:
+            return 'subscribed-true %s' % dup_class
+        else:
+            return 'subscribed-false %s' % dup_class
+
+    @property
+    def current_user_subscription_class(self):
+        bug = self.context
+
+        if bug.personIsSubscribedToDuplicate(self.user):
+            dup_class = 'dup-subscribed-true'
+        else:
+            dup_class = 'dup-subscribed-false'
+
+        if bug.personIsDirectSubscriber(self.user):
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class

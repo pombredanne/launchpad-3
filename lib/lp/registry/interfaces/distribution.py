@@ -16,6 +16,7 @@ __all__ = [
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
     'IDistributionSet',
+    'NoPartnerArchive',
     'NoSuchDistribution',
     ]
 
@@ -511,13 +512,6 @@ class IDistributionPublic(
               bug watches or to products that use_malone.
         """
 
-    def getCustomLanguageCode(sourcepackagename, language_code):
-        """Look up `ICustomLanguageCode`.
-
-        A `SourcePackageName` in a Distribution may override some
-        language codes for translation import purposes.
-        """
-
     def userCanEdit(user):
         """Can the user edit this distribution?"""
 
@@ -585,6 +579,15 @@ class NoSuchDistribution(NameLookupFailed):
     """Raised when we try to find a distribution that doesn't exist."""
 
     _message_prefix = "No such distribution"
+
+
+class NoPartnerArchive(Exception):
+    """Raised when a partner archive is needed, but none exists."""
+
+    def __init__(self, distribution):
+        Exception.__init__(
+            self, "Partner archive for distro '%s' not found"
+            % (distribution.name,))
 
 
 # Monkey patching to fix circular imports done in

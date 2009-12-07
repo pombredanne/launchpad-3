@@ -94,7 +94,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
             vocabulary="ProductSeries",
             schema=Interface,
             description=_(
-                "The registered project series that this source package."
+                "The registered project series that this source package. "
                 "is based on. This series may be the same as the one that "
                 "earlier versions of this source packages were based on.")))
 
@@ -224,6 +224,20 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
 
+    def get_default_archive(component=None):
+        """Get the default archive of this package.
+
+        If 'component' is a partner component, then the default archive is the
+        partner archive. Otherwise, the primary archive of the associated
+        distribution.
+
+        :param component: The `IComponent` to base the default archive
+            decision on. If None, defaults to the last published component.
+        :raise NoPartnerArchive: If returning the partner archive is
+            appropriate, but no partner archive exists.
+        :return: `IArchive`.
+        """
+
     def getLatestTranslationsUploads():
         """Find latest Translations tarballs as produced by Soyuz.
 
@@ -284,7 +298,7 @@ class SourcePackageFileType(DBEnumeratedType):
         which in turn lists the orig.tar.gz and diff.tar.gz files used to
         make up the package.  """)
 
-    ORIG = DBItem(4, """
+    ORIG_TARBALL = DBItem(4, """
         Orig Tarball
 
         This file is an Ubuntu "orig" file, typically an upstream tarball or
@@ -298,8 +312,8 @@ class SourcePackageFileType(DBEnumeratedType):
         diff creates additional directories with patches and documentation
         used to build the binary packages for Ubuntu.  """)
 
-    TARBALL = DBItem(6, """
-        Tarball
+    NATIVE_TARBALL = DBItem(6, """
+        Native Tarball
 
         This is a tarball, usually of a mixture of Ubuntu and upstream code,
         used in the build process for this source package.  """)

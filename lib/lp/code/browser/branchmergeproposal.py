@@ -28,6 +28,7 @@ __all__ = [
     'BranchMergeProposalSubscribersView',
     'BranchMergeProposalView',
     'BranchMergeProposalVoteView',
+    'latest_proposals_for_each_branch',
     ]
 
 import operator
@@ -81,6 +82,28 @@ from lp.services.comments.interfaces.conversation import IConversation
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
+
+
+def latest_proposals_for_each_branch(proposals):
+    """Returns the most recent merge proposals for any particular branch.
+
+    Also filters out proposals that the logged in user can't see.
+    """
+    targets = {}
+    for proposal in proposals:
+        # Don't show the proposal if the user can't see it.
+        if not check_permission('launchpad.View', proposal):
+            continue
+        # Only show the must recent proposal for any given target.
+        date_created = proposal.date_created
+        target_id = proposal.target_branch.id
+
+        if target_id not in targets or date_created > targets[target_id][1]:
+            targets[target_id] = (proposal, date_created)
+
+    return sorted(
+        [proposal for proposal, date_created in targets.itervalues()],
+        key=operator.attrgetter('date_created'), reverse=True)
 
 
 class BranchMergeProposalPrimaryContext:
@@ -172,10 +195,10 @@ class BranchMergeProposalMenuMixin:
         return Link('+edit', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
-    def edit_commit_message(self):
-        text = 'Edit commit message'
+    def set_commit_message(self):
+        text = 'Set commit message'
         enabled = self.context.isMergable()
-        return Link('+edit-commit-message', text, icon='edit',
+        return Link('+edit-commit-message', text, icon='add',
                     enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
@@ -269,7 +292,7 @@ class BranchMergeProposalContextMenu(ContextMenu,
     links = [
         'add_comment',
         'dequeue',
-        'edit_commit_message',
+        'set_commit_message',
         'edit_status',
         'enqueue',
         'merge',
@@ -577,7 +600,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             self.context,
             'commit_message',
             canonical_url(self.context, view_name='+edit-commit-message'),
-            id="edit-description",
+            id="edit-commit-message",
             title="Commit Message",
             value=commit_message,
             accept_empty=True)

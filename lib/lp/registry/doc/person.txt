@@ -626,9 +626,7 @@ to ensure that the cache can be kept consistent when membership changes.
     {}
 
 ** See lib/canonical/launchpad/doc/teammembership.txt for more
-information
-
-   about team membership/participation.
+information about team membership/participation.
 
 
 === Email notifications to teams ===

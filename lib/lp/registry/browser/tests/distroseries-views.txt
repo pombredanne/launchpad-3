@@ -186,6 +186,9 @@ Series that belong to derivative distributions also contain the status field.
     >>> [field.__name__ for field in view.form_fields]
     ['displayname', 'title', 'summary', 'description', 'status']
 
+    >>> print view.widgets.get('status')._getFormValue()
+    Active Development
+
 
 Creating distro series
 ----------------------
