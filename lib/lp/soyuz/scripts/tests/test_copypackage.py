@@ -968,7 +968,8 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         # The returned object has a more descriptive 'displayname'
         # attribute than plain `IPackageUpload` instances.
         self.assertEquals(
-            'Delayed copy of foocomm - 1.0-2 (source, i386, raw-dist-upgrader)',
+            'Delayed copy of foocomm - '
+            '1.0-2 (source, i386, raw-dist-upgrader)',
             delayed_copy.displayname)
 
         # It is targeted to the right publishing context.
