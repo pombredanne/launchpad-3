@@ -28,7 +28,7 @@
     YUI().use('io-base', 'node', 'bugs.bugtask_index', function(Y) {
         // Must be done inline here to ensure the load event fires.
         // This is a work around for a YUI3 issue with event handling.
-        var subscription_link = Y.get('.menu-link-subscription');
+        var subscription_link = Y.one('.menu-link-subscription');
         var subscription_link_handler;
         if (subscription_link) {
             subscription_link_handler = subscription_link.on('click', function(e) {

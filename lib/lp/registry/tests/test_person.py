@@ -8,6 +8,7 @@ from datetime import datetime
 import pytz
 
 from zope.component import getUtility
+from zope.interface import providedBy
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor
@@ -16,6 +17,7 @@ from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.bugs.interfaces.bug import CreateBugParams, IBugSet
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressAlreadyTaken, IEmailAddressSet, InvalidEmailAddress)
+from lazr.lifecycle.snapshot import Snapshot
 from lp.blueprints.interfaces.specification import ISpecificationSet
 from lp.registry.interfaces.person import InvalidName
 from lp.registry.interfaces.product import IProductSet
@@ -414,6 +416,19 @@ class TestPerson(TestCaseWithFactory):
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         self.assertEqual(self.otherteam.visibility,
                          PersonVisibility.PRIVATE_MEMBERSHIP)
+
+    def test_person_snapshot(self):
+        omitted = (
+            'activemembers', 'adminmembers', 'allmembers', 'approvedmembers',
+            'deactivatedmembers', 'expiredmembers', 'inactivemembers',
+            'invited_members', 'member_memberships', 'pendingmembers',
+            'proposedmembers', 'unmapped_participants',
+            )
+        snap = Snapshot(self.myteam, providing=providedBy(self.myteam))
+        for name in omitted:
+            self.assertFalse(
+                hasattr(snap, name),
+                "%s should be omitted from the snapshot but is not." % name)
 
 
 class TestPersonSet(unittest.TestCase):

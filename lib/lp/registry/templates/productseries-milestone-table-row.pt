@@ -2,8 +2,9 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  define="milestone_menu view/milestone/menu:navigation;
-          milestone view/milestone">
+  define="milestone_menu view/menu:navigation;
+          milestone view/milestone;
+          release view/release">
   <tr>
     <td>
       <img src="/@@/milestone" alt="" />
@@ -43,13 +44,12 @@
     </td>
     <td tal:condition="not: view/is_distroseries_milestone">
       <span
-        tal:define="release milestone/product_release"
         tal:condition="release"
         tal:attributes="title release/datereleased/fmt:datetime"
         tal:content="release/datereleased/fmt:approximatedate">
         2005-12-13
       </span>
-      <tal:no-release condition="not: milestone/product_release">
+      <tal:no-release condition="not: release">
         <em tal:condition="not: milestone/active">
           <img src="/@@/info"/> This is an inactive milestone
         </em>
