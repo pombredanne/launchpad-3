@@ -44,16 +44,16 @@ class ListTeamMembersScript(LaunchpadScript):
         if not teamnames:
             self.parser.error('No team specified')
 
-        member_details = []
+        # We don't want duplicates, so use a set to enforce uniqueness.
+        member_details = set()
         for teamname in teamnames:
             try:
-                member_details.extend(process_team(teamname, display_option))
+                member_details.update(process_team(teamname, display_option))
             except NoSuchTeamError:
                 print "Error, no such team: %s" % teamname
                 return 1
-        # We don't want duplicates, so use "set" get unique only
         print "\n".join(detail.encode('utf-8') for detail in
-                        sorted(list(set(member_details))))
+                        sorted(member_details))
         return 0
 
 if __name__ == '__main__':
