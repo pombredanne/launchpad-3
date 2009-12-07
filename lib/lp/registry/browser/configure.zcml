@@ -1310,6 +1310,7 @@
     <browser:menus
         classes="
             MilestoneContextMenu
+            MilestoneInlineNavigationMenu
             MilestoneOverviewMenu
             MilestoneOverviewNavigationMenu"
         module="lp.registry.browser.milestone"/>

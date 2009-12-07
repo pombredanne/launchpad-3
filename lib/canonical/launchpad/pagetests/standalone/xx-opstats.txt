@@ -220,3 +220,59 @@ Stats can also be retrieved via HTTP in cricket-graph format:
     xmlrpc_faults:0@...
     xmlrpc_requests:0@...
     <BLANKLINE>
+
+== No DB access required ==
+
+Accessing the opstats page as an anonymous user will make no database
+queries. This is important to make it as reliable as possible since we
+use this page for monitoring. Because of this property, the load
+balancers also use this page to determine if a Launchpad instance is
+responsive.
+
+To confirm this, we first point all our database connection information
+to somewhere that doesn't exist.
+
+    >>> no_db_overrides = """
+    ...     [database]
+    ...     main_master: dbname=nonexistant
+    ...     main_slave: dbname=nonexistant
+    ...     auth_master: dbname=nonexistant
+    ...     auth_slave: dbname=nonexistant
+    ...
+    ...     [launchpad_session]
+    ...     dbname: nonexistant
+    ...     """
+    >>> config.push('no_db', no_db_overrides)
+
+Then we need to drop all our existing connections, so when we reconnect
+the new connection information is used.
+
+    >>> from zope.component import getUtility
+    >>> from storm.zope.interfaces import IZStorm
+    >>> getUtility(IZStorm)._reset()
+
+We can still access the opstats page.
+
+    >>> print http("GET /+opstats HTTP/1.1\nHost: launchpad.dev\n")
+    HTTP/1.1 200 Ok
+    ...
+    Content-Type: text/plain; charset=US-ASCII
+    ...
+    <BLANKLINE>
+    1XXs:0@...
+
+But our database connections are broken.
+
+    >>> from lp.registry.model.person import Person
+    >>> from canonical.launchpad.interfaces import IStore
+    >>> IStore(Person).find(Person, name='janitor')
+    Traceback (most recent call last):
+    ...
+    OperationalError: FATAL:  database "nonexistant" does not exist
+
+    >>> dummy = config.pop('no_db')
+    >>> getUtility(IZStorm)._reset()
+
+    >>> IStore(Person).find(Person, name='janitor').one().name
+    u'janitor'
+
