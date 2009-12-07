@@ -95,7 +95,8 @@ def make_email_body_for_code_import_update(
             body.append(
                 details_change_prefix + '\n' + new_details +
                 "\ninstead of:\n" + old_details)
-    elif code_import.rcs_type == RevisionControlSystems.SVN:
+    elif code_import.rcs_type in (RevisionControlSystems.SVN,
+                                  RevisionControlSystems.BZR_SVN):
         if CodeImportEventDataType.OLD_SVN_BRANCH_URL in event_data:
             old_url = event_data[CodeImportEventDataType.OLD_SVN_BRANCH_URL]
             body.append(

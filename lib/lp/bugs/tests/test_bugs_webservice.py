@@ -134,5 +134,33 @@ class TestBugCommentRepresentation(TestCaseWithFactory):
             rendered_comment, self.expected_comment_html)
 
 
+class TestBugMessages(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugMessages, self).setUp('test@canonical.com')
+        self.bug = self.factory.makeBug()
+        self.message1 = self.factory.makeMessage()
+        self.message2 = self.factory.makeMessage(parent=self.message1)
+        # Only link message2 to the bug.
+        self.bug.linkMessage(self.message2)
+        self.webservice = LaunchpadWebServiceCaller(
+            'launchpad-library', 'salgado-change-anything')
+
+    def test_messages(self):
+        # When one of the messages on a bug is linked to a parent that
+        # isn't linked to the bug, the webservice should still return
+        # the correct collection link for the bug's messages.
+        response = self.webservice.get('/bugs/%d/messages' % self.bug.id)
+        self.failUnlessEqual(response.status, 200)
+        # The parent_link for the latest message should be None
+        # because the parent is not a member of this bug's messages
+        # collection itself.
+        latest_message = response.jsonBody()['entries'][-1]
+        self.failUnlessEqual(self.message2.subject, latest_message['subject'])
+        self.failUnlessEqual(None, latest_message['parent_link'])
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
