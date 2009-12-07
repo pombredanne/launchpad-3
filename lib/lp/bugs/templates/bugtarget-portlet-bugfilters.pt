@@ -50,7 +50,6 @@
                 }
             };
             var request = Y.io(url, {on: handlers});
-            Y.one('#bugfilters-portlet-spinner').setStyle('display', 'block');
         });
     });
   </script>
