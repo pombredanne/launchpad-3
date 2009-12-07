@@ -694,7 +694,30 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             'source has expired binaries',
             copy_checker.checkCopy, source, series, pocket)
 
-    def test_checkCopy_forbids_copies_from_other_distributions(self):
+    def test_checkCopy_allows_copies_from_other_distributions(self):
+        # It is possible to copy packages between distributions,
+        # as long as the target distroseries exists for the target
+        # distribution.
+
+        # Create a testing source in ubuntu.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        source = self.test_publisher.getPubSource(distroseries=hoary)
+
+        # Create a fresh PPA for ubuntutest, which will be the copy
+        # destination.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
+        series = self.test_publisher.ubuntutest.getSeries('hoary-test')
+        pocket = source.pocket
+
+        # Copy of sources to series in another distribution can be
+        # performed.
+        copy_checker = CopyChecker(archive, include_binaries=False)
+        copy_checker.checkCopy(source, series, pocket)
+
+    def test_checkCopy_forbids_copies_to_unknown_distroseries(self):
         # We currently deny copies to series that are not for the Archive
         # distribution, because they will never be published. And abandoned
         # copies like these keep triggering the PPA publication spending
@@ -710,7 +733,6 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
             purpose=ArchivePurpose.PPA)
-        series = source.distroseries
         pocket = source.pocket
 
         # Copy of sources to series in another distribution, cannot be
@@ -718,8 +740,8 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertRaisesWithContent(
             CannotCopy,
-            'Cannot copy to an unsupported distribution: ubuntu.',
-            copy_checker.checkCopy, source, series, pocket)
+            'No such distro series hoary in distribution ubuntu.',
+            copy_checker.checkCopy, source, hoary, pocket)
 
     def test_checkCopy_identifies_conflicting_copy_candidates(self):
         # checkCopy() is able to identify conflicting candidates within

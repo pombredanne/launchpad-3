@@ -351,10 +351,10 @@ class CopyChecker:
         :raise CannotCopy when a copy is not allowed to be performed
             containing the reason of the error.
         """
-        if source.distroseries.distribution != self.archive.distribution:
+        if series not in self.archive.distribution.series:
             raise CannotCopy(
-                "Cannot copy to an unsupported distribution: %s." %
-                source.distroseries.distribution.name)
+                "No such distro series %s in distribution %s." %
+                (series.name, source.distroseries.distribution.name))
 
         if self.include_binaries:
             built_binaries = source.getBuiltBinaries()
