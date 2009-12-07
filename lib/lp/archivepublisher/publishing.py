@@ -494,7 +494,7 @@ class Publisher(object):
 
         stanza = DISTRORELEASE_STANZA % (
                     self._getOrigin(),
-                    self.distro.displayname,
+                    self.archive.displayname,
                     full_name,
                     distroseries.version,
                     distroseries.name,
@@ -571,7 +571,7 @@ class Publisher(object):
                 distroseries.version,
                 component,
                 self._getOrigin(),
-                self.distro.displayname,
+                self.archive.displayname,
                 clean_architecture)
         f.write(stanza)
         f.close()

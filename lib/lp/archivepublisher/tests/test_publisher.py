@@ -855,8 +855,8 @@ class TestPublisher(TestPublisherBase):
         first_md5_line = release_contents[md5_header_index + 17]
         self.assertEqual(
             first_md5_line,
-            (' a5e5742a193740f17705c998206e18b6              '
-             '114 main/source/Release'))
+            (' 0c62b1baaf49dd4540bacea455bdb757              '
+             '135 main/source/Release'))
 
         sha1_header = 'SHA1:'
         self.assertTrue(sha1_header in release_contents)
@@ -864,8 +864,8 @@ class TestPublisher(TestPublisherBase):
         first_sha1_line = release_contents[sha1_header_index + 17]
         self.assertEqual(
             first_sha1_line,
-            (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
-             '114 main/source/Release'))
+            (' 9df1c50f859196a9ac71c1565448465681ceff78              '
+             '135 main/source/Release'))
 
         sha256_header = 'SHA256:'
         self.assertTrue(sha256_header in release_contents)
@@ -873,8 +873,8 @@ class TestPublisher(TestPublisherBase):
         first_sha256_line = release_contents[sha256_header_index + 17]
         self.assertEqual(
             first_sha256_line,
-            (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
-             '8d106a6338              114 main/source/Release'))
+            (' bc1ffed4dc1cf676e6e2f50e96b97f755c24b40e0272fd0517d915'
+             '37c4ba30b2              135 main/source/Release'))
 
         # Primary archive architecture Release files 'Origin' contain
         # the distribution displayname.
@@ -937,8 +937,8 @@ class TestPublisher(TestPublisherBase):
         release_md5_line = release_contents[md5_header_index + 17]
         self.assertEqual(
             release_md5_line,
-            (' f8351af2392a90cb0b62f0feba49fa42              '
-             '116 main/source/Release'))
+            (' 7214f0271efc59dd335c17e1d720c9e7              '
+             '129 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
         bz2_sources_md5_line = release_contents[md5_header_index + 16]
@@ -958,8 +958,8 @@ class TestPublisher(TestPublisherBase):
         release_sha1_line = release_contents[sha1_header_index + 17]
         self.assertEqual(
             release_sha1_line,
-            (' b080b75dcfc245825d5872bb644afe00f2661fa3              '
-             '116 main/source/Release'))
+            (' 22ac13fb5e2bc0589d76182c5a747bad08a5d291              '
+             '129 main/source/Release'))
         # See above.
         bz2_sources_sha1_line = release_contents[sha1_header_index + 16]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
@@ -978,8 +978,8 @@ class TestPublisher(TestPublisherBase):
         release_sha256_line = release_contents[sha256_header_index + 17]
         self.assertEqual(
             release_sha256_line,
-            (' 8186d7a342c728179da7ce5d045e0a009c4c04cf3f146036d614d29'
-             '6fa8c4359              116 main/source/Release'))
+            (' c0e66e8b219c495b28d53ba207eb7175da5b5af90055544f597ee17'
+             'ad2177abf              129 main/source/Release'))
         # See above.
         bz2_sources_sha256_line = release_contents[sha256_header_index + 16]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
