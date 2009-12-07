@@ -876,6 +876,10 @@ class TestPublisher(TestPublisherBase):
             (' bc1ffed4dc1cf676e6e2f50e96b97f755c24b40e0272fd0517d915'
              '37c4ba30b2              135 main/source/Release'))
 
+        # The Label: field should be set to the archive displayname
+        self.assertEqual(release_contents[1],
+            'Label: Primary Archive for Ubuntu Test')
+
         # Primary archive architecture Release files 'Origin' contain
         # the distribution displayname.
         arch_release_file = os.path.join(
