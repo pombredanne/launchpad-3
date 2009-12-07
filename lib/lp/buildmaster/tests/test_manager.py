@@ -24,7 +24,7 @@ from lp.buildmaster.manager import (
 from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -499,8 +499,9 @@ class TestBuilddManagerScan(TrialTestCase):
 
         self.assertTrue(job is not None)
         self.assertEqual(job.builder, builder)
-        self.assertTrue(job.buildstart is not None)
-        self.assertEqual(job.build.buildstate, BuildStatus.BUILDING)
+        self.assertTrue(job.date_started is not None)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual(build.buildstate, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
 
     def _getManager(self):
@@ -622,8 +623,9 @@ class TestBuilddManagerScan(TrialTestCase):
 
         job = getUtility(IBuildQueueSet).get(job.id)
         self.assertTrue(job.builder is None)
-        self.assertTrue(job.buildstart is None)
-        self.assertEqual(job.build.buildstate, BuildStatus.NEEDSBUILD)
+        self.assertTrue(job.date_started is None)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual(build.buildstate, BuildStatus.NEEDSBUILD)
 
     def testScanRescuesJobFromBrokenBuilder(self):
         # The job assigned to a broken builder is rescued.
@@ -706,13 +708,14 @@ class TestDispatchResult(unittest.TestCase):
         builder.builderok = True
 
         job = builder.currentjob
+        build = getUtility(IBuildSet).getByQueueEntry(job)
         self.assertEqual(
             'i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE',
-            job.build.title)
+            build.title)
 
-        self.assertEqual('BUILDING', job.build.buildstate.name)
+        self.assertEqual('BUILDING', build.buildstate.name)
         self.assertNotEqual(None, job.builder)
-        self.assertNotEqual(None, job.buildstart)
+        self.assertNotEqual(None, job.date_started)
         self.assertNotEqual(None, job.logtail)
 
         transaction.commit()
@@ -722,9 +725,10 @@ class TestDispatchResult(unittest.TestCase):
     def assertJobIsClean(self, job_id):
         """Re-fetch the `IBuildQueue` record and check if it's clean."""
         job = getUtility(IBuildQueueSet).get(job_id)
-        self.assertEqual('NEEDSBUILD', job.build.buildstate.name)
+        build = getUtility(IBuildSet).getByQueueEntry(job)
+        self.assertEqual('NEEDSBUILD', build.buildstate.name)
         self.assertEqual(None, job.builder)
-        self.assertEqual(None, job.buildstart)
+        self.assertEqual(None, job.date_started)
         self.assertEqual(None, job.logtail)
 
     def testResetDispatchResult(self):
