@@ -809,7 +809,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""
 
-    def revisions_since(timestamp):
+    def getRevisionsSince(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
     code_is_browseable = Attribute(

@@ -518,7 +518,7 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return self.revision_history.limit(quantity)
 
-    def revisions_since(self, timestamp):
+    def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
         return BranchRevision.select(
             'Revision.id=BranchRevision.revision AND '
