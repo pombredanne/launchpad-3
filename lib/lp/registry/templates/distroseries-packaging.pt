@@ -7,35 +7,42 @@
   i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main"
-         tal:define="packagings view/cached_packagings;
-                     unlinked_translatables view/unlinked_translatables">
-      <p>Links from distribution packages to upstream project series let
-        distribution and upstream maintainers share bugs, patches, and translations
-        efficiently.</p>
+      tal:define="packagings view/cached_packagings;">
+      <div class="top-portlet">
+        <p>
+          Links from distribution packages to upstream project series let
+          distribution and upstream maintainers share bugs, patches, and
+          translations efficiently.
+        </p>
 
-      <p tal:condition="not: packagings" class="informational message">
-        There are no links between packages in <span
-        tal:replace="context/displayname">Hoary</span> and upstream. By adding
-        information for specific packages, you can help the distribution developers
-        collaborate with upstream.
-      </p>
+        <p class="informational message"
+          tal:condition="not: packagings">
+          There are no links between packages in <span
+          tal:replace="context/displayname">Hoary</span> and upstream. By
+          adding information for specific packages, you can help the
+          distribution developers collaborate with upstream.
+        </p>
 
-      <tal:unlinked_translatables condition="unlinked_translatables">
-        <h2>Unlinked translatable packages</h2>
+        <tal:unlinked_translatables
+          condition="view/unlinked_translatables">
+          <div id="unlinked-translatables">
+            <h2>Unlinked translatable packages</h2>
 
-          <a tal:repeat="sp unlinked_translatables"
-                tal:content="sp/sourcepackagename/name"
-                tal:attributes="href string:${sp/fmt:url}/+packaging">evolution</a>
-
-      </tal:unlinked_translatables>
+            <ul class="horizontal">
+              <li tal:repeat="sp view/unlinked_translatables">
+                <a class="sprite package-source"
+                  tal:attributes="href sp/fmt:url"
+                  tal:content="sp/sourcepackagename/name">evolution</a>
+              </li>
+            </ul>
+          </div>
+        </tal:unlinked_translatables>
+      </div>
 
       <tal:known_links condition="packagings">
         <h2>Upstream links</h2>
+
         <table class="listing">
-          <caption>
-            Upstream links for all source packages in
-            <span tal:replace="context/title">Ubuntu Hoary</span>
-          </caption>
           <thead>
             <tr>
               <th>Source Package</th>
@@ -45,20 +52,18 @@
 
           <tbody>
             <tr tal:repeat="packaging packagings">
-              <td><a tal:attributes="href
-                         string:${packaging/sourcepackage/fmt:url}/+packaging"
-                     tal:content="packaging/sourcepackagename/name">
-                evolution</a>
+              <td>
+                <a class="sprite package-source"
+                  tal:attributes="href packaging/sourcepackage/fmt:url"
+                  tal:content="packaging/sourcepackagename/name">evolution</a>
               </td>
               <td>
                 <a tal:replace="structure packaging/productseries/fmt:link" />
               </td>
             </tr>
           </tbody>
-
         </table>
       </tal:known_links>
-
     </div>
   </body>
 </html>

@@ -473,6 +473,7 @@ class ValidPersonOrTeamVocabulary(
                     Or(Person.visibility == PersonVisibility.PUBLIC,
                        private_query,
                        ),
+                    Person.merged == None,
                     self.extra_clause
                     )
                 )
@@ -630,10 +631,6 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
 
     displayname = 'Select a Team'
 
-    # XXX: BradCrittenden 2008-08-11 bug=255798: This method does not return
-    # only the valid teams as the name implies because it does not account for
-    # merged teams.
-
     # Because the base class does almost everything we need, we just need to
     # restrict the search results to those Persons who have a non-NULL
     # teamowner, i.e. a valid team.
@@ -645,15 +642,19 @@ class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
         """Return the teams whose fti, IRC, or email address match :text:"""
 
         private_query, private_tables = self._privateTeamQueryAndTables()
-        base_query = Or(
-            Person.visibility == PersonVisibility.PUBLIC,
-            private_query,
+        base_query = And(
+            Or(
+                Person.visibility == PersonVisibility.PUBLIC,
+                private_query,
+                ),
+            Person.merged == None
             )
 
         tables = [Person] + private_tables
 
         if not text:
             query = And(base_query,
+                        Person.merged == None,
                         self.extra_clause)
             result = self.store.using(*tables).find(Person, query)
         else:

@@ -546,8 +546,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags_open_count(BugTask.product == self, user)
 
-    branches = SQLMultipleJoin('Branch', joinColumn='product',
-        orderBy='id')
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
