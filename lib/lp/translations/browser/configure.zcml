@@ -160,9 +160,8 @@
         attribute_to_parent="distroseries"
         rootsite="translations"/>
     <browser:navigation
-        module="lp.translations.browser.distroserieslanguage"
-        classes="
-            DistroSeriesLanguageNavigation"/>
+        module="lp.translations.browser.serieslanguage"
+        classes="DistroSeriesLanguageNavigation"/>
     <browser:defaultView
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         name="+index"
@@ -181,7 +180,7 @@
         permission="zope.Public"
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         template="../templates/serieslanguage-index.pt"
-        class="lp.translations.browser.distroserieslanguage.DistroSeriesLanguageView"
+        class="lp.translations.browser.serieslanguage.DistroSeriesLanguageView"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <facet
@@ -271,7 +270,7 @@
         attribute_to_parent="productseries"
         rootsite="translations"/>
     <browser:navigation
-        module="lp.translations.browser.productserieslanguage"
+        module="lp.translations.browser.serieslanguage"
         classes="
             ProductSeriesLanguageNavigation"/>
     <browser:defaultView
@@ -291,7 +290,7 @@
         permission="zope.Public"
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         template="../templates/serieslanguage-index.pt"
-        class="lp.translations.browser.productserieslanguage.ProductSeriesLanguageView"
+        class="lp.translations.browser.serieslanguage.ProductSeriesLanguageView"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <facet
