@@ -18,8 +18,10 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> brazil = getUtility(ICountrySet)['BR']
     >>> content = MirrorContent.ARCHIVE
     >>> http_base_url = 'http://foo.bar.com/pub'
+    >>> whiteboard = "This mirror is based deep in the Amazon rainforest."
     >>> new_mirror = ubuntu.newMirror(
-    ...     owner, speed, brazil, content, http_base_url=http_base_url)
+    ...     owner, speed, brazil, content, http_base_url=http_base_url,
+            whiteboard=whiteboard)
 
 When a new mirror is created we'll generate a unique name for it, based
 on its host name and content.
