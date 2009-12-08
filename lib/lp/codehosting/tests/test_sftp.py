@@ -3,6 +3,8 @@
 
 """Tests for the transport-backed SFTP server implementation."""
 
+from __future__ import with_statement
+from contextlib import closing
 import os
 import unittest
 
@@ -579,6 +581,18 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         nonexistent = self.getPathSegment()
         deferred = self.sftp_server.openDirectory(nonexistent)
         return self.assertFailure(deferred, filetransfer.SFTPError)
+
+    def test_openDirectoryMemory(self):
+        """openDirectory works on MemoryTransport."""
+        transport = MemoryTransport()
+        transport.put_bytes('hello', 'hello')
+        sftp_server = TransportSFTPServer(AsyncTransport(transport))
+        deferred = sftp_server.openDirectory('.')
+        def check_directory(directory):
+            with closing(directory):
+                names = [entry[0] for entry in directory]
+            self.assertEqual(['hello'], names)
+        return deferred.addCallback(check_directory)
 
     def test__format_directory_entries_with_MemoryStat(self):
         """format_directory_entries works with MemoryStat.
