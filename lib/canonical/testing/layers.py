@@ -1564,6 +1564,9 @@ class LayerProcessController:
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         # The database must be available for the app server to start.
         LaunchpadTestSetup().setUp()
+        # The app server will not start at all if the database hasn't been
+        # correctly patched.
+        confirm_dbrevision(cursor())
         _config = cls.appserver_config
         cmd = [
             os.path.join(_config.root, 'bin', 'run'),
