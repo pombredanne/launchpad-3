@@ -38,34 +38,46 @@ Several views are used to handle the various operations on a question.
 This view is used to subscribe and unsubscribe from a question.
 Subscription is done when the user click on the 'Subscribe' button.
 
-    >>> request = LaunchpadTestRequest(form={'subscribe': 'Subscribe'})
-    >>> request.method = 'POST'
-    >>> view = getMultiAdapter((question_three, request), name='+subscribe')
-    >>> view.initialize()
+    >>> view = create_initialized_view(question_three, name='+subscribe')
+    >>> print view.label
+    Subscribe to question
+
+    >>> print view.page_title
+    Subscription
+
+    >>> form = {'subscribe': 'Subscribe'}
+    >>> view = create_initialized_view(
+    ...     question_three, name='+subscribe', form=form)
     >>> question_three.isSubscribed(getUtility(ILaunchBag).user)
     True
 
 A notification message is displayed and the view redirect to the question
 view page.
 
-    >>> for notice in request.notifications:
+    >>> for notice in view.request.notifications:
     ...     print notice.message
     You have subscribed to this question.
-    >>> request.response.getHeader('Location')
+
+    >>> view.request.response.getHeader('Location')
     '.../+question/3'
 
 Unsubscription works in a similar manner.
 
-    >>> request = LaunchpadTestRequest(form={'subscribe': 'Unsubscribe'})
-    >>> request.method = 'POST'
-    >>> view = getMultiAdapter((question_three, request), name='+subscribe')
-    >>> view.initialize()
+    >>> view = create_initialized_view(question_three, name='+subscribe')
+    >>> print view.label
+    Unsubscribe from question
+
+    >>> form = {'subscribe': 'Unsubscribe'}
+    >>> view = create_initialized_view(
+    ...     question_three, name='+subscribe', form=form)
     >>> question_three.isSubscribed(getUtility(ILaunchBag).user)
     False
-    >>> for notice in request.notifications:
+
+    >>> for notice in view.request.notifications:
     ...     print notice.message
     You have unsubscribed from this question.
-    >>> request.response.getHeader('Location')
+
+    >>> view.request.response.getHeader('Location')
     '.../+question/3'
 
 These two actions didn't generate any notification mails:
@@ -502,6 +514,13 @@ fields will be updated:
     Foo Bar
     >>> print question_three.whiteboard
     Some note
+
+The question language can be set to any language registered with
+Launchpad--it is not restricted to the user's preferred languages.
+
+    >>> view = create_initialized_view(question_three, name='+edit')
+    >>> view.widgets['language'].vocabulary
+    <canonical.launchpad.vocabularies.dbobjects.LanguageVocabulary ...>
 
 In a similar manner, the sourcepackagename field can only be updated on
 a distribution question:

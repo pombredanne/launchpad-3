@@ -19,6 +19,8 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachment, IBugAttachmentSet)
+
+
 class BugAttachment(SQLBase):
     """A bug attachment."""
 
@@ -43,6 +45,15 @@ class BugAttachment(SQLBase):
         """See IBugAttachment."""
         notify(ObjectDeletedEvent(self, user))
         self.destroySelf()
+
+    def destroySelf(self):
+        """See IBugAttachment."""
+        # Delete the reference to the LibraryFileContent record right now,
+        # in order to avoid problems with not deleted files as described
+        # in bug 387188.
+        self.libraryfile.content = None
+        super(BugAttachment, self).destroySelf()
+
 
 class BugAttachmentSet:
     """A set for bug attachments."""

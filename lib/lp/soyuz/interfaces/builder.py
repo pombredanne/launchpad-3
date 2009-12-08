@@ -339,7 +339,7 @@ class IBuilderSet(Interface):
             'virtualized' means PPA.
 
         :return: a tuple containing the size of the queue, as an integer,
-            and the sum of the jobs 'estimated_build_duration' in queue,
+            and the sum of the jobs 'estimated_duration' in queue,
             as a timedelta or None for empty queues.
         """
 

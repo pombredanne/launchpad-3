@@ -548,7 +548,10 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
     @action(_("Renew"), name="renew")
     def renew_action(self, action, data):
         member = self.context.person
-        member.renewTeamMembership(self.context.team)
+        # This if-statement prevents an exception if the user
+        # double clicks on the submit button.
+        if self.context.canBeRenewedByMember():
+            member.renewTeamMembership(self.context.team)
         self.request.response.addInfoNotification(
             _("Membership renewed until ${date}.", mapping=dict(
                     date=self.context.dateexpires.strftime('%Y-%m-%d'))))
@@ -4114,9 +4117,13 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         for team in self.user.getAdministratedTeams():
             if team == self.context:
                 continue
+            elif team.visibility != PersonVisibility.PUBLIC:
+                continue
             elif team in self.context.activemembers:
+                # The team is already a member of the context object.
                 continue
             elif self.context.hasParticipationEntryFor(team):
+                # The context object is a member/submember of the team.
                 continue
             candidates.append(team)
         return candidates

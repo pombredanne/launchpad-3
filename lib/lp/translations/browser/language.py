@@ -17,6 +17,9 @@ __all__ = [
 from zope.lifecycleevent import ObjectCreatedEvent
 from zope.component import getUtility
 from zope.event import notify
+from zope.app.form.browser import TextWidget
+from zope.interface import Interface
+from zope.schema import TextLine
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -29,6 +32,7 @@ from canonical.launchpad.webapp import (
     enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, NavigationMenu)
 from lp.translations.utilities.pluralforms import make_friendly_plural_forms
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
@@ -79,16 +83,32 @@ class LanguageNavigationMenu(NavigationMenu):
         return Link('+admin', text, icon='edit')
 
 
-class LanguageSetView:
+class ILanguageSetSearch(Interface):
+    """The collection of languages."""
+
+    search_lang = TextLine(
+        title=u'Name of the language to search for.',
+        required=True)
+
+class LanguageSetView(LaunchpadFormView):
     """View class to render main ILanguageSet page."""
     label = "Languages in Launchpad"
     page_title = "Languages"
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        form = self.request.form
-        self.language_search = form.get('find')
+    schema = ILanguageSetSearch
+
+    custom_widget('search_lang', TextWidget, displayWidth=30)
+
+    def initialize(self):
+        """See `LaunchpadFormView`."""
+        LaunchpadFormView.initialize(self)
+
+        self.language_search = None
+
+        search_lang_widget = self.widgets.get('search_lang')
+        if (search_lang_widget is not None and
+            search_lang_widget.hasValidInput()):
+            self.language_search = search_lang_widget.getInputValue()
         self.search_requested = self.language_search is not None
 
     @cachedproperty
@@ -202,6 +222,13 @@ class LanguageView(TranslationsMixin, LaunchpadView):
 
         return pluralforms_list
 
+    @property
+    def add_question_url(self):
+        rosetta = getUtility(ILaunchpadCelebrities).lp_translations
+        return canonical_url(
+            rosetta,
+            view_name='+addquestion',
+            rootsite='answers')
 
 class LanguageAdminView(LaunchpadEditFormView):
     """Handle an admin form submission."""

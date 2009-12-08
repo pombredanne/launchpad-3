@@ -911,6 +911,7 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('eo'))
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('de'))
 
+
 class TestTranslationCredits(TestCaseWithFactory):
     """Test generation of translation credits."""
 

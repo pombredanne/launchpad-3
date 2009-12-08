@@ -475,7 +475,7 @@ class LibrarianLayer(BaseLayer):
                     "Librarian has been killed or has hung."
                     "Tests should use LibrarianLayer.hide() and "
                     "LibrarianLayer.reveal() where possible, and ensure "
-                    "the Librarian is restarted if it absolutetly must be "
+                    "the Librarian is restarted if it absolutely must be "
                     "shutdown: " + str(e)
                     )
         if LibrarianLayer._reset_between_tests:

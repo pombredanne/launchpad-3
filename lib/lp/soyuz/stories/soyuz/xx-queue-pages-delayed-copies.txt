@@ -48,8 +48,8 @@ It's is listed as a normal upload, however there is no link to the
 
     >>> for row in find_tags_by_class(anon_browser.contents, "queue-row"):
     ...     print extract_text(row)
-    Package                 Version  Component Section Priority Pocket  When
-    foo, foo (source, i386) 666      main      base    low      Release ...
+    Package                           Version  Component Section Priority Pocket When
+    foo, foo (delayed) (source, i386) 666      main      base    low      ...
 
     >>> anon_browser.getLink('foo, foo')
     Traceback (most recent call last):
@@ -84,8 +84,8 @@ archive, nothing else.
 
     >>> for row in find_tags_by_class(cprov_browser.contents, "queue-row"):
     ...     print extract_text(row)
-    Package                 Version  Component Section Priority Pocket  When
-    foo, foo (source, i386) 666      main      base    low      Release ...
+    Package                           Version  Component Section Priority Pocket When
+    foo, foo (delayed) (source, i386) 666      main      base    low      ...
 
     >>> anon_browser.getLink('foo, foo')
     Traceback (most recent call last):
