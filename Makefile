@@ -17,6 +17,7 @@ HERE:=$(shell pwd)
 
 LPCONFIG=development
 
+JSFLAGS=
 LP_BUILT_JS_ROOT=lib/canonical/launchpad/icing/build
 LAZR_BUILT_JS_ROOT=lazr-js/build
 
@@ -52,12 +53,6 @@ $(API_INDEX): $(WADL_FILE)
 
 apidoc: compile $(API_INDEX)
 
-check_loggerhead_on_merge:
-	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
-	# depends on it (yet).
-	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
-
 check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
@@ -65,13 +60,6 @@ check_merge: $(PY)
 
 check_db_merge: $(PY)
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
-
-# This can be removed once we move to zc.buildout and we have versioned
-# dependencies, but for now we run both Launchpad and all other
-# dependencies tests for any merge to sourcecode.
-check_sourcecode_merge: check
-	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
@@ -124,12 +112,17 @@ inplace: build
 build: $(BZR_VERSION_INFO) compile apidoc jsbuild
 
 jsbuild_lazr:
-	${SHHH} bin/jsbuild -b lazr-js/build
+	# We absolutely do not want to include the lazr.testing module and its
+	# jsTestDriver test harness modifications in the lazr.js and launchpad.js
+	# roll-up files.  They fiddle with built-in functions!  See Bug 482340.
+	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/
 
 jsbuild: jsbuild_lazr
 	${SHHH} bin/jsbuild \
-		-n launchpad -s lib/canonical/launchpad/javascript \
-		-b lib/canonical/launchpad/icing/build \
+		$(JSFLAGS) \
+		-n launchpad \
+		-s lib/canonical/launchpad/javascript \
+		-b $(LP_BUILT_JS_ROOT) \
 		lib/canonical/launchpad/icing/MochiKit.js \
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
@@ -369,7 +362,7 @@ ID: compile
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
+	check check_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
 	jsbuild clean_js

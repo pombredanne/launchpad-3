@@ -45,8 +45,10 @@ archive owner as well as the copy archive name.
 
     >>> from lp.soyuz.interfaces.archive import ArchivePurpose
     >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> build = getUtility(IBuildSet).getByQueueEntry(builder.currentjob)
     >>> builder_archive = removeSecurityProxy(
-    ...     builder.currentjob.build.archive)
+    ...     build.archive)
     >>> saved_purpose = builder_archive.purpose
     >>> builder_archive.purpose = ArchivePurpose.COPY
 
