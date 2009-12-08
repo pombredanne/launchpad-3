@@ -35,7 +35,7 @@ corresponding 'Build' page.
     http://launchpad.dev/ubuntu/+source/mozilla-firefox/0.9/+build/8
 
 The build status portlets contain the number of builds waiting
-in queue and the sum of their 'estimated_build_duration' for each
+in queue and the sum of their 'estimated_duration' for each
 supported processor on each separated build domain, 'official'
 (PRIMARY and PARTNER) and 'ppa'.
 
@@ -56,7 +56,7 @@ When there are pending builds in the PPA domain, they are listed in
 the corresponding portlet with their estimated duration as well.
 
     # Retry a failed build in the PPA domain and set its
-    # 'estimated_build_duration' to a known value.
+    # 'estimated_duration' to a known value.
     >>> import datetime
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
@@ -67,9 +67,9 @@ the corresponding portlet with their estimated duration as well.
     >>> failed_build = cprov.archive.getBuildRecords(
     ...     build_state=BuildStatus.FAILEDTOBUILD)[0]
     >>> one_minute = datetime.timedelta(seconds=60)
-    >>> removeSecurityProxy(
-    ...     failed_build).estimated_build_duration = one_minute
-    >>> unused = failed_build.retry()
+    >>> failed_build.retry()
+    >>> bq = failed_build.buildqueue_record
+    >>> removeSecurityProxy(bq).estimated_duration = one_minute
     >>> logout()
 
     >>> anon_browser.reload()

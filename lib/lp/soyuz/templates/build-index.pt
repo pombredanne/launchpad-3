@@ -161,8 +161,8 @@
       <tal:building condition="context/buildstate/enumvalue:BUILDING">
         <li>
           Started
-          <span tal:attributes="title view/buildqueue/buildstart/fmt:datetime"
-                tal:content="view/buildqueue/buildstart/fmt:approximatedate"
+          <span tal:attributes="title view/buildqueue/job/date_started/fmt:datetime"
+                tal:content="view/buildqueue/job/date_started/fmt:approximatedate"
             >5 minutes ago</span>
         </li>
       </tal:building>
