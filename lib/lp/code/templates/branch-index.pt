@@ -47,7 +47,7 @@
   </tal:devmode>
   <script type="text/javascript"
           tal:content="string:
-    YUI().use('node', 'event', 'widget', 'plugin', 'overlay',
+    LPS.use('node', 'event', 'widget', 'plugin', 'overlay',
               'lazr.choiceedit', 'code.branchstatus',
               'code.branchmergeproposal.popupdiff',
               function(Y) {
