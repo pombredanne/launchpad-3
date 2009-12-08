@@ -31,6 +31,7 @@ __all__ = [
     'latest_proposals_for_each_branch',
     ]
 
+from collections import defaultdict
 import operator
 
 import simplejson
@@ -78,7 +79,8 @@ from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.comments.interfaces.conversation import IConversation
+from lp.services.comments.interfaces.conversation import (
+    IComment, IConversation)
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
@@ -503,6 +505,22 @@ class DiffRenderingMixin:
         return diff_text.count('\n') >= config.diff.max_format_lines
 
 
+class CodeReviewNewRevisions:
+    """Represents a logical grouping of revisions.
+
+    Each object instance represents a number of revisions scanned at a
+    particular time.
+    """
+    implements(IComment)
+
+    def __init__(self, revisions, date):
+        self.revisions = revisions
+        self.has_body = False
+        self.has_footer = True
+        # The date attribute is used to sort the comments in the conversation.
+        self.date = date
+
+
 class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin,
                               BranchMergeProposalStatusMixin,
@@ -528,6 +546,22 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def comment_location(self):
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
+
+    def _getRevisionsSinceReviewStart(self):
+        """Get the grouped revisions since the review started."""
+        # Work out the start of the review.
+        cutoff_date = self.context.date_review_requested
+        if cutoff_date is None:
+            cutoff_date = self.context.date_created
+        source = self.context.source_branch
+        source_revisions = source.getRevisionsSince(cutoff_date)
+        # Now group by date created.
+        groups = defaultdict(list)
+        for revision in source_revisions:
+            groups[revision.date_created].append(revision)
+        return [
+            CodeReviewNewRevisions(revisions, date)
+            for date, revisions in groups.iteritems()]
 
     @cachedproperty
     def conversation(self):

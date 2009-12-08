@@ -555,6 +555,45 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual([], view.linked_bugs)
 
+    def test_getRevisionsSinceReviewStart_no_revisions(self):
+        # If there have been no revisions pushed since the start of the
+        # review, the method returns an empty list.
+        view = create_initialized_view(self.bmp, '+index')
+        self.assertEqual([], view._getRevisionsSinceReviewStart())
+
+    def _addRevisionsToSource(self, date):
+        # Add two revisions before, and two revisions after the date.
+        for date in (date-2, date-1, date+1, date+2):
+            x
+
+    def _addRevision(self, branch, revision_date, date_created=None):
+        if date_created is None:
+            date_created = revision_date
+        revision = self.factory.makeRevision(
+            revision_date=revision_date, date_created=date_created)
+        sequence = branch.revision_count + 1
+        branch.createBranchRevision(sequence, revision)
+        branch.updateScannedDetails(revision, sequence)
+        return revision
+
+    def test_getRevisionsSinceReviewStart_skips_early(self):
+        # Revisions that were committed before the review are skipped.
+        review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=review_date,
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        revision_date = review_date - timedelta(days=3)
+        revisions = []
+        for date in range(4):
+            revisions.append(
+                self._addRevision(bmp.source_branch, revision_date))
+            revision_date += timedelta(days=2)
+        view = create_initialized_view(bmp, '+index')
+        groups = view._getRevisionsSinceReviewStart()
+        # The last two revisions are after the review date.
+        view_revisions = [obj.revisions for obj in groups]
+        self.assertEqual([[revisions[2]], [revisions[3]]], view_revisions)
+
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
     """Test the status vocabulary generated for then +edit-status view."""
