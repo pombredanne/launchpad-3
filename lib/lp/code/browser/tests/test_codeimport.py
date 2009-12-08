@@ -20,25 +20,28 @@ class TestImportDetails(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    def assertSvnDetailsDisplayed(self, svn_details, rcs_type, url):
-        """Assert the `svn_details` tag described a Subversion import."""
+    def assertSvnDetailsDisplayed(self, svn_details, rcs_type):
+        """Assert the `svn_details` tag describes a Subversion import.
+
+        :param svn_details: The BeautifulSoup object for the
+            'svn-import-details' area.
+        :param rcs_type: SVN or BZR_SVN from RevisionControlSystems.
+        """
         self.assertEquals(rcs_type.title, svn_details.span['title'])
         text = re.sub('\s+', ' ', extract_text(svn_details))
         self.assertTrue(
             text.startswith(
                 'This branch is an import of the Subversion branch'))
-        self.assertEquals(url, svn_details.a['href'])
 
     def test_bzr_svn_import(self):
-        # The branch page for a bzr-svn-imported branch contains a summary of
-        # the import details.
+        # The branch page for a bzr-svn-imported branch contains
+        # a summary of the import details.
         bzr_svn_import = self.factory.makeCodeImport(
             rcs_type=RevisionControlSystems.BZR_SVN)
         browser = self.getUserBrowser(canonical_url(bzr_svn_import.branch))
         svn_details = find_tag_by_id(browser.contents, 'svn-import-details')
         self.assertSvnDetailsDisplayed(
-            svn_details, RevisionControlSystems.BZR_SVN,
-            bzr_svn_import.svn_branch_url)
+            svn_details, RevisionControlSystems.BZR_SVN)
 
     def test_cscvs_svn_import(self):
         # The branch page for a cscvs-imported svn branch contains a summary
@@ -48,8 +51,7 @@ class TestImportDetails(TestCaseWithFactory):
         browser = self.getUserBrowser(canonical_url(bzr_svn_import.branch))
         svn_details = find_tag_by_id(browser.contents, 'svn-import-details')
         self.assertSvnDetailsDisplayed(
-            svn_details, RevisionControlSystems.SVN,
-            bzr_svn_import.svn_branch_url)
+            svn_details, RevisionControlSystems.SVN)
 
 
 

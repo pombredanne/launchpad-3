@@ -6,8 +6,8 @@ imported branches.  If the logged in user is an import operator
 (member of VCS imports or Launchpad admin) then they can see a link
 to edit the details.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> from lp.code.enums import RevisionControlSystems
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> login('test@canonical.com')
 
     >>> svn_import = factory.makeCodeImport(
@@ -114,7 +114,6 @@ This is true for Subversion imports,
     The code import has been updated.
 
 bzr-svn imports,
-
 
     >>> import_browser.open(bzr_svn_import_location + '/+edit-import')
     >>> import_browser.getControl('Branch URL').value = \

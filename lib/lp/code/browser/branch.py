@@ -504,7 +504,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     @property
     def is_svn_import(self):
         """True if an imported branch is a SVN import."""
-        # You should only be calling this if it's an SVN code import
+        # You should only be calling this if it's a code import
         assert self.context.code_import
         return self.context.code_import.rcs_type in \
                (RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN)
