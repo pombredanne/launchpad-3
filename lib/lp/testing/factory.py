@@ -897,7 +897,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             CodeReviewNotificationLevel.NOEMAIL)
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
-                     rev_id=None, log_body=None):
+                     rev_id=None, log_body=None, date_created=None):
         """Create a single `Revision`."""
         if author is None:
             author = self.getUniqueString('author')
@@ -912,7 +912,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IRevisionSet).new(
             revision_id=rev_id, log_body=log_body,
             revision_date=revision_date, revision_author=author,
-            parent_ids=parent_ids, properties={})
+            parent_ids=parent_ids, properties={},
+            _date_created=date_created)
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
