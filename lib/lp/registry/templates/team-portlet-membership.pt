@@ -18,7 +18,9 @@
     <div id="membership-summary">
       <div>
         <img src="/@@/team" alt="team" />
-        <strong><tal:active content="context/all_member_count" /></strong>
+        <strong id="member-count">
+          <tal:active content="context/all_member_count" />
+        </strong>
         <a tal:attributes="href string:${context/fmt:url/+members}#active"
           >active members</a><tal:invited
             define="invited_member_count context/invited_member_count"
@@ -93,18 +95,27 @@
   <table style="margin: 0px 0px .5em 0px;"
     tal:condition="view/has_recent_approved_or_proposed_members">
     <tr>
+      <td style="padding: 0px 1em 1em 0px;"
+          tal:define="link context/menu:overview/add_member">
+        <span id="add-member-spinner" class="update-in-progress-message"
+              style="display: none">
+          Saving...
+        </span>
+        <tal:add-member replace="structure link/fmt:link-icon" />
+      </td>
       <td style="padding: 0px 0px 1em 0px;"
           tal:define="link context/menu:overview/mugshots">
         <tal:mugshots replace="structure link/fmt:link-icon" />
       </td>
     </tr>
     <tr>
-      <td style="padding: 3px 3em 0px 0px;" id="recently-approved"
+      <td colspan="2" style="padding: 3px 3em 0px 0px;" id="recently-approved"
         tal:condition="view/recently_approved_members">
         <h3 style="color:black; font-weight:bold; margin: 0px">
-          Recently approved
+          Latest members
         </h3>
-        <ul tal:condition="view/recently_approved_members">
+        <ul tal:condition="view/recently_approved_members"
+            id="recently-approved-ul">
           <li tal:repeat="person view/recently_approved_members"
               tal:content="structure person/fmt:link" />
         </ul>

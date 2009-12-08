@@ -226,6 +226,7 @@ member.
     >>> cprov = personset.getByName('cprov')
     >>> marilize = personset.getByName('marilize')
     >>> ubuntu_team.addMember(marilize, reviewer=cprov)
+    True
     >>> transaction.commit()
     >>> len(stub.test_emails)
     6
@@ -275,6 +276,7 @@ only be activated if they accept the invitation.
     >>> mirror_admins.getTeamAdminsEmailAddresses()
     ['mark@example.com']
     >>> ubuntu_team.addMember(mirror_admins, reviewer=cprov)
+    True
     >>> transaction.commit()
     >>> len(stub.test_emails)
     1
@@ -326,6 +328,7 @@ Similarly, a notification is sent if the invitation is declined.
 
     >>> landscape = personset.getByName('landscape-developers')
     >>> ubuntu_team.addMember(landscape, reviewer=cprov)
+    True
 
     # Reset stub.test_emails as we don't care about the notification triggered
     # by the addMember() call.
@@ -359,6 +362,7 @@ passing force_team_add=True to the addMember() method.
 
     >>> launchpad = personset.getByName('launchpad')
     >>> ubuntu_team.addMember(launchpad, reviewer=cprov, force_team_add=True)
+    True
     >>> flush_database_updates()
     >>> transaction.commit()
     >>> len(stub.test_emails)
@@ -812,6 +816,7 @@ email contain subscription information.
     >>> member = factory.makePerson(
     ...     name='team-member', email='team-member@example.com')
     >>> team_one.addMember(member, owner)
+    True
     >>> print_distinct_emails()
     From: Team One ...
     ----------------------------------------
@@ -838,6 +843,7 @@ emails contain subscription information.
     >>> team_two = factory.makeTeam(
     ...     name='team-two', email='team-two@example.com', owner=owner)
     >>> team_one.addMember(team_two, owner, force_team_add=True)
+    True
     >>> print_distinct_emails()
     From: Team One ...
     ----------------------------------------
