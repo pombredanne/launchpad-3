@@ -69,7 +69,7 @@ check_config: build
 check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	${PY} -t ./test_on_merge.py $(VERBOSITY)
+	xvfb-run '-s' '-screen 0 1024x768x24' '${PY}' '-t' './test_on_merge.py' '$(VERBOSITY)'
 
 jscheck: build
 	# Run all JavaScript integration tests.  The test runner takes care of
