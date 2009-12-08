@@ -62,6 +62,17 @@ __all__ = [
 classImplements(TimeoutError, IRequestExpired)
 
 
+class LaunchpadTimeoutError(TimeoutError):
+    """A variant o TimeoutError hat reports the original PostgreSQL error."""
+
+    def __init__(self, statement, params, original_error):
+        super(LaunchpadTimeoutError, self).__init__(statement, params)
+        self.original_error = original_error
+
+    def __str__(self):
+        return ('Statement: %r\nParameters:%r\nOriginal error: %r'
+                % (self.statement, self.params, self.original_error))
+
 def _get_dirty_commit_flags():
     """Return the current dirty commit status"""
     from canonical.ftests.pgsql import ConnectionWrapper
@@ -420,7 +431,7 @@ class LaunchpadTimeoutTracer(PostgresTimeoutTracer):
             return
         if isinstance(error, QueryCanceledError):
             OpStats.stats['timeouts'] += 1
-            raise TimeoutError(statement, params)
+            raise LaunchpadTimeoutError(statement, params, error)
 
     def get_remaining_time(self):
         """See `TimeoutTracer`"""
