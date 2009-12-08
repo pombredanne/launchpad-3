@@ -15,10 +15,15 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase
 
-from canonical.launchpad.interfaces import (
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.milestone import IMilestone
+from lp.registry.interfaces.product import IDistributionSourcePackage, IProduct
+from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject
+from lp.registry.interfaces.structuralsubscription import (
     BlueprintNotificationLevel, BugNotificationLevel, DeleteSubscriptionError,
-    IDistribution, IDistributionSourcePackage, IDistroSeries,
-    ILaunchpadCelebrities, IMilestone, IProduct, IProductSeries, IProject,
     IStructuralSubscription, IStructuralSubscriptionTarget,
     UserCannotSubscribePerson)
 from lp.registry.interfaces.person import (

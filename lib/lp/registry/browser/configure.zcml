@@ -2108,4 +2108,22 @@
         facet="overview"
         template="../templates/sourcepackage-edit-packaging.pt"
         />
+
+    <browser:page
+        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
+        name="+subscribe"
+        permission="launchpad.AnyPerson"
+        facet="bugs"
+        class="lp.registry.browser.structuralsubscription.StructuralSubscriptionView"
+        template="../templates/structural-subscriptions-manage.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
+        name="+portlet-structural-subscribers"
+        facet="bugs"
+        permission="zope.Public"
+        template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
+    <browser:url
+        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
+        path_expression="string:+subscription/${subscriber/name}"
+        attribute_to_parent="target"/>
 </configure>
