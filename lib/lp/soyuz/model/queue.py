@@ -443,13 +443,16 @@ class PackageUpload(SQLBase):
         names = []
         for queue_source in self.sources:
             names.append(queue_source.sourcepackagerelease.name)
-        for queue_build in  self.builds:
+        for queue_build in self.builds:
             names.append(queue_build.build.sourcepackagerelease.name)
         for queue_custom in self.customfiles:
             names.append(queue_custom.libraryfilealias.filename)
         # Make sure the list items have a whitespace separator so
         # that they can be wrapped in table cells in the UI.
-        return ", ".join(names)
+        ret = ", ".join(names)
+        if self.is_delayed_copy:
+            ret += " (delayed)"
+        return ret
 
     @cachedproperty
     def displayarchs(self):

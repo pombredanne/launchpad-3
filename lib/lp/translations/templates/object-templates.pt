@@ -26,12 +26,12 @@
       </style>
       <style tal:condition="view/is_distroseries" type="text/css">
         #templates_table {
-            width: 72em;
+            width: 79em;
         }
       </style>
       <style tal:condition="not:view/is_distroseries" type="text/css">
         #templates_table {
-            width: 50em;
+            width: 58em;
         }
       </style>
       <script language="JavaScript" type="text/javascript">
@@ -75,6 +75,7 @@
             <th tal:condition="view/is_distroseries"
                 class="sourcepackage_column">Source package</th>
             <th class="template_column">Template name</th>
+            <th class="lastupdate_column">Last update</th>
             <th class="actions_column"
                 tal:condition="context/required:launchpad.AnyPerson">
               Actions</th>
@@ -88,6 +89,22 @@
             </td>
             <td class="template_column"><a tal:attributes="href template/fmt:url"
                    tal:content="template/name">Template name</a></td>
+            <td class="lastupdate_column">
+              <span class="sortkey"
+                    tal:condition="template/date_last_updated"
+                    tal:content="template/date_last_updated/fmt:datetime">
+                    time sort key
+              </span>
+              <span class="lastupdate_column"
+                    tal:condition="template/date_last_updated"
+                    tal:attributes="
+                      title template/date_last_updated/fmt:datetime"
+                    tal:content="
+                      template/date_last_updated/fmt:approximatedate"
+              >
+                 2009-09-23
+              </span>
+            </td>
             <td class="actions_column"
                 tal:condition="context/required:launchpad.AnyPerson">
             <div class="template_links">
