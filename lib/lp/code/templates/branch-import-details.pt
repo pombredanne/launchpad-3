@@ -46,7 +46,7 @@
         </tal:git-import>
 
         <tal:svn-import condition="view/is_svn_import">
-          <p>
+          <p id="svn-import-details">
             This branch is an import of the
             <span tal:attributes="title code_import/rcs_type/title">Subversion</span>
             branch from
