@@ -1431,6 +1431,20 @@ class Bug(SQLBase):
 
         return not subscriptions_from_dupes.is_empty()
 
+    @property
+    def patches(self):
+        """See `IBug`."""
+        return [attachment
+                for attachment in self.attachments
+                if attachment.type == BugAttachmentType.PATCH]
+
+    @property
+    def regular_attachments(self):
+        """See `IBug`."""
+        return [attachment
+                for attachment in self.attachments
+                if attachment.type != BugAttachmentType.PATCH]
+
 
 class BugSet:
     """See BugSet."""

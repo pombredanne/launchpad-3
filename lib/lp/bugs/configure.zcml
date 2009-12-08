@@ -598,6 +598,8 @@
                     cve_links
                     duplicates
                     attachments
+                    regular_attachments
+                    patches
                     questions
                     specifications
                     followup_subject
