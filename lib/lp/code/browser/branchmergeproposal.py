@@ -71,8 +71,8 @@ from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
     CodeReviewVote)
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, WrongBranchMergeProposal)
+from lp.code.errors import WrongBranchMergeProposal
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)

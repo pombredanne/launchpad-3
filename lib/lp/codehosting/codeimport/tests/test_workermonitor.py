@@ -479,7 +479,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
 
     def makeBzrSvnCodeImport(self):
         """Make a `CodeImport` that points to a real Subversion repository."""
-        self.subversion_server = SubversionServer(self.repo_path)
+        self.subversion_server = SubversionServer(
+            self.repo_path, use_svn_serve=True)
         self.subversion_server.setUp()
         self.addCleanup(self.subversion_server.tearDown)
         svn_branch_url = self.subversion_server.makeBranch(
@@ -613,6 +614,7 @@ class DeferredOnExit(protocol.ProcessProtocol):
             self._deferred.callback(None)
         else:
             self._deferred.errback(reason)
+
 
 class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
     """Tests for CodeImportWorkerMonitor that execute a child process."""
