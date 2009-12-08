@@ -95,11 +95,11 @@ From the top languages page, anyone can find languages.
     >>> print browser.url
     http://translations.launchpad.dev/+languages
 
-    >>> text_search = browser.getControl(name='find')
+    >>> text_search = browser.getControl(name='field.search_lang')
     >>> text_search.value = 'Spanish'
     >>> browser.getControl('Find language', index=0).click()
     >>> print browser.url
-    http://translations.launchpad.dev/+languages/+index?find=Spanish
+    http://translations.launchpad.dev/+languages/+index?field.search_lang=Spanish
 
 
 Read language information
