@@ -55,7 +55,7 @@ class EnableActionLinksTest(TestCaseWithFactory):
         client.waits.forElement(id=u'templates_table', timeout=u'8000')
         # All links are inactive to start with.
         for row_num in range(self.MAX_ROW):
-            client.asserts.assertNode(
+            client.waits.forElement(
                 xpath=self._xpath_action_links(row_num, active=False))
 
         # Action links are activated when the mouse is over the row.
