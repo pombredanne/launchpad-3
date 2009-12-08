@@ -82,17 +82,27 @@ The page shows a table of all templates and links to their subpages.
 Logging in as an Ubuntu Translations Coordinator, you should be able to
 admin all templates, including those that are currently disabled
 
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IPersonSet)
+    >>> login('foo.bar@canonical.com')
     >>> utc_member = factory.makePerson(email='utc-member@example.com',
     ...     name='utc-member', password='test', displayname='Some Guy')
-    >>> utc_team = personset.getByName('rosetta-admins')
-    >>> utc_team.addMember(utc_member)
+    >>> utc_team = factory.makeTeam(utc_member)
+    >>> utg = factory.makeTranslationGroup(owner=utc_team,
+    ...                                 name="Ubuntu Translation Group")
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu.translationgroup = utg
+    >>> # Log out so we can go back to using test browsers.
+    >>> logout()
 
-    >>> browser = setupBrowser(auth='Basic utc-member@example.com:test')
-    >>> browser.open(
+    >>> utc_browser = setupBrowser(auth='Basic utc-member@example.com:test')
+    >>> utc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+templates')
-    >>> browser.getLink('Edit').click()
-    >>> print admin_browser.url
-    http://translations.../evolution/+pots/disabled-template/+edit
+    >>> utc_browser.getLink('Administer').click()
+    >>> print utc_browser.url
+    http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/disabled-template/+admin
 
 
 Links to the templates
