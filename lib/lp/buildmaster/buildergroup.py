@@ -171,8 +171,8 @@ class BuilderGroup:
         Perform the required actions for each state.
         """
         try:
-            (builder_status, build_id, build_status, logtail, filemap,
-             dependencies) = queueItem.builder.slaveStatus()
+            slave_status = queueItem.builder.slaveStatus()
+
         except (xmlrpclib.Fault, socket.error), info:
             # XXX cprov 2005-06-29:
             # Hmm, a problem with the xmlrpc interface,
@@ -192,6 +192,7 @@ class BuilderGroup:
             'BuilderStatus.WAITING': self.updateBuild_WAITING,
             }
 
+        builder_status = slave_status['builder_status']
         if builder_status not in builder_status_handlers:
             self.logger.critical(
                 "Builder on %s returned unknown status %s, failing it"
@@ -209,7 +210,11 @@ class BuilderGroup:
         # from the IBuilder content class, it arrives protected by a Zope
         # Security Proxy, which is not declared, thus empty. Before passing
         # it to the status handlers we will simply remove the proxy.
-        logtail = removeSecurityProxy(logtail)
+        logtail = removeSecurityProxy(slave_status.get('logtail'))
+        build_id = slave_status.get('build_id')
+        build_status = slave_status.get('build_status')
+        filemap = slave_status.get('filemap')
+        dependencies = slave_status.get('dependencies')
 
         method = builder_status_handlers[builder_status]
         try:

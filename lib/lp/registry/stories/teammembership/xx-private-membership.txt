@@ -234,7 +234,8 @@ no user can add that team as a member of a public team.
     >>> admin_browser.url
     'http://launchpad.dev/%7Esimple-team/+addmember'
     >>> get_feedback_messages(admin_browser.contents)
-    [...Constraint not satisfied...
+    [...There is 1 error...
+    ...A private team is not allowed.']
 
 Anonymous users cannot even know that the private membership team even
 exists.
@@ -305,7 +306,7 @@ no user can subscribe that team to a bug.
     >>> admin_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+addsubscriber'
     >>> get_feedback_messages(admin_browser.contents)
-    [...Constraint not satisfied...
+    [...A private-membership team is not allowed...
 
 
 == Restrict Subscribing to Blueprints ==
@@ -320,7 +321,7 @@ no user can subscribe that team to a blueprint.
     >>> admin_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/canvas/+addsubscriber'
     >>> get_feedback_messages(admin_browser.contents)
-    [...Constraint not satisfied...
+    [...A private team is not allowed...
 
 
 == Restrict Appointing a Translator ==
@@ -336,7 +337,7 @@ no user can specify that team as a translator.
     >>> admin_browser.url
     'http://translations.launchpad.dev/+groups/testing-translation-team/+appoint'
     >>> get_feedback_messages(admin_browser.contents)
-    [...Constraint not satisfied...
+    [...A private team is not allowed...
 
 
 == Restrict Project Owner ==
@@ -365,7 +366,7 @@ no user can set that team as the maintainer of a product.
     >>> admin_browser.url
     'http://launchpad.dev/jokosher/+edit-people'
     >>> get_feedback_messages(admin_browser.contents)
-    [u'There is 1 error.', u'Constraint not satisfied']
+    [...A private-membership team is not allowed...
 
 
 == Restrict Product Bug Supervisor ==

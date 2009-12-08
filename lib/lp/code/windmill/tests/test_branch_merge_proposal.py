@@ -22,12 +22,12 @@ EDIT_COMMIT_LINK = u'//a[contains(@href, "+edit-commit-message")]'
 # There seem to be two textareas rendered for the yui-ieditor-input for some
 # reason.
 EDIT_COMMENT_TEXTBOX = (
-    u'//div[@id="edit-description"]//textarea[@class="yui-ieditor-input"][1]')
+    u'//div[@id="edit-commit-message"]//textarea[@class="yui-ieditor-input"][1]')
 EDIT_COMMENT_SUBMIT = (
-    u'//div[@id="edit-description"]//'
+    u'//div[@id="edit-commit-message"]//'
     'button[contains(@class, "yui-ieditor-submit_button")]')
 COMMIT_MESSAGE_TEXT = (
-    u'//div[@id="edit-description"]//div[@class="yui-editable_text-text"]')
+    u'//div[@id="edit-commit-message"]//div[@class="yui-editable_text-text"]')
 
 
 class TestCommitMessage(TestCaseWithFactory):

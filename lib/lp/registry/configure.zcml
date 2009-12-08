@@ -1551,6 +1551,11 @@
             permission="zope.Public"
             set_schema="lp.registry.interfaces.productrelease.IProductRelease"/>
     </class>
+    <adapter
+        provides="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.productrelease.IProductRelease"
+        factory="lp.registry.model.productrelease.productrelease_to_milestone"
+        permission="zope.Public"/>
 
     <!-- This is class ProductReleaseFile -->
 
@@ -1689,4 +1694,15 @@
         <allow
             interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
     </securedutility>
+
+    <!-- StructuralSubscription -->
+    
+    <class
+        class="lp.registry.model.structuralsubscription.StructuralSubscription">
+        <allow
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+        <require
+            permission="zope.Public"
+            set_schema="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+    </class>
 </configure>

@@ -24,7 +24,7 @@
   </form>
 <script type="text/javascript">
 
-YUI().use('node', function(Y) {
+LPS.use('node', function(Y) {
 
   function submit_filter() {
     Y.one('#filter_form').submit();

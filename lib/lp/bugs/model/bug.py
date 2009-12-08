@@ -52,7 +52,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel, IStructuralSubscriptionTarget)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -279,9 +279,19 @@ class Bug(SQLBase):
     def indexed_messages(self):
         """See `IMessageTarget`."""
         inside = self.default_bugtask
-        return [
-            IndexedMessage(message, inside, index)
-            for index, message in enumerate(self.messages)]
+        message_set = set(self.messages)
+
+        indexed_messages = []
+        for index, message in enumerate(message_set):
+            if message.parent not in message_set:
+                parent = None
+            else:
+                parent = message.parent
+
+            indexed_message = IndexedMessage(message, inside, index, parent)
+            indexed_messages.append(indexed_message)
+
+        return indexed_messages
 
     @property
     def displayname(self):
@@ -1388,6 +1398,38 @@ class Bug(SQLBase):
     def getHWSubmissions(self, user=None):
         """See `IBug`."""
         return getUtility(IHWSubmissionBugSet).submissionsForBug(self, user)
+
+    def personIsDirectSubscriber(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        subscriptions = store.find(
+            BugSubscription,
+            BugSubscription.bug == self,
+            BugSubscription.person == person)
+
+        return not subscriptions.is_empty()
+
+    def personIsAlsoNotifiedSubscriber(self, person):
+        """See `IBug`."""
+        # We have to use getAlsoNotifiedSubscribers() here and iterate
+        # over what it returns because "also notified subscribers" is
+        # actually a composite of bug contacts, structural subscribers
+        # and assignees. As such, it's not possible to get them all with
+        # one query.
+        also_notified_subscribers = self.getAlsoNotifiedSubscribers()
+
+        return person in also_notified_subscribers
+
+    def personIsSubscribedToDuplicate(self, person):
+        """See `IBug`."""
+        store = Store.of(self)
+        subscriptions_from_dupes = store.find(
+            BugSubscription,
+            Bug.duplicateof == self,
+            BugSubscription.bugID == Bug.id,
+            BugSubscription.person == person)
+
+        return not subscriptions_from_dupes.is_empty()
 
 
 class BugSet:

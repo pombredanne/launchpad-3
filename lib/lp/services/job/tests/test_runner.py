@@ -4,10 +4,16 @@
 """Tests for job-running facilities."""
 
 
+from __future__ import with_statement
+
+import contextlib
+import sys
 from unittest import TestLoader
 
 import transaction
 from canonical.testing import LaunchpadZopelessLayer
+from zope.component import getUtility
+from zope.error.interfaces import IErrorReportingUtility
 from zope.interface import implements
 
 from lp.testing.mail_helpers import pop_notifications
@@ -125,7 +131,25 @@ class TestJobRunner(TestCaseWithFactory):
         reporter = errorlog.globalErrorUtility
         oops = reporter.getLastOopsReport()
         self.assertIn('Fake exception.  Foobar, I say!', oops.tb_text)
-        self.assertEqual([('foo', 'bar')], oops.req_vars)
+        self.assertEqual(1, len(oops.req_vars))
+        self.assertEqual("{'foo': 'bar'}", oops.req_vars[0][1])
+
+    def test_oops_messages_used_when_handling(self):
+        """Oops messages should appear even when exceptions are handled."""
+        job_1, job_2 = self.makeTwoJobs()
+        def handleError():
+            reporter = errorlog.globalErrorUtility
+            try:
+                raise ValueError('Fake exception.  Foobar, I say!')
+            except ValueError:
+                reporter.handling(sys.exc_info())
+        job_1.run = handleError
+        runner = JobRunner([job_1, job_2])
+        runner.runAll()
+        reporter = getUtility(IErrorReportingUtility)
+        oops = reporter.getLastOopsReport()
+        self.assertEqual(1, len(oops.req_vars))
+        self.assertEqual("{'foo': 'bar'}", oops.req_vars[0][1])
 
     def test_runAll_aborts_transaction_on_error(self):
         """runAll should abort the transaction on oops."""
