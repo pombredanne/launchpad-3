@@ -1368,6 +1368,21 @@ class CopyPackageTestCase(TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 3)
 
+        # The second copy will fail explicitly because the new BPPH
+        # records are not yet published.
+        nothing_copied = copy_helper.mainTask()
+        self.assertEqual(len(nothing_copied), 0)
+        self.assertEqual(
+            copy_helper.logger.buffer.getvalue().splitlines()[-1],
+            'ERROR: foo 666 in hoary (same version has unpublished binaries '
+            'in the destination archive for Hoary, please wait for them to '
+            'be published before copying)')
+
+        # If we ensure that the copied binaries are published, the
+        # copy won't fail but will simply not copy anything.
+        for bin_pub in copied[1:3]:
+            bin_pub.secure_record.setPublished()
+
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)
         self.assertEqual(
@@ -1504,7 +1519,7 @@ class CopyPackageTestCase(TestCase):
             name='boing')
         self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
         self.assertEqual(len(copied_source.getPublishedBinaries()), 2)
-        self.assertEqual(len(copied_source.getBuilds()), 0)
+        self.assertEqual(len(copied_source.getBuilds()), 1)
 
     def _setupArchitectureGrowingScenario(self, architecturehintlist="all"):
         """Prepare distroseries with different sets of architectures.
