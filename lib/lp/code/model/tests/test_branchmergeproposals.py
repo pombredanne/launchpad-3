@@ -1683,6 +1683,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         # Still only one vote.
         self.assertEqual(1, len(list(merge_proposal.votes)))
 
+
 class TestBranchMergeProposalResubmit(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
