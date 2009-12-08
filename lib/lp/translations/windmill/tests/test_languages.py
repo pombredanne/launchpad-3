@@ -17,7 +17,7 @@ from lp.translations.windmill.testing import TranslationsWindmillLayer
 from lp.testing import TestCaseWithFactory
 
 INPUT_FIELD=(u"//div[contains(@class,'searchform')]"+
-             u"//input[contains(@class,'find')]")
+             u"//input[@id='field.search_lang']")
 FILTER_BUTTON=(u"//div[contains(@class,'searchform')]"+
                u"//input[@value='Filter languages']")
 LANGUAGE=u"//a[contains(@class, 'language') and text()='%s']/parent::li"
