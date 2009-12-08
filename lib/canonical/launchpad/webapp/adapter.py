@@ -63,7 +63,8 @@ classImplements(TimeoutError, IRequestExpired)
 
 
 class LaunchpadTimeoutError(TimeoutError):
-    """A variant o TimeoutError hat reports the original PostgreSQL error."""
+    """A variant of TimeoutError that reports the original PostgreSQL error.
+    """
 
     def __init__(self, statement, params, original_error):
         super(LaunchpadTimeoutError, self).__init__(statement, params)
