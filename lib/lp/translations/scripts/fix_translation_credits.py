@@ -35,7 +35,8 @@ class CreditsFixer:
         self.start_at = start_at
 
         pofileset = getUtility(IPOFileSet)
-        self.pofiles = pofileset.getPOFilesWithTranslationCredits()
+        self.pofiles = pofileset.getPOFilesWithTranslationCredits(
+            untranslated=True)
         self.logger.info(
             "Figuring out POFiles that need fixing: this may take a while...")
         self.total = self.pofiles.count()

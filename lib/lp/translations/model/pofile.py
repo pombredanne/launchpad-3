@@ -1592,7 +1592,8 @@ class POFileSet:
                     TranslationMessage.potemplate == None,
                     POFile.languageID == TranslationMessage.languageID,
                     Or(And(
-                        POFile.variant == None, TranslationMessage.variant == None),
+                        POFile.variant == None,
+                        TranslationMessage.variant == None),
                        POFile.variant == TranslationMessage.variant),
                     TranslationMessage.is_current == True),
                 (TranslationMessage))
