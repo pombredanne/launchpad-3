@@ -56,15 +56,21 @@
                 Language name/code contains:
               </label>
               <input
-                 class="find"
-                 name="find" size="30"
-                 tal:attributes="value view/language_search" />
+                size="30"
+                tal:replace="structure view/widgets/search_lang"
+              />
               <input
                  class="submit"
                  type="submit"
                  value="Find language"
                  />
             </p>
+            <tal:none condition="not: view/search_matches">
+                <script type="text/javascript"
+                    tal:define="script view/focusedElementScript"
+                    tal:condition="script"
+                    tal:content="structure script" />
+            </tal:none>
           </form>
         </div>
         <div tal:condition="not:view/search_requested"

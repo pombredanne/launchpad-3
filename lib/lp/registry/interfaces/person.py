@@ -65,10 +65,9 @@ from canonical.launchpad import _
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
-    MugshotImageUpload, ParticipatingPersonChoice, PasswordField,
-    PublicPersonChoice, StrippedTextLine, is_private_membership,
-    is_valid_public_person)
+    BlacklistableContentNameField, IconImageUpload, is_private_membership,
+    is_valid_public_person, LogoImageUpload, MugshotImageUpload,
+    PasswordField, PersonChoice, PublicPersonChoice, StrippedTextLine)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.app.interfaces.headings import IRootContext
@@ -1518,8 +1517,7 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
 
 # Set the schemas to the newly defined interface for classes that deferred
 # doing so when defined.
-PublicPersonChoice.schema = IPerson
-ParticipatingPersonChoice.schema = IPerson
+PersonChoice.schema = IPerson
 
 
 class INewPersonForm(IPerson):
