@@ -20,7 +20,7 @@
             tal:content="context/datesuperseded/fmt:displaydate" />
       by <a tal:replace="structure context/removed_by/fmt:link"/>
       <div tal:condition="context/removal_comment"
-           tal:content="context/removal_comment" />
+           tal:content="structure context/removal_comment/fmt:text-to-html" />
     </li>
     <li tal:condition="view/wasSuperseded">
       <strong>Superseded</strong>
