@@ -8,7 +8,6 @@ __all__ = [
     ]
 
 import os
-import mimetypes
 import pytz
 import re
 import urlparse
@@ -27,6 +26,7 @@ from lp.registry.interfaces.productrelease import UpstreamFileType
 from lp.registry.scripts.productreleasefinder.hose import Hose
 from lp.registry.scripts.productreleasefinder.filter import (
     FilterPattern)
+from lp.services.mime import mimetypes
 
 
 processors = '|'.join([

@@ -16,7 +16,6 @@ __all__ = [
     ]
 
 import cgi
-import mimetypes
 
 from zope.event import notify
 from zope.lifecycleevent import ObjectCreatedEvent
@@ -30,6 +29,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from lp.registry.interfaces.productrelease import (
     IProductRelease, IProductReleaseFileAddForm)
+from lp.services.mime import mimetypes
 
 from lazr.restful.interface import copy_field
 from canonical.launchpad import _
