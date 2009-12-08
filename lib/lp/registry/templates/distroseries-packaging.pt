@@ -16,7 +16,7 @@
         </p>
 
         <p class="informational message"
-          tal:condition="not: packagings">
+          tal:condition="not: packagings/batch">
           There are no links between packages in <span
           tal:replace="context/displayname">Hoary</span> and upstream. By
           adding information for specific packages, you can help the
@@ -24,7 +24,7 @@
         </p>
 
         <tal:unlinked_translatables
-          condition="view/unlinked_translatables">
+         condition="view/show_unlinked_translatables">
           <div id="unlinked-translatables">
             <h2>Unlinked translatable packages</h2>
 
@@ -39,10 +39,13 @@
         </tal:unlinked_translatables>
       </div>
 
-      <tal:known_links condition="packagings">
+      <tal:known_links condition="packagings/batch">
         <h2>Upstream links</h2>
 
-        <table class="listing">
+        <div class="results"
+          tal:content="structure packagings/@@+navigation-links-upper" />
+
+        <table id="packagings" class="listing">
           <thead>
             <tr>
               <th>Source Package</th>
@@ -51,7 +54,7 @@
           </thead>
 
           <tbody>
-            <tr tal:repeat="packaging packagings">
+            <tr tal:repeat="packaging packagings/batch">
               <td>
                 <a class="sprite package-source"
                   tal:attributes="href packaging/sourcepackage/fmt:url"
@@ -63,6 +66,9 @@
             </tr>
           </tbody>
         </table>
+
+        <div class="results"
+          tal:content="structure packagings/@@+navigation-links-lower" />
       </tal:known_links>
     </div>
   </body>

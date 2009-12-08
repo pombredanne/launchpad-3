@@ -1055,22 +1055,61 @@ It returns a `ResultSet` and it contains 3-element tuples as
 each build found.
 
     >>> cprov_builds.count()
-    7
+    8
 
 The `ResultSet` is ordered by ascending
 `SourcePackagePublishingHistory.id` and ascending
 `DistroArchseries.architecturetag` in this order.
 
-    >>> source_pub, build, arch = cprov_builds.last()
+    # The easiest thing we can do here (without printing ids)
+    # is to show that sorting a list of the resulting ids+tags does not
+    # modify the list.
+    >>> ids_and_tags = [(pub.id, arch.architecturetag)
+    ...     for pub, build, arch in cprov_builds]
+    >>> ids_and_tags == sorted(ids_and_tags)
+    True
 
-    >>> print source_pub.displayname
-    foo 666 in breezy-autotest
+If a source package is copied from another archive (including the
+binaries), then the related builds for that source package will
+also be retrievable via the copied source publication.
+For example, if a package is built in a private security PPA, and then
+later copied out into the primary archive, the builds will then
+be available when looking at the copied source package in the primary
+archive.
 
-    >>> print build.title
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    # Create a new PPA and publish a source with some builds
+    # and binaries.
+    >>> other_ppa = factory.makeArchive(name="otherppa")
+    >>> binaries = test_publisher.getPubBinaries(archive=other_ppa)
 
-    >>> print arch.displayname
-    ubuntutest Breezy Badger Autotest i386
+The associated builds and binaries will be created in the context of the
+other PPA.
+
+    >>> build = binaries[0].binarypackagerelease.build
+    >>> source_pub = build.sourcepackagerelease.publishings[0]
+    >>> print build.archive.name
+    otherppa
+
+    # Copy the source into Celso's PPA, ensuring that the binaries
+    # are alse published there.
+    >>> source_pub_cprov = source_pub.copyTo(
+    ...     source_pub.distroseries, source_pub.pocket,
+    ...     cprov.archive)
+    >>> binaries_cprov = test_publisher.publishBinaryInArchive(
+    ...     binaries[0].binarypackagerelease, cprov.archive)
+
+Now we will see an extra source in Celso's PPA as well as an extra
+build - even though the build's context is not Celso's PPA. Previously
+there were 8 sources and builds.
+
+    >>> cprov_sources_new = cprov.archive.getPublishedSources()
+    >>> cprov_sources_new.count()
+    9
+
+    >>> cprov_builds_new = publishing_set.getBuildsForSources(
+    ...     cprov_sources_new)
+    >>> cprov_builds_new.count()
+    9
 
 Next we'll create two sources with two builds each (the SoyuzTestPublisher
 default) and show that the number of unpublished builds for these sources

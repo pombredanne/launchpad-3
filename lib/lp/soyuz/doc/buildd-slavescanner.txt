@@ -1494,8 +1494,8 @@ findBuildCandidate method, see doc/buildd-dispatching.txt
 
 == Builder Status Handler ==
 
-IBuilder.slaveStatus should return a size homogeneous tuple despite of
-the current slave state. This tuple should contain, in this order:
+IBuilder.slaveStatus should return a dict containing the following
+items:
 
  * slave status string:  'BuilderStatus.IDLE'
  * job identifier string: '1-1'
@@ -1504,24 +1504,60 @@ the current slave state. This tuple should contain, in this order:
  * result file list: {'foo.deb', 'foo.changes'} or None
  * dependencies string: 'bar baz zaz' or None
 
+    # Define a helper to print the slave status dict.
+    >>> from collections import defaultdict
+    >>> def printSlaveStatus(status_dict):
+    ...     status_dict = defaultdict(lambda:None, status_dict)
+    ...     print (
+    ...         "builder_status: %(builder_status)s\n"
+    ...         "build_id: %(build_id)s\n"
+    ...         "build_status: %(build_status)s\n"
+    ...         "logtail: %(logtail)r\n"
+    ...         "filemap: %(filemap)s\n"
+    ...         "dependencies: %(dependencies)s\n" % status_dict)
 
     >>> a_builder.setSlaveForTesting(OkSlave())
-    >>> a_builder.slaveStatus()
-    ('BuilderStatus.IDLE', '', None, None, None, None)
+    >>> printSlaveStatus(a_builder.slaveStatus())
+    builder_status: BuilderStatus.IDLE
+    build_id:
+    build_status: None
+    logtail: None
+    filemap: None
+    dependencies: None
 
     >>> a_builder.setSlaveForTesting(BuildingSlave())
-    >>> a_builder.slaveStatus()
-    ('BuilderStatus.BUILDING', '1-1', None, <xmlrpclib.Binary ...>, None, None)
+    >>> printSlaveStatus(a_builder.slaveStatus())
+    builder_status: BuilderStatus.BUILDING
+    build_id: 1-1
+    build_status: None
+    logtail: <xmlrpclib.Binary ...>
+    filemap: None
+    dependencies: None
 
     >>> a_builder.setSlaveForTesting(WaitingSlave(state='BuildStatus.OK'))
-    >>> a_builder.slaveStatus()
-    ('BuilderStatus.WAITING', '1-1', 'BuildStatus.OK', None, {}, None)
+    >>> printSlaveStatus(a_builder.slaveStatus())
+    builder_status: BuilderStatus.WAITING
+    build_id: 1-1
+    build_status: BuildStatus.OK
+    logtail: None
+    filemap: {}
+    dependencies: None
 
     >>> a_builder.setSlaveForTesting(AbortingSlave())
-    >>> a_builder.slaveStatus()
-    ('BuilderStatus.ABORTING', '1-1', None, None, None, None)
+    >>> printSlaveStatus(a_builder.slaveStatus())
+    builder_status: BuilderStatus.ABORTING
+    build_id: 1-1
+    build_status: None
+    logtail: None
+    filemap: None
+    dependencies: None
 
     >>> a_builder.setSlaveForTesting(AbortedSlave())
-    >>> a_builder.slaveStatus()
-    ('BuilderStatus.ABORTED', '1-1', None, None, None, None)
+    >>> printSlaveStatus(a_builder.slaveStatus())
+    builder_status: BuilderStatus.ABORTED
+    build_id: 1-1
+    build_status: None
+    logtail: None
+    filemap: None
+    dependencies: None
 
