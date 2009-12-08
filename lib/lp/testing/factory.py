@@ -225,10 +225,10 @@ class LaunchpadObjectFactory(ObjectFactory):
     """
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
-        name=None):
+        name=None, enabled=True):
         """Create and return a new arbitrary location for copy packages."""
         copy_archive = self.makeArchive(distribution, owner, name,
-                                        ArchivePurpose.COPY)
+                                        ArchivePurpose.COPY, enabled)
 
         distribution = copy_archive.distribution
         distroseries = distribution.currentseries
@@ -1486,7 +1486,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IComponentSet).ensure(name)
 
     def makeArchive(self, distribution=None, owner=None, name=None,
-                    purpose=None):
+                    purpose=None, enabled=True):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1495,6 +1495,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             makePerson().
         :param name: Name of the archive, defaults to a random string.
         :param purpose: Supply ArchivePurpose, defaults to PPA.
+        :param enabled: Whether the archive should be enabled.
         """
         if distribution is None:
             distribution = self.makeDistribution()
@@ -1515,7 +1516,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
-            distribution=distribution, name=name)
+            distribution=distribution, name=name, enabled=enabled)
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
