@@ -85,6 +85,49 @@ To search the set of IDistroSeriess, use IDistroSeriesSet.search:
     >>> all_ubuntu_releases.count()
     4
 
+
+Distroseries identifying attributes
+-----------------------------------
+
+A distroseries has a set of attributes that identify it. The launchpad id is
+the name attribute.
+
+    >>> print warty.name
+    warty
+
+It has a title for heading and titles...
+
+    >>> print warty.title
+    The Warty Warthog Release
+
+And a displayname for referring to it in a sentence.
+
+    >>> print warty.displayname
+    Warty
+
+The fullseriesname attribute is used when the context of the series name
+can be confused. Note that the value is created from the launchpad id names
+of the distribution and the series, though it may look like the displayname
+attributes were used.
+
+    >>> print warty.fullseriesname
+    Ubuntu Warty
+
+The version attribute holds the debversion of the series.
+
+    >>> print warty.version
+    4.10
+
+The named_version attribute is used is used to present the series displayname
+and version values consistently.
+
+    >>> print warty.named_version
+    Warty (4.10)
+
+
+Published releases
+------------------
+
 DistroSeries.getPublishedReleases:
 
     >>> from lp.registry.model.distroseries import DistroSeries
@@ -334,8 +377,27 @@ the SPR returns all build records for it.
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
    4
 
+The new series also has the same packaging links as its parent series.
 
-== Hiding translations ==
+    >>> for packaging in warty.packagings:
+    ...     print packaging.sourcepackagename.name
+    a52dec
+    alsa-utils
+    evolution
+    mozilla-firefox
+    netapplet
+
+    >>> for packaging in bumpy.packagings:
+    ...     print packaging.sourcepackagename.name
+    a52dec
+    alsa-utils
+    evolution
+    mozilla-firefox
+    netapplet
+
+
+Hiding translations
+-------------------
 
 The hide_all_translations flag, if set, hides a distroseries'
 translations in the user interface.  The check for visibility happens in

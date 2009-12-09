@@ -49,6 +49,8 @@ from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
 from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
@@ -157,7 +159,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
                 excName = str(excClass)
             raise self.failureException, "%s not raised" % excName
 
-    def setupBreezy(self, name="breezy"):
+    def setupBreezy(self, name="breezy", permitted_formats=None):
         """Create a fresh distroseries in ubuntu.
 
         Use *initialiseFromParent* procedure to create 'breezy'
@@ -168,6 +170,8 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         :param name: supply the name of the distroseries if you don't want
             it to be called "breezy"
+        :param permitted_formats: list of SourcePackageFormats to allow
+            in the new distroseries. Only permits '1.0' by default.
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
@@ -184,6 +188,14 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
         self.breezy.changeslist = 'breezy-changes@ubuntu.com'
         self.breezy.initialiseFromParent()
+
+        if permitted_formats is None:
+            permitted_formats = [SourcePackageFormat.FORMAT_1_0]
+
+        for format in permitted_formats:
+            if not self.breezy.isSourcePackageFormatPermitted(format):
+                getUtility(ISourcePackageFormatSelectionSet).add(
+                    self.breezy, format)
 
     def addMockFile(self, filename, content="anything"):
         """Return a librarian file."""
@@ -741,6 +753,53 @@ class TestUploadProcessor(TestUploadProcessorBase):
             "Cannot mix partner files with non-partner." in raw_msg,
             "Expected email containing 'Cannot mix partner files with "
             "non-partner.', got:\n%s" % raw_msg)
+
+    def testPartnerReusingOrigFromPartner(self):
+        """Partner uploads reuse 'orig.tar.gz' from the partner archive."""
+        # Make the official bar orig.tar.gz available in the system.
+        uploadprocessor = self.setupBreezyAndGetUploadProcessor(
+            policy='absolutely-anything')
+
+        upload_dir = self.queueUpload("foocomm_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        self.assertEqual(
+            uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.NEW)
+
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name="foocomm",
+            version="1.0-1", exact_match=True)
+        queue_item.setAccepted()
+        queue_item.realiseUpload()
+        self.layer.commit()
+
+        archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distribution=self.ubuntu, purpose=ArchivePurpose.PARTNER)
+        try:
+            self.ubuntu.getFileByName(
+                'foocomm_1.0.orig.tar.gz', archive=archive, source=True,
+                binary=False)
+        except NotFoundError:
+            self.fail('foocomm_1.0.orig.tar.gz is not yet published.')
+
+        # Please note: this upload goes to the Ubuntu main archive.
+        upload_dir = self.queueUpload("foocomm_1.0-3")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Discard the announcement email and check the acceptance message
+        # content.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        # This is now a MIMEMultipart message.
+        body = msg.get_payload(0)
+        body = body.get_payload(decode=True)
+
+        self.assertEqual(
+            '[ubuntu/breezy] foocomm 1.0-3 (Accepted)', msg['Subject'])
+        self.assertFalse(
+            'Unable to find foocomm_1.0.orig.tar.gz in upload or '
+            'distribution.' in body,
+            'Unable to find foocomm_1.0.orig.tar.gz')
 
     def testPartnerUpload(self):
         """Partner packages should be uploaded to the partner archive.
@@ -1329,7 +1388,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         ap_set = getUtility(IArchivePermissionSet)
         ps_set = getUtility(IPackagesetSet)
         foo_ps = ps_set.new(
-            u'foo-pkg-set', u'Packages that require special care.', uploader)
+            u'foo-pkg-set', u'Packages that require special care.', uploader,
+            distroseries=self.ubuntu['grumpy'])
         self.layer.txn.commit()
 
         foo_ps.add((bar_package,))
@@ -1337,15 +1397,39 @@ class TestUploadProcessor(TestUploadProcessorBase):
             self.ubuntu.main_archive, uploader, foo_ps)
 
         # The uploader now does have a package set based upload permissions
-        # to 'bar'.
+        # to 'bar' in 'grumpy' but not in 'breezy'.
         self.assertTrue(
             ap_set.isSourceUploadAllowed(
-                self.ubuntu.main_archive, 'bar', uploader))
+                self.ubuntu.main_archive, 'bar', uploader,
+                self.ubuntu['grumpy']))
+        self.assertFalse(
+            ap_set.isSourceUploadAllowed(
+                self.ubuntu.main_archive, 'bar', uploader, self.breezy))
 
         # Upload the package again.
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check that it worked,
+        # Check that it failed (permissions were granted for wrong series).
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        self.assertEqual(
+            msg['Subject'], 'bar_1.0-2_source.changes rejected')
+
+        # Grant the permissions in the proper series.
+        breezy_ps = ps_set.new(
+            u'foo-pkg-set-breezy', u'Packages that require special care.',
+            uploader, distroseries=self.breezy)
+        breezy_ps.add((bar_package,))
+        ap_set.newPackagesetUploader(
+            self.ubuntu.main_archive, uploader, breezy_ps)
+        # The uploader now does have a package set based upload permission
+        # to 'bar' in 'breezy'.
+        self.assertTrue(
+            ap_set.isSourceUploadAllowed(
+                self.ubuntu.main_archive, 'bar', uploader, self.breezy))
+        # Upload the package again.
+        self.processUpload(uploadprocessor, upload_dir)
+        # Check that it worked.
         status = uploadprocessor.last_processed_upload.queue_root.status
         self.assertEqual(
             status, PackageUploadStatus.DONE,
@@ -1394,6 +1478,28 @@ class TestUploadProcessor(TestUploadProcessorBase):
             'Daniel Silverstone <daniel.silverstone@canonical.com>',
             ]
         self.assertEmail(contents, recipients=recipients)
+
+    def test30QuiltUploadToUnsupportingSeriesIsRejected(self):
+        """Ensure that uploads to series without format support are rejected.
+
+        Series can restrict the source formats that they accept. Uploads
+        should be rejected if an unsupported format is uploaded.
+        """
+        self.setupBreezy()
+        self.layer.txn.commit()
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload the source.
+        upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
+        self.processUpload(uploadprocessor, upload_dir)
+        # Make sure it was rejected.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "bar_1.0-1.dsc: format '3.0 (quilt)' is not permitted in "
+            "breezy." in raw_msg,
+            "Source was not rejected properly:\n%s" % raw_msg)
 
 
 def test_suite():

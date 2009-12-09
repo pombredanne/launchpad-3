@@ -89,11 +89,12 @@ class POTemplateNavigation(Navigation):
             return self.context.getDummyPOFile(name, requester=user)
         else:
             # It's a POST.
-            # XXX CarlosPerelloMarin 2006-04-20: We should check the kind of
-            # POST we got, a Log out action will be also a POST and we should
-            # not create an IPOFile in that case. See bug #40275 for more
-            # information.
-            return self.context.newPOFile(name, requester=user)
+            # XXX CarlosPerelloMarin 2006-04-20 bug=40275: We should
+            # check the kind of POST we got.  A logout will also be a
+            # POST and we should not create a POFile in that case.
+            pofile = self.context.newPOFile(name)
+            pofile.setOwnerIfPrivileged(user)
+            return pofile
 
 
 class POTemplateFacets(StandardLaunchpadFacets):

@@ -216,7 +216,7 @@ class Publisher(object):
         """
         self.log.debug("* Step A: Publishing packages")
 
-        for distroseries in self.distro.serieses:
+        for distroseries in self.distro.series:
             for pocket, suffix in pocketsuffix.items():
                 if (self.allowed_suites and not (distroseries.name, pocket) in
                     self.allowed_suites):
@@ -256,7 +256,7 @@ class Publisher(object):
         # added to the dirty_pockets set.
 
         # Loop for each pocket in each distroseries:
-        for distroseries in self.distro.serieses:
+        for distroseries in self.distro.series:
             for pocket, suffix in pocketsuffix.items():
                 if self.cannotModifySuite(distroseries, pocket):
                     # We don't want to mark release pockets dirty in a
@@ -292,7 +292,7 @@ class Publisher(object):
         """Second step in publishing: domination."""
         self.log.debug("* Step B: dominating packages")
         judgejudy = Dominator(self.log, self.archive)
-        for distroseries in self.distro.serieses:
+        for distroseries in self.distro.series:
             for pocket in PackagePublishingPocket.items:
                 if not force_domination:
                     if not self.isDirty(distroseries, pocket):
@@ -310,7 +310,7 @@ class Publisher(object):
     def C_writeIndexes(self, is_careful):
         """Write Index files (Packages & Sources) using LP information.
 
-        Iterates over all distroserieses and its pockets and components.
+        Iterates over all distroseries and its pockets and components.
         """
         self.log.debug("* Step C': write indexes directly from DB")
         for distroseries in self.distro:
@@ -437,6 +437,17 @@ class Publisher(object):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 
+    def _getLabel(self):
+        """Return the contents of the Release file Label field.
+
+        :return: a text that should be used as the value of the Release file
+            'Label' field.
+        """
+        if self.archive.is_ppa:
+            return self.archive.displayname
+        else:
+            return self.distro.displayname
+
     def _getOrigin(self):
         """Return the contents of the Release file Origin field.
 
@@ -494,7 +505,7 @@ class Publisher(object):
 
         stanza = DISTRORELEASE_STANZA % (
                     self._getOrigin(),
-                    self.distro.displayname,
+                    self._getLabel(),
                     full_name,
                     distroseries.version,
                     distroseries.name,
@@ -571,7 +582,7 @@ class Publisher(object):
                 distroseries.version,
                 component,
                 self._getOrigin(),
-                self.distro.displayname,
+                self._getLabel(),
                 clean_architecture)
         f.write(stanza)
         f.close()

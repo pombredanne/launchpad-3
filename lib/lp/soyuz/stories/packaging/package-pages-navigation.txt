@@ -93,7 +93,7 @@ and Answers.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > ?alsa-utils? source package
+    Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package
     Tabs:
     * Overview (selected) - not linked
     * Branches - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
@@ -109,7 +109,7 @@ Ubuntu Hoary".)
     >>> anon_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/hoary/+source/alsa-utils')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > ?alsa-utils? source package > Questions
+    Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package > Questions
     Tabs:
     * Overview - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Branches - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
@@ -131,7 +131,7 @@ series source package.
     ...     'http://launchpad.dev/ubuntu/hoary/'
     ...     '+source/alsa-utils/1.0.9a-4ubuntu1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > ?alsa-utils? source package
+    Hierarchy: Ubuntu > Hoary (5.04) > ?alsa-utils? source package
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary/+source/alsa-utils
     * Branches - http://code.launchpad.dev/ubuntu/hoary/+source/alsa-utils
@@ -150,7 +150,7 @@ Translations from the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > i386
+    Hierarchy: Ubuntu > Hoary (5.04) > i386
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     * Branches - http://code.launchpad.dev/ubuntu/hoary
@@ -168,7 +168,7 @@ Bugs, Blueprints and Translations from the distribution series.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary/i386/pmount')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > i386 > pmount
+    Hierarchy: Ubuntu > Hoary (5.04) > i386 > pmount
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     * Branches - http://code.launchpad.dev/ubuntu/hoary
@@ -187,7 +187,7 @@ Bugs, Blueprints and Translations from the distribution series.
     >>> anon_browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/i386/pmount/0.1-1')
     >>> print_location(anon_browser.contents)
-    Hierarchy: Ubuntu > 5.04 > i386 > pmount > 0.1-1
+    Hierarchy: Ubuntu > Hoary (5.04) > i386 > pmount > 0.1-1
     Tabs:
     * Overview (selected) - http://launchpad.dev/ubuntu/hoary
     * Branches - http://code.launchpad.dev/ubuntu/hoary

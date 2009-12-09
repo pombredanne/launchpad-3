@@ -81,6 +81,10 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://translations.launchpad.dev/
     althosts:
     ----
+    ubuntu_openid @ ubuntu-openid.launchpad.dev
+    rooturl: http://ubuntu-openid.launchpad.dev/
+    althosts:
+    ----
     xmlrpc @ xmlrpc.launchpad.dev
     rooturl: http://launchpad.dev/
     althosts:
@@ -109,6 +113,7 @@ request is headed to one of the officialy-used Launchpad host names:
     shipit.kubuntu.dev
     shipit.ubuntu.dev
     translations.launchpad.dev
+    ubuntu-openid.launchpad.dev
     xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
 
@@ -759,8 +764,6 @@ the ticks for the traversal and not for the publication.
     >>> publication.beforeTraversal(request)
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
-    ERROR:SiteError:http://localhost
-    ...
     >>> request._orig_env['launchpad.traversalticks'] < 200
     True
     >>> request._orig_env.has_key('launchpad.publicationticks')
@@ -777,8 +780,6 @@ the publication, up to the point where it was forcefully stopped.
     >>> set_request_started()
     >>> publication.handleException(
     ...     None, request, exc_info, retry_allowed=False)
-    ERROR:SiteError:http://localhost
-    ...
     >>> request._orig_env['launchpad.traversalticks'] < 500
     True
     >>> request._orig_env['launchpad.publicationticks'] < 50

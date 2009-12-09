@@ -565,6 +565,24 @@ target, we reset it in order to avoid data inconsistencies.
   HTTP/1.1 200 Ok
   ...
 
+We can change a distribution task to a task with a package from the same
+distribution.
+
+  >>> from lp.registry.interfaces.distribution import IDistributionSet
+  >>> login('foo.bar@canonical.com')
+  >>> distro_bugtask = factory.makeBugTask(
+  ...     target=getUtility(IDistributionSet).getByName('ubuntu'))
+  >>> distro_bugtask_path = webservice.getAbsoluteUrl(
+  ...     canonical_url(distro_bugtask).replace(
+  ...         'http://bugs.launchpad.dev', ''))
+  >>> logout()
+
+  >>> distro_bugtask = webservice.get(distro_bugtask_path)
+  >>> print webservice.named_post(
+  ...     distro_bugtask_path, 'transitionToTarget',
+  ...     target=webservice.getAbsoluteUrl('/ubuntu/+source/alsa-utils'))
+  HTTP/1.1 200 Ok ...
+
 It's possible to get a list of similar bugs for a bug task by calling
 its findSimilarBugs() method. As it happens, there aren't any bugs
 similar to bug 1 for Firefox.
@@ -1470,11 +1488,12 @@ the advanced search interface.
     ...     order_by='-datecreated').jsonBody()['entries']
     >>> for ordered_bugtask in ordered_bugtasks:
     ...     print ordered_bugtask['self_link']
+    http://.../ubuntu/+source/alsa-utils/+bug/19
     http://.../ubuntu/+source/evolution/+bug/18
     http://.../ubuntu/+bug/17
     http://.../ubuntu/+bug/2
     http://.../ubuntu/+source/linux-source-2.6.15/+bug/10
-    http://.../ubuntu/+source/thunderbird/+bug/9
+
 
 Hardware related bug tasks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1658,6 +1677,7 @@ The collection of all CVEs is available at the top level.
     start: 0
     total_size: 10
     ---
+    bugs_collection_link: u'http://.../bugs/cve/2005-2737/bugs'
     date_created: u'2005-09-13T14:05:17.043865+00:00'
     date_modified: u'2005-09-13T14:05:17.043865+00:00'
     description: u'Cross-site scripting (XSS) vulnerability...'
@@ -1688,11 +1708,13 @@ The collection of all CVEs is available at the top level.
 And for every bug we can look at the CVEs linked to it.
 
     >>> bug_one_cves_url = bug_one['cves_collection_link']
-    >>> pprint_collection(webservice.get(bug_one_cves_url).jsonBody())
+    >>> bug_one_cves = webservice.get(bug_one_cves_url).jsonBody()
+    >>> pprint_collection(bug_one_cves)
     resource_type_link: u'http://.../#cve-page-resource'
     start: 0
     total_size: 1
     ---
+    bugs_collection_link: u'http://.../bugs/cve/1999-8979/bugs'
     date_created: u'2005-09-07T19:00:32.944561+00:00'
     date_modified: u'2005-09-13T14:00:03.508959+00:00'
     description: u'Firefox crashes all the time'
@@ -1704,6 +1726,15 @@ And for every bug we can look at the CVEs linked to it.
     title: u'CVE-1999-8979 (Entry)'
     url: u'http://www.cve.mitre.org/cgi-bin/cvename.cgi?name=1999-8979'
     ---
+
+For every CVE we can also look at the bugs linked to it.
+
+    >>> cve_entry = bug_one_cves['entries'][0]
+    >>> bug_links = webservice.get(
+    ...     cve_entry['bugs_collection_link']).jsonBody()
+    >>> for bug in bug_links['entries']:
+    ...     print bug['self_link']
+    http://.../bugs/1
 
 Unlink CVEs from that bug.
 

@@ -14,7 +14,7 @@
             tal:define="lp_js string:${icingroot}/build"
             tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js"></script>
     <script type="text/javascript">
-      YUI().use('base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
+      LPS.use('base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
         Y.bugs.setup_dupe_finder();
       });
     </script>
@@ -24,14 +24,7 @@
     <div tal:condition="view/isPrivate" id="privacy" class="aside private">
       This report will be private, though you can disclose it later.
     </div>
-    <h2>
-      <tal:heading condition="not:view/show_duplicate_list">
-        Report a bug
-      </tal:heading>
-      <tal:heading condition="view/show_duplicate_list">
-        Is the bug you&rsquo;re reporting one of these?
-      </tal:heading>
-    </h2>
+    <h1>Report a bug</h1>
   </div>
 
   <div metal:fill-slot="main">

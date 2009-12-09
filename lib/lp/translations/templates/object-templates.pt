@@ -26,21 +26,21 @@
       </style>
       <style tal:condition="view/is_distroseries" type="text/css">
         #templates_table {
-            width: 72em;
+            width: 79em;
         }
       </style>
       <style tal:condition="not:view/is_distroseries" type="text/css">
         #templates_table {
-            width: 50em;
+            width: 58em;
         }
       </style>
       <script language="JavaScript" type="text/javascript">
-      YUI().use('node', function(Y) {
+      LPS.use('node-base', 'event-delegate', function(Y) {
           Y.on('domready', function(e) {
-              Y.all('.template_links').addClass('inactive_links');
-              var template_rows = Y.all('.template_row');
-              template_rows.each(function(row) {
-                  var template_links = row.query('.template_links');
+              Y.all('#templates_table .template_links').addClass(
+                    'inactive_links');
+              Y.all('#templates_table .template_row').each(function(row) {
+                  var template_links = row.one('.template_links');
                   row.on('mouseover', function(e) {
                       template_links.removeClass('inactive_links');
                   });
@@ -53,14 +53,13 @@
       </script>
     </div>
     <div metal:fill-slot="main">
-      <ul class="helplinks">
-        <li>
-          <a href="https://help.launchpad.net/Translations"
-             id="link-to-translations-help"
-             >Help for translations
-          </a>
-        </li>
-      </ul>
+      <div class="translation-help-links">
+        <a href="https://help.launchpad.net/Translations"
+           id="link-to-translations-help"
+           >Help for translations
+        </a>
+        <div></div><!-- to clear-up all floats -->
+      </div>
 
       <div class="yui-b top-portlet">
         <p>
@@ -76,7 +75,10 @@
             <th tal:condition="view/is_distroseries"
                 class="sourcepackage_column">Source package</th>
             <th class="template_column">Template name</th>
-            <th class="actions_column">Actions</th>
+            <th class="lastupdate_column">Last update</th>
+            <th class="actions_column"
+                tal:condition="context/required:launchpad.AnyPerson">
+              Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -87,21 +89,41 @@
             </td>
             <td class="template_column"><a tal:attributes="href template/fmt:url"
                    tal:content="template/name">Template name</a></td>
-            <td class="actions_column">
+            <td class="lastupdate_column">
+              <span class="sortkey"
+                    tal:condition="template/date_last_updated"
+                    tal:content="template/date_last_updated/fmt:datetime">
+                    time sort key
+              </span>
+              <span class="lastupdate_column"
+                    tal:condition="template/date_last_updated"
+                    tal:attributes="
+                      title template/date_last_updated/fmt:datetime"
+                    tal:content="
+                      template/date_last_updated/fmt:approximatedate"
+              >
+                 2009-09-23
+              </span>
+            </td>
+            <td class="actions_column"
+                tal:condition="context/required:launchpad.AnyPerson">
             <div class="template_links">
+              <tal:maintainer condition="template/required:launchpad.Edit">
                 <a tal:attributes="href string:${template/fmt:url}/+edit;
                                    title string:Edit ${template/name}'s details">
                    <img src="/@@/edit" />&nbsp;Edit</a>
                 <a tal:attributes="href string:${template/fmt:url}/+upload;
                       title string:Upload translations to ${template/name}">
                    <img src="/@@/add" />&nbsp;Upload</a>
-                <a tal:attributes="href string:${template/fmt:url}/+export;
-                      title string:Download translations from ${template/name}">
-                   <img src="/@@/download" />&nbsp;Download</a>
-                <a tal:condition="python:view.can_administer(template)"
-                   tal:attributes="href string:${template/fmt:url}/+admin;
+              </tal:maintainer>
+              <a tal:attributes="href string:${template/fmt:url}/+export;
+                   title string:Download translations from ${template/name}">
+                <img src="/@@/download" />&nbsp;Download</a>
+              <tal:admin condition="template/required:launchpad.Admin">
+                <a tal:attributes="href string:${template/fmt:url}/+admin;
                                    title string:Administer ${template/name}">
                    <img src="/@@/edit" />&nbsp;Administer</a>
+              </tal:admin>
             </div>
             </td>
           </tr>

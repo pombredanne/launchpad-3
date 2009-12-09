@@ -17,10 +17,12 @@ __all__ = [
 
 import bz2
 import glob
+import logging
 import os
 
 from twisted.python import log
 from twisted.python.logfile import DailyLogFile
+from twisted.web import xmlrpc
 
 from canonical.launchpad.scripts import logger
 from canonical.launchpad.webapp import errorlog
@@ -147,3 +149,42 @@ class LaunchpadLogFile(DailyLogFile):
         """Return the list of rotate log files, newest first."""
         return sorted(glob.glob("%s.*" % self.path), reverse=True)
 
+
+class _QuietQueryFactory(xmlrpc._QueryFactory):
+    """Override noisy to false to avoid useless log spam."""
+    noisy = False
+
+
+class LoggingProxy(xmlrpc.Proxy):
+    """A proxy that logs requests and the corresponding responses."""
+
+    queryFactory = _QuietQueryFactory
+
+    def __init__(self, url, logger, level=logging.INFO):
+        """Contstruct a `LoggingProxy`.
+
+        :param url: The URL to which to post method calls.
+        :param logger: The logger to log requests and responses to.
+        :param level: The log level at which to log requests and responses.
+        """
+        xmlrpc.Proxy.__init__(self, url)
+        self.logger = logger
+        self.level = level
+        self.request_count = 0
+
+    def callRemote(self, method, *args):
+        """See `xmlrpc.Proxy.callRemote`.
+
+        In addition to the superclass' behavior, we log the call and its
+        result.
+        """
+        request = self.request_count
+        self.request_count += 1
+        self.logger.log(
+            self.level, 'Sending request [%d]: %s%s', request, method, args)
+        def _logResult(result):
+            self.logger.log(
+                self.level, 'Reply to request [%d]: %s', request, result)
+            return result
+        deferred = xmlrpc.Proxy.callRemote(self, method, *args)
+        return deferred.addBoth(_logResult)

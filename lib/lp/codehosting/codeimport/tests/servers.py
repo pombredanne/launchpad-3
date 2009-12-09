@@ -3,6 +3,8 @@
 
 """Server classes that know how to create various kinds of foreign archive."""
 
+from __future__ import with_statement
+
 __all__ = [
     'CVSServer',
     'GitServer',
@@ -11,10 +13,12 @@ __all__ = [
 
 __metaclass__ = type
 
-import logging
 import os
 import shutil
+import signal
+import subprocess
 import tempfile
+import time
 
 import CVS
 import pysvn
@@ -24,6 +28,7 @@ from bzrlib.urlutils import escape, join as urljoin
 from bzrlib.transport import Server
 from bzrlib.tests.treeshape import build_tree_contents
 
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 
 def local_path_to_url(local_path):
     """Return a file:// URL to `local_path`.
@@ -33,19 +38,6 @@ def local_path_to_url(local_path):
     """
     return 'file://localhost' + escape(
         os.path.normpath(os.path.abspath(local_path)))
-
-
-def _make_silent_logger():
-    """Create a logger that prints nothing."""
-
-    class SilentLogHandler(logging.Handler):
-        def emit(self, record):
-            pass
-
-    logger = logging.Logger("collector")
-    handler = SilentLogHandler()
-    logger.addHandler(handler)
-    return logger
 
 
 def run_in_temporary_directory(function):
@@ -73,21 +65,54 @@ def run_in_temporary_directory(function):
 class SubversionServer(Server):
     """A controller for an Subversion repository, used for testing."""
 
-    def __init__(self, repository_path):
+    def __init__(self, repository_path, use_svn_serve=False):
         super(SubversionServer, self).__init__()
         self.repository_path = os.path.abspath(repository_path)
+        self._use_svn_serve = use_svn_serve
 
     def createRepository(self, path):
         """Create a Subversion repository at `path`."""
-        svn_oo.Repository.Create(path, _make_silent_logger())
+        svn_oo.Repository.Create(path, QuietFakeLogger())
 
     def get_url(self):
         """Return a URL to the Subversion repository."""
-        return local_path_to_url(self.repository_path)
+        if self._use_svn_serve:
+            return 'svn://localhost/'
+        else:
+            return local_path_to_url(self.repository_path)
 
     def setUp(self):
         super(SubversionServer, self).setUp()
         self.createRepository(self.repository_path)
+        if self._use_svn_serve:
+            conf_path = os.path.join(
+                self.repository_path, 'conf/svnserve.conf')
+            with open(conf_path , 'w') as conf_file:
+                conf_file.write('[general]\nanon-access = write\n')
+            self._svnserve = subprocess.Popen(
+                ['svnserve', '--daemon', '--foreground', '--root',
+                 self.repository_path])
+            delay = 0.1
+            for i in range(10):
+                try:
+                    client = pysvn.Client()
+                    client.ls(self.get_url())
+                except pysvn.ClientError, e:
+                    if 'Connection refused' in str(e):
+                        time.sleep(delay)
+                        delay *= 1.5
+                        continue
+                else:
+                    break
+            else:
+                raise AssertionError(
+                    "svnserve didn't start accepting connections")
+
+    def tearDown(self):
+        super(SubversionServer, self).tearDown()
+        if self._use_svn_serve:
+            os.kill(self._svnserve.pid, signal.SIGINT)
+            self._svnserve.communicate()
 
     @run_in_temporary_directory
     def makeBranch(self, branch_name, tree_contents):
@@ -139,7 +164,7 @@ class CVSServer(Server):
         :param path: The local path to create a repository in.
         :return: A CVS.Repository`.
         """
-        return CVS.init(path, _make_silent_logger())
+        return CVS.init(path, QuietFakeLogger())
 
     def getRoot(self):
         """Return the CVS root for this server."""

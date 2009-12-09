@@ -94,7 +94,6 @@ from lp.registry.interfaces.milestone import *
 from canonical.launchpad.interfaces.oauth import *
 from canonical.launchpad.interfaces.openidconsumer import *
 from canonical.launchpad.interfaces.packagerelationship import *
-from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
 from lp.registry.interfaces.poll import *
 from lp.soyuz.interfaces.processor import *
@@ -125,7 +124,7 @@ from lp.blueprints.interfaces.sprint import *
 from lp.blueprints.interfaces.sprintattendance import *
 from lp.blueprints.interfaces.sprintspecification import *
 from lp.registry.interfaces.ssh import *
-from canonical.launchpad.interfaces.structuralsubscription import *
+from lp.registry.interfaces.structuralsubscription import *
 from lp.registry.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
 from lp.registry.interfaces.wikiname import *

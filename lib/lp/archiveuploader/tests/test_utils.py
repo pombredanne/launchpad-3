@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -8,6 +8,8 @@
 import unittest
 import sys
 import shutil
+
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.archiveuploader.tests import datadir
 
 
@@ -16,6 +18,25 @@ class TestUtilities(unittest.TestCase):
     def testImport(self):
         """lp.archiveuploader.utils should be importable"""
         import lp.archiveuploader.utils
+
+    def test_determine_source_file_type(self):
+        """lp.archiveuploader.utils.determine_source_file_type should work."""
+        from lp.archiveuploader.utils import determine_source_file_type
+
+        self.assertEquals(
+            SourcePackageFileType.DSC,
+            determine_source_file_type('foo_1.0-1.dsc'))
+        self.assertEquals(
+            SourcePackageFileType.DIFF,
+            determine_source_file_type('foo_1.0-1.diff.gz'))
+        self.assertEquals(
+            SourcePackageFileType.ORIG_TARBALL,
+            determine_source_file_type('foo_1.0.orig.tar.gz'))
+        self.assertEquals(
+            SourcePackageFileType.NATIVE_TARBALL,
+            determine_source_file_type('foo_1.0.tar.gz'))
+        self.assertEquals(None, determine_source_file_type('foo_1.0'))
+        self.assertEquals(None, determine_source_file_type('foo_1.0.blah.gz'))
 
     def testPrefixMultilineString(self):
         """lp.archiveuploader.utils.prefix_multi_line_string should work"""

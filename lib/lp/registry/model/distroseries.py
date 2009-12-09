@@ -39,7 +39,7 @@ from canonical.launchpad.components.decoratedresultset import (
 from lp.translations.model.pofiletranslator import (
     POFileTranslator)
 from lp.translations.model.pofile import POFile
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.model.binarypackagename import BinaryPackageName
 from lp.soyuz.model.binarypackagerelease import (
@@ -66,7 +66,7 @@ from lp.translations.model.languagepack import LanguagePack
 from lp.registry.model.milestone import (
     HasMilestonesMixin, Milestone)
 from lp.soyuz.model.packagecloner import clone_packages
-from canonical.launchpad.database.packaging import Packaging
+from lp.registry.model.packaging import Packaging
 from lp.registry.model.person import Person
 from canonical.launchpad.database.librarian import LibraryFileAlias
 from lp.translations.model.potemplate import (
@@ -86,7 +86,7 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
@@ -118,6 +118,8 @@ from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, NotFoundError, SLAVE_FLAVOR,
     TranslationUnavailable)
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet)
 
 
 class SeriesMixin:
@@ -192,6 +194,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     sections = SQLRelatedJoin(
         'Section', joinColumn='distroseries', otherColumn='section',
         intermediateTable='SectionSelection')
+
+    @property
+    def named_version(self):
+        return '%s (%s)' % (self.displayname, self.version)
 
     @property
     def upload_components(self):
@@ -330,8 +336,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=["Language.englishname"])
         return result
 
-    @cachedproperty('_previous_serieses_cached')
-    def previous_serieses(self):
+    @cachedproperty('_previous_series_cached')
+    def previous_series(self):
         """See `IDistroSeries`."""
         # This property is cached because it is used intensely inside
         # sourcepackage.py; avoiding regeneration reduces a lot of
@@ -1492,7 +1498,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         cur = cursor()
 
         # Perform the copies
-        self._copy_component_and_section_selections(cur)
+        self._copy_component_section_and_format_selections(cur)
 
         # Prepare the list of distroarchseries for which binary packages
         # shall be copied.
@@ -1503,6 +1509,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Now copy source and binary packages.
         self._copy_publishing_records(distroarchseries_list)
         self._copy_lucille_config(cur)
+        self._copy_packaging_links(cur)
 
         # Finally, flush the caches because we've altered stuff behind the
         # back of sqlobject.
@@ -1553,9 +1560,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 PackagePublishingPocket.RELEASE)
             clone_packages(origin, destination, distroarchseries_list)
 
-    def _copy_component_and_section_selections(self, cur):
-        """Copy the section and component selections from the parent distro
-        series into this one.
+    def _copy_component_section_and_format_selections(self, cur):
+        """Copy the section, component and format selections from the parent
+        distro series into this one.
         """
         # Copy the component selections
         cur.execute('''
@@ -1569,6 +1576,56 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SELECT %s as distroseries, ss.section AS section
             FROM SectionSelection AS ss WHERE ss.distroseries = %s
             ''' % sqlvalues(self.id, self.parent_series.id))
+        # Copy the source format selections
+        cur.execute('''
+            INSERT INTO SourcePackageFormatSelection (distroseries, format)
+            SELECT %s as distroseries, spfs.format AS format
+            FROM SourcePackageFormatSelection AS spfs
+            WHERE spfs.distroseries = %s
+            ''' % sqlvalues(self.id, self.parent_series.id))
+
+    def _copy_packaging_links(self, cur):
+        """Copy the packaging links from the parent series to this one."""
+        cur.execute("""
+            INSERT INTO
+                Packaging(
+                    distroseries, sourcepackagename, productseries,
+                    packaging, owner)
+            SELECT
+                ChildSeries.id,
+                Packaging.sourcepackagename,
+                Packaging.productseries,
+                Packaging.packaging,
+                Packaging.owner
+            FROM
+                Packaging
+                -- Joining the parent distroseries permits the query to build
+                -- the data set for the series being updated, yet results are
+                -- in fact the data from the original series.
+                JOIN Distroseries ChildSeries
+                    ON Packaging.distroseries = ChildSeries.parent_series
+            WHERE
+                -- Select only the packaging links that are in the parent
+                -- that are not in the child.
+                ChildSeries.id = %s
+                AND Packaging.sourcepackagename in (
+                    SELECT sourcepackagename
+                    FROM Packaging
+                    WHERE distroseries in (
+                        SELECT id
+                        FROM Distroseries
+                        WHERE id = ChildSeries.parent_series
+                        )
+                    EXCEPT
+                    SELECT sourcepackagename
+                    FROM Packaging
+                    WHERE distroseries in (
+                        SELECT id
+                        FROM Distroseries
+                        WHERE id = ChildSeries.id
+                        )
+                    )
+            """ % self.id)
 
     def copyTranslationsFromParent(self, transaction, logger=None):
         """See `IDistroSeries`."""
@@ -1734,6 +1791,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return self.name
         else:
             return '%s%s' % (self.name, pocketsuffix[pocket])
+
+    def isSourcePackageFormatPermitted(self, format):
+        return getUtility(ISourcePackageFormatSelectionSet
+            ).getBySeriesAndFormat(self, format) is not None
 
 
 class DistroSeriesSet:

@@ -19,23 +19,23 @@ import time
 import traceback
 
 from bzrlib.errors import BzrCommandError
-from bzrlib.plugins.launchpad.account import get_lp_login
 
 import paramiko
 
-from devscripts.ec2test.credentials import EC2Credentials
+from devscripts.ec2test.session import EC2SessionName
 
 
 DEFAULT_INSTANCE_TYPE = 'c1.xlarge'
 AVAILABLE_INSTANCE_TYPES = ('m1.large', 'm1.xlarge', 'c1.xlarge')
 
+
 class AcceptAllPolicy:
     """We accept all unknown host key."""
 
-    # Normally the console output is supposed to contain the Host key
-    # but it doesn't seem to be the case here, so we trust that the host
-    # we are connecting to is the correct one.
     def missing_host_key(self, client, hostname, key):
+        # Normally the console output is supposed to contain the Host key but
+        # it doesn't seem to be the case here, so we trust that the host we
+        # are connecting to is the correct one.
         pass
 
 
@@ -159,6 +159,18 @@ mkdir /var/launchpad/sourcecode
 """
 
 
+postmortem_banner = """\
+Postmortem Console. EC2 instance is not yet dead.
+It will shut down when you exit this prompt (CTRL-D)
+
+Tab-completion is enabled.
+EC2Instance is available as `instance`.
+Also try these:
+  http://%(dns)s/current_test.log
+  ssh -A ec2test@%(dns)s
+"""
+
+
 class EC2Instance:
     """A single EC2 instance."""
 
@@ -169,6 +181,7 @@ class EC2Instance:
 
         :param name: The name to use for the key pair and security group for
             the instance.
+        :type name: `EC2SessionName`
         :param instance_type: One of the AVAILABLE_INSTANCE_TYPES.
         :param machine_id: The AMI to use, or None to do the usual regexp
             matching.  If you put 'based-on:' before the AMI id, it is assumed
@@ -179,6 +192,18 @@ class EC2Instance:
             to allow access to the instance.
         :param credentials: An `EC2Credentials` object.
         """
+        # This import breaks in the test environment.  Do it here so
+        # that unit tests (which don't use this factory) can still
+        # import EC2Instance.
+        from bzrlib.plugins.launchpad.account import get_lp_login
+
+        # XXX JeroenVermeulen 2009-11-27 bug=489073: EC2Credentials
+        # imports boto, which isn't necessarily installed in our test
+        # environment.  Doing the import here so that unit tests (which
+        # don't use this factory) can still import EC2Instance.
+        from devscripts.ec2test.credentials import EC2Credentials
+
+        assert isinstance(name, EC2SessionName)
         if instance_type not in AVAILABLE_INSTANCE_TYPES:
             raise ValueError('unknown instance_type %s' % (instance_type,))
 
@@ -199,7 +224,7 @@ class EC2Instance:
         # We always recreate the keypairs because there is no way to
         # programmatically retrieve the private key component, unless we
         # generate it.
-        account.delete_previous_key_pair()
+        account.collect_garbage()
 
         if machine_id and machine_id.startswith('based-on:'):
             from_scratch = True
@@ -210,28 +235,26 @@ class EC2Instance:
         # get the image
         image = account.acquire_image(machine_id)
 
-        vals = os.environ.copy()
         login = get_lp_login()
         if not login:
             raise BzrCommandError(
                 'you must have set your launchpad login in bzr.')
-        vals['launchpad-login'] = login
 
         return EC2Instance(
-            name, image, instance_type, demo_networks, account, vals,
-            from_scratch, user_key)
+            name, image, instance_type, demo_networks, account,
+            from_scratch, user_key, login)
 
     def __init__(self, name, image, instance_type, demo_networks, account,
-                 vals, from_scratch, user_key):
+                 from_scratch, user_key, launchpad_login):
         self._name = name
         self._image = image
         self._account = account
         self._instance_type = instance_type
         self._demo_networks = demo_networks
         self._boto_instance = None
-        self._vals = vals
         self._from_scratch = from_scratch
         self._user_key = user_key
+        self._launchpad_login = launchpad_login
 
     def log(self, msg):
         """Log a message on stdout, flushing afterwards."""
@@ -320,7 +343,8 @@ class EC2Instance:
         """
         authorized_keys_file = conn.sftp.open(remote_filename, 'w')
         authorized_keys_file.write(
-            "%s %s\n" % (self._user_key.get_name(), self._user_key.get_base64()))
+            "%s %s\n" % (
+                self._user_key.get_name(), self._user_key.get_base64()))
         authorized_keys_file.close()
 
     def _ensure_ec2test_user_has_keys(self, connection=None):
@@ -345,8 +369,8 @@ class EC2Instance:
             if our_connection:
                 connection.close()
             self.log(
-                'You can now use ssh -A ec2test@%s to log in the instance.\n' %
-                self.hostname)
+                'You can now use ssh -A ec2test@%s to '
+                'log in the instance.\n' % self.hostname)
             self._ec2test_user_has_keys = True
 
     def connect(self):
@@ -361,15 +385,21 @@ class EC2Instance:
             self._upload_local_key(root_connection, 'local_key')
             root_connection.perform(
                 'cat local_key >> ~/.ssh/authorized_keys && rm local_key')
-            root_connection.run_script(from_scratch_root % self._vals)
+            root_connection.run_script(from_scratch_root)
             self._ensure_ec2test_user_has_keys(root_connection)
             root_connection.close()
             conn = self._connect('ec2test')
-            conn.run_script(from_scratch_ec2test % self._vals)
+            conn.run_script(
+                from_scratch_ec2test
+                % {'launchpad-login': self._launchpad_login})
             self._from_scratch = False
             return conn
         self._ensure_ec2test_user_has_keys()
         return self._connect('ec2test')
+
+    def _report_traceback(self):
+        """Print traceback."""
+        traceback.print_exc()
 
     def set_up_and_run(self, postmortem, shutdown, func, *args, **kw):
         """Start, run `func` and then maybe shut down.
@@ -385,34 +415,33 @@ class EC2Instance:
         :param args: Passed to `func`.
         :param kw: Passed to `func`.
         """
+        # We ignore the value of the 'shutdown' argument and always shut down
+        # unless `func` returns normally.
+        really_shutdown = True
+        retval = None
         try:
             self.start()
             try:
-                return func(*args, **kw)
+                retval = func(*args, **kw)
             except Exception:
-                # When running in postmortem mode, it is really helpful to see if
-                # there are any exceptions before it waits in the console (in the
-                # finally block), and you can't figure out why it's broken.
-                traceback.print_exc()
+                # When running in postmortem mode, it is really helpful to see
+                # if there are any exceptions before it waits in the console
+                # (in the finally block), and you can't figure out why it's
+                # broken.
+                self._report_traceback()
+            else:
+                really_shutdown = shutdown
         finally:
             try:
                 if postmortem:
                     console = code.InteractiveConsole(locals())
-                    console.interact((
-                        'Postmortem Console.  EC2 instance is not yet dead.\n'
-                        'It will shut down when you exit this prompt (CTRL-D).\n'
-                        '\n'
-                        'Tab-completion is enabled.'
-                        '\n'
-                        'EC2Instance is available as `instance`.\n'
-                        'Also try these:\n'
-                        '  http://%(dns)s/current_test.log\n'
-                        '  ssh -A %(dns)s') %
-                                     {'dns': self.hostname})
+                    console.interact(
+                        postmortem_banner % {'dns': self.hostname})
                     print 'Postmortem console closed.'
             finally:
-                if shutdown:
+                if really_shutdown:
                     self.shutdown()
+        return retval
 
     def _copy_single_file(self, sftp, local_path, remote_dir):
         """Copy `local_path` to `remote_dir` on this instance.
@@ -486,7 +515,7 @@ class EC2Instance:
         connection.perform('sudo mkdir /mnt/ec2')
         connection.perform('sudo chown $USER:$USER /mnt/ec2')
 
-        remote_pk, remote_cert =  self.copy_key_and_certificate_to_image(
+        remote_pk, remote_cert = self.copy_key_and_certificate_to_image(
             connection.sftp)
 
         bundle_dir = os.path.join('/mnt', name)
@@ -530,7 +559,7 @@ class EC2Instance:
             'ec2-register',
             '--private-key=%s' % self.local_pk,
             '--cert=%s' % self.local_cert,
-            manifest_path
+            manifest_path,
             ]
         self.log("Executing command: %s" % ' '.join(cmd))
         subprocess.check_call(cmd, env=env)
@@ -551,14 +580,18 @@ class EC2InstanceConnection:
             self._sftp = self._ssh.open_sftp()
         return self._sftp
 
-    def perform(self, cmd, ignore_failure=False, out=None):
+    def perform(self, cmd, ignore_failure=False, out=None, err=None):
         """Perform 'cmd' on server.
 
         :param ignore_failure: If False, raise an error on non-zero exit
             statuses.
         :param out: A stream to write the output of the remote command to.
+        :param err: A stream to write the error of the remote command to.
         """
-        cmd = cmd % self._instance._vals
+        if out is None:
+            out = sys.stdout
+        if err is None:
+            err = sys.stderr
         self._instance.log(
             '%s@%s$ %s\n'
             % (self._username, self._instance._boto_instance.id, cmd))
@@ -570,15 +603,13 @@ class EC2InstanceConnection:
             if session.recv_ready():
                 data = session.recv(4096)
                 if data:
-                    sys.stdout.write(data)
-                    sys.stdout.flush()
-                    if out is not None:
-                        out.write(data)
+                    out.write(data)
+                    out.flush()
             if session.recv_stderr_ready():
                 data = session.recv_stderr(4096)
                 if data:
-                    sys.stderr.write(data)
-                    sys.stderr.flush()
+                    err.write(data)
+                    err.flush()
             if session.exit_status_ready():
                 break
         session.close()
@@ -598,7 +629,6 @@ class EC2InstanceConnection:
         Use this to run commands that require local SSH credentials. For
         example, getting private branches from Launchpad.
         """
-        cmd = cmd % self._instance._vals
         self._instance.log(
             '%s@%s$ %s\n'
             % (self._username, self._instance._boto_instance.id, cmd))

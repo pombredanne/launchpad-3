@@ -12,7 +12,7 @@ from cStringIO import StringIO
 
 from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
-from bzrlib.patches import parse_patches
+from bzrlib.patches import parse_patches, Patch
 from bzrlib.merge import Merge3Merger
 from lazr.delegates import delegates
 import simplejson
@@ -50,6 +50,9 @@ class Diff(SQLBase):
                     in simplejson.loads(self._diffstat).items())
 
     def _set_diffstat(self, diffstat):
+        if diffstat is None:
+            self._diffstat = None
+            return
         # diffstats should be mappings of path to line counts.
         assert isinstance(diffstat, dict)
         self._diffstat = simplejson.dumps(diffstat)
@@ -82,41 +85,76 @@ class Diff(SQLBase):
 
     @classmethod
     def mergePreviewFromBranches(cls, source_branch, source_revision,
-                                 target_branch):
+                                 target_branch, prerequisite_branch=None):
         """Generate a merge preview diff from the supplied branches.
 
         :param source_branch: The branch that will be merged.
         :param source_revision: The revision_id of the revision that will be
             merged.
         :param target_branch: The branch that the source will merge into.
+        :param prerequisite_branch: The branch that should be merged before
+            merging the source.
         :return: A `Diff` for a merge preview.
         """
-        source_branch.lock_read()
+        cleanups = []
         try:
-            target_branch.lock_read()
-            try:
-                merge_target = target_branch.basis_tree()
-                # Can't use bzrlib.merge.Merger because it fetches.
-                graph = target_branch.repository.get_graph(
-                    source_branch.repository)
-                base_revision = graph.find_unique_lca(
-                    source_revision, merge_target.get_revision_id())
-                repo = source_branch.repository
-                merge_source = repo.revision_tree(source_revision)
-                merge_base = repo.revision_tree(base_revision)
-                merger = Merge3Merger(
-                    merge_target, merge_target, merge_base, merge_source,
-                    do_merge=False)
-                transform = merger.make_preview_transform()
-                try:
-                    to_tree = transform.get_preview_tree()
-                    return Diff.fromTrees(merge_target, to_tree)
-                finally:
-                    transform.finalize()
-            finally:
-                target_branch.unlock()
+            for branch in [source_branch, target_branch, prerequisite_branch]:
+                if branch is not None:
+                    branch.lock_read()
+                    cleanups.append(branch.unlock)
+            merge_target = target_branch.basis_tree()
+            if prerequisite_branch is not None:
+                prereq_revision = cls._getLCA(
+                    source_branch, source_revision, prerequisite_branch)
+                from_tree = cls._getMergedTree(
+                    prerequisite_branch, prereq_revision, target_branch,
+                    merge_target, cleanups)
+            else:
+                from_tree = merge_target
+            to_tree = cls._getMergedTree(
+                source_branch, source_revision, target_branch,
+                merge_target, cleanups)
+            return cls.fromTrees(from_tree, to_tree)
         finally:
-            source_branch.unlock()
+            for cleanup in reversed(cleanups):
+                cleanup()
+
+    @classmethod
+    def _getMergedTree(cls, source_branch, source_revision, target_branch,
+                  merge_target, cleanups):
+        """Return a tree that is the result of a merge.
+
+        :param source_branch: The branch to merge.
+        :param source_revision: The revision_id of the revision to merge.
+        :param target_branch: The branch to merge into.
+        :param merge_target: The tree to merge into.
+        :param cleanups: A list of cleanup operations to run when all
+            operations are complete.  This will be appended to.
+        :return: a tree.
+        """
+        lca = cls._getLCA(source_branch, source_revision, target_branch)
+        merge_base = source_branch.repository.revision_tree(lca)
+        merge_source = source_branch.repository.revision_tree(
+            source_revision)
+        merger = Merge3Merger(
+            merge_target, merge_target, merge_base, merge_source,
+            do_merge=False)
+        transform = merger.make_preview_transform()
+        cleanups.append(transform.finalize)
+        return transform.get_preview_tree()
+
+    @staticmethod
+    def _getLCA(source_branch, source_revision, target_branch):
+        """Return the unique LCA of two branches.
+
+        :param source_branch: The branch to merge.
+        :param source_revision: The revision of the source branch.
+        :param target_branch: The branch to merge into.
+        """
+        graph = target_branch.repository.get_graph(
+            source_branch.repository)
+        return graph.find_unique_lca(
+            source_revision, target_branch.last_revision())
 
     @classmethod
     def fromTrees(klass, from_tree, to_tree, filename=None):
@@ -163,9 +201,18 @@ class Diff(SQLBase):
         except Exception:
             getUtility(IErrorReportingUtility).raising(sys.exc_info())
             # Set the diffstat to be empty.
-            diffstat = {}
+            diffstat = None
+            added_lines_count = None
+            removed_lines_count = None
+        else:
+            added_lines_count = 0
+            removed_lines_count = 0
+            for path, (added, removed) in diffstat.items():
+                added_lines_count += added
+                removed_lines_count += removed
         return cls(diff_text=diff_text, diff_lines_count=diff_lines_count,
-                   diffstat=diffstat)
+                   diffstat=diffstat, added_lines_count=added_lines_count,
+                   removed_lines_count=removed_lines_count)
 
     @staticmethod
     def generateDiffstat(diff_bytes):
@@ -176,6 +223,8 @@ class Diff(SQLBase):
         """
         file_stats = {}
         for patch in parse_patches(diff_bytes.splitlines(True)):
+            if not isinstance(patch, Patch):
+                continue
             path = patch.newname.split('\t')[0]
             file_stats[path] = tuple(patch.stats_values()[:2])
         return file_stats
@@ -244,7 +293,7 @@ class PreviewDiff(Storm):
 
     target_revision_id = Unicode(allow_none=False)
 
-    dependent_revision_id = Unicode()
+    prerequisite_revision_id = Unicode(name='dependent_revision_id')
 
     conflicts = Unicode()
 
@@ -267,26 +316,33 @@ class PreviewDiff(Storm):
         preview = cls()
         preview.source_revision_id = source_revision.decode('utf-8')
         preview.target_revision_id = target_revision.decode('utf-8')
+        if bmp.prerequisite_branch is not None:
+            prerequisite_branch = Branch.open(
+                bmp.prerequisite_branch.warehouse_url)
+        else:
+            prerequisite_branch = None
         preview.diff = Diff.mergePreviewFromBranches(
-            source_branch, source_revision, target_branch)
+            source_branch, source_revision, target_branch,
+            prerequisite_branch)
         return preview
 
     @classmethod
     def create(cls, diff_content, source_revision_id, target_revision_id,
-               dependent_revision_id, conflicts):
+               prerequisite_revision_id, conflicts):
         """Create a PreviewDiff with specified values.
 
         :param diff_content: The text of the dift, as bytes.
         :param source_revision_id: The revision_id of the source branch.
         :param target_revision_id: The revision_id of the target branch.
-        :param dependent_revision_id: The revision_id of the dependent branch.
+        :param prerequisite_revision_id: The revision_id of the prerequisite
+            branch.
         :param conflicts: The conflicts, as text.
         :return: A `PreviewDiff` with specified values.
         """
         preview = cls()
         preview.source_revision_id = source_revision_id
         preview.target_revision_id = target_revision_id
-        preview.dependent_revision_id = dependent_revision_id
+        preview.prerequisite_revision_id = prerequisite_revision_id
         preview.conflicts = conflicts
 
         filename = generate_uuid() + '.txt'
@@ -306,10 +362,10 @@ class PreviewDiff(Storm):
             # This is the simple frequent case.
             return True
 
-        # More complex involves the dependent branch too.
-        if (bmp.dependent_branch is not None and
-            (self.dependent_revision_id !=
-             bmp.dependent_branch.last_scanned_id)):
+        # More complex involves the prerequisite branch too.
+        if (bmp.prerequisite_branch is not None and
+            (self.prerequisite_revision_id !=
+             bmp.prerequisite_branch.last_scanned_id)):
             return True
         else:
             return False

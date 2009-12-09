@@ -78,6 +78,7 @@ from windmill.bin.admin_lib import (
 
 from zope.app.publication.httpfactory import chooseClasses
 import zope.app.testing.functional
+import zope.publisher.publish
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, provideUtility
 from zope.component.interfaces import ComponentLookupError
@@ -87,7 +88,8 @@ from zope.server.logger.pythonlogger import PythonLogger
 
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
-from canonical.database.revision import confirm_dbrevision
+from canonical.database.revision import (
+    confirm_dbrevision, confirm_dbrevision_on_startup)
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
@@ -474,7 +476,7 @@ class LibrarianLayer(BaseLayer):
                     "Librarian has been killed or has hung."
                     "Tests should use LibrarianLayer.hide() and "
                     "LibrarianLayer.reveal() where possible, and ensure "
-                    "the Librarian is restarted if it absolutetly must be "
+                    "the Librarian is restarted if it absolutely must be "
                     "shutdown: " + str(e)
                     )
         if LibrarianLayer._reset_between_tests:
@@ -1328,12 +1330,6 @@ class PageTestLayer(LaunchpadFunctionalLayer):
             access_logger.log(MockHTTPTask(response._response, first_line))
             return response
 
-        # Setting STAGGER_RETRIES to False makes tests like
-        # notfound-traversals.txt go much, much faster by avoiding calls to
-        # time.sleep()
-        cls._original_stagger_retries = zope.publisher.http.STAGGER_RETRIES
-        zope.publisher.http.STAGGER_RETRIES = False
-
         PageTestLayer.orig__call__ = (
                 zope.app.testing.functional.HTTPCaller.__call__)
         zope.app.testing.functional.HTTPCaller.__call__ = my__call__
@@ -1345,7 +1341,6 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         PageTestLayer.resetBetweenTests(True)
         zope.app.testing.functional.HTTPCaller.__call__ = (
                 PageTestLayer.orig__call__)
-        zope.publisher.http.STAGGER_RETRIES = cls._original_stagger_retries
         if PageTestLayer.profiler:
             PageTestLayer.profiler.dump_stats(
                 os.environ.get('PROFILE_PAGETESTS_REQUESTS'))
@@ -1570,6 +1565,10 @@ class LayerProcessController:
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         # The database must be available for the app server to start.
         LaunchpadTestSetup().setUp()
+        # The app server will not start at all if the database hasn't been
+        # correctly patched. The app server will make exactly this check,
+        # doing it here makes the error more obvious.
+        confirm_dbrevision_on_startup()
         _config = cls.appserver_config
         cmd = [
             os.path.join(_config.root, 'bin', 'run'),
@@ -1736,3 +1735,11 @@ class BaseWindmillLayer(AppServerLayer):
         if cls.config_file is not None:
             # Close the file so that it gets deleted.
             cls.config_file.close()
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        # Left-over threads should be harmless, since they should all
+        # belong to Windmill, which will be cleaned up on layer
+        # tear down.
+        BaseLayer.disable_thread_check = True

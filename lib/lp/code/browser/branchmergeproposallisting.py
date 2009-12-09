@@ -13,8 +13,11 @@ __all__ = [
     'PersonProductActiveReviewsView',
     ]
 
+from operator import attrgetter
+
 from zope.component import getUtility
 from zope.interface import implements, Interface
+from zope.publisher.interfaces import NotFound
 from zope.schema import Choice
 
 from lazr.delegates import delegates
@@ -28,6 +31,7 @@ from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
 
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
 from lp.code.interfaces.branchmergeproposal import (
@@ -92,6 +96,24 @@ class BranchMergeProposalListingItem:
     def reviewer_vote(self):
         """A vote from the specified reviewer."""
         return self.context.getUsersVoteReference(self.proposal_reviewer)
+
+    @property
+    def sort_key(self):
+        """The value to order by.
+
+        This defaults to date_review_requested, but there are occasions where
+        this is not set if the proposal went directly from work in progress to
+        approved.  In this case the date_reviewed is used.
+
+        The value is always not None as proposals in needs review state will
+        always have date_review_requested set, and approved proposals will
+        always have date_reviewed set.  These are the only two states that are
+        shown in the active reviews page, so they can always be sorted on.
+        """
+        if self.context.date_review_requested is not None:
+            return self.context.date_review_requested
+        else:
+            return self.context.date_reviewed
 
 
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):
@@ -302,6 +324,10 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         return self.user
 
     def initialize(self):
+        # Branches, despite implementing IHasMergeProposals, does not
+        # have an active reviews page.
+        if IBranch.providedBy(self.context):
+            raise NotFound(self.context, '+activereviews')
         # Work out the review groups
         self.review_groups = {}
         self.getter = getUtility(IBranchMergeProposalGetter)
@@ -321,6 +347,8 @@ class ActiveReviewsView(BranchMergeProposalListingView):
             if proposal.preview_diff is not None:
                 self.show_diffs = True
         # Sort each collection...
+        for group in self.review_groups.values():
+            group.sort(key=attrgetter('sort_key'))
         self.proposal_count = len(proposals)
 
     @cachedproperty
@@ -388,8 +416,7 @@ class PersonActiveReviewsView(ActiveReviewsView):
         proposals = collection.getMergeProposalsForPerson(
             self._getReviewer(),
             [BranchMergeProposalStatus.CODE_APPROVED,
-             BranchMergeProposalStatus.NEEDS_REVIEW,
-             BranchMergeProposalStatus.WORK_IN_PROGRESS])
+             BranchMergeProposalStatus.NEEDS_REVIEW])
 
         return proposals
 

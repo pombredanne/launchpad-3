@@ -12,7 +12,6 @@ __all__ = [
     'PullerMonitorProtocol',
     ]
 
-
 import os
 from StringIO import StringIO
 import socket
@@ -366,10 +365,8 @@ class PullerMaster:
 
     def startMirroring(self):
         self.logger.info(
-            'Mirroring branch %d: %s to %s', self.branch_id, self.source_url,
-            self.destination_url)
-        return self.branch_puller_endpoint.callRemote(
-            'startMirroring', self.branch_id)
+            'Worker started on branch %d: %s to %s', self.branch_id,
+            self.source_url, self.destination_url)
 
     def mirrorFailed(self, reason, oops):
         self.logger.info('Recorded %s', oops)
@@ -460,10 +457,11 @@ class JobScheduler:
 
     def run(self):
         consumer = ParallelLimitedTaskConsumer(
-            config.supermirror.maximum_workers)
+            config.supermirror.maximum_workers, logger=self.logger)
         self.consumer = consumer
         source = PollingTaskSource(
-            config.supermirror.polling_interval, self._poll)
+            config.supermirror.polling_interval, self._poll,
+            logger=self.logger)
         deferred = consumer.consume(source)
         deferred.addCallback(self._finishedRunning)
         return deferred

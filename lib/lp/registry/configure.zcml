@@ -149,7 +149,8 @@
                 getSubscription
                 getSubscriptions
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -285,7 +286,8 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -351,6 +353,9 @@
     <class
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
         <allow
+            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
+
+        <allow
             attributes="
                 distribution
                 development_version
@@ -390,12 +395,14 @@
                 getSubscription
                 parent_subscription_target
                 getBugNotificationsRecipients
+                getPersonsByEmail
                 getReleasesAndPublishingHistory
                 upstream_product
                 target_type_display
                 official_bug_tags
                 findRelatedArchives
-                findRelatedArchivePublications"/>
+                findRelatedArchivePublications
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -628,6 +635,12 @@
                 set_schema="lp.registry.interfaces.poll.IPoll"/>
         </class>
 
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.registry.interfaces.poll.IPoll"
+            factory="lp.registry.browser.poll.PollBreadcrumb"
+            permission="zope.Public"/>
+
         <!-- PollOption -->
 
         <class
@@ -801,7 +814,7 @@
                 permission="launchpad.View"
                 interface="lp.registry.interfaces.person.IPersonViewRestricted"/>
             <require
-                permission="launchpad.EditLocation"
+                permission="launchpad.Edit"
                 interface="lp.registry.interfaces.location.ISetLocation"/>
             <require
                 permission="launchpad.Edit"
@@ -903,7 +916,8 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1040,6 +1054,8 @@
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
+        <allow
+            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
             permission="launchpad.Driver"
             interface="lp.registry.interfaces.product.IProductDriverRestricted"/>
@@ -1150,13 +1166,15 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
@@ -1297,7 +1315,8 @@
                 getSubscription
                 getSubscriptions
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
@@ -1407,13 +1426,15 @@
                 getSubscription
                 getBugNotificationsRecipients
                 parent_subscription_target
-                target_type_display"/>
+                target_type_display
+                userHasBugSubscriptions"/>
         <require
             permission="launchpad.AnyPerson"
             attributes="
                 addSubscription
                 addBugSubscription
-                removeBugSubscription"/>
+                removeBugSubscription
+                userCanAlterSubscription"/>
 
         <!-- IHasBugSupervisor -->
 
@@ -1530,6 +1551,11 @@
             permission="zope.Public"
             set_schema="lp.registry.interfaces.productrelease.IProductRelease"/>
     </class>
+    <adapter
+        provides="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.productrelease.IProductRelease"
+        factory="lp.registry.model.productrelease.productrelease_to_milestone"
+        permission="zope.Public"/>
 
     <!-- This is class ProductReleaseFile -->
 
@@ -1582,14 +1608,18 @@
             permission="launchpad.Edit"
             set_attributes="name displayname description http_base_url
                             ftp_base_url rsync_base_url enabled speed
-                            country content official_candidate" />
+                            country content official_candidate owner" />
         <require
             permission="launchpad.Admin"
-            set_attributes="status owner whiteboard reviewer date_reviewed" />
-        <require
-            permission="launchpad.Admin"
+            set_attributes="status whiteboard reviewer date_reviewed"
             attributes="destroySelf" />
     </class>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        factory="lp.registry.browser.distributionmirror.DistributionMirrorBreadcrumb"
+        permission="zope.Public"/>
 
     <!-- DistributionMirrorSet -->
     <class class="lp.registry.model.distributionmirror.DistributionMirrorSet">
@@ -1641,4 +1671,38 @@
         <allow
             interface="lp.registry.interfaces.mentoringoffer.IMentoringOfferSet"/>
     </securedutility>
+
+    <!-- Packaging -->
+    <class
+        class="lp.registry.model.packaging.Packaging">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackaging"/>
+        <require
+            permission="zope.Public"
+            set_schema="lp.registry.interfaces.packaging.IPackaging"/>
+    </class>
+
+    <!-- PackagingUtil -->
+    <class
+        class="lp.registry.model.packaging.PackagingUtil">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
+    </class>
+    <securedutility
+        class="lp.registry.model.packaging.PackagingUtil"
+        provides="lp.registry.interfaces.packaging.IPackagingUtil">
+        <allow
+            interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
+    </securedutility>
+
+    <!-- StructuralSubscription -->
+    
+    <class
+        class="lp.registry.model.structuralsubscription.StructuralSubscription">
+        <allow
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+        <require
+            permission="zope.Public"
+            set_schema="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+    </class>
 </configure>

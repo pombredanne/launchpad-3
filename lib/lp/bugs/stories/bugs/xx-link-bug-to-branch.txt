@@ -33,19 +33,8 @@ a related branch.
     Successfully registered branch main for this bug.
     ...
     Related branches
-    lp://dev/~name12/firefox/main (Development)
+    lp://dev/~name12/firefox/main
     ...
-
-The text "Link a related branch" has now changed to "Link another branch".
-
-    >>> user_browser.getLink('Link a related branch')
-    Traceback (most recent call last):
-    ...
-    LinkNotFoundError
-
-    >>> user_browser.getLink('Link another branch')
-    <Link text='Link another branch'
-        url='http://bugs.launchpad.dev/firefox/+bug/1/+addbranch'>
 
 We can delete existing links between a bug and a branch.
 

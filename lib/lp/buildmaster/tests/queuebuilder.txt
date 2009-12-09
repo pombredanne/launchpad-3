@@ -74,20 +74,20 @@ distroarchseries:
 Produce a set of available DistroArchSeries, for which the
 build jobs will be created.
 
-    >>> distroserieses = set()
+    >>> distroseries = set()
 
     >>> for archseries in DistroArchSeries.select():
-    ...     distroserieses.add(archseries.distroseries)
+    ...     distroseries.add(archseries.distroseries)
     ...     build_master.addDistroArchSeries(archseries)
 
     >>> import operator
-    >>> distroserieses = sorted(
-    ...     distroserieses, key=operator.attrgetter('name'))
+    >>> distroseries = sorted(
+    ...     distroseries, key=operator.attrgetter('name'))
 
 Among all the available distroarchseries only the one with chroot will
 be considered.
 
-    >>> valid_archs = sorted(build_master._archserieses.keys(),
+    >>> valid_archs = sorted(build_master._archseries.keys(),
     ...                      key=operator.attrgetter('id'))
     >>> for arch in valid_archs:
     ...     print arch.title
@@ -107,7 +107,7 @@ sampledata).
 This is to allow us to study carefully what is being added as we add
 new series and builds.
 
-    >>> for series in distroserieses:
+    >>> for series in distroseries:
     ...      build_master.createMissingBuilds(series)
 
 Add the missing build queue entries.
@@ -229,7 +229,7 @@ distroseries (see bug 181328).
     >>> copied_pub = pub_failed.copyTo(
     ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
     >>> failed_build = pub_failed.sourcepackagerelease.createBuild(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)
@@ -292,12 +292,12 @@ checks/counters within this test.
 
 == Create and verify the new builds ==
 
-Create missing builds (packages w/o build entry) for those distroserieses.
+Create missing builds (packages w/o build entry) for those distroseries.
 
 We expect to have a couple of new builds for the sane hoary/RELEASE,
 one for warty/UPDATES and one for hoary/RELEASE/PPA.
 
-    >>> for series in distroserieses:
+    >>> for series in distroseries:
     ...      build_master.createMissingBuilds(series)
 
 Check that we only created new Build entries for the new hoary releases:
@@ -343,7 +343,8 @@ can be dispatched once operation is committed, i.e. dispatching can
 happen in parallel with build creation.
 
     >>> build_queue = active_jobs[0]
-    >>> print build_queue.build.title
+    >>> build = getUtility(IBuildSet).getByQueueEntry(build_queue)
+    >>> print build.title
     i386 build of test-buildd 667 in ubuntu hoary RELEASE
     >>> build_queue.lastscore
     2505
@@ -351,15 +352,15 @@ happen in parallel with build creation.
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.
 
-    >>> print build_queue.build.current_component.name
+    >>> print build.current_component.name
     main
-    >>> print build_queue.build.sourcepackagerelease.component.name
+    >>> print build.sourcepackagerelease.component.name
     main
 
 Missing BuildQueue records, resulting from given-back builds, are
 created in the last stage of the queue-builder script.
 
-    >>> given_back_build = build_queue.build
+    >>> given_back_build = getUtility(IBuildSet).getByQueueEntry(build_queue)
     >>> build_queue.destroySelf()
     >>> flush_database_updates()
 

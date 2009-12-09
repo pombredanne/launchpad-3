@@ -8,8 +8,7 @@ __metaclass__ = type
 # then get the IBranchLookup utility.
 __all__ = []
 
-from zope.component import (
-    adapts, getSiteManager, getUtility, queryMultiAdapter)
+from zope.component import adapts, getUtility, queryMultiAdapter
 from zope.interface import implements
 
 from storm.expr import Join
@@ -27,17 +26,21 @@ from lp.code.interfaces.branchlookup import (
     IBranchLookup, ILinkedBranchTraversable, ILinkedBranchTraverser)
 from lp.code.interfaces.branchnamespace import (
     IBranchNamespaceSet, InvalidNamespace)
-from lp.code.interfaces.linkedbranch import get_linked_branch, NoLinkedBranch
+from lp.code.interfaces.linkedbranch import (
+    CannotHaveLinkedBranch, get_linked_branch, NoLinkedBranch)
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distroseries import (
     IDistroSeries, IDistroSeriesSet, NoSuchDistroSeries)
+from lp.registry.interfaces.person import NoSuchPerson
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import (
     InvalidProductName, IProduct, NoSuchProduct)
 from lp.registry.interfaces.productseries import NoSuchProductSeries
 from lp.registry.interfaces.sourcepackagename import (
     NoSuchSourcePackageName)
+from lp.services.utils import iter_split
 from canonical.launchpad.validators.name import valid_name
+from canonical.launchpad.interfaces.lpstorm import IMasterStore, ISlaveStore
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -160,12 +163,6 @@ class DistroSeriesTraversable:
         return sourcepackage.getSuiteSourcePackage(self.pocket)
 
 
-sm = getSiteManager()
-sm.registerAdapter(ProductTraversable)
-sm.registerAdapter(DistributionTraversable)
-sm.registerAdapter(DistroSeriesTraversable)
-
-
 class LinkedBranchTraverser:
     """Utility for traversing to objects that can have linked branches."""
 
@@ -233,10 +230,18 @@ class BranchLookup:
                 return None
             try:
                 return self.getByLPPath(uri.path.lstrip('/'))[0]
-            except NoSuchBranch:
+            except (
+                CannotHaveLinkedBranch, InvalidNamespace, InvalidProductName,
+                NoSuchBranch, NoSuchPerson, NoSuchProduct,
+                NoSuchProductSeries, NoSuchDistroSeries,
+                NoSuchSourcePackageName, NoLinkedBranch):
                 return None
 
         return Branch.selectOneBy(url=url)
+
+    def getByUrls(self, urls):
+        """See `IBranchLookup`."""
+        return dict((url, self.getByUrl(url)) for url in set(urls))
 
     def getByUniqueName(self, unique_name):
         """Find a branch by its unique name.
@@ -258,6 +263,25 @@ class BranchLookup:
         except InvalidNamespace:
             return None
         return self._getBranchInNamespace(namespace_data, branch_name)
+
+    def getIdAndTrailingPath(self, path, from_slave=False):
+        """See `IBranchLookup`. """
+        if from_slave:
+            store = ISlaveStore(Branch)
+        else:
+            store = IMasterStore(Branch)
+        prefixes = []
+        for first, second in iter_split(path[1:], '/'):
+            prefixes.append(first)
+        result = store.find(
+            (Branch.id, Branch.unique_name),
+            Branch.unique_name.is_in(prefixes), Branch.private == False).one()
+        if result is None:
+            return None, None
+        else:
+            branch_id, unique_name = result
+            trailing = path[len(unique_name) + 1:]
+            return branch_id, trailing
 
     def _getBranchInNamespace(self, namespace_data, branch_name):
         if namespace_data['product'] == '+junk':

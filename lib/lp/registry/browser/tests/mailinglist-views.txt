@@ -1,3 +1,4 @@
+==================
 Mailing list pages
 ==================
 
@@ -6,7 +7,7 @@ currently.  See lib/canonical/launchpad/pagetests/mailinglists/*.txt
 
 
 Requesting a mailing list
--------------------------
+=========================
 
 Both team owners and team administrators can request a mailing list.  Here,
 Sample Person creates the team, thus becoming its owner.
@@ -63,7 +64,7 @@ Now No Privileges Person has permission to request mailing lists.
 
 
 Purging lists
--------------
+=============
 
 A team mailing list can, under certain circumstances, be purged by a
 Mailing List Expert or Launchpad administrator.  Purging is an assertion
@@ -151,7 +152,7 @@ list.
 
 
 Like it never existed
----------------------
+=====================
 
 A list which has been purged acts, for all intents and purposes, as if the
 mailing list doesn't exist.  For example, once purged, it can be re-requested,
@@ -176,7 +177,7 @@ Of course, while purged, the mailing list cannot be purged again.
 
 
 Privacy and mailing lists
--------------------------
+=========================
 
 If a non-public team has a mailing list the information cannot be seen
 by non-members.  Access to the team index page is forbidden and the

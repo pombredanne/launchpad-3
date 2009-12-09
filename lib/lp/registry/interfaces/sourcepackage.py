@@ -11,7 +11,7 @@ __all__ = [
     'ISourcePackage',
     'ISourcePackageFactory',
     'SourcePackageFileType',
-    'SourcePackageFormat',
+    'SourcePackageType',
     'SourcePackageRelationships',
     'SourcePackageUrgency',
     ]
@@ -90,14 +90,13 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
     # This is really a reference to an IProductSeries.
     productseries = exported(
         ReferenceChoice(
-            title=_("Product Series"), required=False,
+            title=_("Project series"), required=False,
             vocabulary="ProductSeries",
             schema=Interface,
             description=_(
-                "The best guess we have as to the Launchpad ProductSeries "
-                "for this Source Package. Try find packaging information for "
-                "this specific distroseries then try parent series and "
-                "previous Ubuntu series.")))
+                "The registered project series that this source package. "
+                "is based on. This series may be the same as the one that "
+                "earlier versions of this source packages were based on.")))
 
     releases = Attribute("The full set of source package releases that "
         "have been published in this distroseries under this source "
@@ -225,11 +224,34 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
 
+    def get_default_archive(component=None):
+        """Get the default archive of this package.
+
+        If 'component' is a partner component, then the default archive is the
+        partner archive. Otherwise, the primary archive of the associated
+        distribution.
+
+        :param component: The `IComponent` to base the default archive
+            decision on. If None, defaults to the last published component.
+        :raise NoPartnerArchive: If returning the partner archive is
+            appropriate, but no partner archive exists.
+        :return: `IArchive`.
+        """
+
     def getLatestTranslationsUploads():
         """Find latest Translations tarballs as produced by Soyuz.
 
         :return: A list of `ILibraryFileAlias`es, usually of size zero
             or one.  If not, they are sorted from oldest to newest.
+        """
+
+    @export_read_operation()
+    def linkedBranches():
+        """Get the official branches for this package.
+
+        This operation returns a {`Pocket`-name : `IBranch`} dict.
+
+        :return: A {`Pocket`-name : `IBranch`} dict.
         """
 
 
@@ -276,7 +298,7 @@ class SourcePackageFileType(DBEnumeratedType):
         which in turn lists the orig.tar.gz and diff.tar.gz files used to
         make up the package.  """)
 
-    ORIG = DBItem(4, """
+    ORIG_TARBALL = DBItem(4, """
         Orig Tarball
 
         This file is an Ubuntu "orig" file, typically an upstream tarball or
@@ -290,14 +312,14 @@ class SourcePackageFileType(DBEnumeratedType):
         diff creates additional directories with patches and documentation
         used to build the binary packages for Ubuntu.  """)
 
-    TARBALL = DBItem(6, """
-        Tarball
+    NATIVE_TARBALL = DBItem(6, """
+        Native Tarball
 
         This is a tarball, usually of a mixture of Ubuntu and upstream code,
         used in the build process for this source package.  """)
 
 
-class SourcePackageFormat(DBEnumeratedType):
+class SourcePackageType(DBEnumeratedType):
     """Source Package Format
 
     Launchpad supports distributions that use source packages in a variety

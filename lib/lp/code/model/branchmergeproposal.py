@@ -108,7 +108,7 @@ class BranchMergeProposal(SQLBase):
     target_branch = ForeignKey(
         dbName='target_branch', foreignKey='Branch', notNull=True)
 
-    dependent_branch = ForeignKey(
+    prerequisite_branch = ForeignKey(
         dbName='dependent_branch', foreignKey='Branch', notNull=False)
 
     whiteboard = StringCol(default=None)
@@ -121,8 +121,8 @@ class BranchMergeProposal(SQLBase):
     def private(self):
         return (
             self.source_branch.private or self.target_branch.private or
-            (self.dependent_branch is not None and
-             self.dependent_branch.private))
+            (self.prerequisite_branch is not None and
+             self.prerequisite_branch.private))
 
     reviewer = ForeignKey(
         dbName='reviewer', foreignKey='Person',
@@ -238,11 +238,16 @@ class BranchMergeProposal(SQLBase):
             self.target_branch: self.target_branch.bzr_identity,
             }
         branches = [self.source_branch, self.target_branch]
-        if self.dependent_branch is not None:
-            branches.append(self.dependent_branch)
+        if self.prerequisite_branch is not None:
+            branches.append(self.prerequisite_branch)
         for branch in branches:
             branch_recipients = branch.getNotificationRecipients()
             for recipient in branch_recipients:
+                # If the recipient cannot see either of the branches, skip
+                # them.
+                if (not self.source_branch.visibleByUser(recipient) or
+                    not self.target_branch.visibleByUser(recipient)):
+                    continue
                 subscription, rationale = branch_recipients.getReason(
                     recipient)
                 if (subscription.review_level < min_level):
@@ -331,18 +336,23 @@ class BranchMergeProposal(SQLBase):
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
         self._transitionToState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        self.date_review_requested = None
         self.reviewer = None
         self.date_reviewed = None
         self.reviewed_revision_id = None
 
-    def requestReview(self):
-        """See `IBranchMergeProposal`."""
+    def requestReview(self, _date_requested=None):
+        """See `IBranchMergeProposal`.
+
+        :param _date_requested: used only for testing purposes to override
+            the normal UTC_NOW for when the review was requested.
+        """
         # Don't reset the date_review_requested if we are already in the
         # review state.
+        if _date_requested is None:
+            _date_requested = UTC_NOW
         if self.queue_status != BranchMergeProposalStatus.NEEDS_REVIEW:
             self._transitionToState(BranchMergeProposalStatus.NEEDS_REVIEW)
-            self.date_review_requested = UTC_NOW
+            self.date_review_requested = _date_requested
 
     def isMergable(self):
         """See `IBranchMergeProposal`."""
@@ -350,7 +360,8 @@ class BranchMergeProposal(SQLBase):
         # or superseded, then it is valid to be merged.
         return (self.queue_status not in FINAL_STATES)
 
-    def _reviewProposal(self, reviewer, next_state, revision_id):
+    def _reviewProposal(self, reviewer, next_state, revision_id,
+                        _date_reviewed=None):
         """Set the proposal to one of the two review statuses."""
         # Check the reviewer can review the code for the target branch.
         old_state = self.queue_status
@@ -360,21 +371,25 @@ class BranchMergeProposal(SQLBase):
         self._transitionToState(next_state, reviewer)
         # Record the reviewer
         self.reviewer = reviewer
-        self.date_reviewed = UTC_NOW
+        if _date_reviewed is None:
+            _date_reviewed = UTC_NOW
+        self.date_reviewed = _date_reviewed
         # Record the reviewed revision id
         self.reviewed_revision_id = revision_id
         notify(BranchMergeProposalStatusChangeEvent(
                 self, reviewer, old_state, next_state))
 
-    def approveBranch(self, reviewer, revision_id):
+    def approveBranch(self, reviewer, revision_id, _date_reviewed=None):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
-            reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id)
+            reviewer, BranchMergeProposalStatus.CODE_APPROVED, revision_id,
+            _date_reviewed)
 
-    def rejectBranch(self, reviewer, revision_id):
+    def rejectBranch(self, reviewer, revision_id, _date_reviewed=None):
         """See `IBranchMergeProposal`."""
         self._reviewProposal(
-            reviewer, BranchMergeProposalStatus.REJECTED, revision_id)
+            reviewer, BranchMergeProposalStatus.REJECTED, revision_id,
+            _date_reviewed)
 
     def enqueue(self, queuer, revision_id):
         """See `IBranchMergeProposal`."""
@@ -476,7 +491,7 @@ class BranchMergeProposal(SQLBase):
         proposal = self.source_branch.addLandingTarget(
             registrant=registrant,
             target_branch=self.target_branch,
-            dependent_branch=self.dependent_branch,
+            prerequisite_branch=self.prerequisite_branch,
             whiteboard=self.whiteboard,
             needs_review=True, review_requests=review_requests)
         self.superseded_by = proposal
@@ -486,13 +501,27 @@ class BranchMergeProposal(SQLBase):
         self.syncUpdate()
         return proposal
 
+    def _normalizeReviewType(self, review_type):
+        """Normalse the review type.
+
+        If review_type is None, it stays None.  Otherwise the review_type is
+        converted to lower case, and if the string is empty is gets changed to
+        None.
+        """
+        if review_type is not None:
+            review_type = review_type.strip()
+            if review_type == '':
+                review_type = None
+            else:
+                review_type = review_type.lower()
+        return review_type
+
     def nominateReviewer(self, reviewer, registrant, review_type=None,
                          _date_created=DEFAULT, _notify_listeners=True):
         """See `IBranchMergeProposal`."""
         # Return the existing vote reference or create a new one.
         # Lower case the review type.
-        if review_type is not None:
-            review_type = review_type.lower()
+        review_type = self._normalizeReviewType(review_type)
         vote_reference = self.getUsersVoteReference(reviewer, review_type)
         if vote_reference is None:
             vote_reference = CodeReviewVoteReference(
@@ -543,6 +572,7 @@ class BranchMergeProposal(SQLBase):
         #:param _date_created: The date the message was created.  Provided
         #    only for testing purposes, as it can break
         # BranchMergeProposal.root_message.
+        review_type = self._normalizeReviewType(review_type)
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
         if parent is not None:
@@ -574,8 +604,7 @@ class BranchMergeProposal(SQLBase):
     def getUsersVoteReference(self, user, review_type=None):
         """Get the existing vote reference for the given user."""
         # Lower case the review type.
-        if review_type is not None:
-            review_type = review_type.lower()
+        review_type = self._normalizeReviewType(review_type)
         if user is None:
             return None
         if user.is_team:
@@ -640,9 +669,7 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         if _validate:
             validate_message(original_email)
-        # Lower case the review type.
-        if review_type is not None:
-            review_type = review_type.lower()
+        review_type = self._normalizeReviewType(review_type)
         code_review_message = CodeReviewComment(
             branch_merge_proposal=self, message=message, vote=vote,
             vote_tag=review_type)
@@ -664,13 +691,13 @@ class BranchMergeProposal(SQLBase):
         return code_review_message
 
     def updatePreviewDiff(self, diff_content, source_revision_id,
-                          target_revision_id, dependent_revision_id=None,
+                          target_revision_id, prerequisite_revision_id=None,
                           conflicts=None):
         """See `IBranchMergeProposal`."""
         # Create the PreviewDiff.
         self.preview_diff = PreviewDiff.create(
             diff_content, source_revision_id, target_revision_id,
-            dependent_revision_id, conflicts)
+            prerequisite_revision_id, conflicts)
 
         # XXX: TimPenhey 2009-02-19 bug 324724
         # Since the branch_merge_proposal attribute of the preview_diff

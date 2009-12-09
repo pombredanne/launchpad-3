@@ -1,6 +1,5 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-
 # pylint: disable-msg=E0611,W0212
 
 """Database classes including and related to Product."""
@@ -23,6 +22,7 @@ from sqlobject import (
 from storm.locals import And, Desc, Join, SQL, Store, Unicode
 from zope.interface import implements
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.cachedproperty import cachedproperty
 from lazr.delegates import delegates
@@ -31,7 +31,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
-from canonical.launchpad.interfaces import IStore
+from canonical.launchpad.interfaces.lpstorm import IStore
 from lp.code.model.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from lp.code.model.hasbranches import HasBranchesMixin, HasMergeProposalsMixin
@@ -44,7 +44,8 @@ from lp.bugs.model.bugtracker import BugTracker
 from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.model.commercialsubscription import (
     CommercialSubscription)
-from lp.translations.model.customlanguagecode import CustomLanguageCode
+from lp.translations.model.customlanguagecode import (
+    CustomLanguageCode, HasCustomLanguageCodesMixin)
 from lp.translations.model.potemplate import POTemplate
 from lp.registry.model.distroseries import DistroSeries
 from lp.registry.model.distribution import Distribution
@@ -56,21 +57,21 @@ from lp.registry.model.milestone import (
 from lp.registry.interfaces.person import (
     validate_person_not_private_membership, validate_public_person)
 from lp.registry.model.announcement import MakesAnnouncements
-from canonical.launchpad.database.packaging import Packaging
+from lp.registry.model.packaging import Packaging
 from lp.registry.model.pillar import HasAliasMixin
 from lp.registry.model.person import Person
 from lp.registry.model.productlicense import ProductLicense
 from lp.registry.model.productrelease import ProductRelease
 from lp.registry.model.productseries import ProductSeries
-from lp.services.database.precache import precache
+from lp.services.database.prejoin import prejoin
 from lp.answers.model.question import (
     QuestionTargetSearch, QuestionTargetMixin)
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin)
-from canonical.launchpad.database.structuralsubscription import (
+    HasTranslationImportsMixin, ITranslationImportQueue)
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
@@ -80,6 +81,8 @@ from lp.bugs.interfaces.bugsupervisor import IHasBugSupervisor
 from canonical.launchpad.interfaces.launchpad import (
     IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, ILaunchpadUsage,
     NotFoundError)
+from lp.translations.interfaces.customlanguagecode import (
+    IHasCustomLanguageCodes)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from lp.registry.interfaces.person import IPersonSet
@@ -165,19 +168,19 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
               QuestionTargetMixin, HasTranslationImportsMixin,
               HasAliasMixin, StructuralSubscriptionTargetMixin,
               HasMilestonesMixin, OfficialBugTagTargetMixin, HasBranchesMixin,
-              HasMergeProposalsMixin):
+              HasCustomLanguageCodesMixin, HasMergeProposalsMixin):
 
     """A Product."""
 
     implements(
-        IFAQTarget, IHasBugSupervisor, IHasIcon, IHasLogo,
-        IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget)
+        IFAQTarget, IHasBugSupervisor, IHasCustomLanguageCodes, IHasIcon,
+        IHasLogo, IHasMugshot, ILaunchpadUsage, IProduct, IQuestionTarget)
 
     _table = 'Product'
 
     project = ForeignKey(
         foreignKey="Project", dbName="project", notNull=False, default=None)
-    owner = ForeignKey(
+    _owner = ForeignKey(
         dbName="owner", foreignKey="Person",
         storm_validator=validate_person_not_private_membership,
         notNull=True)
@@ -490,6 +493,32 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     licenses = property(_getLicenses, _setLicenses)
 
+    def _getOwner(self):
+        """Get the owner."""
+        return self._owner
+
+    def _setOwner(self, new_owner):
+        """Set the owner.
+
+        Change the owner and change the ownership of related artifacts.
+        """
+        old_owner = self._owner
+        self._owner = new_owner
+        if old_owner is not None:
+            import_queue = getUtility(ITranslationImportQueue)
+            for entry in import_queue.getAllEntries(target=self):
+                if entry.importer == old_owner:
+                    removeSecurityProxy(entry).importer = new_owner
+            for series in self.series:
+                if series.owner == old_owner:
+                    series.owner = new_owner
+            for release in self.releases:
+                if release.owner == old_owner:
+                    release.owner = new_owner
+            Store.of(self).flush()
+
+    owner = property(_getOwner, _setOwner)
+
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
         return "BugTask.product = %d" % self.id
@@ -517,9 +546,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags_open_count(BugTask.product == self, user)
 
-    branches = SQLMultipleJoin('Branch', joinColumn='product',
-        orderBy='id')
-    serieses = SQLMultipleJoin('ProductSeries', joinColumn='product',
+    series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
     @property
@@ -695,7 +722,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         translatable_product_series = set(
             product_series
-            for product_series in self.serieses
+            for product_series in self.series
             if product_series.has_current_translation_templates)
         return sorted(
             translatable_product_series,
@@ -705,7 +732,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     def obsolete_translatable_series(self):
         """See `IProduct`."""
         obsolete_product_series = set(
-            product_series for product_series in self.serieses
+            product_series for product_series in self.series
             if len(product_series.getObsoleteTranslationTemplates()) > 0)
         return sorted(obsolete_product_series, key=lambda s: s.datecreated)
 
@@ -886,12 +913,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IProduct`."""
         return ProductSeries.selectOneBy(product=self, name=name)
 
-    def newSeries(self, owner, name, summary, branch=None):
+    def newSeries(
+        self, owner, name, summary, branch=None, releasefileglob=None):
         # XXX: jamesh 2008-04-11
         # Set the ID of the new ProductSeries to avoid flush order
         # loops in ProductSet.createProduct()
-        series = ProductSeries(productID=self.id, owner=owner, name=name,
-                             summary=summary, branch=branch)
+        series = ProductSeries(
+            productID=self.id, owner=owner, name=name,
+            summary=summary, branch=branch, releasefileglob=releasefileglob)
         if owner.inTeam(self.driver) and not owner.inTeam(self.owner):
             # The user is a product driver, and should be the driver of this
             # series to make him the release manager.
@@ -937,10 +966,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         if bug_supervisor is not None:
             subscription = self.addBugSubscription(bug_supervisor, user)
 
-    def getCustomLanguageCode(self, language_code):
-        """See `IProduct`."""
-        return CustomLanguageCode.selectOneBy(
-            product=self, language_code=language_code)
+    def composeCustomLanguageCodeMatch(self):
+        """See `HasCustomLanguageCodesMixin`."""
+        return CustomLanguageCode.product == self
+
+    def createCustomLanguageCode(self, language_code, language):
+        """See `IHasCustomLanguageCodes`."""
+        return CustomLanguageCode(
+            product=self, language_code=language_code, language=language)
 
     def userCanEdit(self, user):
         """See `IProduct`."""
@@ -963,15 +996,18 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def getTimeline(self, include_inactive=False):
         """See `IProduct`."""
-        series_list = sorted_version_numbers(self.serieses,
+        series_list = sorted_version_numbers(self.series,
                                              key=operator.attrgetter('name'))
         if self.development_focus in series_list:
             series_list.remove(self.development_focus)
         series_list.insert(0, self.development_focus)
         series_list.reverse()
-        return [series.getTimeline(include_inactive=include_inactive)
-                for series in series_list
-                if include_inactive or series.active]
+        return [
+            series.getTimeline(include_inactive=include_inactive)
+            for series in series_list
+            if include_inactive or series.active or
+               series == self.development_focus
+            ]
 
 
 class ProductSet:
@@ -1006,7 +1042,7 @@ class ProductSet:
         results = Product.selectBy(
             active=True, orderBy="-Product.datecreated")
         # The main product listings include owner, so we prejoin it.
-        return results.prejoin(["owner"])
+        return results.prejoin(["_owner"])
 
     def get(self, productid):
         """See `IProductSet`."""
@@ -1247,7 +1283,7 @@ class ProductSet:
             queries.append('Product.active IS TRUE')
         query = " AND ".join(queries)
         return Product.select(query, distinct=True,
-                              prejoins=["owner"],
+                              prejoins=["_owner"],
                               clauseTables=clauseTables)
 
     def getTranslatables(self):
@@ -1258,12 +1294,12 @@ class ProductSet:
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.official_rosetta == True,
-            Person.id == Product.ownerID
+            Person.id == Product._ownerID
             ).config(distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate
         # the cache.
-        return precache(results)
+        return prejoin(results)
 
     def featuredTranslatables(self, maximumproducts=8):
         """See `IProductSet`"""

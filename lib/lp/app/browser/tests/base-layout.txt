@@ -85,7 +85,7 @@ Watermark and breadcrumbs.
             <h2>Waffles</h2>
     ...
       <!-- Application Menu -->
-      <ul>
+      <ul class="facetmenu">
     <BLANKLINE>
           <li class="overview active"
               title="General information about Waffles"><a
@@ -290,7 +290,7 @@ Watermarks.
             </div>
     <BLANKLINE>
       <!-- Application Menu -->
-      <ul>
+      <ul class="facetmenu">
     <BLANKLINE>
           <li class="overview active"
               title="General information about Waffles"><a

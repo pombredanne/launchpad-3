@@ -15,7 +15,9 @@ __all__ = [
     'TeamMailingListModerationView',
     'TeamMailingListSubscribersView',
     'TeamMapData',
+    'TeamMapLtdData',
     'TeamMapView',
+    'TeamMapLtdView',
     'TeamMemberAddView',
     'TeamPrivacyAdapter',
     ]
@@ -251,11 +253,7 @@ class TeamEditView(TeamFormMixin, HasRenewalPolicyMixin,
                     reason = 'has a mailing list'
                 else:
                     reason = 'has a mailing list and a PPA'
-
-            # We can't change the widget's .hint directly because that's a
-            # read-only property.  But that property just delegates to the
-            # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = _(
+            self.widgets['name'].hint = _(
                 'This team cannot be renamed because it %s.' % reason)
 
 
@@ -1012,17 +1010,10 @@ class TeamMapView(LaunchpadView):
     """
 
     label = "Team member locations"
-
-    def __init__(self, context, request):
-        """Accept the 'preview' parameter to limit mapped participants."""
-        super(TeamMapView, self).__init__(context, request)
-        if 'preview' in self.request.form:
-            self.limit = 24
-        else:
-            self.limit = None
+    limit = None
 
     def initialize(self):
-        # Tell our main-template to include Google's gmap2 javascript so that
+        # Tell our base-layout to include Google's gmap2 javascript so that
         # we can render the map.
         if self.mapped_participants_count > 0:
             self.request.needs_gmap2 = True
@@ -1067,7 +1058,7 @@ class TeamMapView(LaunchpadView):
     def bounds(self):
         """A dictionary with the bounds and center of the map, or None"""
         if self.has_mapped_participants:
-            return self.context.getMappedParticipantsBounds()
+            return self.context.getMappedParticipantsBounds(self.limit)
         return None
 
     @property
@@ -1108,6 +1099,19 @@ class TeamMapData(TeamMapView):
             'content-type', 'application/xml;charset=utf-8')
         body = LaunchpadView.render(self)
         return body.encode('utf-8')
+
+
+class TeamMapLtdMixin:
+    """A mixin for team views with limited participants."""
+    limit = 24
+
+
+class TeamMapLtdView(TeamMapLtdMixin, TeamMapView):
+    """Team map view with limited participants."""
+
+
+class TeamMapLtdData(TeamMapLtdMixin, TeamMapData):
+    """An XML dump of the locations of limited number of team members."""
 
 
 class TeamHierarchyView(LaunchpadView):

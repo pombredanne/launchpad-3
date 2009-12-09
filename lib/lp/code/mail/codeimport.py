@@ -8,6 +8,7 @@ __metaclass__ = type
 import textwrap
 
 from zope.component import getUtility
+from zope.app.security.interfaces import IUnauthenticatedPrincipal
 
 from canonical.config import config
 from canonical.launchpad.helpers import (
@@ -23,11 +24,11 @@ from canonical.launchpad.webapp import canonical_url
 
 def new_import(code_import, event):
     """Email the vcs-imports team about a new code import."""
-    if event.user is None:
+    if (event.user is None
+        or IUnauthenticatedPrincipal.providedBy(event.user)):
         # If there is no logged in user, then we are most likely in a
         # test.
         return
-
     user = IPerson(event.user)
     subject = 'New code import: %s/%s' % (
         code_import.product.name, code_import.branch.name)
@@ -94,7 +95,8 @@ def make_email_body_for_code_import_update(
             body.append(
                 details_change_prefix + '\n' + new_details +
                 "\ninstead of:\n" + old_details)
-    elif code_import.rcs_type == RevisionControlSystems.SVN:
+    elif code_import.rcs_type in (RevisionControlSystems.SVN,
+                                  RevisionControlSystems.BZR_SVN):
         if CodeImportEventDataType.OLD_SVN_BRANCH_URL in event_data:
             old_url = event_data[CodeImportEventDataType.OLD_SVN_BRANCH_URL]
             body.append(

@@ -13,6 +13,7 @@ __all__ = [
     'NewSpecificationFromProjectView',
     'NewSpecificationFromRootView',
     'NewSpecificationFromSprintView',
+    'SpecificationActionMenu',
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
@@ -71,12 +72,12 @@ from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsView)
 
 from canonical.launchpad.webapp import (
-    ContextMenu, LaunchpadView, LaunchpadEditFormView, LaunchpadFormView,
-    Link, Navigation, action, canonical_url, enabled_with_permission,
+    LaunchpadView, LaunchpadEditFormView, LaunchpadFormView,
+    Navigation, action, canonical_url,
     safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.registry.browser.mentoringoffer import CanBeMentoredView
+from canonical.launchpad.webapp.menu import (
+    ContextMenu, enabled_with_permission, Link, NavigationMenu)
 from canonical.launchpad.browser.launchpad import AppFrontPageSearchView
 
 
@@ -272,7 +273,32 @@ class SpecificationNavigation(Navigation):
         return self.context.getSprintSpecification(name)
 
 
-class SpecificationContextMenu(ContextMenu):
+class SpecificationEditLinksMixin:
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit(self):
+        text = 'Change details'
+        return Link('+edit', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def supersede(self):
+        text = 'Mark superseded'
+        return Link('+supersede', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Edit')
+    def retarget(self):
+        text = 'Re-target blueprint'
+        return Link('+retarget', text, icon='edit')
+
+
+class SpecificationActionMenu(NavigationMenu, SpecificationEditLinksMixin):
+
+    usedfor = ISpecification
+    facet = 'specifications'
+    links = ('edit', 'supersede', 'retarget')
+
+
+class SpecificationContextMenu(ContextMenu, SpecificationEditLinksMixin):
 
     usedfor = ISpecification
     links = ['edit', 'people', 'status', 'priority',
@@ -280,15 +306,9 @@ class SpecificationContextMenu(ContextMenu):
              'milestone', 'requestfeedback', 'givefeedback', 'subscription',
              'subscribeanother',
              'linkbug', 'unlinkbug', 'linkbranch',
-             'offermentoring', 'retractmentoring',
              'adddependency', 'removedependency',
              'dependencytree', 'linksprint', 'supersede',
              'retarget']
-
-    @enabled_with_permission('launchpad.Edit')
-    def edit(self):
-        text = 'Change details'
-        return Link('+edit', text, icon='edit')
 
     def givefeedback(self):
         text = 'Give feedback'
@@ -306,7 +326,7 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Change people'
         return Link('+people', text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
+    @enabled_with_permission('launchpad.Admin')
     def priority(self):
         text = 'Change priority'
         return Link('+priority', text, icon='edit')
@@ -335,24 +355,6 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Change status'
         return Link('+status', text, icon='edit')
 
-    @enabled_with_permission('launchpad.AnyPerson')
-    def offermentoring(self):
-        text = 'Offer mentorship'
-        user = getUtility(ILaunchBag).user
-        enabled = self.context.canMentor(user)
-        return Link('+mentor', text, icon='add', enabled=enabled)
-
-    def retractmentoring(self):
-        text = 'Retract mentorship'
-        user = getUtility(ILaunchBag).user
-        # We should really only allow people to retract mentoring if the
-        # spec's open and the user's already a mentor.
-        if user and not self.context.is_complete:
-            enabled = self.context.isMentor(user)
-        else:
-            enabled = False
-        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
-
     def subscribeanother(self):
         """Return the 'Subscribe someone else' Link."""
         text = 'Subscribe someone else'
@@ -372,16 +374,12 @@ class SpecificationContextMenu(ContextMenu):
             icon = 'add'
         return Link('+subscribe', text, icon=icon)
 
-    @enabled_with_permission('launchpad.Edit')
-    def supersede(self):
-        text = 'Mark superseded'
-        return Link('+supersede', text, icon='edit')
-
     @enabled_with_permission('launchpad.AnyPerson')
     def linkbug(self):
         text = 'Link a bug report'
         return Link('+linkbug', text, icon='add')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def unlinkbug(self):
         text = 'Unlink a bug'
         enabled = bool(self.context.bugs)
@@ -409,11 +407,6 @@ class SpecificationContextMenu(ContextMenu):
         text = 'Propose for sprint'
         return Link('+linksprint', text, icon='add')
 
-    @enabled_with_permission('launchpad.Edit')
-    def retarget(self):
-        text = 'Re-target blueprint'
-        return Link('+retarget', text, icon='edit')
-
     @enabled_with_permission('launchpad.AnyPerson')
     def whiteboard(self):
         text = 'Edit whiteboard'
@@ -427,7 +420,8 @@ class SpecificationContextMenu(ContextMenu):
             text = 'Link a related branch'
         return Link('+linkbranch', text, icon='add')
 
-class SpecificationSimpleView(LaunchpadView, CanBeMentoredView):
+
+class SpecificationSimpleView(LaunchpadView):
     """Used to render portlets and listing items that need browser code."""
 
     __used_for__ = ISpecification
@@ -489,16 +483,18 @@ class SpecificationView(SpecificationSimpleView):
             essential = request.form.get('essential') == 'yes'
             if sub is not None:
                 self.context.subscribe(self.user, self.user, essential)
-                self.notices.append("You have subscribed to this spec.")
+                self.notices.append(
+                    "You have subscribed to this blueprint.")
             elif upd is not None:
                 self.context.subscribe(self.user, self.user, essential)
                 self.notices.append('Your subscription has been updated.')
             elif unsub is not None:
                 self.context.unsubscribe(self.user)
-                self.notices.append("You have unsubscribed from this spec.")
+                self.notices.append(
+                    "You have unsubscribed from this blueprint.")
 
         if self.feedbackrequests:
-            msg = "You have %d feedback request(s) on this specification."
+            msg = "You have %d feedback request(s) on this blueprint."
             msg %= len(self.feedbackrequests)
             self.notices.append(msg)
 
@@ -529,7 +525,7 @@ class SpecificationEditView(LaunchpadEditFormView):
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
-                'Specification is now considered "%s".' % newstate.title)
+                'blueprint is now considered "%s".' % newstate.title)
         self.next_url = canonical_url(self.context)
 
 
@@ -693,7 +689,7 @@ class SpecificationRetargetingView(LaunchpadFormView):
         elif IDistribution.providedBy(target):
             distribution = target
         else:
-            raise AssertionError, 'Unknown target'
+            raise AssertionError('Unknown target.')
         self.context.retarget(product=product, distribution=distribution)
         self._nextURL = canonical_url(self.context)
 
@@ -747,8 +743,8 @@ class SpecificationSupersedingView(LaunchpadFormView):
                 vocabulary=SimpleVocabulary(terms),
                 required=False,
                 description=_(
-                    "The specification which supersedes this one. Note "
-                    "that selecting a specification here and pressing "
+                    "The blueprint which supersedes this one. Note "
+                    "that selecting a blueprint here and pressing "
                     "Continue will change the specification status "
                     "to Superseded.")),
             render_context=self.render_context)
