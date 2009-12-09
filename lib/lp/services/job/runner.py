@@ -12,7 +12,7 @@ __all__ = ['JobRunner']
 
 
 import contextlib
-from signal import getsignal, SIGCHLD, signal
+from signal import getsignal, SIGCHLD, SIGINT, signal
 import sys
 
 from ampoule import child, pool, main
@@ -50,7 +50,7 @@ def main(reactor, ampChildPath):
     stdio.StandardIO(ampChild(), 3, 4)
     from canonical.launchpad import scripts
     scripts.execute_zcml_for_scripts(use_web_security=False)
-    reactor.run()
+    reactor.run(False)
 main(sys.argv[-2], sys.argv[-1])
 """
 
@@ -251,6 +251,16 @@ class JobRunnerProto(child.AMPChild):
         return {'success': len(runner.completed_jobs), 'oops_id': oops_id}
 
 
+class GentleProcessPool(pool.ProcessPool):
+    """A ProcessPool that kills with KeyboardInterrupt."""
+
+    def _handleTimeout(self, child):
+        try:
+            child.transport.signalProcess(SIGINT)
+        except error.ProcessExitedAlready:
+            pass
+
+
 class TwistedJobRunner(BaseJobRunner):
 
     def __init__(self, job_source, job_amp, logger=None):
@@ -263,7 +273,7 @@ class TwistedJobRunner(BaseJobRunner):
         BaseJobRunner.__init__(self, logger=logger)
         self.job_source = job_source
         self.job_amp = job_amp
-        self.pp = pool.ProcessPool(job_amp, starter=starter, min=0)
+        self.pp = GentleProcessPool(job_amp, starter=starter, min=0)
 
     def runJobInSubprocess(self, job):
         try:
