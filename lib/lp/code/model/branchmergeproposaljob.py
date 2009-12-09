@@ -167,6 +167,13 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
 
     @classmethod
     def get(cls, job_id):
+        """Get a job by id.
+
+        :return: the BranchMergeProposalJob with the specified id, as the
+            current BranchMergeProposalJobDereived subclass.
+        :raises: SQLObjectNotFound if there is no job with the specified id,
+            or its job_type does not match the desired subclass.
+        """
         job = BranchMergeProposalJob.get(job_id)
         if job.job_type != cls.class_job_type:
             raise SQLObjectNotFound(
