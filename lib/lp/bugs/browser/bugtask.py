@@ -3097,6 +3097,14 @@ class BugTasksAndNominationsView(LaunchpadView):
         else:
             return 'false'
 
+    @property
+    def other_users_affected_count(self):
+        """The number of other users affected by this bug."""
+        if self.current_user_affected_status:
+            return self.context.users_affected_count - 1
+        else:
+            return self.context.users_affected_count
+
 
 class BugTaskTableRowView(LaunchpadView):
     """Browser class for rendering a bugtask row on the bug page."""

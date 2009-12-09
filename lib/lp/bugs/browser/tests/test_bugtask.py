@@ -68,6 +68,38 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             self.bug.default_bugtask, False, False)
         self.failUnless(row_view.many_bugtasks)
 
+    def test_other_users_affected_count(self):
+        # The number of other users affected does not change when the
+        # logged-in user marked him or herself as affected or not.
+        self.failUnlessEqual(
+            1, self.view.other_users_affected_count)
+        self.view.context.markUserAffected(self.view.user, True)
+        self.failUnlessEqual(
+            1, self.view.other_users_affected_count)
+        self.view.context.markUserAffected(self.view.user, False)
+        self.failUnlessEqual(
+            1, self.view.other_users_affected_count)
+
+    def test_other_users_affected_count_other_users(self):
+        # The number of other users affected only changes when other
+        # users mark themselves as affected.
+        self.failUnlessEqual(
+            1, self.view.other_users_affected_count)
+        other_user_1 = self.factory.makePerson()
+        self.view.context.markUserAffected(other_user_1, True)
+        self.failUnlessEqual(
+            2, self.view.other_users_affected_count)
+        other_user_2 = self.factory.makePerson()
+        self.view.context.markUserAffected(other_user_2, True)
+        self.failUnlessEqual(
+            3, self.view.other_users_affected_count)
+        self.view.context.markUserAffected(other_user_1, False)
+        self.failUnlessEqual(
+            2, self.view.other_users_affected_count)
+        self.view.context.markUserAffected(self.view.user, True)
+        self.failUnlessEqual(
+            2, self.view.other_users_affected_count)
+
 
 def test_suite():
     suite = unittest.TestSuite()
