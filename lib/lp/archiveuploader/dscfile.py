@@ -31,10 +31,13 @@ from lp.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
 from lp.archiveuploader.utils import (
     prefix_multi_line_string, safe_fix_maintainer, ParseMaintError,
-    re_valid_pkg_name, re_valid_version, re_issource)
+    re_valid_pkg_name, re_valid_version, re_issource,
+    determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from canonical.launchpad.interfaces import (
     GPGVerificationError, IGPGHandler, IGPGKeySet,
     ISourcePackageNameSet, NotFoundError)
@@ -228,6 +231,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         This method is an error generator, i.e, it returns an iterator over all
         exceptions that are generated while processing DSC file checks.
         """
+        # Avoid circular imports.
+        from lp.archiveuploader.nascentupload import EarlyReturnUploadError
+
         for error in SourceUploadFile.verify(self):
             yield error
 
@@ -265,10 +271,17 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield UploadError(
                 "%s: invalid version %s" % (self.filename, self.dsc_version))
 
-        if self.format != "1.0":
+        try:
+            format_term = SourcePackageFormat.getTermByToken(self.format)
+        except LookupError:
+            raise EarlyReturnUploadError(
+                "Unsupported source format: %s" % self.format)
+
+        if not self.policy.distroseries.isSourcePackageFormatPermitted(
+            format_term.value):
             yield UploadError(
-                "%s: Format is not 1.0. This is incompatible with "
-                "dpkg-source." % self.filename)
+                "%s: format '%s' is not permitted in %s." %
+                (self.filename, self.format, self.policy.distroseries.name))
 
         # Validate the build dependencies
         for field_name in ['build-depends', 'build-depends-indep']:
@@ -323,8 +336,19 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         :raise: `NotFoundError` when the wanted file could not be found.
         """
-        if (self.policy.archive.purpose == ArchivePurpose.PPA and
-            filename.endswith('.orig.tar.gz')):
+        # We cannot check the archive purpose for partner archives here,
+        # because the archive override rules have not been applied yet.
+        # Uploads destined for the Ubuntu main archive and the 'partner'
+        # component will eventually end up in the partner archive though.
+        if (self.policy.archive.purpose == ArchivePurpose.PRIMARY and
+            self.component_name == 'partner'):
+            archives = [
+                getUtility(IArchiveSet).getByDistroPurpose(
+                distribution=self.policy.distro,
+                purpose=ArchivePurpose.PARTNER)]
+        elif (self.policy.archive.purpose == ArchivePurpose.PPA and
+            determine_source_file_type(filename) ==
+                SourcePackageFileType.ORIG_TARBALL):
             archives = [self.policy.archive, self.policy.distro.main_archive]
         else:
             archives = [self.policy.archive]
@@ -348,11 +372,25 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         We don't use the NascentUploadFile.verify here, only verify size
         and checksum.
         """
-        has_tar = False
+
+        diff_count = 0
+        orig_tar_count = 0
+        native_tar_count = 0
+
         files_missing = False
         for sub_dsc_file in self.files:
-            if sub_dsc_file.filename.endswith("tar.gz"):
-                has_tar = True
+            filetype = determine_source_file_type(sub_dsc_file.filename)
+
+            if filetype == SourcePackageFileType.DIFF:
+                diff_count += 1
+            elif filetype == SourcePackageFileType.ORIG_TARBALL:
+                orig_tar_count += 1
+            elif filetype == SourcePackageFileType.NATIVE_TARBALL:
+                native_tar_count += 1
+            else:
+                yield UploadError('Unknown file: ' + sub_dsc_file.filename)
+                continue
+
             try:
                 library_file, file_archive = self._getFileByName(
                     sub_dsc_file.filename)
@@ -397,11 +435,37 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield error
                 files_missing = True
 
-
-        if not has_tar:
+        # Reject if we have more than one file of any type.
+        if orig_tar_count > 1:
             yield UploadError(
-                "%s: does not mention any tar.gz or orig.tar.gz."
+                "%s: has more than one orig.tar.*."
                 % self.filename)
+        if native_tar_count > 1:
+            yield UploadError(
+                "%s: has more than one tar.*."
+                % self.filename)
+        if diff_count > 1:
+            yield UploadError(
+                "%s: has more than one diff.gz."
+                % self.filename)
+
+        if ((orig_tar_count == 0 and native_tar_count == 0) or
+            (orig_tar_count > 0 and native_tar_count > 0)):
+            yield UploadError(
+                "%s: must have exactly one tar.* or orig.tar.*."
+                % self.filename)
+
+        # Format 1.0 must be native (exactly one tar.gz), or
+        # have an orig.tar.gz and a diff.gz. It cannot have
+        # compression types other than 'gz'.
+        if self.format == '1.0':
+            if ((diff_count == 0 and native_tar_count == 0) or
+                (diff_count > 0 and native_tar_count > 0)):
+                yield UploadError(
+                    "%s: must have exactly one diff.gz or tar.gz."
+                    % self.filename)
+        else:
+            raise AssertionError("Unknown source format.")
 
         if files_missing:
             yield UploadError(

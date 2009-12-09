@@ -229,7 +229,7 @@ distroseries (see bug 181328).
     >>> copied_pub = pub_failed.copyTo(
     ...     hoary, PackagePublishingPocket.RELEASE, warty.main_archive)
 
-    >>> from lp.soyuz.interfaces.build import BuildStatus
+    >>> from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
     >>> failed_build = pub_failed.sourcepackagerelease.createBuild(
     ...     warty['i386'], PackagePublishingPocket.RELEASE,
     ...     warty.main_archive, status=BuildStatus.FAILEDTOBUILD)
@@ -343,7 +343,8 @@ can be dispatched once operation is committed, i.e. dispatching can
 happen in parallel with build creation.
 
     >>> build_queue = active_jobs[0]
-    >>> print build_queue.build.title
+    >>> build = getUtility(IBuildSet).getByQueueEntry(build_queue)
+    >>> print build.title
     i386 build of test-buildd 667 in ubuntu hoary RELEASE
     >>> build_queue.lastscore
     2505
@@ -351,15 +352,15 @@ happen in parallel with build creation.
 Check the published component name retriever, they might be different,
 i.e., the published component can be different than the original component.
 
-    >>> print build_queue.build.current_component.name
+    >>> print build.current_component.name
     main
-    >>> print build_queue.build.sourcepackagerelease.component.name
+    >>> print build.sourcepackagerelease.component.name
     main
 
 Missing BuildQueue records, resulting from given-back builds, are
 created in the last stage of the queue-builder script.
 
-    >>> given_back_build = build_queue.build
+    >>> given_back_build = getUtility(IBuildSet).getByQueueEntry(build_queue)
     >>> build_queue.destroySelf()
     >>> flush_database_updates()
 

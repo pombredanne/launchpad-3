@@ -25,7 +25,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad.fields import (
     ContentNameField, Description, PublicPersonChoice, Summary, Title,
     UniqueField)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -849,6 +849,12 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
         :param pocket: A `DBItem` of `PackagePublishingPocket`.
         :return: A string.
+        """
+
+    def isSourcePackageFormatPermitted(format):
+        """Check if the specified source format is allowed in this series.
+
+        :param format: The SourcePackageFormat to check.
         """
 
 
