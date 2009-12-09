@@ -13,12 +13,15 @@
             tal:condition="devmode"
             tal:define="lp_js string:${icingroot}/build"
             tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js"></script>
-    <script type="text/javascript">
-        LPS.use(
-          'base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
-            Y.bugs.setup_dupe_finder();
-        });
-    </script>
+
+    <tal:dupe-finder-js condition="view/use_asynchronous_dupefinder">
+      <script type="text/javascript">
+          LPS.use(
+            'base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
+              Y.bugs.setup_dupe_finder();
+          });
+      </script>
+    </tal:dupe-finder-js>
   </metal:block>
 
   <div metal:fill-slot="heading">
@@ -115,7 +118,7 @@
   <div id="filebug-form-container" style="display: none;">
   </div>
 
-  <p style="display: none">
+  <p style="display: none" tal:condition="view/use_asynchronous_dupefinder">
     <a id="filebug-form-url"
         tal:attributes="href view/inline_filebug_form_url"></a>
     <a id="duplicate-search-url"
