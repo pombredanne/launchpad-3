@@ -972,8 +972,8 @@ body.tab-bugs #portlet-subscribers .sprite {
 .distromirrorstatusONEHOURBEHIND {color: green;}
 .distromirrorstatusTWOHOURSBEHIND {color: green;}
 .distromirrorstatusFOURHOURSBEHIND {color: green;}
-.distromirrorstatusSIXHOURSBEHIND {color: green;}
-.distromirrorstatusONEDAYBEHIND {color: green;}
-.distromirrorstatusTWODAYSBEHIND {color: yellow;}
-.distromirrorstatusONEWEEKBEHIND {color: red;}
+.distromirrorstatusSIXHOURSBEHIND {color: #FFBF00;}
+.distromirrorstatusONEDAYBEHIND {color: #FFBF00; font-weight: bold;}
+.distromirrorstatusTWODAYSBEHIND {color: #FFBF00; font-weight: bold;}
+.distromirrorstatusONEWEEKBEHIND {color: red; font-weight: bold;}
 .distromirrorstatusUNKNOWN {color: grey; font-weight: bold;}
