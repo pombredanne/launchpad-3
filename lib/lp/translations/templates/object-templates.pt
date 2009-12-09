@@ -82,7 +82,16 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="template view/iter_templates" class="template_row">
+          <tal:iterator repeat="template view/iter_templates">
+            <tal:def define="global show_template python:True"/>
+            <tal:is-current condition="not: template/iscurrent">
+              <tal:hide define="global show_template nothing"/>
+              <tal:admin condition="template/required:launchpad.TranslationsAdmin">
+                <tal:show define="global show_template python:True"/>
+              </tal:admin>
+            </tal:is-current>
+
+          <tr class="template_row" tal:condition="show_template">
             <td tal:condition="view/is_distroseries"
                 tal:content="template/sourcepackagename/name"
                 class="sourcepackage_column">Source package
@@ -127,6 +136,7 @@
             </div>
             </td>
           </tr>
+          </tal:iterator>
         </tbody>
       </table>
       </div>

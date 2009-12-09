@@ -480,27 +480,6 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
         return is_admin_or_rosetta_expert(user)
 
 
-class AdminDistroTranslations(OnlyRosettaExpertsAndAdmins):
-    """LP/Translations admins, distro owners and distro translations
-    group owners have administrative rights over templates.
-    """
-
-    def checkAuthenticated(self, user):
-        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
-            return True
-
-        template = self.obj
-        if template.distroseries is not None:
-            distro = template.distroseries.distribution
-            if user.inTeam(distro.owner):
-                return True
-            translation_group = distro.translationgroup
-            if translation_group and user.inTeam(translation_group.owner):
-                return True
-
-        return False
-
-
 class AdminProductTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IProduct
@@ -1125,9 +1104,55 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
-class AdminPOTemplateDetails(AdminDistroTranslations):
+class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
+                                    EditDistributionByDistroOwnersOrAdmins):
+    """Class for deciding who can administer distribution translations.
+
+    This class is used for `launchpad.TranslationsAdmin` privilege on
+    `IDistribution` and `IDistroSeries` and corresponding `IPOTemplate`s,
+    and limits access to Rosetta experts, Launchpad admins and distribution
+    translation group owner.
+    """
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistribution
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistribution` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or people allowed
+        to edit distribution details are able to change translation settings
+        for a distribution.
+        """
+        return (
+            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+            EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
+                self, user))
+
+
+class AdminPOTemplateDetails(AdminDistributionTranslations):
+    """Controls administration of an `IPOTemplate`.
+
+    Allow all persons that can also administer the translations to
+    which this template belongs to and also translation group owners.
+
+    Product owners does not have administrative privileges.
+    """
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IPOTemplate
+
+    def checkAuthenticated(self, user):
+        template = self.obj
+        if template.distroseries is not None:
+            distro = template.distroseries.distribution
+            translation_group = distro.translationgroup
+            if translation_group and user.inTeam(translation_group.owner):
+                return True
+
+            return (
+                AdminDistributionTranslations(
+                template.distroseries.distribution).checkAuthenticated(user))
+
+        return False
 
 
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
@@ -1611,9 +1636,30 @@ class AdminBranch(AuthorizationBase):
                 user.inTeam(celebs.bazaar_experts))
 
 
-class AdminPOTemplateSubset(AdminDistroTranslations):
-    permission = 'launchpad.Admin'
+class AdminPOTemplateSubset(AdminDistributionTranslations):
+    """Controls administration of an `IPOTemplateSubset`.
+
+    Allow all persons that can also administer the translations to
+    which this template belongs to and also translation group owners.
+
+    Product owners does not have administrative privileges.
+    """
+    permission = 'launchpad.TranslationsAdmin'
     usedfor = IPOTemplateSubset
+
+    def checkAuthenticated(self, user):
+        template = self.obj
+        if template.distroseries is not None:
+            distro = template.distroseries.distribution
+            translation_group = distro.translationgroup
+            if translation_group and user.inTeam(translation_group.owner):
+                return True
+
+            return (
+                AdminDistributionTranslations(
+                template.distroseries.distribution).checkAuthenticated(user))
+
+        return False
 
 
 class AdminDistroSeriesLanguage(OnlyRosettaExpertsAndAdmins):
@@ -1793,24 +1839,6 @@ class AdminDistroSeriesLanguagePacks(
             EditDistroSeriesByOwnersOrDistroOwnersOrAdmins.checkAuthenticated(
                 self, user) or
             user.inTeam(self.obj.distribution.language_pack_admin))
-
-
-class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
-                                    EditDistributionByDistroOwnersOrAdmins):
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IDistribution
-
-    def checkAuthenticated(self, user):
-        """Is the user able to manage `IDistribution` translations settings?
-
-        Any Launchpad/Launchpad Translations administrator or people allowed
-        to edit distribution details are able to change translation settings
-        for a distribution.
-        """
-        return (
-            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-            EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
-                self, user))
 
 
 class AdminLanguagePack(OnlyRosettaExpertsAndAdmins):
