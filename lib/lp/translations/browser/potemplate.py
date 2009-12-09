@@ -282,9 +282,16 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
         return by_source
 
     @property
-    def has_more_templates_by_source(self):
+    def more_templates_by_source(self):
         by_source_count = self.context.relatives_by_source.count()
-        return by_source_count > self.SHOW_RELATED_TEMPLATES
+        if (by_source_count > self.SHOW_RELATED_TEMPLATES):
+            other = by_source_count - self.SHOW_RELATED_TEMPLATES;
+            if other == 1:
+                return "one other template"
+            else:
+                return "%d other templates" % other
+        else:
+            return None
 
     @property
     def related_templates_by_name(self):
