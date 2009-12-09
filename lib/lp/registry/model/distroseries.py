@@ -48,6 +48,7 @@ from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries, DistroArchSeriesSet, PocketChroot)
@@ -303,38 +304,44 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def packagings(self):
-        # We join through sourcepackagename to be able to ORDER BY it,
-        # and this code also uses prejoins to avoid fetching data later
-        # on.
+        """See `IDistroSeries`."""
+        # Avoid circular import failures.
+        # We join to SourcePackageName, ProductSeries, and Product to cache
+        # the objects are implcitly needed to work with a Packaging object.
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        find_spec = (Packaging, SourcePackageName, ProductSeries, Product)
+        origin = [
+            Packaging,
+            Join(
+                SourcePackageName,
+                Packaging.sourcepackagename == SourcePackageName.id),
+            Join(
+                ProductSeries,
+                Packaging.productseries == ProductSeries.id),
+            Join(
+                Product,
+                ProductSeries.product == Product.id)]
+        condition = [Packaging.distroseries == self.id]
+        # In the case of full functionality distros like Ubuntu, the
+        # DistroSeriesPackageCache is a definitive source of what is
+        # published in the primary and partner archives. Packagings that
+        # are in PPAs are ignored.
         if self.distribution.full_functionality:
-            # In the case of full functionality distros like Ubuntu, the 
-            # DistroseriesPackageCache is a definitive source if what is
-            # published in the primary and partner archives. Packagings that
-            # are in PPAs are ignored.
-            from lp.soyuz.model.archive import Archive
-            origin = [
-                Packaging,
-                Join(
-                    SourcePackageName,
-                    Packaging.sourcepackagename == SourcePackageName.id),
+            origin += [
                 Join(
                     DistroSeriesPackageCache,
                     SourcePackageName.name == DistroSeriesPackageCache.name),
                 Join(
                     Archive,
-                    DistroSeriesPackageCache.archive == Archive.id)
+                    DistroSeriesPackageCache.archive == Archive.id),
                 ]
-            packagings = IStore(self).using(*origin).find(
-                Packaging,
-                Packaging.distroseries == self.id,
-                Archive.purpose in MAIN_ARCHIVE_PURPOSES)
-        else:
-            packagings = IStore(self).find(
-                Packaging,
-                Packaging.sourcepackagename == SourcePackageName.id,
-                Packaging.distroseries == self.id)
-        packagings = packagings.order_by(SourcePackageName.name)
-        return packagings
+            condition += [Archive.purpose in MAIN_ARCHIVE_PURPOSES]
+        results = IStore(self).using(*origin).find(find_spec, *condition)
+        results = results.order_by(SourcePackageName.name)
+        return [
+            packaging
+            for (packaging, spn, product_series, product) in results]
 
     @property
     def supported(self):
