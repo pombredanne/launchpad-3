@@ -446,6 +446,13 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         self.assertEqual(
             proposal.date_created, proposal.date_review_requested)
 
+    def test_date_not_reset_on_wip(self):
+        # If a proposal has been in needs review state, and is moved back into
+        # work in progress, the date_review_requested is not reset.
+        proposal = self._createMergeProposal(needs_review=True)
+        proposal.setAsWorkInProgress()
+        self.assertIsNot(None, proposal.date_review_requested)
+
 
 class TestBranchMergeProposalQueueing(TestCase):
     """Test the enqueueing and dequeueing of merge proposals."""

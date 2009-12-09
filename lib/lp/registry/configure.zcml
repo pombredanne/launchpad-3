@@ -1694,4 +1694,15 @@
         <allow
             interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
     </securedutility>
+
+    <!-- StructuralSubscription -->
+    
+    <class
+        class="lp.registry.model.structuralsubscription.StructuralSubscription">
+        <allow
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+        <require
+            permission="zope.Public"
+            set_schema="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+    </class>
 </configure>

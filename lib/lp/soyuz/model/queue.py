@@ -443,13 +443,16 @@ class PackageUpload(SQLBase):
         names = []
         for queue_source in self.sources:
             names.append(queue_source.sourcepackagerelease.name)
-        for queue_build in  self.builds:
+        for queue_build in self.builds:
             names.append(queue_build.build.sourcepackagerelease.name)
         for queue_custom in self.customfiles:
             names.append(queue_custom.libraryfilealias.filename)
         # Make sure the list items have a whitespace separator so
         # that they can be wrapped in table cells in the UI.
-        return ", ".join(names)
+        ret = ", ".join(names)
+        if self.is_delayed_copy:
+            ret += " (delayed)"
+        return ret
 
     @cachedproperty
     def displayarchs(self):
@@ -1468,7 +1471,8 @@ class PackageUploadSource(SQLBase):
             published_sha1 = published_file.content.sha1
 
             # Multiple orig(s) with the same content are fine.
-            if source_file.filetype == SourcePackageFileType.ORIG:
+            if source_file.filetype == (
+                SourcePackageFileType.ORIG_TARBALL):
                 if proposed_sha1 == published_sha1:
                     continue
                 raise QueueInconsistentStateError(
