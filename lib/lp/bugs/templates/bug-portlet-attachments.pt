@@ -22,7 +22,7 @@
     <ul>
       <li>
         <a tal:attributes="href view/current_bugtask/fmt:url/+addcomment"
-           class="sprite add">Add attachment or patch</a>
+           class="sprite add">Add attachment</a>
       </li>
     </ul>
   </div>
@@ -44,7 +44,7 @@
     <ul>
       <li>
         <a tal:attributes="href view/current_bugtask/fmt:url/+addcomment"
-           class="sprite add">Add attachment or patch</a>
+           class="sprite add">Add patch</a>
       </li>
     </ul>
   </div>

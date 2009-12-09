@@ -234,7 +234,7 @@ class BugContextMenu(ContextMenu):
 
     def addcomment(self):
         """Return the 'Comment or attach file' Link."""
-        text = 'Add an attachment'
+        text = 'Add attachment or patch'
         return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
