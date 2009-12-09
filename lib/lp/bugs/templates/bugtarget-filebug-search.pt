@@ -92,7 +92,7 @@
               </td>
               <td style="text-align: left;">
                 <input tal:replace="structure view/actions/field.actions.search/render" />
-                <span id="spinner" style="text-align: center; display: none;">
+                <span id="spinner" style="text-align: center" class="unseen">
                   <img src="/@@/spinner" />
                 </span>
               </td>

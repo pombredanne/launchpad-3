@@ -707,7 +707,7 @@ class FileBugViewBase(LaunchpadFormView):
         If a token was passed to this view, it will be be passed through
         to the inline bug filing form via the returned URL.
         """
-        url = urlappend(canonical_url(self.context), '+filebug-inline-form')
+        url = canonical_url(self.context, view_name='+filebug-inline-form')
         if self.extra_data_token is not None:
             url = urlappend(url, self.extra_data_token)
         return url
@@ -715,7 +715,7 @@ class FileBugViewBase(LaunchpadFormView):
     @property
     def duplicate_search_url(self):
         """The URL to the inline duplicate search view."""
-        url = urlappend(canonical_url(self.context), '+filebug-show-similar')
+        url = canonical_url(self.context, view_name='+filebug-show-similar')
         if self.extra_data_token is not None:
             url = urlappend(url, self.extra_data_token)
         return url
