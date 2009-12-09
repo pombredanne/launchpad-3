@@ -134,10 +134,13 @@ class BaseRunnableJob:
 class BaseJobRunner(object):
     """Runner of Jobs."""
 
-    def __init__(self, logger=None):
+    def __init__(self, logger=None, error_utility=None):
         self.completed_jobs = []
         self.incomplete_jobs = []
         self.logger = logger
+        self.error_utility = error_utility
+        if self.error_utility is None:
+            self.error_utility = errorlog.globalErrorUtility
 
     def runJob(self, job):
         """Attempt to run a job, updating its status as appropriate."""
@@ -163,7 +166,7 @@ class BaseJobRunner(object):
 
     def runJobHandleError(self, job):
         job = IRunnableJob(job)
-        with errorlog.globalErrorUtility.oopsMessage(
+        with self.error_utility.oopsMessage(
             dict(job.getOopsVars())):
             try:
                 self.runJob(job)
@@ -173,10 +176,9 @@ class BaseJobRunner(object):
                 info = sys.exc_info()
                 return self._doOops(job, info)
 
-    @staticmethod
-    def _doOops(job, info):
-        errorlog.globalErrorUtility.raising(info)
-        oops = errorlog.globalErrorUtility.getLastOopsReport()
+    def _doOops(self, job, info):
+        self.error_utility.raising(info)
+        oops = self.error_utility.getLastOopsReport()
         job.notifyOops(oops)
         return oops
 
@@ -263,14 +265,14 @@ class GentleProcessPool(pool.ProcessPool):
 
 class TwistedJobRunner(BaseJobRunner):
 
-    def __init__(self, job_source, job_amp, logger=None):
+    def __init__(self, job_source, job_amp, logger=None, error_utility=None):
         import os
         starter = main.ProcessStarter(
             bootstrap=BOOTSTRAP, packages=('twisted', 'ampoule'),
             env={'PYTHONPATH': os.environ['PYTHONPATH'],
             'PATH': os.environ['PATH'],
             'LPCONFIG': os.environ['LPCONFIG']})
-        BaseJobRunner.__init__(self, logger=logger)
+        BaseJobRunner.__init__(self, logger, error_utility)
         self.job_source = job_source
         self.job_amp = job_amp
         self.pp = GentleProcessPool(job_amp, starter=starter, min=0)
@@ -329,9 +331,10 @@ class TwistedJobRunner(BaseJobRunner):
         self.terminated()
 
     @classmethod
-    def runFromSource(cls, job_source, logger):
+    def runFromSource(cls, job_source, logger, error_utility=None):
         logger.info("Running through Twisted.")
-        runner = cls(job_source, removeSecurityProxy(job_source).amp, logger)
+        runner = cls(job_source, removeSecurityProxy(job_source).amp, logger,
+                     error_utility)
         reactor.callWhenRunning(runner.runAll)
         handler = getsignal(SIGCHLD)
         try:
