@@ -26,7 +26,7 @@ from lp.registry.interfaces.person import (
     IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import Bug, BugTask, BugSubscription
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from lp.registry.model.person import Person
 from lp.answers.model.answercontact import AnswerContact
