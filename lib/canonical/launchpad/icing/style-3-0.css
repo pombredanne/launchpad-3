@@ -967,3 +967,13 @@ body.tab-bugs #portlet-subscribers .sprite {
 .codeimportREVIEWED  {color: green;}
 .codeimportSUSPENDED {color: red;}
 .codeimportFAILING   {color: red;}
+
+.distromirrorstatusUP {color: green;}
+.distromirrorstatusONEHOURBEHIND {color: green;}
+.distromirrorstatusTWOHOURSBEHIND {color: green;}
+.distromirrorstatusFOURHOURSBEHIND {color: green;}
+.distromirrorstatusSIXHOURSBEHIND {color: green;}
+.distromirrorstatusONEDAYBEHIND {color: green;}
+.distromirrorstatusTWODAYSBEHIND {color: yellow;}
+.distromirrorstatusONEWEEKBEHIND {color: red;}
+.distromirrorstatusUNKNOWN {color: grey; font-weight: bold;}
