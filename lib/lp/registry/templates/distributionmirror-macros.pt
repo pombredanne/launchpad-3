@@ -50,8 +50,8 @@
         </td>
         <td tal:condition="show_freshness"
             tal:define="freshness mirror/getOverallFreshness">
-          <span tal:replace="freshness/title"
-            tal:attributes="class string:distromirrorstatus${mirror/getOverallFreshness/name}" />
+          <span tal:content="freshness/title"
+            tal:attributes="class string:distromirrorstatus${freshness/name}" />
         </td>
       </tr>
 
@@ -111,7 +111,8 @@
     <tr tal:repeat="arch_series arch_series">
       <td tal:content="arch_series/distro_arch_series/distroseries/title" />
       <td tal:content="arch_series/distro_arch_series/architecturetag" />
-      <td tal:content="arch_series/freshness/title" />
+      <td tal:content="arch_series/freshness/title"
+        tal:attributes="class string:distromirrorstatus${arch_series/freshness/name}" />
     </tr>
   </tbody>
   </table>
@@ -133,7 +134,8 @@
   <tbody>
     <tr tal:repeat="source_series source_series">
       <td tal:content="source_series/distroseries/title" />
-      <td tal:content="source_series/freshness/title" />
+      <td tal:content="source_series/freshness/title"
+        tal:attributes="class string:distromirrorstatus${source_series/freshness/name}" />
     </tr>
   </tbody>
   </table>
