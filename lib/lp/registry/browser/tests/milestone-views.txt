@@ -21,8 +21,8 @@ The default url for a milestone is to the main site.
 Milestone defines several menus.
 
     >>> from lp.registry.browser.milestone import (
-    ...     MilestoneContextMenu, MilestoneOverviewMenu,
-    ...     MilestoneOverviewNavigationMenu)
+    ...     MilestoneContextMenu, MilestoneInlineNavigationMenu,
+    ...     MilestoneOverviewMenu, MilestoneOverviewNavigationMenu)
     >>> from lp.testing.menu import check_menu_links
 
     >>> check_menu_links(MilestoneContextMenu(milestone))
@@ -31,6 +31,18 @@ Milestone defines several menus.
     True
     >>> check_menu_links(MilestoneOverviewNavigationMenu(milestone))
     True
+    >>> check_menu_links(MilestoneInlineNavigationMenu(milestone))
+    True
+
+The MilestoneView used can be adapted to a MilestoneInlineNavigationMenu
+for use with inline presentation of milestones.
+
+    >>> from canonical.lazr.canonicalurl import nearest_adapter
+    >>> from canonical.launchpad.webapp.interfaces import INavigationMenu
+
+    >>> view = create_view(milestone, name='+productseries-table-row')
+    >>> nearest_adapter(view, INavigationMenu, name='overview')
+    <lp.registry.browser.milestone.MilestoneInlineNavigationMenu ...>
 
 The MilestoneView provides access to the milestone and to its release if
 it has one.

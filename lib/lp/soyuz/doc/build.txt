@@ -1274,8 +1274,9 @@ As a buildd-admin it will work:
 
 == Estimated Build Duration ==
 
-Newly created builds should have their 'estimated_build_duration' times
-set from previous builds' 'buildduration' values.
+Build records will have an 'estimated_duration' time in the associated
+BuildQueue record. The latter is set from a previous builds' 'buildduration'
+value.
 
 We will use SoyuzTestPublisher to generate coherent publications to
 test this behaviour.
@@ -1298,12 +1299,13 @@ Create oldest build instance.
     >>> oldest_build.buildduration = timedelta(minutes=72)
     >>> oldest_build.datebuilt = datetime(2008, 4, 1, 10, 45, 39, tzinfo=UTC)
 
-Check that the oldest build instance's 'estimated_build_duration'
+Check that the oldest build instance's 'estimated_duration'
 is initialized based on its package size. Since the latter is very
-small (less than a KB) the 'estimated_build_duration' will be a
+small (less than a KB) the 'estimated_duration' will be a
 minute.
 
-    >>> oldest_build.estimated_build_duration
+    >>> bq = oldest_build.createBuildQueueEntry()
+    >>> bq.estimated_duration
     datetime.timedelta(0, 60)
 
 Create intermediate SourcePackageRelease instance.
@@ -1322,10 +1324,12 @@ Create intermediate build instance.
     >>> medium_build.buildduration = timedelta(minutes=60)
     >>> medium_build.datebuilt = datetime(2008, 4, 2, 11, 56, 33, tzinfo=UTC)
 
-Check whether the intermediate build instance's 'estimated_build_duration'
-value equals the oldest instance's 'buildduration'.
+Check whether the intermediate build instance's 'estimated_duration'
+value equals the oldest instance's 'buildduration' (72 minutes equals 4320
+seconds).
 
-    >>> medium_build.estimated_build_duration
+    >>> bq = medium_build.createBuildQueueEntry()
+    >>> bq.estimated_duration
     datetime.timedelta(0, 4320)
 
 Create most recent SourcePackageRelease instance.
@@ -1343,10 +1347,11 @@ NEEDSBUILD.
     ...         test_publisher.breezy_autotest.main_archive,
     ...         status=BuildStatus.NEEDSBUILD)
 
-Check whether the most recent build instance's 'estimated_build_duration'
+Check whether the most recent build instance's 'estimated_duration'
 value equals the intermediate instance's 'buildduration'.
 
-    >>> recent_build.estimated_build_duration
+    >>> bq = recent_build.createBuildQueueEntry()
+    >>> bq.estimated_duration
     datetime.timedelta(0, 3600)
 
 Create a SourcePackageRelease instance in a PPA.
@@ -1363,11 +1368,12 @@ Create most recent build instance.
     ...         cprov.archive,
     ...         status=BuildStatus.NEEDSBUILD)
 
-Check whether the PPA build instance's 'estimated_build_duration'
+Check whether the PPA build instance's 'estimated_duration'
 value was set from the intermediate instance's 'buildduration' in
 the main archive.
 
-    >>> ppa_build.estimated_build_duration
+    >>> bq = ppa_build.createBuildQueueEntry()
+    >>> bq.estimated_duration
     datetime.timedelta(0, 3600)
 
 

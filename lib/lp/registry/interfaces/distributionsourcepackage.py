@@ -26,7 +26,7 @@ from lp.bugs.interfaces.bugtask import IBugTask
 from lp.code.interfaces.hasbranches import IHasBranches, IHasMergeProposals
 from lp.registry.interfaces.distribution import IDistribution
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 
 

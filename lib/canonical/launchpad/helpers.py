@@ -477,9 +477,9 @@ def getFileType(fname):
     if fname.endswith(".diff.gz"):
         return SourcePackageFileType.DIFF
     if fname.endswith(".orig.tar.gz"):
-        return SourcePackageFileType.ORIG
+        return SourcePackageFileType.ORIG_TARBALL
     if fname.endswith(".tar.gz"):
-        return SourcePackageFileType.TARBALL
+        return SourcePackageFileType.NATIVE_TARBALL
 
 
 BINARYPACKAGE_EXTENSIONS = {

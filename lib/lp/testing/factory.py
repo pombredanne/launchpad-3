@@ -1210,7 +1210,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, product=None, branch_name=None,
-                       git_repo_url=None, registrant=None):
+                       git_repo_url=None, registrant=None, rcs_type=None):
         """Create and return a new, arbitrary code import.
 
         The type of code import will be inferred from the source details
@@ -1229,16 +1229,22 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
+            if rcs_type is None:
+                rcs_type = RevisionControlSystems.SVN
+            else:
+                assert rcs_type in (RevisionControlSystems.SVN,
+                                    RevisionControlSystems.BZR_SVN)
             return code_import_set.new(
-                registrant, product, branch_name,
-                rcs_type=RevisionControlSystems.SVN,
+                registrant, product, branch_name, rcs_type=rcs_type,
                 svn_branch_url=svn_branch_url)
         elif git_repo_url is not None:
+            assert rcs_type in (None, RevisionControlSystems.GIT)
             return code_import_set.new(
                 registrant, product, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
                 git_repo_url=git_repo_url)
         else:
+            assert rcs_type in (None, RevisionControlSystems.CVS)
             return code_import_set.new(
                 registrant, product, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
@@ -1694,12 +1700,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
                 subscription_policy=subscription_policy)
-        # Any member of the mailing-list-experts team can review a list
-        # registration.  It doesn't matter which one.
-        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-        reviewer = list(experts.allmembers)[0]
         team_list = getUtility(IMailingListSet).new(team, owner)
-        team_list.review(reviewer, MailingListStatus.APPROVED)
         team_list.startConstructing()
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list
