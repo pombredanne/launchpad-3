@@ -1,3 +1,4 @@
+====================================
 Mailing list subscription management
 ====================================
 
@@ -13,7 +14,7 @@ approved at the same time that they are approved for the team.
 
 
 Setup
------
+=====
 
 Carlos is a member of four teams: admins, rosetta-admins, testing-spanish-team
 and ubuntu-translators.  He has two email addresses, one of which is his
@@ -28,12 +29,6 @@ contact address.
     >>> admin_browser.open('http://launchpad.dev/~rosetta-admins/')
     >>> admin_browser.getLink(url='+mailinglist').click()
     >>> admin_browser.getControl('Apply for Mailing List').click()
-
-    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
-    >>> admin_browser.getControl(name='field.admins').value = ['approve']
-    >>> admin_browser.getControl(name='field.rosetta-admins').value = [
-    ...     'approve']
-    >>> admin_browser.getControl('Submit').click()
 
     >>> import transaction
     >>> from lp.registry.tests import mailinglists_helper
@@ -57,7 +52,7 @@ actually be approved.
 
 
 Subscribing
------------
+===========
 
 Any team member can join the mailing list.
 
@@ -75,7 +70,7 @@ Any team member can join the mailing list.
 
 
 Subscription management
------------------------
+=======================
 
 To subscribe to a mailing list, Carlos uses his subscription management
 screen, which shows a subscription control for the mailing lists of every team
@@ -181,7 +176,7 @@ menu item to "Don't subscribe".
 
 
 Subscription during team sign up
---------------------------------
+================================
 
 Jdub is only a member of the ubuntu team.  He can request to be placed
 on another team's mailing list at the same time that he requests
@@ -228,7 +223,8 @@ Now Jdub can apply for team membership and mailing list access.
     >>> browser.url
     'http://launchpad.dev/~rosetta-admins/+join'
 
-    >>> browser.getControl(name='field.mailinglist_subscribe').value = ['checked']
+    >>> browser.getControl(name='field.mailinglist_subscribe').value = [
+    ...     'checked']
     >>> browser.getControl(name='field.actions.join').click()
     >>> browser.url
     'http://launchpad.dev/~rosetta-admins'
@@ -260,8 +256,8 @@ been approved for the team.
     >>> admin_browser.getLink('All members').click()
     >>> admin_browser.getLink(
     ...     url='/~rosetta-admins/+member/jdub').click()
-    >>> admin_browser.url
-    'http://launchpad.dev/~rosetta-admins/+member/jdub'
+    >>> print admin_browser.url
+    http://launchpad.dev/~rosetta-admins/+member/jdub
     >>> admin_browser.getControl(name='approve').click()
 
 His mailing list subscription is now available to be managed.
@@ -286,8 +282,8 @@ list is not presented.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
-    >>> browser.url
-    'http://launchpad.dev/~rosetta-admins/+join'
+    >>> print browser.url
+    http://launchpad.dev/~rosetta-admins/+join
 
     >>> browser.getControl(name='mailinglist_subscribe')
     Traceback (most recent call last):
@@ -299,8 +295,8 @@ for teams that don't have mailing lists.
 
     >>> browser.open('http://launchpad.dev/~testing-spanish-team')
     >>> browser.getLink('Join the team').click()
-    >>> browser.url
-    'http://launchpad.dev/~testing-spanish-team/+join'
+    >>> print browser.url
+    http://launchpad.dev/~testing-spanish-team/+join
 
     >>> browser.getControl(name='mailinglist_subscribe')
     Traceback (most recent call last):
@@ -313,8 +309,8 @@ if we visit the URL directly, as the link is not present on the Team
 Overview.)
 
     >>> browser.open('http://launchpad.dev/~launchpad/+join')
-    >>> browser.url
-    'http://launchpad.dev/~launchpad/+join'
+    >>> print browser.url
+    http://launchpad.dev/~launchpad/+join
 
     >>> browser.getControl(name='mailinglist_subscribe')
     Traceback (most recent call last):
@@ -323,7 +319,7 @@ Overview.)
 
 
 Team page quick-links
----------------------
+=====================
 
 Links to subscribe and unsubscribe from the mailing lists are also
 available from the team's Overview page.
@@ -391,7 +387,7 @@ does not show either link.
 
 
 Team page subscribers link
---------------------------
+==========================
 
 Team administrators can see a link to a page listing the team's
 mailing list subscribers, if there is an active mailing list.  The
@@ -409,8 +405,8 @@ The mailing list for Rosetta Admins has no subscribers.
 because his membership on Rosetta Admins hasn't been approved)
 
     >>> browser.getLink('View subscribers').click()
-    >>> browser.title
-    'Mailing list subscribers for the Rosetta Administrators team...
+    >>> print browser.title
+    Mailing list subscribers for the Rosetta Administrators team...
 
     >>> print extract_text(find_tag_by_id(browser.contents, 'subscribers'))
     Nobody has subscribed to this team's mailing list yet.
@@ -460,7 +456,7 @@ links are not present.
 
 
 Mailing list auto-subscription settings
----------------------------------------
+=======================================
 
 Launchpad may automatically subscribe a person to a team's mailing
 list based on a setting in the person's Email preferences page.
@@ -554,8 +550,8 @@ subscription settings will see the box checked by default.
 
     >>> browser.open('http://launchpad.dev/~rosetta-admins')
     >>> browser.getLink('Join the team').click()
-    >>> browser.url
-    'http://launchpad.dev/~rosetta-admins/+join'
+    >>> print browser.url
+    http://launchpad.dev/~rosetta-admins/+join
 
     >>> print browser.getControl(name='field.mailinglist_subscribe').value
     True
