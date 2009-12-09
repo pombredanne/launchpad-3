@@ -326,9 +326,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 ]
             packagings = IStore(self).using(*origin).find(
                 Packaging,
-                "Packaging.distroseries = %s"
-                "AND Archive.purpose in %s" % (
-                    quote(self.id), quote(MAIN_ARCHIVE_PURPOSES)))
+                Packaging.distroseries == self.id,
+                Archive.purpose in MAIN_ARCHIVE_PURPOSES)
         else:
             packagings = IStore(self).find(
                 Packaging,
