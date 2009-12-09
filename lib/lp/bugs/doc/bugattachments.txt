@@ -468,33 +468,3 @@ noting that the notification still includes the URL to the attachment.
     >>> print latest_notification.message.text_contents
     ** Attachment removed: "Attachment to be deleted"
        http://.../foo.baz
-
-
-== Listing bug attachments ==
-
-Bug.attachments returns all attachments of a bug.
-
-    >>> bug_one.addAttachment(
-    ...     owner=foobar,
-    ...     data='blah',
-    ...     filename="whatever.txt",
-    ...     description="some additional information",
-    ...     comment=message,
-    ...     is_patch=False)
-    <BugAttachment at...
-    >>> for attachment in bug_one.attachments:
-    ...     print attachment.libraryfile.filename, attachment.type.title
-    foo.bar Patch
-    whatever.txt Unspecified
-
-Bug.patches returns the patches associated with a bug,
-
-    >>> for patch in bug_one.patches:
-    ...     print patch.libraryfile.filename, patch.type.title
-    foo.bar Patch
-
-Bug.regular_attachments returns the non-patch attachments.
-
-    >>> for attachment in bug_one.regular_attachments:
-    ...     print attachment.libraryfile.filename, attachment.type.title
-    whatever.txt Unspecified

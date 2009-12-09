@@ -248,16 +248,6 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             title=_("List of bug attachments."),
             value_type=Reference(schema=IBugAttachment),
             readonly=True))
-    patches = exported(
-        CollectionField(
-            title=_("List of bug attachments that are patches."),
-            value_type=Reference(schema=IBugAttachment),
-            readonly=True))
-    regular_attachments = exported(
-        CollectionField(
-            title=_("List of bug attachments that are not patches."),
-            value_type=Reference(schema=IBugAttachment),
-            readonly=True))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
     linked_branches = Attribute(
