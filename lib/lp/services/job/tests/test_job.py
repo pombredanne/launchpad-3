@@ -226,12 +226,19 @@ class TestReadiness(TestCase):
         job.acquireLease()
 
     def test_acquireLeaseTimeout(self):
+        """Test that getTimeout correctly calculates value from lease.
+
+        The imprecision is because leases are relative to the current time,
+        and the current time may have changed by the time we get to
+        job.getTimeout() <= 300.
+        """
         job = Job()
         job.acquireLease(300)
         self.assertTrue(job.getTimeout() > 0)
         self.assertTrue(job.getTimeout() <= 300)
 
     def test_acquireLeaseTimeoutExpired(self):
+        """Expired leases don't produce negative timeouts."""
         job = Job()
         job.acquireLease(-300)
         self.assertEqual(0, job.getTimeout())

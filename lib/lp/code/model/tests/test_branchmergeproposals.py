@@ -1842,8 +1842,8 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
     layer = LaunchpadZopelessLayer
 
     def test_implement_interface(self):
+        """UpdatePreviewDiffJob implements IUpdatePreviewDiffJobSource."""
         verifyObject(IUpdatePreviewDiffJobSource, UpdatePreviewDiffJob)
-        bmp = self.factory.makeBranchMergeProposal()
 
     def test_run(self):
         self.useBzrBranches()
