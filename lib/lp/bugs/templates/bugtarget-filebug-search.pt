@@ -75,7 +75,7 @@
             <tr>
               <td tal:define="field_name widget/context/__name__;
                               error python:view.getFieldError(field_name);
-                              error_class python:error and 'error' or None;"
+                              error_class python:('error' if error else None);"
                   tal:attributes="class error_class"
                   style="text-align: left; padding-left: 5em;">
                 <div>
@@ -115,13 +115,11 @@
   <div id="filebug-form-container" style="display: none;">
   </div>
 
-  <p>
+  <p style="display: none">
     <a id="filebug-form-url"
-        tal:attributes="href view/inline_filebug_form_url"
-        style="display: none;"></a>
+        tal:attributes="href view/inline_filebug_form_url"></a>
     <a id="duplicate-search-url"
-        tal:attributes="href view/duplicate_search_url"
-        style="display: none;"></a>
+        tal:attributes="href view/duplicate_search_url"></a>
   </p>
 
   </div>
