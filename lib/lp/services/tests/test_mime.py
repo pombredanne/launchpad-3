@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import unittest
 
-from lp.services.mime import mimetypes
+import mimetypes
 from lp.testing import TestCase
 
 
@@ -27,6 +27,7 @@ class TestBzip(TestCase):
         (application, encoding) = mimetypes.guess_type(filename)
         self.assertEqual('application/x-tar', application)
         self.assertEqual('bzip2', encoding)
+
 
 
 def test_suite():
