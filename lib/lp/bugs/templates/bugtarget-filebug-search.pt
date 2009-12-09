@@ -39,7 +39,8 @@
       </tal:does-not-use-malone>
 
       <tal:uses-malone tal:condition="view/contextUsesMalone">
-        <div class="top-portlet">
+        <div class="top-portlet"
+            tal:define="launchpad_form_id string:filebug-search-form">
           <div metal:use-macro="context/@@launchpad_form/form">
 
         <table metal:fill-slot="widgets">
