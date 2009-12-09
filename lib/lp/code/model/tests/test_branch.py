@@ -1947,5 +1947,32 @@ class TestScheduleDiffUpdates(TestCaseWithFactory):
         self.assertEqual(0, len(jobs))
 
 
+class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
+    """Tests for Branch.getMainlineBranchRevisions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_start_date(self):
+        # Revisions created before the start date are not returned.
+
+        pass
+
+    def test_end_date(self):
+        # Revisions created after the end date are not returned.
+        pass
+
+    def test_newest_first(self):
+        # If oldest_first is False, the newest are returned first.
+        pass
+
+    def test_oldest_first(self):
+        # If oldest_first is True, the oldest are returned first.
+        pass
+
+    def test_only_mainline_revisions(self):
+        # Only mainline revisions are returned.
+        pass
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
