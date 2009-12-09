@@ -306,28 +306,35 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # We join through sourcepackagename to be able to ORDER BY it,
         # and this code also uses prejoins to avoid fetching data later
         # on.
-        clause_tables = ["SourcePackageName", "DistroSeries"]
-        cache = ''
         if self.distribution.full_functionality:
             # In the case of full functionality distros like Ubuntu, the 
             # DistroseriesPackageCache is a definitive source if what is
             # published in the primary and partner archives. Packagings that
             # are in PPAs are ignored.
-            clause_tables += ['DistroseriesPackageCache', 'Archive']
-            cache = ("""
-                AND SourcePackageName.name = DistroseriesPackageCache.name
-                AND DistroseriesPackageCache.archive = Archive.id
-                AND Archive.purpose in %s
-                """ % sqlvalues(MAIN_ARCHIVE_PURPOSES))
-        packagings = Packaging.select(
-            "Packaging.sourcepackagename = SourcePackageName.id "
-            " %s "
-            "AND DistroSeries.id = Packaging.distroseries "
-            "AND DistroSeries.id = %d" % (cache, self.id),
-            prejoinClauseTables=["SourcePackageName", ],
-            clauseTables=clause_tables,
-            prejoins=["productseries", "productseries.product"],
-            orderBy=["SourcePackageName.name"])
+            from lp.soyuz.model.archive import Archive
+            origin = [
+                Packaging,
+                Join(
+                    SourcePackageName,
+                    Packaging.sourcepackagename == SourcePackageName.id),
+                Join(
+                    DistroSeriesPackageCache,
+                    SourcePackageName.name == DistroSeriesPackageCache.name),
+                Join(
+                    Archive,
+                    DistroSeriesPackageCache.archive == Archive.id)
+                ]
+            packagings = IStore(self).using(*origin).find(
+                Packaging,
+                "Packaging.distroseries = %s"
+                "AND Archive.purpose in %s" % (
+                    quote(self.id), quote(MAIN_ARCHIVE_PURPOSES)))
+        else:
+            packagings = IStore(self).find(
+                Packaging,
+                Packaging.sourcepackagename == SourcePackageName.id,
+                Packaging.distroseries == self.id)
+        packagings = packagings.order_by(SourcePackageName.name)
         return packagings
 
     @property
