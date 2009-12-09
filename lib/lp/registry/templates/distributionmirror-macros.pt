@@ -50,7 +50,8 @@
         </td>
         <td tal:condition="show_freshness"
             tal:define="freshness mirror/getOverallFreshness">
-          <span tal:replace="freshness/title" />
+          <span tal:replace="freshness/title"
+            tal:attributes="class string:distromirrorstatus${mirror/getOverallFreshness/name}" />
         </td>
       </tr>
 
