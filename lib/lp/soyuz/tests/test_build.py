@@ -88,8 +88,6 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build.buildqueue_record.destroySelf()
         self.layer.txn.commit()
         self.assertNoBuildQueue(depwait_build)
-        depwait_build.retry()
-        self.assertIsInstance(depwait_build.buildqueue_record, BuildQueue)
 
     def testUpdateDependenciesWorks(self):
         # Calling `IBuild.updateDependencies` makes the build
