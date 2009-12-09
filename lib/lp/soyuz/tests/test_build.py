@@ -5,13 +5,17 @@
 
 import unittest
 
+from storm.store import Store
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
+from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.buildqueue import BuildQueue
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -42,6 +46,50 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build.dependencies = 'dep-bin'
 
         return depwait_build
+
+    def assertNoBuildQueue(self, build):
+        """Test there's no buildqueue, buildpackagejob or job for `build`"""
+        store = Store.of(build)
+        result = store.find(
+            BuildPackageJob,
+            BuildPackageJob.build == build.id)
+        bpj_count = result.count()
+        self.assertEqual(
+            bpj_count, 0,
+            "Expected no buildpackagejob rows, got %s" % bpj_count)
+
+        bpj = result.one()
+
+        result = store.find(
+            Job,
+            bpj.job == Job.id)
+        job_count = result.count()
+        self.assertEqual(
+            job_count, 0,
+            "Expected no job rows, got %s" % job_count)
+
+        job = result.one()
+
+        result = store.find(
+            BuildQueue,
+            BuildQueue.job == job.id)
+        buildqueue_count = result.count()
+        self.assertEqual(
+            buildqueue_count, 0,
+            "Expected no buildqueue rows, got %s" % buildqueue_count)
+
+    def testBuildqueueRemoval(self):
+        """Test removing buildqueue items.
+
+        Removing a Buildqueue row should also remove its associated
+        BuildPackageJob and Job rows.
+        """
+        depwait_build = self._setupSimpleDepwaitContext()
+        depwait_build.buildqueue_record.destroySelf()
+        self.layer.txn.commit()
+        self.assertNoBuildQueue(depwait_build)
+        depwait_build.retry()
+        self.assertIsInstance(depwait_build.buildqueue_record, BuildQueue)
 
     def testUpdateDependenciesWorks(self):
         # Calling `IBuild.updateDependencies` makes the build
