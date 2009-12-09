@@ -1,4 +1,6 @@
-= Direct user-to-user contact =
+===========================
+Direct user-to-user contact
+===========================
 
 A Launchpad user can contact another Launchpad user via a form accessible from
 the recipient's user page.  Let's say for example, that No Privileges Person
@@ -65,7 +67,8 @@ No Priv starts to send another message to Salgado, but then changes her mind.
     Guilherme Salgado in Launchpad
 
 
-== Choosing a From: address ==
+Choosing a From: address
+========================
 
 Sample Person has multiple registered and validated email addresses.
 
@@ -114,7 +117,8 @@ alternative addresses.
     https://help.launchpad.net/YourAccount/ContactingPeople
 
 
-== Bypassing the quota ==
+Bypassing the quota
+===================
 
 Salgado is the Launchpad Community Help Rotation expert for the day and he
 needs to contact several people.  As a convenience, he opens multiple browser
@@ -161,7 +165,8 @@ pages, when he tries to submit the fourth one, the submission fails.
     messages to contact users. Try again in ... hours.
 
 
-== Your own profile page ==
+Your own profile page
+=====================
 
 For consistency and testing purposes, the "contact" page is available even
 when someone is looking at their own profile page.  The wording on the profile
@@ -186,7 +191,8 @@ This holds true even for Sample Person, who is hiding her email addresses.
     Contact Sample Person...
 
 
-== Teams ==
+Teams
+=====
 
 Teams can also be contacted directly by team members, regardless of whether
 the team has set a contact address or uses a Launchpad mailing list.
@@ -228,9 +234,6 @@ Foo Bar later registers a Launchpad mailing list for Guadamen...
 
     >>> admin_browser.open('http://launchpad.dev/~guadamen/+mailinglist')
     >>> admin_browser.getControl('Apply for Mailing List').click()
-    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
-    >>> admin_browser.getControl(name='field.guadamen').value = ['approve']
-    >>> admin_browser.getControl('Submit').click()
 
 ...which too can be contacted directly.
 
