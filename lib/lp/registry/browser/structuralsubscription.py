@@ -17,10 +17,10 @@ from zope.schema import Choice, List
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.interfaces import (
-    BugNotificationLevel, IDistributionSourcePackage,
-    IStructuralSubscriptionForm)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.product import IDistributionSourcePackage
+from lp.registry.interfaces.structuralsubscription import (
+    BugNotificationLevel, IStructuralSubscriptionForm)
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.milestone import IProjectMilestone

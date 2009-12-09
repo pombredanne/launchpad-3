@@ -68,18 +68,6 @@ Mailing lists are not active when they are first registered.
     >>> list(list_vocabulary.search())
     []
 
-Even when the mailing lists are approved, they are not yet active.
-
-    >>> list_one.review(carlos, MailingListStatus.APPROVED)
-    >>> list_two.review(carlos, MailingListStatus.APPROVED)
-    >>> list_three.review(carlos, MailingListStatus.APPROVED)
-    >>> list(list_vocabulary)
-    []
-    >>> len(list_vocabulary)
-    0
-    >>> list(list_vocabulary.search())
-    []
-
 Mailing lists become active once they have been constructed by Mailman (which
 indicates so by transitioning the state to ACTIVE).
 
@@ -778,10 +766,22 @@ Almost all teams have the word 'team' as part of their names, so a search
 for 'team' should give us some of them.  Notice that the
 PRIVATE_MEMBERSHIP_TEAM 'myteam' is not included in the results.
 
+    >>> ephemeral = factory.makeTeam(owner=foo_bar, name='ephemeral-team')
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'hwdb-team', u'name18', u'name20', u'name21', u'no-team-memberships',
-     u'otherteam', u'simple-team', u'testing-spanish-team',
-     u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
+    [u'ephemeral-team', u'hwdb-team', u'name18', u'name20', u'name21',
+     u'no-team-memberships', u'otherteam', u'simple-team',
+     u'testing-spanish-team', u'ubuntu-security', u'ubuntu-team',
+     u'warty-gnome']
+
+Valid teams do not include teams that have been merged.
+
+    >>> ephemeral.deactivateAllMembers("Merging", foo_bar)
+    >>> person_set.merge(ephemeral, foo_bar)
+    >>> sorted(person.name for person in vocab.search('team'))
+    [u'hwdb-team', u'name18', u'name20', u'name21',
+     u'no-team-memberships', u'otherteam', u'simple-team',
+     u'testing-spanish-team', u'ubuntu-security', u'ubuntu-team',
+     u'warty-gnome']
 
 Logging in as 'owner', who is a member of myteam shows that the token
 lookup still omits myteam.

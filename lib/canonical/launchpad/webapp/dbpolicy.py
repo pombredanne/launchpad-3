@@ -157,8 +157,10 @@ def LaunchpadDatabasePolicyFactory(request):
     # We need to select a non-load balancing DB policy for +opstats so
     # it doesn't query the DB for lag information (this page should not
     # hit the database at all). We haven't traversed yet, so we have
-    # to sniff the request this way.
-    if request['PATH_INFO'] == u'/+opstats':
+    # to sniff the request this way.  Even though PATH_INFO is always
+    # present in real requests, we need to tread carefully (``get``) because
+    # of test requests in our automated tests.
+    if request.get('PATH_INFO') == u'/+opstats':
         return DatabaseBlockedPolicy(request)
     elif config.launchpad.read_only:
         return ReadOnlyLaunchpadDatabasePolicy(request)

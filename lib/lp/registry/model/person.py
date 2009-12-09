@@ -66,7 +66,7 @@ from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
 from lp.registry.model.personlocation import PersonLocation
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from canonical.launchpad.event.interfaces import (
     IJoinTeamEvent, ITeamInvitationEvent)
@@ -1374,6 +1374,7 @@ class Person(
         owner_of_teams = Person.select('''
             Person.teamowner = TeamParticipation.team
             AND TeamParticipation.person = %s
+            AND Person.merged IS NULL
             ''' % sqlvalues(self),
             clauseTables=['TeamParticipation'])
         admin_of_teams = Person.select('''
@@ -1381,6 +1382,7 @@ class Person(
             AND TeamMembership.status = %(admin)s
             AND TeamMembership.person = TeamParticipation.team
             AND TeamParticipation.person = %(person)s
+            AND Person.merged IS NULL
             ''' % sqlvalues(person=self, admin=TeamMembershipStatus.ADMIN),
             clauseTables=['TeamParticipation', 'TeamMembership'])
         return admin_of_teams.union(
