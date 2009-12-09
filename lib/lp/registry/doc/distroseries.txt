@@ -381,19 +381,11 @@ The new series also has the same packaging links as its parent series.
 
     >>> for packaging in warty.packagings:
     ...     print packaging.sourcepackagename.name
-    a52dec
-    alsa-utils
-    evolution
     mozilla-firefox
-    netapplet
 
     >>> for packaging in bumpy.packagings:
     ...     print packaging.sourcepackagename.name
-    a52dec
-    alsa-utils
-    evolution
     mozilla-firefox
-    netapplet
 
 
 Hiding translations
@@ -492,12 +484,9 @@ packagings property:
     >>> for packaging in packagings:
     ...     print packaging.sourcepackagename.name, \
     ...           packaging.productseries.product.displayname
-    evolution Evolution
     mozilla-firefox Mozilla Firefox
-    netapplet NetApplet
 
-From the results above you can notice that neither mozilla-firefox nor
-netapplet are translatable in Hoary.
+From the results, mozilla-firefox is not translatable in Hoary.
 
 
 == DistroSeries can build meta objects for packages ==

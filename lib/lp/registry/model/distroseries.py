@@ -306,15 +306,28 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # We join through sourcepackagename to be able to ORDER BY it,
         # and this code also uses prejoins to avoid fetching data later
         # on.
+        clause_tables = ["SourcePackageName", "DistroSeries"]
+        cache = ''
+        if self.distribution.full_functionality:
+            # In the case of full functionality distros like Ubuntu, the 
+            # DistroseriesPackageCache is a definitive source if what is
+            # published in the primary and partner archives. Packagings that
+            # are in PPAs are ignored.
+            clause_tables += ['DistroseriesPackageCache', 'Archive']
+            cache = ("""
+                AND SourcePackageName.name = DistroseriesPackageCache.name
+                AND DistroseriesPackageCache.archive = Archive.id
+                AND Archive.purpose in %s
+                """ % sqlvalues(MAIN_ARCHIVE_PURPOSES))
         packagings = Packaging.select(
             "Packaging.sourcepackagename = SourcePackageName.id "
+            " %s "
             "AND DistroSeries.id = Packaging.distroseries "
-            "AND DistroSeries.id = %d" % self.id,
+            "AND DistroSeries.id = %d" % (cache, self.id),
             prejoinClauseTables=["SourcePackageName", ],
-            clauseTables=["SourcePackageName", "DistroSeries"],
+            clauseTables=clause_tables,
             prejoins=["productseries", "productseries.product"],
-            orderBy=["SourcePackageName.name"]
-            )
+            orderBy=["SourcePackageName.name"])
         return packagings
 
     @property
