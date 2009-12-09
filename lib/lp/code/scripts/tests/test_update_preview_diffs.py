@@ -49,6 +49,21 @@ class TestUpdatePreviewDiffs(TestCaseWithFactory):
         self.assertEqual('', stdout)
         self.assertEqual(
             'INFO    creating lockfile\n'
+            'INFO    Running synchronously.\n'
+            'INFO    Ran 1 IUpdatePreviewDiffJobSource jobs.\n'
+            'INFO    0 IUpdatePreviewDiffJobSource jobs did not complete.\n',
+            stderr)
+        self.assertIsNot(None, bmp.preview_diff)
+
+    def test_update_preview_diffs_twisted(self):
+        """Ensure update_preview_diffs runs and generates diffs."""
+        job, bmp, source_tree = self.create_preview_diff_job()
+        retcode, stdout, stderr = run_script(
+            'cronscripts/update_preview_diffs.py', ['--twisted'])
+        self.assertEqual(0, retcode)
+        self.assertEqual('', stdout)
+        self.assertEqual(
+            'INFO    creating lockfile\n'
             'INFO    Running through Twisted.\n'
             'INFO    Ran 1 IUpdatePreviewDiffJobSource jobs.\n'
             'INFO    0 IUpdatePreviewDiffJobSource jobs did not complete.\n',
