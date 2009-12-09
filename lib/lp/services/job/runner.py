@@ -12,7 +12,7 @@ __all__ = ['JobRunner']
 
 
 import contextlib
-from signal import getsignal, SIGCHLD, SIGINT, signal
+from signal import getsignal, SIGCHLD, SIGHUP, signal
 import sys
 
 from ampoule import child, pool, main
@@ -32,27 +32,6 @@ from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
 from canonical.launchpad.webapp import errorlog
-
-BOOTSTRAP = """\
-import sys
-
-def main(reactor, ampChildPath):
-    from twisted.application import reactors
-    reactors.installReactor(reactor)
-    
-    from twisted.python import log
-    log.startLogging(sys.stderr)
-
-    from twisted.internet import reactor, stdio
-    from twisted.python import reflect
-
-    ampChild = reflect.namedAny(ampChildPath)
-    stdio.StandardIO(ampChild(), 3, 4)
-    from canonical.launchpad import scripts
-    scripts.execute_zcml_for_scripts(use_web_security=False)
-    reactor.run(False)
-main(sys.argv[-2], sys.argv[-1])
-"""
 
 
 class BaseRunnableJob:
@@ -258,7 +237,7 @@ class GentleProcessPool(pool.ProcessPool):
 
     def _handleTimeout(self, child):
         try:
-            child.transport.signalProcess(SIGINT)
+            child.transport.signalProcess(SIGHUP)
         except error.ProcessExitedAlready:
             pass
 
@@ -361,3 +340,35 @@ class JobCronScript(LaunchpadCronScript):
         self.logger.info(
             '%d %s jobs did not complete.',
             len(runner.incomplete_jobs), self.source_interface.__name__)
+
+
+class TimeoutError(Exception):
+
+    def __init__(self):
+        Exception.__init__(self, "Job ran too long.")
+
+
+BOOTSTRAP = """\
+import sys
+from twisted.application import reactors
+reactors.installReactor(sys.argv[-2])
+from lp.services.job.runner import bootstrap
+bootstrap(sys.argv[-1])
+"""
+
+def bootstrap(ampChildPath):
+    from signal import signal, SIGHUP
+    def handler(signum, frame):
+        raise TimeoutError
+    signal(SIGHUP, handler)
+    from twisted.python import log
+    log.startLogging(sys.stderr)
+
+    from twisted.internet import reactor, stdio
+    from twisted.python import reflect
+
+    ampChild = reflect.namedAny(ampChildPath)
+    stdio.StandardIO(ampChild(), 3, 4)
+    from canonical.launchpad import scripts
+    scripts.execute_zcml_for_scripts(use_web_security=False)
+    reactor.run()

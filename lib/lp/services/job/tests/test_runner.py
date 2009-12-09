@@ -271,7 +271,10 @@ class StuckJob(BaseRunnableJob):
         self.job = Job()
 
     def acquireLease(self):
-        return self.job.acquireLease(0)
+        # Must be enough time for the setup to complete and runJobHandleError
+        # to be called.  7 was the minimum that worked on my computer.
+        # -- abentley
+        return self.job.acquireLease(10)
 
     def run(self):
         sleep(30)
@@ -307,8 +310,8 @@ class TestTwistedJobRunner(TestCaseWithFactory):
         expected = [
             'Running through Twisted.', 'Job resulted in OOPS: %s' % oops.id]
         self.assertEqual(expected, logger.entries)
-        self.assertEqual('ProcessTerminated', oops.type)
-        self.assertIn('ended by signal 9', oops.value)
+        self.assertEqual('TimeoutError', oops.type)
+        self.assertIn('Job ran too long.', oops.value)
 
 
 def test_suite():
