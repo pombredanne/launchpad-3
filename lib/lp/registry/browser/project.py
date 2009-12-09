@@ -56,7 +56,7 @@ from lp.registry.browser.product import (
     ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
 from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (

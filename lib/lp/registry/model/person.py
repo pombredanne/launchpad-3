@@ -66,7 +66,7 @@ from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
 from lp.registry.model.personlocation import PersonLocation
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from canonical.launchpad.event.interfaces import (
     IJoinTeamEvent, ITeamInvitationEvent)

@@ -24,6 +24,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior)
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
@@ -47,6 +49,11 @@ class BuildQueue(SQLBase):
     lastscore = IntCol(dbName='lastscore', default=0)
     manual = BoolCol(dbName='manual', default=False)
     estimated_duration = IntervalCol()
+
+    @property
+    def required_build_behavior(self):
+        """See `IBuildQueue`."""
+        return IBuildFarmJobBehavior(self.specific_job)
 
     @property
     def specific_job(self):
