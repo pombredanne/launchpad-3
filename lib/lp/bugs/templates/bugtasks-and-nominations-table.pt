@@ -90,7 +90,9 @@
         <script type="text/javascript" tal:content="string:
           LPS.use('event', 'bugs.bugtask_index', function(Y) {
               Y.on('load', function(e) {
-                  Y.bugs.setup_me_too(${view/current_user_affected_js_status});
+                  Y.bugs.setup_me_too(
+                      ${view/current_user_affected_js_status},
+                      ${view/other_users_affected_count});
               }, window);
           });
           ">
