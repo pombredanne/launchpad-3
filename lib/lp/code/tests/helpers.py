@@ -27,7 +27,7 @@ from lp.testing import time_counter
 
 
 def add_revision_to_branch(factory, branch, revision_date, date_created=None,
-                           mainline=True):
+                           mainline=True, commit_msg=None):
     """Add a new revision to the branch with the specified revision date.
 
     If date_created is None, it gets set to the revision_date.
@@ -35,7 +35,8 @@ def add_revision_to_branch(factory, branch, revision_date, date_created=None,
     if date_created is None:
         date_created = revision_date
     revision = factory.makeRevision(
-        revision_date=revision_date, date_created=date_created)
+        revision_date=revision_date, date_created=date_created,
+        log_body=commit_msg)
     if mainline:
         sequence = branch.revision_count + 1
         branch_revision = branch.createBranchRevision(sequence, revision)
