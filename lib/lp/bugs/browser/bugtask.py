@@ -3107,7 +3107,11 @@ class BugTasksAndNominationsView(LaunchpadView):
 
     @property
     def affected_statement(self):
-        """The default "this bug affects" statement to show."""
+        """The default "this bug affects" statement to show.
+
+        The outputs of this method should be mirrored in
+        MeTooChoiceSource._getSourceNames() (Javascript).
+        """
         if self.other_users_affected_count == 1:
             if self.current_user_affected_status is None:
                 return "This bug affects 1 person. Does this bug affect you?"
@@ -3136,7 +3140,11 @@ class BugTasksAndNominationsView(LaunchpadView):
 
     @property
     def anon_affected_statement(self):
-        """The "this bug affects" statement to show to anonymous users."""
+        """The "this bug affects" statement to show to anonymous users.
+
+        The outputs of this method should be mirrored in
+        MeTooChoiceSource._getSourceNames() (Javascript).
+        """
         if self.context.users_affected_count == 1:
             return "This bug affects 1 person"
         elif self.context.users_affected_count > 1:
