@@ -133,6 +133,11 @@ class BaseJobRunner(object):
         transaction.commit()
 
     def runJobHandleError(self, job):
+        """Run the specified job, handling errors.
+
+        Most errors will be logged as Oopses.  Jobs in user_error_types won't.
+        The list of complete or incomplete jobs will be updated.
+        """
         job = IRunnableJob(job)
         with errorlog.globalErrorUtility.oopsMessage(
             dict(job.getOopsVars())):
@@ -164,6 +169,7 @@ class JobRunner(BaseJobRunner):
 
     @classmethod
     def runFromSource(cls, job_source, logger):
+        """Run all ready jobs provided by the specified source."""
         logger.info("Running synchronously.")
         runner = cls.fromReady(job_source, logger)
         runner.runAll()
@@ -176,12 +182,14 @@ class JobRunner(BaseJobRunner):
 
 
 class TwistedJobRunner(BaseJobRunner):
+    """Run Jobs via twisted."""
 
     def __init__(self, job_source, logger=None):
         BaseJobRunner.__init__(self, logger=logger)
         self.job_source = job_source
 
     def getTaskSource(self):
+        """Return a task source for all jobs in job_source."""
         def producer():
             while True:
                 for job in self.job_source.iterReady():
@@ -190,20 +198,24 @@ class TwistedJobRunner(BaseJobRunner):
         return PollingTaskSource(5, producer().next)
 
     def doConsumer(self):
+        """Create a ParallelLimitedTaskConsumer for this job type."""
         consumer = ParallelLimitedTaskConsumer(1)
         return consumer.consume(self.getTaskSource())
 
     def runAll(self):
+        """Run all ready jobs, and any that become ready while running."""
         d = defer.maybeDeferred(self.doConsumer)
         d.addCallbacks(lambda ignored: reactor.stop(), self.failed)
 
     @staticmethod
     def failed(failure):
+        """Callback for when the job fails."""
         failure.printTraceback()
         reactor.stop()
 
     @classmethod
     def runFromSource(cls, job_source, logger):
+        """Run all ready jobs provided by the specified source."""
         logger.info("Running through Twisted.")
         runner = cls(job_source, logger)
         reactor.callWhenRunning(runner.runAll)
