@@ -30,10 +30,11 @@
       max-width: inherit;
     }
     #add-comment-form .actions {
-    float:right;
+      float:right;
+      margin: 0 -0.5em;
     }
     #add-comment-review-fields {
-    padding-bottom: 0.5em;
+      margin-top: 1em;
     }
     #add-comment-review-fields div {
       display: inline;
@@ -109,6 +110,12 @@
   </div>
 
   <div class="yui-g">
+    <tal:not-logged-in condition="not: view/user">
+      <div align="center" id="add-comment-login-first">
+        To post a comment you must <a href="+login">log in</a>.
+      </div>
+    </tal:not-logged-in>
+
     <div tal:define="link menu/add_comment"
          tal:condition="link/enabled"
          tal:content="structure link/render">
@@ -119,30 +126,26 @@
          tal:content="structure view/conversation/@@+render"/>
   </div>
 
-  <div tal:define="comment_form nocall:context/@@+comment;
-                   dummy comment_form/initialize">
-    <h2 id="add-comment">Add comment</h2>
-    <form action="+comment"
-          method="post"
-          enctype="multipart/form-data"
-          accept-charset="UTF-8"
-          id="add-comment-form">
-      <div id="add-comment-review-fields">
-        Review: <tal:review replace="structure comment_form/widgets/vote"/>
-        Review type: <tal:review replace="structure comment_form/widgets/review_type"/>
-      </div>
-      <tal:comment-input replace="structure comment_form/widgets/comment"/>
-      <div class="actions"
-           tal:content="structure comment_form/actions/field.actions.add/render" />
-    </form>
-  </div>
+  <tal:logged-in condition="view/user">
+    <div tal:define="comment_form nocall:context/@@+comment;
+                     dummy comment_form/initialize">
+      <h2 id="add-comment">Add comment</h2>
+      <form action="+comment"
+            method="post"
+            enctype="multipart/form-data"
+            accept-charset="UTF-8"
+            id="add-comment-form">
+        <tal:comment-input replace="structure comment_form/widgets/comment"/>
+        <div id="add-comment-review-fields">
+            <div class="actions"
+                 tal:content="structure comment_form/actions/field.actions.add/render" />
+            Optional review info: <tal:review replace="structure comment_form/widgets/vote"/>
+            Review type: <tal:review replace="structure comment_form/widgets/review_type"/>
+        </div>
+      </form>
+    </div>
+  </tal:logged-in>
 
-  <script type="text/javascript">
-    LPS.use('lp.comment', function(Y) {
-    var comment = new Y.lp.CodeReviewComment();
-    comment.render();
-    })
-  </script>
   <div class="yui-g">
     <div class="yui-u first">
       <div id="source-revisions"
@@ -187,21 +190,25 @@
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
   conf = <tal:status-config replace="view/status_config" />
   <!--
-  LPS.use('io-base', 'code.codereview', 'code.branchmergeproposal',
+  LPS.use('io-base', 'code.codereview', 'code.branchmergeproposal', 'lp.comment',
             function(Y) {
 
+    Y.on('load', function() {
+        var logged_in = LP.client.links['me'] !== undefined;
 
-  if(Y.UA.ie) {
-      return;
-  }
+        if (logged_in) {
+            var comment = new Y.lp.CodeReviewComment();
+            comment.render();
 
-  Y.on('domready', function() {
-      Y.code.codereview.connect_links();
-      Y.code.branchmergeproposal.connect_status(conf);
-  });
+            if(Y.UA.ie) {
+                return;
+            }
 
-  (new Y.codereview.NumberToggle()).render();
-
+            Y.code.codereview.connect_links();
+            Y.code.branchmergeproposal.connect_status(conf);
+        }
+        (new Y.codereview.NumberToggle()).render();
+      }, window);
   });
   -->
 <tal:script replace="structure string:&lt;/script&gt;" />
