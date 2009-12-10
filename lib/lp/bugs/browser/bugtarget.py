@@ -34,7 +34,7 @@ from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Choice
-from zope.schema.vocabulary import SimpleVocabulary
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -363,7 +363,9 @@ class FileBugViewBase(LaunchpadFormView):
     @property
     def use_asynchronous_dupefinder(self):
         """Return True if the asynchronous dupe finder can be used."""
-        return IProduct.providedBy(self.context)
+        return (
+            IProduct.providedBy(self.context) or
+            IProject.providedBy(self.context))
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -1032,6 +1034,50 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     actions = FileBugGuidedView.actions
     schema = IProjectBugAddForm
 
+    @cachedproperty
+    def products_using_malone(self):
+        return [
+            product for product in self.context.products
+            if product.official_malone]
+
+    @property
+    def default_product(self):
+        if len(self.products_using_malone) > 0:
+            return self.products_using_malone[0]
+        else:
+            return None
+
+    @property
+    def inline_filebug_form_url(self):
+        """The URL to the inline filebug form.
+
+        If a token was passed to this view, it will be be passed through
+        to the inline bug filing form via the returned URL.
+
+        The URL returned will be the URL of the first of the current
+        Project's products, since that's the product that will be
+        selected by default when the view is rendered.
+        """
+        url = canonical_url(
+            self.default_product, view_name='+filebug-inline-form')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
+    @property
+    def duplicate_search_url(self):
+        """The URL to the inline duplicate search view.
+
+        The URL returned will be the URL of the first of the current
+        Project's products, since that's the product that will be
+        selected by default when the view is rendered.
+        """
+        url = canonical_url(
+            self.default_product, view_name='+filebug-show-similar')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
     def _getSelectedProduct(self):
         """Return the product that's selected."""
         assert self.widgets['product'].hasValidInput(), (
@@ -1042,6 +1088,20 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     def getSecurityContext(self):
         """See FileBugViewBase."""
         return self._getSelectedProduct()
+
+#    def setUpFields(self):
+#        """Set up the form fields. See `LaunchpadFormView`."""
+#        super(ProjectFileBugGuidedView, self).setUpFields()
+#
+#        # Override the product form field so that its default is set to
+#        # the first of the Project's products_using_malone.
+#        product_field = Choice(
+#            __name__='product', title=u"Project", required=True,
+#            vocabulary="ProjectProductsUsingMalone",
+#            default=self.default_product.name)
+#
+#        self.form_fields = self.form_fields.omit('product')
+#        self.form_fields += formlib.form.Fields(product_field)
 
 
 class BugTargetBugListingView:
