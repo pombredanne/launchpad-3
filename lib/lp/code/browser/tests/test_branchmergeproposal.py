@@ -612,7 +612,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         expected_groups = [
             [revisions[0], revisions[1]],
             [revisions[2], revisions[3]]]
-        self.assertRevisionGroups(self.bmp, expected_groups)
+        self.assertRevisionGroups(bmp, expected_groups)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
