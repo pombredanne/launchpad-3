@@ -125,7 +125,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             0, self.view.other_users_affected_count)
         self.failUnlessEqual(
-            "This bug does not affect you",
+            "This bug doesn't affect you",
             self.view.affected_statement)
 
     def test_affected_statement_1_person_not_you(self):

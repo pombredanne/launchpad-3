@@ -3132,7 +3132,7 @@ class BugTasksAndNominationsView(LaunchpadView):
             elif self.current_user_affected_status:
                 return "This bug affects you"
             else:
-                return "This bug does not affect you"
+                return "This bug doesn't affect you"
 
 
 class BugTaskTableRowView(LaunchpadView):
