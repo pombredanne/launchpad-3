@@ -236,8 +236,8 @@ Create a mock slave so the builder can operate - one with a failed package.
 
 Do the test execution:
 
-    >>> buildergroup.updateBuild(bqItem3)
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem3)
+    >>> buildergroup.updateBuild(bqItem3)
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -250,10 +250,6 @@ Do the test execution:
     True
     >>> build.buildstate.title
     'Failed to build'
-
-Cleanup in preparation for the next test:
-
-    bqItem3.destroySelf()
 
 WAITING - DEPWAIT -> a required dependency is missing, again notice
 from builder, but Build.buildstate has the right state:
@@ -270,9 +266,9 @@ Create a mock slave so the builder can operate - one with a dependency error.
 
 Do the test execution:
 
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem4)
     >>> buildergroup.updateBuild(bqItem4)
     CRITICAL:root:***** bob is MANUALDEPWAIT *****
-    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem4)
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -288,10 +284,6 @@ Do the test execution:
     >>> build.buildstate.title
     'Dependency wait'
 
-Cleanup in preparation for the next test:
-
-    bqItem4.destroySelf()
-
 WAITING - CHROOTFAIL -> the Chroot for this distroseries is damage, nor
 builder, but right state stored in Build entry:
 
@@ -303,9 +295,9 @@ builder, but right state stored in Build entry:
 
     >>> bqItem5.builder.setSlaveForTesting(
     ...     WaitingSlave('BuildStatus.CHROOTFAIL'))
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem5)
     >>> buildergroup.updateBuild(bqItem5)
     CRITICAL:root:***** bob is CHROOTWAIT *****
-    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem5)
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -318,10 +310,6 @@ builder, but right state stored in Build entry:
     True
     >>> build.buildstate.title
     'Chroot problem'
-
-Cleanup in preparation for the next test:
-
-    bqItem5.destroySelf()
 
 WAITING - BUILDERFAIL -> builder has failed by internal error, job is
 available for next build round:
@@ -451,8 +439,8 @@ If the build record wasn't updated before/during the updateBuild
 (precisely on binary upload time), the build will be considered
 FAILEDTOUPLOAD:
 
-    >>> buildergroup.updateBuild(bqItem10)
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem10)
+    >>> buildergroup.updateBuild(bqItem10)
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -508,10 +496,6 @@ What we can clearly notice is that the buildlog is still containing
 the old build state (BUILDING) in its name. This is a minor problem
 that can be sorted by modifying the execution order of procedures
 inside Buildergroup.buildStatus_OK method.
-
-Cleanup in preparation for the next test:
-
-     bqItem10.destroySelf()
 
 
 === Successfully collected and uploaded  (FULLYBUILT) ===
@@ -569,10 +553,6 @@ processing succeeded.
     >>> build.upload_log is None
     True
 
-Cleanup in preparation for the next test:
-
-    bqItem10.destroySelf()
-
 WAITING -> GIVENBACK - slave requested build record to be rescheduled.
 
     >>> bqItem11 = a_build.createBuildQueueEntry()
@@ -625,10 +605,16 @@ Create a mock slave so the builder gets the right responses for this test.
     ...
     AssertionError: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE (2) can not be built for pocket RELEASE: illegal status
 
+Cleanup in preparation for the next test:
+
+    >>> bqItem12.builder = None
 
 The buildlog is collected and compressed locally using gzip algorithm,
 let's see how this method works:
 
+    >>> bqItem10 = getUtility(IBuildSet).getByBuildID(
+    ...     6).createBuildQueueEntry()
+    >>> setupBuildQueue(bqItem10, a_builder)
     >>> bqItem10.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
 
 Before collecting and processing the buildlog we will store the files
@@ -740,6 +726,9 @@ Check the log from the uploader run has made it into the upload directory:
 Remove build upload results root
 
     >>> shutil.rmtree(config.builddmaster.root)
+    >>> bqItem10.destroySelf()
+    >>> setupBuildQueue(bqItem12, a_builder)
+
 
 == Setup chroots ==
 
@@ -1283,8 +1272,7 @@ Mark's PPA:
 
     >>> cprov_archive.private = False
     >>> cprov_archive.require_virtualized = True
-    >>> build = getUtility(IBuildSet).getByQueueEntry(candidate)
-    >>> for build_file in build.sourcepackagerelease.files:
+    >>> for build_file in a_build.sourcepackagerelease.files:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = False
     >>> mark_archive = getUtility(IPersonSet).getByName('mark').archive
 
