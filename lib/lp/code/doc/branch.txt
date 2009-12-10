@@ -426,8 +426,8 @@ the history.
     >>> list(junk.latest_revisions(3)) == three_latest
     True
 
-Branch.getRevisionsSince gives all the BranchRevisions for revisions comitted
-since a given timestamp. It may give suprising results if some committers had a
+Branch.getRevisionsSince gives all the BranchRevisions for revisions committed
+since a given timestamp. It may give surprising results if some committers had a
 skewed clock.
 
     >>> from datetime import datetime
