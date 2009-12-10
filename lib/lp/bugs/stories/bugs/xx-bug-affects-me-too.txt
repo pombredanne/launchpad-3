@@ -46,7 +46,7 @@ clear to the user that they have marked this bug as affecting them.
    >>> print extract_text(find_tag_by_id(
    ...     user_browser.contents, 'affectsmetoo').find(
    ...         None, 'static'))
-   This bug affects you and 1 other person.
+   This bug affects you and 1 other person
 
 Next to it, we also see the 'hot bug' icon, to indicate that the user
 has marked the bug as affecting them.
@@ -70,7 +70,7 @@ Back at the bug page, the text changes once again.
    >>> print extract_text(find_tag_by_id(
    ...     user_browser.contents, 'affectsmetoo').find(
    ...         None, 'static'))
-   This bug affects 1 person. Does this bug affect you?
+   This bug affects 1 person, but not you
 
 
 == Static and dynamic support ==
