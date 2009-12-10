@@ -180,6 +180,7 @@ A user can request a package to be deleted:
     ...     removal_comment="No longer needed")
     >>> print response 
     HTTP/1.1 200 Ok
+    ...
 
 After removal, the package is marked as such:
 
