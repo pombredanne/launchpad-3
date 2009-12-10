@@ -66,10 +66,10 @@
         <span class="static">
           <tal:affected condition="affected">
             <img width="14" height="14" src="/@@/flame-icon" alt="" />
-            This bug affects me too
+            <tal:statement replace="view/affected_statement" />
           </tal:affected>
           <tal:not-affected condition="not:affected">
-            This bug doesn't affect me
+            <tal:statement replace="view/affected_statement" />
           </tal:not-affected>
           <a href="+affectsmetoo">
             <img class="editicon" src="/@@/edit" alt="Edit" />
@@ -83,7 +83,7 @@
         <span class="dynamic unseen">
           <img src="/@@/flame-icon" alt=""/>
           <a href="+affectsmetoo" class="js-action"
-             ><span class="value">Does this bug affect you?</span></a>
+             ><span class="value" tal:content="view/affected_statement" /></a>
           <img class="editicon" src="/@@/edit" alt="Edit" />
         </span>
 

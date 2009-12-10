@@ -10,13 +10,14 @@ try this out.
    >>> logout()
 
 The user goes to the bug's index page, and finds a statement that the
-bug is not marked as affecting them.
+bug affects one other person (in this instance, the person who filed
+the bug).
 
    >>> user_browser.open(test_bug_url)
    >>> print extract_text(find_tag_by_id(
    ...     user_browser.contents, 'affectsmetoo').find(
    ...         None, 'static'))
-   This bug doesn't affect me
+   This bug affects 1 person. Does this bug affect you?
 
 Next to the statement is a link containing an edit icon.
 
@@ -45,7 +46,7 @@ clear to the user that they have marked this bug as affecting them.
    >>> print extract_text(find_tag_by_id(
    ...     user_browser.contents, 'affectsmetoo').find(
    ...         None, 'static'))
-   This bug affects me too
+   This bug affects you and 1 other person.
 
 Next to it, we also see the 'hot bug' icon, to indicate that the user
 has marked the bug as affecting them.
@@ -69,7 +70,7 @@ Back at the bug page, the text changes once again.
    >>> print extract_text(find_tag_by_id(
    ...     user_browser.contents, 'affectsmetoo').find(
    ...         None, 'static'))
-   This bug doesn't affect me
+   This bug affects 1 person. Does this bug affect you?
 
 
 == Static and dynamic support ==
