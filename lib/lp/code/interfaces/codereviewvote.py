@@ -19,8 +19,8 @@ from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment)
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_write_operation, exported,
-    REQUEST_USER)
+    call_with, export_as_webservice_entry, export_destructor_operation,
+    export_write_operation, exported, REQUEST_USER)
 
 
 class ICodeReviewVoteReferencePublic(Interface):
@@ -84,6 +84,13 @@ class ICodeReviewVoteReferenceEdit(Interface):
             personal review, if the reviewer is not a team, if the
             claimant is not in the reviewer team, or if the review is
             not pending.
+        """
+
+    @export_destructor_operation()
+    def delete():
+        """Delete the pending review.
+
+        :raises ReviewNotPending: If the review is not pending.
         """
 
 

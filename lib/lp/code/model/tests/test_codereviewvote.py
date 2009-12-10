@@ -9,7 +9,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.code.enums import CodeReviewVote
-from lp.code.errors import ClaimReviewFailed
+from lp.code.errors import ClaimReviewFailed, ReviewNotPending
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.testing import login_person, TestCaseWithFactory
 
@@ -109,6 +109,78 @@ class TestCodeReviewVoteReferenceClaimReview(TestCaseWithFactory):
         login_person(self.claimant)
         review.claimReview(self.claimant)
         self.assertEqual(self.claimant, review.reviewer)
+
+
+class TestCodeReviewVoteReferenceDelete(TestCaseWithFactory):
+    """Tests for CodeReviewVoteReference.delete."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_delete_pending_by_registrant(self):
+        # A pending review can be deleted by the person requesting the review.
+        reviewer = self.factory.makePerson()
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.registrant)
+        review = bmp.nominateReviewer(
+            reviewer=reviewer, registrant=bmp.registrant)
+        review.delete()
+        self.assertEqual([], list(bmp.votes))
+
+    def test_delete_pending_by_reviewer(self):
+        # A pending review can be deleted by the person requesting the review.
+        reviewer = self.factory.makePerson()
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.registrant)
+        review = bmp.nominateReviewer(
+            reviewer=reviewer, registrant=bmp.registrant)
+        login_person(reviewer)
+        review.delete()
+        self.assertEqual([], list(bmp.votes))
+
+    def test_delete_pending_by_review_team_member(self):
+        # A pending review can be deleted by the person requesting the review.
+        review_team = self.factory.makeTeam()
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.registrant)
+        review = bmp.nominateReviewer(
+            reviewer=review_team, registrant=bmp.registrant)
+        login_person(review_team.teamowner)
+        review.delete()
+        self.assertEqual([], list(bmp.votes))
+
+    def test_delete_pending_by_target_branch_owner(self):
+        # A pending review can be deleted by anyone with edit permissions on
+        # the target branch.
+        reviewer = self.factory.makePerson()
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.registrant)
+        review = bmp.nominateReviewer(
+            reviewer=reviewer, registrant=bmp.registrant)
+        login_person(bmp.target_branch.owner)
+        review.delete()
+        self.assertEqual([], list(bmp.votes))
+
+    def test_delete_by_others_unauthorized(self):
+        # A pending review can be deleted by the person requesting the review.
+        reviewer = self.factory.makePerson()
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(bmp.registrant)
+        review = bmp.nominateReviewer(
+            reviewer=reviewer, registrant=bmp.registrant)
+        login_person(self.factory.makePerson())
+        self.assertRaises(
+            Unauthorized, getattr, review, 'delete')
+
+    def test_delete_not_pending(self):
+        # A non-pending review reference cannot be deleted.
+        reviewer = self.factory.makePerson()
+        bmp = self.factory.makeBranchMergeProposal()
+        login_person(reviewer)
+        bmp.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE)
+        [review] = list(bmp.votes)
+        self.assertRaises(ReviewNotPending, review.delete)
 
 
 def test_suite():

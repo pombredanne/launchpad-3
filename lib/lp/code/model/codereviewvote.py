@@ -15,7 +15,7 @@ from zope.schema import Int
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from lp.code.errors import ClaimReviewFailed
+from lp.code.errors import ClaimReviewFailed, ReviewNotPending
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 
 
@@ -65,3 +65,9 @@ class CodeReviewVoteReference(SQLBase):
             raise ClaimReviewFailed(
                 error_str % claimant.unique_displayname)
         self.reviewer = claimant
+
+    def delete(self):
+        """See `ICodeReviewVote`"""
+        if not self.is_pending:
+            raise ReviewNotPending('The review is not pending.')
+        self.destroySelf()
