@@ -97,7 +97,7 @@ def determine_binary_file_type(filename):
     if filename.endswith(".deb"):
         return BinaryPackageFileType.DEB
     elif filename.endswith(".udeb"):
-        return BinaryPackageFileType.DEB
+        return BinaryPackageFileType.UDEB
     else:
         return None
 
