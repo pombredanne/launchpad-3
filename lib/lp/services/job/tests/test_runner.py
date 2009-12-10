@@ -19,7 +19,7 @@ from zope.interface import implements
 
 from lp.testing.mail_helpers import pop_notifications
 from lp.services.job.runner import (
-    JobRunner, BaseRunnableJob, JobRunnerProto, TwistedJobRunner
+    JobRunner, BaseRunnableJob, JobRunnerProcess, TwistedJobRunner
 )
 from lp.services.job.interfaces.job import JobStatus, IRunnableJob
 from lp.services.job.model.job import Job
@@ -280,12 +280,12 @@ class StuckJob(BaseRunnableJob):
         sleep(30)
 
 
-class StuckJobAmp(JobRunnerProto):
+class StuckJobProcess(JobRunnerProcess):
 
     job_class = StuckJob
 
 
-StuckJob.amp = StuckJobAmp
+StuckJob.amp = StuckJobProcess
 
 
 class ListLogger:

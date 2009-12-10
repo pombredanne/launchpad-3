@@ -196,6 +196,7 @@ class JobRunner(BaseJobRunner):
     def runAll(self):
         """Run all the Jobs for this JobRunner."""
         for job in self.jobs:
+            job = IRunnableJob(job)
             try:
                 job.acquireLease()
             except LeaseHeld:
@@ -264,13 +265,14 @@ class TwistedJobRunner(BaseJobRunner):
             'LPCONFIG': os.environ['LPCONFIG']})
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
-        self.pp = GentleProcessPool(job_amp, starter=starter, min=0)
+        self.pool = GentleProcessPool(job_amp, starter=starter, min=0)
 
     def runJobInSubprocess(self, job):
         """Run the job_class with the specified id in the process pool.
 
         :return: a Deferred that fires when the job has completed.
         """
+        job = IRunnableJob(job)
         try:
             job.acquireLease()
         except LeaseHeld:
@@ -281,7 +283,7 @@ class TwistedJobRunner(BaseJobRunner):
         # work around ampoule bug
         if timeout == 0:
             timeout = 0.0000000000001
-        deferred = self.pp.doWork(
+        deferred = self.pool.doWork(
             RunJobCommand, job_id = job_id, _timeout=timeout)
         def update(response):
             if response['success']:
@@ -372,14 +374,13 @@ bootstrap(sys.argv[-1])
 """
 
 def bootstrap(ampChildPath):
-    from signal import signal, SIGHUP
     def handler(signum, frame):
         raise TimeoutError
     signal(SIGHUP, handler)
     from twisted.python import log
     log.startLogging(sys.stderr)
 
-    from twisted.internet import reactor, stdio
+    from twisted.internet import stdio
     from twisted.python import reflect
 
     ampChild = reflect.namedAny(ampChildPath)
