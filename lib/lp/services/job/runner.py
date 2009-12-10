@@ -17,9 +17,10 @@ from signal import getsignal, SIGCHLD, SIGHUP, signal
 import sys
 
 from ampoule import child, pool, main
-
-from twisted.internet import reactor, defer
+from twisted.internet import defer, reactor, stdio
 from twisted.protocols import amp
+from twisted.python import log, reflect
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -32,6 +33,7 @@ import transaction
 from lp.services.scripts.base import LaunchpadCronScript
 from lp.services.job.interfaces.job import LeaseHeld, IRunnableJob, IJob
 from lp.services.mail.sendmail import MailController
+from canonical.launchpad import scripts
 from canonical.launchpad.webapp import errorlog
 
 
@@ -377,14 +379,8 @@ def bootstrap(ampChildPath):
     def handler(signum, frame):
         raise TimeoutError
     signal(SIGHUP, handler)
-    from twisted.python import log
     log.startLogging(sys.stderr)
-
-    from twisted.internet import stdio
-    from twisted.python import reflect
-
     ampChild = reflect.namedAny(ampChildPath)
     stdio.StandardIO(ampChild(), 3, 4)
-    from canonical.launchpad import scripts
     scripts.execute_zcml_for_scripts(use_web_security=False)
     reactor.run()
