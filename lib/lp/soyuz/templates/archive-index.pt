@@ -252,7 +252,10 @@ YUI({
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="publishing batch">
+            <tal:publishing repeat="publishing batch">
+            <tr tal:define="newer_version publishing/newer_distroseries_version"
+                tal:attributes="class python: newer_version and
+                                              'superseded' or ''">
               <td>
                 <img src="/@@/package-source" />
                 <tal:source_name replace="publishing/sourcepackagerelease/name">
@@ -265,8 +268,7 @@ YUI({
                     content="version_name">
                   2.0.39
                 </tal:version>
-                <tal:newer_version define="newer_version publishing/newer_distroseries_version"
-                                   condition="newer_version">
+                <tal:newer_version condition="newer_version">
                   (<a tal:attributes="href newer_version/fmt:url">Newer version</a>
                   available)
                 </tal:newer_version>
@@ -282,6 +284,7 @@ YUI({
                   </tal:date_published>
               </td>
             </tr>
+            </tal:publishing>
           </tbody>
         </table>
 
