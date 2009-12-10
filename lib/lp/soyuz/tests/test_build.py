@@ -47,37 +47,6 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
 
         return depwait_build
 
-    def assertNoBuildQueue(self, build):
-        """Test there's no buildqueue, buildpackagejob or job for `build`"""
-        store = Store.of(build)
-        result = store.find(
-            BuildPackageJob,
-            BuildPackageJob.build == build.id)
-        bpj_count = result.count()
-        self.assertEqual(
-            bpj_count, 0,
-            "Expected no buildpackagejob rows, got %s" % bpj_count)
-
-        bpj = result.one()
-
-        result = store.find(
-            Job,
-            bpj.job == Job.id)
-        job_count = result.count()
-        self.assertEqual(
-            job_count, 0,
-            "Expected no job rows, got %s" % job_count)
-
-        job = result.one()
-
-        result = store.find(
-            BuildQueue,
-            BuildQueue.job == job.id)
-        buildqueue_count = result.count()
-        self.assertEqual(
-            buildqueue_count, 0,
-            "Expected no buildqueue rows, got %s" % buildqueue_count)
-
     def testBuildqueueRemoval(self):
         """Test removing buildqueue items.
 
