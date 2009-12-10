@@ -247,8 +247,8 @@ class JobRunnerProcess(child.AMPChild):
         return {'success': len(runner.completed_jobs), 'oops_id': oops_id}
 
 
-class GentleProcessPool(pool.ProcessPool):
-    """A ProcessPool that kills with KeyboardInterrupt."""
+class HUPProcessPool(pool.ProcessPool):
+    """A ProcessPool that kills with HUP."""
 
     def _handleTimeout(self, child):
         try:
@@ -267,7 +267,7 @@ class TwistedJobRunner(BaseJobRunner):
             'LPCONFIG': os.environ['LPCONFIG']})
         super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
-        self.pool = GentleProcessPool(job_amp, starter=starter, min=0)
+        self.pool = HUPProcessPool(job_amp, starter=starter, min=0)
 
     def runJobInSubprocess(self, job):
         """Run the job_class with the specified id in the process pool.
