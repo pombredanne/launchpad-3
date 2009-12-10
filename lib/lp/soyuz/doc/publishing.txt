@@ -344,13 +344,14 @@ removal_comment argument.
 
     >>> from zope.component import getUtility
     >>> mark = getUtility(IPersonSet).getByName('mark')
-    >>> modified_spph = spph.requestDeletion(mark, "testing deletion")
+    >>> spph.requestDeletion(mark, "testing deletion")
 
 Inspecting the modified record shows it's ready for domination:
 
     >>> from canonical.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
 
+    >>> modified_spph = spph.secure_record
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.DELETED, (4) Deleted>
 
@@ -535,8 +536,9 @@ getBuiltBinaries() result.
 The same happens when we delete the i386 binary, so no binaries are
 published in the original location.
 
-    >>> deleted = source.getPublishedBinaries()[0].requestDeletion(
-    ...     mark, "go")
+    >>> deletable = source.getPublishedBinaries()[0]
+    >>> deletable.requestDeletion(mark, "go")
+    >>> deleted = deletable.secure_record
     >>> syncUpdate(deleted)
 
     >>> len(source.getPublishedBinaries())

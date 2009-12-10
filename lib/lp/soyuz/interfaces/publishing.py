@@ -288,10 +288,6 @@ class IPublishing(Interface):
 
         :param removed_by: `IPerson` responsible for the removal.
         :param removal_comment: optional text describing the removal reason.
-
-        :return: The deleted publishing record, either:
-            `ISourcePackagePublishingHistory` or
-            `IBinaryPackagePublishingHistory`.
         """
 
     def requestObsolescence():

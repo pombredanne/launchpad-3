@@ -955,8 +955,8 @@ it continues to be considered 'available for deletion'.
     >>> len(removal_candidate.getPublishedBinaries())
     1
 
-    >>> deleted = removal_candidate.requestDeletion(cprov, 'go away !')
-    >>> syncUpdate(deleted)
+    >>> removal_candidate.requestDeletion(cprov, 'go away !')
+    >>> syncUpdate(removal_candidate.secure_record)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     1
@@ -995,8 +995,8 @@ The source publication is only excluded from 'deletion list' when its
 binary is also DELETED.
 
     >>> for bin in removal_candidate.getPublishedBinaries():
-    ...     deleted = bin.requestDeletion(cprov, 'go away !')
-    ...     syncUpdate(deleted)
+    ...     bin.requestDeletion(cprov, 'go away !')
+    ...     syncUpdate(bin.secure_record)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     0
