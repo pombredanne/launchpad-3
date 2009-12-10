@@ -1123,13 +1123,21 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
         to edit distribution details are able to change translation settings
         for a distribution.
         """
-        return (
+        # Translation group owner for a distribution is also a
+        # translations administrator for it.
+        translation_group = self.obj.translationgroup
+        if translation_group and user.inTeam(translation_group.owner):
+            return True
+        else:
+            return (
             OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
             EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
                 self, user))
 
 
-class AdminPOTemplateDetails(AdminDistributionTranslations):
+# Please keep AdminPOTemplateSubset in sync with this, unless you
+# know exactly what you are doing.
+class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     """Controls administration of an `IPOTemplate`.
 
     Allow all persons that can also administer the translations to
@@ -1143,16 +1151,17 @@ class AdminPOTemplateDetails(AdminDistributionTranslations):
     def checkAuthenticated(self, user):
         template = self.obj
         if template.distroseries is not None:
-            distro = template.distroseries.distribution
-            translation_group = distro.translationgroup
-            if translation_group and user.inTeam(translation_group.owner):
-                return True
-
+            # Template is on a distribution.
+            distribution = template.distroseries.distribution
             return (
                 AdminDistributionTranslations(
-                template.distroseries.distribution).checkAuthenticated(user))
+                    template.distroseries.distribution).checkAuthenticated(
+                        user))
 
-        return False
+        else:
+            # Template is on a product.
+            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(
+                self, user)
 
 
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
@@ -1636,7 +1645,11 @@ class AdminBranch(AuthorizationBase):
                 user.inTeam(celebs.bazaar_experts))
 
 
-class AdminPOTemplateSubset(AdminDistributionTranslations):
+# Please keep this in sync with AdminPOTemplateDetails.  Note that
+# this permission controls access to browsing into individual
+# potemplates, but it's on a different object (POTemplateSubset)
+# from AdminPOTemplateDetails, even though it looks almost identical
+class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
     """Controls administration of an `IPOTemplateSubset`.
 
     Allow all persons that can also administer the translations to
@@ -1648,16 +1661,16 @@ class AdminPOTemplateSubset(AdminDistributionTranslations):
     usedfor = IPOTemplateSubset
 
     def checkAuthenticated(self, user):
-        template = self.obj
-        if template.distroseries is not None:
-            distro = template.distroseries.distribution
+        template_set = self.obj
+        if template_set.distroseries is not None:
+            distro = template_set.distroseries.distribution
             translation_group = distro.translationgroup
             if translation_group and user.inTeam(translation_group.owner):
                 return True
 
             return (
                 AdminDistributionTranslations(
-                template.distroseries.distribution).checkAuthenticated(user))
+                template_set.distroseries.distribution).checkAuthenticated(user))
 
         return False
 
