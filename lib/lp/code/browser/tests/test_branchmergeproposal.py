@@ -557,11 +557,39 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual([], view.linked_bugs)
 
+    def test_revision_end_date_active(self):
+        # An active merge proposal will have None as an end date.
+        bmp = self.factory.makeBranchMergeProposal()
+        view = create_initialized_view(bmp, '+index')
+        self.assertIs(None, view.revision_end_date)
+
+    def test_revision_end_date_merged(self):
+        # An merged proposal will have the date merged as an end date.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.MERGED)
+        view = create_initialized_view(bmp, '+index')
+        self.assertEqual(bmp.date_merged, view.revision_end_date)
+
+    def test_revision_end_date_rejected(self):
+        # An rejected proposal will have the date reviewed as an end date.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.REJECTED)
+        view = create_initialized_view(bmp, '+index')
+        self.assertEqual(bmp.date_reviewed, view.revision_end_date)
+
+    def assertRevisionGroups(self, bmp, expected_groups):
+        """Get the groups for the merge proposal and check them."""
+        view = create_initialized_view(bmp, '+index')
+        groups = view._getRevisionsSinceReviewStart()
+        view_groups = [
+            obj.revisions for obj in sorted(
+                groups, key=operator.attrgetter('date'))]
+        self.assertEqual(expected_groups, view_groups)
+
     def test_getRevisionsSinceReviewStart_no_revisions(self):
         # If there have been no revisions pushed since the start of the
         # review, the method returns an empty list.
-        view = create_initialized_view(self.bmp, '+index')
-        self.assertEqual([], view._getRevisionsSinceReviewStart())
+        self.assertRevisionGroups(self.bmp, [])
 
     def test_getRevisionsSinceReviewStart_groups(self):
         # Revisions that were scanned at the same time have the same
@@ -581,16 +609,10 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                 add_revision_to_branch(
                     self.factory, bmp.source_branch, revision_date))
             revision_date += timedelta(days=1)
-        view = create_initialized_view(bmp, '+index')
-        groups = view._getRevisionsSinceReviewStart()
-        # The last two revisions are after the review date.
-        view_revisions = [
-            obj.revisions for obj in sorted(
-                groups, key=operator.attrgetter('date'))]
-        self.assertEqual(
-            [[revisions[0], revisions[1]],
-             [revisions[2], revisions[3]]],
-            view_revisions)
+        expected_groups = [
+            [revisions[0], revisions[1]],
+            [revisions[2], revisions[3]]]
+        self.assertRevisionGroups(self.bmp, expected_groups)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):

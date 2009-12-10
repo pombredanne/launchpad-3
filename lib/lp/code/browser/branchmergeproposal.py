@@ -548,15 +548,32 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
 
+    @property
+    def revision_end_date(self):
+        """The cutoff date for showing revisions.
+
+        If the proposal has been merged, then we stop at the merged date. If
+        it is rejected, we stop at the reviewed date. For superseded
+        proposals, it should ideally use the non-existant date_last_modified,
+        but could use the last comment date.
+        """
+        status = self.context.queue_status
+        if status == BranchMergeProposalStatus.MERGED:
+            return self.context.date_merged
+        if status == BranchMergeProposalStatus.REJECTED:
+            return self.context.date_reviewed
+        # Otherwise return None representing an open end date.
+        return None
+
     def _getRevisionsSinceReviewStart(self):
         """Get the grouped revisions since the review started."""
         # Work out the start of the review.
-        cutoff_date = self.context.date_review_requested
-        if cutoff_date is None:
-            cutoff_date = self.context.date_created
+        start_date = self.context.date_review_requested
+        if start_date is None:
+            start_date = self.context.date_created
         source = self.context.source_branch
         resultset = source.getMainlineBranchRevisions(
-            cutoff_date, oldest_first=True)
+            start_date, self.revision_end_date, oldest_first=True)
         # Now group by date created.
         groups = defaultdict(list)
         for branch_revision, revision, revision_author in resultset:
