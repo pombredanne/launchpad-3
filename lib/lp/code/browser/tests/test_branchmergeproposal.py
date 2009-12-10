@@ -9,6 +9,7 @@ __metaclass__ = type
 
 from datetime import datetime, timedelta
 from difflib import unified_diff
+import operator
 import unittest
 
 import pytz
@@ -24,6 +25,7 @@ from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalVoteView, DecoratedCodeReviewVoteReference,
     latest_proposals_for_each_branch)
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.code.tests.helpers import add_revision_to_branch
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
 from lp.testing.views import create_initialized_view
@@ -561,38 +563,34 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual([], view._getRevisionsSinceReviewStart())
 
-    def _addRevisionsToSource(self, date):
-        # Add two revisions before, and two revisions after the date.
-        for date in (date-2, date-1, date+1, date+2):
-            x
-
-    def _addRevision(self, branch, revision_date, date_created=None):
-        if date_created is None:
-            date_created = revision_date
-        revision = self.factory.makeRevision(
-            revision_date=revision_date, date_created=date_created)
-        sequence = branch.revision_count + 1
-        branch.createBranchRevision(sequence, revision)
-        branch.updateScannedDetails(revision, sequence)
-        return revision
-
-    def test_getRevisionsSinceReviewStart_skips_early(self):
-        # Revisions that were committed before the review are skipped.
+    def test_getRevisionsSinceReviewStart_groups(self):
+        # Revisions that were scanned at the same time have the same
+        # date_created.  These revisions are grouped together.
         review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
         bmp = self.factory.makeBranchMergeProposal(
-            date_created=review_date,
-            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
-        revision_date = review_date - timedelta(days=3)
+            date_created=review_date)
+        login_person(bmp.registrant)
+        bmp.requestReview(review_date)
+        revision_date = review_date + timedelta(days=1)
         revisions = []
-        for date in range(4):
+        for date in range(2):
             revisions.append(
-                self._addRevision(bmp.source_branch, revision_date))
-            revision_date += timedelta(days=2)
+                add_revision_to_branch(
+                    self.factory, bmp.source_branch, revision_date))
+            revisions.append(
+                add_revision_to_branch(
+                    self.factory, bmp.source_branch, revision_date))
+            revision_date += timedelta(days=1)
         view = create_initialized_view(bmp, '+index')
         groups = view._getRevisionsSinceReviewStart()
         # The last two revisions are after the review date.
-        view_revisions = [obj.revisions for obj in groups]
-        self.assertEqual([[revisions[2]], [revisions[3]]], view_revisions)
+        view_revisions = [
+            obj.revisions for obj in sorted(
+                groups, key=operator.attrgetter('date'))]
+        self.assertEqual(
+            [[revisions[0], revisions[1]],
+             [revisions[2], revisions[3]]],
+            view_revisions)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):

@@ -513,8 +513,9 @@ class CodeReviewNewRevisions:
     """
     implements(IComment)
 
-    def __init__(self, revisions, date):
+    def __init__(self, revisions, date, branch):
         self.revisions = revisions
+        self.branch = branch
         self.has_body = False
         self.has_footer = True
         # The date attribute is used to sort the comments in the conversation.
@@ -554,13 +555,14 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         if cutoff_date is None:
             cutoff_date = self.context.date_created
         source = self.context.source_branch
-        source_revisions = source.getRevisionsSince(cutoff_date)
+        resultset = source.getMainlineBranchRevisions(
+            cutoff_date, oldest_first=True)
         # Now group by date created.
         groups = defaultdict(list)
-        for revision in source_revisions:
-            groups[revision.date_created].append(revision)
+        for branch_revision, revision, revision_author in resultset:
+            groups[revision.date_created].append(branch_revision)
         return [
-            CodeReviewNewRevisions(revisions, date)
+            CodeReviewNewRevisions(revisions, date, source)
             for date, revisions in groups.iteritems()]
 
     @cachedproperty
