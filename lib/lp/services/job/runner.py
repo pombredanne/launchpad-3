@@ -163,6 +163,11 @@ class BaseJobRunner(object):
         transaction.commit()
 
     def runJobHandleError(self, job):
+        """Run the specified job, handling errors.
+
+        Most errors will be logged as Oopses.  Jobs in user_error_types won't.
+        The list of complete or incomplete jobs will be updated.
+        """
         job = IRunnableJob(job)
         with self.error_utility.oopsMessage(
             dict(job.getOopsVars())):
@@ -207,6 +212,7 @@ class JobRunner(BaseJobRunner):
 
     @classmethod
     def runFromSource(cls, job_source, logger):
+        """Run all ready jobs provided by the specified source."""
         with removeSecurityProxy(job_source.contextManager()):
             logger.info("Running synchronously.")
             runner = cls.fromReady(job_source, logger)
@@ -258,6 +264,7 @@ class JobRunnerProcess(child.AMPChild):
 
 
 class TwistedJobRunner(BaseJobRunner):
+    """Run Jobs via twisted."""
 
     def __init__(self, job_source, job_amp, logger=None, error_utility=None):
         starter = main.ProcessStarter(
@@ -292,6 +299,7 @@ class TwistedJobRunner(BaseJobRunner):
         return deferred
 
     def getTaskSource(self):
+        """Return a task source for all jobs in job_source."""
         def producer():
             while True:
                 for job in self.job_source.iterReady():
@@ -300,10 +308,12 @@ class TwistedJobRunner(BaseJobRunner):
         return PollingTaskSource(5, producer().next)
 
     def doConsumer(self):
+        """Create a ParallelLimitedTaskConsumer for this job type."""
         consumer = ParallelLimitedTaskConsumer(1)
         return consumer.consume(self.getTaskSource())
 
     def runAll(self):
+        """Run all ready jobs, and any that become ready while running."""
         self.pool.start()
         d = defer.maybeDeferred(self.doConsumer)
         d.addCallbacks(self.terminated, self.failed)
@@ -314,11 +324,13 @@ class TwistedJobRunner(BaseJobRunner):
         deferred.addBoth(lambda ignored: reactor.stop())
 
     def failed(self, failure):
+        """Callback for when the job fails."""
         failure.printTraceback()
         self.terminated()
 
     @classmethod
     def runFromSource(cls, job_source, logger, error_utility=None):
+        """Run all ready jobs provided by the specified source."""
         logger.info("Running through Twisted.")
         runner = cls(job_source, removeSecurityProxy(job_source).amp, logger,
                      error_utility)
