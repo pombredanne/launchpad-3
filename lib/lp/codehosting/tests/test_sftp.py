@@ -3,12 +3,15 @@
 
 """Tests for the transport-backed SFTP server implementation."""
 
+from __future__ import with_statement
+from contextlib import closing
 import os
 import unittest
 
 from bzrlib.tests import TestCaseInTempDir
 from bzrlib import errors as bzr_errors
 from bzrlib.transport import get_transport
+from bzrlib.transport.memory import MemoryTransport
 from bzrlib import urlutils
 
 from twisted.conch.ssh import filetransfer
@@ -578,6 +581,39 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
         nonexistent = self.getPathSegment()
         deferred = self.sftp_server.openDirectory(nonexistent)
         return self.assertFailure(deferred, filetransfer.SFTPError)
+
+    def test_openDirectoryMemory(self):
+        """openDirectory works on MemoryTransport."""
+        transport = MemoryTransport()
+        transport.put_bytes('hello', 'hello')
+        sftp_server = TransportSFTPServer(AsyncTransport(transport))
+        deferred = sftp_server.openDirectory('.')
+        def check_directory(directory):
+            with closing(directory):
+                names = [entry[0] for entry in directory]
+            self.assertEqual(['hello'], names)
+        return deferred.addCallback(check_directory)
+
+    def test__format_directory_entries_with_MemoryStat(self):
+        """format_directory_entries works with MemoryStat.
+
+        MemoryStat lacks many fields, but format_directory_entries works
+        around that.
+        """
+        t = MemoryTransport()
+        stat_result = t.stat('.')
+        entries = self.sftp_server._format_directory_entries(
+            [stat_result], ['filename'])
+        self.assertEqual(list(entries), [
+            ('filename', 'drwxr-xr-x    0 0        0               0 '
+             'Jan 01  1970 filename',
+             {'atime': 0,
+              'gid': 0,
+              'mtime': 0,
+              'permissions': 16877,
+              'size': 0,
+              'uid': 0})])
+        self.assertIs(None, getattr(stat_result, 'st_mtime', None))
 
     def do_translation_test(self, exception, sftp_code, method_name=None):
         """Test that `exception` is translated into the correct SFTPError."""

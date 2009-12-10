@@ -189,7 +189,7 @@ class DistributionMirrorAddView(LaunchpadFormView):
 
     implements(IDistributionMirrorMenuMarker)
     schema = IDistributionMirror
-    field_names = ["displayname", "description", "http_base_url",
+    field_names = ["displayname", "description", "whiteboard", "http_base_url",
                    "ftp_base_url", "rsync_base_url", "speed", "country",
                    "content", "official_candidate"]
     @property
@@ -213,6 +213,7 @@ class DistributionMirrorAddView(LaunchpadFormView):
             owner=self.user, speed=data['speed'], country=data['country'],
             content=data['content'], displayname=data['displayname'],
             description=data['description'],
+            whiteboard=data['whiteboard'],
             http_base_url=data['http_base_url'],
             ftp_base_url=data['ftp_base_url'],
             rsync_base_url=data['rsync_base_url'],
@@ -255,9 +256,9 @@ class DistributionMirrorReviewView(LaunchpadEditFormView):
 class DistributionMirrorEditView(LaunchpadEditFormView):
 
     schema = IDistributionMirror
-    field_names = ["name", "displayname", "description", "http_base_url",
-                   "ftp_base_url", "rsync_base_url", "speed", "country",
-                   "content", "official_candidate"]
+    field_names = ["name", "displayname", "description", "whiteboard",
+                   "http_base_url", "ftp_base_url", "rsync_base_url", "speed",
+                   "country", "content", "official_candidate"]
     @property
     def label(self):
         """See `LaunchpadFormView`."""

@@ -17,7 +17,7 @@ import unittest
 from bzrlib.branch import Branch
 from bzrlib.tests import TestCase as BzrTestCase
 
-from twisted.internet import defer, error, protocol, reactor
+from twisted.internet import defer, error, protocol, reactor, task
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
@@ -29,7 +29,8 @@ from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
-from lp.code.enums import CodeImportResultStatus, CodeImportReviewStatus
+from lp.code.enums import (
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -476,6 +477,20 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         return self.factory.makeCodeImport(
             svn_branch_url=svn_branch_url)
 
+    def makeBzrSvnCodeImport(self):
+        """Make a `CodeImport` that points to a real Subversion repository."""
+        self.subversion_server = SubversionServer(
+            self.repo_path, use_svn_serve=True)
+        self.subversion_server.setUp()
+        self.addCleanup(self.subversion_server.tearDown)
+        svn_branch_url = self.subversion_server.makeBranch(
+            'trunk', [('README', 'contents')])
+        self.foreign_commit_count = 2
+
+        return self.factory.makeCodeImport(
+            svn_branch_url=svn_branch_url,
+            rcs_type=RevisionControlSystems.BZR_SVN)
+
     def makeGitCodeImport(self):
         """Make a `CodeImport` that points to a real Git repository."""
         load_optional_plugin('git')
@@ -579,6 +594,15 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
+    def test_import_bzrsvn(self):
+        # Create a Subversion-via-bzr-svn CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeBzrSvnCodeImport())
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        result = self.performImport(job_id)
+        return result.addCallback(self.assertImported, code_import_id)
+
 
 class DeferredOnExit(protocol.ProcessProtocol):
 
@@ -591,12 +615,18 @@ class DeferredOnExit(protocol.ProcessProtocol):
         else:
             self._deferred.errback(reason)
 
+
 class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
     """Tests for CodeImportWorkerMonitor that execute a child process."""
 
     def setUp(self):
         TestWorkerMonitorIntegration.setUp(self)
         self._protocol = None
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
 
     def performImport(self, job_id):
         """Perform the import job with ID job_id.

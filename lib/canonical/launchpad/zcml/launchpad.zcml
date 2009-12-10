@@ -305,23 +305,6 @@
       classes="LaunchpadRootFacets"
       />
 
-  <!-- This is a view on TALES CONTEXTS rather than all dicts. -->
-  <browser:page
-      for="*"
-      name="+menubox"
-      class="canonical.launchpad.browser.launchpad.MenuBox"
-      template="../templates/launchpad-menubox.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="*"
-      name="+navigationmenutabs"
-      class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
-      template="../templates/launchpad-navigation-menutabs.pt"
-      permission="zope.Public"
-      />
-
   <browser:defaultView
       for="canonical.launchpad.webapp.interfaces.ILink"
       name="+link"

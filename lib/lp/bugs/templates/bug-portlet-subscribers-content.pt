@@ -35,7 +35,7 @@
                tal:attributes="
                  title string:Unsubscribe ${subscription/person/fmt:displayname};
                  id string:unsubscribe-${subscription/css_name};
-                 class python: view.subscription_class(subscription.person)
+                 class python: view.getSubscriptionClassForUser(subscription.person)
                "
             >
               <img class="unsub-icon" src="/@@/remove"

@@ -39,7 +39,7 @@ from lp.bugs.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -1077,7 +1077,7 @@ def notify_specification_subscription_created(specsub, event):
     body = mailwrapper.format(
         'You are now subscribed to the blueprint '
         '%(blueprint_name)s - %(blueprint_title)s.\n\n'
-        '--\n  %(blueprint_url)s' %
+        '-- \n%(blueprint_url)s' %
         {'blueprint_name': spec.name,
          'blueprint_title': spec.title,
          'blueprint_url': canonical_url(spec)})
