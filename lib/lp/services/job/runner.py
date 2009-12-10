@@ -185,7 +185,7 @@ class TwistedJobRunner(BaseJobRunner):
     """Run Jobs via twisted."""
 
     def __init__(self, job_source, logger=None):
-        BaseJobRunner.__init__(self, logger=logger)
+        super(TwistedJobRunner, self).__init__(logger=logger)
         self.job_source = job_source
 
     def getTaskSource(self):
