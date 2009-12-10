@@ -262,6 +262,7 @@ class BranchUpgradeJob(BranchJobDerived):
     @staticmethod
     @contextlib.contextmanager
     def contextManager():
+        """See `IBranchUpgradeJobSource`."""
         errorlog.globalErrorUtility.configure('upgrade_branches')
         server = get_multi_server(write_hosted=True)
         server.setUp()

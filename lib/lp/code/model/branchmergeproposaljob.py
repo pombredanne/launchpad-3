@@ -49,7 +49,7 @@ from lp.code.model.diff import PreviewDiff, StaticDiff
 from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
-from lp.services.job.runner import BaseRunnableJob, JobRunnerProto
+from lp.services.job.runner import BaseRunnableJob, JobRunnerProcess
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -292,6 +292,7 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
     @staticmethod
     @contextlib.contextmanager
     def contextManager():
+        """See `IUpdatePreviewDiffJobSource`."""
         errorlog.globalErrorUtility.configure('update_preview_diffs')
         server = get_scanner_server()
         server.setUp()
@@ -305,11 +306,12 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         self.branch_merge_proposal.preview_diff = preview
 
 
-class UpdatePreviewDiffAmp(JobRunnerProto):
+class UpdatePreviewDiffProcess(JobRunnerProcess):
+    """A process that runs UpdatePreviewDiffJobs"""
     job_class = UpdatePreviewDiffJob
 
 
-UpdatePreviewDiffJob.amp = UpdatePreviewDiffAmp
+UpdatePreviewDiffJob.amp = UpdatePreviewDiffProcess
 
 
 class CreateMergeProposalJob(BaseRunnableJob):
