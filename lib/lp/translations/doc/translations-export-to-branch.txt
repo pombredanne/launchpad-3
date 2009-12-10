@@ -45,7 +45,7 @@ files into the branches.  We mock it up here.
     ...         if self.simulate_race:
     ...             raise ConcurrentUpdateError("Simulated race condition.")
     ...
-    ...     def commit(self, message=None):
+    ...     def commit(self, message=None, txn=None):
     ...         self._checkForRace()
     ...         self.logger.info("Committed %d file(s)." % self.written_files)
     ...
@@ -129,11 +129,11 @@ translations to the DirectBranchCommit.
 
     >>> transaction.commit()
     >>> script = MockExportTranslationsToBranch(
-    ...     'export-to-branch', test_args=['-vv'])
+    ...     'export-to-branch', test_args=[])
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
-    DEBUG No previous translations commit found.
+    DEBUG ...
     INFO Writing file 'po/main/nl.po':
     INFO # ...
     msgid ""
@@ -143,6 +143,7 @@ translations to the DirectBranchCommit.
     msgid "maingazpot msgid"
     msgstr "maingazpot msgstr"
     <BLANKLINE>
+    DEBUG ...
     INFO Writing file 'po/module/nl.po':
     INFO # ...
     msgid ""
@@ -152,6 +153,8 @@ translations to the DirectBranchCommit.
     <BLANKLINE>
     msgid "gazmod msgid"
     msgstr "gazmod msgstr"
+    <BLANKLINE>
+    DEBUG ...
     INFO Committed 2 file(s).
     INFO Unlock.
     INFO Processed 1 item(s); 0 failure(s).
@@ -186,6 +189,7 @@ the time it last exported them, it won't export them again.
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
+    DEBUG ....
     DEBUG Last commit was at ....
     INFO Unlock.
     INFO Processed 1 item(s); 0 failure(s).
@@ -197,6 +201,7 @@ are not.
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
+    DEBUG ....
     DEBUG Last commit was at ...
     INFO Writing file 'po/main/nl.po':
     INFO ...
@@ -228,11 +233,14 @@ refuse to commit to the branch.
     >>> script.main()
     INFO Exporting to translations branches.
     INFO Exporting Gazblachko trunk series.
+    DEBUG ....
     DEBUG No previous translations commit found.
+    DEBUG ....
     INFO Writing file 'po/main/nl.po':
     ...
     msgstr "gazmod msgstr"
     <BLANKLINE>
+    DEBUG ...
     INFO Unlock.
     ERROR Failure: Simulated race condition.
     INFO Processed 1 item(s); 1 failure(s).

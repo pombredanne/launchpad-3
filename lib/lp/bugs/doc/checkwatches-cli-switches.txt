@@ -138,3 +138,6 @@ tracker option fully.
       --reset               Update all the watches on the bug tracker,
                             regardless of whether or not they need
                             checking.
+      --jobs=JOBS           The number of simulataneous jobs to run, 1
+                            by default.
+    <BLANKLINE>

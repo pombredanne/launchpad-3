@@ -1031,8 +1031,17 @@ will not be listed twice in the returned result.
 The 'contributors' property of a POFile returns all the people who contributed
 translations to it.
 
-    >>> [person.name for person in evolution_es.contributors]
-    [u'carlos', u'mark', u'no-priv']
+    >>> def print_names(persons):
+    ...     """Print name for each of `persons`."""
+    ...     for person in persons:
+    ...         print person.name
+    ...     print "--"
+
+    >>> print_names(evolution_es.contributors)
+    carlos
+    mark
+    no-priv
+    --
 
 If you have a distroseries and want to know all the people who contributed
 translations on a given language for that distroseries, you can use
@@ -1042,9 +1051,16 @@ the getPOFileContributorsByLanguage() method of IDistroSeries.
     >>> from lp.registry.model.distroseries import DistroSeries
     >>> hoary = DistroSeries.selectOneBy(name="hoary")
     >>> spanish = Language.selectOneBy(code="es")
-    >>> [p.name for p in hoary.getPOFileContributorsByLanguage(spanish)]
-    [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16',
-     u'name12', u'ubuntu-translators', u'tsukimi']
+    >>> print_names(hoary.getPOFileContributorsByLanguage(spanish))
+    jorge-gonzalez-gonzalez
+    carlos
+    valyag
+    danner
+    name16
+    name12
+    ubuntu-translators
+    tsukimi
+    --
 
     # We can see that there is another translator that doesn't appear in
     # previous list because the template he translated is not current.
@@ -1052,14 +1068,26 @@ the getPOFileContributorsByLanguage() method of IDistroSeries.
     >>> non_current_pofile.potemplate.iscurrent
     False
 
-    >>> [p.name for p in non_current_pofile.contributors]
-    [u'jordi']
+    >>> print_names(non_current_pofile.contributors)
+    jordi
+    --
 
     >>> non_current_pofile.potemplate.distroseries == hoary
     True
 
     >>> non_current_pofile.language == spanish
     True
+
+The rosetta_experts team is special: it never shows up in contributors
+lists.
+
+    >>> experts_pofile = factory.makePOFile('nl')
+    >>> experts_message = factory.makeTranslationMessage(
+    ...     pofile=experts_pofile, translator=rosetta_experts,
+    ...     reviewer=rosetta_experts, translations=['hi'])
+
+    >>> print_names(experts_pofile.contributors)
+    --
 
 
 == getPOTMsgSetTranslated ==
@@ -1191,7 +1219,6 @@ credited as well.
     Happy translator
     Launchpad Contributions:
     Carlos ...
-    Rosetta Administrators...
 
 Emails of translators just has the dummy translation.
 
@@ -1210,7 +1237,7 @@ for 'Launchpad Contributions' title; see bug #133817 for details).
 
     >>> print alsa_translation.prepareTranslationCredits(
     ...     emails_of_translators)
-    ,,carlos@canonical.com,rosetta@launchpad.net
+    ,,carlos@canonical.com
 
 Names of translators just has the dummy translation.
 
@@ -1228,7 +1255,7 @@ Contributions:" is used as a header for the added credits.
 
     >>> print alsa_translation.prepareTranslationCredits(
     ...     names_of_translators)
-    ,Launchpad Contributions:,Carlos P... M...,Rosetta Administrators
+    ,Launchpad Contributions:,Carlos P... M...
 
 Lets add a newly supported KDE context message with credit strings
 split into two: context and message, instead of a single message with
@@ -1241,7 +1268,7 @@ embedded context.
 prepareTranslationCredits works on such messages as well:
 
     >>> print alsa_translation.prepareTranslationCredits(new_kde_name_credits)
-    ,Launchpad Contributions:,Carlos P... M...,Rosetta Administrators
+    ,Launchpad Contributions:,Carlos P... M...
 
 Similar happens for email credits as with name credits.
 
@@ -1249,7 +1276,7 @@ Similar happens for email credits as with name credits.
     ...     singular_text=u"Your emails", plural_text=None,
     ...     context=u"EMAIL OF TRANSLATORS")
     >>> print alsa_translation.prepareTranslationCredits(new_kde_email_credits)
-    ,,carlos@canonical.com,rosetta@launchpad.net
+    ,,carlos@canonical.com
 
 
 == POFileToTranslationFileDataAdapter ==

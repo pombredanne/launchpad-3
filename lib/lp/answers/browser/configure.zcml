@@ -330,12 +330,6 @@
     template="../templates/faq-index.pt"
     />
   <browser:page
-    name="+portlet-lifecycle"
-    for="lp.answers.interfaces.faq.IFAQ"
-    permission="zope.Public"
-    template="../templates/faq-portlet-lifecycle.pt"
-    />
-  <browser:page
     name="+portlet-related-questions"
     for="lp.answers.interfaces.faq.IFAQ"
     class="canonical.launchpad.webapp.LaunchpadView"

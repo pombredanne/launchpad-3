@@ -124,7 +124,7 @@ from lp.blueprints.interfaces.sprint import *
 from lp.blueprints.interfaces.sprintattendance import *
 from lp.blueprints.interfaces.sprintspecification import *
 from lp.registry.interfaces.ssh import *
-from canonical.launchpad.interfaces.structuralsubscription import *
+from lp.registry.interfaces.structuralsubscription import *
 from lp.registry.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
 from lp.registry.interfaces.wikiname import *

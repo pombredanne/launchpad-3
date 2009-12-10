@@ -437,6 +437,17 @@ class Publisher(object):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 
+    def _getLabel(self):
+        """Return the contents of the Release file Label field.
+
+        :return: a text that should be used as the value of the Release file
+            'Label' field.
+        """
+        if self.archive.is_ppa:
+            return self.archive.displayname
+        else:
+            return self.distro.displayname
+
     def _getOrigin(self):
         """Return the contents of the Release file Origin field.
 
@@ -494,7 +505,7 @@ class Publisher(object):
 
         stanza = DISTRORELEASE_STANZA % (
                     self._getOrigin(),
-                    self.distro.displayname,
+                    self._getLabel(),
                     full_name,
                     distroseries.version,
                     distroseries.name,
@@ -571,7 +582,7 @@ class Publisher(object):
                 distroseries.version,
                 component,
                 self._getOrigin(),
-                self.distro.displayname,
+                self._getLabel(),
                 clean_architecture)
         f.write(stanza)
         f.close()

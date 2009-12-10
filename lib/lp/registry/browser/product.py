@@ -90,7 +90,7 @@ from lp.translations.browser.customlanguagecode import (
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
@@ -472,11 +472,14 @@ class ProductSpecificationsMenu(NavigationMenu,
     links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
 
 
-def _sort_distros(a, b):
+def _cmp_distros(a, b):
     """Put Ubuntu first, otherwise in alpha order."""
-    if a['name'] == 'ubuntu':
+    if a == 'ubuntu':
         return -1
-    return cmp(a['name'], b['name'])
+    elif b == 'ubuntu':
+        return 1
+    else:
+        return cmp(a, b)
 
 
 class ProductSetBreadcrumb(Breadcrumb):
@@ -947,29 +950,33 @@ class ProductPackagesView(PackagingDeleteView):
         title, and an attribute "packagings" which is a list of the relevant
         packagings for this distro and product.
         """
-        distros = {}
-        # first get a list of all relevant packagings
+        # First get a list of all relevant packagings.
         all_packagings = []
         for series in self.context.series:
             for packaging in series.packagings:
                 all_packagings.append(packaging)
-        # we sort it so that the packagings will always be displayed in the
-        # distroseries version, then productseries name order
+        # We sort it so that the packagings will always be displayed in the
+        # distroseries version, then productseries name order.
         all_packagings.sort(key=lambda a: (a.distroseries.version,
             a.productseries.name, a.id))
+
+        distros = {}
         for packaging in all_packagings:
-            if distros.has_key(packaging.distroseries.distribution.name):
-                distro = distros[packaging.distroseries.distribution.name]
+            distribution = packaging.distroseries.distribution
+            if distribution.name in distros:
+                distro = distros[distribution.name]
             else:
-                distro = {}
-                distro['distribution'] = packaging.distroseries.distribution
-                distro['packagings'] = []
-                distros[packaging.distroseries.distribution.name] = distro
+                # Create a dictionary for the distribution.
+                distro = dict(
+                    distribution=distribution,
+                    packagings=[])
+                distros[distribution.name] = distro
             distro['packagings'].append(packaging)
-        # now we sort the resulting set of "distro" objects, and return that
-        result = distros.values()
-        result.sort(cmp=_sort_distros)
-        return result
+        # Now we sort the resulting list of "distro" objects, and return that.
+        distro_names = distros.keys()
+        distro_names.sort(cmp=_cmp_distros)
+        results = [distros[name] for name in distro_names]
+        return results
 
 
 class ProductDownloadFilesView(LaunchpadView,

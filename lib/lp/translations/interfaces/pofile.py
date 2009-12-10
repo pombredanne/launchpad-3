@@ -214,6 +214,9 @@ class IPOFile(IRosettaStats):
     def canEditTranslations(person):
         """Whether the given person is able to add/edit translations."""
 
+    def setOwnerIfPrivileged(person):
+        """Set `owner` to `person`, provided `person` has edit rights."""
+
     def canAddSuggestions(person):
         """Whether the given person is able to add new suggestions."""
 

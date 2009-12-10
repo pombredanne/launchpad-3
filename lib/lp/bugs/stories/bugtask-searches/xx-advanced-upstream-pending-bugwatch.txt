@@ -19,7 +19,8 @@ see that there are '0 bugs need forwarding upstream'.
     'Bugs in ALSA utilities'
 
     >>> pending_watches_link = user_browser.getLink(
-    ...     'need forwarding upstream')
+    ...     'Bugs fixed elsewhere')
+
 
 == Marking and searching for pending bugwatches ==
 
