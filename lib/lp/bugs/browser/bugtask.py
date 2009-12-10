@@ -3134,6 +3134,17 @@ class BugTasksAndNominationsView(LaunchpadView):
             else:
                 return "This bug doesn't affect you"
 
+    @property
+    def anon_affected_statement(self):
+        """The "this bug affects" statement to show to anonymous users."""
+        if self.context.users_affected_count == 1:
+            return "This bug affects 1 person"
+        elif self.context.users_affected_count > 1:
+            return "This bug affects %d people" % (
+                self.context.users_affected_count)
+        else:
+            return None
+
 
 class BugTaskTableRowView(LaunchpadView):
     """Browser class for rendering a bugtask row on the bug page."""

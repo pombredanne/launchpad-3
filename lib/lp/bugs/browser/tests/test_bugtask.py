@@ -186,6 +186,24 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             "This bug affects 2 people, but not you",
             self.view.affected_statement)
 
+    def test_anon_affected_statement_no_one_affected(self):
+        self.bug.markUserAffected(self.bug.owner, False)
+        self.failUnlessEqual(0, self.bug.users_affected_count)
+        self.assertIs(None, self.view.anon_affected_statement)
+
+    def test_anon_affected_statement_1_user_affected(self):
+        self.failUnlessEqual(1, self.bug.users_affected_count)
+        self.failUnlessEqual(
+            "This bug affects 1 person",
+            self.view.anon_affected_statement)
+
+    def test_anon_affected_statement_2_users_affected(self):
+        self.view.context.markUserAffected(self.view.user, True)
+        self.failUnlessEqual(2, self.bug.users_affected_count)
+        self.failUnlessEqual(
+            "This bug affects 2 people",
+            self.view.anon_affected_statement)
+
 
 def test_suite():
     suite = unittest.TestSuite()
