@@ -23,7 +23,7 @@ class RunUpdatePreviewDiffJobs(JobCronScript):
     source_interface = IUpdatePreviewDiffJobSource
 
     def __init__(self):
-        super(JobCronScript, self).__init__()
+        super(RunUpdatePreviewDiffJobs, self).__init__()
         if self.options.twisted:
             self.runner_class = TwistedJobRunner
         else:
