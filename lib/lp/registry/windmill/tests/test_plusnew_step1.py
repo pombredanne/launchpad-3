@@ -15,6 +15,8 @@ from canonical.launchpad.windmill.testing import lpuser
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import TestCaseWithFactory
 
+BACKSPACE = u'\x08'
+
 
 class TestNewProjectStep1(TestCaseWithFactory):
     """Test form for creating a new project."""
@@ -35,8 +37,8 @@ class TestNewProjectStep1(TestCaseWithFactory):
         # Perform step 1 of the project registration, using information
         # that will yield search results.
         self.client.open(url=u'http://launchpad.dev:8085/projects/+new')
-        self.client.waits.forPageLoad(timeout=u'20000')
 
+        self.client.waits.forElement(id='field.displayname')
         self.client.type(text=u'dolphin', id='field.displayname')
 
         # The field is forced to lower case by a CSS text-transform, but
@@ -59,7 +61,7 @@ class TestNewProjectStep1(TestCaseWithFactory):
             validator=u'mongoose')
         # But once we clear the URL field, autofilling is re-enabled.  Type a
         # backspace character to trigger this.
-        self.client.type(text=u'\x08', id='field.name')
+        self.client.type(text=BACKSPACE, id='field.name')
         self.client.type(text='hyena', id='field.displayname')
         self.client.asserts.assertValue(
             id=u'field.name',
