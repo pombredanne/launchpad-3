@@ -115,7 +115,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             0, self.view.other_users_affected_count)
         self.failUnlessEqual(
-            "This bug affects you.",
+            "This bug affects you",
             self.view.affected_statement)
 
     def test_affected_statement_1_person_not_you(self):
@@ -132,7 +132,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             1, self.view.other_users_affected_count)
         self.failUnlessEqual(
-            "This bug affects you and 1 other person.",
+            "This bug affects you and 1 other person",
             self.view.affected_statement)
 
     def test_affected_statement_more_than_1_person_not_you(self):
@@ -153,7 +153,7 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
         self.failUnlessEqual(
             2, self.view.other_users_affected_count)
         self.failUnlessEqual(
-            "This bug affects you and 2 other people.",
+            "This bug affects you and 2 other people",
             self.view.affected_statement)
 
 

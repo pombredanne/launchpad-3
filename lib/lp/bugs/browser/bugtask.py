@@ -3110,19 +3110,19 @@ class BugTasksAndNominationsView(LaunchpadView):
         """The default "this bug affects" statement to show."""
         if self.other_users_affected_count == 1:
             if self.current_user_affected_status:
-                return "This bug affects you and 1 other person."
+                return "This bug affects you and 1 other person"
             else:
                 return "This bug affects 1 person. Does this bug affect you?"
         elif self.other_users_affected_count > 1:
             if self.current_user_affected_status:
-                return "This bug affects you and %d other people." % (
+                return "This bug affects you and %d other people" % (
                     self.other_users_affected_count)
             else:
                 return (
                     "This bug affects %d people. Does this bug "
                     "affect you?" % (self.other_users_affected_count))
         elif self.current_user_affected_status:
-            return "This bug affects you."
+            return "This bug affects you"
         else:
             return "Does this bug affect you?"
 
