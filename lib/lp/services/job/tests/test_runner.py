@@ -251,6 +251,7 @@ class TestJobRunner(TestCaseWithFactory):
 
 
 class StuckJob(BaseRunnableJob):
+    """Simulation of a job that stalls."""
     implements(IRunnableJob)
 
     done = False
@@ -301,6 +302,7 @@ class TestTwistedJobRunner(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def test_timeout(self):
+        """When a job exceeds its lease, an exception is raised."""
         logger = ListLogger()
         runner = TwistedJobRunner.runFromSource(StuckJob, logger)
         self.assertEqual([], runner.completed_jobs)
