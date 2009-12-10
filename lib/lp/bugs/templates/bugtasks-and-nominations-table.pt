@@ -4,53 +4,60 @@
   define="context_menu context/menu:context"
   omit-tag="">
 
-<div class="actions">
-  <span id="affectsmetoo" style="display: inline"
-        tal:condition="link/enabled"
-        tal:define="link context_menu/affectsmetoo;
-                    affected view/current_user_affected_status">
-  
-    <tal:comment condition="nothing">
-      This .static section is shown in browsers with javascript
-      enabled, and before setup_me_too is run.
-    </tal:comment>
-    <span class="static">
-      <tal:affected condition="affected">
-        <img width="14" height="14" src="/@@/flame-icon" alt="" />
-        <tal:statement replace="view/affected_statement" />
-      </tal:affected>
-      <tal:not-affected condition="not:affected">
-        <tal:statement replace="view/affected_statement" />
-      </tal:not-affected>
-      <a href="+affectsmetoo">
+<tal:affects-editable condition="context_menu/affectsmetoo/enabled">
+  <div class="actions">
+    <span id="affectsmetoo" style="display: inline"
+          tal:define="affected view/current_user_affected_status">
+    
+      <tal:comment condition="nothing">
+        This .static section is shown in browsers with javascript
+        enabled, and before setup_me_too is run.
+      </tal:comment>
+      <span class="static">
+        <tal:affected condition="affected">
+          <img width="14" height="14" src="/@@/flame-icon" alt="" />
+          <tal:statement replace="view/affected_statement" />
+        </tal:affected>
+        <tal:not-affected condition="not:affected">
+          <tal:statement replace="view/affected_statement" />
+        </tal:not-affected>
+        <a href="+affectsmetoo">
+          <img class="editicon" src="/@@/edit" alt="Edit" />
+        </a>
+      </span>
+    
+      <tal:comment condition="nothing">
+        This .dynamic section is used by setup_me_too to display
+        controls and information in the correct places.
+      </tal:comment>
+      <span class="dynamic unseen">
+        <img src="/@@/flame-icon" alt=""/>
+        <a href="+affectsmetoo" class="js-action"
+           ><span class="value" tal:content="view/affected_statement" /></a>
         <img class="editicon" src="/@@/edit" alt="Edit" />
-      </a>
+      </span>
+    
+      <script type="text/javascript" tal:content="string:
+        LPS.use('event', 'bugs.bugtask_index', function(Y) {
+            Y.on('load', function(e) {
+                Y.bugs.setup_me_too(
+                    ${view/current_user_affected_js_status},
+                    ${view/other_users_affected_count});
+            }, window);
+        });
+        ">
+      </script>
+    
     </span>
-  
-    <tal:comment condition="nothing">
-      This .dynamic section is used by setup_me_too to display
-      controls and information in the correct places.
-    </tal:comment>
-    <span class="dynamic unseen">
-      <img src="/@@/flame-icon" alt=""/>
-      <a href="+affectsmetoo" class="js-action"
-         ><span class="value" tal:content="view/affected_statement" /></a>
-      <img class="editicon" src="/@@/edit" alt="Edit" />
-    </span>
-  
-    <script type="text/javascript" tal:content="string:
-      LPS.use('event', 'bugs.bugtask_index', function(Y) {
-          Y.on('load', function(e) {
-              Y.bugs.setup_me_too(
-                  ${view/current_user_affected_js_status},
-                  ${view/other_users_affected_count});
-          }, window);
-      });
-      ">
-    </script>
-  
-  </span>
-</div>
+  </div>
+</tal:affects-editable>
+<tal:affects-not-editable condition="not:context_menu/affectsmetoo/enabled">
+  <div class="actions"
+       tal:define="statement view/anon_affected_statement"
+       tal:condition="statement">
+    <span id="affectsmetoo" style="display: inline" tal:content="statement" />
+  </div>
+</tal:affects-not-editable>
 
 <script type="text/javascript">
   function toggleFormVisibility(row_id) {

@@ -73,6 +73,27 @@ Back at the bug page, the text changes once again.
    This bug affects 1 person, but not you
 
 
+== Anonymous users ==
+
+Anonymous users just see the number of affected users.
+
+   >>> anon_browser.open(test_bug_url)
+   >>> print extract_text(find_tag_by_id(
+   ...     anon_browser.contents, 'affectsmetoo'))
+   This bug affects 1 person
+
+If no one is marked as affected by the bug, the message does not
+appear at all to anonymous users.
+
+   >>> login('test@canonical.com')
+   >>> test_bug.markUserAffected(test_bug.owner, False)
+   >>> logout()
+
+   >>> anon_browser.open(test_bug_url)
+   >>> print find_tag_by_id(anon_browser.contents, 'affectsmetoo')
+   None
+
+
 == Static and dynamic support ==
 
 A bug page contains markup to support both static (no Javascript) and
