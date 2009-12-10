@@ -204,7 +204,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
 
     class MyDropWidget(DropdownWidget):
         "Override the default no-value display name to -Select-."
-        _messageNoValue = '-Select-'
+        _messageNoValue = 'Comment only'
 
     schema = IEditCodeReviewComment
 
