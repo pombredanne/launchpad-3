@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = ['JobRunner']
 
 
+import os
 from signal import getsignal, SIGCHLD, signal
 import sys
 
@@ -176,12 +177,19 @@ class BaseJobRunner(object):
                 return self._doOops(job, info)
 
     def _doOops(self, job, info):
+        """Report an OOPS for the provided job and info.
+
+        :param job: The IRunnableJob whose run failed.
+        :param info: The standard sys.exc_info() value.
+        :return: the Oops that was reported.
+        """
         self.error_utility.raising(info)
         oops = self.error_utility.getLastOopsReport()
         job.notifyOops(oops)
         return oops
 
     def _logOopsId(self, oops_id):
+        """Report oopses by id to the log."""
         if self.logger is not None:
             self.logger.info('Job resulted in OOPS: %s' % oops_id)
 
@@ -213,28 +221,32 @@ class JobRunner(BaseJobRunner):
                 self._logOopsId(oops.id)
 
 
-class RunAmpouleJob(amp.Command):
+class RunJobCommand(amp.Command):
 
     arguments = [('job_id', amp.Integer())]
     response = [('success', amp.Integer()), ('oops_id', amp.String())]
 
 
-class JobRunnerProto(child.AMPChild):
+class JobRunnerProcess(child.AMPChild):
+    """Base class for processes that run jobs."""
 
     def __init__(self):
         child.AMPChild.__init__(self)
         self.context_manager = self.job_class.contextManager()
 
     def makeConnection(self, transport):
+        """The Job context is entered on connect."""
         child.AMPChild.makeConnection(self, transport)
         self.context_manager.__enter__()
 
     def connectionLost(self, reason):
+        """The Job context is left on disconnect."""
         self.context_manager.__exit__(None, None, None)
         child.AMPChild.connectionLost(self, reason)
 
-    @RunAmpouleJob.responder
-    def runAmpouleJob(self, job_id):
+    @RunJobCommand.responder
+    def runJobCommand(self, job_id):
+        """Run a job of this job_class according to its job id."""
         runner = BaseJobRunner()
         job = self.job_class.get(job_id)
         oops = runner.runJobHandleError(job)
@@ -248,20 +260,22 @@ class JobRunnerProto(child.AMPChild):
 class TwistedJobRunner(BaseJobRunner):
 
     def __init__(self, job_source, job_amp, logger=None, error_utility=None):
-        import os
         starter = main.ProcessStarter(
             bootstrap=BOOTSTRAP, packages=('twisted', 'ampoule'),
             env={'PYTHONPATH': os.environ['PYTHONPATH'],
             'PATH': os.environ['PATH'],
             'LPCONFIG': os.environ['LPCONFIG']})
-        BaseJobRunner.__init__(self, logger, error_utility)
+        super(TwistedJobRunner, self).__init__(logger, error_utility)
         self.job_source = job_source
-        self.job_amp = job_amp
-        self.pp = pool.ProcessPool(job_amp, starter=starter, min=0)
+        self.pool = pool.ProcessPool(job_amp, starter=starter, min=0)
 
     def runJobInSubprocess(self, job):
+        """Run the job_class with the specified id in the process pool.
+
+        :return: a Deferred that fires when the job has completed.
+        """
         job_id = job.id
-        deferred = self.pp.doWork(RunAmpouleJob, job_id = job_id)
+        deferred = self.pool.doWork(RunJobCommand, job_id=job_id)
         def update(response):
             if response['success']:
                 self.completed_jobs.append(job)
@@ -290,12 +304,13 @@ class TwistedJobRunner(BaseJobRunner):
         return consumer.consume(self.getTaskSource())
 
     def runAll(self):
-        self.pp.start()
+        self.pool.start()
         d = defer.maybeDeferred(self.doConsumer)
         d.addCallbacks(self.terminated, self.failed)
 
     def terminated(self, ignored=None):
-        deferred = self.pp.stop()
+        """Callback to stop the processpool and reactor."""
+        deferred = self.pool.stop()
         deferred.addBoth(lambda ignored: reactor.stop())
 
     def failed(self, failure):

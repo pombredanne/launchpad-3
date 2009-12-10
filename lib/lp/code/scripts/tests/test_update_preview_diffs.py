@@ -78,7 +78,7 @@ class TestUpdatePreviewDiffs(TestCaseWithFactory):
         error_utility.configure('update_preview_diffs')
         old_id = error_utility.getLastOopsReport().id
         retcode, stdout, stderr = run_script(
-            'cronscripts/update_preview_diffs.py', [])
+            'cronscripts/update_preview_diffs.py', ['--twisted'])
         self.assertEqual(0, retcode)
         self.assertIn(
             'INFO    1 IUpdatePreviewDiffJobSource jobs did not complete.\n',
