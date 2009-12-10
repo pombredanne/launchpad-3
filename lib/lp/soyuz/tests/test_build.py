@@ -84,10 +84,31 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         Removing a Buildqueue row should also remove its associated
         BuildPackageJob and Job rows.
         """
+        # Create a build in depwait.
         depwait_build = self._setupSimpleDepwaitContext()
+
+        # Grab the relevant db records for later comparison.
+        store = Store.of(depwait_build)
+        build_package_job = store.find(
+            BuildPackageJob, depwait_build.id == BuildPackageJob.build).one()
+        job = store.find(Job, Job.id == build_package_job.id).one()
+        build_queue = store.find(
+            BuildQueue, BuildQueue.job == job.id).one()
+
         depwait_build.buildqueue_record.destroySelf()
-        self.layer.txn.commit()
-        self.assertNoBuildQueue(depwait_build)
+
+        # Test that the records above no longer exist in the db.
+        self.assertEqual(
+            store.find(
+                BuildPackageJob,
+                depwait_build.id == BuildPackageJob.build).count(),
+            0)
+        self.assertEqual(
+            store.find(Job, Job.id == build_package_job.id).count(),
+            0)
+        self.assertEqual(
+            store.find(BuildQueue, BuildQueue.job == job.id).count(),
+            0)
 
     def testUpdateDependenciesWorks(self):
         # Calling `IBuild.updateDependencies` makes the build
