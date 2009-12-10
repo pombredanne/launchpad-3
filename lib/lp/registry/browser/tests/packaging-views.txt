@@ -381,7 +381,11 @@ is 200.
 
     >>> for packaging in batch_navigator.batch:
     ...     print packaging.sourcepackagename.name
+    a52dec
+    alsa-utils
+    evolution
     mozilla-firefox
+    netapplet
 
 The show_unlinked_translatables property is False when the batch is after the
 first batch.

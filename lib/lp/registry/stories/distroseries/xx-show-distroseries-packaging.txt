@@ -19,49 +19,27 @@ not linked to an upstream project to sync them to.
 
 The page lists the upstream packaging links.
 
-    # Two packaging links are needed to demonstrate the navigation, and test
-    # data is very poor. The test needs an extra
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> from lp.registry.model.packaging import PackagingUtil
-    >>> from lp.registry.interfaces.packaging import PackagingType
-    >>> from lp.testing import login, logout
-
-    >>> login('admin@canonical.com')
-    >>> warty = getUtility(ILaunchpadCelebrities).ubuntu.getSeries('warty')
-    >>> product = factory.makeProduct(name='elephant')
-    >>> series = product.development_focus
-    >>> source_package_name = warty.getSourcePackage('at').sourcepackagename
-    >>> PackagingUtil().createPackaging(
-    ...     productseries=series, sourcepackagename=source_package_name,
-    ...     distroseries=warty, packaging=PackagingType.PRIME,
-    ...     owner=product.owner)
-    >>> #transaction.commit()
-    >>> logout()
-
-    >>> anon_browser.open('http://launchpad.dev/ubuntu/warty/+packaging')
-    >>> print extract_text(find_tag_by_id(
-    ...     anon_browser.contents, 'packagings'))
+    >>> print extract_text(find_tag_by_id(content, 'packagings'))
     Source Package   Upstream Project Series
-    at               Elephant trunk series
-    mozilla-firefox  Mozilla Firefox trunk series
+    evolution        Evolution trunk series
+    mozilla-firefox  Mozilla Firefox 1.0 series
+    netapplet        NetApplet trunk series
 
 The packaging links are batched so that users can view the thousands of
 links packages. Users can also hack the URL to set their own batch size.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/ubuntu/warty/+packaging?start=0&batch=1')
+    ...     'http://launchpad.dev/ubuntu/hoary/+packaging?start=0&batch=1')
     >>> print extract_text(find_tag_by_id(
     ...     anon_browser.contents, 'packagings'))
     Source Package   Upstream Project Series
-    at               Elephant trunk series
+    evolution        Evolution trunk series
 
     >>> anon_browser.getLink('Next', index=0).click()
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(find_tag_by_id(content, 'packagings'))
     Source Package   Upstream Project Series
-    mozilla-firefox  Mozilla Firefox trunk series
+    mozilla-firefox  Mozilla Firefox 1.0 series
 
 The unlinked translatable source packages is not displayed on pages after
 the first page.

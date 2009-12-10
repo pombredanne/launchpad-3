@@ -324,22 +324,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 Product,
                 ProductSeries.product == Product.id)]
         condition = [Packaging.distroseries == self.id]
-        # In the case of full functionality distros like Ubuntu, the
-        # DistroSeriesPackageCache is a definitive source of what is
-        # published in the primary and partner archives. Packagings that
-        # are in PPAs are ignored.
-        if self.distribution.full_functionality:
-            origin += [
-                Join(
-                    DistroSeriesPackageCache,
-                    SourcePackageName.name == DistroSeriesPackageCache.name),
-                Join(
-                    Archive,
-                    DistroSeriesPackageCache.archive == Archive.id),
-                ]
-            condition += [
-                DistroSeriesPackageCache.distroseries == self.id,
-                Archive.purpose in MAIN_ARCHIVE_PURPOSES]
         results = IStore(self).using(*origin).find(find_spec, *condition)
         results = results.order_by(SourcePackageName.name)
         return [
