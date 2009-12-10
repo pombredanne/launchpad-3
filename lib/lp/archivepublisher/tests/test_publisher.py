@@ -280,7 +280,7 @@ class TestPublisher(TestPublisherBase):
             owner=ubuntu_team, purpose=ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
 
         publisher.A_publish(False)
@@ -290,7 +290,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
 
         # nothing got published
-        foo_path = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        foo_path = "%s/main/f/foo/foo_1.dsc" % self.pool_dir
         self.assertEqual(os.path.exists(foo_path), False)
 
     def testPublishingWorksForOtherArchives(self):
@@ -309,7 +309,7 @@ class TestPublisher(TestPublisherBase):
             test_archive)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc",
+            sourcename="foo", filename="foo_1.dsc",
             filecontent='I am supposed to be a embargoed archive',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
 
@@ -322,7 +322,7 @@ class TestPublisher(TestPublisherBase):
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
 
         # nothing got published
-        foo_path = "%s/main/f/foo/foo.dsc" % test_pool_dir
+        foo_path = "%s/main/f/foo/foo_1.dsc" % test_pool_dir
         self.assertEqual(
             open(foo_path).read().strip(),
             'I am supposed to be a embargoed archive',)
@@ -401,11 +401,11 @@ class TestPublisher(TestPublisherBase):
             owner=name16, distribution=ubuntu, purpose=ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=spiv.archive)
 
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PUBLISHED, archive=name16.archive)
 
         self.assertEqual(4, ubuntu.getAllPPAs().count())
@@ -465,7 +465,7 @@ class TestPublisher(TestPublisherBase):
         # Pending source and binary publications.
         # The binary description explores index formatting properties.
         pub_source = self.getPubSource(
-            sourcename="foo", filename="foo.dsc", filecontent='Hello world',
+            sourcename="foo", filename="foo_1.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=cprov.archive)
         pub_bin = self.getPubBinaries(
             pub_source=pub_source,
@@ -507,7 +507,7 @@ class TestPublisher(TestPublisherBase):
              'Format: 1.0',
              'Directory: pool/main/f/foo',
              'Files:',
-             ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo.dsc',
+             ' 3e25960a79dbc69b674cd4ec67a72c62 11 foo_1.dsc',
              ''],
             index_contents)
 
@@ -876,6 +876,9 @@ class TestPublisher(TestPublisherBase):
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
 
+        # The Label: field should be set to the archive displayname
+        self.assertEqual(release_contents[1], 'Label: ubuntutest')
+
         # Primary archive architecture Release files 'Origin' contain
         # the distribution displayname.
         arch_release_file = os.path.join(
@@ -937,8 +940,8 @@ class TestPublisher(TestPublisherBase):
         release_md5_line = release_contents[md5_header_index + 17]
         self.assertEqual(
             release_md5_line,
-            (' f8351af2392a90cb0b62f0feba49fa42              '
-             '116 main/source/Release'))
+            (' 7214f0271efc59dd335c17e1d720c9e7              '
+             '129 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
         bz2_sources_md5_line = release_contents[md5_header_index + 16]
@@ -958,8 +961,8 @@ class TestPublisher(TestPublisherBase):
         release_sha1_line = release_contents[sha1_header_index + 17]
         self.assertEqual(
             release_sha1_line,
-            (' b080b75dcfc245825d5872bb644afe00f2661fa3              '
-             '116 main/source/Release'))
+            (' 22ac13fb5e2bc0589d76182c5a747bad08a5d291              '
+             '129 main/source/Release'))
         # See above.
         bz2_sources_sha1_line = release_contents[sha1_header_index + 16]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
@@ -978,13 +981,17 @@ class TestPublisher(TestPublisherBase):
         release_sha256_line = release_contents[sha256_header_index + 17]
         self.assertEqual(
             release_sha256_line,
-            (' 8186d7a342c728179da7ce5d045e0a009c4c04cf3f146036d614d29'
-             '6fa8c4359              116 main/source/Release'))
+            (' c0e66e8b219c495b28d53ba207eb7175da5b5af90055544f597ee17'
+             'ad2177abf              129 main/source/Release'))
         # See above.
         bz2_sources_sha256_line = release_contents[sha256_header_index + 16]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
         gz_sources_sha256_line = release_contents[sha256_header_index + 18]
         self.assertTrue('main/source/Sources.gz' in gz_sources_sha256_line)
+
+        # The Label: field should be set to the archive displayname
+        self.assertEqual(release_contents[1],
+            'Label: PPA for Celso Providelo')
 
         # Architecture Release files also have a distinct Origin: for PPAs.
         arch_release_file = os.path.join(

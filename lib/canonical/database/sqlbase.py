@@ -716,7 +716,11 @@ def flush_database_caches():
 def block_implicit_flushes(func):
     """A decorator that blocks implicit flushes on the main store."""
     def block_implicit_flushes_decorator(*args, **kwargs):
-        store = _get_sqlobject_store()
+        from canonical.launchpad.webapp.interfaces import DisallowedStore
+        try:
+            store = _get_sqlobject_store()
+        except DisallowedStore:
+            return func(*args, **kwargs)
         store.block_implicit_flushes()
         try:
             return func(*args, **kwargs)

@@ -1,200 +1,3 @@
-/*
-
-Reset 1.0 and 2.0 portlets and asides.
-Remove this section when the old templates and these declarations are gone.
-
-*/
-#maincontent {
-    clear: both;
-    float: left;
-    width: 100%;
-    margin-right: -25%;
-    }
-#maincontent ol, #maincontent ul {
-    padding-left: auto;
-    }
-.portlet, .aside {
-    clear: none;
-    float: none;
-    margin: 0;
-    }
-#portlets .portlet, div.aside {
-    background-color: inherit !important;
-    border: none;
-    margin: 0;
-    color: inherit !important;
-    padding: 0;
-    width: auto;
-    overflow: auto;
-    -moz-border-radius: 0;
-    -o-border-radius: 0;
-    -webkit-border-radius: 0;
-    -khtml-border-radius: 0;
-    font-size: inherit !important;
-    }
-#portlets .portlet h2, div.aside h2 {
-    border-bottom: none;
-    color: inherit !important;
-    font-weight: bold;
-    margin: 0;
-    padding: 0;
-    }
-body.tab-overview #mainarea #portlets .portlet.active h2 a,
-body.tab-overview #mainarea div#portlets div.portlet.active a {
-    background-color: inherit !important;
-    }
-body.tab-overview #mainarea #portlets .portlet.active h2 a:hover,
-body.tab-overview #mainarea div#portlets div.portlet.active a:hover {
-    background-color: inherit !important;
-    }
-body.tab-overview #mainarea #portlets .portlet.active div,
-body.tab-overview #mainarea #portlets .portlet.active ul,
-body.tab-overview #mainarea #portlets .portlet.active ul li a,
-body.tab-overview #mainarea #portlets .portlet.active ul li a:hover,
-body.tab-overview #mainarea div#portlets div.portlet.active ul,
-body.tab-overview #mainarea div#portlets div.portlet.active ul li a,
-body.tab-overview #mainarea div#portlets div.portlet.active ul li a:hover {
-    background-color: inherit !important;
-    }
-body.tab-overview #mainarea #portlets .portlet.active div {
-    border-left: none;
-    border-right: none;
-    }
-body.tab-branches #mainarea #portlets .portlet.active h2 a,
-body.tab-branches #mainarea div#portlets div.portlet.active a {
-    background-color: inherit !important;
-    }
-body.tab-branches #mainarea #portlets .portlet.active h2 a:hover,
-body.tab-branches #mainarea div#portlets div.portlet.active a:hover {
-    background-color: inherit !important;
-    }
-body.tab-branches #mainarea #portlets .portlet.active div,
-body.tab-branches #mainarea #portlets .portlet.active ul,
-body.tab-branches #mainarea #portlets .portlet.active ul li a,
-body.tab-branches #mainarea #portlets .portlet.active ul li a:hover,
-body.tab-branches #mainarea div#portlets div.portlet.active ul,
-body.tab-branches #mainarea div#portlets div.portlet.active ul li a,
-body.tab-branches #mainarea div#portlets div.portlet.active ul li a:hover {
-    background-color: inherit !important;
-    }
-body.tab-branches #mainarea #portlets .portlet.active div {
-    border-left: none;
-    border-right: none;
-    }
-body.tab-bugs #mainarea #portlets .portlet.active h2 a,
-body.tab-bugs #mainarea div#portlets div.portlet.active a {
-    background-color: inherit !important;
-    }
-body.tab-bugs #mainarea #portlets .portlet.active h2 a:hover,
-body.tab-bugs #mainarea div#portlets div.portlet.active a:hover {
-    background-color: inherit !important;
-    }
-body.tab-bugs #mainarea #portlets .portlet.active div,
-body.tab-bugs #mainarea #portlets .portlet.active ul,
-body.tab-bugs #mainarea #portlets .portlet.active ul li a,
-body.tab-bugs #mainarea #portlets .portlet.active ul li a:hover,
-body.tab-bugs #mainarea div#portlets div.portlet.active ul,
-body.tab-bugs #mainarea div#portlets div.portlet.active ul li a,
-body.tab-bugs #mainarea div#portlets div.portlet.active ul li a:hover {
-    background-color: inherit !important;
-    }
-body.tab-bugs #mainarea #portlets .portlet.active div {
-    border-left: none;
-    border-right: none;
-    }
-body.tab-specifications #mainarea #portlets .portlet.active h2 a,
-body.tab-specifications #mainarea div#portlets div.portlet.active a {
-    background-color: inherit !important;
-    }
-body.tab-specifications #mainarea #portlets .portlet.active h2 a:hover,
-body.tab-specifications #mainarea div#portlets div.portlet.active a:hover {
-    background-color: inherit !important;
-    }
-body.tab-specifications #mainarea #portlets .portlet.active div,
-body.tab-specifications #mainarea #portlets .portlet.active ul,
-body.tab-specifications #mainarea #portlets .portlet.active ul li a,
-body.tab-specifications #mainarea #portlets .portlet.active ul li a:hover,
-body.tab-specifications #mainarea div#portlets div.portlet.active ul,
-body.tab-specifications #mainarea div#portlets div.portlet.active ul li a,
-body.tab-specifications #mainarea div#portlets div.portlet.active ul li a:hover {
-    background-color: inherit !important;
-    }
-body.tab-translations #mainarea #portlets .portlet.active h2 a,
-body.tab-translations #mainarea div#portlets div.portlet.active a {
-    background-color: inherit !important;
-    }
-body.tab-translations #mainarea #portlets .portlet.active h2 a:hover,
-body.tab-translations #mainarea div#portlets div.portlet.active a:hover {
-    background-color: inherit !important;
-    }
-body.tab-translations #mainarea #portlets .portlet.active div,
-body.tab-translations #mainarea #portlets .portlet.active ul,
-body.tab-translations #mainarea #portlets .portlet.active ul li a,
-body.tab-translations #mainarea #portlets .portlet.active ul li a:hover,
-body.tab-translations #mainarea div#portlets div.portlet.active ul,
-body.tab-translations #mainarea div#portlets div.portlet.active ul li a,
-body.tab-translations #mainarea div#portlets div.portlet.active ul li a:hover {
-    background-color: inherit !important;
-    }
-body.tab-translations #mainarea #portlets .portlet.active div {
-    border-left: none;
-    border-right: none;
-    }
-body.tab-answers #mainarea #portlets .portlet.active h2 a,
-body.tab-answers #mainarea div#portlets div.portlet.active a {
-    background-color: inherit !important;
-    }
-body.tab-answers #mainarea #portlets .portlet.active h2 a:hover,
-body.tab-answers #mainarea div#portlets div.portlet.active a:hover {
-    background-color: inherit !important;
-    }
-body.tab-answers #mainarea #portlets .portlet.active div,
-body.tab-answers #mainarea #portlets .portlet.active ul,
-body.tab-answers #mainarea #portlets .portlet.active ul li a,
-body.tab-answers #mainarea #portlets .portlet.active ul li a:hover,
-body.tab-answers #mainarea div#portlets div.portlet.active ul,
-body.tab-answers #mainarea div#portlets div.portlet.active ul li a,
-body.tab-answers #mainarea div#portlets div.portlet.active ul li a:hover {
-    background-color: inherit !important;
-    }
-body.tab-answers #mainarea #portlets .portlet.active div {
-    border-left: none;
-    border-right: none;
-    }
-div.left div.portlet, div.right div.portlet {
-    border: none;
-    margin-top: 0;
-    padding-top: 0;
-    }
-div.left div.portlet {
-    border-width: 0;
-    padding: 0;
-    }
-div.right div.portlet {
-    border-width:0;
-    padding: 0;
-    }
-div.columns div.right div.portlet {
-    border: none;
-    padding: 0;
-    }
-span.nolink {
-    font-weight: bold;
-    }
-#colophon {
-    float: none;
-    }
-#globalsearch {
-  float: none;
-  display: auto;
-  font-weight: inherit;
-  margin-right: auto;
-}
-
-#globalsearch input {
-  font-size: inherit;
-}
-
 /* Page layout */
 .yui-d0 {
     margin: 10px 20px;
@@ -232,6 +35,9 @@ span.nolink {
     }
 .footer .lp-branding {
     float: left;
+    }
+.footer form {
+    display: inline;
     }
 .portlet-border {
     border-top: 1px solid #EBEBEB;
@@ -405,6 +211,9 @@ div.see-all {
     font-size: 123.1%; /* Same as a h2 */
     text-align:right;
     }
+span.nolink {
+    font-weight: bold;
+    }
 span.see-all {
     float: right;
     }
@@ -480,13 +289,33 @@ ol.subordinate {
     display: inline;
     margin: 0 0.25em 0.75em 0;
     }
+.three-column-list dl {
+    width: 31%;
+    float: left;
+    display: inline;
+    margin: 0 0.25em 0.75em 0;
+    }
 .two-column-list li {
     width: 48%;
     float: left;
     display: inline;
     margin: 0 0.25em 0 0;
     }
-.two-column-list:after {
+.three-column-list li {
+    width: 31%;
+    float: left;
+    display: inline;
+    margin: 0 0.25em 0 0;
+    }
+/* Keep the abilty to hide list entries. */
+.two-column-list dl.unseen,
+.two-column-list li.unseen,
+.three-column-list dl.unseen,
+.three-column-list li.unseen {
+    display: none;
+    }
+.two-column-list:after,
+.three-column-list:after {
     content: ".";
     display: block;
     height: 0;
@@ -794,6 +623,21 @@ ul.language, li.language             {
   background: inherit;
 }
 
+/* ==== Translations styles ==== */
+
+.translationimportstatusAPPROVED,
+.translationimportstatusAPPROVED a {color: #050;}
+.translationimportstatusIMPORTED,
+.translationimportstatusIMPORTED a {color: green;}
+.translationimportstatusDELETED,
+.translationimportstatusDELETED a {color: black;}
+.translationimportstatusFAILED,
+.translationimportstatusFAILED a {color: red;}
+.translationimportstatusNEEDS_REVIEW,
+.translationimportstatusNEEDS_REVIEW a {color: #f60;}
+.translationimportstatusBLOCKED,
+.translationimportstatusBLOCKED a {color: blue;}
+
 /* ==== Translations hand-made forms ==== */
 
 form.translations div.fields {
@@ -941,6 +785,17 @@ div.translation-help-links div {
 .vertical .sprite:first-line {
     line-height: 12px;
 }
+
+/* XXX: mars 2009-11-22 bug=484848
+  Override the styling in the Bug Subscribers portlet.  Trying to display
+  as inline-block is of little use, as the maximum name width is 20 characters,
+  and we are unlikely to wrap the text. Not to mention that setting the display
+  in this way breaks the icons.
+*/
+body.tab-bugs #portlet-subscribers .sprite {
+    display: inline;
+}
+
 .sprite-after {padding: 2px 18px 0 0;}
 
 /* XXX: EdwinGrubbs 2009-07-27 bug=405476
