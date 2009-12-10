@@ -265,15 +265,11 @@ YUI({
                     content="version_name">
                   2.0.39
                 </tal:version>
-                <span tal:define="newer_version publishing/newer_distroseries_version"
-                   tal:condition="newer_version"
-                   class="sprite warning-icon">
-                  There is a <a tal:attributes="href newer_version/fmt:url">
-                  newer version</a> in
-                  <tal:distroseries
-                  content="newer_version/distroseries/displayname" />
-                  (<tal:pocket content="newer_version/pocket/title" />)
-                </span>
+                <tal:newer_version define="newer_version publishing/newer_distroseries_version"
+                                   condition="newer_version">
+                  (<a tal:attributes="href newer_version/fmt:url">Newer version</a>
+                  available)
+                </tal:newer_version>
               </td>
               <td tal:define="spr publishing/sourcepackagerelease;
                               signer spr/dscsigningkey/owner/fmt:link|string:no signer">
