@@ -496,7 +496,8 @@ packagings property:
     mozilla-firefox Mozilla Firefox
     netapplet NetApplet
 
-From the results, mozilla-firefox is not translatable in Hoary.
+From the results above you can notice that neither mozilla-firefox nor
+netapplet are translatable in Hoary.
 
 
 == DistroSeries can build meta objects for packages ==
