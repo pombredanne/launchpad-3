@@ -86,6 +86,11 @@ class Job(SQLBase):
         self.lease_expires = expiry
 
     def getTimeout(self):
+        """Return the number of seconds until the job should time out.
+
+        Jobs timeout when their leases expire.  If the lease for this job has
+        already expired, return 0.
+        """
         expiry = timegm(self.lease_expires.timetuple())
         return max(0,  expiry - time.time())
 
