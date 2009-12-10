@@ -505,13 +505,17 @@ class DiffRenderingMixin:
         return diff_text.count('\n') >= config.diff.max_format_lines
 
 
+class ICodeReviewNewRevisions(Interface):
+    """Marker interface used to register views for CodeReviewNewRevisions."""
+
+
 class CodeReviewNewRevisions:
     """Represents a logical grouping of revisions.
 
     Each object instance represents a number of revisions scanned at a
     particular time.
     """
-    implements(IComment)
+    implements(IComment, ICodeReviewNewRevisions)
 
     def __init__(self, revisions, date, branch):
         self.revisions = revisions
@@ -520,6 +524,15 @@ class CodeReviewNewRevisions:
         self.has_footer = True
         # The date attribute is used to sort the comments in the conversation.
         self.date = date
+
+
+class CodeReviewNewRevisionsView(LaunchpadView):
+    """The view for rendering the new revisions."""
+
+    @property
+    def codebrowse_url(self):
+        """Return the link to codebrowse for this branch."""
+        return self.context.branch.codebrowse_url()
 
 
 class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
@@ -589,6 +602,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         comments = [
             CodeReviewDisplayComment(comment)
             for comment in self.context.all_comments]
+        comments.extend(self._getRevisionsSinceReviewStart())
         comments = sorted(comments, key=operator.attrgetter('date'))
         return CodeReviewConversation(comments)
 
