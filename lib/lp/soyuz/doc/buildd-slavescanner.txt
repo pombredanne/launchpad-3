@@ -605,7 +605,8 @@ Create a mock slave so the builder gets the right responses for this test.
     ...
     AssertionError: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE (2) can not be built for pocket RELEASE: illegal status
 
-Cleanup in preparation for the next test:
+We need 'a_builder' released (from 'bqItem12') so it can be associated with
+'bqItem10' below.
 
     >>> bqItem12.builder = None
 
