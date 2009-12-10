@@ -118,6 +118,16 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             "This bug affects you",
             self.view.affected_statement)
 
+    def test_affected_statement_only_not_you(self):
+        self.view.context.markUserAffected(self.view.user, False)
+        self.failIf(self.bug.isUserAffected(self.view.user))
+        self.view.context.markUserAffected(self.bug.owner, False)
+        self.failUnlessEqual(
+            0, self.view.other_users_affected_count)
+        self.failUnlessEqual(
+            "This bug does not affect you",
+            self.view.affected_statement)
+
     def test_affected_statement_1_person_not_you(self):
         self.assertIs(None, self.bug.isUserAffected(self.view.user))
         self.failUnlessEqual(
@@ -133,6 +143,15 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             1, self.view.other_users_affected_count)
         self.failUnlessEqual(
             "This bug affects you and 1 other person",
+            self.view.affected_statement)
+
+    def test_affected_statement_1_person_and_not_you(self):
+        self.view.context.markUserAffected(self.view.user, False)
+        self.failIf(self.bug.isUserAffected(self.view.user))
+        self.failUnlessEqual(
+            1, self.view.other_users_affected_count)
+        self.failUnlessEqual(
+            "This bug affects 1 person, but not you",
             self.view.affected_statement)
 
     def test_affected_statement_more_than_1_person_not_you(self):
@@ -154,6 +173,17 @@ class TestBugTasksAndNominationsView(TestCaseWithFactory):
             2, self.view.other_users_affected_count)
         self.failUnlessEqual(
             "This bug affects you and 2 other people",
+            self.view.affected_statement)
+
+    def test_affected_statement_more_than_1_person_and_not_you(self):
+        self.view.context.markUserAffected(self.view.user, False)
+        self.failIf(self.bug.isUserAffected(self.view.user))
+        other_user = self.factory.makePerson()
+        self.view.context.markUserAffected(other_user, True)
+        self.failUnlessEqual(
+            2, self.view.other_users_affected_count)
+        self.failUnlessEqual(
+            "This bug affects 2 people, but not you",
             self.view.affected_statement)
 
 
