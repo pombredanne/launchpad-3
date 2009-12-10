@@ -373,6 +373,8 @@ A distro series can have thousands of upstream packaging links. The view
 provides a batch navigator to access the packagings. The default batch size
 is 200.
 
+    >>> warty = ubuntu.getSeries('warty')
+    >>> view = create_initialized_view(warty, name='+packaging')
     >>> batch_navigator = view.cached_packagings
     >>> batch_navigator.default_size
     200

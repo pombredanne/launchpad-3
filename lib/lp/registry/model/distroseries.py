@@ -307,7 +307,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         # Avoid circular import failures.
         # We join to SourcePackageName, ProductSeries, and Product to cache
-        # the objects are implcitly needed to work with a Packaging object.
+        # the objects that are implcitly needed to work with a
+        # Packaging object.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
         find_spec = (Packaging, SourcePackageName, ProductSeries, Product)
@@ -336,7 +337,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     Archive,
                     DistroSeriesPackageCache.archive == Archive.id),
                 ]
-            condition += [Archive.purpose in MAIN_ARCHIVE_PURPOSES]
+            condition += [
+                DistroSeriesPackageCache.distroseries == self.id,
+                Archive.purpose in MAIN_ARCHIVE_PURPOSES]
         results = IStore(self).using(*origin).find(find_spec, *condition)
         results = results.order_by(SourcePackageName.name)
         return [
