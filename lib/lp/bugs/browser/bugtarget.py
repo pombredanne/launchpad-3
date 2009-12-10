@@ -708,8 +708,17 @@ class FileBugViewBase(LaunchpadFormView):
         raise NotImplementedError
 
     @property
+    def inline_filebug_base_url(self):
+        """Return the base URL for the current request.
+
+        This allows us to build URLs in Javascript without guessing at
+        domains.
+        """
+        return self.request.getRootURL(None)
+
+    @property
     def inline_filebug_form_url(self):
-        """The URL to the inline filebug form.
+        """Return the URL to the inline filebug form.
 
         If a token was passed to this view, it will be be passed through
         to the inline bug filing form via the returned URL.
@@ -721,7 +730,7 @@ class FileBugViewBase(LaunchpadFormView):
 
     @property
     def duplicate_search_url(self):
-        """The URL to the inline duplicate search view."""
+        """Return the URL to the inline duplicate search view."""
         url = canonical_url(self.context, view_name='+filebug-show-similar')
         if self.extra_data_token is not None:
             url = urlappend(url, self.extra_data_token)

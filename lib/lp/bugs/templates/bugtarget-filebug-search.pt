@@ -119,6 +119,8 @@
   </div>
 
   <p style="display: none" tal:condition="view/use_asynchronous_dupefinder">
+    <a id="filebug-base-url"
+        tal:attributes="href view/inline_filebug_base_url"></a>
     <a id="filebug-form-url"
         tal:attributes="href view/inline_filebug_form_url"></a>
     <a id="duplicate-search-url"
