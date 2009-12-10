@@ -522,9 +522,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         """See `ISourcePackagePublishingHistory`."""
         latest_releases = self.distroseries.getCurrentSourceReleases(
             [self.sourcepackagerelease.sourcepackagename])
-        latest_release = latest_releases[self.meta_sourcepackage]
+        latest_release = latest_releases.get(self.meta_sourcepackage, None)
 
-        if apt_pkg.VersionCompare(
+        if latest_release is not None and apt_pkg.VersionCompare(
             latest_release.version, self.source_package_version) > 0:
             return latest_release
         else:

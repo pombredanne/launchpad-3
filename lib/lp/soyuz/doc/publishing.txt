@@ -125,7 +125,6 @@ source package release will be returned.
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
-    >>> from lp.soyuz.interfaces.build import BuildStatus
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
     >>> new_version = test_publisher.getPubSource(
@@ -140,6 +139,7 @@ the spph's related builds, getStatusSummaryForBuilds(), which just
 augments the IBuildSet.getStatusSummaryForBuilds() method to include the
 'pending' state when builds are fully built but not yet published.
 
+    >>> from lp.soyuz.interfaces.build import BuildStatus
     >>> spph = test_publisher.getPubSource(architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
     >>> for build in builds:
