@@ -11,7 +11,6 @@ __metaclass__ = type
 
 import _pythonpath
 
-from lp.codehosting.vfs import get_scanner_server
 from lp.services.job.runner import JobCronScript, JobRunner, TwistedJobRunner
 from lp.code.interfaces.branchmergeproposal import (
     IUpdatePreviewDiffJobSource,)
@@ -24,7 +23,7 @@ class RunUpdatePreviewDiffJobs(JobCronScript):
     source_interface = IUpdatePreviewDiffJobSource
 
     def __init__(self):
-        super(JobCronScript, self).__init__()
+        super(RunUpdatePreviewDiffJobs, self).__init__()
         if self.options.twisted:
             self.runner_class = TwistedJobRunner
         else:

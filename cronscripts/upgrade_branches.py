@@ -11,7 +11,6 @@ import _pythonpath
 
 from lp.services.job.runner import JobCronScript
 from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
-from lp.codehosting.vfs import get_multi_server
 
 
 class RunUpgradeBranches(JobCronScript):
