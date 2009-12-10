@@ -15,7 +15,8 @@ from zope.schema import Int
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
-from lp.code.errors import ClaimReviewFailed, ReviewNotPending
+from lp.code.errors import (
+    ClaimReviewFailed, ReassignReviewFailed, ReviewNotPending)
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 
 
@@ -65,6 +66,22 @@ class CodeReviewVoteReference(SQLBase):
             raise ClaimReviewFailed(
                 error_str % claimant.unique_displayname)
         self.reviewer = claimant
+
+    def reassignReview(self, reviewer):
+        """See `ICodeReviewVote`"""
+        if not self.is_pending:
+            raise ReviewNotPending('The review is not pending.')
+        if not reviewer.is_team:
+            existing_review = (
+                self.branch_merge_proposal.getUsersVoteReference(reviewer))
+            if existing_review is not None:
+                if existing_review.is_pending:
+                    error_str = '%s has an existing pending review'
+                else:
+                    error_str = '%s has an existing personal review'
+                raise ReassignReviewFailed(
+                    error_str % reviewer.unique_displayname)
+        self.reviewer = reviewer
 
     def delete(self):
         """See `ICodeReviewVote`"""
