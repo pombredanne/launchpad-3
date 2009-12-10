@@ -33,7 +33,7 @@
           tal:repeat="attachment view/patches">
         <a tal:attributes="href attachment/libraryfile/http_url"
            tal:content="attachment/title"
-           class="sprite download-icon">
+           class="sprite haspatch-icon">
           Attachment Title
         </a>
         <small>
