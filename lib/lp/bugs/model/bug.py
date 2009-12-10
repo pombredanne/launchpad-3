@@ -1317,10 +1317,7 @@ class Bug(SQLBase):
         :param user: An `IPerson` that may be affected by the bug.
         :return: An `IBugAffectsPerson` or None.
         """
-        return Store.of(self).find(
-            BugAffectsPerson,
-            And(BugAffectsPerson.bug == self,
-                BugAffectsPerson.person == user)).one()
+        return Store.of(self).get(BugAffectsPerson, (self.id, user.id))
 
     def isUserAffected(self, user):
         """See `IBug`."""
@@ -1684,3 +1681,4 @@ class BugAffectsPerson(SQLBase):
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     affected = BoolCol(notNull=True, default=True)
+    __storm_primary__ = "bugID", "personID"
