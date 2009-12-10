@@ -22,15 +22,17 @@ from zope.interface import Interface
 from zope.schema import TextLine
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad.webapp.breadcrumb import Breadcrumb
-from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
-from lp.translations.interfaces.translationsperson import (
-    ITranslationsPerson)
-from lp.translations.browser.translations import TranslationsMixin
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
     LaunchpadFormView, LaunchpadView, Link, NavigationMenu)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
+from canonical.launchpad.webapp.tales import LanguageFormatterAPI
+from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
+from lp.translations.interfaces.translationsperson import (
+    ITranslationsPerson)
+from lp.translations.browser.translations import TranslationsMixin
 from lp.translations.utilities.pluralforms import make_friendly_plural_forms
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
@@ -83,6 +85,11 @@ class LanguageNavigationMenu(NavigationMenu):
         return Link('+admin', text, icon='edit')
 
 
+def _format_language(language):
+    """Format a language as a link."""
+    return LanguageFormatterAPI(language).link(None)
+
+
 class ILanguageSetSearch(Interface):
     """The collection of languages."""
 
@@ -121,6 +128,14 @@ class LanguageSetView(LaunchpadFormView):
             return self.search_results.count()
         else:
             return 0
+
+    @cachedproperty
+    def user_languages(self):
+        """The user's preferred languages, or English if none are set."""
+        languages = list(self.user.languages)
+        if len(languages) == 0:
+            languages = [getUtility(ILaunchpadCelebrities).english]
+        return ", ".join(map(_format_language, languages))
 
 
 # There is no easy way to remove an ILanguage from the database due all the

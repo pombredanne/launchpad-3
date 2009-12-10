@@ -228,6 +228,7 @@ again.
     >>> login("foo.bar@canonical.com")
     >>> private_job = store.get(BuildQueue, private_job_id)
     >>> Store.of(private_job).remove(private_job)
+    >>> frog.current_build_behavior = None
 
     >>> login('no-priv@canonical.com')
     >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")

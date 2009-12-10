@@ -68,18 +68,6 @@ Mailing lists are not active when they are first registered.
     >>> list(list_vocabulary.search())
     []
 
-Even when the mailing lists are approved, they are not yet active.
-
-    >>> list_one.review(carlos, MailingListStatus.APPROVED)
-    >>> list_two.review(carlos, MailingListStatus.APPROVED)
-    >>> list_three.review(carlos, MailingListStatus.APPROVED)
-    >>> list(list_vocabulary)
-    []
-    >>> len(list_vocabulary)
-    0
-    >>> list(list_vocabulary.search())
-    []
-
 Mailing lists become active once they have been constructed by Mailman (which
 indicates so by transitioning the state to ACTIVE).
 
