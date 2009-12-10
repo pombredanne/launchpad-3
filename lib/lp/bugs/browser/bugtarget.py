@@ -1058,7 +1058,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
 
     @property
     def inline_filebug_form_url(self):
-        """The URL to the inline filebug form.
+        """Return the URL to the inline filebug form.
 
         If a token was passed to this view, it will be be passed through
         to the inline bug filing form via the returned URL.
@@ -1075,7 +1075,7 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
 
     @property
     def duplicate_search_url(self):
-        """The URL to the inline duplicate search view.
+        """Return the URL to the inline duplicate search view.
 
         The URL returned will be the URL of the first of the current
         Project's products, since that's the product that will be
@@ -1097,20 +1097,6 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     def getSecurityContext(self):
         """See FileBugViewBase."""
         return self._getSelectedProduct()
-
-#    def setUpFields(self):
-#        """Set up the form fields. See `LaunchpadFormView`."""
-#        super(ProjectFileBugGuidedView, self).setUpFields()
-#
-#        # Override the product form field so that its default is set to
-#        # the first of the Project's products_using_malone.
-#        product_field = Choice(
-#            __name__='product', title=u"Project", required=True,
-#            vocabulary="ProjectProductsUsingMalone",
-#            default=self.default_product.name)
-#
-#        self.form_fields = self.form_fields.omit('product')
-#        self.form_fields += formlib.form.Fields(product_field)
 
 
 class BugTargetBugListingView:
