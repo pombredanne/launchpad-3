@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'add_revision_to_branch',
     'make_linked_package_branch',
     'make_erics_fooix_project',
     ]
@@ -23,6 +24,25 @@ from lp.code.interfaces.seriessourcepackagebranch import (
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import time_counter
+
+
+def add_revision_to_branch(factory, branch, revision_date, date_created=None,
+                           mainline=True):
+    """Add a new revision to the branch with the specified revision date.
+
+    If date_created is None, it gets set to the revision_date.
+    """
+    if date_created is None:
+        date_created = revision_date
+    revision = factory.makeRevision(
+        revision_date=revision_date, date_created=date_created)
+    if mainline:
+        sequence = branch.revision_count + 1
+        branch_revision = branch.createBranchRevision(sequence, revision)
+        branch.updateScannedDetails(revision, sequence)
+    else:
+        branch_revision = branch.createBranchRevision(None, revision)
+    return branch_revision
 
 
 def make_erics_fooix_project(factory):
