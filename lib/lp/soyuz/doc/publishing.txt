@@ -112,16 +112,34 @@ The iceweasel source has good data:
     >>> print pub.changes_file_url
     http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
 
-A helper is also included to create a summary of the build statuses for
-the spph's related builds, getStatusSummaryForBuilds(), which just
-augments the IBuildSet.getStatusSummaryForBuilds() method to include the
-'pending' state when builds are fully built but not yet published.
+There is also a helper property to determine whether the current release for
+this package in the distroseries is newer than this publishing. Nothing is
+returned if there is no package in the distroseries primary archive with a
+later version.
+
+    >>> print pub.newer_distroseries_version
+    None
+
+If we publish iceweasel 1.1 in the same distroseries, then the distroseries
+source package release will be returned.
 
     >>> from lp.soyuz.tests.test_publishing import (
     ...     SoyuzTestPublisher)
     >>> from lp.soyuz.interfaces.build import BuildStatus
     >>> test_publisher = SoyuzTestPublisher()
     >>> test_publisher.prepareBreezyAutotest()
+    >>> new_version = test_publisher.getPubSource(
+    ...     distroseries=pub.distroseries, version="1.1",
+    ...     sourcename='iceweasel')
+
+    >>> print pub.newer_distroseries_version.title
+    "iceweasel" 1.1 source package in The Warty Warthog Release
+
+A helper is also included to create a summary of the build statuses for
+the spph's related builds, getStatusSummaryForBuilds(), which just
+augments the IBuildSet.getStatusSummaryForBuilds() method to include the
+'pending' state when builds are fully built but not yet published.
+
     >>> spph = test_publisher.getPubSource(architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
     >>> for build in builds:
@@ -1214,14 +1232,17 @@ publications.
 Please note how the result set is ordered by the id of `LibraryFileAlias`
 (second element of the triple):
 
+    >>> file_ids = [file.id for source, file, content in binary_files]
+    >>> file_ids == sorted(file_ids)
+    True
     >>> for source, file, content in binary_files:
-    ...     print file.id, file.filename
-    40 mozilla-firefox_0.9_i386.deb
-    124 foo-bin_666_all.deb
-    124 foo-bin_666_all.deb
-    130 foo-bin_999_all.deb
-    130 foo-bin_999_all.deb
-    135 foo-bin_666_all.deb
+    ...     print file.filename
+    mozilla-firefox_0.9_i386.deb
+    foo-bin_666_all.deb
+    foo-bin_666_all.deb
+    foo-bin_999_all.deb
+    foo-bin_999_all.deb
+    foo-bin_666_all.deb
 
 getPackageDiffsForSources() is also provided by `IPublishingSet`, it
 allows callsites to retrieve all related `PackageDiff` records based
@@ -1694,7 +1715,7 @@ And then grab the build summaries for firefox and foo:
     Relevant builds:
      - i386 build of foobar-test 666 in ubuntutest breezy-autotest RELEASE
 
-Any of the source ids passed into 
+Any of the source ids passed into
 getBuildStatusSummariesForSourceIdsAndArchive that do not belong to the
 required archive parameter will be ignored:
 

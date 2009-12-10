@@ -18,6 +18,7 @@ __all__ = [
     ]
 
 
+import apt_pkg
 from datetime import datetime
 import operator
 import os
@@ -515,6 +516,19 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if self.sourcepackagerelease.dscsigningkey is not None:
             return self.sourcepackagerelease.dscsigningkey.owner
         return None
+
+    @property
+    def newer_distroseries_version(self):
+        """See `ISourcePackagePublishingHistory`."""
+        latest_releases = self.distroseries.getCurrentSourceReleases(
+            [self.sourcepackagerelease.sourcepackagename])
+        latest_release = latest_releases[self.meta_sourcepackage]
+
+        if apt_pkg.VersionCompare(
+            latest_release.version, self.source_package_version) > 0:
+            return latest_release
+        else:
+            return None
 
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""

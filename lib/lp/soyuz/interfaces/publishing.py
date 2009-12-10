@@ -570,6 +570,11 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             required=False, readonly=True,
         ))
 
+    newer_distroseries_version = Attribute(
+        "An `IDistroSeriosSourcePackageRelease` with a newer version of this "
+        "package that has been published in the main distribution series, "
+        "if one exists, or None.")
+
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
     @export_read_operation()
