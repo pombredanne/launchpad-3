@@ -10,6 +10,7 @@ __all__ = [
     'AccountStatus',
     'AccountCreationRationale',
     'IAccount',
+    'IAccountEdit',
     'IAccountModerate',
     'IAccountPrivate',
     'IAccountPublic',
@@ -283,7 +284,7 @@ class IAccountPrivate(Interface):
 
 
 class IAccountModerate(IAccountStatus):
-    """Information on an `IAccount` to be accessed with lp.Moderate."""
+    """Attributes of `IAccount` protected with launchpad.Moderate."""
     date_status_set = Datetime(
         title=_('Date status last modified.'),
         required=True, readonly=False)
@@ -319,6 +320,10 @@ class IAccountSpecialRestricted(Interface):
         Just like `IAccountSpecialRestricted`.activate() above, but here the
         password can't be None or the empty string.
         """
+
+
+class IAccountEdit(IAccountBase, IAccountPrivate, IAccountSpecialRestricted):
+    """Attributes of `IAccount` protected with launchpad.Edit."""
 
 
 class IAccount(IAccountBase, IAccountModerate, IAccountPrivate,

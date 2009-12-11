@@ -15,8 +15,11 @@
             permission="launchpad.Special"
             interface="canonical.launchpad.interfaces.IAccountSpecialRestricted" />
         <require
+            permission="launchpad.Moderate"
+            set_schema="canonical.launchpad.interfaces.IAccountModerate" />
+        <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IAccount" />
+            set_schema="canonical.launchpad.interfaces.IAccountEdit" />
     </class>
 
     <securedutility
