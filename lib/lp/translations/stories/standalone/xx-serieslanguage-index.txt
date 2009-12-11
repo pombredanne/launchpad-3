@@ -46,9 +46,10 @@ requiring a review.
     ...     find_tag_by_id(user_browser.contents, 'group-team-info'))
     There is no translation group to manage Ubuntu translations.
 
-A translation group is created for Ubuntu, togheter with a translation
-person for managing Ubuntu Spanish translations.
-The translation policy is also defined as RESTRICTED.
+Create a translation group for Ubuntu, togheter with a translation
+person for managing Ubuntu Spanish translations and set translation 
+policy to RESTRICTED.
+This is done to so see what the page will look like when they exist.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
