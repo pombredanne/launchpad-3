@@ -354,7 +354,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
-        return self.context.revisions_since(timestamp).count()
+        return self.context.getRevisionsSince(timestamp).count()
 
     def owner_is_registrant(self):
         """Is the branch owner the registrant?"""
