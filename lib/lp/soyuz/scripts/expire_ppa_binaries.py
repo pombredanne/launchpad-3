@@ -48,6 +48,11 @@ class PPABinaryExpirer(LaunchpadCronScript):
             "-n", "--dry-run", action="store_true",
             dest="dryrun", metavar="DRY_RUN", default=False,
             help="If set, no transactions are committed")
+        self.parser.add_option(
+            "-e", "--expire-after", action="store", type="int",
+            dest="num_days", metavar="DAYS", default=15,
+            help=("The number of days after which to expire binaries. "
+                  "Must be specified."))
 
     def determineExpirables(self, num_days):
         """Return expirable libraryfilealias IDs."""
@@ -105,21 +110,7 @@ class PPABinaryExpirer(LaunchpadCronScript):
 
     def main(self):
         self.logger.info('Starting the PPA binary expiration')
-
-        # Check to see if we got passed a 'days' argument.
-        if not self.args:
-            self.logger.info(
-                "Require one program argument; the number of days before "
-                "today to keep librarian files for.")
-            self.txn.abort()
-            return
-
-        # Make sure it looks like an integer.
-        try:
-            num_days = int(self.args[0])
-        except ValueError:
-            self.logger.info("'%s' needs to be an integer" % self.args[0])
-            return
+        num_days = self.options.num_days
         self.logger.info("Expiring files up to %d days ago" % num_days)
 
         self.store = getUtility(IStoreSelector).get(
