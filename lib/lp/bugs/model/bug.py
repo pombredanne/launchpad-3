@@ -18,7 +18,6 @@ __all__ = [
     ]
 
 
-import mimetypes
 import operator
 import re
 from cStringIO import StringIO
@@ -100,15 +99,6 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
 from lp.registry.model.pillar import pillar_sort_key
-
-
-# XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
-# for Intrepid, to add .debdiff to /etc/mime.types, so we may be able
-# to remove this setting once a new /etc/mime.types has been installed
-# on the app servers. Additionally, Firefox does not display content
-# of type text/x-diff inline, so making this text/plain because
-# viewing .debdiff inline is the most common use-case.
-mimetypes.add_type('text/plain', '.debdiff')
 
 
 _bug_tag_query_template = """

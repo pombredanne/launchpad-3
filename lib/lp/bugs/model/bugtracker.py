@@ -179,7 +179,7 @@ class BugTracker(SQLBase):
             "%(base_url)s/enter_bug.cgi?product=%(remote_product)s"
             "&short_desc=%(summary)s&long_desc=%(description)s"),
         BugTrackerType.GOOGLE_CODE: (
-            "%(base_url)s/entry?summary=%(summary)s&amp;"
+            "%(base_url)s/entry?summary=%(summary)s&"
             "comment=%(description)s"),
         BugTrackerType.MANTIS: (
             "%(base_url)s/bug_report_advanced_page.php"
