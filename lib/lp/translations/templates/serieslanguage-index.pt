@@ -47,8 +47,6 @@
           translations.
         </p>
       </tal:without_group>
-      <p>
-      
       <p condition="view/translation_group" id="translation-access-level">
         <tal:not-logged-in condition="view/show_not_logged_in">
           You are not logged in. Please <a href="+login" >log in</a>
@@ -56,8 +54,8 @@
         </tal:not-logged-in>
 
         <tal:no-license condition="view/show_no_license">
-          To make translations in Launchpad you need to agree with the 
-          <a tal:attributes="href request/lp:person/fmt:url:translations/+licensing" 
+          To make translations in Launchpad you need to agree with the
+          <a tal:attributes="href request/lp:person/fmt:url:translations/+licensing"
           >Translations licensing</a> first.
         </tal:no-license>
 
@@ -72,14 +70,14 @@
           </tal:comment>
           <tal:have-group condition="view/translation_group">
           Your suggestions will be held for review by the managers of
-          these translations. If you need help, or your translations are 
+          these translations. If you need help, or your translations are
           not being reviewed, please get in touch with
-          <tal:team 
+          <tal:team
             condition="view/translation_team"
             replace="structure
                              view/translation_team/translator/fmt:link">
           Serbian translators</tal:team><!--
-       --><tal:group 
+       --><tal:group
             condition="not: view/translation_team"
             replace="structure view/translation_group/owner/fmt:link">
           Serbian translators</tal:group>.
@@ -92,7 +90,7 @@
           i add this check in case things will change.
           </tal:comment>
           <tal:have-group condition="view/translation_group">
-          Since there is nobody to manage translation approvals into 
+          Since there is nobody to manage translation approvals into
           <a tal:attributes="href context/language/fmt:url"
              tal:content="context/language/englishname">Serbian</a>
           , your cannot add new suggestions. If you are interested
@@ -108,7 +106,6 @@
 
         Templates which are more important to translate are listed first.
       </p>
-      
     </div>
 
     <div style="max-width:840px;">

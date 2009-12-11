@@ -77,7 +77,7 @@ class SeriesLanguageView(LaunchpadView):
     @property
     def show_full_edit(self):
         """Should we display a notice that user is not logged in?"""
-        if (self.show_not_logged_in or 
+        if (self.show_not_logged_in or
             self.show_no_license):
             return False
 
@@ -90,7 +90,7 @@ class SeriesLanguageView(LaunchpadView):
     @property
     def show_can_suggest(self):
         """Should we display a notice that user is not logged in?"""
-        if (self.show_not_logged_in or 
+        if (self.show_not_logged_in or
             self.show_no_license or
             self.show_full_edit):
             return False
@@ -104,7 +104,7 @@ class SeriesLanguageView(LaunchpadView):
     @property
     def show_only_managers(self):
         """Should we display a notice that user is not logged in?"""
-        if (self.show_not_logged_in or 
+        if (self.show_not_logged_in or
             self.show_no_license or
             self.show_full_edit or
             self.show_can_suggest):
@@ -114,7 +114,8 @@ class SeriesLanguageView(LaunchpadView):
         if sample_pofile is None:
             return False
 
-        if (sample_pofile.translationpermission == TranslationPermission.CLOSED):
+        if (sample_pofile.translationpermission ==
+                                        TranslationPermission.CLOSED):
             return True
         else:
             return False
@@ -138,16 +139,17 @@ class DistroSeriesLanguageView(SeriesLanguageView, LaunchpadView):
     """View class to render translation status for an `IDistroSeries`."""
 
     def initialize(self):
-        self.series =  self.context.distroseries
+        self.series = self.context.distroseries
         SeriesLanguageView.initialize(self)
         self.parent = self.series.distribution
         self.translationgroup = self.series.distribution.translationgroup
+
 
 class ProductSeriesLanguageView(SeriesLanguageView, LaunchpadView):
     """View class to render translation status for an `IProductSeries`."""
 
     def initialize(self):
-        self.series =  self.context.productseries
+        self.series = self.context.productseries
         SeriesLanguageView.initialize(self)
         self.context.recalculateCounts()
         self.parent = self.series.product
