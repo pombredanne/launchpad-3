@@ -10,6 +10,7 @@ __all__ = [
     'AccountStatus',
     'AccountCreationRationale',
     'IAccount',
+    'IAccountModerate',
     'IAccountPrivate',
     'IAccountPublic',
     'IAccountSet',
@@ -180,17 +181,13 @@ class AccountCreationRationale(DBEnumeratedType):
         """)
 
 
-class IAccountPublic(Interface):
-    """Public information on an `IAccount`."""
+class IAccountBase(Interface):
+    """Base information on an `IAccount`."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
     displayname = StrippedTextLine(
         title=_('Display Name'), required=True, readonly=False,
         description=_("Your name as you would like it displayed."))
-
-    status = Choice(
-        title=_("The status of this account"), required=True,
-        readonly=False, vocabulary=AccountStatus)
 
     is_valid = Bool(
         title=_("True if this account is active and has a valid email."),
@@ -245,6 +242,19 @@ class IAccountPublic(Interface):
         """
 
 
+class IAccountStatus(Interface):
+    """The status attribute gets its own Interface.
+
+    Status needs to be in both IAccountModerate and IAccountPublic."""
+    status = Choice(
+        title=_("The status of this account"), required=True,
+        readonly=False, vocabulary=AccountStatus)
+
+
+class IAccountPublic(IAccountBase, IAccountStatus):
+    """Base information on an `IAccount`."""
+
+
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
     date_created = Datetime(
@@ -253,14 +263,6 @@ class IAccountPrivate(Interface):
     creation_rationale = Choice(
         title=_("Rationale for this account's creation."), required=True,
         readonly=True, values=AccountCreationRationale.items)
-
-    date_status_set = Datetime(
-        title=_('Date status last modified.'),
-        required=True, readonly=False)
-
-    status_comment = Text(
-        title=_("Why are you deactivating your account?"),
-        required=False, readonly=False)
 
     openid_identifier = TextLine(
         title=_("Key used to generate opaque OpenID identities."),
@@ -278,6 +280,17 @@ class IAccountPrivate(Interface):
         :param comment: Populate `IPerson.creation_comment`. See
             `IPerson`.
         """
+
+
+class IAccountModerate(IAccountStatus):
+    """Information on an `IAccount` to be accessed with lp.Moderate."""
+    date_status_set = Datetime(
+        title=_('Date status last modified.'),
+        required=True, readonly=False)
+
+    status_comment = Text(
+        title=_("Why are you deactivating your account?"),
+        required=False, readonly=False)
 
 
 class IAccountSpecialRestricted(Interface):
@@ -308,7 +321,8 @@ class IAccountSpecialRestricted(Interface):
         """
 
 
-class IAccount(IAccountPublic, IAccountPrivate, IAccountSpecialRestricted):
+class IAccount(IAccountBase, IAccountModerate, IAccountPrivate,
+               IAccountSpecialRestricted):
     """Interface describing an `Account`."""
 
 
