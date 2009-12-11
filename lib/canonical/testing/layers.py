@@ -73,6 +73,8 @@ from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
 
+from lazr.restful.utils import safe_hasattr
+
 from windmill.bin.admin_lib import (
     start_windmill, teardown as windmill_teardown)
 
@@ -1715,6 +1717,14 @@ class BaseWindmillLayer(AppServerLayer):
             # base_url. With no base_url, we can't create the config
             # file windmill needs.
             return
+        # If we're running in a bin/test sub-process, sys.stdin is
+        # replaced by FakeInputContinueGenerator, which doesn't have a
+        # fileno method. When Windmill starts Firefox,
+        # sys.stdin.fileno() is called, so we add such a method here, to
+        # prevent it from breaking. By returning None, we should ensure
+        # that it doesn't try to use the return value for anything.
+        if not safe_hasattr(sys.stdin, 'fileno'):
+            sys.stdin.fileno = lambda: None
         # Windmill needs a config file on disk.
         config_text = dedent("""\
             START_FIREFOX = True
