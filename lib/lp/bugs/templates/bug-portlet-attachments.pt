@@ -33,7 +33,7 @@
           tal:repeat="attachment view/patches">
         <a tal:attributes="href attachment/libraryfile/http_url"
            tal:content="attachment/title"
-           class="sprite download-icon">
+           class="sprite haspatch-icon">
           Attachment Title
         </a>
         <small>
@@ -43,7 +43,7 @@
     </ul>
     <ul>
       <li>
-        <a tal:attributes="href view/current_bugtask/fmt:url/+addcomment"
+        <a tal:attributes="href string:${view/current_bugtask/fmt:url/+addcomment}?field.patch=on"
            class="sprite add">Add patch</a>
       </li>
     </ul>

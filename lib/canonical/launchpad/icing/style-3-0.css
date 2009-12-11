@@ -910,6 +910,7 @@ body.tab-bugs #portlet-subscribers .sprite {
 .greenbar {background:url(icon-sprites-3) 0 -446px repeat-x;}
 .purplebar {background:url(icon-sprites-3) 0 -476px repeat-x;}
 .favorite-yes {background:url(icon-sprites-3) 0 -530px no-repeat;}
+.haspatch-icon {background:url(icon-sprites-3) 0 -562px no-repeat;}
 
 /*large*/
 .large-branch {background:url(icon-sprites-large) 0 0 no-repeat;}
