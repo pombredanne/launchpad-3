@@ -49,12 +49,12 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
-from lp.translations.utilities.permission_helpers import (
-    is_admin_or_rosetta_expert)
 from lp.registry.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
     IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
+from lp.services.permission_helpers import (
+    is_admin_or_registry_expert, is_admin_or_rosetta_expert)
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -194,9 +194,7 @@ class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
     usedfor = None
 
     def checkAuthenticated(self, user):
-        celebrities = getUtility(ILaunchpadCelebrities)
-        return (user.inTeam(celebrities.registry_experts)
-                or user.inTeam(celebrities.admin))
+        return is_admin_or_registry_expert(user)
 
 
 class ReviewProduct(ReviewByRegistryExpertsOrAdmins):
@@ -216,7 +214,7 @@ class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
 
 
 class ModeratePerson(ReviewByRegistryExpertsOrAdmins):
-    permission = 'launchpad.moderate'
+    permission = 'launchpad.Moderate'
     usedfor = IPerson
 
 class ViewPillar(AuthorizationBase):
@@ -233,8 +231,7 @@ class ViewPillar(AuthorizationBase):
         else:
             celebrities = getUtility(ILaunchpadCelebrities)
             return (user.inTeam(celebrities.commercial_admin)
-                    or user.inTeam(celebrities.registry_experts)
-                    or user.inTeam(celebrities.admin))
+                    or is_admin_or_registry_expert(user))
 
 
 class EditAccount(AuthorizationBase):
@@ -245,8 +242,7 @@ class EditAccount(AuthorizationBase):
         if account == self.obj:
             return True
         user = IPerson(account, None)
-        return (user is not None and
-                user.inTeam(getUtility(ILaunchpadCelebrities).admin))
+        return user is not None and is_admin_or_registry_expert(user)
 
 
 class ViewAccount(EditAccount):
