@@ -46,7 +46,7 @@ requiring a review.
     ...     find_tag_by_id(user_browser.contents, 'group-team-info'))
     There is no translation group to manage Ubuntu translations.
 
-Create a translation group for Ubuntu, togheter with a translation
+Create a translation group for Ubuntu, together with a translation
 person for managing Ubuntu Spanish translations and set translation 
 policy to RESTRICTED.
 This is done to so see what the page will look like when they exist.
@@ -63,7 +63,8 @@ This is done to so see what the page will look like when they exist.
     >>> utg = factory.makeTranslationGroup(
     ...     owner=utc_team, name='utg', title='Ubuntu Translation Group')
     >>> st_coordinator = factory.makePerson(
-    ...     displayname='Ubuntu Spanish Translator')
+    ...     name="ubuntu-l10n-es",
+    ...     displayname='Ubuntu Spanish Translators')
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.translationgroup = utg
@@ -84,7 +85,7 @@ translation page.
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'group-team-info'))
-    These Ubuntu translations are managed by Ubuntu Spanish Translator.
+    These Ubuntu translations are managed by Ubuntu Spanish Translators.
 
 Authenticated users can add suggestion but will be held for review by
 the members of Spanish translations team.
@@ -92,33 +93,77 @@ the members of Spanish translations team.
     >>> print extract_text(
     ...     find_tag_by_id(
     ...         user_browser.contents, 'translation-access-level'))
-    Your suggestions will be held for review by the managers of
-    these translations. If you need help, ...
-    please get in touch with Ubuntu Spanish Translator...
+    Your suggestions will be held for review by
+    Ubuntu Spanish Translator...
+    please get in touch with Ubuntu Spanish Translators...
+
+Users will see three references to the team managing these translations.
+
+    >>> print user_browser.getLink(
+    ...     'Ubuntu Spanish Translator',index=0).url
+    http://launchpad.dev/~ubuntu-l10n-es
+
+    >>> print user_browser.getLink(
+    ...     'Ubuntu Spanish Translator',index=1).url
+    http://launchpad.dev/~ubuntu-l10n-es
+
+    >>> print user_browser.getLink(
+    ...     'Ubuntu Spanish Translator',index=2).url
+    http://launchpad.dev/~ubuntu-l10n-es
 
 Catalan has no translation team for managing translations and since
 there is no one to review the work, authenticated users can not add
 suggestions.
 
-    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/')
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/')
     >>> user_browser.getLink('Catalan').click()
     >>> print user_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+lang/ca
 
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'group-team-info'))
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'group-team-info'))
     There is no team to manage ... To set one up, please get in touch
     with Ubuntu Translation Coordinators.
 
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'translation-access-level'))
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'translation-access-level'))
     Since there is nobody to manage translation ...
     your cannot add new suggestions. If you are interested in making
     translations, please contact Ubuntu Translation Coordinators...
 
+    >>> print user_browser.getLink(
+    ...     'Ubuntu Translation Coordinators',index=0).url
+    http://launchpad.dev/~utc-team
+    >>> print user_browser.getLink(
+    ...     'Ubuntu Translation Coordinators',index=1).url
+    http://launchpad.dev/~utc-team
+
 Members of translation team and translations admins have full access to
 translations. They can add and review translations.
 
-    >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+lang/ro')
-    >>> print extract_text(find_tag_by_id(admin_browser.contents, 'translation-access-level'))
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/ro')
+    >>> print extract_text(find_tag_by_id(
+    ...     admin_browser.contents, 'translation-access-level'))
     You can add and review translations...
+
+
+For project with no translation teams, translators see a note stating
+there is no group. No access level information is displayed in this case.
+
+    >>> login('foo.bar@canonical.com')
+    >>> ubuntu.translationgroup = None
+    >>> logout()
+
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/ro')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'group-team-info'))
+    There is no translation group to manage Ubuntu translations.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     user_browser.contents, 'translation-access-level'))
+    Templates which are more important to translate are listed first.
 
 The details of the page are tested at the view level.

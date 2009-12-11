@@ -76,7 +76,7 @@ class BaseSeriesLanguageView(LaunchpadView):
     @property
     def access_level_description(self):
         if self.user is None:
-            return ("You are not logged in. Please log in to work " +
+            return ("You are not logged in. Please log in to work "
                     "on translations.")
 
         translations_person = ITranslationsPerson(self.user)
@@ -89,11 +89,21 @@ class BaseSeriesLanguageView(LaunchpadView):
             translations_contact_link = PersonFormatterAPI(
                 self.translation_group.owner).link(None)
 
+        if translations_contact_link is None:
+            #Having no translation group is a valid case, but the
+            #template should not call access_level_description for
+            #this condition.
+            #We return a blank screen since the information about
+            #missing group is displaying in a different section
+            return ""
+
         if not translations_person.translations_relicensing_agreement:
             translation_license_url = PersonFormatterAPI(
-                translations_person).url() + '/translations/+licensing'
-            return ("To make translations in Launchpad you need to " +
-                    "agree with the " +
+                translations_person).url(
+                    view_name='+licensing',
+                    rootsite='translations')
+            return ("To make translations in Launchpad you need to "
+                    "agree with the "
                     "<a href='%s'>Translations licensing</a>.") % (
                         translation_license_url)
 
@@ -103,23 +113,23 @@ class BaseSeriesLanguageView(LaunchpadView):
                 return "You can add and review translations."
 
             if sample_pofile.canAddSuggestions(self.user):
-                return ("Your suggestions will be held for review by " +
-                        "the managers of these translations. If you " +
-                        "need help, or your translations are not being " +
-                        "reviewed, please get in touch with " +
-                        "%s") % translations_contact_link
+                return ("Your suggestions will be held for review by "
+                        "%s. If you need help, or your translations are "
+                        "not being reviewed, please get in touch with "
+                        "%s.") % (
+                            translations_contact_link,
+                            translations_contact_link)
 
             permission = sample_pofile.translationpermission
             if permission == TranslationPermission.CLOSED:
-                return ("These templates can be translated only by " +
-                        "its managers")
+                return ("These templates can be translated only by "
+                        "its managers.")
 
-        # no-managers
         if self.translation_team is None:
-            return ("Since there is nobody to manage translation " +
-                    "approvals into this language, your cannot add " +
-                    "new suggestions. If you are interested in making " +
-                    "translations, please contact %s") % (
+            return ("Since there is nobody to manage translation "
+                    "approvals into this language, your cannot add "
+                    "new suggestions. If you are interested in making "
+                    "translations, please contact %s.") % (
                         translations_contact_link)
 
         raise AssertionError(
@@ -145,7 +155,7 @@ class ProductSeriesLanguageView(BaseSeriesLanguageView, LaunchpadView):
         series = self.context.productseries
         super(ProductSeriesLanguageView, self).initialize(
             series=series,
-            translationgroup=series.product.translationgroup) 
+            translationgroup=series.product.translationgroup)
         self.context.recalculateCounts()
         self.parent = self.series.product
 
