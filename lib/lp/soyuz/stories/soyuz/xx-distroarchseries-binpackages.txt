@@ -147,7 +147,7 @@ not be linked.
     >>> dfiles_element = find_tag_by_id(
     ...     browser.contents, 'downloadable-files')
     >>> print dfiles_element.find(name='a')
-    Some exception
+    None
 
 Binary Packages with no files to present results in a clear statement
 intead of a empty section.
