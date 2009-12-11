@@ -45,6 +45,20 @@ directly.
 
 == URLs to additional FileBug elements ==
 
+FileBugViewBase's inline_filebug_base_url returns the base URL for all
+inline +filebug work.
+
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> filebug_view = create_initialized_view(
+    ...     firefox, '+filebug')
+
+This property returns the root URL of the current request, so in the
+case of this test will return 127.0.0.1.
+
+    >>> print filebug_view.inline_filebug_base_url
+    http://127.0.0.1/
+
 FileBugViewBase provides properties that return the URLs of further
 useful parts of the +filebug process.
 
@@ -52,14 +66,28 @@ The inline_filebug_form_url property returns the URL of the inline
 filebug form so that it may be loaded asynchronously.
 
     >>> print filebug_view.inline_filebug_form_url
-    http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug-inline-form
+    http://launchpad.dev/firefox/+filebug-inline-form
 
 Similarly, the duplicate_search_url property returns the base URL for
 the duplicate search view, which can be used to load the list of
 possible duplicates for a bug asynchronously.
 
     >>> print filebug_view.duplicate_search_url
-    http://launchpad.dev/ubuntu/+source/mozilla-firefox/+filebug-show-similar
+    http://launchpad.dev/firefox/+filebug-show-similar
+
+For project groups, the URLs returned will refer to the default product
+for those project groups.
+
+    >>> from lp.registry.interfaces.project import IProjectSet
+    >>> gnome_project = getUtility(IProjectSet).getByName('gnome')
+    >>> gnome_filebug_view = create_initialized_view(
+    ...     gnome_project, '+filebug')
+
+    >>> print gnome_filebug_view.inline_filebug_form_url
+    http://launchpad.dev/evolution/+filebug-inline-form
+
+    >>> print gnome_filebug_view.duplicate_search_url
+    http://launchpad.dev/evolution/+filebug-show-similar
 
 
 == Adding extra info to filed bugs ==
