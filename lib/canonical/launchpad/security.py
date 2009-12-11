@@ -215,6 +215,10 @@ class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectSet
 
 
+class ModeratePerson(ReviewByRegistryExpertsOrAdmins):
+    permission = 'launchpad.moderate'
+    usedfor = IPerson
+
 class ViewPillar(AuthorizationBase):
     usedfor = IPillar
     permission = 'launchpad.View'
