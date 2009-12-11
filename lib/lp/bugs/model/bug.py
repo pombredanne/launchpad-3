@@ -99,6 +99,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
+from lp.registry.model.person import Person
 from lp.registry.model.pillar import pillar_sort_key
 
 
@@ -272,8 +273,9 @@ class Bug(SQLBase):
     @property
     def users_affected(self):
         """See `IBug`."""
-        return [bap.person for bap
-                in Store.of(self).find(BugAffectsPerson, bug=self)]
+        return Store.of(self).find(
+            Person, BugAffectsPerson.person == Person.id,
+            BugAffectsPerson.bug == self)
 
     @property
     def indexed_messages(self):
