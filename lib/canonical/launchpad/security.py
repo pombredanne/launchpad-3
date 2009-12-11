@@ -234,7 +234,7 @@ class ViewPillar(AuthorizationBase):
                     or is_admin_or_registry_expert(user))
 
 
-class EditAccount(ModeratePerson):
+class EditAccount(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IAccount
 
