@@ -109,6 +109,46 @@ the respective librarian URL and size:
     >>> print dfiles_element.find(name='a')['href']
     http://localhost:58000/40/mozilla-firefox_0.9_i386.deb
 
+If the binary package did produce files, but those files have been
+subsequently deleted, this will also be indicated and the file will
+not be linked.
+
+    First we need to get a handle on the right binary file.
+    >>> login('admin@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
+    >>> firefox_build = warty.getBuildRecords(
+    ...     name='mozilla-firefox', arch_tag='i386')[0]
+    >>> firefox_deb = firefox_build.binarypackages[0].files[0]
+    >>> print firefox_deb.libraryfile.filename
+    mozilla-firefox_0.9_i386.deb
+
+    Next we manually ensure that the file is deleted.
+    >>> firefox_deb.libraryfile.deleted
+    False
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(firefox_deb.libraryfile).content = None
+    >>> firefox_deb.libraryfile.deleted
+    True
+    >>> import transaction
+    >>> transaction.commit()
+    >>> logout()
+
+    Now reload the page to see the deleted file without the link.
+
+    >>> browser.reload()
+    >>> files_element = find_tag_by_id(browser.contents, 'files')
+    >>> print extract_text(files_element)
+    i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
+    produced these files:
+    mozilla-firefox_0.9_i386.deb (deleted)
+
+    >>> dfiles_element = find_tag_by_id(
+    ...     browser.contents, 'downloadable-files')
+    >>> print dfiles_element.find(name='a')
+    Some exception
+
 Binary Packages with no files to present results in a clear statement
 intead of a empty section.
 
@@ -117,7 +157,6 @@ intead of a empty section.
     >>> print extract_text(find_tag_by_id(browser.contents, 'files'))
     i386 build of pmount 0.1-1 in ubuntu hoary RELEASE
     produced no files for this binary package.
-
 
 == DistroArchSeries Partner Binary Package Pages ==
 
