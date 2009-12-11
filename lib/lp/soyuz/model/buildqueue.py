@@ -68,6 +68,15 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         return self.job.date_started
 
+    def destroySelf(self):
+        """Remove this record and associated job/specific_job."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        job = self.job
+        specific_job = self.specific_job
+        SQLBase.destroySelf(self)
+        store.remove(specific_job)
+        job.destroySelf()
+
     def manualScore(self, value):
         """See `IBuildQueue`."""
         self.lastscore = value

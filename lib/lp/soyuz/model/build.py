@@ -1232,6 +1232,7 @@ class BuildSet:
         result_set = store.find(
             Build,
             BuildPackageJob.build == Build.id,
-            BuildPackageJob.job == queue_entry.job)
+            BuildPackageJob.job == BuildQueue.jobID,
+            BuildQueue.job == queue_entry.job)
 
         return result_set.one()

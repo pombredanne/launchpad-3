@@ -22,6 +22,7 @@ The page lists the upstream packaging links.
     >>> print extract_text(find_tag_by_id(content, 'packagings'))
     Source Package   Upstream Project Series
     evolution        Evolution trunk series
+    mozilla-firefox  Mozilla Firefox 1.0 series
     netapplet        NetApplet trunk series
 
 The packaging links are batched so that users can view the thousands of
@@ -38,7 +39,7 @@ links packages. Users can also hack the URL to set their own batch size.
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(find_tag_by_id(content, 'packagings'))
     Source Package   Upstream Project Series
-    netapplet        NetApplet trunk series
+    mozilla-firefox  Mozilla Firefox 1.0 series
 
 The unlinked translatable source packages is not displayed on pages after
 the first page.
