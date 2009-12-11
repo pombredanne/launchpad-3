@@ -8,8 +8,6 @@ __all__ = []
 
 import unittest
 
-from windmill.authoring import WindmillTestClient
-
 from canonical.launchpad.windmill.testing import lpuser, widgets
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
