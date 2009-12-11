@@ -17,7 +17,7 @@
   <tal:block condition="view/pofiles">
     <div class="top-portlet">
       <tal:with_group condition="view/translation_group">
-        <p tal:condition="view/translation_team">
+        <p tal:condition="view/translation_team" id="group-team-info">
           These
           <tal:product replace="structure
             view/parent/fmt:link">Evolution</tal:product>
@@ -27,7 +27,7 @@
             Serbian translators</tal:team>.
         </p>
 
-        <p tal:condition="not:view/translation_team">
+        <p tal:condition="not:view/translation_team" id="group-team-info">
           There is no team to manage
           <tal:product replace="structure
             view/parent/fmt:link">Evolution</tal:product>
@@ -40,7 +40,7 @@
         </p>
       </tal:with_group>
       <tal:without_group condition="not: view/translation_group">
-        <p>
+        <p id="group-team-info">
           There is no translation group to manage
           <tal:product replace="structure
             view/parent/fmt:link">Evolution</tal:product>
@@ -49,9 +49,9 @@
       </tal:without_group>
       <p>
       
-      <p condition="view/translation_group">
+      <p condition="view/translation_group" id="translation-access-level">
         <tal:not-logged-in condition="view/show_not_logged_in">
-          You are not logged in. Please <a href="+login" >login in</a>
+          You are not logged in. Please <a href="+login" >log in</a>
           to work on translations.
         </tal:not-logged-in>
 
@@ -62,19 +62,36 @@
         </tal:no-license>
 
         <tal:full-edit condition="view/show_full_edit">
-          You can add and review translations translations.
+          You can add and review translations.
         </tal:full-edit>
 
         <tal:can-suggest condition="view/show_can_suggest">
+          <tal:comment replace="nothing">
+          If there is no group, translators have full access, but
+          i add this check in case things will change.
+          </tal:comment>
+          <tal:have-group condition="view/translation_group">
           Your suggestions will be held for review by the managers of
           these translations. If you need help, or your translations are 
           not being reviewed, please get in touch with
-          <tal:team replace="structure
+          <tal:team 
+            condition="view/translation_team"
+            replace="structure
                              view/translation_team/translator/fmt:link">
-          Serbian translators</tal:team>.
+          Serbian translators</tal:team><!--
+       --><tal:group 
+            condition="not: view/translation_team"
+            replace="structure view/translation_group/owner/fmt:link">
+          Serbian translators</tal:group>.
+          </tal:have-group>
         </tal:can-suggest>
 
         <tal:no-managers condition="view/show_no_managers">
+          <tal:comment replace="nothing">
+          If there is no group, translators have full access, but
+          i add this check in case things will change.
+          </tal:comment>
+          <tal:have-group condition="view/translation_group">
           Since there is nobody to manage translation approvals into 
           <a tal:attributes="href context/language/fmt:url"
              tal:content="context/language/englishname">Serbian</a>
@@ -82,6 +99,7 @@
           in making translations, please contact
           <a tal:replace="structure view/translation_group/owner/fmt:link"
           >Ubuntu Translators</a>.
+          </tal:have-group>
         </tal:no-managers>
 
         <tal:only-managers condition="view/show_only_managers">
