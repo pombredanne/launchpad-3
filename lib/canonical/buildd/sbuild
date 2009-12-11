@@ -978,7 +978,7 @@ sub build {
 		
 		while( <PIPE> ) {
 			print PLOG $_;
-			$dir = $1 if /^dpkg-source: extracting \S+ in (\S+)/;
+			$dir = $1 if /^dpkg-source: (?:info: )?extracting \S+ in (\S+)/;
 			$main::pkg_fail_stage = "unpack-check"
 				if /^dpkg-source: error: file.*instead of expected/;
 		}
@@ -1694,7 +1694,7 @@ sub unpack_special_source {
 		my $dir;
 		while( <PIPE> ) {
 			print PLOG $_;
-			$dir = $1 if /^dpkg-source: extracting \S+ in (\S+)/;
+			$dir = $1 if /^dpkg-source: (?:info: )?extracting \S+ in (\S+)/;
 		}
 		close( PIPE );
 		if ($?) {
