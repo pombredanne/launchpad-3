@@ -256,8 +256,8 @@ class IAccountPublic(IAccountBase, IAccountStatus):
     """Base information on an `IAccount`."""
 
 
-class IAccountPrivate(Interface):
-    """Private information on an `IAccount`."""
+class IAccountPrivateBase(Interface):
+    """Base private information on an `IAccount`."""
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
 
@@ -283,8 +283,8 @@ class IAccountPrivate(Interface):
         """
 
 
-class IAccountModerate(IAccountStatus):
-    """Attributes of `IAccount` protected with launchpad.Moderate."""
+class IAccountModerateBase(Interface):
+    """Base attributes of `IAccount` protected with launchpad.Moderate."""
     date_status_set = Datetime(
         title=_('Date status last modified.'),
         required=True, readonly=False)
@@ -292,6 +292,14 @@ class IAccountModerate(IAccountStatus):
     status_comment = Text(
         title=_("Why are you deactivating your account?"),
         required=False, readonly=False)
+
+
+class IAccountModerate(IAccountModerateBase, IAccountStatus):
+    """Attributes of `IAccount` protected with launchpad.Moderate."""
+
+
+class IAccountPrivate(IAccountModerateBase, IAccountPrivateBase):
+    """Private information on an `IAccount`."""
 
 
 class IAccountSpecialRestricted(Interface):
@@ -322,12 +330,13 @@ class IAccountSpecialRestricted(Interface):
         """
 
 
-class IAccountEdit(IAccountBase, IAccountPrivate, IAccountSpecialRestricted):
+class IAccountEdit(IAccountBase, IAccountPrivateBase,
+                   IAccountSpecialRestricted):
     """Attributes of `IAccount` protected with launchpad.Edit."""
 
 
-class IAccount(IAccountBase, IAccountModerate, IAccountPrivate,
-               IAccountSpecialRestricted):
+class IAccount(IAccountBase, IAccountModerateBase, IAccountPrivateBase,
+               IAccountSpecialRestricted, IAccountStatus):
     """Interface describing an `Account`."""
 
 
