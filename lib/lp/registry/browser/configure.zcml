@@ -761,7 +761,7 @@
             name="+reviewaccount"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonAccountAdministerView"
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             template="../templates/person-review.pt"/>
         <browser:page
             name="+claimteam"

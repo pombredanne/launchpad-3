@@ -234,7 +234,7 @@ class ViewPillar(AuthorizationBase):
                     or is_admin_or_registry_expert(user))
 
 
-class EditAccount(AuthorizationBase):
+class EditAccount(ModeratePerson):
     permission = 'launchpad.Edit'
     usedfor = IAccount
 
@@ -243,6 +243,10 @@ class EditAccount(AuthorizationBase):
             return True
         user = IPerson(account, None)
         return user is not None and is_admin_or_registry_expert(user)
+
+
+class ModerateAccount(EditAccount):
+    permission = 'launchpad.Moderate'
 
 
 class ViewAccount(EditAccount):
