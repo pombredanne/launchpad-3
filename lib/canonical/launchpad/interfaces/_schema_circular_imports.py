@@ -22,7 +22,7 @@ from canonical.launchpad.components.apihelpers import (
     patch_collection_return_type, patch_plain_parameter_type,
     patch_choice_parameter_type, patch_reference_property)
 
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription, IStructuralSubscriptionTarget)
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugbranch import IBugBranch

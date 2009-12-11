@@ -40,7 +40,7 @@ from lp.registry.interfaces.distroseries import (
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.interfaces.launchpad import (
@@ -485,9 +485,4 @@ class DistroSeriesPackagesView(DistroSeriesView):
     def cached_packagings(self):
         """The batched upstream packaging links."""
         packagings = self.context.packagings
-        if self.context.distribution.full_functionality:
-            # Launchpad knows exactly what is published in the series.
-            packagings = [
-                packaging for packaging in packagings
-                if packaging.sourcepackage.currentrelease is not None]
         return BatchNavigator(packagings, self.request, size=200)

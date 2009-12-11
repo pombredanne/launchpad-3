@@ -71,7 +71,7 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin, ITranslationImportQueue)
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 

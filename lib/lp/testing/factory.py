@@ -897,7 +897,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             CodeReviewNotificationLevel.NOEMAIL)
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
-                     rev_id=None, log_body=None):
+                     rev_id=None, log_body=None, date_created=None):
         """Create a single `Revision`."""
         if author is None:
             author = self.getUniqueString('author')
@@ -912,7 +912,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IRevisionSet).new(
             revision_id=rev_id, log_body=log_body,
             revision_date=revision_date, revision_author=author,
-            parent_ids=parent_ids, properties={})
+            parent_ids=parent_ids, properties={},
+            _date_created=date_created)
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
@@ -1700,12 +1701,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
                 subscription_policy=subscription_policy)
-        # Any member of the mailing-list-experts team can review a list
-        # registration.  It doesn't matter which one.
-        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-        reviewer = list(experts.allmembers)[0]
         team_list = getUtility(IMailingListSet).new(team, owner)
-        team_list.review(reviewer, MailingListStatus.APPROVED)
         team_list.startConstructing()
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list
