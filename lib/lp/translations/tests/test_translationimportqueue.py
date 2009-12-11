@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import transaction
 import unittest
 
 from zope.component import getUtility
@@ -17,25 +18,27 @@ from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadZopelessLayer
 
 
-class TestTranslationImportQueueEntryStatus(TestCaseWithFactory):
-    """Test handling of the status of a queue entry."""
+class TestCanSetStatusBase(TestCaseWithFactory):
+    """Base for tests that check that canSetStatus works ."""
 
     layer = LaunchpadZopelessLayer
+    dbuser = None
+    entry = None
 
     def setUp(self):
         """Set up context to test in."""
-        super(TestTranslationImportQueueEntryStatus, self).setUp()
+        super(TestCanSetStatusBase, self).setUp()
 
         self.queue = getUtility(ITranslationImportQueue)
         self.rosetta_experts = (
             getUtility(ILaunchpadCelebrities).rosetta_experts)
         self.productseries = self.factory.makeProductSeries()
         self.uploaderperson = self.factory.makePerson()
-        self.potemplate = self.factory.makePOTemplate(
-            productseries=self.productseries)
-        self.entry = self.queue.addOrUpdateEntry(
-            'demo.pot', '#demo', False, self.uploaderperson,
-            productseries=self.productseries, potemplate=self.potemplate)
+
+    def _switch_dbuser(self):
+        if self.dbuser != None:
+            transaction.commit()
+            self.layer.switchDbUser(self.dbuser)
 
     def _assertCanSetStatus(self, user, entry, expected_list):
         # Helper to check for all statuses.
@@ -49,6 +52,7 @@ class TestTranslationImportQueueEntryStatus(TestCaseWithFactory):
             RosettaImportStatus.IMPORTED,
             RosettaImportStatus.NEEDS_REVIEW,
         ]
+        self._switch_dbuser()
         # Do *not* use assertContentEqual here, as the order matters.
         self.assertEqual(expected_list,
             [entry.canSetStatus(status, user)
@@ -71,6 +75,7 @@ class TestTranslationImportQueueEntryStatus(TestCaseWithFactory):
         # If the entry has no import target set, even Rosetta experts
         # cannot set it to approved.
         self.entry.potemplate = None
+        self.entry.pofile = None
         self._assertCanSetStatus(self.rosetta_experts, self.entry,
             #  A      B     D     F     I    NR
             [False, True, True, True, True, True])
@@ -115,5 +120,66 @@ class TestTranslationImportQueueEntryStatus(TestCaseWithFactory):
             [False, False, False, False, False, False])
 
 
+class TestCanSetStatusPOTemplate(TestCanSetStatusBase):
+    """Test canStatus applied to an entry with a POTemplate."""
+
+    def setUp(self):
+        """Create the entry to test on."""
+        super(TestCanSetStatusPOTemplate, self).setUp()
+
+        self.potemplate = self.factory.makePOTemplate(
+            productseries=self.productseries)
+        self.entry = self.queue.addOrUpdateEntry(
+            'demo.pot', '#demo', False, self.uploaderperson,
+            productseries=self.productseries, potemplate=self.potemplate)
+
+
+class TestCanSetStatusPOFile(TestCanSetStatusBase):
+    """Test canStatus applied to an entry with a POFile."""
+
+    def setUp(self):
+        """Create the entry to test on."""
+        super(TestCanSetStatusPOFile, self).setUp()
+
+        self.potemplate = self.factory.makePOTemplate(
+            productseries=self.productseries)
+        self.pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
+        self.entry = self.queue.addOrUpdateEntry(
+            'demo.po', '#demo', False, self.uploaderperson,
+            productseries=self.productseries, pofile=self.pofile)
+
+
+class TestCanSetStatusPOTemplateWithQueuedUser(TestCanSetStatusPOTemplate):
+    """Test handling of the status of a queue entry with 'queued' db user.
+
+    The archive uploader needs to set (and therefore check) the status of a
+    queue entry. It connects as a different database user and therefore we
+    need to make sure that setStatus stays within this user's permissions.
+    This is the version for POTemplate entries.
+    """
+
+    dbuser = 'queued'
+
+
+class TestCanSetStatusPOFileWithQueuedUser(TestCanSetStatusPOFile):
+    """Test handling of the status of a queue entry with 'queued' db user.
+
+    The archive uploader needs to set (and therefore check) the status of a
+    queue entry. It connects as a different database user and therefore we
+    need to make sure that setStatus stays within this user's permissions.
+    This is the version for POFile entries.
+    """
+
+    dbuser = 'queued'
+
+
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    """Add only specific test cases and leave out the base case."""
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(TestCanSetStatusPOTemplate))
+    suite.addTest(unittest.makeSuite(TestCanSetStatusPOFile))
+    suite.addTest(
+        unittest.makeSuite(TestCanSetStatusPOTemplateWithQueuedUser))
+    suite.addTest(unittest.makeSuite(TestCanSetStatusPOFileWithQueuedUser))
+    return suite
+
