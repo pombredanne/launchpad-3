@@ -35,13 +35,13 @@ class TestNewProjectStep2(TestCaseWithFactory):
         and hiding them.
         """
 
-        lpuser.SAMPLE_PERSON.ensure_login(self.client)
-
         # Perform step 1 of the project registration, using information
         # that will yield search results.
         self.client.open(url=u'http://launchpad.dev:8085/projects/+new')
-        self.client.waits.forPageLoad(timeout=u'20000')
 
+        lpuser.SAMPLE_PERSON.ensure_login(self.client)
+
+        self.client.waits.forElement(id='field.displayname', timeout=u'20000')
         self.client.type(text=u'Badgers', id='field.displayname')
         self.client.type(text=u'badgers', id='field.name')
         self.client.type(text=u"There's the Badger", id='field.title')
@@ -49,7 +49,7 @@ class TestNewProjectStep2(TestCaseWithFactory):
         self.client.click(id=u'field.actions.continue')
         self.client.waits.forPageLoad(timeout=u'20000')
         # The h2 heading indicates that a search was performed.
-        self.client.asserts.assertText(
+        self.client.asserts.assertTextIn(
             id=u'step-title',
             validator=u'Check for duplicate projects')
 
@@ -58,7 +58,7 @@ class TestNewProjectStep2(TestCaseWithFactory):
         # for toggling the search results.  It also changes the h2 title
         # to something more appropriate.
         self.client.click(id=u'registration-details-buttons')
-        self.client.asserts.assertText(
+        self.client.asserts.assertTextIn(
             id=u'step-title',
             validator=u'Registration details')
 

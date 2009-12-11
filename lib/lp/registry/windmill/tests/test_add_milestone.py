@@ -61,8 +61,8 @@ def test_inline_add_milestone(client, url, name=None, suite='milestone',
     client.waits.forElement(id=u'field.name', timeout=u'8000')
     client.type(id='field.name', text=milestone_name)
     client.click(id=u'formoverlay-add-milestone')
-    client.asserts.assertText(
-        id='milestone-error',
+    client.asserts.assertTextIn(
+        classname='yui-lazr-formoverlay-errors',
         validator='The name %s is already used' % milestone_name.lower())
     client.click(classname='close-button')
 
@@ -74,14 +74,11 @@ def test_inline_add_milestone(client, url, name=None, suite='milestone',
     client.waits.forPageLoad(timeout=u'20000')
 
     # Verify that the release was created.
-    milestone_xpath = (
-        "//table[@id='series_trunk']//a[@href='/bzr/+milestone/%s']"
-        % milestone_name.lower())
-    client.waits.forElement(xpath=milestone_xpath, timeout=u'8000')
+    client.waits.forElement(id="version")
     client.asserts.assertText(
-        xpath=milestone_xpath, validator=milestone_name.lower())
+        xpath="//*[@id='version']/dd", validator=milestone_name.lower())
     client.asserts.assertText(
-        xpath=milestone_xpath, validator=code_name)
+        xpath="//*[@id='code-name']/dd", validator=code_name)
 
 
 class TestAddMilestone(TestCaseWithFactory):
@@ -94,6 +91,7 @@ class TestAddMilestone(TestCaseWithFactory):
 
     def test_adding_milestone_on_addrelease_page(self):
         test_inline_add_milestone(
+            self.client,
             url='http://launchpad.dev:8085/bzr/trunk/+addrelease',
             name='test_inline_add_milestone_for_release')
 

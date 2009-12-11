@@ -26,16 +26,16 @@ class TestProjectLicenses(TestCaseWithFactory):
 
     def test_project_licenses(self):
         """Test the dynamic aspects of the project license picker."""
-        lpuser.SAMPLE_PERSON.ensure_login(self.client)
-
         # The firefox project is as good as any.
         self.client.open(url=u'http://launchpad.dev:8085/firefox/+edit')
         self.client.waits.forPageLoad(timeout=u'20000')
 
+        lpuser.SAMPLE_PERSON.ensure_login(self.client)
+
         # The Recommended table is visible.
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'recommended',
-            validator='className|lazr-opened')
+            option='className|lazr-opened')
         # But the More table is not.
         self.client.asserts.assertProperty(
             id=u'more',
@@ -47,23 +47,21 @@ class TestProjectLicenses(TestCaseWithFactory):
 
         # Clicking on the link exposes the More section though.
         self.client.click(id='more-expand')
-        self.client.waits.sleep(milliseconds=u'1000')
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'more',
-            validator='className|lazr-opened')
+            option='className|lazr-opened')
 
         # As does clicking on the Other choices section.
         self.client.click(id='special-expand')
-        self.client.waits.sleep(milliseconds=u'1000')
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'special',
-            validator='className|lazr-opened')
+            option='className|lazr-opened')
 
         # Clicking on any opened link closes the section.
         self.client.click(id='recommended-expand')
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'recommended',
-            validator='className|lazr-closed')
+            option='className|lazr-closed')
 
         # The license details box starts out hidden.
         self.client.asserts.assertProperty(
@@ -98,9 +96,9 @@ class TestProjectLicenses(TestCaseWithFactory):
             validator='className|lazr-opened')
 
         self.client.click(id='field.licenses.25')
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'license-details',
-            validator='className|lazr-closed')
+            option='className|lazr-closed')
         self.client.asserts.assertProperty(
             id=u'proprietary',
             validator='className|lazr-closed')
@@ -109,9 +107,9 @@ class TestProjectLicenses(TestCaseWithFactory):
         # closes the details box, but leaves the sections opened.
 
         self.client.click(id='field.licenses.25')
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'license-details',
-            validator='className|lazr-opened')
+            option='className|lazr-opened')
 
         self.client.asserts.assertChecked(
             id=u'field.licenses.25')

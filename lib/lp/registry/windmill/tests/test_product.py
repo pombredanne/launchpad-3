@@ -10,12 +10,12 @@ import unittest
 
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.windmill.testing import widgets
+from canonical.launchpad.windmill.testing import lpuser, widgets
 
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import TestCaseWithFactory
 
-class TestProductEditPeople(TestCaseWithFactory):
+class TestProductIndexPage(TestCaseWithFactory):
     """Test product index page."""
 
     layer = RegistryWindmillLayer

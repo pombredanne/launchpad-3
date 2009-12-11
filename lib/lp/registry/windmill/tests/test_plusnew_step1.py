@@ -32,11 +32,11 @@ class TestNewProjectStep1(TestCaseWithFactory):
         On step 1 of the wizard, the URL field gets autofilled from the Name
         field.  Also, the URL field will not accept invalid characters.
         """
-        lpuser.SAMPLE_PERSON.ensure_login(self.client)
-
         # Perform step 1 of the project registration, using information
         # that will yield search results.
         self.client.open(url=u'http://launchpad.dev:8085/projects/+new')
+
+        lpuser.SAMPLE_PERSON.ensure_login(self.client)
 
         self.client.waits.forElement(id='field.displayname')
         self.client.type(text=u'dolphin', id='field.displayname')
