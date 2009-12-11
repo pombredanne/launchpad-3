@@ -52,7 +52,7 @@ from lp.code.model.branchmergeproposal import (
      BranchMergeProposal, BranchMergeProposalGetter)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
-from lp.code.model.revision import Revision
+from lp.code.model.revision import Revision, RevisionAuthor
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
@@ -518,7 +518,26 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return self.revision_history.limit(quantity)
 
-    def revisions_since(self, timestamp):
+    def getMainlineBranchRevisions(self, start_date, end_date=None,
+                                   oldest_first=False):
+        """See `IBranch`."""
+        date_clause = Revision.revision_date >= start_date
+        if end_date is not None:
+            date_clause = And(date_clause, Revision.revision_date <= end_date)
+        result = Store.of(self).find(
+            (BranchRevision, Revision, RevisionAuthor),
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            BranchRevision.revision == Revision.id,
+            Revision.revision_author == RevisionAuthor.id,
+            date_clause)
+        if oldest_first:
+            result = result.order_by(BranchRevision.sequence)
+        else:
+            result = result.order_by(Desc(BranchRevision.sequence))
+        return result
+
+    def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
         return BranchRevision.select(
             'Revision.id=BranchRevision.revision AND '
@@ -705,14 +724,6 @@ class Branch(SQLBase):
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
         store.flush()
-
-    def getMainlineBranchRevisions(self, revision_ids):
-        return Store.of(self).find(
-            BranchRevision,
-            BranchRevision.branch == self,
-            BranchRevision.sequence != None,
-            BranchRevision.revision == Revision.id,
-            Revision.revision_id.is_in(revision_ids))
 
     def getBranchRevision(self, sequence=None, revision=None,
                           revision_id=None):
