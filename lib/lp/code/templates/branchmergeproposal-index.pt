@@ -22,7 +22,7 @@
       margin: 1em 0 0 0;
     }
     #add-comment-form {
-      max-width:60em;
+      max-width: 60em;
       padding-bottom: 3em;
     }
     #add-comment-form textarea{
@@ -30,7 +30,7 @@
       max-width: inherit;
     }
     #add-comment-form .actions {
-      float:right;
+      float: right;
       margin: 0 -0.5em;
     }
     #add-comment-review-fields {
