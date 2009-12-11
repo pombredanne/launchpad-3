@@ -78,15 +78,16 @@ from lazr.restful.utils import safe_hasattr
 from windmill.bin.admin_lib import (
     start_windmill, teardown as windmill_teardown)
 
-from zope.app.publication.httpfactory import chooseClasses
 import zope.app.testing.functional
 import zope.publisher.publish
+from zope.app.publication.httpfactory import chooseClasses
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, provideUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
+from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
@@ -1724,6 +1725,8 @@ class BaseWindmillLayer(AppServerLayer):
         # prevent it from breaking. By returning None, we should ensure
         # that it doesn't try to use the return value for anything.
         if not safe_hasattr(sys.stdin, 'fileno'):
+            assert isinstance(sys.stdin, FakeInputContinueGenerator), (
+                "sys.stdin (%r) doesn't have a fileno method." % sys.stdin)
             sys.stdin.fileno = lambda: None
         # Windmill needs a config file on disk.
         config_text = dedent("""\
