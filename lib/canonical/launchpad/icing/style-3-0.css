@@ -682,7 +682,8 @@ form.translations div.alignment .secondary label {
  */
 
 .inactive-template td {
-    background-color: #DCDCDC;
+    background-color: #fee;
+    color: #855;
 }
 
 

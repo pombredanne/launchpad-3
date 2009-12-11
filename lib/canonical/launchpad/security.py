@@ -1130,9 +1130,9 @@ class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
             return True
         else:
             return (
-            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-            EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
-                self, user))
+                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+                EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
+                    self, user))
 
 
 # Please keep AdminPOTemplateSubset in sync with this, unless you
@@ -1155,8 +1155,7 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
             distribution = template.distroseries.distribution
             return (
                 AdminDistributionTranslations(
-                    template.distroseries.distribution).checkAuthenticated(
-                        user))
+                    distribution).checkAuthenticated(user))
 
         else:
             # Template is on a product.
@@ -1663,16 +1662,13 @@ class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
     def checkAuthenticated(self, user):
         template_set = self.obj
         if template_set.distroseries is not None:
-            distro = template_set.distroseries.distribution
-            translation_group = distro.translationgroup
-            if translation_group and user.inTeam(translation_group.owner):
-                return True
-
+            distribution = template_set.distroseries.distribution
             return (
                 AdminDistributionTranslations(
-                template_set.distroseries.distribution).checkAuthenticated(user))
-
-        return False
+                    distribution).checkAuthenticated(user))
+        else:
+            # Template is on a product.
+            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user)
 
 
 class AdminDistroSeriesLanguage(OnlyRosettaExpertsAndAdmins):
