@@ -15,14 +15,15 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
-celebrities = getUtility(ILaunchpadCelebrities)
-
 def is_admin_or_rosetta_expert(user):
     """Check if the user is a Launchpad admin or a Rosetta expert."""
+    celebrities = getUtility(ILaunchpadCelebrities)
     return (user.inTeam(celebrities.admin) or
             user.inTeam(celebrities.rosetta_experts))
 
+
 def is_admin_or_registry_expert(user):
     """Check if the user is a Launchpad admin or a registry expert."""
+    celebrities = getUtility(ILaunchpadCelebrities)
     return (user.inTeam(celebrities.admin) or
             user.inTeam(celebrities.registry_experts))
