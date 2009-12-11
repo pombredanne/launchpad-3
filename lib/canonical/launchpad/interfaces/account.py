@@ -253,7 +253,7 @@ class IAccountStatus(Interface):
 
 
 class IAccountPublic(IAccountBase, IAccountStatus):
-    """Base information on an `IAccount`."""
+    """Public information on an `IAccount`."""
 
 
 class IAccountPrivateBase(Interface):
