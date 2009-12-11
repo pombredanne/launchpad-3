@@ -85,6 +85,36 @@ Launchpad, and can change the account too.
     The user is reactivated. He must use the "forgot password" to log in.
 
 
+Partial access for registry experts
+-----------------------------------
+
+Members of the registry team get partial access to the review accont page to
+be able to suspend spam accounts.
+
+    >>> login('foo.bar@canonical.com')  
+    >>> registry_expert = factory.makePerson(email='expert@example.com',
+    ...                                      password='test')
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from zope.component import getUtility
+    >>> registry_team = getUtility(ILaunchpadCelebrities).registry_experts
+    >>> registry_team.addMember(registry_expert, registry_team.teamowner)
+    >>> print registry_expert.inTeam(registry_team)
+    True
+    >>> logout()
+
+    >>> expert_browser = setupBrowser(auth='Basic expert@canonical.com:test')
+    >>> expert_browser.open('http://launchpad.dev/~no-priv/+reviewaccount')
+    >>> print expert_browser.title
+    Review person's account...
+
+The +reviewaccount page does not display account information for registry
+experts.
+
+    >>> content = find_main_content(admin_browser.contents)
+    >>> print content.find(id='summary')
+    None
+
+
 Restricted to admins
 --------------------
 
