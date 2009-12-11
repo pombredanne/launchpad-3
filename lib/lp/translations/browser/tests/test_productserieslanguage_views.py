@@ -7,7 +7,7 @@ import unittest
 
 from zope.component import getUtility
 
-from lp.translations.browser.productserieslanguage import (
+from lp.translations.browser.serieslanguage import (
     ProductSeriesLanguageView)
 from lp.translations.interfaces.translator import ITranslatorSet
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest

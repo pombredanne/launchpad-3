@@ -1,4 +1,4 @@
-Product of distribution release series language overview
+Product or distribution release series language overview
 ========================================================
 
 These pages are used by translators for accessing all templates in a 
@@ -17,19 +17,20 @@ templates links to per-language overviews.
     Portuguese (Brazil) (pt_BR) : Translations : Series trunk : Evolution
 
 Since there is no translation team to manage Portuguese (Brazil) language
-in the Evolution's translation group, all user will be informed about it
+in the Evolution's translation group, all users will be informed about it
 and pointed to the translation group owner.
 
-    >>> print extract_text(find_tag_by_id(browser.contents, 'group-team-info'))
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'group-team-info'))
     There is no team to manage Evolution ... translations to ...
     To set one up, please get in touch with Carlos Perelló Marín.
 
 Anonymous users are informed that in order to make translations they
 need to login first.
 
-    >>> browser.getLink('log in').click()
-    >>> print browser.url
-    http://translations.launchpad.dev/evolution/trunk/+lang/pt_BR/+login
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'translation-access-level'))
+    You are not logged in. Please log in to work on translations...
 
 Authenticated users will see information about what they can do in
 these translations. Things like review, only add suggestion or no
@@ -39,53 +40,60 @@ If a product or distribution had no translation group, visitors are
 informed about this fact and will be able to add translations without
 requiring a review.
 
-    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'group-team-info'))
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'group-team-info'))
     There is no translation group to manage Ubuntu translations.
 
 A translation group is created for Ubuntu, togheter with a translation
 person for managing Ubuntu Spanish translations.
-The translation policy is also defined as RESTRICTED
+The translation policy is also defined as RESTRICTED.
 
-    >>> from canonical.launchpad.ftests import login, logout
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from lp.translations.interfaces.translationgroup import (
     ...     TranslationPermission)
     >>> login('foo.bar@canonical.com')
-    >>> utc_member = factory.makePerson(email='utd@ex.com', name='utc.member',
-    ...                 password='test', displayname='Some Guy')
-    >>> utc_team = factory.makeTeam(owner=utc_member, name='utc-team',
-    ...                 displayname='Ubuntu Translation Coordinators')
-    >>> utg = factory.makeTranslationGroup(owner=utc_team, name='utg',
-    ...                 title='Ubuntu Translation Group')
-    >>> st_coordinator = factory.makePerson(email='st@ex.com',
-    ...                 name='st-coordinator', password='test',
-    ...                 displayname='Ubuntu Spanish Translator')
+    >>> utc_owner = factory.makePerson(displayname='Some Guy')
+    >>> utc_team = factory.makeTeam(
+    ...     owner=utc_owner, name='utc-team',
+    ...     displayname='Ubuntu Translation Coordinators')
+    >>> utg = factory.makeTranslationGroup(
+    ...     owner=utc_team, name='utg', title='Ubuntu Translation Group')
+    >>> st_coordinator = factory.makePerson(
+    ...     displayname='Ubuntu Spanish Translator')
 
     >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> ubuntu.translationgroup = utg
     >>> ubuntu.translationpermission = TranslationPermission.RESTRICTED
-    >>> someone = factory.makeTranslator('es', group=utg, person=st_coordinator)
+    >>> translators = factory.makeTranslator(
+    ...     'es', group=utg, person=st_coordinator)
     >>> logout()
 
 Spanish has a translation team for managing its translations and all
-Evolution Spanish templates can be access from the distribution series 
+Evolution Spanish templates can be accessed from the distribution series 
 translation page.
 
-    >>> user_browser.open('http://translations.launchpad.dev/ubuntu/hoary/')
+    >>> user_browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/')
     >>> user_browser.getLink('Spanish').click()
     >>> print user_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+lang/es
 
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'group-team-info'))
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'group-team-info'))
     These Ubuntu translations are managed by Ubuntu Spanish Translator.
 
 Authenticated users can add suggestion but will be held for review by
 the members of Spanish translations team.
 
-    >>> print extract_text(find_tag_by_id(user_browser.contents, 'translation-access-level'))
-    Your suggestions ... Ubuntu Spanish Translator...
+    >>> print extract_text(
+    ...     find_tag_by_id(
+    ...         user_browser.contents, 'translation-access-level'))
+    Your suggestions will be held for review by the managers of
+    these translations. If you need help, ...
+    please get in touch with Ubuntu Spanish Translator...
 
 Catalan has no translation team for managing translations and since
 there is no one to review the work, authenticated users can not add
@@ -97,16 +105,19 @@ suggestions.
     http://translations.launchpad.dev/ubuntu/hoary/+lang/ca
 
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'group-team-info'))
-    There is no team ... Catalan. ... Ubuntu Translation Coordinators.
+    There is no team to manage ... To set one up, please get in touch
+    with Ubuntu Translation Coordinators.
 
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'translation-access-level'))
-    Since ... Ubuntu Translation Coordinators. ...
+    Since there is nobody to manage translation ...
+    your cannot add new suggestions. If you are interested in making
+    translations, please contact Ubuntu Translation Coordinators...
 
 Members of translation team and translations admins have full access to
 translations. They can add and review translations.
 
     >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+lang/ro')
     >>> print extract_text(find_tag_by_id(admin_browser.contents, 'translation-access-level'))
-    You can add ...
+    You can add and review translations...
 
 The details of the page are tested at the view level.

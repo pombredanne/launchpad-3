@@ -14,6 +14,7 @@ __all__ = [
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.publisher import Navigation
 from lp.translations.interfaces.distroserieslanguage import (
@@ -26,9 +27,12 @@ from lp.translations.interfaces.productserieslanguage import (
     IProductSeriesLanguage)
 
 
-class SeriesLanguageView(LaunchpadView):
-    """View class to render translation status for an `IDistroSeries`
-    and `IProductSeries`"""
+class BaseSeriesLanguageView(LaunchpadView):
+    """View base class to render translation status for an 
+    `IDistroSeries` and `IProductSeries`
+
+    This class should not be directly instantiated.
+    """
 
     pofiles = None
     label = "Translatable templates"
@@ -36,7 +40,9 @@ class SeriesLanguageView(LaunchpadView):
     parent = None
     translationgroup = None
 
-    def initialize(self):
+    def initialize(self, series, translationgroup):
+        self.series = series
+        self.translationgroup = translationgroup
         self.form = self.request.form
 
         self.batchnav = BatchNavigator(
@@ -46,14 +52,20 @@ class SeriesLanguageView(LaunchpadView):
         self.pofiles = self.context.getPOFilesFor(
             self.batchnav.currentBatch())
 
-    @cachedproperty
+    @property
     def translation_group(self):
-        """Is there a translation group for these translations."""
+        """Return the translation group for these translations.
+
+        Return None if there's no translation group for them.
+        """
         return self.translationgroup
 
     @cachedproperty
     def translation_team(self):
-        """Is there a translation team for these translations."""
+        """Return the translation team for these translations.
+
+        Return None if there's no translation team for them.
+        """
         if self.translation_group is not None:
             team = self.translation_group.query_translator(
                 self.context.language)
@@ -62,98 +74,80 @@ class SeriesLanguageView(LaunchpadView):
         return team
 
     @property
-    def show_not_logged_in(self):
-        """Should we display a notice that user is not logged in?"""
-        return self.user is None
+    def access_level_description(self):
+        if self.user is None:
+            return ("You are not logged in. Please log in to work " +
+                    "on translations.")
 
-    @property
-    def show_no_license(self):
-        """Should we display a notice that licence was not accepted?"""
-        if self.show_not_logged_in:
-            return False
         translations_person = ITranslationsPerson(self.user)
-        return not translations_person.translations_relicensing_agreement
+        translations_contact_link = None
 
-    @property
-    def show_full_edit(self):
-        """Should we display a notice that user is not logged in?"""
-        if (self.show_not_logged_in or
-            self.show_no_license):
-            return False
+        if self.translation_team:
+            translations_contact_link = PersonFormatterAPI(
+                self.translation_team.translator).link(None)
+        elif self.translation_group:
+            translations_contact_link = PersonFormatterAPI(
+                self.translation_group.owner).link(None)
 
-        sample_pofile = self.pofiles[0]
-        if sample_pofile is None:
-            return False
-
-        return sample_pofile.canEditTranslations(self.user)
-
-    @property
-    def show_can_suggest(self):
-        """Should we display a notice that user is not logged in?"""
-        if (self.show_not_logged_in or
-            self.show_no_license or
-            self.show_full_edit):
-            return False
+        if not translations_person.translations_relicensing_agreement:
+            translation_license_url = PersonFormatterAPI(
+                translations_person).url() + '/translations/+licensing'
+            return ("To make translations in Launchpad you need to " +
+                    "agree with the " +
+                    "<a href='%s'>Translations licensing</a>.") % (
+                        translation_license_url)
 
         sample_pofile = self.pofiles[0]
-        if sample_pofile is None:
-            return False
+        if sample_pofile is not None:
+            if sample_pofile.canEditTranslations(self.user):
+                return "You can add and review translations."
 
-        return sample_pofile.canAddSuggestions(self.user)
+            if sample_pofile.canAddSuggestions(self.user):
+                return ("Your suggestions will be held for review by " +
+                        "the managers of these translations. If you " +
+                        "need help, or your translations are not being " +
+                        "reviewed, please get in touch with " +
+                        "%s") % translations_contact_link
 
-    @property
-    def show_only_managers(self):
-        """Should we display a notice that user is not logged in?"""
-        if (self.show_not_logged_in or
-            self.show_no_license or
-            self.show_full_edit or
-            self.show_can_suggest):
-            return False
+            permission = sample_pofile.translationpermission
+            if permission == TranslationPermission.CLOSED:
+                return ("These templates can be translated only by " +
+                        "its managers")
 
-        sample_pofile = self.pofiles[0]
-        if sample_pofile is None:
-            return False
-
-        if (sample_pofile.translationpermission ==
-                                        TranslationPermission.CLOSED):
-            return True
-        else:
-            return False
-
-    @property
-    def show_no_managers(self):
-        """Should we display a notice that user is not logged in?"""
-        if (self.show_not_logged_in or
-            self.show_no_license or
-            self.show_full_edit or
-            self.show_can_suggest or
-            self.show_only_managers):
-            return False
+        # no-managers
         if self.translation_team is None:
-            return True
-        else:
-            return False
+            return ("Since there is nobody to manage translation " +
+                    "approvals into this language, your cannot add " +
+                    "new suggestions. If you are interested in making " +
+                    "translations, please contact %s") % (
+                        translations_contact_link)
+
+        raise AssertionError(
+            "BUG! Couldn't identify the user's access level for these "
+            "translations.")
 
 
-class DistroSeriesLanguageView(SeriesLanguageView, LaunchpadView):
+class DistroSeriesLanguageView(BaseSeriesLanguageView, LaunchpadView):
     """View class to render translation status for an `IDistroSeries`."""
 
     def initialize(self):
-        self.series = self.context.distroseries
-        SeriesLanguageView.initialize(self)
+        series = self.context.distroseries
+        super(DistroSeriesLanguageView, self).initialize(
+            series=series,
+            translationgroup=series.distribution.translationgroup)
         self.parent = self.series.distribution
-        self.translationgroup = self.series.distribution.translationgroup
 
 
-class ProductSeriesLanguageView(SeriesLanguageView, LaunchpadView):
+class ProductSeriesLanguageView(BaseSeriesLanguageView, LaunchpadView):
     """View class to render translation status for an `IProductSeries`."""
 
     def initialize(self):
-        self.series = self.context.productseries
-        SeriesLanguageView.initialize(self)
+        series = self.context.productseries
+        super(ProductSeriesLanguageView, self).initialize(
+            series=series,
+            translationgroup=series.product.translationgroup) 
         self.context.recalculateCounts()
         self.parent = self.series.product
-        self.translationgroup = self.series.product.translationgroup
 
 
 class DistroSeriesLanguageNavigation(Navigation):
