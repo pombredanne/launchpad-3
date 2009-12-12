@@ -223,3 +223,20 @@ used for determining who is allowed to create new package sets.
     techboard
     >>> celebs.ubuntu_techboard == ubuntu_techboard
     True
+
+
+== Detecting if a person is a celebrity ==
+
+We can ask if a person has celebrity status.
+
+    >>> celebs.isCelebrityPerson(ubuntu_techboard.name)
+    True
+    >>> celebs.isCelebrityPerson(obsolete_junk.name)
+    False
+    >>> celebs.isCelebrityPerson('admins')
+    True
+    >>> celebs.isCelebrityPerson('admin')
+    False
+    >>> celebs.isCelebrityPerson('janitor')
+    True
+

@@ -17,6 +17,7 @@ HERE:=$(shell pwd)
 
 LPCONFIG=development
 
+JSFLAGS=
 LP_BUILT_JS_ROOT=lib/canonical/launchpad/icing/build
 LAZR_BUILT_JS_ROOT=lazr-js/build
 
@@ -111,12 +112,17 @@ inplace: build
 build: $(BZR_VERSION_INFO) compile apidoc jsbuild
 
 jsbuild_lazr:
-	${SHHH} bin/jsbuild -b lazr-js/build
+	# We absolutely do not want to include the lazr.testing module and its
+	# jsTestDriver test harness modifications in the lazr.js and launchpad.js
+	# roll-up files.  They fiddle with built-in functions!  See Bug 482340.
+	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/
 
 jsbuild: jsbuild_lazr
 	${SHHH} bin/jsbuild \
-		-n launchpad -s lib/canonical/launchpad/javascript \
-		-b lib/canonical/launchpad/icing/build \
+		$(JSFLAGS) \
+		-n launchpad \
+		-s lib/canonical/launchpad/javascript \
+		-b $(LP_BUILT_JS_ROOT) \
 		lib/canonical/launchpad/icing/MochiKit.js \
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
@@ -130,6 +136,9 @@ download-cache:
 	@echo "Missing ./download-cache."
 	@echo "Developers: please run utilities/link-external-sourcecode."
 	@exit 1
+
+buildonce_eggs: $(PY)
+	find eggs -name '*.pyc' -exec rm {} \;
 
 # The download-cache dependency comes *before* eggs so that developers get the
 # warning before the eggs directory is made.  The target for the eggs directory
@@ -358,4 +367,4 @@ ID: compile
 	check check_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild clean_js
+	jsbuild clean_js buildonce_eggs

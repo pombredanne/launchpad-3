@@ -14,7 +14,7 @@
     }
     </style>
     <script type="text/javascript">
-    YUI().use('node', 'lazr.anim', function(Y) {
+    LPS.use('node', 'lazr.anim', function(Y) {
         var fields = {'POT':
                             ['field.name', 'field.translation_domain',
                              'field.languagepack'],
@@ -29,7 +29,7 @@
         function getElemById(elem_id) {
             // XXX 'elem_id' is a Zope form field, and triggers
             // YUI bug #2423101.  We'll work around it.
-            return Y.get(Y.DOM.byId(elem_id));
+            return Y.one(Y.DOM.byId(elem_id));
         }
 
         function getEnclosingTR(fieldname) {
