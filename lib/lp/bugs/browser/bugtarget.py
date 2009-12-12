@@ -360,13 +360,6 @@ class FileBugViewBase(LaunchpadFormView):
             if 'field.actions' in key] != [] or
             self.user.inTeam(bug_supervisor))
 
-    @property
-    def use_asynchronous_dupefinder(self):
-        """Return True if the asynchronous dupe finder can be used."""
-        return (
-            IProduct.providedBy(self.context) or
-            IProject.providedBy(self.context))
-
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
         if self.widget_errors.get("packagename"):

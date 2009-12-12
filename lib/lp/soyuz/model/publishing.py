@@ -18,6 +18,7 @@ __all__ = [
     ]
 
 
+import apt_pkg
 from datetime import datetime
 import operator
 import os
@@ -45,7 +46,6 @@ from lp.soyuz.model.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
 from canonical.launchpad.database.librarian import (
     LibraryFileAlias, LibraryFileContent)
-from canonical.launchpad.helpers import getFileType
 from lp.soyuz.model.packagediff import PackageDiff
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.component import IComponentSet
@@ -64,7 +64,6 @@ from canonical.launchpad.components.decoratedresultset import (
 from canonical.launchpad.webapp.interfaces import (
         IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
 
@@ -514,6 +513,19 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         if self.sourcepackagerelease.dscsigningkey is not None:
             return self.sourcepackagerelease.dscsigningkey.owner
         return None
+
+    @property
+    def newer_distroseries_version(self):
+        """See `ISourcePackagePublishingHistory`."""
+        latest_releases = self.distroseries.getCurrentSourceReleases(
+            [self.sourcepackagerelease.sourcepackagename])
+        latest_release = latest_releases.get(self.meta_sourcepackage, None)
+
+        if latest_release is not None and apt_pkg.VersionCompare(
+            latest_release.version, self.source_package_version) > 0:
+            return latest_release
+        else:
+            return None
 
     def getPublishedBinaries(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1464,14 +1476,6 @@ class PublishingSet:
 
     def getFilesForSources(self, one_or_more_source_publications):
         """See `IPublishingSet`."""
-        # Import Build and BinaryPackageRelease locally to avoid circular
-        # imports, since that Build already imports
-        # SourcePackagePublishingHistory and BinaryPackageRelease imports
-        # Build.
-        from lp.soyuz.model.binarypackagerelease import (
-            BinaryPackageRelease)
-        from lp.soyuz.model.build import Build
-
         source_publication_ids = self._extractIDs(
             one_or_more_source_publications)
 
@@ -1496,12 +1500,9 @@ class PublishingSet:
     def getBinaryPublicationsForSources(
         self, one_or_more_source_publications):
         """See `IPublishingSet`."""
-        # Import Build, BinaryPackageRelease and DistroArchSeries locally
-        # to avoid circular imports, since Build uses
-        # SourcePackagePublishingHistory, BinaryPackageRelease uses Build
-        # and DistroArchSeries uses BinaryPackagePublishingHistory.
-        from lp.soyuz.model.binarypackagerelease import (
-            BinaryPackageRelease)
+        # Import Buildand DistroArchSeries locally to avoid circular imports,
+        # since Build uses SourcePackagePublishingHistory and DistroArchSeries
+        # uses BinaryPackagePublishingHistory.
         from lp.soyuz.model.distroarchseries import (
             DistroArchSeries)
 
