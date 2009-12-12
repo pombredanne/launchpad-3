@@ -285,7 +285,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
     def more_templates_by_source(self):
         by_source_count = self.context.relatives_by_source.count()
         if (by_source_count > self.SHOW_RELATED_TEMPLATES):
-            other = by_source_count - self.SHOW_RELATED_TEMPLATES;
+            other = by_source_count - self.SHOW_RELATED_TEMPLATES
             if other == 1:
                 return "one other template"
             else:
@@ -445,7 +445,7 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                         warning = (
                             "A file could not be uploaded because its "
                             "name matched multiple existing uploads, for "
-                            "different templates." )
+                            "different templates.")
                         ul_conflicts = (
                             "The conflicting file name was:<br /> "
                             "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
@@ -489,8 +489,11 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
 
 
 class POTemplateViewPreferred(POTemplateView):
+    """View class that shows only users preferred templates."""
+
     def pofiles(self):
         return POTemplateView.pofiles(self, preferred_only=True)
+
 
 class POTemplateEditView(LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
@@ -555,7 +558,7 @@ class POTemplateExportView(BaseExportView):
         if what == 'all':
             export_potemplate = True
 
-            pofiles =  self.context.pofiles
+            pofiles = self.context.pofiles
         elif what == 'some':
             pofiles = []
             export_potemplate = 'potemplate' in self.request.form
@@ -587,6 +590,7 @@ class POTemplateExportView(BaseExportView):
         """Return a list of PO files available for export."""
 
         class BrowserPOFile:
+
             def __init__(self, value, browsername):
                 self.value = value
                 self.browsername = browsername
@@ -706,6 +710,7 @@ class POTemplateSubsetNavigation(Navigation):
 
 class POTemplateBreadcrumb(Breadcrumb):
     """Breadcrumb for `IPOTemplate`."""
+
     @property
     def text(self):
         return smartquote('Template "%s"' % self.context.name)
