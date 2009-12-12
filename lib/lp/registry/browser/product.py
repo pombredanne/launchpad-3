@@ -778,7 +778,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
-            self.user == self.context.owner)
+            check_permission('launchpad.Edit', self.context))
 
     @property
     def show_license_status(self):
