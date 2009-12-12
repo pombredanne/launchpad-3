@@ -110,20 +110,22 @@
         </div>
       </div>
     </div>
+
+    <div id="possible-duplicates" style="text-align: left;">
+    </div>
+    <div id="filebug-form-container" style="display: none;">
+    </div>
+
+    <p style="display: none" tal:condition="view/use_asynchronous_dupefinder">
+      <a id="filebug-base-url"
+          tal:attributes="href view/inline_filebug_base_url"></a>
+      <a id="filebug-form-url"
+          tal:attributes="href view/inline_filebug_form_url"></a>
+      <a id="duplicate-search-url"
+          tal:attributes="href view/duplicate_search_url"></a>
+    </p>
     </tal:uses-malone>
   </div>
-
-  <div id="possible-duplicates" style="text-align: left;">
-  </div>
-  <div id="filebug-form-container" style="display: none;">
-  </div>
-
-  <p style="display: none" tal:condition="view/use_asynchronous_dupefinder">
-    <a id="filebug-form-url"
-        tal:attributes="href view/inline_filebug_form_url"></a>
-    <a id="duplicate-search-url"
-        tal:attributes="href view/duplicate_search_url"></a>
-  </p>
 
   </div>
 
