@@ -40,13 +40,14 @@ from lp.registry.interfaces.distroseries import (
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchBag, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, GetitemNavigation, action, custom_widget)
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.launchpadform import (
@@ -298,22 +299,11 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
         return '%s %s in Launchpad' % (
         self.context.distribution.title, self.context.version)
 
-    @cachedproperty
-    def cached_packagings(self):
-        # +packaging hits this many times, so avoid redoing the query
-        # multiple times, in particular because it's gnarly.
-        return list(self.context.packagings)
-
     def requestCountry(self):
         return ICountry(self.request, None)
 
     def browserLanguages(self):
         return helpers.browserLanguages(self.request)
-
-    @cachedproperty
-    def unlinked_translatables(self):
-        """Return the sourcepackages that lack a link to a productseries."""
-        return self.context.getUnlinkedTranslatableSourcePackages()
 
     def redirectToDistroFileBug(self):
         """Redirect to the distribution's filebug page.
@@ -472,3 +462,27 @@ class DistroSeriesPackagesView(DistroSeriesView):
     """A View to show series package to upstream package relationships."""
 
     label = 'Mapping series packages to upstream project series'
+    page_title = 'Upstream packaging links'
+
+    @cachedproperty
+    def unlinked_translatables(self):
+        """The sourcepackages that lack a link to a productseries."""
+        packages = self.context.getUnlinkedTranslatableSourcePackages()
+        if self.context.distribution.full_functionality:
+            # Launchpad knows exactly what is published in the series.
+            packages = [package for package in packages
+                        if package.currentrelease is not None]
+        return packages
+
+    @cachedproperty
+    def show_unlinked_translatables(self):
+        """Are there unlinked translatables and should they be shown."""
+        return (
+            len(self.unlinked_translatables) > 0
+            and self.cached_packagings.start == 0)
+
+    @cachedproperty
+    def cached_packagings(self):
+        """The batched upstream packaging links."""
+        packagings = self.context.packagings
+        return BatchNavigator(packagings, self.request, size=200)

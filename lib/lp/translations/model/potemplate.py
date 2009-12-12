@@ -734,8 +734,7 @@ class POTemplate(SQLBase, RosettaStats):
             template._cached_pofiles_by_language[language_code,
                                                  variant] = pofile
 
-    def newPOFile(self, language_code, variant=None, requester=None,
-                  create_sharing=True):
+    def newPOFile(self, language_code, variant=None, create_sharing=True):
         """See `IPOTemplate`."""
         # Make sure we don't already have a PO file for this language.
         existingpo = self.getPOFileByLang(language_code, variant)
@@ -763,13 +762,8 @@ class POTemplate(SQLBase, RosettaStats):
         else:
             data['origin'] = self.sourcepackagename.name
 
-        # The default POFile owner is the Rosetta Experts team unless the
-        # requester has rights to write into that file.
-        dummy_pofile = self.getDummyPOFile(language.code, variant)
-        if dummy_pofile.canEditTranslations(requester):
-            owner = requester
-        else:
-            owner = getUtility(ILaunchpadCelebrities).rosetta_experts
+        # The default POFile owner is the Rosetta Experts team.
+        owner = getUtility(ILaunchpadCelebrities).rosetta_experts
 
         path = self._composePOFilePath(language, variant)
 
@@ -1117,8 +1111,8 @@ class POTemplateSubset:
             if shared_template is template:
                 continue
             for pofile in shared_template.pofiles:
-                template.newPOFile(pofile.language.code,
-                                   pofile.variant, pofile.owner, False)
+                template.newPOFile(
+                    pofile.language.code, pofile.variant, False)
             # Do not continue, else it would trigger an existingpo assertion.
             return
 

@@ -52,6 +52,7 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces._schema_circular_imports import IBug
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, IBugTask, IFrontPageBugTaskSearch)
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -233,7 +234,7 @@ class BugContextMenu(ContextMenu):
 
     def addcomment(self):
         """Return the 'Comment or attach file' Link."""
-        text = 'Add an attachment'
+        text = 'Add attachment or patch'
         return Link('+addcomment', text, icon='add')
 
     def addbranch(self):
@@ -451,8 +452,7 @@ class BugViewMixin:
     def current_user_subscription_class(self):
         bug = self.context
 
-        if (bug.personIsSubscribedToDuplicate(self.user) or
-            bug.personIsAlsoNotifiedSubscriber(self.user)):
+        if bug.personIsSubscribedToDuplicate(self.user):
             dup_class = 'dup-subscribed-true'
         else:
             dup_class = 'dup-subscribed-false'
@@ -461,6 +461,20 @@ class BugViewMixin:
             return 'subscribed-true %s' % dup_class
         else:
             return 'subscribed-false %s' % dup_class
+
+    @property
+    def regular_attachments(self):
+        """The list of bug attachments that are not patches."""
+        return [attachment
+                for attachment in self.context.attachments
+                if attachment.type != BugAttachmentType.PATCH]
+
+    @property
+    def patches(self):
+        """The list of bug attachments that are patches."""
+        return [attachment
+                for attachment in self.context.attachments
+                if attachment.type == BugAttachmentType.PATCH]
 
 
 class BugView(LaunchpadView, BugViewMixin):

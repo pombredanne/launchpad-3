@@ -13,7 +13,7 @@
         user_is_official_translator context/user_is_official_translator;
         ">
       <metal:suggestion
-         use-macro="context/@@+translationmessage-macros/render-suggestion" />
+         use-macro="context/@@+translations-macros/render-suggestion" />
     </tal:variables>
   </tal:submission>
 </tal:block>

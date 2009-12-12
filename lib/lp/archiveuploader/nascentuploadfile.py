@@ -33,8 +33,9 @@ from zope.component import getUtility
 from lp.archiveuploader.utils import (
     prefix_multi_line_string, re_taint_free, re_isadeb, re_issource,
     re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
-    re_extract_src_version)
+    re_extract_src_version, determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
+from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
 from lp.soyuz.interfaces.binarypackagerelease import (
@@ -351,7 +352,8 @@ class SourceUploadFile(PackageUploadFile):
                 "Architecture field." % (self.filename))
 
         version_chopped = re_no_epoch.sub('', self.version)
-        if self.filename.endswith("orig.tar.gz"):
+        if determine_source_file_type(self.filename) == (
+            SourcePackageFileType.ORIG_TARBALL):
             version_chopped = re_no_revision.sub('', version_chopped)
 
         source_match = re_issource.match(self.filename)
@@ -688,7 +690,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                             tar_checker.ancient_files[first_file])
                         yield UploadError(
                             "%s: has %s file(s) with a time stamp too "
-                            "far into the future (e.g. %s [%s])."
+                            "far in the past (e.g. %s [%s])."
                              % (self.filename, len(ancient_files), first_file,
                                 timestamp))
                     return
