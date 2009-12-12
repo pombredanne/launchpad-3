@@ -694,6 +694,19 @@ form.translations div.alignment .secondary label {
     padding: 2px 1em 2px 2px;
 }
 
+/* Templates listing.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+templates
+ *   https://translations.launchpad.dev/evolution/trunk/+templates
+ */
+
+.inactive-template td {
+    background-color: #fee;
+    color: #855;
+}
+
+
 /* Translations statistics and legend.
  *
  * Examples:
