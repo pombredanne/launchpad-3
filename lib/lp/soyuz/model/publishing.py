@@ -386,7 +386,6 @@ class ArchivePublisherBase:
         current.datesuperseded = UTC_NOW
         current.removed_by = removed_by
         current.removal_comment = removal_comment
-        return current
 
     def requestObsolescence(self):
         """See `IArchivePublisher`."""

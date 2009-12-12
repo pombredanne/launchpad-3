@@ -39,9 +39,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_returns_collection_of)
-
+    export_as_webservice_entry, export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_collection_of)
 
 #
 # Exceptions
@@ -283,15 +282,15 @@ class IPublishing(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
+    @operation_parameters(
+        removed_by=Reference(schema=IPerson, title=_("Removed by")),
+        removal_comment=TextLine(title=_("Removal comment"), required=False))
+    @export_write_operation()
     def requestDeletion(removed_by, removal_comment=None):
         """Delete this publication.
 
         :param removed_by: `IPerson` responsible for the removal.
         :param removal_comment: optional text describing the removal reason.
-
-        :return: The deleted publishing record, either:
-            `ISourcePackagePublishingHistory` or
-            `IBinaryPackagePublishingHistory`.
         """
 
     def requestObsolescence():

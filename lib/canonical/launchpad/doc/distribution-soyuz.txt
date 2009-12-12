@@ -370,7 +370,8 @@ state:
 We can also make Celso's PPA pending publication by deleting a published
 source.
 
-    >>> src_pub = cprov_src.requestDeletion(cprov, 'go away !')
+    >>> cprov_src.requestDeletion(cprov, 'go away !')
+    >>> src_pub = cprov_src.secure_record
     >>> syncUpdate(src_pub)
 
     >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()
@@ -414,7 +415,8 @@ publication results:
 
 A binary deletion will also make Celso's PPA pending publication.
 
-    >>> bin_pub = cprov_bin.requestDeletion(cprov, 'go away !')
+    >>> cprov_bin.requestDeletion(cprov, 'go away !')
+    >>> bin_pub = cprov_bin.secure_record
     >>> syncUpdate(bin_pub)
 
     >>> [pending_ppa] = ubuntu.getPendingPublicationPPAs()

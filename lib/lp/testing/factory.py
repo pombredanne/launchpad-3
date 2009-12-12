@@ -76,6 +76,7 @@ from lp.blueprints.interfaces.specification import (
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translator import ITranslatorSet
+from lp.translations.interfaces.translationsperson import ITranslationsPerson 
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -502,13 +503,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, url, owner)
 
-    def makeTranslator(self, language_code, group=None, person=None):
+    def makeTranslator(
+        self, language_code, group=None, person=None, license=True):
         """Create a new, arbitrary `Translator`."""
         language = getUtility(ILanguageSet).getLanguageByCode(language_code)
         if group is None:
             group = self.makeTranslationGroup()
         if person is None:
             person = self.makePerson()
+        ITranslationsPerson(person).translations_relicensing_agreement = license
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(
