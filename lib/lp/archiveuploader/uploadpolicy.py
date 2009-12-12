@@ -373,6 +373,10 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
         """Nothing, let it go."""
         pass
 
+    def rejectPPAUploads(self, upload):
+        """We allow PPA uploads."""
+        return False
+
 AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
 
 
