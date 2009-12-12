@@ -1319,7 +1319,11 @@ class Bug(SQLBase):
         :param user: An `IPerson` that may be affected by the bug.
         :return: An `IBugAffectsPerson` or None.
         """
-        return Store.of(self).get(BugAffectsPerson, (self.id, user.id))
+        if user is None:
+            return None
+        else:
+            return Store.of(self).get(
+                BugAffectsPerson, (self.id, user.id))
 
     def isUserAffected(self, user):
         """See `IBug`."""
