@@ -120,7 +120,7 @@ class BaseSeriesLanguageView(LaunchpadView):
             permission = sample_pofile.translationpermission
             if permission == TranslationPermission.CLOSED:
                 return ("These templates can be translated only by "
-                        "its managers.")
+                        "their managers.")
 
         if self.translation_team is None:
             return ("Since there is nobody to manage translation "
