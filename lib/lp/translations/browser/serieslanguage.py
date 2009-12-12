@@ -75,6 +75,8 @@ class BaseSeriesLanguageView(LaunchpadView):
 
     @property
     def access_level_description(self):
+        """Must not be called when there's no translation group."""
+        
         if self.user is None:
             return ("You are not logged in. Please log in to work "
                     "on translations.")
@@ -88,18 +90,13 @@ class BaseSeriesLanguageView(LaunchpadView):
         elif self.translation_group:
             translations_contact_link = PersonFormatterAPI(
                 self.translation_group.owner).link(None)
-
-        if translations_contact_link is None:
-            #Having no translation group is a valid case, but the
-            #template should not call access_level_description for
-            #this condition.
-            #We return a blank screen since the information about
-            #missing group is displaying in a different section
-            return ""
+        else:
+            assert self.translation_group is not None, (
+                "Must not be called when there's no translation group.")
 
         if not translations_person.translations_relicensing_agreement:
             translation_license_url = PersonFormatterAPI(
-                translations_person).url(
+                self.user).url(
                     view_name='+licensing',
                     rootsite='translations')
             return ("To make translations in Launchpad you need to "
