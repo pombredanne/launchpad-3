@@ -26,6 +26,7 @@ from zope.component import getUtility
 from zope.interface import Interface, Attribute
 from zope.schema import (
     Bool, Bytes, Choice, Datetime, Int, List, Object, Text, TextLine)
+from zope.schema.vocabulary import SimpleVocabulary
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad import _
@@ -745,6 +746,7 @@ class UserCannotUnsubscribePerson(Unauthorized):
 IBugAttachment['bug'].schema = IBug
 IBugWatch['bug'].schema = IBug
 IMessage['bugs'].value_type.schema = IBug
+ICve['bugs'].value_type.schema = IBug
 
 # In order to avoid circular dependencies, we only import
 # IBugSubscription (which itself imports IBug) here, and assign it as
@@ -786,6 +788,11 @@ class IBugDelta(Interface):
         "A list or tuple of IBugTasks, one IBugTask, or None.")
     bugtask_deltas = Attribute(
         "A sequence of IBugTaskDeltas, one IBugTaskDelta or None.")
+
+
+# A simple vocabulary for the subscribe_to_existing_bug form field.
+SUBSCRIBE_TO_BUG_VOCABULARY = SimpleVocabulary.fromItems(
+    [('yes', True), ('no', False)])
 
 
 class IBugAddForm(IBug):
@@ -841,8 +848,9 @@ class IBugAddForm(IBug):
     assignee = PublicPersonChoice(
         title=_('Assign to'), required=False,
         vocabulary='ValidAssignee')
-    subscribe_to_existing_bug = Bool(
-        title=_(u'Subscribe to this bug'),
+    subscribe_to_existing_bug = Choice(
+        title=u'Subscribe to this bug',
+        vocabulary=SUBSCRIBE_TO_BUG_VOCABULARY,
         required=True, default=False)
 
 
@@ -935,6 +943,31 @@ class IBugSet(Interface):
         :param user: The Person getting the list of Bugs. Only Bugs
             visible to :user: will be returned.
         :param limit: The number of distinct Bugs to return.
+        """
+
+    def getByNumbers(bug_numbers):
+        """Get `IBug` instances identified by the `bug_numbers` iterable.
+
+        :param bug_numbers: An iterable of bug numbers for which we should
+            return Bugs.
+        """
+
+    def personIsDirectSubscriber(person):
+        """Return True if the person is a direct subscriber to this `IBug`.
+
+        Otherwise, return False.
+        """
+
+    def personIsAlsoNotifiedSubscriber(person):
+        """Return True if the person is an indirect subscriber to this `IBug`.
+
+        Otherwise, return False.
+        """
+
+    def personIsSubscribedToDuplicate(person):
+        """Return True if the person subscribed to a duplicate of this `IBug`.
+
+        Otherwise, return False.
         """
 
 

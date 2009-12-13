@@ -9,6 +9,7 @@ __all__ = [
     'BranchAddView',
     'BranchContextMenu',
     'BranchDeletionView',
+    'BranchEditStatusView',
     'BranchEditView',
     'BranchEditWhiteboardView',
     'BranchRequestImportView',
@@ -71,14 +72,18 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.lazr.utils import smartquote
 from canonical.widgets.branch import TargetBranchWidget
 from canonical.widgets.itemswidgets import LaunchpadRadioWidgetWithDescription
+from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 
 from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
-from lp.code.enums import BranchType, UICreatableBranchType
+from lp.code.browser.branchmergeproposal import (
+    latest_proposals_for_each_branch)
+from lp.code.enums import (
+    BranchLifecycleStatus, BranchType, UICreatableBranchType)
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch)
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, InvalidBranchMergeProposal)
+    BranchCreationForbidden, BranchExists, IBranch,
+    user_has_special_branch_access)
+from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import CodeImportReviewStatus
 from lp.code.interfaces.codeimportjob import (
@@ -174,6 +179,7 @@ class BranchNavigation(Navigation):
             if proposal.id == id:
                 return proposal
 
+
 class BranchEditMenu(NavigationMenu):
     """Edit menu for IBranch."""
 
@@ -203,10 +209,11 @@ class BranchEditMenu(NavigationMenu):
         return Link(
             '+whiteboard', text, icon='edit', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Edit')
     def edit_import(self):
         text = 'Edit import source or review import'
-        enabled = self.branch_is_import()
+        enabled = (
+            self.branch_is_import() and
+            check_permission('launchpad.Edit', self.context.code_import))
         return Link(
             '+edit-import', text, icon='edit', enabled=enabled)
 
@@ -222,8 +229,14 @@ class BranchContextMenu(ContextMenu):
     usedfor = IBranch
     facet = 'branches'
     links = [
-        'associations', 'add_subscriber', 'browse_revisions', 'link_bug',
-        'link_blueprint', 'register_merge', 'source', 'subscription']
+        'add_subscriber', 'browse_revisions', 'link_bug',
+        'link_blueprint', 'register_merge', 'source', 'subscription',
+        'edit_status']
+
+    @enabled_with_permission('launchpad.Edit')
+    def edit_status(self):
+        text = 'Change branch status'
+        return Link('+edit-status', text, icon='edit')
 
     def browse_revisions(self):
         """Return a link to the branch's revisions on codebrowse."""
@@ -248,10 +261,6 @@ class BranchContextMenu(ContextMenu):
     def add_subscriber(self):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
-
-    def associations(self):
-        text = 'View branch associations'
-        return Link('+associations', text)
 
     @enabled_with_permission('launchpad.AnyPerson')
     def register_merge(self):
@@ -305,6 +314,7 @@ class DecoratedBug:
         """
         return self.branch.target.getBugTask(self.context)
 
+
 class BranchView(LaunchpadView, FeedsMixin):
 
     __used_for__ = IBranch
@@ -343,7 +353,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
-        return self.context.revisions_since(timestamp).count()
+        return self.context.getRevisionsSince(timestamp).count()
 
     def owner_is_registrant(self):
         """Is the branch owner the registrant?"""
@@ -418,20 +428,8 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     @cachedproperty
     def landing_targets(self):
-        """Return a decorated filtered list of landing targets."""
-        targets = []
-        targets_added = set()
-        for proposal in self.context.landing_targets:
-            # Don't show the proposal if the user can't see it.
-            if not check_permission('launchpad.View', proposal):
-                continue
-            # Only show the must recent proposal for any given target.
-            target_id = proposal.target_branch.id
-            if target_id in targets_added:
-                continue
-            targets.append(DecoratedMergeProposal(proposal))
-            targets_added.add(target_id)
-        return targets
+        """Return a filtered list of landing targets."""
+        return latest_proposals_for_each_branch(self.context.landing_targets)
 
     @property
     def latest_landing_candidates(self):
@@ -443,7 +441,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
-        return [DecoratedMergeProposal(proposal) for proposal in candidates
+        return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 
     @property
@@ -557,18 +555,18 @@ class BranchView(LaunchpadView, FeedsMixin):
         # Actually only ProductSeries currently do that.
         return list(self.context.getProductSeriesPushingTranslations())
 
-
-class DecoratedMergeProposal:
-    """Provide some additional attributes to a normal branch merge proposal.
-    """
-    delegates(IBranchMergeProposal)
-
-    def __init__(self, context):
-        self.context = context
-
-    def show_registrant(self):
-        """Show the registrant if it was not the branch owner."""
-        return self.context.registrant != self.source_branch.owner
+    @property
+    def status_config(self):
+        """The config to configure the ChoiceSource JS widget."""
+        return simplejson.dumps({
+            'status_widget_items': vocabulary_to_choice_edit_items(
+                BranchLifecycleStatus,
+                css_class_prefix='branchstatus'),
+            'status_value': self.context.lifecycle_status.title,
+            'user_can_edit_status': check_permission(
+                'launchpad.Edit', self.context),
+            'branch_path': '/' + self.context.unique_name,
+            })
 
 
 class BranchInProductView(BranchView):
@@ -654,7 +652,7 @@ class BranchEditFormView(LaunchpadEditFormView):
             private = data.pop('private')
             if private != self.context.private:
                 # We only want to show notifications if it actually changed.
-                self.context.setPrivate(private)
+                self.context.setPrivate(private, self.user)
                 changed = True
                 if private:
                     self.request.response.addNotification(
@@ -698,6 +696,12 @@ class BranchEditWhiteboardView(BranchEditFormView):
     """A view for editing the whiteboard only."""
 
     field_names = ['whiteboard']
+
+
+class BranchEditStatusView(BranchEditFormView):
+    """A view for editing the lifecycle status only."""
+
+    field_names = ['lifecycle_status']
 
 
 class BranchMirrorStatusView(LaunchpadFormView):
@@ -889,8 +893,11 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             show_private_field = policy.canBranchesBePublic()
         else:
             # If the branch is public, and can be made private, show the
-            # field.
-            show_private_field = policy.canBranchesBePrivate()
+            # field.  Users with special access rights to branches can set
+            # public branches as private.
+            show_private_field = (
+                policy.canBranchesBePrivate() or
+                user_has_special_branch_access(self.user))
 
         if not show_private_field:
             self.form_fields = self.form_fields.omit('private')
@@ -1125,6 +1132,13 @@ class RegisterProposalSchema(Interface):
         description=_(
             "The branch that the source branch will be merged into."))
 
+    prerequisite_branch = Choice(
+        title=_('Prerequisite Branch'),
+        vocabulary='Branch', required=False, readonly=False,
+        description=_(
+            'A branch that should be merged before this one.  (Its changes'
+            ' will not be shown in the diff.)'))
+
     comment = Text(
         title=_('Initial Comment'), required=False,
         description=_('Describe your change.'))
@@ -1132,7 +1146,10 @@ class RegisterProposalSchema(Interface):
     reviewer = copy_field(
         ICodeReviewVoteReference['reviewer'], required=False)
 
-    review_type = copy_field(ICodeReviewVoteReference['review_type'])
+    review_type = copy_field(
+        ICodeReviewVoteReference['review_type'],
+        description=u'Lowercase keywords describing the type of review you '
+                     'would like to be performed.')
 
 
 class RegisterBranchMergeProposalView(LaunchpadFormView):
@@ -1175,6 +1192,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         registrant = self.user
         source_branch = self.context
         target_branch = data['target_branch']
+        prerequisite_branch = data.get('prerequisite_branch')
 
         review_requests = []
         reviewer = data.get('reviewer')
@@ -1186,7 +1204,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             # and an advanced expandable section.
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                needs_review=True, initial_comment=data.get('comment'),
+                prerequisite_branch=prerequisite_branch, needs_review=True,
+                initial_comment=data.get('comment'),
                 review_requests=review_requests)
 
             self.next_url = canonical_url(proposal)

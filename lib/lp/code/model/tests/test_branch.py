@@ -41,6 +41,7 @@ from lp.code.interfaces.branch import (
     BranchCannotBePrivate, BranchCannotBePublic,
     BranchCreatorNotMemberOfOwnerTeam, BranchCreatorNotOwner,
     BranchTargetError, CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING)
+from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchnamespace import IBranchNamespaceSet
 from lp.code.interfaces.branchmergeproposal import (
@@ -59,6 +60,7 @@ from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.code.model.codeimport import CodeImport, CodeImportSet
 from lp.code.model.codereviewcomment import CodeReviewComment
+from lp.code.tests.helpers import add_revision_to_branch
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.model.product import ProductSet
 from lp.registry.model.sourcepackage import SourcePackage
@@ -139,37 +141,6 @@ class TestBranchGetRevision(TestCaseWithFactory):
                           revision=rev1, revision_id=rev1.revision_id)
         self.assertRaises(AssertionError, self.branch.getBranchRevision,
                           sequence=1, revision_id=rev1.revision_id)
-
-
-class TestGetMainlineBranchRevisions(TestCaseWithFactory):
-
-    layer = DatabaseFunctionalLayer
-
-    def test_getMainlineBranchRevisions(self):
-        """Only gets the mainline revisions, ignoring the others."""
-        branch = self.factory.makeBranch()
-        self.factory.makeBranchRevision(branch, 'rev1', 1)
-        self.factory.makeBranchRevision(branch, 'rev2', 2)
-        self.factory.makeBranchRevision(branch, 'rev2b', None)
-        result_set = branch.getMainlineBranchRevisions(
-            ['rev1', 'rev2', 'rev3'])
-        revid_set = set(
-            branch_revision.revision.revision_id for
-            branch_revision in result_set)
-        self.assertEqual(set(['rev1', 'rev2']), revid_set)
-
-    def test_getMainlineBranchRevisionsWrongBranch(self):
-        """Only gets the revisions for this branch, ignoring the others."""
-        branch = self.factory.makeBranch()
-        other_branch = self.factory.makeBranch()
-        self.factory.makeBranchRevision(branch, 'rev1', 1)
-        self.factory.makeBranchRevision(other_branch, 'rev1b', 2)
-        result_set = branch.getMainlineBranchRevisions(
-            ['rev1', 'rev1b'])
-        revid_set = set(
-            branch_revision.revision.revision_id for
-            branch_revision in result_set)
-        self.assertEqual(set(['rev1']), revid_set)
 
 
 class TestBranch(TestCaseWithFactory):
@@ -395,6 +366,17 @@ class TestBranch(TestCaseWithFactory):
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         self.assertTrue(branch.needs_upgrading)
 
+    def test_requestUpgrade(self):
+        # A BranchUpgradeJob can be created by calling IBranch.requestUpgrade.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        job = removeSecurityProxy(branch.requestUpgrade())
+
+        jobs = list(getUtility(IBranchUpgradeJobSource).iterReady())
+        self.assertEqual(
+            jobs,
+            [job,])
+
 
 class TestBzrIdentity(TestCaseWithFactory):
     """Test IBranch.bzr_identity."""
@@ -541,13 +523,13 @@ class TestBranchDeletion(TestCaseWithFactory):
             CodeReviewNotificationLevel.NOEMAIL)
         self.assertEqual(True, self.branch.canBeDeleted())
 
-    def test_codeImportDisablesDeletion(self):
-        """A branch that has an attached code import can't be deleted."""
+    def test_codeImportCanStillBeDeleted(self):
+        """A branch that has an attached code import can be deleted."""
         code_import = LaunchpadObjectFactory().makeCodeImport()
         branch = code_import.branch
-        self.assertEqual(branch.canBeDeleted(), False,
-                         "A branch that has a import is not deletable.")
-        self.assertRaises(CannotDeleteBranch, branch.destroySelf)
+        self.assertEqual(
+            branch.canBeDeleted(), True,
+            "A branch that has a import is deletable.")
 
     def test_bugBranchLinkDisablesDeletion(self):
         """A branch linked to a bug cannot be deleted."""
@@ -869,9 +851,7 @@ class TestBranchDeletionConsequences(TestCase):
         code_import = self.factory.makeCodeImport()
         # Remove the implicit branch subscription first.
         code_import.branch.unsubscribe(code_import.branch.owner)
-        self.assertEqual({code_import:
-            ('delete', _('This is the import data for this branch.'))},
-             code_import.branch.deletionRequirements())
+        self.assertEqual({}, code_import.branch.deletionRequirements())
 
     def test_branchWithCodeImportDeletion(self):
         """break_links allows deleting a code import branch."""
@@ -1151,13 +1131,36 @@ class BranchAddLandingTarget(TestCaseWithFactory):
     def test_attributeAssignment(self):
         """Smoke test to make sure the assignments are there."""
         whiteboard = u"Some whiteboard"
+        commit_message = u'Some commit message'
         proposal = self.source.addLandingTarget(
-            self.user, self.target, self.prerequisite, whiteboard)
+            self.user, self.target, self.prerequisite, whiteboard,
+            commit_message=commit_message)
         self.assertEqual(proposal.registrant, self.user)
         self.assertEqual(proposal.source_branch, self.source)
         self.assertEqual(proposal.target_branch, self.target)
         self.assertEqual(proposal.prerequisite_branch, self.prerequisite)
         self.assertEqual(proposal.whiteboard, whiteboard)
+        self.assertEqual(proposal.commit_message, commit_message)
+
+    def test__createMergeProposal_with_reviewers(self):
+        person1 = self.factory.makePerson()
+        person2 = self.factory.makePerson()
+        e = self.assertRaises(ValueError,
+            self.source._createMergeProposal, self.user, self.target,
+            reviewers=[person1, person2])
+        self.assertEqual(
+            'reviewers and review_types must be equal length.', str(e))
+        e = self.assertRaises(ValueError,
+            self.source._createMergeProposal, self.user, self.target,
+            reviewers=[person1, person2], review_types=['review1'])
+        self.assertEqual(
+            'reviewers and review_types must be equal length.', str(e))
+        bmp = self.source._createMergeProposal(
+            self.user, self.target, reviewers=[person1, person2],
+            review_types=['review1', 'review2'])
+        votes = set((vote.reviewer, vote.review_type) for vote in bmp.votes)
+        self.assertEqual(
+            set([(person1, 'review1'), (person2, 'review2')]), votes)
 
 
 class BranchDateLastModified(TestCaseWithFactory):
@@ -1333,6 +1336,13 @@ class TestCodebrowseURL(TestCaseWithFactory):
             'http://bazaar.launchpad.dev/' + branch.unique_name + '/a/b',
             branch.codebrowse_url('a', 'b'))
 
+    def test_source_code_url(self):
+        # The source code URL points to the codebrowse URL where you can
+        # actually browse the source code.
+        branch = self.factory.makeAnyBranch()
+        self.assertEqual(
+            branch.browse_source_url, branch.codebrowse_url('files'))
+
 
 class TestBranchNamespace(TestCaseWithFactory):
     """Tests for `IBranch.namespace`."""
@@ -1472,7 +1482,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         # Setting a public branch to be public is a no-op.
         branch = self.factory.makeProductBranch()
         self.assertFalse(branch.private)
-        branch.setPrivate(False)
+        branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
 
     def test_public_to_private_allowed(self):
@@ -1481,7 +1491,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         branch = self.factory.makeProductBranch()
         branch.product.setBranchVisibilityTeamPolicy(
             branch.owner, BranchVisibilityRule.PRIVATE)
-        branch.setPrivate(True)
+        branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
 
     def test_public_to_private_not_allowed(self):
@@ -1491,20 +1501,29 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertRaises(
             BranchCannotBePrivate,
             branch.setPrivate,
-            True)
+            True, branch.owner)
+
+    def test_public_to_private_for_admins(self):
+        # Admins can override the default behaviour and make any public branch
+        # private.
+        branch = self.factory.makeProductBranch()
+        # Grab a random admin, the teamowner is good enough here.
+        admins = getUtility(ILaunchpadCelebrities).admin
+        branch.setPrivate(True, admins.teamowner)
+        self.assertTrue(branch.private)
 
     def test_private_to_private(self):
         # Setting a private branch to be private is a no-op.
         branch = self.factory.makeProductBranch(private=True)
         self.assertTrue(branch.private)
-        branch.setPrivate(True)
+        branch.setPrivate(True, branch.owner)
         self.assertTrue(branch.private)
 
     def test_private_to_public_allowed(self):
         # If the namespace policy allows public branches, then changing from
         # private to public is allowed.
         branch = self.factory.makeProductBranch(private=True)
-        branch.setPrivate(False)
+        branch.setPrivate(False, branch.owner)
         self.assertFalse(branch.private)
 
     def test_private_to_public_not_allowed(self):
@@ -1518,7 +1537,7 @@ class TestBranchSetPrivate(TestCaseWithFactory):
         self.assertRaises(
             BranchCannotBePublic,
             branch.setPrivate,
-            False)
+            False, branch.owner)
 
 
 class TestBranchCommitsForDays(TestCaseWithFactory):
@@ -1896,6 +1915,75 @@ class TestScheduleDiffUpdates(TestCaseWithFactory):
                 removeSecurityProxy(bmp).deleteProposal()
         jobs = source_branch.scheduleDiffUpdates()
         self.assertEqual(0, len(jobs))
+
+
+class TestBranchGetMainlineBranchRevisions(TestCaseWithFactory):
+    """Tests for Branch.getMainlineBranchRevisions."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_start_date(self):
+        # Revisions created before the start date are not returned.
+        branch = self.factory.makeAnyBranch()
+        epoch = datetime(2009, 9, 10, tzinfo=UTC)
+        old = add_revision_to_branch(
+            self.factory, branch, epoch - timedelta(days=1))
+        new = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=1))
+        result = branch.getMainlineBranchRevisions(epoch)
+        branch_revisions = [br for br, rev, ra in result]
+        self.assertEqual([new], branch_revisions)
+
+    def test_end_date(self):
+        # Revisions created after the end date are not returned.
+        branch = self.factory.makeAnyBranch()
+        epoch = datetime(2009, 9, 10, tzinfo=UTC)
+        end_date = epoch + timedelta(days=2)
+        in_range = add_revision_to_branch(
+            self.factory, branch, end_date - timedelta(days=1))
+        too_new = add_revision_to_branch(
+            self.factory, branch, end_date + timedelta(days=1))
+        result = branch.getMainlineBranchRevisions(epoch, end_date)
+        branch_revisions = [br for br, rev, ra in result]
+        self.assertEqual([in_range], branch_revisions)
+
+    def test_newest_first(self):
+        # If oldest_first is False, the newest are returned first.
+        branch = self.factory.makeAnyBranch()
+        epoch = datetime(2009, 9, 10, tzinfo=UTC)
+        old = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=1))
+        new = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=2))
+        result = branch.getMainlineBranchRevisions(epoch, oldest_first=False)
+        branch_revisions = [br for br, rev, ra in result]
+        self.assertEqual([new, old], branch_revisions)
+
+    def test_oldest_first(self):
+        # If oldest_first is True, the oldest are returned first.
+        branch = self.factory.makeAnyBranch()
+        epoch = datetime(2009, 9, 10, tzinfo=UTC)
+        old = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=1))
+        new = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=2))
+        result = branch.getMainlineBranchRevisions(epoch, oldest_first=True)
+        branch_revisions = [br for br, rev, ra in result]
+        self.assertEqual([old, new], branch_revisions)
+
+    def test_only_mainline_revisions(self):
+        # Only mainline revisions are returned.
+        branch = self.factory.makeAnyBranch()
+        epoch = datetime(2009, 9, 10, tzinfo=UTC)
+        old = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=1))
+        merged = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=2), mainline=False)
+        new = add_revision_to_branch(
+            self.factory, branch, epoch + timedelta(days=3))
+        result = branch.getMainlineBranchRevisions(epoch)
+        branch_revisions = [br for br, rev, ra in result]
+        self.assertEqual([new, old], branch_revisions)
 
 
 def test_suite():

@@ -1,20 +1,91 @@
 == Setting Upstream Bug Supervisor ==
 
 Setting the bug supervisor for an upstream requires launchpad.Edit
-permission on the product.
+permission on the product. But regular users can only appoint
+themselves as bug supervisors and teams they administer.
 
-    >>> browser.addHeader("Authorization", "Basic mark@example.com:test")
+    >>> sample_browser = setupBrowser()
+    >>> sample_browser.addHeader("Authorization",
+    ...                          "Basic test@canonical.com:test")
 
-    >>> browser.open("http://localhost:9000/firefox/+bugsupervisor")
-    >>> browser.getControl(name="field.bug_supervisor").value = (
-    ...     "robertc@robertcollins.net")
-    >>> browser.getControl("Change").click()
+    >>> sample_browser.open("http://localhost:9000/firefox/+bugsupervisor")
+    >>> sample_browser.getControl(name="field.bug_supervisor").value = (
+    ...                           "test@canonical.com")
+    >>> sample_browser.getControl("Change").click()
+
+He is now redircted to the main product page, and he sees a confirmation
+message.
+
+    >>> print sample_browser.url
+    http://localhost:9000/firefox
+    >>> print extract_text(sample_browser.contents)
+    Mozilla Firefox in Launchpad
+    ...
+    Successfully changed the bug supervisor to Sample Person.
+    ...
 
 Another example, this time with a team that has no "preferred email" set.
 
-    >>> browser.open("http://localhost:9000/firefox/+bugsupervisor")
-    >>> browser.getControl(name="field.bug_supervisor").value = "guadamen"
-    >>> browser.getControl("Change").click()
+    >>> sample_browser.open("http://localhost:9000/firefox/+bugsupervisor")
+    >>> sample_browser.getControl(name="field.bug_supervisor").value = (
+    ...     "landscape-developers")
+    >>> sample_browser.getControl("Change").click()
+    >>> print sample_browser.url
+    http://localhost:9000/firefox
+    >>> print extract_text(sample_browser.contents)
+    Mozilla Firefox in Launchpad
+    ...
+    Successfully changed the bug supervisor to Landscape Developers.
+    ...
+
+If Sample Person tries to appoint another person, he'll get an error message.
+
+    >>> sample_browser.open("http://localhost:9000/firefox/+bugsupervisor")
+    >>> sample_browser.getControl(name="field.bug_supervisor").value = (
+    ...                           "robertc@robertcollins.net")
+    >>> sample_browser.getControl("Change").click()
+    >>> print sample_browser.url
+    http://localhost:9000/firefox/+bugsupervisor
+    >>> print extract_text(sample_browser.contents)
+    Edit bug supervisor for Mozilla Firefox : Mozilla Firefox
+    ...
+    You cannot set another person as the bug supervisor for Mozilla Firefox.
+    See the help wiki for information about setting a bug supervisor.
+    The person or team responsible for bug management.
+    ...
+
+If he tries to appoint a team which he does not administer, he'll get
+too an an error message.
+
+    >>> sample_browser.getControl(name="field.bug_supervisor").value = (
+    ...                           "guadamen")
+    >>> sample_browser.getControl("Change").click()
+    >>> print sample_browser.url
+    http://localhost:9000/firefox/+bugsupervisor
+    >>> print extract_text(sample_browser.contents)
+    Edit bug supervisor for Mozilla Firefox : Mozilla Firefox
+    ...
+    You cannot set GuadaMen as the bug supervisor for Mozilla Firefox
+    because you are not an administrator of that team.
+    If you believe that GuadaMen should be the bug supervisor for Mozilla
+    Firefox, please notify one of the GuadaMen administrators.
+    ...
+
+Launchpad administrators can appoint anybody.
+
+    >>> admin_browser = setupBrowser()
+    >>> admin_browser.addHeader("Authorization",
+    ...                          "Basic foo.bar@canonical.com:test")
+
+    >>> admin_browser.open("http://localhost:9000/firefox/+bugsupervisor")
+    >>> admin_browser.getControl(name="field.bug_supervisor").value = (
+    ...                           "robertc@robertcollins.net")
+    >>> admin_browser.getControl("Change").click()
+    >>> print extract_text(admin_browser.contents)
+    Mozilla Firefox in Launchpad
+    ...
+    Successfully changed the bug supervisor to Robert Collins.
+    ...
 
 
 = Teams as Bug Supervisors =
@@ -22,9 +93,6 @@ Another example, this time with a team that has no "preferred email" set.
 First, some setup. We create a new product owned by "Sample Person", using a
 separate browser instance to avoid breaking the other page tests.
 
-    >>> sample_browser = setupBrowser()
-    >>> sample_browser.addHeader("Authorization",
-    ...                          "Basic test@canonical.com:test")
     >>> sample_browser.open('http://launchpad.dev/projects/+new')
     >>> sample_browser.getControl('URL').value = 'testy'
     >>> sample_browser.getControl('Name').value = 'Test Product'

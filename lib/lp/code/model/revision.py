@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 import email
 
 import pytz
-from storm.expr import And, Asc, Desc, Exists, Join, Not, Select
+from storm.expr import And, Asc, Desc, Exists, Join, Not, Or, Select
 from storm.locals import Bool, DateTime, Int, Min, Reference, Storm
 from storm.store import Store
 from zope.component import getUtility
@@ -26,7 +26,7 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.constants import DEFAULT
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
@@ -114,9 +114,15 @@ class Revision(SQLBase):
         if not allow_private:
             query = And(query, Not(Branch.private))
         if not allow_junk:
-            # XXX: Tim Penhey 2008-08-20, bug 244768
-            # Using Not(column == None) rather than column != None.
-            query = And(query, Not(Branch.product == None))
+            query = And(
+                query,
+                # Not-junk branches are either associated with a product
+                # or with a source package.
+                Or(
+                    (Branch.product != None),
+                    And(
+                        Branch.sourcepackagename != None, 
+                        Branch.distroseries != None)))
         result_set = store.find(Branch, query)
         if self.revision_author.person is None:
             result_set.order_by(Asc(BranchRevision.sequence))
@@ -212,16 +218,20 @@ class RevisionSet:
         return author
 
     def new(self, revision_id, log_body, revision_date, revision_author,
-            parent_ids, properties):
+            parent_ids, properties, _date_created=None):
         """See IRevisionSet.new()"""
         if properties is None:
             properties = {}
+        if _date_created is None:
+            _date_created = UTC_NOW
         author = self.acquireRevisionAuthor(revision_author)
 
-        revision = Revision(revision_id=revision_id,
-                            log_body=log_body,
-                            revision_date=revision_date,
-                            revision_author=author)
+        revision = Revision(
+            revision_id=revision_id,
+            log_body=log_body,
+            revision_date=revision_date,
+            revision_author=author,
+            date_created=_date_created)
         # Don't create future revisions.
         if revision.revision_date > revision.date_created:
             revision.revision_date = revision.date_created

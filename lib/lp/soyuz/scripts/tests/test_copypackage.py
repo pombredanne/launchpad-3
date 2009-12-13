@@ -37,6 +37,8 @@ from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
     PackageUploadCustomFormat, PackageUploadStatus)
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from lp.soyuz.model.publishing import (
     SecureSourcePackagePublishingHistory,
     SecureBinaryPackagePublishingHistory)
@@ -48,24 +50,6 @@ from lp.soyuz.scripts.packagecopier import (
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import (
     TestCase, TestCaseWithFactory)
-
-
-def _create_source(test_publisher, archive):
-    """Create source with meaningful '.changes' file."""
-    changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_1.0-2_binary/foocomm_1.0-2_i386.changes'
-
-    changesfile_content = ''
-    handle = open(changesfile_path, 'r')
-    try:
-        changesfile_content = handle.read()
-    finally:
-        handle.close()
-
-    source = test_publisher.getPubSource(
-        sourcename='foocomm', archive=archive, version='1.0-2',
-        changes_file_content=changesfile_content)
-
-    return source
 
 
 class ReUploadFileTestCase(TestCaseWithFactory):
@@ -152,9 +136,7 @@ class ReUploadFileTestCase(TestCaseWithFactory):
         self.assertFileIsReset(private_file)
 
     def test_re_upload_file_does_not_leak_file_descriptors(self):
-        # Reuploading a library file doesn't leak file descriptors. The
-        # only extra file opened by the end of the process is the socket
-        # with the librarian server.
+        # Reuploading a library file doesn't leak file descriptors.
         private_file = self.factory.makeLibraryFileAlias(restricted=True)
         transaction.commit()
 
@@ -163,9 +145,12 @@ class ReUploadFileTestCase(TestCaseWithFactory):
         previously_open_files = number_of_open_files()
 
         public_file = re_upload_file(private_file)
+        # The above call would've raised an error if the upload failed, but
+        # better safe than sorry.
+        self.assertIsNot(None, public_file)
 
         open_files = number_of_open_files() - previously_open_files
-        self.assertEqual(1, open_files)
+        self.assertEqual(0, open_files)
 
 
 class UpdateFilesPrivacyTestCase(TestCaseWithFactory):
@@ -711,23 +696,45 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             'source has expired binaries',
             copy_checker.checkCopy, source, series, pocket)
 
-    def test_checkCopy_forbids_copies_from_other_distributions(self):
-        # We currently deny copies to series that are not for the Archive
-        # distribution, because they will never be published. And abandoned
-        # copies like these keep triggering the PPA publication spending
-        # resources.
+    def test_checkCopy_allows_copies_from_other_distributions(self):
+        # It is possible to copy packages between distributions,
+        # as long as the target distroseries exists for the target
+        # distribution.
 
         # Create a testing source in ubuntu.
-        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-        hoary = ubuntu.getSeries('hoary')
-        source = self.test_publisher.getPubSource(distroseries=hoary)
+        ubuntu = getUtility(IDistributionSet).getByName('debian')
+        sid = ubuntu.getSeries('sid')
+        source = self.test_publisher.getPubSource(distroseries=sid)
 
         # Create a fresh PPA for ubuntutest, which will be the copy
         # destination.
         archive = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
             purpose=ArchivePurpose.PPA)
-        series = source.distroseries
+        series = self.test_publisher.ubuntutest.getSeries('hoary-test')
+        pocket = source.pocket
+
+        # Copy of sources to series in another distribution can be
+        # performed.
+        copy_checker = CopyChecker(archive, include_binaries=False)
+        copy_checker.checkCopy(source, series, pocket)
+
+    def test_checkCopy_forbids_copies_to_unknown_distroseries(self):
+        # We currently deny copies to series that are not for the Archive
+        # distribution, because they will never be published. And abandoned
+        # copies like these keep triggering the PPA publication spending
+        # resources.
+
+        # Create a testing source in ubuntu.
+        ubuntu = getUtility(IDistributionSet).getByName('debian')
+        sid = ubuntu.getSeries('sid')
+        source = self.test_publisher.getPubSource(distroseries=sid)
+
+        # Create a fresh PPA for ubuntutest, which will be the copy
+        # destination.
+        archive = self.factory.makeArchive(
+            distribution=self.test_publisher.ubuntutest,
+            purpose=ArchivePurpose.PPA)
         pocket = source.pocket
 
         # Copy of sources to series in another distribution, cannot be
@@ -735,8 +742,34 @@ class CopyCheckerTestCase(TestCaseWithFactory):
         copy_checker = CopyChecker(archive, include_binaries=False)
         self.assertRaisesWithContent(
             CannotCopy,
-            'Cannot copy to an unsupported distribution: ubuntu.',
-            copy_checker.checkCopy, source, series, pocket)
+            'No such distro series sid in distribution debian.',
+            copy_checker.checkCopy, source, sid, pocket)
+
+    def test_checkCopy_respects_sourceformatselection(self):
+        # A source copy should be denied if the source's dsc_format is
+        # not permitted in the target series.
+
+        # Get hoary, and configure it to accept 3.0 (quilt) uploads.
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        hoary = ubuntu.getSeries('hoary')
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            hoary, SourcePackageFormat.FORMAT_3_0_QUILT)
+
+        # Create a 3.0 (quilt) source.
+        source = self.test_publisher.getPubSource(
+            distroseries=hoary, dsc_format='3.0 (quilt)')
+
+        archive = source.archive
+        series = ubuntu.getSeries('warty')
+        pocket = source.pocket
+
+        # An attempt to copy the source to warty, which only supports
+        # 1.0 sources, is rejected.
+        copy_checker = CopyChecker(archive, include_binaries=True)
+        self.assertRaisesWithContent(
+            CannotCopy,
+            "Source format '3.0 (quilt)' not supported by target series "
+            "warty.", copy_checker.checkCopy, source, series, pocket)
 
     def test_checkCopy_identifies_conflicting_copy_candidates(self):
         # checkCopy() is able to identify conflicting candidates within
@@ -788,7 +821,8 @@ class CopyCheckerTestCase(TestCaseWithFactory):
             purpose=ArchivePurpose.PPA)
         private_archive.buildd_secret = 'x'
         private_archive.private = True
-        source = _create_source(self.test_publisher, private_archive)
+        source = self.test_publisher.createSource(
+            private_archive, 'foocomm', '1.0-2')
 
         archive = self.test_publisher.ubuntutest.main_archive
         series = source.distroseries
@@ -917,7 +951,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         ppa.buildd_secret = 'x'
         ppa.private = True
 
-        source = _create_source(self.test_publisher, ppa)
+        source = self.test_publisher.createSource(ppa, 'foocomm', '1.0-2')
         self.test_publisher.getPubBinaries(pub_source=source)
 
         [build] = source.getBuilds()
@@ -962,7 +996,8 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         # The returned object has a more descriptive 'displayname'
         # attribute than plain `IPackageUpload` instances.
         self.assertEquals(
-            'Delayed copy of foocomm - 1.0-2 (source, i386, raw-dist-upgrader)',
+            'Delayed copy of foocomm - '
+            '1.0-2 (source, i386, raw-dist-upgrader)',
             delayed_copy.displayname)
 
         # It is targeted to the right publishing context.
@@ -1356,6 +1391,21 @@ class CopyPackageTestCase(TestCase):
         target_archive = copy_helper.destination.archive
         self.checkCopies(copied, target_archive, 3)
 
+        # The second copy will fail explicitly because the new BPPH
+        # records are not yet published.
+        nothing_copied = copy_helper.mainTask()
+        self.assertEqual(len(nothing_copied), 0)
+        self.assertEqual(
+            copy_helper.logger.buffer.getvalue().splitlines()[-1],
+            'ERROR: foo 666 in hoary (same version has unpublished binaries '
+            'in the destination archive for Hoary, please wait for them to '
+            'be published before copying)')
+
+        # If we ensure that the copied binaries are published, the
+        # copy won't fail but will simply not copy anything.
+        for bin_pub in copied[1:3]:
+            bin_pub.secure_record.setPublished()
+
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)
         self.assertEqual(
@@ -1492,7 +1542,7 @@ class CopyPackageTestCase(TestCase):
             name='boing')
         self.assertEqual(copied_source.displayname, 'boing 1.0 in hoary')
         self.assertEqual(len(copied_source.getPublishedBinaries()), 2)
-        self.assertEqual(len(copied_source.getBuilds()), 0)
+        self.assertEqual(len(copied_source.getBuilds()), 1)
 
     def _setupArchitectureGrowingScenario(self, architecturehintlist="all"):
         """Prepare distroseries with different sets of architectures.

@@ -49,7 +49,7 @@ Check if it fails for an already released distroseries:
   DEBUG   Initialising connection.
   DEBUG   Check empty mutable queues in parentseries
   DEBUG   Check for no pending builds in parentseries
-  DEBUG   Copying distroarchserieses from parent and setting nominatedarchindep.
+  DEBUG   Copying distroarchseries from parent and setting nominatedarchindep.
   Traceback (most recent call last):
   ...
   AssertionError: Can not copy distroarchseries from parent, there are already distroarchseries(s) initialised for this series.
@@ -70,7 +70,7 @@ Let's initialise the just created distroseries:
   DEBUG   Initialising connection.
   DEBUG   Check empty mutable queues in parentseries
   DEBUG   Check for no pending builds in parentseries
-  DEBUG   Copying distroarchserieses from parent and setting nominatedarchindep.
+  DEBUG   Copying distroarchseries from parent and setting nominatedarchindep.
   DEBUG   initialising from parent, copying publishing records.
   DEBUG   Committing transaction.
   DEBUG   Releasing lock
@@ -171,4 +171,11 @@ this test, see more details in buildd-queuebuilder)
 
   >>> pmount_source.sourcepackagerelease.getBuildByArch(
   ...    foobuntu['hppa'], ubuntu.main_archive) is None
+  True
+
+initialiseFromParent also copies the permitted source formats from the
+parent series.
+
+  >>> from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
+  >>> foobuntu.isSourcePackageFormatPermitted(SourcePackageFormat.FORMAT_1_0)
   True

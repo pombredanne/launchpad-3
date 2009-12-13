@@ -174,11 +174,6 @@ class IBuildView(Interface):
             title=_('State'), required=True, vocabulary=BuildStatus,
             description=_("The current build state.")))
 
-    estimated_build_duration = Timedelta(
-        title=_("Estimated Build Duration"), required=False,
-        description=_("Estimated build duration interval. Optionally "
-                      "set during build creation time."))
-
     date_first_dispatched = exported(
         Datetime(
             title=_('Date first dispatched'), required=False,
@@ -442,7 +437,7 @@ class IBuildSet(Interface):
         """
 
     def getPendingBuildsForArchSet(archseries):
-        """Return all pending build records within a group of ArchSerieses
+        """Return all pending build records within a group of ArchSeries
 
         Pending means that buildstate is NEEDSBUILD.
         """
@@ -522,6 +517,13 @@ class IBuildSet(Interface):
                     'builds':[build3]
                 }
         :rtype: ``dict``.
+        """
+
+    def getByQueueEntry(queue_entry):
+        """Return an IBuild instance for the given build queue entry.
+
+        Retrieve the only one possible build record associated with the given
+        build queue entry. If not found, return None.
         """
 
 

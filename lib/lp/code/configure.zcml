@@ -261,6 +261,11 @@
                     createComment
                     createCommentFromMessage"/>
   </class>
+  <adapter
+      factory="lp.code.browser.branchmergeproposal.text_xhtml_representation"
+      name="commit_message"/>
+
+
   <class class="lp.code.model.branchmergeproposaljob.CreateMergeProposalJob">
     <allow interface="canonical.launchpad.interfaces.IMessageJob"/>
     <allow interface="lp.code.interfaces.branchmergeproposal.ICreateMergeProposalJob"/>
@@ -355,6 +360,9 @@
       provides="lp.code.interfaces.branchlookup.ILinkedBranchTraverser">
     <allow interface="lp.code.interfaces.branchlookup.ILinkedBranchTraverser"/>
   </securedutility>
+  <adapter factory="lp.code.model.branchlookup.ProductTraversable" />
+  <adapter factory="lp.code.model.branchlookup.DistributionTraversable" />
+  <adapter factory="lp.code.model.branchlookup.DistroSeriesTraversable" />
   <securedutility
       class="lp.code.model.branchscanner.BranchScanner"
       provides="lp.code.interfaces.branchscanner.IBranchScanner">
@@ -426,11 +434,13 @@
                     landing_targets
                     landing_candidates
                     dependent_branches
+                    _createMergeProposal
                     addLandingTarget
                     scheduleDiffUpdates
                     getMergeQueue
-                    revisions_since
+                    getRevisionsSince
                     code_is_browseable
+                    browse_source_url
                     code_import
                     bzr_identity
                     canBeDeleted
@@ -474,6 +484,7 @@
                     pending_writes
                     commitsForDays
                     needs_upgrading
+                    requestUpgrade
                     getUpgradeFormat
                     isBranchMergeable
                     visibleByUser
@@ -626,6 +637,10 @@
       for="lp.registry.interfaces.product.IProduct"
       provides="lp.code.interfaces.branchtarget.IBranchTarget"
       factory="lp.code.model.branchtarget.ProductBranchTarget"/>
+  <adapter
+      for="lp.registry.interfaces.product.IProductSeries"
+      provides="lp.code.interfaces.branchtarget.IBranchTarget"
+      factory="lp.code.model.branchtarget.ProductSeriesBranchTarget"/>
   <adapter
       for="lp.code.interfaces.branchtarget.IBranchTarget"
       provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
@@ -871,6 +886,15 @@
     <allow interface="lp.code.interfaces.branchmergeproposal.IUpdatePreviewDiffJobSource"/>
   </securedutility>
   <class class="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob">
+    <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+  </class>
+
+  <securedutility
+      component="lp.code.model.branchjob.BranchUpgradeJob"
+      provides="lp.code.interfaces.branchjob.IBranchUpgradeJobSource">
+    <allow interface="lp.code.interfaces.branchjob.IBranchUpgradeJobSource"/>
+  </securedutility>
+  <class class="lp.code.model.branchjob.BranchUpgradeJob">
     <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
   </class>
 

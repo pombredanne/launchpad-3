@@ -52,7 +52,7 @@ from lp.code.model.branchmergeproposal import (
      BranchMergeProposal, BranchMergeProposalGetter)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
-from lp.code.model.revision import Revision
+from lp.code.model.revision import Revision, RevisionAuthor
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
@@ -68,6 +68,7 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.branchpuller import IBranchPuller
 from lp.code.interfaces.branchtarget import IBranchTarget
+from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.interfaces.person import (
@@ -97,16 +98,18 @@ class Branch(SQLBase):
 
     private = BoolCol(default=False, notNull=True)
 
-    def setPrivate(self, private):
+    def setPrivate(self, private, user):
         """See `IBranch`."""
         if private == self.private:
             return
-        policy = IBranchNamespacePolicy(self.namespace)
+        # Only check the privacy policy if the user is not special.
+        if (not user_has_special_branch_access(user)):
+            policy = IBranchNamespacePolicy(self.namespace)
 
-        if private and not policy.canBranchesBePrivate():
-            raise BranchCannotBePrivate()
-        if not private and not policy.canBranchesBePublic():
-            raise BranchCannotBePublic()
+            if private and not policy.canBranchesBePrivate():
+                raise BranchCannotBePrivate()
+            if not private and not policy.canBranchesBePublic():
+                raise BranchCannotBePublic()
         self.private = private
 
     registrant = ForeignKey(
@@ -307,7 +310,7 @@ class Branch(SQLBase):
                          prerequisite_branch=None, whiteboard=None,
                          date_created=None, needs_review=False,
                          initial_comment=None, review_requests=None,
-                         review_diff=None):
+                         review_diff=None, commit_message=None):
         """See `IBranch`."""
         if not self.target.supports_merge_proposals:
             raise InvalidBranchMergeProposal(
@@ -359,7 +362,8 @@ class Branch(SQLBase):
             prerequisite_branch=prerequisite_branch, whiteboard=whiteboard,
             date_created=date_created,
             date_review_requested=date_review_requested,
-            queue_status=queue_status, review_diff=review_diff)
+            queue_status=queue_status, review_diff=review_diff,
+            commit_message=commit_message)
 
         if initial_comment is not None:
             bmp.createComment(
@@ -371,6 +375,24 @@ class Branch(SQLBase):
 
         notify(NewBranchMergeProposalEvent(bmp))
         return bmp
+
+    def _createMergeProposal(
+        self, registrant, target_branch, prerequisite_branch=None,
+        needs_review=True, initial_comment=None, commit_message=None,
+        reviewers=None, review_types=None):
+        """See `IBranch`."""
+        if reviewers is None:
+            reviewers = []
+        if review_types is None:
+            review_types = []
+        if len(reviewers) != len(review_types):
+            raise ValueError(
+                'reviewers and review_types must be equal length.')
+        review_requests = zip(reviewers, review_types)
+        return self.addLandingTarget(
+            registrant, target_branch, prerequisite_branch,
+            needs_review=needs_review, initial_comment=initial_comment,
+            commit_message=commit_message, review_requests=review_requests)
 
     def scheduleDiffUpdates(self):
         """See `IBranch`."""
@@ -435,13 +457,20 @@ class Branch(SQLBase):
         return urlutils.join(root, self.unique_name, *extras)
 
     @property
+    def browse_source_url(self):
+        return self.codebrowse_url('files')
+
+    @property
     def bzr_identity(self):
         """See `IBranch`."""
-        # XXX: JonathanLange 2009-03-19 spec=package-branches bug=345740: This
-        # should not dispatch on product is None.
+        # Should probably put this into the branch target.
         if self.product is not None:
             series_branch = self.product.development_focus.branch
             is_dev_focus = (series_branch == self)
+        elif self.distroseries is not None:
+            distro_package = self.sourcepackage.distribution_sourcepackage
+            linked_branch = ICanHasLinkedBranch(distro_package)
+            is_dev_focus = (linked_branch.branch == self)
         else:
             is_dev_focus = False
         return bazaar_identity(self, is_dev_focus)
@@ -489,7 +518,26 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return self.revision_history.limit(quantity)
 
-    def revisions_since(self, timestamp):
+    def getMainlineBranchRevisions(self, start_date, end_date=None,
+                                   oldest_first=False):
+        """See `IBranch`."""
+        date_clause = Revision.revision_date >= start_date
+        if end_date is not None:
+            date_clause = And(date_clause, Revision.revision_date <= end_date)
+        result = Store.of(self).find(
+            (BranchRevision, Revision, RevisionAuthor),
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            BranchRevision.revision == Revision.id,
+            Revision.revision_author == RevisionAuthor.id,
+            date_clause)
+        if oldest_first:
+            result = result.order_by(BranchRevision.sequence)
+        else:
+            result = result.order_by(Desc(BranchRevision.sequence))
+        return result
+
+    def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
         return BranchRevision.select(
             'Revision.id=BranchRevision.revision AND '
@@ -564,8 +612,6 @@ class Branch(SQLBase):
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
-        if self.code_import is not None:
-            deletion_operations.append(DeleteCodeImport(self.code_import))
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
@@ -596,6 +642,12 @@ class Branch(SQLBase):
             operation()
         for operation in deletion_operations:
             operation()
+        # Special-case code import, since users don't have lp.Edit on them,
+        # since if you can delete a branch you should be able to delete the
+        # code import and since deleting the code import object itself isn't
+        # actually a very interesting thing to tell the user about.
+        if self.code_import is not None:
+            DeleteCodeImport(self.code_import)()
 
     def associatedProductSeries(self):
         """See `IBranch`."""
@@ -672,14 +724,6 @@ class Branch(SQLBase):
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
         store.flush()
-
-    def getMainlineBranchRevisions(self, revision_ids):
-        return Store.of(self).find(
-            BranchRevision,
-            BranchRevision.branch == self,
-            BranchRevision.sequence != None,
-            BranchRevision.revision == Revision.id,
-            Revision.revision_id.is_in(revision_ids))
 
     def getBranchRevision(self, sequence=None, revision=None,
                           revision_id=None):
@@ -951,6 +995,11 @@ class Branch(SQLBase):
             return True
         return False
 
+    def requestUpgrade(self):
+        """See `IBranch`."""
+        from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
+        return getUtility(IBranchUpgradeJobSource).create(self)
+
     def _checkBranchVisibleByUser(self, user):
         """Is *this* branch visible by the user.
 
@@ -1147,6 +1196,10 @@ class BranchSet:
     def getByUrl(self, url):
         """See `IBranchSet`."""
         return getUtility(IBranchLookup).getByUrl(url)
+
+    def getByUrls(self, urls):
+        """See `IBranchSet`."""
+        return getUtility(IBranchLookup).getByUrls(urls)
 
     def getBranches(self, limit=50):
         """See `IBranchSet`."""

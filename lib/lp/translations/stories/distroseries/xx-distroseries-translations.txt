@@ -101,7 +101,7 @@ the system tells them that they're not allowed to see those pages.
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
     Traceback (most recent call last):
     ...
-    httperror_seek_wrapper: HTTP Error 503: Service Unavailable
+    HTTPError: HTTP Error 503: Service Unavailable
     >>> main_content = find_main_content(user_browser.contents)
     >>> print main_content.findNext('p').renderContents()
     Translations for this release series are not available yet.
@@ -171,3 +171,31 @@ Once the system accepts the submission, we can see such change applied.
 There are no visible user interface changes once this flag is changed. It
 just prevents that the translation import script, which is executed by cron,
 handle translation imports for this distro series.
+
+== Translation focus ==
+
+If translation focus is not set, there is no recommendation of what
+release series should be translated.
+
+    >>> login('admin@canonical.com')
+    >>> distribution = factory.makeDistribution(name='earthian')
+    >>> distroseries = factory.makeDistroRelease(
+    ...     name='1.4', distribution=distribution)
+    >>> logout()
+    >>> print distribution.translation_focus
+    None
+    >>> admin_browser.open('http://translations.launchpad.dev/earthian/1.4')
+    >>> print find_tag_by_id(admin_browser.contents, 'translation-focus')
+    None
+
+If focus is set, nice explanatory text is displayed.
+
+    >>> login('admin@canonical.com')
+    >>> focus_series = factory.makeDistroRelease(
+    ...     name='1.6', distribution=distribution)
+    >>> distribution.translation_focus = focus_series
+    >>> logout()
+    >>> admin_browser.open('http://translations.launchpad.dev/earthian/1.4')
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'translation-focus'))
+    Launchpad currently recommends translating 1.6.

@@ -24,9 +24,9 @@ from twisted.internet import defer
 from twisted.trial.unittest import TestCase as TrialTestCase
 
 from lp.codehosting.vfs.branchfs import (
-    AsyncLaunchpadTransport, branch_id_to_path, LaunchpadInternalServer,
-    LaunchpadServer, BranchTransportDispatch, TransportDispatch,
-    UnknownTransportType)
+    AsyncLaunchpadTransport, BranchTransportDispatch,
+    DirectDatabaseLaunchpadServer, LaunchpadInternalServer, LaunchpadServer,
+    TransportDispatch, UnknownTransportType, branch_id_to_path)
 from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.codehosting.sftp import FatLocalTransport
@@ -34,8 +34,8 @@ from lp.codehosting.vfs.transport import AsyncVirtualTransport
 from lp.code.enums import BranchType
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
-from lp.testing import TestCase
-from canonical.testing import TwistedLayer
+from lp.testing import TestCase, TestCaseWithFactory
+from canonical.testing import TwistedLayer, ZopelessDatabaseLayer
 
 
 def branch_to_path(branch, add_slash=True):
@@ -293,18 +293,8 @@ class TestLaunchpadServer(MixinBaseLaunchpadServerTests, TrialTestCase,
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
 
 
-class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
-                                  TrialTestCase, BzrTestCase):
-    """Tests for the LaunchpadInternalServer, used by the puller and scanner.
-    """
-
-    def setUp(self):
-        BzrTestCase.setUp(self)
-        MixinBaseLaunchpadServerTests.setUp(self)
-
-    def getLaunchpadServer(self, authserver, user_id):
-        return LaunchpadInternalServer(
-            'lp-test:///', XMLRPCWrapper(authserver), MemoryTransport())
+class LaunchpadInternalServerTests:
+    """Tests for the internal server classes, used by e.g. the scanner."""
 
     def test_translate_branch_path(self):
         branch = self.factory.makeAnyBranch()
@@ -314,7 +304,7 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
         expected_transport, expected_path = dispatch
 
         deferred = self.server.translateVirtualPath(
-            '%s/.bzr/README' % (branch.unique_name,))
+            '/%s/.bzr/README' % (branch.unique_name,))
         def check_branch_transport((transport, path)):
             self.assertEqual(expected_path, path)
             # Can't test for equality of transports, since URLs and object
@@ -346,6 +336,35 @@ class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
         self.assertRaises(
             errors.NotBranchError,
             BzrDir.open_containing_from_transport, transport)
+
+
+class TestLaunchpadInternalServer(MixinBaseLaunchpadServerTests,
+                                  TrialTestCase, BzrTestCase,
+                                  LaunchpadInternalServerTests):
+    """Tests for `LaunchpadInternalServer`, used by the puller and scanner."""
+
+    def setUp(self):
+        BzrTestCase.setUp(self)
+        self.disable_directory_isolation()
+        MixinBaseLaunchpadServerTests.setUp(self)
+
+    def getLaunchpadServer(self, authserver, user_id):
+        return LaunchpadInternalServer(
+            'lp-test:///', XMLRPCWrapper(authserver), MemoryTransport())
+
+
+class TestDirectDatabaseLaunchpadServer(TestCaseWithFactory, TrialTestCase,
+                                        LaunchpadInternalServerTests):
+    """Tests for `DirectDatabaseLaunchpadServer`."""
+
+    layer = ZopelessDatabaseLayer
+
+    def setUp(self):
+        super(TestDirectDatabaseLaunchpadServer, self).setUp()
+        self.requester = self.factory.makePerson()
+        self.server = DirectDatabaseLaunchpadServer(
+            'lp-test://', MemoryTransport())
+
 
 
 class TestAsyncVirtualTransport(TrialTestCase, TestCaseInTempDir):

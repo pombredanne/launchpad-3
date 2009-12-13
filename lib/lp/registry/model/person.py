@@ -66,7 +66,7 @@ from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
 from lp.registry.model.personlocation import PersonLocation
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from canonical.launchpad.event.interfaces import (
     IJoinTeamEvent, ITeamInvitationEvent)
@@ -77,7 +77,7 @@ from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccount, IAccountSet,
     INACTIVE_ACCOUNT_STATUSES)
-from lp.soyuz.interfaces.archive import ArchivePurpose, NoSuchPPA
+from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.soyuz.interfaces.archivepermission import (
     IArchivePermissionSet)
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
@@ -550,20 +550,6 @@ class Person(
             self._location = PersonLocation(
                 person=self, time_zone=time_zone, latitude=latitude,
                 longitude=longitude, last_modified_by=user)
-
-        # Make a note that we need to tell this person that their
-        # information was updated by the user. We can only do this if we
-        # have a validated email address for this person.
-        if user != self and self.preferredemail is not None:
-            mail_text = get_email_template('person-location-modified.txt')
-            mail_text = mail_text % {
-                'actor': user.name,
-                'actor_browsername': user.displayname,
-                'person': self.name}
-            subject = '%s updated your location and time zone' % (
-                user.displayname)
-            getUtility(IPersonNotificationSet).addNotification(
-                self, subject, mail_text)
 
     # specification-related joins
     @property
@@ -1388,6 +1374,7 @@ class Person(
         owner_of_teams = Person.select('''
             Person.teamowner = TeamParticipation.team
             AND TeamParticipation.person = %s
+            AND Person.merged IS NULL
             ''' % sqlvalues(self),
             clauseTables=['TeamParticipation'])
         admin_of_teams = Person.select('''
@@ -1395,6 +1382,7 @@ class Person(
             AND TeamMembership.status = %(admin)s
             AND TeamMembership.person = TeamParticipation.team
             AND TeamParticipation.person = %(person)s
+            AND Person.merged IS NULL
             ''' % sqlvalues(person=self, admin=TeamMembershipStatus.ADMIN),
             clauseTables=['TeamParticipation', 'TeamMembership'])
         return admin_of_teams.union(
@@ -1615,13 +1603,13 @@ class Person(
         """See `IPersonViewRestricted`."""
         return self._getMappedParticipantsLocations().count()
 
-    def getMappedParticipantsBounds(self):
+    def getMappedParticipantsBounds(self, limit=None):
         """See `IPersonViewRestricted`."""
         max_lat = -90.0
         min_lat = 90.0
         max_lng = -180.0
         min_lng = 180.0
-        locations = self._getMappedParticipantsLocations()
+        locations = self._getMappedParticipantsLocations(limit)
         if self.mapped_participants_count == 0:
             raise AssertionError, (
                 'This method cannot be called when '
@@ -2286,8 +2274,7 @@ class Person(
     @property
     def archive(self):
         """See `IPerson`."""
-        return Archive.selectOneBy(
-            owner=self, purpose=ArchivePurpose.PPA, name='ppa')
+        return getUtility(IArchiveSet).getPPAOwnedByPerson(self)
 
     @property
     def ppas(self):
@@ -2297,11 +2284,7 @@ class Person(
 
     def getPPAByName(self, name):
         """See `IPerson`."""
-        ppa = Archive.selectOneBy(
-            owner=self, purpose=ArchivePurpose.PPA, name=name)
-        if ppa is None:
-            raise NoSuchPPA(name)
-        return ppa
+        return getUtility(IArchiveSet).getPPAOwnedByPerson(self, name)
 
     def isBugContributor(self, user=None):
         """See `IPerson`."""
@@ -2866,21 +2849,9 @@ class PersonSet:
                           name=name, new_name=new_name, product=product))
 
     def _mergeMailingListSubscriptions(self, cur, from_id, to_id):
-        # Update MailingListSubscription. Note that no remaining records
-        # will have email_address set, as we assert earlier that the
-        # from_person has no email addresses.
-        # Update records that don't conflict.
-        cur.execute('''
-            UPDATE MailingListSubscription
-            SET person=%(to_id)d
-            WHERE person=%(from_id)d
-                AND mailing_list NOT IN (
-                    SELECT mailing_list
-                    FROM MailingListSubscription
-                    WHERE person=%(to_id)d
-                    )
-            ''' % vars())
-        # Then trash the remainders.
+        # Update MailingListSubscription. Note that since all the from_id
+        # email addresses are set to NEW, all the subscriptions must be
+        # removed because the user must confirm them.
         cur.execute('''
             DELETE FROM MailingListSubscription WHERE person=%(from_id)d
             ''' % vars())
@@ -3476,6 +3447,17 @@ class PersonSet:
         # Since we've updated the database behind Storm's back,
         # flush its caches.
         store.invalidate()
+
+        # Inform the user of the merge changes.
+        if not to_person.isTeam():
+            mail_text = get_email_template('person-merged.txt')
+            mail_text = mail_text % {
+                'dupename': from_person.name,
+                'person': to_person.name,
+                }
+            subject = 'Launchpad accounts merged'
+            getUtility(IPersonNotificationSet).addNotification(
+                to_person, subject, mail_text)
 
     def getValidPersons(self, persons):
         """See `IPersonSet.`"""

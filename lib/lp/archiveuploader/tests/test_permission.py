@@ -13,7 +13,9 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.archiveuploader.permission import (
-    CannotUploadToArchive, components_valid_for, verify_upload)
+    check_upload_to_archive, components_valid_for)
+from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import TestCaseWithFactory
@@ -56,14 +58,23 @@ class TestPermission(TestCaseWithFactory):
         self.permission_set = removeSecurityProxy(permission_set)
 
     def assertCanUpload(self, person, spn, archive, component,
-                        strict_component=True):
+                        strict_component=True, distroseries=None):
         """Assert that 'person' can upload 'spn' to 'archive'."""
         # For now, just check that doesn't raise an exception.
+        if distroseries is None:
+            distroseries = archive.distribution.currentseries
+        if distroseries is None:
+            distroseries = self.factory.makeDistroSeries(
+                distribution=archive.distribution)
+        pocket = PackagePublishingPocket.RELEASE
         self.assertIs(
             None,
-            verify_upload(person, spn, archive, component, strict_component))
+            check_upload_to_archive(
+                person, distroseries, spn, archive, component, pocket,
+                strict_component))
 
-    def assertCannotUpload(self, reason, person, spn, archive, component):
+    def assertCannotUpload(self, reason, person, spn, archive, component,
+                           distroseries=None):
         """Assert that 'person' cannot upload to the archive.
 
         :param reason: The expected reason for not being able to upload. A
@@ -73,8 +84,15 @@ class TestPermission(TestCaseWithFactory):
             package does not yet exist.
         :param archive: The `IArchive` being uploaded to.
         :param component: The IComponent to which the package belongs.
+        :param distroseries: The upload's target distro series.
         """
-        exception = verify_upload(person, spn, archive, component)
+        if distroseries is None:
+            distroseries = archive.distribution.currentseries
+        if distroseries is None:
+            distroseries = self.factory.makeDistroSeries()
+        pocket = PackagePublishingPocket.RELEASE
+        exception = check_upload_to_archive(
+            person, distroseries, spn, archive, component, pocket)
         self.assertEqual(reason, str(exception))
 
     def test_random_person_cannot_upload_to_ppa(self):
@@ -104,6 +122,18 @@ class TestPermission(TestCaseWithFactory):
         person = self.factory.makePerson()
         removeSecurityProxy(team).addMember(person, team.teamowner)
         self.assertCanUpload(person, None, ppa, None)
+
+    def test_can_upload_to_ppa_for_old_series(self):
+        # You can upload whatever you want to a PPA, regardless of the upload
+        # policy.
+        person = self.factory.makePerson()
+        ppa = self.factory.makeArchive(
+            purpose=ArchivePurpose.PPA, owner=person)
+        spn = self.factory.makeSourcePackageName()
+        distroseries = self.factory.makeDistroSeries(
+            status=DistroSeriesStatus.CURRENT)
+        self.assertCanUpload(
+            person, spn, ppa, None, distroseries=distroseries)
 
     def test_arbitrary_person_cannot_upload_to_primary_archive(self):
         # By default, you can't upload to the primary archive.
@@ -135,10 +165,33 @@ class TestPermission(TestCaseWithFactory):
         person = self.factory.makePerson()
         archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         spn = self.factory.makeSourcePackageName()
-        package_set = self.factory.makePackageset(packages=[spn])
+        distroseries = self.factory.makeDistroSeries()
+        package_set = self.factory.makePackageset(
+            packages=[spn], distroseries=distroseries)
         self.permission_set.newPackagesetUploader(
             archive, person, package_set)
-        self.assertCanUpload(person, spn, archive, None)
+        self.assertCanUpload(
+            person, spn, archive, None, distroseries=distroseries)
+
+    def test_packageset_wrong_distroseries(self):
+        # A person with rights to upload to the package set in distro
+        # series K may not upload with these same rights to a different
+        # distro series L.
+        distroseries_K = self.factory.makeDistroRelease()
+        distroseries_L = self.factory.makeDistroRelease()
+        person = self.factory.makePerson()
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        spn = self.factory.makeSourcePackageName()
+        package_set = self.factory.makePackageset(
+            packages=[spn], distroseries=distroseries_K)
+        self.permission_set.newPackagesetUploader(
+            archive, person, package_set)
+        self.assertCanUpload(
+            person, spn, archive, None, distroseries=distroseries_K)
+        self.assertCannotUpload(
+            ("The signer of this package is lacking the upload rights for "
+             "the source package, component or package set in question."),
+            person, spn, archive, None, distroseries=distroseries_L)
 
     def test_component_rights(self):
         # A person allowed to upload to a particular component of an archive

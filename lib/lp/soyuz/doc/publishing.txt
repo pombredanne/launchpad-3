@@ -112,16 +112,34 @@ The iceweasel source has good data:
     >>> print pub.changes_file_url
     http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
 
+There is also a helper property to determine whether the current release for
+this package in the distroseries is newer than this publishing. Nothing is
+returned if there is no package in the distroseries primary archive with a
+later version.
+
+    >>> print pub.newer_distroseries_version
+    None
+
+If we publish iceweasel 1.1 in the same distroseries, then the distroseries
+source package release will be returned.
+
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> new_version = test_publisher.getPubSource(
+    ...     distroseries=pub.distroseries, version="1.1",
+    ...     sourcename='iceweasel')
+
+    >>> print pub.newer_distroseries_version.title
+    "iceweasel" 1.1 source package in The Warty Warthog Release
+
 A helper is also included to create a summary of the build statuses for
 the spph's related builds, getStatusSummaryForBuilds(), which just
 augments the IBuildSet.getStatusSummaryForBuilds() method to include the
 'pending' state when builds are fully built but not yet published.
 
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
     >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> test_publisher = SoyuzTestPublisher()
-    >>> test_publisher.prepareBreezyAutotest()
     >>> spph = test_publisher.getPubSource(architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
     >>> for build in builds:
@@ -344,13 +362,14 @@ removal_comment argument.
 
     >>> from zope.component import getUtility
     >>> mark = getUtility(IPersonSet).getByName('mark')
-    >>> modified_spph = spph.requestDeletion(mark, "testing deletion")
+    >>> spph.requestDeletion(mark, "testing deletion")
 
 Inspecting the modified record shows it's ready for domination:
 
     >>> from canonical.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
 
+    >>> modified_spph = spph.secure_record
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.DELETED, (4) Deleted>
 
@@ -535,8 +554,9 @@ getBuiltBinaries() result.
 The same happens when we delete the i386 binary, so no binaries are
 published in the original location.
 
-    >>> deleted = source.getPublishedBinaries()[0].requestDeletion(
-    ...     mark, "go")
+    >>> deletable = source.getPublishedBinaries()[0]
+    >>> deletable.requestDeletion(mark, "go")
+    >>> deleted = deletable.secure_record
     >>> syncUpdate(deleted)
 
     >>> len(source.getPublishedBinaries())
@@ -1055,22 +1075,61 @@ It returns a `ResultSet` and it contains 3-element tuples as
 each build found.
 
     >>> cprov_builds.count()
-    7
+    8
 
 The `ResultSet` is ordered by ascending
 `SourcePackagePublishingHistory.id` and ascending
 `DistroArchseries.architecturetag` in this order.
 
-    >>> source_pub, build, arch = cprov_builds.last()
+    # The easiest thing we can do here (without printing ids)
+    # is to show that sorting a list of the resulting ids+tags does not
+    # modify the list.
+    >>> ids_and_tags = [(pub.id, arch.architecturetag)
+    ...     for pub, build, arch in cprov_builds]
+    >>> ids_and_tags == sorted(ids_and_tags)
+    True
 
-    >>> print source_pub.displayname
-    foo 666 in breezy-autotest
+If a source package is copied from another archive (including the
+binaries), then the related builds for that source package will
+also be retrievable via the copied source publication.
+For example, if a package is built in a private security PPA, and then
+later copied out into the primary archive, the builds will then
+be available when looking at the copied source package in the primary
+archive.
 
-    >>> print build.title
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    # Create a new PPA and publish a source with some builds
+    # and binaries.
+    >>> other_ppa = factory.makeArchive(name="otherppa")
+    >>> binaries = test_publisher.getPubBinaries(archive=other_ppa)
 
-    >>> print arch.displayname
-    ubuntutest Breezy Badger Autotest i386
+The associated builds and binaries will be created in the context of the
+other PPA.
+
+    >>> build = binaries[0].binarypackagerelease.build
+    >>> source_pub = build.sourcepackagerelease.publishings[0]
+    >>> print build.archive.name
+    otherppa
+
+    # Copy the source into Celso's PPA, ensuring that the binaries
+    # are alse published there.
+    >>> source_pub_cprov = source_pub.copyTo(
+    ...     source_pub.distroseries, source_pub.pocket,
+    ...     cprov.archive)
+    >>> binaries_cprov = test_publisher.publishBinaryInArchive(
+    ...     binaries[0].binarypackagerelease, cprov.archive)
+
+Now we will see an extra source in Celso's PPA as well as an extra
+build - even though the build's context is not Celso's PPA. Previously
+there were 8 sources and builds.
+
+    >>> cprov_sources_new = cprov.archive.getPublishedSources()
+    >>> cprov_sources_new.count()
+    9
+
+    >>> cprov_builds_new = publishing_set.getBuildsForSources(
+    ...     cprov_sources_new)
+    >>> cprov_builds_new.count()
+    9
 
 Next we'll create two sources with two builds each (the SoyuzTestPublisher
 default) and show that the number of unpublished builds for these sources
@@ -1161,7 +1220,31 @@ check that they unpack as specified, a 3-element tuple.
     ...    file.filename for source, file, content in cprov_files)
 
     >>> print ordered_filenames[-1]
-    firefox-0.9.2.orig.tar.gz
+    firefox_0.9.2.orig.tar.gz
+
+We can also retrieve just the binary files related with Celso's PPA
+publications.
+
+    >>> binary_files = publishing_set.getBinaryFilesForSources(
+    ...     cprov_sources)
+    >>> binary_files = binary_files.config(distinct=True)
+    >>> binary_files.count()
+    6
+
+Please note how the result set is ordered by the id of `LibraryFileAlias`
+(second element of the triple):
+
+    >>> file_ids = [file.id for source, file, content in binary_files]
+    >>> file_ids == sorted(file_ids)
+    True
+    >>> for source, file, content in binary_files:
+    ...     print file.filename
+    mozilla-firefox_0.9_i386.deb
+    foo-bin_666_all.deb
+    foo-bin_666_all.deb
+    foo-bin_999_all.deb
+    foo-bin_999_all.deb
+    foo-bin_666_all.deb
 
 getPackageDiffsForSources() is also provided by `IPublishingSet`, it
 allows callsites to retrieve all related `PackageDiff` records based
@@ -1634,7 +1717,7 @@ And then grab the build summaries for firefox and foo:
     Relevant builds:
      - i386 build of foobar-test 666 in ubuntutest breezy-autotest RELEASE
 
-Any of the source ids passed into 
+Any of the source ids passed into
 getBuildStatusSummariesForSourceIdsAndArchive that do not belong to the
 required archive parameter will be ignored:
 

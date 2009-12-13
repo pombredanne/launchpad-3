@@ -36,6 +36,7 @@
           detailed information about the open source project in question.
         </div>
 
+        <div tal:replace="structure overview_menu/branding/fmt:link" />
         <ul id="external-links" class="horizontal"
           tal:condition="view/has_external_links">
           <li tal:condition="view/should_display_homepage">
@@ -62,7 +63,10 @@
 
               <dl id="owner" tal:condition="context/owner">
                 <dt>Maintainer:</dt>
-                <dd><a tal:replace="structure context/owner/fmt:link" /></dd>
+                <dd>
+                  <a tal:replace="structure context/owner/fmt:link" />
+                  <a tal:replace="structure overview_menu/reassign/fmt:icon" />
+                </dd>
               </dl>
 
               <dl id="aliases" tal:condition="context/aliases">
@@ -76,9 +80,13 @@
               <dl id="driver">
                 <dt>Driver:</dt>
                 <dd tal:condition="view/effective_driver">
-                  <a tal:replace="structure view/effective_driver/fmt:link" /></dd>
+                  <a tal:replace="structure view/effective_driver/fmt:link" />
+                  <a tal:replace="structure overview_menu/reassign/fmt:icon" />
+                </dd>
                 <dd tal:condition="not: view/effective_driver">
-                  Not yet appointed.</dd>
+                  Not yet appointed.
+                  <a tal:replace="structure overview_menu/reassign/fmt:icon" />
+                </dd>
               </dl>
 
               <dl id="uses" tal:define="uses_launchpad view/uses_launchpad_for">
@@ -90,6 +98,29 @@
                   <dt>Does not use Launchpad for development.</dt>
                   <dd></dd>
                 </tal:no_launchpad>
+              </dl>
+
+              <dl id="dev-focus"
+                  tal:define="dev_focus context/development_focus;
+                              trunk dev_focus/branch;
+                              trunk_visible trunk/required:launchpad.View|nothing">
+                <dt>Development focus:</dt>
+                <dd>
+                  <p>
+                  <a tal:attributes="href dev_focus/fmt:url"
+                     tal:content="string:${dev_focus/name} series" />&nbsp;
+                  <a tal:replace="structure overview_menu/edit/fmt:icon" /></p>
+                  <p tal:condition="trunk_visible">
+                    <a tal:replace="structure trunk/fmt:link" />&nbsp;
+                    <a tal:replace="structure dev_focus/menu:overview/link_branch/fmt:icon" />
+                    <br/>
+                    <a tal:replace="structure trunk/menu:context/source/fmt:link"/>
+                  </p>
+                  <p tal:condition="not: trunk_visible">
+                    Development focus branch has not been specified
+                    <a tal:replace="structure dev_focus/menu:overview/link_branch/fmt:icon" />
+                  </p>
+                </dd>
               </dl>
 
               <dl id="product-languages"
@@ -122,7 +153,7 @@
             </div>
 
             <p>
-              <a tal:replace="structure  overview_menu/rdf/fmt:link" />
+              <a tal:replace="structure overview_menu/rdf/fmt:link" />
             </p>
 
             <div id="project-admin-whiteboard" class="whiteboard"
@@ -150,13 +181,14 @@
             <p id="development-focus">
               <a tal:replace="structure context/development_focus/fmt:link" />
               is the current focus of development
-              <a tal:replace="structure overview_menu/edit/fmt:icon" />
             </p>
 
-            <ul class="horizontal"
-              tal:condition="overview_menu/series_add/enabled">
-              <li>
+            <ul class="horizontal">
+              <li tal:condition="overview_menu/series_add/enabled">
                 <a tal:replace="structure overview_menu/series_add/fmt:link" />
+              </li>
+              <li>
+                <a tal:replace="structure overview_menu/milestones/fmt:link" />
               </li>
             </ul>
           </div>
@@ -211,7 +243,7 @@
         </tal:release>
 
         <p class="alternate">
-          <a class="sprint info"
+          <a class="sprite info"
             tal:define="link overview_menu/downloads"
             tal:condition="release"
             tal:attributes="href link/fmt:url;

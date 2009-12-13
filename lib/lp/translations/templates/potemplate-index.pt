@@ -8,14 +8,13 @@
 <body>
 
 <div metal:fill-slot="main">
-  <ul class="helplinks">
-    <li>
-      <a href="https://help.launchpad.net/Translations/StartingToTranslate"
-         id="link-to-translations-help"
-         >Help for translations
-      </a>
-    </li>
-  </ul>
+  <div class="translation-help-links">
+    <a href="https://help.launchpad.net/Translations/StartingToTranslate"
+       id="link-to-translations-help"
+       >Help for translations
+    </a>
+    <div></div><!-- to clear-up all floats -->
+  </div>
 
   <div class="yui-b top-portlet">
     <p tal:condition="context/description">
@@ -116,7 +115,7 @@
              class="download sprite">download</a>
           translation tarballs.
         </p>
-        <div tal:condition="context/required:launchpad.Admin">
+        <div tal:condition="context/required:launchpad.TranslationsAdmin">
           <a tal:attributes="href
                              context/menu:navigation/administer/url"
              class="edit sprite">

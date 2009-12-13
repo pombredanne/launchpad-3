@@ -358,11 +358,22 @@ class IPOTemplate(IRosettaStats):
         The sequence number must be > 0.
         """
 
-    def getPOTMsgSets(current=True):
+    def getPOTMsgSets(current=True, prefetch=True):
         """Return an iterator over `IPOTMsgSet` objects in this template.
 
-        The 'current' argument is used to select only current POTMsgSets or
-        all of them.
+        :param current: Whether to limit the search to current
+            POTMsgSets.
+        :param prefetch: Whether to prefetch the `POMsgID`s attached to
+            the POTMsgSets.  This is for optimization only.
+        :return: All current POTMsgSets for the template if `current` is
+            True, or all POTMsgSets for the template otherwise.
+        """
+
+    def getTranslationCredits():
+        """Return an iterator over translation credits.
+
+        Return all `IPOTMsgSet` objects in this template that are translation
+        credits.
         """
 
     def getPOTMsgSetsCount(current=True):
@@ -421,8 +432,7 @@ class IPOTemplate(IRosettaStats):
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""
 
-    def newPOFile(language_code, variant=None,
-                  requester=None, create_sharing=True):
+    def newPOFile(language_code, variant=None, create_sharing=True):
         """Return a new `IPOFile` for the given language.
 
         Raise LanguageNotFound if the language does not exist in the
@@ -456,27 +466,35 @@ class IPOTemplate(IRosettaStats):
         """
 
     def createPOTMsgSetFromMsgIDs(msgid_singular, msgid_plural=None,
-                                  context=None):
+                                  context=None, sequence=0):
         """Creates a new template message in the database.
 
         :param msgid_singular: A reference to a singular msgid.
         :param msgid_plural: A reference to a plural msgid.  Can be None
-        if the message is not a plural message.
+            if the message is not a plural message.
         :param context: A context for the template message differentiating
-        it from other template messages with exactly the same `msgid`.
+            it from other template messages with exactly the same `msgid`.
+        :param sequence: The sequence number of this POTMsgSet within this
+            POTemplate. If 0, it is considered obsolete.
         :return: The newly created message set.
         """
 
-    def createMessageSetFromText(singular_text, plural_text, context=None):
+    def createMessageSetFromText(singular_text, plural_text,
+                                 context=None, sequence=0):
         """Creates a new template message in the database using strings.
 
         Similar to createMessageSetFromMessageID, but takes text objects
         (unicode or string) along with textual context, rather than a
         message IDs.
 
-        For non-plural messages, plural_text should be None.
-
-        Returns the newly created message set.
+        :param singular_text: The string for the singular msgid.
+        :param msgid_plural: The string for the plural msgid.  Must be None
+            if the message is not a plural message.
+        :param context: A context for the template message differentiating
+            it from other template messages with exactly the same `msgid`.
+        :param sequence: The sequence number of this POTMsgSet within this
+            POTemplate. If 0, it is considered obsolete.
+        :return: The newly created message set.
         """
 
     def getOrCreateSharedPOTMsgSet(singular_text, plural_text, context=None):
@@ -586,6 +604,18 @@ class IPOTemplateSubset(Interface):
         and both are the closer ones, returns None.
         """
 
+    def findUniquePathlessMatch(filename):
+        """Find the one `POTemplate` with given filename, if there is one.
+
+        Directory paths are ignored in the search.  Only the filename
+        itself is matched.
+
+        :param filename: A filename, without any directory component.
+        :return: The one `POTemplate` in the subset whose filename
+            matches `filename`, if there is exactly one.  Otherwise,
+            None.
+        """
+
 
 class IPOTemplateSet(Interface):
     """A set of PO templates."""
@@ -603,7 +633,8 @@ class IPOTemplateSet(Interface):
         """Return an iterator over all POTemplate sorted by modification."""
 
     def getSubset(distroseries=None, sourcepackagename=None,
-                  productseries=None, iscurrent=None):
+                  productseries=None, iscurrent=None,
+                  ordered_by_names=False):
         """Return a POTemplateSubset object depending on the given arguments.
         """
 

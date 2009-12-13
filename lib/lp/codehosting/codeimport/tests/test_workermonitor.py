@@ -11,25 +11,26 @@ __all__ = [
 import os
 import shutil
 import StringIO
-import sys
 import tempfile
 import unittest
 
 from bzrlib.branch import Branch
-from bzrlib.tests import TestCaseWithMemoryTransport
+from bzrlib.tests import TestCase as BzrTestCase
 
-from twisted.internet import defer, error, protocol, reactor
-from twisted.trial.unittest import TestCase
+from twisted.internet import defer, error, protocol, reactor, task
+from twisted.trial.unittest import TestCase as TrialTestCase
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import (
     TwistedLayer, TwistedLaunchpadZopelessLayer)
 from canonical.twistedsupport.tests.test_processmonitor import (
     makeFailure, ProcessTestsMixin)
-from lp.code.enums import CodeImportResultStatus, CodeImportReviewStatus
+from lp.code.enums import (
+    CodeImportResultStatus, CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -42,14 +43,14 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, SubversionServer, _make_silent_logger)
+    CVSServer, GitServer, SubversionServer)
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from lp.testing import login, logout
 from lp.testing.factory import LaunchpadObjectFactory
 
 
-class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
+class TestWorkerMonitorProtocol(ProcessTestsMixin, TrialTestCase):
 
     layer = TwistedLayer
 
@@ -127,13 +128,14 @@ class TestWorkerMonitorProtocol(ProcessTestsMixin, TestCase):
             self.protocol._tail, 'line 3\nline 4\nline 5\nline 6\n')
 
 
-class TestWorkerMonitorUnit(TestCase):
+class TestWorkerMonitorUnit(TrialTestCase):
     """Unit tests for most of the `CodeImportWorkerMonitor` class.
 
     We have to pay attention to the fact that several of the methods of the
     `CodeImportWorkerMonitor` class are wrapped in decorators that create and
     commit a transaction, and have to start our own transactions to check what
-    they did."""
+    they did.
+    """
 
     layer = TwistedLaunchpadZopelessLayer
 
@@ -173,8 +175,7 @@ class TestWorkerMonitorUnit(TestCase):
         getUtility(ICodeImportJobWorkflow).startJob(
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(
-            job.id, _make_silent_logger())
+        self.worker_monitor = self.WorkerMonitor(job.id, QuietFakeLogger())
         self.worker_monitor._failures = []
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
@@ -320,7 +321,7 @@ class TestWorkerMonitorUnit(TestCase):
         self.assertEqual(calls, [])
 
 
-class TestWorkerMonitorRunNoProcess(TestCase):
+class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
     """Tests for `CodeImportWorkerMonitor.run` that don't launch a subprocess.
     """
 
@@ -349,8 +350,7 @@ class TestWorkerMonitorRunNoProcess(TestCase):
         getUtility(ICodeImportJobWorkflow).startJob(
             job, self.factory.makeCodeImportMachine(set_online=True))
         self.job_id = job.id
-        self.worker_monitor = self.WorkerMonitor(
-            job.id, _make_silent_logger())
+        self.worker_monitor = self.WorkerMonitor(job.id, QuietFakeLogger())
         self.worker_monitor.result_status = None
         self.layer.txn.commit()
         self.layer.switchDbUser('codeimportworker')
@@ -435,21 +435,22 @@ class CIWorkerMonitorForTesting(CodeImportWorkerMonitor):
         return protocol
 
 
-class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
+class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithMemoryTransport.setUp(self)
+        BzrTestCase.setUp(self)
         login('no-priv@canonical.com')
         self.factory = LaunchpadObjectFactory()
         nuke_codeimport_sample_data()
         self.repo_path = tempfile.mkdtemp()
+        self.disable_directory_isolation()
         self.addCleanup(shutil.rmtree, self.repo_path)
         self.foreign_commit_count = 0
 
     def tearDown(self):
-        TestCaseWithMemoryTransport.tearDown(self)
+        BzrTestCase.tearDown(self)
         logout()
 
     def makeCVSCodeImport(self):
@@ -475,6 +476,20 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
 
         return self.factory.makeCodeImport(
             svn_branch_url=svn_branch_url)
+
+    def makeBzrSvnCodeImport(self):
+        """Make a `CodeImport` that points to a real Subversion repository."""
+        self.subversion_server = SubversionServer(
+            self.repo_path, use_svn_serve=True)
+        self.subversion_server.setUp()
+        self.addCleanup(self.subversion_server.tearDown)
+        svn_branch_url = self.subversion_server.makeBranch(
+            'trunk', [('README', 'contents')])
+        self.foreign_commit_count = 2
+
+        return self.factory.makeCodeImport(
+            svn_branch_url=svn_branch_url,
+            rcs_type=RevisionControlSystems.BZR_SVN)
 
     def makeGitCodeImport(self):
         """Make a `CodeImport` that points to a real Git repository."""
@@ -539,7 +554,7 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         This implementation does it in-process.
         """
         self.layer.switchDbUser('codeimportworker')
-        monitor = CIWorkerMonitorForTesting(job_id, _make_silent_logger())
+        monitor = CIWorkerMonitorForTesting(job_id, QuietFakeLogger())
         deferred = monitor.run()
         def save_protocol_object(result):
             """Save the process protocol object.
@@ -579,6 +594,15 @@ class TestWorkerMonitorIntegration(TestCase, TestCaseWithMemoryTransport):
         result = self.performImport(job_id)
         return result.addCallback(self.assertImported, code_import_id)
 
+    def test_import_bzrsvn(self):
+        # Create a Subversion-via-bzr-svn CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeBzrSvnCodeImport())
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        result = self.performImport(job_id)
+        return result.addCallback(self.assertImported, code_import_id)
+
 
 class DeferredOnExit(protocol.ProcessProtocol):
 
@@ -591,12 +615,18 @@ class DeferredOnExit(protocol.ProcessProtocol):
         else:
             self._deferred.errback(reason)
 
+
 class TestWorkerMonitorIntegrationScript(TestWorkerMonitorIntegration):
     """Tests for CodeImportWorkerMonitor that execute a child process."""
 
     def setUp(self):
         TestWorkerMonitorIntegration.setUp(self)
         self._protocol = None
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
 
     def performImport(self, job_id):
         """Perform the import job with ID job_id.

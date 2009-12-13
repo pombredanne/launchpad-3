@@ -36,7 +36,6 @@ from canonical.launchpad.webapp import (
     LaunchpadView,
     Link,
     NavigationMenu)
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import structured
 from canonical.widgets.itemswidgets import (
     LaunchpadRadioWidgetWithDescription)
@@ -133,7 +132,8 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
     @property
     def has_imports_enabled(self):
         """Is imports enabled for the series?"""
-        return (self.context.translations_autoimport_mode !=
+        return (self.context.branch is not None and
+                self.context.translations_autoimport_mode !=
                 TranslationsBranchImportMode.NO_IMPORT)
 
     @property
@@ -153,12 +153,6 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
         """URL to change the translations for the series."""
         return canonical_url(self.context,
                              view_name="+translations-settings")
-
-    @property
-    def product_edit_url(self):
-        """URL to edit the `IProduct`."""
-        return canonical_url(self.context.product, rootsite="mainsite",
-                             view_name="+edit")
 
 
 class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
@@ -487,11 +481,8 @@ class ProductSeriesTemplatesView(LaunchpadView):
     def iter_templates(self):
         """Return an iterator of all `IPOTemplates` for the series."""
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(productseries=self.context)
-
-    def can_administer(self, template):
-        """Can the user administer the template?"""
-        return check_permission('launchpad.Admin', template)
+        return potemplateset.getSubset(productseries=self.context,
+                                       ordered_by_names=True)
 
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):

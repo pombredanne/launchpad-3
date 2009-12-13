@@ -1042,33 +1042,23 @@ PackageUpload records.
    >>> from lp.registry.interfaces.person import IPersonSet
    >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
-   >>> def _create_source():
-   ...     """Create source with meaningful '.changes' file."""
-   ...     archive = cprov.archive
-   ...     version = '1.0-1'
-   ...     new_version = '2.0-1'
-   ...     changesfile_path = 'lib/lp/archiveuploader/tests/data/suite/foocomm_%s_binary/foocomm_%s_i386.changes' % ((version,)*2)
-   ... 
-   ...     changesfile_content = ''
-   ...     handle = open(changesfile_path, 'r')
-   ...     try:
-   ...         changesfile_content = handle.read()
-   ...     finally:
-   ...         handle.close()
-   ... 
-   ...     changesfile_content = changesfile_content.replace(
-   ...          version, new_version)
-   ...     source = test_publisher.getPubSource(
-   ...         sourcename='foocomm', archive=archive, version=new_version,
-   ...         changes_file_content=changesfile_content, distroseries=hoary)
-   ... 
-   ...     return source
-
 A 'delayed-copy' is a PackageUpload record.
 
    >>> delayed_copy = getUtility(IPackageUploadSet).createDelayedCopy(
    ...     ubuntu.main_archive, hoary,
    ...     PackagePublishingPocket.RELEASE, testing_key)
+
+Delayed copies are manipulated exactly as normal uploads
+are. Contents can be attached to it.
+
+   >>> a_source_package = test_publisher.createSource(
+   ...     cprov.archive, 'foocomm', '1.0-1', new_version='2.0-1')
+   >>> transaction.commit()
+   >>> unused = delayed_copy.addSource(a_source_package.sourcepackagerelease)
+
+   >>> print delayed_copy.displayname
+   foocomm (delayed)
+
    >>> verifyObject(IPackageUpload, delayed_copy)
    True
 
@@ -1111,13 +1101,6 @@ requester of the copy.
 
    >>> print delayed_copy.signing_key.owner.displayname
    Foo Bar
-
-Delayed copies are further manipulated exactly as normal uploads
-are. Contents can be attached to it.
-
-   >>> a_source_package = _create_source()
-   >>> transaction.commit()
-   >>> unused = delayed_copy.addSource(a_source_package.sourcepackagerelease)
 
 IPackageUpload.acceptFromCopy() simply checks and accepts a
 delayed-copy record. Bugs mentioned in the changelog are closed by

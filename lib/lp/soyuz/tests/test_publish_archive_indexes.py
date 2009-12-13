@@ -245,7 +245,8 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
 
         # An example of a corrupt dsc_binaries field. We need to ensure
         # that the corruption is not carried over into the index stanza.
-        pub_source.sourcepackagerelease.dsc_binaries = 'foo_bin\nbar_bin\n'
+        pub_source.sourcepackagerelease.dsc_binaries = (
+            'foo_bin,\nbar_bin,\nzed_bin')
 
         parser = self.write_stanza_and_reparse(pub_source.getIndexStanza())
 
@@ -258,7 +259,8 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
             'The Version field should be parsed correctly.')
 
         # Without the fix, the second binary would not be parsed at all.
-        self.assertEqual('foo_bin\n bar_bin', parser.Section['Binary'])
+        self.assertEqual(
+            'foo_bin,\n bar_bin,\n zed_bin', parser.Section['Binary'])
 
     def test_getIndexStanza_with_correct_dsc_binaries(self):
         """Ensure correct binary fields are written correctly to indexes.
@@ -278,7 +280,8 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
 
         # An example of a corrupt dsc_binaries field. We need to ensure
         # that the corruption is not carried over into the index stanza.
-        pub_source.sourcepackagerelease.dsc_binaries = 'foo_bin\n bar_bin'
+        pub_source.sourcepackagerelease.dsc_binaries = (
+            'foo_bin,\n bar_bin,\n zed_bin')
 
         parser = self.write_stanza_and_reparse(pub_source.getIndexStanza())
 
@@ -291,7 +294,8 @@ class TestNativeArchiveIndexesReparsing(TestNativePublishingBase):
             'The Version field should be parsed correctly.')
 
         # Without the fix, the second binary would not be parsed at all.
-        self.assertEqual('foo_bin\n bar_bin', parser.Section['Binary'])
+        self.assertEqual(
+            'foo_bin,\n bar_bin,\n zed_bin', parser.Section['Binary'])
 
 
 class TestIndexStanzaFieldsHelper(unittest.TestCase):

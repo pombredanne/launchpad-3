@@ -1031,8 +1031,17 @@ will not be listed twice in the returned result.
 The 'contributors' property of a POFile returns all the people who contributed
 translations to it.
 
-    >>> [person.name for person in evolution_es.contributors]
-    [u'carlos', u'mark', u'no-priv']
+    >>> def print_names(persons):
+    ...     """Print name for each of `persons`."""
+    ...     for person in persons:
+    ...         print person.name
+    ...     print "--"
+
+    >>> print_names(evolution_es.contributors)
+    carlos
+    mark
+    no-priv
+    --
 
 If you have a distroseries and want to know all the people who contributed
 translations on a given language for that distroseries, you can use
@@ -1042,9 +1051,16 @@ the getPOFileContributorsByLanguage() method of IDistroSeries.
     >>> from lp.registry.model.distroseries import DistroSeries
     >>> hoary = DistroSeries.selectOneBy(name="hoary")
     >>> spanish = Language.selectOneBy(code="es")
-    >>> [p.name for p in hoary.getPOFileContributorsByLanguage(spanish)]
-    [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16',
-     u'name12', u'ubuntu-translators', u'tsukimi']
+    >>> print_names(hoary.getPOFileContributorsByLanguage(spanish))
+    jorge-gonzalez-gonzalez
+    carlos
+    valyag
+    danner
+    name16
+    name12
+    ubuntu-translators
+    tsukimi
+    --
 
     # We can see that there is another translator that doesn't appear in
     # previous list because the template he translated is not current.
@@ -1052,14 +1068,26 @@ the getPOFileContributorsByLanguage() method of IDistroSeries.
     >>> non_current_pofile.potemplate.iscurrent
     False
 
-    >>> [p.name for p in non_current_pofile.contributors]
-    [u'jordi']
+    >>> print_names(non_current_pofile.contributors)
+    jordi
+    --
 
     >>> non_current_pofile.potemplate.distroseries == hoary
     True
 
     >>> non_current_pofile.language == spanish
     True
+
+The rosetta_experts team is special: it never shows up in contributors
+lists.
+
+    >>> experts_pofile = factory.makePOFile('nl')
+    >>> experts_message = factory.makeTranslationMessage(
+    ...     pofile=experts_pofile, translator=rosetta_experts,
+    ...     reviewer=rosetta_experts, translations=['hi'])
+
+    >>> print_names(experts_pofile.contributors)
+    --
 
 
 == getPOTMsgSetTranslated ==
@@ -1144,14 +1172,16 @@ Lets get Spanish translation for alsa-utils.
     >>> alsa_translation = alsa_template.newPOFile('sr')
     >>> alsa_translation.owner = editor
 
-This translation file contains untranslated translation-credits message.
+This translation file contains a translation-credits message. By default it
+is created with a dummy translation
 
     >>> potmsgset = alsa_template.getPOTMsgSetByMsgIDText(
     ...     u'translation-credits')
     >>> current = potmsgset.getCurrentTranslationMessage(
     ...     alsa_template, alsa_translation.language)
-    >>> print current
-    None
+    >>> print current.translations
+    [u'This is a dummy translation so that
+    the credits are counted as translated.']
 
 If we submit a published translation, the translation for this message
 is updated.
@@ -1184,44 +1214,48 @@ credited as well.
 
     >>> potmsgset = alsa_template.getPOTMsgSetByMsgIDText(
     ...     u'translation-credits')
-    >>> alsa_translation.prepareTranslationCredits(
+    >>> print alsa_translation.prepareTranslationCredits(
     ...     potmsgset)
-    u'Happy translator\n\nLaunchpad Contributions:\n  Carlos Perell\xf3 Mar\xedn http://launchpad.dev/~carlos'
+    Happy translator
+    Launchpad Contributions:
+    Carlos ...
 
-Emails of translators is not yet translated.
+Emails of translators just has the dummy translation.
 
     >>> emails_of_translators = alsa_template.getPOTMsgSetByMsgIDText(
     ...     u"_: EMAIL OF TRANSLATORS\nYour emails")
     >>> current = emails_of_translators.getCurrentTranslationMessage(
     ...     alsa_template, alsa_translation.language)
-    >>> print current
-    None
+    >>> print current.translations
+    [u'This is a dummy translation so that
+    the credits are counted as translated.']
 
 But now credits Carlos when prepared automatically.  Two empty emails are
 added to make formatting nicer (first one is used as a separation
 between package and Launchpad contributors, and second is empty email
 for 'Launchpad Contributions' title; see bug #133817 for details).
 
-    >>> alsa_translation.prepareTranslationCredits(
+    >>> print alsa_translation.prepareTranslationCredits(
     ...     emails_of_translators)
-    u',,carlos@canonical.com'
+    ,,carlos@canonical.com
 
-Names of translators are untranslated and there is no message set for them yet.
+Names of translators just has the dummy translation.
 
     >>> names_of_translators = alsa_template.getPOTMsgSetByMsgIDText(
     ...     u"_: NAME OF TRANSLATORS\nYour names")
     >>> current = names_of_translators.getCurrentTranslationMessage(
     ...     alsa_template, alsa_translation.language)
-    >>> print current
-    None
+    >>> print current.translations
+    [u'This is a dummy translation so that
+    the credits are counted as translated.']
 
 But now names credit Carlos when prepared automatically.  As above, an
 empty name is added first to serve as a separator, and "Launchpad
 Contributions:" is used as a header for the added credits.
 
-    >>> alsa_translation.prepareTranslationCredits(
+    >>> print alsa_translation.prepareTranslationCredits(
     ...     names_of_translators)
-    u' ,Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
+    ,Launchpad Contributions:,Carlos P... M...
 
 Lets add a newly supported KDE context message with credit strings
 split into two: context and message, instead of a single message with
@@ -1233,16 +1267,16 @@ embedded context.
 
 prepareTranslationCredits works on such messages as well:
 
-    >>> alsa_translation.prepareTranslationCredits(new_kde_name_credits)
-    u' ,Launchpad Contributions:,Carlos Perell\xf3 Mar\xedn'
+    >>> print alsa_translation.prepareTranslationCredits(new_kde_name_credits)
+    ,Launchpad Contributions:,Carlos P... M...
 
 Similar happens for email credits as with name credits.
 
     >>> new_kde_email_credits = alsa_template.createMessageSetFromText(
     ...     singular_text=u"Your emails", plural_text=None,
     ...     context=u"EMAIL OF TRANSLATORS")
-    >>> alsa_translation.prepareTranslationCredits(new_kde_email_credits)
-    u',,carlos@canonical.com'
+    >>> print alsa_translation.prepareTranslationCredits(new_kde_email_credits)
+    ,,carlos@canonical.com
 
 
 == POFileToTranslationFileDataAdapter ==

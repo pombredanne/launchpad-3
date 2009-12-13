@@ -47,7 +47,7 @@ here first:
     ...     'http://localhost'
     ...     '/ubuntu/breezy-autotest/+package/mozilla-firefox')
     >>> print browser.title
-    mozilla-firefox : 6.6.6 : Ubuntu
+    mozilla-firefox : Breezy Badger Autotest (6.6.6) : Ubuntu
 
 Now run a search for mozilla-firefox and check that it is found:
 
@@ -256,7 +256,7 @@ javascript enabled, the information is shown in-place.
     Built packages
       mozilla-firefox ff from iceweasel
     Package files
-      firefox-0.9.2.orig.tar.gz (9.5 MiB)
+      firefox_0.9.2.orig.tar.gz (9.5 MiB)
       iceweasel-1.0.dsc (123 bytes)
       mozilla-firefox_0.9_i386.deb (3 bytes)
 
@@ -268,6 +268,7 @@ There's also a section on the page that gives some package information:
     Urgency:* Low Urgency
     Component:* main
     Architectures:* any
+    Latest upload: 1.0
     *actual publishing details may vary in this distribution, these are just the package defaults.
 
 And if the source has direct packaging linkage, the upstream's description
@@ -287,22 +288,28 @@ As can be seen, the packaging is not linked yet.  We can do that now using the
     ...     name='field.productseries').value = "firefox/trunk"
     >>> user_browser.getControl('Change').click()
 
-Go back to the source page, and now the upstream's description is shown.
+Go back to the source page, and now the upstream's description is shown and
+linked.
 
     >>> user_browser.open("http://launchpad.dev/ubuntu/+source/iceweasel/")
     >>> print extract_text(find_tag_by_id(user_browser.contents, 'upstream'))
     Upstream
+    Mozilla Firefox
     The Mozilla Firefox web browser
+
+    >>> user_browser.getLink('Mozilla Firefox')
+    <Link text='Mozilla Firefox' url='http://launchpad.dev/firefox'>
 
 
 Distribution source packages side-bar
 -------------------------------------
 
 The page has a side-bar with a global actions menu, a "Get Involved"
-menu, a "Latest release" portlet and a "Bug subscriptions" portlet.
+menu, and a "Bug subscriptions" portlet.
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'global-actions'))
+    View full publishing history
     View full change log
     Subscribe to bug mail
 
@@ -311,13 +318,6 @@ menu, a "Latest release" portlet and a "Bug subscriptions" portlet.
     Get Involved
     Report a bug
     Ask a question
-
-    >>> print extract_text(
-    ...     find_tag_by_id(user_browser.contents, 'latest-release'))
-    Latest release
-    Version: 1.0
-    Uploaded by: Mark Shuttleworth
-    On date: ...
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents,
@@ -558,11 +558,10 @@ Returning to the distribution source package index page using the
 Publishing History
 ------------------
 
-Users can inspect the full publishing history by clicking on a link at
-the bottom of the 'packages_list' section in the distribution source
-package index page.
+Users can inspect the full publishing history by clicking on a link in
+the action menu on the the distribution source package index page.
 
-    >>> anon_browser.getLink('See full publishing history').click()
+    >>> anon_browser.getLink('View full publishing history').click()
 
 The full publishing history is presented in a new page, with the
 appropriate title and main heading, but preserving the distribution

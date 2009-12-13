@@ -28,7 +28,7 @@ from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.blueprints.model.specification import Specification
 from lp.registry.model.productrelease import ProductRelease
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)
@@ -188,6 +188,9 @@ class Milestone(SQLBase, StructuralSubscriptionTargetMixin, HasBugsBase):
         """See `IMilestone`."""
         params = BugTaskSearchParams(milestone=self, user=None)
         bugtasks = getUtility(IBugTaskSet).search(params)
+        assert len(self.getSubscriptions()) == 0, (
+            "You cannot delete a milestone which has structural "
+            "subscriptions.")
         assert bugtasks.count() == 0, (
             "You cannot delete a milestone which has bugtasks targeted "
             "to it.")
@@ -237,6 +240,7 @@ class MilestoneSet:
     def getVisibleMilestones(self):
         """See lp.registry.interfaces.milestone.IMilestoneSet."""
         return Milestone.selectBy(active=True, orderBy='id')
+
 
 class ProjectMilestone(HasBugsBase):
     """A virtual milestone implementation for project.
@@ -301,3 +305,7 @@ class ProjectMilestone(HasBugsBase):
     def official_bug_tags(self):
         """See `IHasBugs`."""
         return self.target.official_bug_tags
+
+    def userHasBugSubscriptions(self, user):
+        """See `IStructuralSubscriptionTarget`."""
+        return False

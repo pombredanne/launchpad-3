@@ -12,9 +12,13 @@ from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
+from lp.registry.interfaces.distribution import NoPartnerArchive
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
 from lp.testing import TestCaseWithFactory
@@ -165,6 +169,59 @@ class TestSourcePackage(TestCaseWithFactory):
         self.assertEqual(
             distribution_sourcepackage,
             sourcepackage.distribution_sourcepackage)
+
+    def test_default_archive(self):
+        # The default archive of a source package is the primary archive of
+        # its distribution.
+        sourcepackage = self.factory.makeSourcePackage()
+        distribution = sourcepackage.distribution
+        self.assertEqual(
+            distribution.main_archive, sourcepackage.get_default_archive())
+
+    def test_default_archive_partner(self):
+        # If the source package was most recently uploaded to a partner
+        # component, then its default archive is the partner archive for the
+        # distribution.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackage.sourcepackagename,
+            distroseries=sourcepackage.distroseries,
+            component=partner,
+            status=PackagePublishingStatus.PUBLISHED)
+        distribution = sourcepackage.distribution
+        expected_archive = self.factory.makeArchive(
+            distribution=distribution,
+            purpose=ArchivePurpose.PARTNER)
+        self.assertEqual(
+            expected_archive, sourcepackage.get_default_archive())
+
+    def test_default_archive_specified_component(self):
+        # If the component is explicitly specified as partner, then we return
+        # the partner archive.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        distribution = sourcepackage.distribution
+        expected_archive = self.factory.makeArchive(
+            distribution=distribution,
+            purpose=ArchivePurpose.PARTNER)
+        self.assertEqual(
+            expected_archive,
+            sourcepackage.get_default_archive(component=partner))
+
+    def test_default_archive_partner_doesnt_exist(self):
+        # If the default archive ought to be the partner archive (because the
+        # last published upload was to a partner component) then
+        # default_archive will raise an exception.
+        sourcepackage = self.factory.makeSourcePackage()
+        partner = getUtility(IComponentSet)['partner']
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackage.sourcepackagename,
+            distroseries=sourcepackage.distroseries,
+            component=partner,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.assertRaises(
+            NoPartnerArchive, sourcepackage.get_default_archive)
 
 
 class TestSourcePackageSecurity(TestCaseWithFactory):

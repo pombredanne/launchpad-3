@@ -548,7 +548,10 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
     @action(_("Renew"), name="renew")
     def renew_action(self, action, data):
         member = self.context.person
-        member.renewTeamMembership(self.context.team)
+        # This if-statement prevents an exception if the user
+        # double clicks on the submit button.
+        if self.context.canBeRenewedByMember():
+            member.renewTeamMembership(self.context.team)
         self.request.response.addInfoNotification(
             _("Membership renewed until ${date}.", mapping=dict(
                     date=self.context.dateexpires.strftime('%Y-%m-%d'))))
@@ -595,12 +598,10 @@ class TeamInvitationView(LaunchpadFormView):
         return "Make %s a member of %s" % (
             self.context.person.displayname, self.context.team.displayname)
 
-    # XXX BarryWarsaw 2009-09-14 bug 429663.  Because this view is subordinate
-    # to the ~person in its context, no +hierarchy adapter can be found.  This
-    # means the page has no breadcrumbs and no proper page title.  For
-    # expediency during the 3.0 conversion work, we'll just set the page title
-    # to its label and move on.
-    page_title = label
+    @property
+    def page_title(self):
+        return smartquote(
+            '"%s" team invitation') % self.context.team.displayname
 
     def browserDefault(self, request):
         return self, ()
@@ -844,7 +845,7 @@ class CommonMenuLinks:
 
     def related_software_summary(self):
         target = '+related-software'
-        text = 'Summary'
+        text = 'Related software'
         return Link(target, text, icon='info')
 
     def maintained(self):
@@ -856,21 +857,21 @@ class CommonMenuLinks:
     def uploaded(self):
         target = '+uploaded-packages'
         text = 'Uploaded packages'
-        return Link(target, text, icon='info')
+        enabled = bool(
+            self.person.getLatestUploadedButNotMaintainedPackages())
+        return Link(target, text, enabled=enabled, icon='info')
 
     def ppa(self):
-        # XXX: salgado, 2009-09-09, bug=426899: Need to conditionally disable
-        # this link.
         target = '+ppa-packages'
-        text = 'PPA packages'
-        return Link(target, text, icon='info')
+        text = 'Related PPA packages'
+        enabled = bool(self.person.getLatestUploadedPPAPackages())
+        return Link(target, text, enabled=enabled, icon='info')
 
     def projects(self):
-        # XXX: salgado, 2009-09-09, bug=426900: Need to conditionally disable
-        # this link.
         target = '+related-projects'
         text = 'Related projects'
-        return Link(target, text, icon='info')
+        enabled = bool(self.person.getOwnedOrDrivenPillars())
+        return Link(target, text, enabled=enabled, icon='info')
 
 
 class PersonMenuMixin(CommonMenuLinks):
@@ -956,7 +957,7 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
         text = 'Update Jabber IDs'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.EditLocation')
+    @enabled_with_permission('launchpad.Edit')
     def editlocation(self):
         target = '+editlocation'
         text = 'Set location and time zone'
@@ -1073,7 +1074,7 @@ class PersonEditNavigationMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Special')
     def sshkeys(self):
         target = '+editsshkeys'
-        text = 'SSH Keys'
+        text = 'SSH keys'
         return Link(target, text)
 
     def gpgkeys(self):
@@ -1140,7 +1141,7 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
     @enabled_with_permission('launchpad.Edit')
     def proposed_members(self):
         target = '+editproposedmembers'
-        text = 'Approve/Decline applicants'
+        text = 'Approve or decline members'
         return Link(target, text, icon='add')
 
     def map(self):
@@ -1255,7 +1256,8 @@ class TeamOverviewMenu(ApplicationMenu, TeamMenuMixin):
              'editemail', 'configure_mailing_list', 'moderate_mailing_list',
              'editlanguages', 'map', 'polls',
              'add_poll', 'join', 'leave', 'add_my_teams',
-             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa']
+             'reassign', 'projects', 'activate_ppa', 'maintained', 'ppa',
+             'related_software_summary']
 
 
 class TeamOverviewNavigationMenu(NavigationMenu, TeamMenuMixin):
@@ -1809,6 +1811,7 @@ class PersonSpecWorkloadTableView(LaunchpadView):
 class PersonSpecFeedbackView(HasSpecificationsView):
 
     label = 'Feature feedback requests'
+    page_title = label
 
     @cachedproperty
     def feedback_specs(self):
@@ -2444,7 +2447,8 @@ class PersonLanguagesView(LaunchpadFormView):
     def getRedirectionURL(self):
         request = self.request
         referrer = request.getHeader('referer')
-        if referrer and referrer.startswith(request.getApplicationURL()):
+        if referrer and (referrer.startswith(request.getApplicationURL()) or
+                         referrer.find('+languages') != -1):
             return referrer
         else:
             return ''
@@ -2456,10 +2460,20 @@ class PersonLanguagesView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        """Redirect to this url after successfully processing the form."""
+        """Redirect back to the +languages page if request originated there."""
+        redirection_url = self.request.get('redirection_url')
+        if redirection_url:
+            return redirection_url
         return canonical_url(self.context)
 
-    cancel_url = next_url
+    @property
+    def cancel_url(self):
+        """Redirect back to the +languages page if request originated there."""
+        redirection_url = self.getRedirectionURL()
+        if redirection_url:
+            return redirection_url
+        return canonical_url(self.context)
+
 
     @action(_("Save"), name="save")
     def submitLanguages(self, action, data):
@@ -2499,9 +2513,6 @@ class PersonLanguagesView(LaunchpadFormView):
         if len(messages) > 0:
             message = structured('<br />'.join(messages))
             self.request.response.addInfoNotification(message)
-        redirection_url = self.request.get('redirection_url')
-        if redirection_url:
-            self.request.response.redirect(redirection_url)
 
     @property
     def answers_url(self):
@@ -2857,11 +2868,15 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         else:
             raise AssertionError('Unknown group to contact.')
 
+    @property
     def should_show_polls_portlet(self):
         menu = TeamOverviewMenu(self.context)
-        return self.hasCurrentPolls() or menu.add_poll().enabled
+        return (
+            self.has_current_polls or self.closedpolls
+            or menu.add_poll().enabled)
 
-    def hasCurrentPolls(self):
+    @property
+    def has_current_polls(self):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
@@ -2996,15 +3011,15 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         """Return True if "Personal package archives" is to be shown.
 
         We display it if:
-        person has any public PPA or current_user has lp.edit
+        current_user may view at least one PPA or current_user has lp.edit
         """
         # If the current user has edit permission, show the section.
         if check_permission('launchpad.Edit', self.context):
             return True
 
-        # If the current user has any public PPA, show the section.
+        # If the current user can view any PPA, show the section.
         for ppa in self.context.ppas:
-            if not ppa.private:
+            if check_permission('launchpad.View', ppa):
                 return True
 
         return False
@@ -3205,13 +3220,13 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         """Should the map portlet be displayed?
 
         The map portlet is displayed only if the person has no location
-        specified, or if the user has permission to view the person's
-        location.
+        specified (latitude), or if the user has permission to view the
+        person's location.
         """
-        if self.context.location is None:
+        if self.user == self.context:
             return True
         else:
-            return check_permission('launchpad.View', self.context.location)
+            return self.has_visible_location
 
 
 class TeamIndexView(PersonIndexView):
@@ -3237,17 +3252,20 @@ class TeamIndexView(PersonIndexView):
             raise AssertionError(e)
 
     @property
-    def visibility(self):
-        return self.context.visibility.title + ' Team'
-
-    @property
     def visibility_info(self):
         if self.context.visibility == PersonVisibility.PRIVATE:
-            return 'Viewable by team members.'
+            return 'Private team'
         elif self.context.visibility == PersonVisibility.PRIVATE_MEMBERSHIP:
-            return 'Team membership is viewable by team members.'
+            return 'Team membership is viewable by team members'
         else:
-            return ''
+            return 'Public team'
+
+    @property
+    def visibility_portlet_class(self):
+        """The portlet class for team visibility."""
+        if self.context.visibility == PersonVisibility.PUBLIC:
+            return 'portlet'
+        return 'portlet private'
 
 
 class PersonCodeOfConductEditView(LaunchpadView):
@@ -3350,12 +3368,19 @@ class PersonEditWikiNamesView(LaunchpadView):
             if wiki and wikiname:
                 existingwiki = wikinameset.getByWikiAndName(wiki, wikiname)
                 if existingwiki and existingwiki.person != context:
-                    self.error_message = structured(
+                    owner_name = urllib.quote(existingwiki.person.name)
+                    merge_url = (
+                        '%s/+requestmerge?field.dupe_person=%s'
+                        % (canonical_url(getUtility(IPersonSet)), owner_name))
+                    self.error_message =  structured(
                         'The WikiName %s%s is already registered by '
-                        '<a href="%s">%s</a>.',
+                        '<a href="%s">%s</a>. If you think this is a '
+                        'duplicated account, you can <a href="%s">merge it'
+                        '</a> into your account.',
                         wiki, wikiname, canonical_url(existingwiki.person),
-                        existingwiki.person.displayname)
+                        existingwiki.person.displayname, merge_url)
                     return
+
                 elif existingwiki:
                     self.error_message = structured(
                         'The WikiName %s%s already belongs to you.',
@@ -3852,10 +3877,7 @@ class PersonEditView(BasePersonEditView):
             self.form_fields['name'].for_display = True
         super(PersonEditView, self).setUpWidgets()
         if not writable:
-            # We can't change the widget's .hint directly because that's a
-            # read-only property.  But that property just delegates to the
-            # context's underlying description, so change that instead.
-            self.widgets['name'].context.description = _(
+            self.widgets['name'].hint = _(
                 'This user has a PPA and may not be renamed.')
 
     def validate(self, data):
@@ -4103,9 +4125,13 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         for team in self.user.getAdministratedTeams():
             if team == self.context:
                 continue
+            elif team.visibility != PersonVisibility.PUBLIC:
+                continue
             elif team in self.context.activemembers:
+                # The team is already a member of the context object.
                 continue
             elif self.context.hasParticipationEntryFor(team):
+                # The context object is a member/submember of the team.
                 continue
             candidates.append(team)
         return candidates
@@ -4664,16 +4690,20 @@ class PersonEditEmailsView(LaunchpadFormView):
 class TeamMugshotView(LaunchpadView):
     """A view for the team mugshot (team photo) page"""
 
-    label = "Who's in this team?"
+    label = "Member photos"
+    batch_size = config.launchpad.mugshot_batch_size
 
     def initialize(self):
         """Cache images to avoid dying from a million cuts."""
-        getUtility(IPersonSet).cacheBrandingForPeople(self.allmembers)
-
+        getUtility(IPersonSet).cacheBrandingForPeople(
+            self.members.currentBatch())
 
     @cachedproperty
-    def allmembers(self):
-        return list(self.context.allmembers)
+    def members(self):
+        """Get a batch of all members in the team."""
+        batch_nav = BatchNavigator(
+            self.context.allmembers, self.request, size=self.batch_size)
+        return batch_nav
 
 
 class TeamReassignmentView(ObjectReassignmentView):
@@ -5326,6 +5356,7 @@ class PersonEditLocationView(LaunchpadFormView):
     """Edit a person's location."""
 
     schema = PersonLocationForm
+    field_names = ['location', 'hide']
     custom_widget('location', LocationWidget)
 
     @property
@@ -5334,19 +5365,6 @@ class PersonEditLocationView(LaunchpadFormView):
             "%s's location and timezone" % self.context.displayname)
 
     label = page_title
-
-    @property
-    def field_names(self):
-        """See `LaunchpadFormView`.
-
-        If the user has launchpad.Edit on this context, then allow him to set
-        whether or not the location should be visible.  The field for setting
-        the person's location is always shown.
-        """
-        if check_permission('launchpad.Edit', self.context):
-            return ['location', 'hide']
-        else:
-            return ['location']
 
     @property
     def initial_values(self):

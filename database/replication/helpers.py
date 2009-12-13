@@ -26,6 +26,11 @@ CLUSTERNAME = 'sl'
 # The namespace in the database used to contain all the Slony-I tables.
 CLUSTER_NAMESPACE = '_%s' % CLUSTERNAME
 
+# Replication set id constants. Don't change these without DBA help.
+LPMAIN_SET_ID = 1
+AUTHDB_SET_ID = 2
+HOLDING_SET_ID = 666
+
 # Seed tables for the authdb replication set to be passed to
 # calculate_replication_set().
 AUTHDB_SEED = frozenset([
@@ -58,7 +63,15 @@ LPMAIN_SEED = frozenset([
 # session tables, as these might exist in developer databases but will not
 # exist in the production launchpad database.
 IGNORED_TABLES = set([
-    'public.secret', 'public.sessiondata', 'public.sessionpkgdata'])
+    # Session tables that in some situations will exist in the main lp
+    # database.
+    'public.secret', 'public.sessiondata', 'public.sessionpkgdata',
+    # Mirror tables, per Bug #489078. These tables have their own private
+    # replication set that is setup manually.
+    'public.lp_person',
+    'public.lp_personlocation',
+    'public.lp_teamparticipation',
+    ])
 
 
 def slony_installed(con):
@@ -101,7 +114,7 @@ class TableReplicationInfo:
 
 def sync(timeout):
     """Generate a sync event and wait for it to complete on all nodes.
-   
+
     This means that all pending events have propagated and are in sync
     to the point in time this method was called. This might take several
     hours if there is a large backlog of work to replicate.
@@ -282,10 +295,10 @@ def preamble(con=None):
         cluster name = sl;
 
         # Symbolic ids for replication sets.
-        define lpmain_set  1;
-        define authdb_set  2;
-        define holding_set 666;
-        """)]
+        define lpmain_set  %d;
+        define authdb_set  %d;
+        define holding_set %d;
+        """ % (LPMAIN_SET_ID, AUTHDB_SET_ID, HOLDING_SET_ID))]
 
     if master_node is not None:
         preamble.append(dedent("""\
@@ -303,9 +316,9 @@ def preamble(con=None):
                 node.nickname, node.node_id,
                 node.nickname, node.connection_string,
                 node.nickname, node.nickname)))
-    
+
     return '\n\n'.join(preamble)
-        
+
 
 def calculate_replication_set(cur, seeds):
     """Return the minimal set of tables and sequences needed in a

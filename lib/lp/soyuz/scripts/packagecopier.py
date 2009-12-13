@@ -22,7 +22,6 @@ import tempfile
 
 from zope.component import getUtility
 
-from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lazr.delegates import delegates
@@ -33,10 +32,11 @@ from lp.soyuz.interfaces.archive import (
 from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus)
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
-    active_publishing_status)
+    IBinaryPackagePublishingHistory, IPublishingSet,
+    ISourcePackagePublishingHistory, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadSet)
+from lp.soyuz.interfaces.sourcepackageformat import SourcePackageFormat
 from lp.soyuz.scripts.ftpmasterbase import (
     SoyuzScript, SoyuzScriptError)
 from lp.soyuz.scripts.processaccepted import (
@@ -352,10 +352,18 @@ class CopyChecker:
         :raise CannotCopy when a copy is not allowed to be performed
             containing the reason of the error.
         """
-        if source.distroseries.distribution != self.archive.distribution:
+        if series not in self.archive.distribution.series:
             raise CannotCopy(
-                "Cannot copy to an unsupported distribution: %s." %
-                source.distroseries.distribution.name)
+                "No such distro series %s in distribution %s." %
+                (series.name, source.distroseries.distribution.name))
+
+        format = SourcePackageFormat.getTermByToken(
+            source.sourcepackagerelease.dsc_format).value
+
+        if not series.isSourcePackageFormatPermitted(format):
+            raise CannotCopy(
+                "Source format '%s' not supported by target series %s." %
+                (source.sourcepackagerelease.dsc_format, series.name))
 
         if self.include_binaries:
             built_binaries = source.getBuiltBinaries()
@@ -520,28 +528,10 @@ def _do_direct_copy(source, archive, series, pocket, include_binaries):
     # unique publication per binary package releases (i.e. excludes
     # irrelevant arch-indep publications) and IBPPH.copy is prepared
     # to expand arch-indep publications.
-    # For safety, we use the architecture the binary was built, and
-    # not the one it is published, coping with single arch-indep
-    # publications for architectures that do not exist in the
-    # destination series. See #387589 for more information.
-    for binary in source.getBuiltBinaries():
-        binarypackagerelease = binary.binarypackagerelease
-        try:
-            target_distroarchseries = series[
-                binarypackagerelease.build.arch_tag]
-        except NotFoundError:
-            # It is not an error if the destination series doesn't
-            # support all the architectures originally built. We
-            # simply do not copy the binary and life goes on.
-            continue
-        binary_in_destination = archive.getAllPublishedBinaries(
-            name=binarypackagerelease.name, exact_match=True,
-            version=binarypackagerelease.version,
-            status=active_publishing_status, pocket=pocket,
-            distroarchseries=target_distroarchseries)
-        if binary_in_destination.count() == 0:
-            binary_copy = binary.copyTo(series, pocket, archive)
-            copies.extend(binary_copy)
+    binary_copies = getUtility(IPublishingSet).copyBinariesTo(
+        source.getBuiltBinaries(), series, pocket, archive)
+
+    copies.extend(binary_copies)
 
     # Always ensure the needed builds exist in the copy destination
     # after copying the binaries.

@@ -23,8 +23,7 @@ class DirectBranchCommitTestCase(TestCaseWithFactory):
         self.useBzrBranches()
 
         self.series = self.factory.makeProductSeries()
-        self.db_branch, self.tree = self.create_branch_and_tree(
-            db_branch=self.db_branch, hosted=True)
+        self.db_branch, self.tree = self.create_branch_and_tree(hosted=True)
 
         self.series.translations_branch = self.db_branch
 
@@ -38,7 +37,7 @@ class DirectBranchCommitTestCase(TestCaseWithFactory):
 
         self.committer = DirectBranchCommit(self.db_branch)
         if update_last_scanned_id:
-            self.db_branch.last_scanned_id = (
+            self.committer.last_scanned_id = (
                 self.committer.bzrbranch.last_revision())
 
     def _tearDownCommitter(self):

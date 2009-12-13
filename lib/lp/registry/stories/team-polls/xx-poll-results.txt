@@ -1,6 +1,7 @@
-  First we check all polls of 'ubuntu-team'.
+First we check all polls of 'ubuntu-team'.
 
-  >>> anon_browser.open("http://launchpad.dev/~ubuntu-team/+polls")
+  >>> anon_browser.open("http://launchpad.dev/~ubuntu-team")
+  >>> anon_browser.getLink('Show polls').click()
   >>> print find_main_content(anon_browser.contents)
   <...
   ...Current polls...

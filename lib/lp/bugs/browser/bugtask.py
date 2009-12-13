@@ -8,7 +8,8 @@ __metaclass__ = type
 __all__ = [
     'assignee_renderer',
     'BugListingBatchNavigator',
-    'BugListingPortletView',
+    'BugListingPortletInfoView',
+    'BugListingPortletStatsView',
     'BugNominationsView',
     'bugtarget_renderer',
     'BugTargetTraversalMixin',
@@ -56,7 +57,8 @@ from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
 from zope.app.form.utility import setUpWidget, setUpWidgets
 from zope.component import (
-    ComponentLookupError, getAdapter, getUtility, getMultiAdapter)
+    ComponentLookupError, getAdapter, getMultiAdapter, getUtility,
+    queryMultiAdapter)
 from zope.event import notify
 from zope import formlib
 from zope.interface import implementer, implements, Interface, providedBy
@@ -107,8 +109,7 @@ from lp.bugs.interfaces.bugtask import (
     IDistroSeriesBugTask, IFrontPageBugTaskSearch,
     INominationsReviewTableBatchNavigator, INullBugTask, IPersonBugTaskSearch,
     IProductSeriesBugTask, IRemoveQuestionFromBugTaskForm, IUpstreamBugTask,
-    IUpstreamProductBugTaskSearch, RESOLVED_BUGTASK_STATUSES,
-    UNRESOLVED_BUGTASK_STATUSES)
+    IUpstreamProductBugTaskSearch, UNRESOLVED_BUGTASK_STATUSES)
 from lp.bugs.interfaces.bugtracker import BugTrackerType
 from lp.bugs.interfaces.cve import ICveSet
 from lp.registry.interfaces.distribution import IDistribution
@@ -214,7 +215,10 @@ def get_comments_for_bugtask(bugtask, truncate=False):
         # All attachments are related to a message, so we can be
         # sure that the BugComment is already created.
         assert comments.has_key(message_id), message_id
-        comments[message_id].bugattachments.append(attachment)
+        if attachment.type == BugAttachmentType.PATCH:
+            comments[message_id].patches.append(attachment)
+        else:
+            comments[message_id].bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
     current_title = bugtask.bug.title
     for comment in comments:
@@ -258,16 +262,17 @@ def get_visible_comments(comments):
 def get_sortorder_from_request(request):
     """Get the sortorder from the request.
 
-    >>> from zope.publisher.browser import TestRequest
-    >>> get_sortorder_from_request(TestRequest(form={}))
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> get_sortorder_from_request(LaunchpadTestRequest(form={}))
     ['-importance']
-    >>> get_sortorder_from_request(TestRequest(form={'orderby': '-status'}))
-    ['-status']
     >>> get_sortorder_from_request(
-    ...     TestRequest(form={'orderby': 'status,-severity,importance'}))
+    ...     LaunchpadTestRequest(form={'orderby': '-status'}))
+    ['-status']
+    >>> get_sortorder_from_request(LaunchpadTestRequest(
+    ...     form={'orderby': 'status,-severity,importance'}))
     ['status', 'importance']
     >>> get_sortorder_from_request(
-    ...     TestRequest(form={'orderby': 'priority,-severity'}))
+    ...     LaunchpadTestRequest(form={'orderby': 'priority,-severity'}))
     ['-importance']
     """
     order_by_string = request.get("orderby", '')
@@ -289,6 +294,24 @@ def get_sortorder_from_request(request):
     else:
         # No sort ordering specified, so use a reasonable default.
         return ["-importance"]
+
+
+def get_default_search_params(user):
+    """Return a BugTaskSearchParams instance with default values.
+
+    By default, a search includes any bug that is unresolved and not a
+    duplicate of another bug.
+
+    If this search will be used to display a list of bugs to the user
+    it may be a good idea to set the orderby attribute using
+    get_sortorder_from_request():
+
+      params = get_default_search_params(user)
+      params.orderby = get_sortorder_from_request(request)
+
+    """
+    return BugTaskSearchParams(
+        user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES), omit_dupes=True)
 
 
 OLD_BUGTASK_STATUS_MAP = {
@@ -1667,59 +1690,162 @@ class BugTaskListingView(LaunchpadView):
         return u""
 
 
-class BugListingPortletView(LaunchpadView):
-    """Portlet containing all available bug listings."""
-    def getOpenBugsURL(self):
-        """Return the URL for open bugs on this bug target."""
-        return get_buglisting_search_filter_url(
-            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
+class BugsInfoMixin:
+    """Contains properties giving URLs to bug information."""
 
-    def getBugsAssignedToMeURL(self):
-        """Return the URL for bugs assigned to the current user on target."""
-        if self.user:
-            return get_buglisting_search_filter_url(assignee=self.user.name)
+    @property
+    def bugs_fixed_elsewhere_url(self):
+        """A URL to a list of bugs fixed elsewhere."""
+        return "%s?field.status_upstream=resolved_upstream" % (
+            canonical_url(self.context, view_name='+bugs'))
+
+    @property
+    def open_cve_bugs_url(self):
+        """A URL to a list of open bugs linked to CVEs."""
+        return "%s?field.has_cve=on" % (
+            canonical_url(self.context, view_name='+bugs'))
+
+    @property
+    def open_cve_bugs_has_report(self):
+        """Whether or not the context has a CVE report page."""
+        return queryMultiAdapter(
+            (self.context, self.request), name='+cve') is not None
+
+    @property
+    def pending_bugwatches_url(self):
+        """A URL to a list of bugs that need a bugwatch.
+
+        None is returned if the context is not an upstream product.
+        """
+        if not IProduct.providedBy(self.context):
+            return None
+        if self.context.official_malone:
+            return None
+        return "%s?field.status_upstream=pending_bugwatch" % (
+            canonical_url(self.context, view_name='+bugs'))
+
+    @property
+    def expirable_bugs_url(self):
+        """A URL to a list of bugs that can expire, or None.
+
+        If the bugtarget is not a supported implementation, or its pillar
+        does not have enable_bug_expiration set to True, None is returned.
+        The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
+        or `IProductSeries`.
+        """
+        if target_has_expirable_bugs_listing(self.context):
+            return canonical_url(self.context, view_name='+expirable-bugs')
         else:
-            return str(self.request.URL) + "/+login"
+            return None
 
-    def getBugsAssignedToMeCount(self):
-        """Return the count of bugs assinged to the logged-in user."""
-        assert self.user, (
-            "Counting 'bugs assigned to me' requires a logged-in user")
+    @property
+    def new_bugs_url(self):
+        """A URL to a page of new bugs."""
+        return get_buglisting_search_filter_url(
+            status=BugTaskStatus.NEW.title)
 
-        search_params = BugTaskSearchParams(
-            user=self.user, assignee=self.user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
+    @property
+    def open_bugs_url(self):
+        """A URL to a list of open bugs."""
+        return canonical_url(self.context, view_name='+bugs')
 
-        return self.context.searchTasks(search_params).count()
-
-    def getCriticalBugsURL(self):
-        """Return the URL for critical bugs on this bug target."""
+    @property
+    def critical_bugs_url(self):
+        """A URL to a list of critical bugs."""
         return get_buglisting_search_filter_url(
             status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES],
             importance=BugTaskImportance.CRITICAL.title)
 
-    def getUnassignedBugsURL(self):
-        """Return the URL for critical bugs on this bug target."""
-        unresolved_tasks_query_string = get_buglisting_search_filter_url(
-            status=[status.title for status in UNRESOLVED_BUGTASK_STATUSES])
+    @property
+    def my_bugs_url(self):
+        """A URL to a list of bugs assigned to the user, or None."""
+        if self.user is None:
+            return None
+        else:
+            return get_buglisting_search_filter_url(assignee=self.user.name)
 
-        return unresolved_tasks_query_string + "&assignee_option=none"
 
-    def getNewBugsURL(self):
-        """Return the URL for new bugs on this bug target."""
-        return get_buglisting_search_filter_url(
-            status=BugTaskStatus.NEW.title)
+class BugsStatsMixin(BugsInfoMixin):
+    """Contains properties giving bug stats.
 
-    def getAllBugsEverReportedURL(self):
-        """Return the URL to list all bugs reported."""
-        all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
-        all_status_query_string = get_buglisting_search_filter_url(
-            status=[status.title for status in all_statuses])
+    These can be expensive to obtain.
+    """
 
-        # Add the bit that simulates the "omit dupes" checkbox
-        # being unchecked.
-        return all_status_query_string + "&field.omit_dupes.used="
+    @property
+    def bugs_fixed_elsewhere_count(self):
+        """A count of bugs fixed elsewhere."""
+        params = get_default_search_params(self.user)
+        params.resolved_upstream = True
+        return self.context.searchTasks(params).count()
+
+    @property
+    def open_cve_bugs_count(self):
+        """A count of open bugs linked to CVEs."""
+        params = get_default_search_params(self.user)
+        params.has_cve = True
+        return self.context.searchTasks(params).count()
+
+    @property
+    def pending_bugwatches_count(self):
+        """A count of bugs that need a bugwatch.
+
+        None is returned if the context is not an upstream product.
+        """
+        if not IProduct.providedBy(self.context):
+            return None
+        if self.context.official_malone:
+            return None
+        params = get_default_search_params(self.user)
+        params.pending_bugwatch_elsewhere = True
+        return self.context.searchTasks(params).count()
+
+    @property
+    def expirable_bugs_count(self):
+        """A count of bugs that can expire, or None.
+
+        If the bugtarget is not a supported implementation, or its pillar
+        does not have enable_bug_expiration set to True, None is returned.
+        The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
+        or `IProductSeries`.
+        """
+        if target_has_expirable_bugs_listing(self.context):
+            return getUtility(IBugTaskSet).findExpirableBugTasks(
+                0, user=self.user, target=self.context).count()
+        else:
+            return None
+
+    @property
+    def new_bugs_count(self):
+        """A count of new bugs."""
+        return self.context.new_bugtasks.count()
+
+    @property
+    def open_bugs_count(self):
+        """A count of open bugs."""
+        return self.context.open_bugtasks.count()
+
+    @property
+    def critical_bugs_count(self):
+        """A count of critical bugs."""
+        return self.context.critical_bugtasks.count()
+
+    @property
+    def my_bugs_count(self):
+        """A count of bugs assigned to the user, or None."""
+        if self.user is None:
+            return None
+        else:
+            params = get_default_search_params(self.user)
+            params.assignee = self.user
+            return self.context.searchTasks(params).count()
+
+
+class BugListingPortletInfoView(LaunchpadView, BugsInfoMixin):
+    """Portlet containing available bug listings without stats."""
+
+
+class BugListingPortletStatsView(LaunchpadView, BugsStatsMixin):
+    """Portlet containing available bug listings with stats."""
 
 
 def get_buglisting_search_filter_url(
@@ -1971,7 +2097,7 @@ class BugTaskSearchListingMenu(NavigationMenu):
         return Link('+nominations', 'Review nominations', icon='bug')
 
 
-class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
+class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
     """View that renders a list of bugs for a given set of search criteria."""
 
     implements(IBugTaskSearchListingMenu)
@@ -2130,18 +2256,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             # LaunchpadFormView's own validation.
             pass
 
-    def _getDefaultSearchParams(self):
-        """Return a BugTaskSearchParams instance with default values.
-
-        By default, a search includes any bug that is unresolved and not
-        a duplicate of another bug.
-        """
-        search_params = BugTaskSearchParams(
-            user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES),
-            omit_dupes=True)
-        search_params.orderby = get_sortorder_from_request(self.request)
-        return search_params
-
     def buildSearchParams(self, searchtext=None, extra_params=None):
         """Build the BugTaskSearchParams object for the given arguments and
         values specified by the user on this form's widgets.
@@ -2212,7 +2326,8 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
             else:
                 form_values['tag'] = tags
 
-        search_params = self._getDefaultSearchParams()
+        search_params = get_default_search_params(self.user)
+        search_params.orderby = get_sortorder_from_request(self.request)
         for name, value in form_values.items():
             setattr(search_params, name, value)
         return search_params
@@ -2418,9 +2533,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         for different series.
         """
         return (
-            IDistribution.providedBy(self.context) and self.context.serieses
+            IDistribution.providedBy(self.context) and self.context.series
             or IDistroSeries.providedBy(self.context)
-            or IProduct.providedBy(self.context) and self.context.serieses
+            or IProduct.providedBy(self.context) and self.context.series
             or IProductSeries.providedBy(self.context))
 
     def shouldShowSubscriberWidget(self):
@@ -2600,140 +2715,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin):
         Return the IDistributionSourcePackage if yes, otherwise return None.
         """
         return IDistributionSourcePackage(self.context, None)
-
-    def _bugOrBugs(self, count):
-        """Return 'bug' if the count is 1, otherwise return 'bugs'.
-
-        zope.i18n does not support for ngettext-like functionality.
-        """
-        if count == 1:
-            return 'bug'
-        else:
-            return 'bugs'
-
-    @property
-    def bugs_fixed_elsewhere_info(self):
-        """Return a dict with count and URL of bugs fixed elsewhere.
-
-        The available keys are:
-        * 'count' - The number of bugs.
-        * 'url' - The URL of the search.
-        * 'label' - Either 'bug' or 'bugs' depending on the count.
-        """
-        params = self._getDefaultSearchParams()
-        params.resolved_upstream = True
-        fixed_elsewhere = self.context.searchTasks(params)
-        count = fixed_elsewhere.count()
-        label = self._bugOrBugs(count)
-        search_url = (
-            "%s/+bugs?field.status_upstream=resolved_upstream" %
-                canonical_url(self.context))
-        return dict(count=count, url=search_url, label=label)
-
-    @property
-    def open_cve_bugs_info(self):
-        """Return a dict with count and URL of open bugs linked to CVEs.
-
-        The available keys are:
-        * 'count' - The number of bugs.
-        * 'url' - The URL of the search.
-        * 'label' - Either 'bug' or 'bugs' depending on the count.
-        """
-        params = self._getDefaultSearchParams()
-        params.has_cve = True
-        open_cve_bugs = self.context.searchTasks(params)
-        count = open_cve_bugs.count()
-        label = self._bugOrBugs(count)
-        search_url = (
-            "%s/+bugs?field.has_cve=on" % canonical_url(self.context))
-        return dict(count=count, url=search_url, label=label)
-
-    @property
-    def pending_bugwatches_info(self):
-        """Return a dict with count and URL of bugs that need a bugwatch.
-
-        None is returned if the context is not an upstream product.
-
-        The available keys are:
-        * 'count' - The number of bugs.
-        * 'url' - The URL of the search.
-        * 'label' - Either 'bug' or 'bugs' depending on the count.
-        """
-        if not self.isUpstreamProduct:
-            return None
-        params = self._getDefaultSearchParams()
-        params.pending_bugwatch_elsewhere = True
-        pending_bugwatch_elsewhere = self.context.searchTasks(params)
-        count = pending_bugwatch_elsewhere.count()
-        label = self._bugOrBugs(count)
-        search_url = (
-            "%s/+bugs?field.status_upstream=pending_bugwatch" %
-            canonical_url(self.context))
-        return dict(count=count, url=search_url, label=label)
-
-    @property
-    def expirable_bugs_info(self):
-        """Return a dict with count and url of bugs that can expire, or None.
-
-        If the bugtarget is not a supported implementation, or its pillar
-        does not have enable_bug_expiration set to True, None is returned.
-        The bugtarget may be an `IDistribution`, `IDistroSeries`, `IProduct`,
-        or `IProductSeries`.
-
-        The available keys are:
-        * 'count' - The number of bugs.
-        * 'url' - The URL of the search, or None.
-        * 'label' - Either 'bug' or 'bugs' depending on the count.
-        """
-        if not target_has_expirable_bugs_listing(self.context):
-            return None
-        bugtaskset = getUtility(IBugTaskSet)
-        expirable_bugtasks = bugtaskset.findExpirableBugTasks(
-            0, user=self.user, target=self.context)
-        count = expirable_bugtasks.count()
-        label = self._bugOrBugs(count)
-        url = "%s/+expirable-bugs" % canonical_url(self.context)
-        return dict(count=count, url=url, label=label)
-
-    @property
-    def new_bugs_info(self):
-        """Return a dict with new bugs info."""
-        return dict(
-            count=self.context.new_bugtasks.count,
-            url=get_buglisting_search_filter_url(
-                status=BugTaskStatus.NEW.title))
-
-    @property
-    def open_bugs_info(self):
-        """Return a dict with open bugs info."""
-        return dict(
-            count=self.context.open_bugtasks.count,
-            url=canonical_url(
-                self.context, rootsite='bugs', view_name='+bugs'))
-
-    @property
-    def critical_bugs_info(self):
-        """Return a dict with critical bugs info."""
-        return dict(
-            count=self.context.critical_bugtasks.count,
-            url=get_buglisting_search_filter_url(
-                status=[status.title for status
-                        in UNRESOLVED_BUGTASK_STATUSES],
-                importance=BugTaskImportance.CRITICAL.title))
-
-    @property
-    def my_bugs_info(self):
-        """Return a dict with info on bugs assigned to the user, or None."""
-        if self.user:
-            return dict(
-                count=self.context.searchTasks(
-                    BugTaskSearchParams(
-                        user=self.user, assignee=self.user,
-                        status=any(*UNRESOLVED_BUGTASK_STATUSES),
-                        omit_dupes=True)).count(),
-                url=get_buglisting_search_filter_url(assignee=self.user.name))
-        else:
-            return None
 
     @property
     def hot_bugtasks(self):
@@ -3118,6 +3099,62 @@ class BugTasksAndNominationsView(LaunchpadView):
             return 'true'
         else:
             return 'false'
+
+    @property
+    def other_users_affected_count(self):
+        """The number of other users affected by this bug."""
+        if self.current_user_affected_status:
+            return self.context.users_affected_count - 1
+        else:
+            return self.context.users_affected_count
+
+    @property
+    def affected_statement(self):
+        """The default "this bug affects" statement to show.
+
+        The outputs of this method should be mirrored in
+        MeTooChoiceSource._getSourceNames() (Javascript).
+        """
+        if self.other_users_affected_count == 1:
+            if self.current_user_affected_status is None:
+                return "This bug affects 1 person. Does this bug affect you?"
+            elif self.current_user_affected_status:
+                return "This bug affects you and 1 other person"
+            else:
+                return "This bug affects 1 person, but not you"
+        elif self.other_users_affected_count > 1:
+            if self.current_user_affected_status is None:
+                return (
+                    "This bug affects %d people. Does this bug "
+                    "affect you?" % (self.other_users_affected_count))
+            elif self.current_user_affected_status:
+                return "This bug affects you and %d other people" % (
+                    self.other_users_affected_count)
+            else:
+                return "This bug affects %d people, but not you" % (
+                    self.other_users_affected_count)
+        else:
+            if self.current_user_affected_status is None:
+                return "Does this bug affect you?"
+            elif self.current_user_affected_status:
+                return "This bug affects you"
+            else:
+                return "This bug doesn't affect you"
+
+    @property
+    def anon_affected_statement(self):
+        """The "this bug affects" statement to show to anonymous users.
+
+        The outputs of this method should be mirrored in
+        MeTooChoiceSource._getSourceNames() (Javascript).
+        """
+        if self.context.users_affected_count == 1:
+            return "This bug affects 1 person"
+        elif self.context.users_affected_count > 1:
+            return "This bug affects %d people" % (
+                self.context.users_affected_count)
+        else:
+            return None
 
 
 class BugTaskTableRowView(LaunchpadView):
@@ -3688,7 +3725,7 @@ class BugTaskBreadcrumb(Breadcrumb):
         # If the user does not have permission to view the bug for
         # whatever reason, raise ComponentLookupError.
         try:
-            name = context.bug.displayname
+            context.bug.displayname
         except Unauthorized:
             raise ComponentLookupError()
 

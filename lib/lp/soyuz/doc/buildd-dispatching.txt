@@ -134,18 +134,20 @@ The single BuildQueue found is a non-virtual pending build:
 
     >>> job.id
     2
-    >>> job.build.buildstate.name
+    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> build = getUtility(IBuildSet).getByQueueEntry(job)
+    >>> build.buildstate.name
     'NEEDSBUILD'
     >>> job.builder is None
     True
-    >>> job.buildstart is None
+    >>> job.date_started is None
     True
-    >>> job.is_virtualized
+    >>> build.is_virtualized
     False
 
 The build start time is not set yet either.
 
-    >>> print job.build.date_first_dispatched
+    >>> print build.date_first_dispatched
     None
 
 Update the SourcePackageReleaseFile corresponding to this job:
@@ -154,7 +156,7 @@ Update the SourcePackageReleaseFile corresponding to this job:
     >>> alias_id = librarian_client.addFile(
     ...    'foo.dsc', len(content), StringIO(content), 'application/dsc')
 
-    >>> sprf = job.build.sourcepackagerelease.files[0]
+    >>> sprf = build.sourcepackagerelease.files[0]
     >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_sprf = removeSecurityProxy(sprf)
     >>> naked_sprf.libraryfile = getUtility(ILibraryFileAliasSet)[alias_id]
@@ -167,27 +169,12 @@ Check the dispatching method itself:
 
 Verify if the job (BuildQueue) was updated appropriately:
 
-    >>> def checkTimes(expected, actual):
-    ...     if expected != actual:
-    ...         return "expected: %s, actual: %s" % (expected, actual)
-    ...     else:
-    ...         return "OK"
-
     >>> job.builder.id == bob_builder.id
     True
 
-    >>> job.build.buildstate.name
+    >>> build = getUtility(IBuildSet).getByQueueEntry(job)
+    >>> build.buildstate.name
     'BUILDING'
-
-    >>> from canonical.database.sqlbase import get_transaction_timestamp
-    >>> checkTimes(get_transaction_timestamp(), job.buildstart)
-    'OK'
-
-The build start time will be set to the same value.
-
-    >>> checkTimes(get_transaction_timestamp(),
-    ...            job.build.date_first_dispatched)
-    'OK'
 
 Shutdown builder, mark the build record as failed and remove the
 buildqueue record, so the build was eliminated:
@@ -195,14 +182,14 @@ buildqueue record, so the build was eliminated:
     >>> BuilddSlaveTestSetup().tearDown()
 
     >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> job.build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
     >>> job.destroySelf()
     >>> flush_database_updates()
 
 
 == PPA build dispatching ==
 
-Create new Build record of the same source targeted for a PPA archive:
+Create a new Build record of the same source targeted for a PPA archive:
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
@@ -217,12 +204,13 @@ Create BuildQueue record and inspect some parameters:
     3
     >>> ppa_job.builder == None
     True
-    >>> ppa_job.buildstart == None
+    >>> ppa_job.date_started == None
     True
 
 The build job's archive requires virtualized builds.
 
-    >>> ppa_job.build.archive.require_virtualized
+    >>> build = getUtility(IBuildSet).getByQueueEntry(ppa_job)
+    >>> build.archive.require_virtualized
     True
 
 But the builder is not virtualized.
@@ -249,10 +237,10 @@ do this by copying the existing publication in Ubuntu.
     >>> from lp.soyuz.model.publishing import (
     ...     SourcePackagePublishingHistory)
     >>> [old_pub] = SourcePackagePublishingHistory.selectBy(
-    ...    distroseries=ppa_job.build.distroseries,
-    ...    sourcepackagerelease=ppa_job.build.sourcepackagerelease)
+    ...    distroseries=build.distroseries,
+    ...    sourcepackagerelease=build.sourcepackagerelease)
     >>> new_pub = old_pub.copyTo(
-    ...     old_pub.distroseries, old_pub.pocket, ppa_job.build.archive)
+    ...     old_pub.distroseries, old_pub.pocket, build.archive)
 
     >>> bob_builder.virtualized = True
     >>> syncUpdate(bob_builder)
@@ -260,6 +248,9 @@ do this by copying the existing publication in Ubuntu.
     >>> job = bob_builder.findBuildCandidate()
     >>> ppa_job.id == job.id
     True
+
+For further details regarding IBuilder.findBuildCandidate() please see
+lib/lp/soyuz/tests/test_builder.py.
 
 Start buildd-slave to be able to dispatch jobs.
 
@@ -290,11 +281,8 @@ PPA job is building.
     >>> ppa_job.builder.name
     u'bob'
 
-    >>> ppa_job.build.buildstate.name
+    >>> build.buildstate.name
     'BUILDING'
-
-    >>> ppa_job.buildstart == get_transaction_timestamp()
-    True
 
 Shutdown builder slave, mark the ppa build record as failed, remove the
 buildqueue record and make 'bob' builder non-virtual again,  so the
@@ -302,7 +290,7 @@ environment is back to the initial state.
 
     >>> BuilddSlaveTestSetup().tearDown()
 
-    >>> ppa_job.build.buildstate = BuildStatus.FAILEDTOBUILD
+    >>> build.buildstate = BuildStatus.FAILEDTOBUILD
     >>> ppa_job.destroySelf()
     >>> bob_builder.virtualized = False
     >>> flush_database_updates()
@@ -329,9 +317,9 @@ Create BuildQueue record and inspect some parameters:
     4
     >>> print sec_job.builder
     None
-    >>> print sec_job.buildstart
+    >>> print sec_job.date_started
     None
-    >>> sec_job.is_virtualized
+    >>> sec_build.is_virtualized
     False
 
 In normal conditions the next available candidate would be the job
