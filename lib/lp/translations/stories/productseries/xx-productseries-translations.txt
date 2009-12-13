@@ -222,9 +222,9 @@ Branch synchronization options
 If automatic import and export are set, but import branch is unset, we only
 indicate that export is happening.
 
+    >>> login('foo.bar@canonical.com')
     >>> from lp.translations.interfaces.translations import (
     ...     TranslationsBranchImportMode)
-    >>> login('admin@canonical.com')
     >>> branch = factory.makeBranch(product=frobnicator)
     >>> branch_name = branch.name
     >>> frobnicator_trunk.branch = None
@@ -251,11 +251,13 @@ are not presented in the list
 
     # Use the raw DB object to bypass the security proxy.
     # Adi: I think there is a bug in the test from line 150
+    # evolution is modified but then bazaar is tested
     >>> from lp.registry.model.product import Product
     >>> Product.byName('evolution').official_rosetta = True
 
 For projects with only one active series that is already configured,
-project admin does not see the link for configuring other branches.
+the project administrator does not see the link for configuring
+other branches.
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/evolution')
@@ -308,10 +310,10 @@ series, excepting the one with status 'Obsolete'.
     Evolution evo-supported...
     Evolution evo-development...
     Evolution evo-future...
-    Evolution evo-experimental...
+    Evolution evo-experimental ...
 
 For each series there is a link for accesing the series translations
-page togheter with link for uploading a template from that series
+page, togheter with links for uploading a template from that series
 (manual) and setting automatic imports.
 
     >>> print admin_browser.getLink('Evolution evo-current series').url
