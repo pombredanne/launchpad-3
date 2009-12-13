@@ -222,9 +222,9 @@ Branch synchronization options
 If automatic import and export are set, but import branch is unset, we only
 indicate that export is happening.
 
-    >>> login('foo.bar@canonical.com')
     >>> from lp.translations.interfaces.translations import (
     ...     TranslationsBranchImportMode)
+    >>> login('admin@canonical.com')
     >>> branch = factory.makeBranch(product=frobnicator)
     >>> branch_name = branch.name
     >>> frobnicator_trunk.branch = None
@@ -238,3 +238,88 @@ indicate that export is happening.
     Translations...
     Translations are exported daily to branch
     ...
+
+
+Setting up translations for a series
+------------------------------------
+
+When visiting product translations main page, users see status for
+current series configured for translations.
+Beside, in the "Set up translations for a series" section, they will find
+links to other series to be configured for translations. Obsolete series
+are not presented in the list
+
+    # Use the raw DB object to bypass the security proxy.
+    # Adi: I think there is a bug in the test from line 150
+    >>> from lp.registry.model.product import Product
+    >>> Product.byName('evolution').official_rosetta = True
+
+For projects with only one active series that is already configured,
+project admin does not see the link for configuring other branches.
+
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/evolution')
+    >>> untranslatable = find_tag_by_id(
+    ...     admin_browser.contents, 'portlet-untranslatable-branches')
+    >>> untranslatable is None
+    True
+
+New series are added, one for each type of status, to have a full test
+coverage.
+
+    >>> from lp.registry.model.product import Product
+    >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> login('foo.bar@canonical.com')
+    >>> evolution = Product.byName('evolution')
+    >>> series = factory.makeProductSeries(
+    ...     product=evolution, name='evo-experimental')
+    >>> series.status = SeriesStatus.EXPERIMENTAL
+    >>> series = factory.makeProductSeries(
+    ...     product=evolution, name='evo-development')
+    >>> series.status = SeriesStatus.DEVELOPMENT
+    >>> series = factory.makeProductSeries(
+    ...     product=evolution, name='evo-frozen')
+    >>> series.status = SeriesStatus.FROZEN
+    >>> series = factory.makeProductSeries(
+    ...     product=evolution, name='evo-current')
+    >>> series.status = SeriesStatus.CURRENT
+    >>> series = factory.makeProductSeries(
+    ...     product=evolution, name='evo-supported')
+    >>> series.status = SeriesStatus.SUPPORTED
+    >>> series = factory.makeProductSeries(
+    ...     product=evolution, name='evo-obsolete')
+    >>> series.status = SeriesStatus.OBSOLETE
+    >>> series = factory.makeProductSeries(
+    ...     product=evolution, name='evo-future')
+    >>> series.status = SeriesStatus.FUTURE
+    >>> logout()
+
+Project administrator will see links to configuring translations for all
+series, excepting the one with status 'Obsolete'.
+
+    >>> admin_browser.open(
+    ...     'http://translations.launchpad.dev/evolution')
+    >>> untranslatable = find_tag_by_id(
+    ...     admin_browser.contents, 'portlet-untranslatable-branches')
+    >>> print extract_text(untranslatable)
+    Set up translations for a series
+    Evolution evo-current series — manual or automatic import.
+    Evolution evo-frozen series — manual or automatic import.
+    Evolution evo-supported...
+    Evolution evo-development...
+    Evolution evo-future...
+    Evolution evo-experimental...
+
+For each series there is a link for accesing the series translations
+page togheter with link for uploading a template from that series
+(manual) and setting automatic imports.
+
+    >>> print admin_browser.getLink('Evolution evo-current series').url
+    http://translations.launchpad.dev/evolution/evo-current/+translations
+
+    >>> print admin_browser.getLink('manual', index=0).url
+    http://translations.launchpad.dev/evolution/evo-current/+translations-upload
+
+    >>> print admin_browser.getLink('automatic', index=0).url
+    http://translations.launchpad.dev/evolution/evo-current/+translations-settings
+
