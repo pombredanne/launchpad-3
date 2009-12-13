@@ -42,12 +42,10 @@
 
         <ul tal:condition="view/contributors">
           <li tal:repeat="contributor view/contributors">
-            <tal:not-merged condition="not: contributor/merged">
-              <a tal:replace="structure contributor/fmt:link" />
-              (<a tal:attributes="
-                 href string:${context/fmt:url}/+filter?person=${contributor/name}"
-                >filter</a>)
-            </tal:not-merged>
+            <a tal:replace="structure contributor/fmt:link" />
+            (<a tal:attributes="
+               href string:${context/fmt:url}/+filter?person=${contributor/name}"
+              >filter</a>)
           </li>
         </ul>
 
