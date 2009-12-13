@@ -210,7 +210,7 @@ The bug data is stored as a list of dicts:
         priority: P1
         product: Marvin
         resolution: FIXED
-        see_also: []
+        see_also:...
         severity: normal
         status: RESOLVED
         summary: That bloody robot still exists.
@@ -227,7 +227,7 @@ The bug data is stored as a list of dicts:
         priority: P1
         product: HeartOfGold
         resolution:
-        see_also: []
+        see_also:...
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
