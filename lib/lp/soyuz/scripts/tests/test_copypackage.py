@@ -23,7 +23,7 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet)
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocationError
@@ -971,7 +971,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         # Make ubuntutest/breezy-autotest CURRENT so uploads to SECURITY
         # pocket can be accepted.
         self.test_publisher.breezy_autotest.status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
 
         # Setup and execute the delayed copy procedure.
         copy_archive = self.test_publisher.ubuntutest.main_archive

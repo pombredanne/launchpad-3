@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces.launchpad import NotFoundError
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 
 # XXX cprov 2009-04-16: This function should live in
 # lp.registry.interfaces.distroseries. It cannot be done right now
@@ -159,7 +159,7 @@ class RetryDepwait(LaunchpadCronScript):
         # Iterate over all supported distroarchseries with available chroot.
         build_set = getUtility(IBuildSet)
         for distroseries in distribution:
-            if distroseries.status == DistroSeriesStatus.OBSOLETE:
+            if distroseries.status == SeriesStatus.OBSOLETE:
                 self.logger.debug(
                     "Skipping obsolete distroseries: %s" % distroseries.title)
                 continue

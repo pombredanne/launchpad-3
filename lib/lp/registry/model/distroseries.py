@@ -95,8 +95,9 @@ from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet, ISeriesMixin)
+    IDistroSeries, IDistroSeriesSet, ISeriesMixin)
 from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
@@ -129,10 +130,10 @@ class SeriesMixin:
     @property
     def active(self):
         return self.status in [
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.FROZEN,
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED
+            SeriesStatus.DEVELOPMENT,
+            SeriesStatus.FROZEN,
+            SeriesStatus.CURRENT,
+            SeriesStatus.SUPPORTED
             ]
 
 
@@ -157,7 +158,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     status = EnumCol(
-        dbName='releasestatus', notNull=True, schema=DistroSeriesStatus)
+        dbName='releasestatus', notNull=True, schema=SeriesStatus)
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parent_series =  ForeignKey(
@@ -332,8 +333,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def supported(self):
         return self.status in [
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED
+            SeriesStatus.CURRENT,
+            SeriesStatus.SUPPORTED
             ]
 
     @property
@@ -377,12 +378,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def canUploadToPocket(self, pocket):
         """See `IDistroSeries`."""
         # Allow everything for distroseries in FROZEN state.
-        if self.status == DistroSeriesStatus.FROZEN:
+        if self.status == SeriesStatus.FROZEN:
             return True
 
         # Define stable/released states.
-        stable_states = (DistroSeriesStatus.SUPPORTED,
-                         DistroSeriesStatus.CURRENT)
+        stable_states = (SeriesStatus.SUPPORTED,
+                         SeriesStatus.CURRENT)
 
         # Deny uploads for RELEASE pocket in stable states.
         if (pocket == PackagePublishingPocket.RELEASE and
@@ -727,14 +728,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return
 
         future = [
-            DistroSeriesStatus.EXPERIMENTAL,
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.FUTURE,
+            SeriesStatus.EXPERIMENTAL,
+            SeriesStatus.DEVELOPMENT,
+            SeriesStatus.FUTURE,
             ]
         if self.status in future:
             raise TranslationUnavailable(
                 "Translations for this release series are not available yet.")
-        elif self.status == DistroSeriesStatus.OBSOLETE:
+        elif self.status == SeriesStatus.OBSOLETE:
             raise TranslationUnavailable(
                 "This release series is obsolete.  Its translations are no "
                 "longer available.")
@@ -830,9 +831,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def isUnstable(self):
         """See `IDistroSeries`."""
         return self.status in [
-            DistroSeriesStatus.FROZEN,
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.EXPERIMENTAL,
+            SeriesStatus.FROZEN,
+            SeriesStatus.DEVELOPMENT,
+            SeriesStatus.EXPERIMENTAL,
         ]
 
     def getAllPublishedSources(self):
@@ -1734,7 +1735,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return True
 
         # FROZEN state also allow all pockets to be published.
-        if self.status == DistroSeriesStatus.FROZEN:
+        if self.status == SeriesStatus.FROZEN:
             return True
 
         # If we're not republishing, we want to make sure that
@@ -1875,14 +1876,14 @@ class DistroSeriesSet:
             if isreleased:
                 # The query is filtered on released releases.
                 where_clause += "releasestatus in (%s, %s)" % sqlvalues(
-                    DistroSeriesStatus.CURRENT,
-                    DistroSeriesStatus.SUPPORTED)
+                    SeriesStatus.CURRENT,
+                    SeriesStatus.SUPPORTED)
             else:
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
-                    DistroSeriesStatus.EXPERIMENTAL,
-                    DistroSeriesStatus.DEVELOPMENT,
-                    DistroSeriesStatus.FROZEN)
+                    SeriesStatus.EXPERIMENTAL,
+                    SeriesStatus.DEVELOPMENT,
+                    SeriesStatus.FROZEN)
         if orderBy is not None:
             return DistroSeries.select(where_clause, orderBy=orderBy)
         else:

@@ -14,7 +14,7 @@ from zope.component import getUtility
 from lp.archivepublisher.domination import Dominator
 from lp.archivepublisher.publishing import Publisher
 from canonical.database.sqlbase import flush_database_updates
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -404,7 +404,7 @@ class TestDominationOfObsoletedSeries(TestDomination):
     def setUp(self):
         TestDomination.setUp(self)
         self.ubuntutest['breezy-autotest'].status = (
-            DistroSeriesStatus.OBSOLETE)
+            SeriesStatus.OBSOLETE)
 
 
 def test_suite():

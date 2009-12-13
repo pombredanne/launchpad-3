@@ -20,6 +20,7 @@ from canonical.launchpad.webapp.menu import NavigationMenu
 from lp.registry.interfaces.product import IProduct
 from lp.registry.model.productseries import ProductSeries
 from lp.registry.browser.product import ProductEditView
+from lp.registry.interfaces.series import SeriesStatus
 from lp.translations.browser.translations import TranslationsMixin
 
 
@@ -114,7 +115,12 @@ class ProductView(LaunchpadView):
 
     @cachedproperty
     def untranslatable_series(self):
-        """Return series which are not yet set up for translations."""
-        all_series = set(self.context.series)
+        """Return series which are not yet set up for translations.
+
+        Obsolete series will be excluded from this list.
+        """
+        all_active_series = set(
+            [serie for serie in self.context.series if (
+                serie.status != SeriesStatus.OBSOLETE)])
         translatable = set(self.context.translatable_series)
-        return all_series - translatable
+        return all_active_series - translatable

@@ -100,8 +100,8 @@ from lp.registry.model.distributionsourcepackage import (
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
@@ -1440,7 +1440,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             members, owner)
 
     def makeDistroRelease(self, distribution=None, version=None,
-                          status=DistroSeriesStatus.DEVELOPMENT,
+                          status=SeriesStatus.DEVELOPMENT,
                           parent_series=None, name=None):
         """Make a new distro release."""
         if distribution is None:

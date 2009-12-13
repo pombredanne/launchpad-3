@@ -18,11 +18,11 @@ permission to add a new ComponentSelection, so we temporarily switch to
 "launchpad" to handle this.
 
   >>> from canonical.launchpad.interfaces import (
-  ...     DistroSeriesStatus, IComponentSet, IDistributionSet)
+  ...     SeriesStatus, IComponentSet, IDistributionSet)
   >>> from canonical.launchpad.database import ComponentSelection
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
-  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+  >>> hoary.status = SeriesStatus.DEVELOPMENT
   >>> universe = getUtility(IComponentSet)['universe']
   >>> from canonical.testing import LaunchpadZopelessLayer
   >>> from canonical.database.sqlbase import commit
@@ -717,7 +717,7 @@ to set hoary to CURRENT in order to do this because we're not allowed
 to upload to -UPDATES in a DEVELOPMENT series.
 
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-  >>> hoary.status = DistroSeriesStatus.CURRENT
+  >>> hoary.status = SeriesStatus.CURRENT
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 
@@ -749,7 +749,7 @@ unapproved.
 And pop it back to development now that we're done
 
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+  >>> hoary.status = SeriesStatus.DEVELOPMENT
   >>> commit()
   >>> LaunchpadZopelessLayer.switchDbUser('uploader')
 

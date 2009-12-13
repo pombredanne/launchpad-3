@@ -66,7 +66,7 @@ from canonical.launchpad.webapp.interfaces import (
     ILaunchBag, NotFoundError, UnsafeFormGetSubmissionError)
 from lp.registry.interfaces.pillar import IPillarNameSet
 from lp.registry.interfaces.product import IProductReviewSearch, License
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.product import (
     IProduct, IProductSet, LicenseStatus)
 from lp.registry.interfaces.productrelease import (
@@ -540,7 +540,7 @@ class SortSeriesMixin:
         # Callback for the filter which only allows series that have not been
         # marked obsolete.
         def check_active(series):
-            return series.status != DistroSeriesStatus.OBSOLETE
+            return series.status != SeriesStatus.OBSOLETE
         return self._sorted_filtered_list(check_active)
 
 
@@ -618,7 +618,7 @@ class SeriesWithReleases:
         """The highlighted, unhighlighted, or dimmed CSS class."""
         if self.is_development_focus:
             return 'highlighted'
-        elif self.status == DistroSeriesStatus.OBSOLETE:
+        elif self.status == SeriesStatus.OBSOLETE:
             return 'dimmed'
         else:
             return 'unhighlighted'

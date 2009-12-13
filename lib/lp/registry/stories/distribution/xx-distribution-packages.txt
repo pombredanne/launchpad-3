@@ -124,9 +124,9 @@ archive as well as some new PPAs.
     >>> publisher = SoyuzTestPublisher()
     >>> publisher.prepareBreezyAutotest()
     >>> ubuntutest = publisher.ubuntutest
-    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
-    >>> ubuntutest['breezy-autotest'].status = DistroSeriesStatus.DEVELOPMENT
-    >>> ubuntutest['hoary-test'].status = DistroSeriesStatus.DEVELOPMENT
+    >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> ubuntutest['breezy-autotest'].status = SeriesStatus.DEVELOPMENT
+    >>> ubuntutest['hoary-test'].status = SeriesStatus.DEVELOPMENT
 
     # Publish the source 'netapplet' in the breezy-autotest and
     #  main archive.

@@ -18,7 +18,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distribution import Distribution
 from lp.registry.model.sourcepackagename import (
     SourcePackageName,
@@ -819,7 +819,7 @@ class TestCleanup(TestCaseWithFactory):
         self.queue._cleanUpObsoleteDistroEntries(self.store)
         self.assertTrue(self._exists(entry_id))
 
-        entry.distroseries.status = DistroSeriesStatus.OBSOLETE
+        entry.distroseries.status = SeriesStatus.OBSOLETE
         entry.distroseries.syncUpdate()
 
         become_the_gardener(self.layer)

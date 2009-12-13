@@ -170,7 +170,7 @@ not, according the distroseries status and the upload target pocket.
    >>> hoary = ubuntu['hoary']
 
    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-   >>> from canonical.launchpad.interfaces import DistroSeriesStatus
+   >>> from canonical.launchpad.interfaces import SeriesStatus
 
    >>> warty.status.name
    'CURRENT'
@@ -190,7 +190,7 @@ The FROZEN status is special.  Uploads are allowed for all pockets as
 the upload will have to wait for manual approval anyway:
 
    >>> from zope.security.proxy import removeSecurityProxy
-   >>> removeSecurityProxy(hoary).status = DistroSeriesStatus.FROZEN
+   >>> removeSecurityProxy(hoary).status = SeriesStatus.FROZEN
 
    >>> hoary.status.name
    'FROZEN'
@@ -430,35 +430,35 @@ But when translations are hidden, it raises TranslationUnavailable.
 
 Exactly what message is displayed depends on the series' status.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.EXPERIMENTAL
+    >>> untranslatable_series.status = SeriesStatus.EXPERIMENTAL
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not available yet.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.DEVELOPMENT
+    >>> untranslatable_series.status = SeriesStatus.DEVELOPMENT
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not available yet.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.FROZEN
+    >>> untranslatable_series.status = SeriesStatus.FROZEN
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not currently available.
     Please come back soon.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.CURRENT
+    >>> untranslatable_series.status = SeriesStatus.CURRENT
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not currently available.
     Please come back soon.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.SUPPORTED
+    >>> untranslatable_series.status = SeriesStatus.SUPPORTED
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not currently available.
     Please come back soon.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.OBSOLETE
+    >>> untranslatable_series.status = SeriesStatus.OBSOLETE
     >>> print get_visibility_notice(untranslatable_series)
     This release series is obsolete.  Its translations are no longer
     available.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.FUTURE
+    >>> untranslatable_series.status = SeriesStatus.FUTURE
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not available yet.
 

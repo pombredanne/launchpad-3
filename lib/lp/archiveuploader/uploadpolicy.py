@@ -11,7 +11,7 @@ from zope.component import getUtility
 
 from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
 
@@ -295,7 +295,7 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
 
         if self.pocket == PackagePublishingPocket.RELEASE:
             if (self.distroseries.status !=
-                DistroSeriesStatus.FROZEN):
+                SeriesStatus.FROZEN):
                 return True
         return False
 

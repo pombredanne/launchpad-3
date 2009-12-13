@@ -50,7 +50,7 @@ from lp.translations.model.translationimportqueue import (
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.model.distroseries import SeriesMixin
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.packaging import PackagingType
@@ -89,8 +89,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasMilestonesMixin,
 
     product = ForeignKey(dbName='product', foreignKey='Product', notNull=True)
     status = EnumCol(
-        notNull=True, schema=DistroSeriesStatus,
-        default=DistroSeriesStatus.DEVELOPMENT)
+        notNull=True, schema=SeriesStatus,
+        default=SeriesStatus.DEVELOPMENT)
     name = StringCol(notNull=True)
     summary = StringCol(notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)

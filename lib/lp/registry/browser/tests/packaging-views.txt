@@ -206,12 +206,12 @@ action is ignored because there is no change
 When the current Ubuntu series changes, the sourcepackagename is not known,
 and a new entry can be added to the packaging history.
 
-    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
 
     >>> login('admin@canonical.com')
-    >>> hoary.status = DistroSeriesStatus.CURRENT
+    >>> hoary.status = SeriesStatus.CURRENT
     >>> grumpy_series = ubuntu.getSeries('grumpy')
-    >>> grumpy_series.status = DistroSeriesStatus.FROZEN
+    >>> grumpy_series.status = SeriesStatus.FROZEN
 
     >>> a_user = factory.makePerson(name="hedgehog")
     >>> login_person(a_user)

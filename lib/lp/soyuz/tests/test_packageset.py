@@ -9,7 +9,7 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.testing import TestCaseWithFactory
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.soyuz.interfaces.packageset import (
     DuplicatePackagesetName, IPackagesetSet)
 
@@ -26,7 +26,7 @@ class TestPackagesetSet(TestCaseWithFactory):
         self.distroseries_current = self.distribution.currentseries
         self.distroseries_experimental = self.factory.makeDistroRelease(
             distribution = self.distribution, name="experimental",
-            status=DistroSeriesStatus.EXPERIMENTAL)
+            status=SeriesStatus.EXPERIMENTAL)
 
         self.person1 = self.factory.makePerson(
             name='hacker', displayname=u'Happy Hacker')
@@ -133,10 +133,10 @@ class TestPackageset(TestCaseWithFactory):
         self.distroseries_current = self.distribution.currentseries
         self.distroseries_experimental = self.factory.makeDistroRelease(
             distribution = self.distribution, name="experimental",
-            status=DistroSeriesStatus.EXPERIMENTAL)
+            status=SeriesStatus.EXPERIMENTAL)
         self.distroseries_experimental2 = self.factory.makeDistroRelease(
             distribution = self.distribution, name="experimental2",
-            status=DistroSeriesStatus.EXPERIMENTAL)
+            status=SeriesStatus.EXPERIMENTAL)
 
         self.person1 = self.factory.makePerson(
             name='hacker', displayname=u'Happy Hacker')

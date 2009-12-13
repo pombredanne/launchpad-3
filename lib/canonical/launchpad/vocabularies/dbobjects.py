@@ -90,8 +90,8 @@ from lp.code.enums import BranchType
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries    
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
@@ -780,7 +780,7 @@ class BugNominatableDistroSeriesVocabulary(
         """Return all non-obsolete distribution series"""
         return [
             series for series in shortlist(self.distribution.series)
-            if series.status != DistroSeriesStatus.OBSOLETE]
+            if series.status != SeriesStatus.OBSOLETE]
 
     def _queryNominatableObjectByName(self, name):
         """See BugNominatableSeriesVocabularyBase."""

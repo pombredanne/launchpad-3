@@ -75,7 +75,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 from lp.registry.browser import (
     MilestoneOverlayMixin, RegistryDeleteViewMixin)
 from lp.registry.browser.packaging import PackagingAddView
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.productseries import IProductSeries
 
 
@@ -329,7 +329,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
         them for obsolete series can be a problem if many series are being
         displayed.
         """
-        return self.context.status == DistroSeriesStatus.OBSOLETE
+        return self.context.status == SeriesStatus.OBSOLETE
 
     @cachedproperty
     def bugtask_status_counts(self):

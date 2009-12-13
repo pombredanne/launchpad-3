@@ -5,7 +5,7 @@
 Let's use ubuntu/hoary for these tests.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
-    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> hoary = ubuntu.getSeries('hoary')
 
@@ -13,7 +13,7 @@ We set the Hoary status to current, so we get appropriate explanation
 message.
 
     >>> login('foo.bar@canonical.com')
-    >>> hoary.status = DistroSeriesStatus.CURRENT
+    >>> hoary.status = SeriesStatus.CURRENT
 
 == Hiding translations ==
 

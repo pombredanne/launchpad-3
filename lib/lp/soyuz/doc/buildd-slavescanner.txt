@@ -1381,8 +1381,8 @@ Make a build in the updates pocket:
 Change the distroseries status for testing. FROZEN allows building in
 all pockets:
 
-    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
-    >>> hoary_i386.distroseries.status = DistroSeriesStatus.FROZEN
+    >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> hoary_i386.distroseries.status = SeriesStatus.FROZEN
 
 Now we can start a build in other pockets, and see what archives are
 passed to the slave.

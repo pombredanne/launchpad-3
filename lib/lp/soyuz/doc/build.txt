@@ -261,12 +261,12 @@ retried.
 We will reactivate ubuntu/warty allowing the pmount build to be
 retried.
 
-    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
+    >>> from canonical.launchpad.interfaces import SeriesStatus
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> warty = ubuntu.getSeries('warty')
-    >>> warty.status = DistroSeriesStatus.DEVELOPMENT
+    >>> warty.status = SeriesStatus.DEVELOPMENT
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 
@@ -333,7 +333,7 @@ We will restore ubuntu/warty previously changes status, SUPPORTED, so
 it won't interfere in the next tests.
 
     >>> login('foo.bar@canonical.com')
-    >>> warty.status = DistroSeriesStatus.SUPPORTED
+    >>> warty.status = SeriesStatus.SUPPORTED
     >>> flush_database_updates()
     >>> login(ANONYMOUS)
 

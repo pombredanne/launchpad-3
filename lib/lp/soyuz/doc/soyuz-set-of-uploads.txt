@@ -502,8 +502,8 @@ And its binary:
 Set ubuntutest/breezy as the "current series" to activate post-release
 pockets.
 
-  >>> from canonical.launchpad.interfaces import DistroSeriesStatus
-  >>> breezy.status = DistroSeriesStatus.CURRENT
+  >>> from canonical.launchpad.interfaces import SeriesStatus
+  >>> breezy.status = SeriesStatus.CURRENT
   >>> LaunchpadZopelessLayer.txn.commit()
 
 Since we are using 'sync' policy in the following tests the packages
@@ -599,7 +599,7 @@ we expect.
 Set ubuntutest/breezy to 'experimental' state again to not affect the
 rest of the test:
 
-  >>> breezy.status = DistroSeriesStatus.EXPERIMENTAL
+  >>> breezy.status = SeriesStatus.EXPERIMENTAL
   >>> breezy.syncUpdate()
 
 

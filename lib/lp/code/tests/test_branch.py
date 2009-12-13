@@ -17,7 +17,7 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     BranchType, CodeReviewNotificationLevel)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
 from lp.testing import run_with_login, TestCaseWithFactory
@@ -247,7 +247,7 @@ class TestWriteToBranch(PermissionTest):
         # Make sure the (distroseries, pocket) combination used allows us to
         # upload to it.
         stable_states = (
-            DistroSeriesStatus.SUPPORTED, DistroSeriesStatus.CURRENT)
+            SeriesStatus.SUPPORTED, SeriesStatus.CURRENT)
         if branch.distroseries.status in stable_states:
             pocket = PackagePublishingPocket.BACKPORTS
         else:

@@ -85,7 +85,7 @@ from lp.code.interfaces.seriessourcepackagebranch import (
     IFindOfficialBranchLinks)
 from lp.registry.browser.product import (
     ProductDownloadFileMixin, SortSeriesMixin)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPerson, IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.product import IProduct
@@ -170,7 +170,7 @@ class BranchListingItem(BranchBadges):
     @property
     def active_series(self):
         return [series for series in self.associated_product_series
-                if series.status != DistroSeriesStatus.OBSOLETE]
+                if series.status != SeriesStatus.OBSOLETE]
 
     @property
     def bzr_identity(self):
