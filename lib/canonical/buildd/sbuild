@@ -972,7 +972,26 @@ sub build {
 				system ("rm -fr $tmpunpackdir") if -d $tmpunpackdir;
 				exit 1;
 			}
-			exec "$conf::dpkg_source -sn -x $main::cwd/$dsc 2>&1";
+
+			my @files;
+			push( @files, $dsc );
+			if (!open( F, "<$main::cwd/$dsc" )) {
+				print PLOG "Can't open $main::cwd/$dsc: $!\n";
+				return 0;
+			}
+			my $dsctext;
+			{ local($/); $dsctext = <F>; }
+			close( F );
+			my $files;
+			$dsctext =~ /^Files:\s*\n((\s+.*\s*\n)+)/mi and $files = $1;
+			push(@files, map { (split( /\s+/, $_ ))[3] } split( "\n", $files ));
+
+			my $file;
+			foreach $file (@files) {
+				system ("cp", "$main::cwd/$file", "$file");
+			}
+			exec "$conf::dpkg_source -sn -x $dsc 2>&1";
+			unlink @files;
 		}
 		$main::sub_task = "dpkg-source";
 		
