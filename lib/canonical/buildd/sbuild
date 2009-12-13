@@ -518,7 +518,7 @@ $| = 1;
 $main::distribution = "";
 $main::distribution = $conf::default_distribution if $conf::default_distribution;
 
-chomp( $main::arch = `$conf::dpkg --print-installation-architecture` );
+chomp( $main::arch = `$conf::dpkg --print-architecture` );
 $main::username = (getpwuid($<))[0] || $ENV{'LOGNAME'} || $ENV{'USER'};
 $main::debug = 0;
 $main::verbose = 0;
