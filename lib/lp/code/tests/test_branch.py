@@ -15,7 +15,7 @@ from canonical.testing import DatabaseFunctionalLayer
 from lp.archiveuploader.permission import verify_upload
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType, CodeReviewNotificationLevel)
+    CodeReviewNotificationLevel)
 from lp.code.interfaces.linkedbranch import ICanHasLinkedBranch
 from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket

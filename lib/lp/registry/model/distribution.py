@@ -394,8 +394,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
 
     def newMirror(self, owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None,
-                  ftp_base_url=None, rsync_base_url=None, official_candidate=False,
-                  enabled=False, whiteboard=None):
+                  ftp_base_url=None, rsync_base_url=None,
+                  official_candidate=False, enabled=False,
+                  whiteboard=None):
         """See `IDistribution`."""
         # NB this functionality is only available to distributions that have
         # the full functionality of Launchpad enabled. This is Ubuntu and

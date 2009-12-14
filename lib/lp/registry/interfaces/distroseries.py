@@ -19,7 +19,7 @@ from zope.component import getUtility
 from zope.schema import Bool, Datetime, Choice, Object, TextLine
 from zope.interface import Interface, Attribute
 
-from lazr.enum import DBEnumeratedType, DBItem
+from lazr.enum import DBEnumeratedType
 
 from canonical.launchpad.fields import (
     ContentNameField, Description, PublicPersonChoice, Summary, Title,
