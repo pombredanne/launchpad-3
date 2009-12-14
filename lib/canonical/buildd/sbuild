@@ -990,7 +990,9 @@ sub build {
 			foreach $file (@files) {
 				system ("cp", "$main::cwd/$file", "$file");
 			}
-			exec "$conf::dpkg_source -sn -x $dsc 2>&1";
+			exec "$conf::sudo", "/usr/sbin/chroot", "$main::cwd/$main::chroot_dir",
+				"$conf::su", $main::username, "-s", "/bin/sh", "-c",
+				"cd /build/$main::username && $conf::dpkg_source -sn -x $dsc 2>&1";
 			unlink @files;
 		}
 		$main::sub_task = "dpkg-source";
