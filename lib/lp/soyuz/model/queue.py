@@ -547,7 +547,8 @@ class PackageUpload(SQLBase):
                 # it's available.
                 changes_file = None
                 if ISourcePackagePublishingHistory.providedBy(pub_record):
-                    changes_file = pub_record.sourcepackagerelease.package_upload.changesfile
+                    release = pub_record.sourcepackagerelease
+                    changes_file = release.package_upload.changesfile
 
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
@@ -562,7 +563,8 @@ class PackageUpload(SQLBase):
                     debug(
                         logger,
                         "sending email to %s" % self.distroseries.changeslist)
-                    changes_file_object = StringIO.StringIO(changes_file.read())
+                    changes_file_object = StringIO.StringIO(
+                        changes_file.read())
                     self.notify(
                         announce_list=self.distroseries.changeslist,
                         changes_file_object=changes_file_object,
@@ -1492,6 +1494,15 @@ class PackageUploadSource(SQLBase):
         distroseries = self.packageupload.distroseries
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
+
+        if self.packageupload.is_delayed_copy:
+            # For a delayed copy the component will not yet have
+            # had the chance to be overridden, so we'll check the value
+            # that will be overridden by querying the ancestor - if one
+            # is available.
+            ancestry = self.getSourceAncestry()
+            if ancestry is not None:
+                component = ancestry.component
 
         if (not self.packageupload.archive.is_ppa and
             component not in distroseries.upload_components):
