@@ -1050,7 +1050,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         """An original PPA upload for an invalid component will have been
         overridden when uploaded to the PPA, but when copying it to another
         archive, only the ancestry in the destination archive can be used.
-        If an ancestor is found in the destination archive, it's component
+        If an ancestor is found in the destination archive, its component
         is assumed for this package upload."""
         # We'll simulate an upload that was overridden to main in the
         # ppa, by explicitly setting the spr's component to something else.
