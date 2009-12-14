@@ -3,7 +3,7 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
 
-<metal:macro define-macro="render-suggestion">
+<metal:render-suggestion define-macro="render-suggestion">
 <tal:submission condition="submission">
   <tal:not-empty condition="not:submission/is_empty">
     <tr tal:attributes="class string:secondary ${dismissable};
@@ -105,7 +105,30 @@
   </tal:not-empty>
 </tal:submission>
 
-</metal:macro>
+</metal:render-suggestion>
+
+
+<metal:nav-pofile-subpages define-macro="nav-pofile-subpages">
+      <ul
+          class="horizontal"
+          id="nav-pofile-subpages"
+          style="margin-top: 1em; margin-bottom: 1em;"
+          tal:define="navigation_menu context/menu:navigation">
+        <li
+            tal:define="link navigation_menu/download"
+            tal:condition="link/enabled"
+            tal:content="structure link/render"></li>
+        <li
+            tal:define="link navigation_menu/upload"
+            tal:condition="link/enabled"
+            tal:content="structure link/render"></li>
+        <li
+            tal:define="link navigation_menu/details"
+            tal:condition="link/enabled"
+            tal:content="structure link/render"></li>
+      </ul>
+</metal:nav-pofile-subpages>
+
 
 </tal:root>
 
