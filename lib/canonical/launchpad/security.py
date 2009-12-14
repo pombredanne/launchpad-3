@@ -10,7 +10,8 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
-from lp.archiveuploader.permission import verify_upload
+from lp.archiveuploader.permission import can_upload_to_archive
+from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.archivepermission import (
@@ -48,7 +49,8 @@ from lp.registry.interfaces.distributionsourcepackage import (
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguage)
-from canonical.launchpad.interfaces.emailaddress import IEmailAddress
+from lp.translations.utilities.permission_helpers import (
+    is_admin_or_rosetta_expert)
 from lp.registry.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
@@ -475,9 +477,7 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Allow Launchpad's admins and Rosetta experts edit all fields."""
-        celebrities = getUtility(ILaunchpadCelebrities)
-        return (user.inTeam(celebrities.admin) or
-                user.inTeam(celebrities.rosetta_experts))
+        return is_admin_or_rosetta_expert(user)
 
 
 class AdminProductTranslations(AuthorizationBase):
@@ -490,10 +490,8 @@ class AdminProductTranslations(AuthorizationBase):
         Any Launchpad/Launchpad Translations administrator or owners are
         able to change translation settings for a product.
         """
-        celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(self.obj.owner) or
-                user.inTeam(celebrities.admin) or
-                user.inTeam(celebrities.rosetta_experts))
+                is_admin_or_rosetta_expert(user))
 
 
 class AdminSeriesByVCSImports(AuthorizationBase):
@@ -1106,27 +1104,63 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
+class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
+                                    EditDistributionByDistroOwnersOrAdmins):
+    """Class for deciding who can administer distribution translations.
+
+    This class is used for `launchpad.TranslationsAdmin` privilege on
+    `IDistribution` and `IDistroSeries` and corresponding `IPOTemplate`s,
+    and limits access to Rosetta experts, Launchpad admins and distribution
+    translation group owner.
+    """
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistribution
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistribution` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or people allowed
+        to edit distribution details are able to change translation settings
+        for a distribution.
+        """
+        # Translation group owner for a distribution is also a
+        # translations administrator for it.
+        translation_group = self.obj.translationgroup
+        if translation_group and user.inTeam(translation_group.owner):
+            return True
+        else:
+            return (
+                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+                EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
+                    self, user))
+
+
+# Please keep AdminPOTemplateSubset in sync with this, unless you
+# know exactly what you are doing.
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
+    """Controls administration of an `IPOTemplate`.
+
+    Allow all persons that can also administer the translations to
+    which this template belongs to and also translation group owners.
+
+    Product owners does not have administrative privileges.
+    """
+    permission = 'launchpad.TranslationsAdmin'
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
-        """Allow LP/Translations admins, and for distros, owners and
-        translation group owners.
-        """
-        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
-            return True
-
         template = self.obj
         if template.distroseries is not None:
-            distro = template.distroseries.distribution
-            if user.inTeam(distro.owner):
-                return True
-            translation_group = distro.translationgroup
-            if translation_group and user.inTeam(translation_group.owner):
-                return True
+            # Template is on a distribution.
+            distribution = template.distroseries.distribution
+            return (
+                AdminDistributionTranslations(
+                    distribution).checkAuthenticated(user))
 
-        return False
+        else:
+            # Template is on a product.
+            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(
+                self, user)
 
 
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
@@ -1278,10 +1312,8 @@ class AdminTranslationImportQueueEntry(OnlyRosettaExpertsAndAdmins):
 
         # As a special case, the Ubuntu translation group owners can
         # manage Ubuntu uploads.
-        if self.obj.is_targeted_to_ubuntu:
-            group = self.obj.distroseries.distribution.translationgroup
-            if group is not None and user.inTeam(group.owner):
-                return True
+        if self.obj.isUbuntuAndIsUserTranslationGroupOwner(user):
+            return True
 
         return False
 
@@ -1291,11 +1323,12 @@ class EditTranslationImportQueueEntry(AdminTranslationImportQueueEntry):
     usedfor = ITranslationImportQueueEntry
 
     def checkAuthenticated(self, user):
-        """Anyone who can admin an entry, plus its owner, can edit it.
+        """Anyone who can admin an entry, plus its owner or the owner of the
+        product or distribution, can edit it.
         """
         if AdminTranslationImportQueueEntry.checkAuthenticated(self, user):
             return True
-        if user.inTeam(self.obj.importer):
+        if self.obj.isUserUploaderOrOwner(user):
             return True
 
         return False
@@ -1582,17 +1615,6 @@ class EditBranch(AuthorizationBase):
 
 def can_upload_linked_package(person, branch):
     """True if person may upload the package linked to `branch`."""
-
-    def get_current_release(ssp):
-        """Get current release for the source package linked to branch.
-
-        This function uses the `ISuiteSourcePackage` instance supplied.
-        """
-        package = ssp.sourcepackage
-        releases = ssp.distroseries.getCurrentSourceReleases(
-            [package.sourcepackagename])
-        return releases.get(package, None)
-
     # No associated `ISuiteSourcePackage` data -> not an official branch.
     # Abort.
     ssp_list = branch.associatedSuiteSourcePackages()
@@ -1605,31 +1627,10 @@ def can_upload_linked_package(person, branch):
     # around this by assuming that things are fine as long as we find at least
     # one combination that allows us to upload the corresponding source
     # package.
-
-    # Go through the associated `ISuiteSourcePackage` instances and see
-    # whether we can upload to any of the distro series/pocket combinations.
-    ssp = None
     for ssp in ssp_list:
-        # Can we upload to the respective pocket?
-        if ssp.distroseries.canUploadToPocket(ssp.pocket):
-            break
-    else:
-        # Loop terminated normally i.e. we could not upload to any of the
-        # (distroseries, pocket) combinations found.
-        return False
-
-    archive = ssp.distroseries.distribution.main_archive
-    # Find the component the linked source package was published in.
-    current_release = get_current_release(ssp)
-    component = getattr(current_release, 'component', None)
-
-    # Is person authorised to upload the source package this branch
-    # is targeting?
-    result = verify_upload(
-        person, ssp.sourcepackagename, archive, component, ssp.distroseries)
-    # verify_upload() indicates that person *is* allowed to upload by
-    # returning None.
-    return result is None
+        if can_upload_to_archive(person, ssp):
+            return True
+    return False
 
 
 class AdminBranch(AuthorizationBase):
@@ -1643,9 +1644,31 @@ class AdminBranch(AuthorizationBase):
                 user.inTeam(celebs.bazaar_experts))
 
 
+# Please keep this in sync with AdminPOTemplateDetails.  Note that
+# this permission controls access to browsing into individual
+# potemplates, but it's on a different object (POTemplateSubset)
+# from AdminPOTemplateDetails, even though it looks almost identical
 class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
+    """Controls administration of an `IPOTemplateSubset`.
+
+    Allow all persons that can also administer the translations to
+    which this template belongs to and also translation group owners.
+
+    Product owners does not have administrative privileges.
+    """
+    permission = 'launchpad.TranslationsAdmin'
     usedfor = IPOTemplateSubset
+
+    def checkAuthenticated(self, user):
+        template_set = self.obj
+        if template_set.distroseries is not None:
+            distribution = template_set.distroseries.distribution
+            return (
+                AdminDistributionTranslations(
+                    distribution).checkAuthenticated(user))
+        else:
+            # Template is on a product.
+            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user)
 
 
 class AdminDistroSeriesLanguage(OnlyRosettaExpertsAndAdmins):
@@ -1825,24 +1848,6 @@ class AdminDistroSeriesLanguagePacks(
             EditDistroSeriesByOwnersOrDistroOwnersOrAdmins.checkAuthenticated(
                 self, user) or
             user.inTeam(self.obj.distribution.language_pack_admin))
-
-
-class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
-                                    EditDistributionByDistroOwnersOrAdmins):
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IDistribution
-
-    def checkAuthenticated(self, user):
-        """Is the user able to manage `IDistribution` translations settings?
-
-        Any Launchpad/Launchpad Translations administrator or people allowed
-        to edit distribution details are able to change translation settings
-        for a distribution.
-        """
-        return (
-            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-            EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
-                self, user))
 
 
 class AdminLanguagePack(OnlyRosettaExpertsAndAdmins):

@@ -526,7 +526,7 @@ class TestRevisionsAddedJob(TestCaseWithFactory):
         tree.merge_from_branch(tree2.branch)
         tree3 = tree.bzrdir.sprout('tree3').open_workingtree()
         tree3.commit('rev2b', rev_id='rev2b-id', committer='qux@')
-        tree.merge_from_branch(tree3.branch)
+        tree.merge_from_branch(tree3.branch, force=True)
         if include_ghost:
             tree.add_parent_tree_id('rev2c-id')
         tree.commit('rev2d', rev_id='rev2d-id', timestamp=1000, timezone=0,

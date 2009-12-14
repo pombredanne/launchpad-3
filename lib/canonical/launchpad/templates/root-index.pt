@@ -51,14 +51,14 @@
           margin-top: 1em;
           font-size: 161%;
           }
-      .featured-project h3 {
+      .featured-project-top h3 {
           font-size: 131%;
           font-weight: bold;
           }
-      .featured-project h3 img {
+      .featured-project-top h3 img {
           vertical-align: middle;
           }
-      .featured-project p {
+      .featured-project-top p {
           margin-top: 0.5em;
           margin-bottom: 1em;
           border-bottom: 1px solid #888888;
@@ -133,6 +133,11 @@
             <div id="homepage-blogposts" class="homepage-portlet">
               <h2>Recent Launchpad blog posts</h2>
               <ul>
+              <li class="news">
+                  <a href="http://blog.launchpad.net/?p=1178">
+                  Working with bug mail</a><span class="registered"> &ndash; 02 Dec 2009</span><br />
+                  Get the most from Launchpad's bug notifications.
+                </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/bazaar/accessing-git-subversion-and-mercurial-from-bazaar">
                   Git and Subversion from Bazaar</a><span class="registered"> &ndash; 29 Oct 2009</span><br />
@@ -226,7 +231,7 @@
             <div id="homepage-featured" class="homepage-portlet">
               <h2>Featured projects</h2>
 
-              <div class="featured-project"
+              <div class="featured-project-top"
                    tal:define="topproject view/featured_projects_top"
                    tal:condition="topproject">
                 <h3>
@@ -241,7 +246,7 @@
               </div>
 
               <div class="two-column-list">
-                <ul id="homepage-featured">
+                <ul class="featured-projects-list">
                   <li tal:repeat="project view/featured_projects">
                     <a tal:replace="structure project/fmt:link" />
                   </li>

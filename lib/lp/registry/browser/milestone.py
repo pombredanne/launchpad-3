@@ -7,9 +7,11 @@ __metaclass__ = type
 
 __all__ = [
     'MilestoneAddView',
+    'MilestoneBreadcrumb',
     'MilestoneContextMenu',
     'MilestoneDeleteView',
     'MilestoneEditView',
+    'MilestoneInlineNavigationMenu',
     'MilestoneNavigation',
     'MilestoneOverviewNavigationMenu',
     'MilestoneSetNavigation',
@@ -21,6 +23,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.formlib import form
+from zope.interface import implements, Interface
 from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
@@ -32,13 +35,14 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget,
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView,
     enabled_with_permission, GetitemNavigation, Navigation)
+from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.menu import (
     ApplicationMenu, ContextMenu, Link, NavigationMenu)
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -59,6 +63,18 @@ class MilestoneNavigation(Navigation,
     usedfor = IMilestone
 
 
+class MilestoneBreadcrumb(Breadcrumb):
+    """The Breadcrumb for an `IMilestone`."""
+
+    @property
+    def text(self):
+        milestone = IMilestone(self.context)
+        if milestone.code_name:
+            return '%s "%s"' % (milestone.name, milestone.code_name)
+        else:
+            return milestone.name
+
+
 class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
     """The menu for this milestone."""
 
@@ -72,7 +88,6 @@ class MilestoneLinkMixin(StructuralSubscriptionMenuMixin):
         summary = "Edit this milestone"
         return Link(
             '+edit', text, icon='edit', summary=summary, enabled=enabled)
-
 
     @enabled_with_permission('launchpad.Edit')
     def create_release(self):
@@ -105,7 +120,7 @@ class MilestoneContextMenu(ContextMenu, MilestoneLinkMixin):
 
 
 class MilestoneOverviewNavigationMenu(NavigationMenu, MilestoneLinkMixin):
-    """Overview navigation menus for `IMilestone` objects."""
+    """Overview navigation menu for `IMilestone` objects."""
     usedfor = IMilestone
     facet = 'overview'
     links = ('edit', 'delete', 'subscribe')
@@ -118,11 +133,22 @@ class MilestoneOverviewMenu(ApplicationMenu, MilestoneLinkMixin):
     links = ('create_release', )
 
 
+class IMilestoneInline(Interface):
+    """A marker interface for views that show a milestone inline."""
+
+
+class MilestoneInlineNavigationMenu(NavigationMenu, MilestoneLinkMixin):
+    """An inline navigation menus for milestone views."""
+    usedfor = IMilestoneInline
+    facet = 'overview'
+    links = ('edit', )
+
+
 class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
     """A View for listing milestones and releases."""
     # XXX sinzui 2009-05-29 bug=381672: Extract the BugTaskListingItem rules
     # to a mixin so that MilestoneView and others can use it.
-
+    implements(IMilestoneInline)
     show_series_context = False
 
     def __init__(self, context, request):

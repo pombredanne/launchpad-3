@@ -119,7 +119,7 @@ class LibrarianClientTestCase(unittest.TestCase):
                                                               expected_host))
             # If the alias has been deleted, _getURLForDownload returns None.
             lfa = LibraryFileAlias.get(alias_id)
-            lfa.content.deleted = True
+            lfa.content = None
             call = block_implicit_flushes( # Prevent a ProgrammingError
                 LibrarianClient._getURLForDownload)
             self.assertEqual(call(client, alias_id), None)
@@ -155,7 +155,7 @@ class LibrarianClientTestCase(unittest.TestCase):
                                                               expected_host))
             # If the alias has been deleted, _getURLForDownload returns None.
             lfa = LibraryFileAlias.get(alias_id)
-            lfa.content.deleted = True
+            lfa.content = None
             call = block_implicit_flushes( # Prevent a ProgrammingError
                 RestrictedLibrarianClient._getURLForDownload)
             self.assertEqual(call(client, alias_id), None)

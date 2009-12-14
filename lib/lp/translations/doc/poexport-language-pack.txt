@@ -12,10 +12,12 @@ Some initialisation tasks:
     >>> import transaction
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.launchpad.helpers import string_to_tarfile
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from lp.translations.scripts.language_pack import \
     ...    export_language_pack
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from canonical.database.sqlbase import flush_database_caches
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> login("daf@canonical.com")
 
     # This is a dummy logger class to capture the export's log messages.
@@ -183,8 +185,10 @@ Attach the es.xpi file (the translation) file.
 Before we are ready to import the attached files, we need to approve
 them first.
 
-    >>> template_entry.setStatus(RosettaImportStatus.APPROVED)
-    >>> translation_entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> template_entry.setStatus(
+    ...     RosettaImportStatus.APPROVED, rosetta_experts)
+    >>> translation_entry.setStatus(
+    ...     RosettaImportStatus.APPROVED, rosetta_experts)
 
 Given that the files are attached to Librarian, we need to commit the
 transaction to make sure it's stored properly and available.

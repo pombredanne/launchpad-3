@@ -37,7 +37,6 @@ from lp.bugs.model.bugtarget import (
     BugTargetBase, OfficialBugTagTargetMixin)
 from lp.bugs.model.bugtask import BugTask
 from lp.soyuz.model.build import Build
-from lp.translations.model.customlanguagecode import CustomLanguageCode
 from lp.registry.model.distributionmirror import DistributionMirror
 from lp.registry.model.distributionsourcepackage import (
     DistributionSourcePackage)
@@ -66,7 +65,7 @@ from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.registry.model.sourcepackagename import SourcePackageName
 from lp.soyuz.model.sourcepackagerelease import (
     SourcePackageRelease)
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
@@ -394,9 +393,9 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
         return DistributionMirror.selectOneBy(distribution=self, name=name)
 
     def newMirror(self, owner, speed, country, content, displayname=None,
-                  description=None, http_base_url=None, ftp_base_url=None,
-                  rsync_base_url=None, official_candidate=False,
-                  enabled=False):
+                  description=None, http_base_url=None,
+                  ftp_base_url=None, rsync_base_url=None, official_candidate=False,
+                  enabled=False, whiteboard=None):
         """See `IDistribution`."""
         # NB this functionality is only available to distributions that have
         # the full functionality of Launchpad enabled. This is Ubuntu and
@@ -430,7 +429,8 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
             description=description, http_base_url=urls['http_base_url'],
             ftp_base_url=urls['ftp_base_url'],
             rsync_base_url=urls['rsync_base_url'],
-            official_candidate=official_candidate, enabled=enabled)
+            official_candidate=official_candidate, enabled=enabled,
+            whiteboard=whiteboard)
 
     def createBug(self, bug_params):
         """See canonical.launchpad.interfaces.IBugTarget."""
@@ -1457,12 +1457,6 @@ class Distribution(SQLBase, BugTargetBase, MakesAnnouncements,
                 (dsp, product, open_bugs, bugs_triaged,
                  bugs_affecting_upstream, bugs_with_upstream_bugwatch))
         return results
-
-    def getCustomLanguageCode(self, sourcepackagename, language_code):
-        """See `IDistribution`."""
-        return CustomLanguageCode.selectOneBy(
-            distribution=self, sourcepackagename=sourcepackagename,
-            language_code=language_code)
 
     def setBugSupervisor(self, bug_supervisor, user):
         """See `IHasBugSupervisor`."""

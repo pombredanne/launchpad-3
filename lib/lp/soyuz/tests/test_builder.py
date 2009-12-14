@@ -8,10 +8,15 @@ import unittest
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    BuildBehaviorMismatch, IBuildFarmJobBehavior)
+from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.builder import IBuilderSet
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.binarypackagebuildbehavior import (
+    BinaryPackageBuildBehavior)
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
@@ -77,14 +82,16 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
 
         # Asking frog to find a candidate should give us the joesppa build.
         next_job = self.frog_builder.findBuildCandidate()
-        self.assertEqual('joesppa', next_job.build.archive.name)
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.assertEqual('joesppa', build.archive.name)
 
         # If bob is in a failed state the joesppa build is still
         # returned.
         self.bob_builder.builderok = False
         self.bob_builder.manual = False
         next_job = self.frog_builder.findBuildCandidate()
-        self.assertEqual('joesppa', next_job.build.archive.name)
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.assertEqual('joesppa', build.archive.name)
 
 
 class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
@@ -156,14 +163,16 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         # A PPA cannot start a build if it would use 80% or more of the
         # builders.
         next_job = self.builder4.findBuildCandidate()
-        self.failIfEqual('joesppa', next_job.build.archive.name)
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.failIfEqual('joesppa', build.archive.name)
 
     def test_findBuildCandidate_first_build_finished(self):
         # When joe's first ppa build finishes, his fourth i386 build
         # will be the next build candidate.
         self.joe_builds[0].buildstate = BuildStatus.FAILEDTOBUILD
         next_job = self.builder4.findBuildCandidate()
-        self.failUnlessEqual('joesppa', next_job.build.archive.name)
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.failUnlessEqual('joesppa', build.archive.name)
 
     def test_findBuildCandidate_for_private_ppa(self):
         # If a ppa is private it will be able to have parallel builds
@@ -171,7 +180,8 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         self.ppa_joe.private = True
         self.ppa_joe.buildd_secret = 'sekrit'
         next_job = self.builder4.findBuildCandidate()
-        self.failUnlessEqual('joesppa', next_job.build.archive.name)
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.failUnlessEqual('joesppa', build.archive.name)
 
 
 class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
@@ -196,18 +206,67 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         # arch.
 
         next_job = self.builder2.findBuildCandidate()
-        self.failUnlessEqual('primary', next_job.build.archive.name)
-        self.failUnlessEqual(
-            'gedit', next_job.build.sourcepackagerelease.name)
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.failUnlessEqual('primary', build.archive.name)
+        self.failUnlessEqual('gedit', build.sourcepackagerelease.name)
 
         # Now even if we set the build building, we'll still get the
         # second non-ppa build for the same archive as the next candidate.
-        next_job.build.buildstate = BuildStatus.BUILDING
-        next_job.build.builder = self.builder2
+        build.buildstate = BuildStatus.BUILDING
+        build.builder = self.builder2
         next_job = self.builder2.findBuildCandidate()
-        self.failUnlessEqual('primary', next_job.build.archive.name)
-        self.failUnlessEqual(
-            'firefox', next_job.build.sourcepackagerelease.name)
+        build = getUtility(IBuildSet).getByQueueEntry(next_job)
+        self.failUnlessEqual('primary', build.archive.name)
+        self.failUnlessEqual('firefox', build.sourcepackagerelease.name)
+
+
+class TestCurrentBuildBehavior(TestCaseWithFactory):
+    """This test ensures the get/set behavior of IBuilder's
+    current_build_behavior property.
+    """
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        """Create a new builder ready for testing."""
+        super(TestCurrentBuildBehavior, self).setUp()
+        self.builder = self.factory.makeBuilder(name='builder')
+
+        # Have a publisher and a ppa handy for some of the tests below.
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+        self.ppa_joe = self.factory.makeArchive(name="joesppa")
+
+        self.build = self.publisher.getPubSource(
+            sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+            archive=self.ppa_joe).createMissingBuilds()[0]
+
+        self.buildfarmjob = self.build.buildqueue_record.specific_job
+
+    def test_idle_behavior_when_no_current_build(self):
+        """We return an idle behavior when there is no behavior specified
+        nor a current build.
+        """
+        self.assertIsInstance(
+            self.builder.current_build_behavior, IdleBuildBehavior)
+
+    def test_set_behavior_sets_builder(self):
+        """Setting a builder's behavior also associates the behavior with the
+        builder."""
+        behavior = IBuildFarmJobBehavior(self.buildfarmjob)
+        self.builder.current_build_behavior = behavior
+
+        self.assertEqual(behavior, self.builder.current_build_behavior)
+        self.assertEqual(behavior._builder, self.builder)
+
+    def test_current_job_behavior(self):
+        """The current behavior is set automatically from the current job."""
+        # Set the builder attribute on the buildqueue record so that our
+        # builder will think it has a current build.
+        self.build.buildqueue_record.builder = self.builder
+
+        self.assertIsInstance(
+            self.builder.current_build_behavior, BinaryPackageBuildBehavior)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

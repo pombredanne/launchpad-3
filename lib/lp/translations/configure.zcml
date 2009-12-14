@@ -411,7 +411,7 @@
                 permission="launchpad.Edit"
                 set_attributes="owner priority description"/>
             <require
-                permission="launchpad.Admin"
+                permission="launchpad.TranslationsAdmin"
                 set_attributes="name translation_domain productseries distroseries                                                                                                 sourcepackagename sourcepackageversion                                                                                                 binarypackagename languagepack path header                                                                                                 iscurrent from_sourcepackagename date_last_updated                                                                                                 source_file source_file_format"/>
         </class>
         <adapter
@@ -549,6 +549,11 @@
                 interface="lp.translations.interfaces.translationmessage.ITranslationMessageSet"/>
         </securedutility>
     </facet>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        factory="lp.translations.browser.customlanguagecode.CustomLanguageCodeBreadcrumb"
+        permission="zope.Public"/>
     <class
         class="lp.translations.model.customlanguagecode.CustomLanguageCode">
         <allow

@@ -391,8 +391,10 @@ artifacts of the list on the Mailman side.
 
     >>> from canonical.launchpad.interfaces import IMailingListSet
     >>> mailing_list = getUtility(IMailingListSet).new(landscape)
+    >>> from lp.registry.tests.mailinglists_helper import mailman
+    >>> mailman.act()
     >>> print mailing_list.status.name
-    REGISTERED
+    ACTIVE
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> personset.merge(landscape, ubuntu_team)
     Traceback (most recent call last):
@@ -403,13 +405,15 @@ Purging the associated mailing list doesn't delete it, but puts it into a
 state that essentially treats it as nonexistent.  It still can't be merged
 until all the members are deactivated though.
 
+    >>> mailing_list.deactivate()
+    >>> mailman.act()
     >>> mailing_list.purge()
     >>> print mailing_list.status.name
     PURGED
     >>> personset.merge(landscape, ubuntu_team)
     Traceback (most recent call last):
     ...
-    AssertionError: Only teams without active members can be merged
+    AssertionError: from_person still has email addresses.
 
 For cases like this we have an API which takes care of deactivating all
 active members of the team so that we can perform the merge.

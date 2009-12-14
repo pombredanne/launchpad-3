@@ -38,7 +38,7 @@ We need to insert some dependent fake data before continuing.
     iceweasel 1.0 in warty
     pmount 0.1-1 in warty
 
-getPublishedSources() can accept some optional filtering paramters to reduce
+getPublishedSources() can accept some optional filtering parameters to reduce
 the number of returned publications.
 
 Search by name and version using an exact match:
@@ -111,6 +111,7 @@ publication to play with first.
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
+    binary_file_urls: []
     changes_file_url: u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
     component_name: u'main'
     date_created: ...
@@ -130,6 +131,7 @@ publication to play with first.
     scheduled_deletion_date: None
     section_name: u'base'
     self_link: u'http://.../~cprov/+archive/ppa/+sourcepub/...'
+    source_file_urls: [u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666.dsc']
     source_package_name: u'testwebservice'
     source_package_version: u'666'
     status: u'Pending'
@@ -159,6 +161,35 @@ Query the source again:
 
     >>> print pubs['entries'][0]['package_signer_link']
     None
+
+Package deletion
+================
+
+A user can request a package to be deleted:
+
+    >>> cprov = webservice.get("/~cprov").jsonBody()
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="testwebservice", version="666",
+    ...     exact_match=True).jsonBody()
+    >>> print pubs['total_size']
+    1
+    >>> package = pubs['entries'][0]['self_link']
+    >>> response = webservice.named_post(
+    ...     package, 'requestDeletion', removed_by=cprov['self_link'],
+    ...     removal_comment="No longer needed")
+    >>> print response 
+    HTTP/1.1 200 Ok
+    ...
+
+After removal, the package is marked as such:
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources',
+    ...     source_name="testwebservice", version="666",
+    ...     exact_match=True).jsonBody()
+    >>> print pubs['entries'][0]['removal_comment']
+    No longer needed
 
 Privacy
 =======
@@ -205,18 +236,20 @@ Finding related Builds
 ======================
 
 The source publication object has a custom operation called 'getBuilds' and
-it returns the build records in the context of that publication.
+it returns the build records for builds that were built in the same context
+archive as the publication, or builds from other archives but where the
+binaries have been copied and published in the same context archive.
 
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
-    ...     source_name="iceweasel", version="1.0",
+    ...     source_name="pmount", version="0.1-1",
     ...     exact_match=True).jsonBody()
     >>> source_pub = pubs['entries'][0]
     >>> builds = webservice.named_get(
     ...     source_pub['self_link'], 'getBuilds').jsonBody()
     >>> for entry in sorted(builds['entries']):
     ...     print entry['title']
-    i386 build of iceweasel 1.0 in ubuntu warty RELEASE
+    i386 build of pmount 0.1-1 in ubuntu warty RELEASE
 
 
 Finding related Binary publications
@@ -283,3 +316,26 @@ and a list of all the relevant builds for the summary:
     >>> print_build_summaries(build_summaries)
     Source ID 27: FAILEDTOBUILD ([u'i386'])
     Source ID 28: FULLYBUILT_PENDING ([u'i386'])
+
+    >>> pubs = webservice.named_get(
+    ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
+    >>> def print_source_urls(pubs):
+    ...     for source_file_urls in sorted(
+    ...         entry['source_file_urls'] for entry in pubs['entries']):
+    ...         print source_file_urls
+    >>> print_source_urls(pubs)
+    []
+    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox_0.9.2.orig.tar.gz', u'http://launchpad.dev/~cprov/+archive/ppa/+files/iceweasel-1.0.dsc']
+    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/foobar-1.0.dsc']
+    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666.dsc']
+
+    >>> def print_binary_urls(pubs):
+    ...     for binary_file_urls in sorted(
+    ...         entry['binary_file_urls'] for entry in pubs['entries']):
+    ...         print binary_file_urls
+    >>> print_binary_urls(pubs)
+    []
+    []
+    []
+    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/mozilla-firefox_0.9_i386.deb']
+
