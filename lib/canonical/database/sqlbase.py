@@ -351,7 +351,7 @@ class ZopelessTransactionManager(object):
 
         This is required for connection setting changes to be made visible.
         """
-        for store in getUtility(IZStorm).iterstores():
+        for name, store in getUtility(IZStorm).iterstores():
             connection = store._connection
             if connection._state == storm.database.STATE_CONNECTED:
                 if connection._raw_connection is not None:
