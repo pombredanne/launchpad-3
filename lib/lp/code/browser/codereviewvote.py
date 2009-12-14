@@ -34,3 +34,9 @@ class CodeReviewVoteReassign(LaunchpadFormView):
         """Use the form data to change the review request reviewer."""
         self.context.reassignReview(data['reviewer'])
         self.next_url = canonical_url(self.context.branch_merge_proposal)
+
+    def validate(self, data):
+        """Make sure that the reassignment can happen."""
+        reviewer = data.get('reviewer')
+        if reviewer is not None:
+            self.context.validateReassignReview(reviewer)
