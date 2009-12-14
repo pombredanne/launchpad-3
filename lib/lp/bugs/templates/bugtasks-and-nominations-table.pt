@@ -33,8 +33,10 @@
         <span class="dynamic unseen">
           <img src="/@@/flame-icon" alt=""/>
           <a href="+affectsmetoo" class="js-action"
-             ><span class="value" tal:content="view/affected_statement" />
-          <img class="editicon" src="/@@/edit" alt="Edit" /></a>
+             ><span class="value" tal:content="view/affected_statement" /></a>
+          <a href="+affectsmetoo">
+            <img class="editicon" src="/@@/edit" alt="Edit" />
+          </a>
         </span>
         <script type="text/javascript" tal:content="string:
           LPS.use('event', 'bugs.bugtask_index', function(Y) {
