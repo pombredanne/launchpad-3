@@ -1041,7 +1041,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
 
         # Setup and execute the delayed copy procedure. This should
         # raise an exception, as it won't be able to find an ancestor
-        # who's component can be used for overriding.
+        # whose component can be used for overriding.
         do_delayed_copy_method = self.do_delayed_copy
         self.assertRaises(
             QueueInconsistentStateError, do_delayed_copy_method, source)
