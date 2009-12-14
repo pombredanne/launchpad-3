@@ -1782,16 +1782,16 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['displayname', 'description']
+    field_names = ['displayname', 'description', 'enabled']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 
 
 class ArchiveAdminView(BaseArchiveEditView):
 
-    field_names = ['enabled', 'private', 'require_virtualized',
-                   'buildd_secret', 'authorized_size', 'relative_build_score',
-                   'external_dependencies']
+    field_names = [
+        'private', 'require_virtualized', 'buildd_secret', 'authorized_size',
+        'relative_build_score', 'external_dependencies']
 
     custom_widget('external_dependencies', TextAreaWidget, height=3)
 
