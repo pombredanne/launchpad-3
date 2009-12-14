@@ -53,10 +53,11 @@ class TestDupeFinder(TestCaseWithFactory):
             timeout=constants.FOR_ELEMENT)
         client.type(text=u'problem', id=u'field.search')
         client.click(xpath=u'//input[@id="field.actions.search"]')
-        client.waits.sleep(timeout=constants.SLEEP)
+
         # The details div for the duplicate bug should not be shown.
-        client.asserts.assertProperty(
-            id='details-for-bug-4', validator=BUG_INFO_HIDDEN)
+        client.waits.forElementProperty(
+            id='details-for-bug-4', option=BUG_INFO_HIDDEN,
+            timeout=constants.FOR_ELEMENT)
 
         # The expander for the duplicate should be collapsed.
         client.asserts.assertProperty(
