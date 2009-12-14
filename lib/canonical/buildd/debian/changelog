@@ -12,6 +12,7 @@ launchpad-buildd (53) hardy-cat; urgency=low
   * sbuild: run dpkg-source inside the chroot.  LP#476036
   * sbuild: change the regexp for dpkg-source extraction to handle both karmic and pre-karmic dpkg.  LP#476036
   * sbuild: use --print-architecture instead of --print-installation-architecture
+  * mount-chroot: copy hosts et al into chroot. LP#447919
 
  -- LaMont Jones <lamont@canonical.com>  Sun, 13 Dec 2009 16:39:40 -0700
 
