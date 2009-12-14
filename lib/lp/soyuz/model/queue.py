@@ -18,8 +18,8 @@ import shutil
 import StringIO
 import tempfile
 
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from storm.locals import Desc, In, Join
 from storm.store import Store
