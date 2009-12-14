@@ -1606,12 +1606,12 @@
         <allow interface="lp.registry.interfaces.distributionmirror.IDistributionMirror" />
         <require
             permission="launchpad.Edit"
-            set_attributes="name displayname description http_base_url
-                            ftp_base_url rsync_base_url enabled speed
-                            country content official_candidate owner" />
+            set_attributes="name displayname description whiteboard
+                            http_base_url ftp_base_url rsync_base_url enabled
+                            speed country content official_candidate owner" />
         <require
             permission="launchpad.Admin"
-            set_attributes="status whiteboard reviewer date_reviewed"
+            set_attributes="status reviewer date_reviewed"
             attributes="destroySelf" />
     </class>
 

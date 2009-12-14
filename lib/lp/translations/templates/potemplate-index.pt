@@ -120,7 +120,7 @@
              class="download sprite">download</a>
           translation tarballs.
         </p>
-        <div tal:condition="context/required:launchpad.Admin">
+        <div tal:condition="context/required:launchpad.TranslationsAdmin">
           <a tal:attributes="href
                              context/menu:navigation/administer/url"
              class="edit sprite">

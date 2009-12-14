@@ -137,6 +137,9 @@ download-cache:
 	@echo "Developers: please run utilities/link-external-sourcecode."
 	@exit 1
 
+buildonce_eggs: $(PY)
+	find eggs -name '*.pyc' -exec rm {} \;
+
 # The download-cache dependency comes *before* eggs so that developers get the
 # warning before the eggs directory is made.  The target for the eggs directory
 # is only there for deployment convenience.
@@ -364,4 +367,4 @@ ID: compile
 	check check_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild clean_js
+	jsbuild clean_js buildonce_eggs
