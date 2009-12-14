@@ -548,7 +548,10 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
     @action(_("Renew"), name="renew")
     def renew_action(self, action, data):
         member = self.context.person
-        member.renewTeamMembership(self.context.team)
+        # This if-statement prevents an exception if the user
+        # double clicks on the submit button.
+        if self.context.canBeRenewedByMember():
+            member.renewTeamMembership(self.context.team)
         self.request.response.addInfoNotification(
             _("Membership renewed until ${date}.", mapping=dict(
                     date=self.context.dateexpires.strftime('%Y-%m-%d'))))
@@ -2444,7 +2447,8 @@ class PersonLanguagesView(LaunchpadFormView):
     def getRedirectionURL(self):
         request = self.request
         referrer = request.getHeader('referer')
-        if referrer and referrer.startswith(request.getApplicationURL()):
+        if referrer and (referrer.startswith(request.getApplicationURL()) or
+                         referrer.find('+languages') != -1):
             return referrer
         else:
             return ''
@@ -2456,10 +2460,20 @@ class PersonLanguagesView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        """Redirect to this url after successfully processing the form."""
+        """Redirect back to the +languages page if request originated there."""
+        redirection_url = self.request.get('redirection_url')
+        if redirection_url:
+            return redirection_url
         return canonical_url(self.context)
 
-    cancel_url = next_url
+    @property
+    def cancel_url(self):
+        """Redirect back to the +languages page if request originated there."""
+        redirection_url = self.getRedirectionURL()
+        if redirection_url:
+            return redirection_url
+        return canonical_url(self.context)
+
 
     @action(_("Save"), name="save")
     def submitLanguages(self, action, data):
@@ -2499,9 +2513,6 @@ class PersonLanguagesView(LaunchpadFormView):
         if len(messages) > 0:
             message = structured('<br />'.join(messages))
             self.request.response.addInfoNotification(message)
-        redirection_url = self.request.get('redirection_url')
-        if redirection_url:
-            self.request.response.redirect(redirection_url)
 
     @property
     def answers_url(self):
@@ -2857,13 +2868,15 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         else:
             raise AssertionError('Unknown group to contact.')
 
+    @property
     def should_show_polls_portlet(self):
         menu = TeamOverviewMenu(self.context)
         return (
-            self.hasCurrentPolls() or self.closedpolls
+            self.has_current_polls or self.closedpolls
             or menu.add_poll().enabled)
 
-    def hasCurrentPolls(self):
+    @property
+    def has_current_polls(self):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
@@ -2998,15 +3011,15 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         """Return True if "Personal package archives" is to be shown.
 
         We display it if:
-        person has any public PPA or current_user has lp.edit
+        current_user may view at least one PPA or current_user has lp.edit
         """
         # If the current user has edit permission, show the section.
         if check_permission('launchpad.Edit', self.context):
             return True
 
-        # If the current user has any public PPA, show the section.
+        # If the current user can view any PPA, show the section.
         for ppa in self.context.ppas:
-            if not ppa.private:
+            if check_permission('launchpad.View', ppa):
                 return True
 
         return False
@@ -4112,9 +4125,13 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         for team in self.user.getAdministratedTeams():
             if team == self.context:
                 continue
+            elif team.visibility != PersonVisibility.PUBLIC:
+                continue
             elif team in self.context.activemembers:
+                # The team is already a member of the context object.
                 continue
             elif self.context.hasParticipationEntryFor(team):
+                # The context object is a member/submember of the team.
                 continue
             candidates.append(team)
         return candidates

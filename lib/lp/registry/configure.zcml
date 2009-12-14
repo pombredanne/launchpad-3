@@ -353,6 +353,9 @@
     <class
         class="lp.registry.model.distributionsourcepackage.DistributionSourcePackage">
         <allow
+            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
+
+        <allow
             attributes="
                 distribution
                 development_version
@@ -631,6 +634,12 @@
                 permission="launchpad.Edit"
                 set_schema="lp.registry.interfaces.poll.IPoll"/>
         </class>
+
+        <adapter
+            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+            for="lp.registry.interfaces.poll.IPoll"
+            factory="lp.registry.browser.poll.PollBreadcrumb"
+            permission="zope.Public"/>
 
         <!-- PollOption -->
 
@@ -1045,6 +1054,8 @@
             interface="lp.registry.interfaces.product.IProductPublic"/>
         <allow
             interface="lp.translations.interfaces.translationimportqueue.IHasTranslationImports"/>
+        <allow
+            interface="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"/>
         <require
             permission="launchpad.Driver"
             interface="lp.registry.interfaces.product.IProductDriverRestricted"/>
@@ -1540,6 +1551,11 @@
             permission="zope.Public"
             set_schema="lp.registry.interfaces.productrelease.IProductRelease"/>
     </class>
+    <adapter
+        provides="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.productrelease.IProductRelease"
+        factory="lp.registry.model.productrelease.productrelease_to_milestone"
+        permission="zope.Public"/>
 
     <!-- This is class ProductReleaseFile -->
 
@@ -1590,16 +1606,20 @@
         <allow interface="lp.registry.interfaces.distributionmirror.IDistributionMirror" />
         <require
             permission="launchpad.Edit"
-            set_attributes="name displayname description http_base_url
-                            ftp_base_url rsync_base_url enabled speed
-                            country content official_candidate" />
+            set_attributes="name displayname description whiteboard
+                            http_base_url ftp_base_url rsync_base_url enabled
+                            speed country content official_candidate owner" />
         <require
             permission="launchpad.Admin"
-            set_attributes="status owner whiteboard reviewer date_reviewed" />
-        <require
-            permission="launchpad.Admin"
+            set_attributes="status reviewer date_reviewed"
             attributes="destroySelf" />
     </class>
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.distributionmirror.IDistributionMirror"
+        factory="lp.registry.browser.distributionmirror.DistributionMirrorBreadcrumb"
+        permission="zope.Public"/>
 
     <!-- DistributionMirrorSet -->
     <class class="lp.registry.model.distributionmirror.DistributionMirrorSet">
@@ -1661,7 +1681,7 @@
             permission="zope.Public"
             set_schema="lp.registry.interfaces.packaging.IPackaging"/>
     </class>
-    
+
     <!-- PackagingUtil -->
     <class
         class="lp.registry.model.packaging.PackagingUtil">
@@ -1674,4 +1694,15 @@
         <allow
             interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
     </securedutility>
+
+    <!-- StructuralSubscription -->
+    
+    <class
+        class="lp.registry.model.structuralsubscription.StructuralSubscription">
+        <allow
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+        <require
+            permission="zope.Public"
+            set_schema="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+    </class>
 </configure>

@@ -89,11 +89,12 @@ class POTemplateNavigation(Navigation):
             return self.context.getDummyPOFile(name, requester=user)
         else:
             # It's a POST.
-            # XXX CarlosPerelloMarin 2006-04-20: We should check the kind of
-            # POST we got, a Log out action will be also a POST and we should
-            # not create an IPOFile in that case. See bug #40275 for more
-            # information.
-            return self.context.newPOFile(name, requester=user)
+            # XXX CarlosPerelloMarin 2006-04-20 bug=40275: We should
+            # check the kind of POST we got.  A logout will also be a
+            # POST and we should not create a POFile in that case.
+            pofile = self.context.newPOFile(name)
+            pofile.setOwnerIfPrivileged(user)
+            return pofile
 
 
 class POTemplateFacets(StandardLaunchpadFacets):
@@ -183,7 +184,7 @@ class POTemplateMenu(NavigationMenu):
         text = 'Settings'
         return Link('+edit', text)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def administer(self):
         text = 'Administer'
         return Link('+admin', text)
@@ -687,7 +688,7 @@ class POTemplateSubsetNavigation(Navigation):
             raise AssertionError('Unknown context for %s' % potemplate.title)
 
         if ((official_rosetta and potemplate.iscurrent) or
-            check_permission('launchpad.Admin', self.context)):
+            check_permission('launchpad.TranslationsAdmin', self.context)):
             # The target is using officially Launchpad Translations and the
             # template is available to be translated, or the user is a is a
             # Launchpad administrator in which case we show everything.

@@ -94,7 +94,7 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
             vocabulary="ProductSeries",
             schema=Interface,
             description=_(
-                "The registered project series that this source package."
+                "The registered project series that this source package. "
                 "is based on. This series may be the same as the one that "
                 "earlier versions of this source packages were based on.")))
 
@@ -224,6 +224,20 @@ class ISourcePackage(IBugTarget, IHasBranches, IHasMergeProposals):
         title=u'The component in which the package was last published.',
         schema=IComponent, readonly=True, required=False)
 
+    def get_default_archive(component=None):
+        """Get the default archive of this package.
+
+        If 'component' is a partner component, then the default archive is the
+        partner archive. Otherwise, the primary archive of the associated
+        distribution.
+
+        :param component: The `IComponent` to base the default archive
+            decision on. If None, defaults to the last published component.
+        :raise NoPartnerArchive: If returning the partner archive is
+            appropriate, but no partner archive exists.
+        :return: `IArchive`.
+        """
+
     def getLatestTranslationsUploads():
         """Find latest Translations tarballs as produced by Soyuz.
 
@@ -284,7 +298,7 @@ class SourcePackageFileType(DBEnumeratedType):
         which in turn lists the orig.tar.gz and diff.tar.gz files used to
         make up the package.  """)
 
-    ORIG = DBItem(4, """
+    ORIG_TARBALL = DBItem(4, """
         Orig Tarball
 
         This file is an Ubuntu "orig" file, typically an upstream tarball or
@@ -296,13 +310,31 @@ class SourcePackageFileType(DBEnumeratedType):
         This is an Ubuntu "diff" file, containing changes that need to be
         made to upstream code for the packaging on Ubuntu. Typically this
         diff creates additional directories with patches and documentation
-        used to build the binary packages for Ubuntu.  """)
+        used to build the binary packages for Ubuntu.
 
-    TARBALL = DBItem(6, """
-        Tarball
+        This is only part of the 1.0 source package format.""")
+
+    NATIVE_TARBALL = DBItem(6, """
+        Native Tarball
 
         This is a tarball, usually of a mixture of Ubuntu and upstream code,
         used in the build process for this source package.  """)
+
+    DEBIAN_TARBALL = DBItem(7, """
+        Debian Tarball
+
+        This file is an Ubuntu "orig" file, typically an upstream tarball or
+        other lightly-modified upstreamish thing.
+
+        This is only part of the 3.0 (quilt) source package format.""")
+
+    COMPONENT_ORIG_TARBALL = DBItem(8, """
+        Component Orig Tarball
+
+        This file is an Ubuntu component "orig" file, typically an upstream
+        tarball containing a component of the source package.
+
+        This is only part of the 3.0 (quilt) source package format.""")
 
 
 class SourcePackageType(DBEnumeratedType):

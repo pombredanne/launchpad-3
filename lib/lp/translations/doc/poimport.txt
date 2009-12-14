@@ -21,6 +21,7 @@ Here are some imports we need to get this test running.
     >>> import datetime
     >>> import pytz
     >>> UTC = pytz.timezone('UTC')
+    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
 
 We need this for the Librarian to work properly.
 
@@ -125,7 +126,7 @@ transaction to make sure it's stored properly.
 
 The entry gets approved, so it can be imported.
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
     >>> import datetime
     >>> import pytz
@@ -201,7 +202,7 @@ The entry must have been approved for import.
 The entry indicates what file it is to be imported to; importing it to
 any other file would be an error.
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
     >>> other_product = getUtility(IProductSet).getByName('netapplet')
     >>> other_productseries = other_product.getSeries('trunk')
@@ -306,7 +307,7 @@ Set it as the place where the entry should be imported.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
 And we do the import.
 
@@ -448,7 +449,7 @@ For example, here's a gettext PO file with two headers.
     ...     productseries=series, potemplate=potemplate,
     ...     pofile=sumerian_pofile)
     >>> transaction.commit()
-    >>> warning_entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> warning_entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = sumerian_pofile.importFromQueue(warning_entry)
 
 The warning is noted in the confirmation email.  Note that this
@@ -477,14 +478,13 @@ that, but it should help a bit.
     <BLANKLINE>
     Line 12: We got a second header.
 
-    >>> warning_entry.setStatus(RosettaImportStatus.DELETED)
+    >>> warning_entry.setStatus(RosettaImportStatus.DELETED, rosetta_experts)
 
 
 === Import Without Errors ===
 
 Now, let's import one without errors.
 
-    >>> rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
     >>> pofile_without_errors = r'''
     ... msgid ""
     ... msgstr ""
@@ -522,7 +522,7 @@ Set it as the place where the entry should be imported.
 
 We must approve the entry to be able to import it.
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
 At this point, the statistics note that we have 2 translations coming
 from imported files (currentCount), and none updated in Launchpad
@@ -608,7 +608,7 @@ The entry must have been approved for import.
 The entry indicates what file it is to be imported to; importing it to
 any other file would be an error.
 
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> other_pofile = potemplate.newPOFile('de')
     >>> other_pofile.importFromQueue(entry)
     Traceback (most recent call last):
@@ -638,7 +638,7 @@ in this test; We don't touch entries that were in the queue previously.
     ...     if (entry.status == RosettaImportStatus.IMPORTED or
     ...         entry.status == RosettaImportStatus.FAILED) and (
     ...         entry.productseries == series):
-    ...         entry.setStatus(RosettaImportStatus.APPROVED)
+    ...         entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     ...     syncUpdate(entry)
     >>> transaction.commit()
 
@@ -859,7 +859,7 @@ normal:
     ...     potemplate.path, potemplate_contents, True, potemplate.owner,
     ...     sourcepackagename=firefox_name, distroseries=warty,
     ...     potemplate=potemplate)
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> syncUpdate(entry)
     >>> transaction.commit()
 
@@ -941,7 +941,7 @@ We now import this POFile as Divehi translation of Firefox trunk:
     >>> # Allow Librarian to see the change.
     >>> transaction.commit()
     >>> entry.pofile = firefox_dv
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, body) = firefox_dv.importFromQueue(entry, FakeLogger())
     >>> flush_database_updates()
     >>> print entry.status.name
@@ -989,7 +989,7 @@ approve and import it.
     ...     productseries=pofile.potemplate.productseries,
     ...     potemplate=pofile.potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
 Import succeeds but no email is sent out.
@@ -1008,7 +1008,7 @@ For syntax errors, failure notification is still sent out.
     ...     productseries=pofile.potemplate.productseries,
     ...     potemplate=pofile.potemplate, pofile=pofile)
     >>> transaction.commit()
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> (subject, message) = pofile.importFromQueue(entry)
 
 Import fails and email is sent out even though it's a published upload.
@@ -1042,7 +1042,7 @@ Kermit uploads a translation, which gets approved.
     ...     'lo.po', 'Invalid content', True, hermit,
     ...     pofile=pofile, potemplate=pofile.potemplate,
     ...     productseries=pofile.potemplate.productseries)
-    >>> entry.setStatus(RosettaImportStatus.APPROVED)
+    >>> entry.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> transaction.commit()
 
 The import fails.  The importer would like to send Kermit an email about

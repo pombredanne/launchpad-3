@@ -26,8 +26,8 @@ from lazr.delegates import delegates
 
 from canonical.cachedproperty import cachedproperty
 from canonical.lazr.utils import smartquote
-from canonical.launchpad.interfaces import IBugSet
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.bugs.interfaces.bug import IBugSet
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadView, Navigation, StandardLaunchpadFacets,
@@ -50,6 +50,8 @@ from lp.soyuz.interfaces.packagediff import IPackageDiffSet
 from lp.registry.browser.packaging import PackagingDeleteView
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.registry.interfaces.product import IDistributionSourcePackage
+from lp.translations.browser.customlanguagecode import (
+    HasCustomLanguageCodesTraversalMixin)
 
 
 class DistributionSourcePackageBreadcrumb(Breadcrumb):
@@ -117,7 +119,8 @@ class DistributionSourcePackageBugsMenu(
 
 
 class DistributionSourcePackageNavigation(Navigation,
-    BugTargetTraversalMixin, QuestionTargetTraversalMixin,
+    BugTargetTraversalMixin, HasCustomLanguageCodesTraversalMixin,
+    QuestionTargetTraversalMixin,
     StructuralSubscriptionTargetTraversalMixin):
 
     usedfor = IDistributionSourcePackage

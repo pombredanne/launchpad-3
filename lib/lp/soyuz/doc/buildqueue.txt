@@ -31,19 +31,21 @@ Instances returned by IBuildQueueSet provides the IBuildQueue interface:
 The IBuild record related to this job is provided by the 'build'
 attribute:
 
-    >>> bq.build.id
+    >>> from lp.soyuz.interfaces.build import IBuildSet
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bq)
+    >>> build.id
     8
-    >>> bq.build.buildstate.name
+    >>> build.buildstate.name
     'BUILDING'
 
 The static timestamps, representing when the record was initialised
 (inserted) and when the job was dispatched are provided as datetime
 instances:
 
-    >>> bq.created
+    >>> bq.job.date_created
     datetime.datetime(2005, 6, 15, 9, 14, 12, 820778, tzinfo=<UTC>)
 
-    >>> bq.buildstart
+    >>> bq.date_started
     datetime.datetime(2005, 6, 15, 9, 20, 12, 820778, tzinfo=<UTC>)
 
 Check Builder foreign key, which indicated which builder 'is processing'
@@ -77,29 +79,6 @@ used to manually reorder jobs via the web UI:
     >>> bq.manual
     False
 
-BuildQueue provides a property which calculates the partial duration
-of the build procedure (NOW - buildstart), it's mainly used in the UI.
-
-    >>> bq.buildduration
-    datetime.timedelta(...)
-
-Some local properties inherited from related content classes:
-
-    >>> bq.archseries.id == bq.build.distroarchseries.id
-    True
-    >>> bq.urgency == bq.build.sourcepackagerelease.urgency
-    True
-    >>> bq.archhintlist == bq.build.sourcepackagerelease.architecturehintlist
-    True
-    >>> bq.name == bq.build.sourcepackagerelease.name
-    True
-    >>> bq.version == bq.build.sourcepackagerelease.version
-    True
-    >>> bq.files.count() == bq.build.sourcepackagerelease.files.count()
-    True
-    >>> bq.builddependsindep == bq.build.sourcepackagerelease.builddependsindep
-    True
-
 BuildQueue provides the name for the logfile resulting from the build:
 
     >>> bq.getLogFileName()
@@ -119,6 +98,16 @@ set 'manual' attribute atomically. For this we use manualScore:
     (True, 1000)
 
 
+The BuildQueue item is responsible for providing the required build behavior
+for the item.
+
+    >>> from zope.security.proxy import isinstance
+    >>> from lp.soyuz.model.binarypackagebuildbehavior import (
+    ...     BinaryPackageBuildBehavior)
+    >>> isinstance(bq.required_build_behavior, BinaryPackageBuildBehavior)
+    True
+
+
 == Dispatching and Reseting jobs ==
 
 The sampledata contains an active job, being built by the 'bob'
@@ -131,11 +120,12 @@ builder.
 
     >>> print job.builder.name
     bob
-    >>> job.buildstart is not None
+    >>> job.date_started is not None
     True
     >>> print job.logtail
     Dummy sampledata entry, not processing
-    >>> print job.build.buildstate.name
+    >>> build = getUtility(IBuildSet).getByQueueEntry(job)
+    >>> print build.buildstate.name
     BUILDING
     >>> print job.lastscore
     1
@@ -150,11 +140,11 @@ to another build. The score value of the job is preserved.
 
     >>> print job.builder
     None
-    >>> print job.buildstart
+    >>> print job.date_started
     None
     >>> print job.logtail
     None
-    >>> print job.build.buildstate.name
+    >>> print build.buildstate.name
     NEEDSBUILD
     >>> print job.lastscore
     1
@@ -169,9 +159,9 @@ the specified builder.
 
     >>> print job.builder.name
     bob
-    >>> job.buildstart is not None
+    >>> job.date_started is not None
     True
-    >>> print job.build.buildstate.name
+    >>> print build.buildstate.name
     BUILDING
 
 
@@ -266,7 +256,7 @@ Note that the results are ordered by descending BuildQueue.lastscore
 and restricted
 
     >>> for bq in bqset.calculateCandidates(archseries):
-    ...     build = bq.build
+    ...     build = getUtility(IBuildSet).getByQueueEntry(bq)
     ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
     hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
     i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE (1000, 2)
@@ -298,7 +288,7 @@ The fake language pack will be queued behind the other source packages
 as intended.
 
     >>> for bq in bqset.calculateCandidates(archseries):
-    ...     build = bq.build
+    ...     build = getUtility(IBuildSet).getByQueueEntry(bq)
     ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
     hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
     i386 build of alsa-utils 1.0.9a-4ubuntu1 in ubuntu hoary RELEASE (1000, 2)
@@ -310,7 +300,7 @@ Restricting the domain to only hoary/hppa:
 
     >>> archseries = [hoary['hppa']]
     >>> for bq in bqset.calculateCandidates(archseries):
-    ...     build = bq.build
+    ...     build = getUtility(IBuildSet).getByQueueEntry(bq)
     ...     print "%s (%s, %d)" % (build.title, bq.lastscore, bq.id)
     hppa build of pmount 0.1-2 in ubuntu hoary RELEASE (1500, 4)
     hppa build of alsa-utils 1.0.9a-4 in ubuntu hoary RELEASE (500, 3)

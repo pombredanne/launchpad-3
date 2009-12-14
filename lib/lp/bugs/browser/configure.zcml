@@ -24,15 +24,21 @@
             template="../templates/bugtarget-portlet-recently-touched-bugs.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtask.BugListingPortletView"
+            class="lp.bugs.browser.bugtask.BugListingPortletInfoView"
             permission="zope.Public"
             name="+portlet-bugfilters"
             template="../templates/bugtarget-portlet-bugfilters.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtask.BugListingPortletView"
+            class="lp.bugs.browser.bugtask.BugListingPortletInfoView"
             permission="zope.Public"
-            name="+bugtarget-portlet-bugfilters-content"
+            name="+bugtarget-portlet-bugfilters-info"
+            template="../templates/bugtarget-portlet-bugfilters-content.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugtarget.IHasBugs"
+            class="lp.bugs.browser.bugtask.BugListingPortletStatsView"
+            permission="zope.Public"
+            name="+bugtarget-portlet-bugfilters-stats"
             template="../templates/bugtarget-portlet-bugfilters-content.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
@@ -86,6 +92,13 @@
             name="+filebug-advanced"
             for="lp.bugs.interfaces.bugtarget.IBugTarget"
             class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
+            facet="bugs"
+            permission="launchpad.AnyPerson"/>
+        <browser:page
+            name="+filebug-inline-form"
+            for="lp.bugs.interfaces.bugtarget.IBugTarget"
+            class="lp.bugs.browser.bugtarget.FilebugShowSimilarBugsView"
+            template="../templates/bugtarget-filebug-inline-form.pt"
             facet="bugs"
             permission="launchpad.AnyPerson"/>
         <browser:page
@@ -820,6 +833,7 @@
     <browser:page
         name="+bug-branch"
         for="lp.bugs.interfaces.bugbranch.IBugBranch"
+        class="lp.bugs.browser.bugbranch.BugBranchView"
         permission="launchpad.View"
         template="../templates/bug-branch.pt"/>
     <adapter
@@ -1003,6 +1017,11 @@
             name="+bug-portlet-dupe-subscribers-content"
             class="lp.bugs.browser.bugsubscription.BugPortletDuplicateSubcribersContents"
             template="../templates/bug-portlet-dupe-subscribers-content.pt"
+            permission="zope.Public"/>
+        <browser:page
+            for="lp.bugs.interfaces.bug.IBug"
+            name="+bug-portlet-subscribers-ids"
+            class="lp.bugs.browser.bugsubscription.BugPortletSubcribersIds"
             permission="zope.Public"/>
         <browser:navigation
             module="lp.bugs.browser.bug"
