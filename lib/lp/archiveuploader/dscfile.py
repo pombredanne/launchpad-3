@@ -30,9 +30,9 @@ from lp.archiveuploader.nascentuploadfile import (
 from lp.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
 from lp.archiveuploader.utils import (
-    prefix_multi_line_string, safe_fix_maintainer, ParseMaintError,
-    re_valid_pkg_name, re_valid_version, re_issource,
-    determine_source_file_type)
+    determine_source_file_type, get_source_file_extension,
+    ParseMaintError, prefix_multi_line_string, re_is_component_orig_tar_ext,
+    re_issource, re_valid_pkg_name, re_valid_version, safe_fix_maintainer)
 from canonical.encoding import guess as guess_encoding
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
@@ -160,6 +160,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         Can raise UploadError.
         """
+        # Avoid circular imports.
+        from lp.archiveuploader.nascentupload import EarlyReturnUploadError
+
         SourceUploadFile.__init__(
             self, filepath, digest, size, component_and_section, priority,
             package, version, changes, policy, logger)
@@ -186,6 +189,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         if 'format' not in self._dict:
             self._dict['format'] = "1.0"
 
+        if self.format is None:
+            raise EarlyReturnUploadError(
+                "Unsupported source format: %s" % self._dict['format'])
+
         if self.policy.unsigned_dsc_ok:
             self.logger.debug("DSC file can be unsigned.")
         else:
@@ -208,7 +215,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     @property
     def format(self):
         """Return the DSC format."""
-        return self._dict['format']
+        try:
+            return SourcePackageFormat.getTermByToken(
+                self._dict['format']).value
+        except LookupError:
+            return None
 
     @property
     def architecture(self):
@@ -231,8 +242,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         This method is an error generator, i.e, it returns an iterator over all
         exceptions that are generated while processing DSC file checks.
         """
-        # Avoid circular imports.
-        from lp.archiveuploader.nascentupload import EarlyReturnUploadError
 
         for error in SourceUploadFile.verify(self):
             yield error
@@ -271,14 +280,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             yield UploadError(
                 "%s: invalid version %s" % (self.filename, self.dsc_version))
 
-        try:
-            format_term = SourcePackageFormat.getTermByToken(self.format)
-        except LookupError:
-            raise EarlyReturnUploadError(
-                "Unsupported source format: %s" % self.format)
-
         if not self.policy.distroseries.isSourcePackageFormatPermitted(
-            format_term.value):
+            self.format):
             yield UploadError(
                 "%s: format '%s' is not permitted in %s." %
                 (self.filename, self.format, self.policy.distroseries.name))
@@ -347,8 +350,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 distribution=self.policy.distro,
                 purpose=ArchivePurpose.PARTNER)]
         elif (self.policy.archive.purpose == ArchivePurpose.PPA and
-            determine_source_file_type(filename) ==
-                SourcePackageFileType.ORIG_TARBALL):
+            determine_source_file_type(filename) in (
+                SourcePackageFileType.ORIG_TARBALL,
+                SourcePackageFileType.COMPONENT_ORIG_TARBALL)):
             archives = [self.policy.archive, self.policy.distro.main_archive]
         else:
             archives = [self.policy.archive]
@@ -373,23 +377,35 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         and checksum.
         """
 
-        diff_count = 0
-        orig_tar_count = 0
-        native_tar_count = 0
-
+        file_type_counts = {
+            SourcePackageFileType.DIFF: 0,
+            SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+            SourcePackageFileType.NATIVE_TARBALL: 0,
+            }
+        component_orig_tar_counts = {}
+        bzip2_count = 0
         files_missing = False
-        for sub_dsc_file in self.files:
-            filetype = determine_source_file_type(sub_dsc_file.filename)
 
-            if filetype == SourcePackageFileType.DIFF:
-                diff_count += 1
-            elif filetype == SourcePackageFileType.ORIG_TARBALL:
-                orig_tar_count += 1
-            elif filetype == SourcePackageFileType.NATIVE_TARBALL:
-                native_tar_count += 1
-            else:
+        for sub_dsc_file in self.files:
+            file_type = determine_source_file_type(sub_dsc_file.filename)
+
+            if file_type is None:
                 yield UploadError('Unknown file: ' + sub_dsc_file.filename)
                 continue
+
+            if file_type == SourcePackageFileType.COMPONENT_ORIG_TARBALL:
+                # Split the count by component name.
+                component = re_is_component_orig_tar_ext.match(
+                    get_source_file_extension(sub_dsc_file.filename)).group(1)
+                if component not in component_orig_tar_counts:
+                    component_orig_tar_counts[component] = 0
+                component_orig_tar_counts[component] += 1
+            else:
+                file_type_counts[file_type] += 1
+
+            if sub_dsc_file.filename.endswith('.bz2'):
+                bzip2_count += 1
 
             try:
                 library_file, file_archive = self._getFileByName(
@@ -435,37 +451,16 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 yield error
                 files_missing = True
 
-        # Reject if we have more than one file of any type.
-        if orig_tar_count > 1:
-            yield UploadError(
-                "%s: has more than one orig.tar.*."
-                % self.filename)
-        if native_tar_count > 1:
-            yield UploadError(
-                "%s: has more than one tar.*."
-                % self.filename)
-        if diff_count > 1:
-            yield UploadError(
-                "%s: has more than one diff.gz."
-                % self.filename)
+        try:
+            file_checker = format_to_file_checker_map[self.format]
+        except KeyError:
+            raise AssertionError(
+                "No file checker for source format %s." % self.format)
 
-        if ((orig_tar_count == 0 and native_tar_count == 0) or
-            (orig_tar_count > 0 and native_tar_count > 0)):
-            yield UploadError(
-                "%s: must have exactly one tar.* or orig.tar.*."
-                % self.filename)
-
-        # Format 1.0 must be native (exactly one tar.gz), or
-        # have an orig.tar.gz and a diff.gz. It cannot have
-        # compression types other than 'gz'.
-        if self.format == '1.0':
-            if ((diff_count == 0 and native_tar_count == 0) or
-                (diff_count > 0 and native_tar_count > 0)):
-                yield UploadError(
-                    "%s: must have exactly one diff.gz or tar.gz."
-                    % self.filename)
-        else:
-            raise AssertionError("Unknown source format.")
+        for error in file_checker(
+            self.filename, file_type_counts, component_orig_tar_counts,
+            bzip2_count):
+            yield error
 
         if files_missing:
             yield UploadError(
@@ -648,3 +643,94 @@ class DSCUploadedFile(NascentUploadFile):
             yield error
 
 
+def check_format_1_0_files(filename, file_type_counts, component_counts,
+                           bzip2_count):
+    """Check that the given counts of each file type suit format 1.0.
+
+    A 1.0 source must be native (with only one tar.gz), or have an orig.tar.gz
+    and a diff.gz. It cannot use bzip2 compression.
+    """
+    if bzip2_count > 0:
+        yield UploadError(
+            "%s: is format 1.0 but uses bzip2 compression."
+            % filename)
+
+    valid_file_type_counts = [
+        {
+            SourcePackageFileType.NATIVE_TARBALL: 1,
+            SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+            SourcePackageFileType.DIFF: 0,
+        },
+        {
+            SourcePackageFileType.ORIG_TARBALL: 1,
+            SourcePackageFileType.DIFF: 1,
+            SourcePackageFileType.NATIVE_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+        },
+    ]
+
+    if (file_type_counts not in valid_file_type_counts or
+        len(component_counts) > 0):
+        yield UploadError(
+            "%s: must have exactly one tar.gz, or an orig.tar.gz and diff.gz"
+            % filename)
+
+
+def check_format_3_0_native_files(filename, file_type_counts,
+                                  component_counts, bzip2_count):
+    """Check that the given counts of each file type suit format 3.0 (native).
+
+    A 3.0 (native) source must have only one tar.*. Both gzip and bzip2
+    compression are permissible.
+    """
+
+    valid_file_type_counts = [
+        {
+            SourcePackageFileType.NATIVE_TARBALL: 1,
+            SourcePackageFileType.ORIG_TARBALL: 0,
+            SourcePackageFileType.DEBIAN_TARBALL: 0,
+            SourcePackageFileType.DIFF: 0,
+        },
+    ]
+
+    if (file_type_counts not in valid_file_type_counts or
+        len(component_counts) > 0):
+        yield UploadError("%s: must have only a tar.*." % filename)
+
+
+def check_format_3_0_quilt_files(filename, file_type_counts,
+                                 component_counts, bzip2_count):
+    """Check that the given counts of each file type suit format 3.0 (native).
+
+    A 3.0 (quilt) source must have exactly one orig.tar.*, one debian.tar.*,
+    and at most one orig-COMPONENT.tar.* for each COMPONENT. Both gzip and
+    bzip2 compression are permissible.
+    """
+
+    valid_file_type_counts = [
+        {
+            SourcePackageFileType.ORIG_TARBALL: 1,
+            SourcePackageFileType.DEBIAN_TARBALL: 1,
+            SourcePackageFileType.NATIVE_TARBALL: 0,
+            SourcePackageFileType.DIFF: 0,
+        },
+    ]
+
+    if file_type_counts not in valid_file_type_counts:
+        yield UploadError(
+            "%s: must have only an orig.tar.*, a debian.tar.*, and "
+            "optionally orig-*.tar.*" % filename)
+
+    for component in component_counts:
+        if component_counts[component] > 1:
+            yield UploadError(
+                "%s: has more than one orig-%s.tar.*."
+                % (filename, component))
+
+
+format_to_file_checker_map = {
+    SourcePackageFormat.FORMAT_1_0: check_format_1_0_files,
+    SourcePackageFormat.FORMAT_3_0_NATIVE: check_format_3_0_native_files,
+    SourcePackageFormat.FORMAT_3_0_QUILT: check_format_3_0_quilt_files,
+    }

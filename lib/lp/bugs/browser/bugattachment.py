@@ -99,9 +99,7 @@ class BugAttachmentEditView(LaunchpadFormView):
     @action('Delete Attachment', name='delete')
     def delete_action(self, action, data):
         self.request.response.addInfoNotification(structured(
-            'Attachment "<a href="%(url)s">%(name)s</a>" has been deleted.'
-            ' It will be possible to download it until it has been'
-            ' automatically removed from the server.',
+            'Attachment "<a href="%(url)s">%(name)s</a>" has been deleted.',
             url=self.context.libraryfile.http_url, name=self.context.title))
         self.context.removeFromBug(user=self.user)
 

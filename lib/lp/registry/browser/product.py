@@ -90,7 +90,7 @@ from lp.translations.browser.customlanguagecode import (
 from canonical.launchpad.browser.multistep import MultiStepView, StepView
 from lp.answers.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.mail import format_address, simple_sendmail
@@ -778,7 +778,7 @@ class ProductView(HasAnnouncementsView, SortSeriesMixin, FeedsMixin,
             **additional_arguments)
         self.show_programming_languages = bool(
             self.context.programminglang or
-            self.user == self.context.owner)
+            check_permission('launchpad.Edit', self.context))
 
     @property
     def show_license_status(self):

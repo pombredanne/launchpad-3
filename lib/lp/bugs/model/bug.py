@@ -18,7 +18,6 @@ __all__ = [
     ]
 
 
-import mimetypes
 import operator
 import re
 from cStringIO import StringIO
@@ -52,7 +51,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.interfaces.message import (
     IMessage, IndexedMessage)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel, IStructuralSubscriptionTarget)
 from canonical.launchpad.mailnotification import BugNotificationRecipients
 from canonical.launchpad.validators import LaunchpadValidationError
@@ -99,16 +98,8 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
+from lp.registry.model.person import Person
 from lp.registry.model.pillar import pillar_sort_key
-
-
-# XXX: GavinPanella 2008-07-04 bug=229040: A fix has been requested
-# for Intrepid, to add .debdiff to /etc/mime.types, so we may be able
-# to remove this setting once a new /etc/mime.types has been installed
-# on the app servers. Additionally, Firefox does not display content
-# of type text/x-diff inline, so making this text/plain because
-# viewing .debdiff inline is the most common use-case.
-mimetypes.add_type('text/plain', '.debdiff')
 
 
 _bug_tag_query_template = """
@@ -272,8 +263,9 @@ class Bug(SQLBase):
     @property
     def users_affected(self):
         """See `IBug`."""
-        return [bap.person for bap
-                in Store.of(self).find(BugAffectsPerson, bug=self)]
+        return Store.of(self).find(
+            Person, BugAffectsPerson.person == Person.id,
+            BugAffectsPerson.bug == self)
 
     @property
     def indexed_messages(self):
@@ -1317,10 +1309,11 @@ class Bug(SQLBase):
         :param user: An `IPerson` that may be affected by the bug.
         :return: An `IBugAffectsPerson` or None.
         """
-        return Store.of(self).find(
-            BugAffectsPerson,
-            And(BugAffectsPerson.bug == self,
-                BugAffectsPerson.person == user)).one()
+        if user is None:
+            return None
+        else:
+            return Store.of(self).get(
+                BugAffectsPerson, (self.id, user.id))
 
     def isUserAffected(self, user):
         """See `IBug`."""
@@ -1684,3 +1677,4 @@ class BugAffectsPerson(SQLBase):
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     affected = BoolCol(notNull=True, default=True)
+    __storm_primary__ = "bugID", "personID"

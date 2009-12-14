@@ -113,6 +113,7 @@ list of dicts containing those bugs' data.
     priority: P1
     product: Marvin
     resolution: FIXED
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
@@ -165,6 +166,7 @@ date / time.
     priority: P1
     product: HeartOfGold
     resolution: 
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -194,6 +196,7 @@ results to those IDs.
     priority: P1
     product: Marvin
     resolution: FIXED
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
@@ -237,6 +240,7 @@ It's possible to search for bugs filed on a particular product.
     priority: P1
     product: HeartOfGold
     resolution: 
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -261,6 +265,7 @@ You can search for more than one product.
     priority: P1
     product: Marvin
     resolution: FIXED
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
@@ -275,6 +280,7 @@ You can search for more than one product.
     priority: P1
     product: HeartOfGold
     resolution: 
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -469,3 +475,69 @@ raised.
     Fault: <Fault 101: 'Bug #42 does not exist.'>
 
 
+Updating the "See also" links on a bug
+--------------------------------------
+
+It's possible to alter the list of bugs linked to a bug in a Bugzilla
+instance by calling the Bug.update_see_also() method.
+
+URLs can be added to the list of "See also" links by passing them in the
+`add` parameter.
+
+    >>> server.Bug.update_see_also({
+    ...     'ids': [1], 'add': ['https://launchpad.net/bugs/15']})
+    {'changes': {1: {'see_also':
+        {'added': ['https://launchpad.net/bugs/15']}}}}
+
+The URL will now have been added to the bug's see_also list.
+
+    >>> return_value = server.Bug.get(
+    ...     {'ids': [1], 'permissive': True})
+    >>> bug_dict = return_value['bugs'][0]
+    >>> for key in sorted(bug_dict):
+    ...     print "%s: %s" % (key, bug_dict.get(key))
+    alias: 
+    assigned_to: test@canonical.com
+    component: GPPSystems
+    creation_time: 20080610T16:19:53
+    id: 1
+    internals:...
+    is_open: True
+    last_change_time: 20080610T16:19:53
+    priority: P1
+    product: Marvin
+    resolution: FIXED
+    see_also: ['https://launchpad.net/bugs/15']
+    severity: normal
+    status: RESOLVED
+    summary: That bloody robot still exists.
+
+Any attempt to add the same URL again will simply be ignored.
+
+    >>> server.Bug.update_see_also({
+    ...     'ids': [1], 'add': ['https://launchpad.net/bugs/15']})
+    {'changes': {}}
+
+Trying to add a non Bugzilla or Launchpad URL will raise a Fault.
+
+    >>> server.Bug.update_see_also({
+    ...     'ids': [1], 'add': ['http://example.com/fail']});
+    Traceback (most recent call last):
+      ...
+    Fault: <Fault 112: 'Bug URL http://example.com/fail is invalid.'>
+
+It's also possible to remove items from a bug's see_also list.
+
+    >>> server.Bug.update_see_also({
+    ...     'ids': [1], 'remove': ['https://launchpad.net/bugs/15']})
+    {'changes': {1: {'see_also':
+        {'removed': ['https://launchpad.net/bugs/15']}}}}
+
+If a URL is passed in both the `add` and `remove` argument, it will be
+added (i.e. `add` overrides `remove`).
+
+    >>> server.Bug.update_see_also({
+    ...     'ids': [1], 'add': ['https://launchpad.net/bugs/14'],
+    ...     'remove': ['https://launchpad.dev/bugs/14']})
+    {'changes': {1: {'see_also':
+        {'added': ['https://launchpad.net/bugs/14']}}}}
