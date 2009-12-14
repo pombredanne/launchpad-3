@@ -52,3 +52,4 @@ dist
 bzr.dev
 _trial_temp
 lazr-js
+lib/canonical/buildd/launchpad-files
