@@ -14,7 +14,7 @@ from canonical.testing.layers import LaunchpadZopelessLayer
 from lp.testing import TestCase
 
 
-class TestZopelessTransactionManager(TestCase):
+class TestZopelessTransactionManagerNoLayer(TestCase):
 
     def test_initZopeless_connects_to_auth_master_db(self):
         # Some scripts might create EmailAddress and Account entries, so
@@ -43,19 +43,19 @@ class TestZopelessTransactionManager(TestCase):
             config.pop('new-db')
 
 
-class TestZopelessTransactionManager_reset_store(TestCase):
+class TestZopelessTransactionManager(TestCase):
     layer = LaunchpadZopelessLayer
 
     def test_reset_stores_only_does_so_on_active_stores(self):
-        active_stores = sorted(
-            item[0] for item in getUtility(IZStorm).iterstores())
-        self.assertEquals(active_stores, ['launchpad-main-master', 'session'])
+        active_stores = [item[0] for item in getUtility(IZStorm).iterstores()]
+        self.assertContentEqual(
+            ['launchpad-main-master', 'session'], active_stores)
         ZopelessTransactionManager._reset_stores()
         # If any other stores had been reset, they'd be activated and would
         # then be returned by ZStorm.iterstores().
-        new_active_stores = sorted(
-            item[0] for item in getUtility(IZStorm).iterstores())
-        self.assertEquals(active_stores, new_active_stores)
+        new_active_stores = [
+            item[0] for item in getUtility(IZStorm).iterstores()]
+        self.assertContentEqual(active_stores, new_active_stores)
 
 
 def test_suite():
