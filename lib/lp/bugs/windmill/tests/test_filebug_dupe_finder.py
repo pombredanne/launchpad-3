@@ -46,14 +46,14 @@ class TestDupeFinder(TestCaseWithFactory):
         client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
         lpuser.SAMPLE_PERSON.ensure_login(client)
 
-        # Ensure the "title" field has finished loading, then enter a simple
-        # title and hit search.
+        # Ensure the "search" field has finished loading, then enter a simple
+        # search and hit search.
         client.waits.forElement(
-            xpath=u'//input[@id="field.title"]',
+            xpath=u'//input[@id="field.search"]',
             timeout=constants.FOR_ELEMENT)
-        client.type(text=u'problem', id=u'field.title')
+        client.type(text=u'problem', id=u'field.search')
         client.click(xpath=u'//input[@id="field.actions.search"]')
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.waits.sleep(timeout=constants.SLEEP)
         # The details div for the duplicate bug should not be shown.
         client.asserts.assertProperty(
             id='details-for-bug-4', validator=BUG_INFO_HIDDEN)
@@ -87,29 +87,6 @@ class TestDupeFinder(TestCaseWithFactory):
         # Clicking it yet again will reopen it.
         client.click(id='bug-details-expander-bug-4')
         client.waits.sleep(milliseconds=constants.SLEEP)
-        client.asserts.assertProperty(
-            id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
-        client.asserts.assertElemJS(
-            id='details-for-bug-4', js=BUG_INFO_SHOWN_JS)
-
-        # Clicking "No, I need to file a new bug" will collapse the
-        # duplicate details and expander and will show the filebug form.
-        client.click(id='bug-not-already-reported')
-        client.waits.sleep(milliseconds=constants.SLEEP)
-        client.asserts.assertProperty(
-            id='bug-details-expander-bug-4',
-            validator='src|/@@/treeCollapsed')
-        client.asserts.assertProperty(
-            id='details-for-bug-4', validator=BUG_INFO_HIDDEN)
-        client.asserts.assertProperty(
-            id='bug_reporting_form', validator='style.display|block')
-
-        # Clicking the duplicate expander again will collapse the filebug
-        # form and expand the duplicate.
-        client.click(id='bug-details-expander-bug-4')
-        client.waits.sleep(milliseconds=constants.SLEEP)
-        client.asserts.assertProperty(
-            id='bug_reporting_form', validator='style.display|none')
         client.asserts.assertProperty(
             id='bug-details-expander-bug-4', validator='src|/@@/treeExpanded')
         client.asserts.assertElemJS(
