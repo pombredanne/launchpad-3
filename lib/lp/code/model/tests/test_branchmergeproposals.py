@@ -1828,5 +1828,16 @@ class TestUpdatePreviewDiffJob(DiffTestCase):
         self.checkExampleMerge(bmp.preview_diff.text)
 
 
+class TestNextPreviewDiffJob(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_returns_bmp_job(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        job = bmp.next_preview_diff_job
+        self.assertEqual(bmp, job.branch_merge_proposal)
+
+
+
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

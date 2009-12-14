@@ -180,6 +180,15 @@
     </div>
   </div>
 
+  <div class="yui-g" tal:condition="view/pending_diff">
+    <div class="portlet" id="diff-pending-update">
+      <h3>Updating diff...</h3>
+      <p>
+        An updated diff will be available in a few minutes.  Reload to see the
+        changes.
+      </p>
+    </div>
+  </div>
   <div id="review-diff" tal:condition="view/preview_diff">
     <h2>Preview Diff</h2>
     <div tal:replace="structure context/@@++diff"/>

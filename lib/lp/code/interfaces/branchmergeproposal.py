@@ -155,6 +155,8 @@ class IBranchMergeProposal(IPrivacy):
         IStaticDiff, title=_('The diff to be used for reviews.'),
         readonly=True)
 
+    next_preview_diff_job = Attribute('foo')
+
     preview_diff = exported(
         Reference(
             IPreviewDiff,

@@ -132,6 +132,13 @@ class BranchMergeProposal(SQLBase):
     review_diff = ForeignKey(
         foreignKey='StaticDiff', notNull=False, default=None)
 
+    @property
+    def next_preview_diff_job(self):
+        from lp.code.model.branchmergeproposaljob import (
+            BranchMergeProposalJob)
+        return Store.of(self).find(
+            BranchMergeProposalJob).one()
+
     preview_diff_id = Int(name='merge_diff')
     preview_diff = Reference(preview_diff_id, 'PreviewDiff.id')
 
