@@ -93,9 +93,11 @@ DROP FUNCTION cleanup_buildqueue_rows();
 -- We need to drop the `buildqueue__job__idx` and recreate it as a *unique*
 -- index.
 DROP INDEX buildqueue__job__idx;
-CREATE UNIQUE INDEX buildqueue__job__idx ON buildqueue(job);
+ALTER TABLE BuildQueue ADD CONSTRAINT buildqueue__job__key UNIQUE (job);
 
-CREATE UNIQUE INDEX buildpackagejob__job__idx ON buildpackagejob(job);
-CREATE UNIQUE INDEX buildpackagejob__build__idx ON buildpackagejob(build);
+ALTER TABLE BuildPackageJob
+    ADD CONSTRAINT buildpackagejob__job__key UNIQUE (job);
+ALTER TABLE BuildPackageJob
+    ADD CONSTRAINT buildpackagejob__build__key UNIQUE (build);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 19, 0);
