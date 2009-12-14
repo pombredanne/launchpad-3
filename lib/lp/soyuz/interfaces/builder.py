@@ -19,11 +19,13 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, TextLine, Text, Bool
+from zope.schema import Bool, Choice, Field, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
 from lp.registry.interfaces.role import IHasOwner
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    IBuildFarmJobBehavior)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
 
@@ -57,7 +59,7 @@ class BuildSlaveFailure(BuildDaemonError):
     """The build slave has suffered an error and cannot be used."""
 
 
-class IBuilder(IHasOwner):
+class IBuilder(IHasOwner, IBuildFarmJobBehavior):
     """Build-slave information and state.
 
     Builder instance represents a single builder slave machine within the
@@ -138,6 +140,10 @@ class IBuilder(IHasOwner):
                 "new jobs. "),
         required=False)
 
+    current_build_behavior = Field(
+        title=u"The current behavior of the builder for the current job.",
+        required=False)
+
     def cacheFileOnSlave(logger, libraryfilealias):
         """Ask the slave to cache a librarian file to its local disk.
 
@@ -146,19 +152,6 @@ class IBuilder(IHasOwner):
         :param logger: A logger used for providing debug information.
         :param libraryfilealias: A library file alias representing the needed
             file.
-        """
-
-    def cachePrivateSourceOnSlave(logger, build_queue_item):
-        """Ask the slave to download source files for a private build.
-
-        The slave will cache the files for the source in build_queue_item
-        to its local disk in preparation for a private build.  Private builds
-        will always take the source files from the archive rather than the
-        librarian since the archive has more granular access to each
-        archive's files.
-
-        :param logger: A logger used for providing debug information.
-        :param build_queue_item: The `IBuildQueue` being built.
         """
 
     def checkCanBuildForDistroArchSeries(distro_arch_series):
@@ -215,16 +208,8 @@ class IBuilder(IHasOwner):
     def slaveStatus():
         """Get the slave status for this builder.
 
-        * builder_status => string
-        * build_id => string
-        * build_status => string or None
-        * logtail => string or None
-        * filename => dictionary or None
-        * dependencies => string or None
-
-        :return: a tuple containing (
-            builder_status, build_id, build_status, logtail, filemap,
-            dependencies)
+        :return: a dict containing at least builder_status, but potentially
+            other values included by the current build behavior.
         """
 
     def slaveStatusSentence():

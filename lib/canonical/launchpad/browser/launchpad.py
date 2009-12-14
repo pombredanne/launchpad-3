@@ -79,7 +79,6 @@ from canonical.launchpad.interfaces.launchpad import (
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
-from lp.registry.interfaces.mailinglist import IMailingListSet
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.mentoringoffer import IMentoringOfferSet
 from lp.services.openid.interfaces.openidrpconfig import IOpenIDRPConfigSet
@@ -552,7 +551,6 @@ class LaunchpadRootNavigation(Navigation):
         'karmaaction': IKarmaActionSet,
         '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
-        '+mailinglists': IMailingListSet,
         '+mentoring': IMentoringOfferSet,
         'package-sets': IPackagesetSet,
         'people': IPersonSet,

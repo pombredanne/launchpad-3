@@ -1,13 +1,48 @@
-Check that the page with the packaging link to upstream ProductReleaseSeries
-is working
+Distro series packaging
+=======================
 
-  >>> print http(r"""
-  ... GET /ubuntu/hoary/+packaging HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Mapping series packages to upstream project series...
-  ...Unlinked translatable packages...
-  ...pmount...
-  ...Upstream links...
-  ...evolution...
-  ...
+The distro series packaging page is accssible to any user from the distro
+series +index page.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/hoary')
+    >>> anon_browser.getLink('Upstream links').click()
+    >>> print anon_browser.title
+    Upstream packaging links : ...
+
+The page lists the the source packages that have translations, but are
+not linked to an upstream project to sync them to.
+
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print extract_text(find_tag_by_id(content, 'unlinked-translatables'))
+    Unlinked translatable packages
+    pmount
+
+The page lists the upstream packaging links.
+
+    >>> print extract_text(find_tag_by_id(content, 'packagings'))
+    Source Package   Upstream Project Series
+    evolution        Evolution trunk series
+    mozilla-firefox  Mozilla Firefox 1.0 series
+    netapplet        NetApplet trunk series
+
+The packaging links are batched so that users can view the thousands of
+links packages. Users can also hack the URL to set their own batch size.
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/hoary/+packaging?start=0&batch=1')
+    >>> print extract_text(find_tag_by_id(
+    ...     anon_browser.contents, 'packagings'))
+    Source Package   Upstream Project Series
+    evolution        Evolution trunk series
+
+    >>> anon_browser.getLink('Next', index=0).click()
+    >>> content = find_main_content(anon_browser.contents)
+    >>> print extract_text(find_tag_by_id(content, 'packagings'))
+    Source Package   Upstream Project Series
+    mozilla-firefox  Mozilla Firefox 1.0 series
+
+The unlinked translatable source packages is not displayed on pages after
+the first page.
+
+    >>> print find_tag_by_id(content, 'unlinked_translatables')
+    None

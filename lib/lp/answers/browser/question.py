@@ -46,6 +46,7 @@ from z3c.ptcompat import ViewPageTemplateFile
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
+from lazr.restful.interface import copy_field
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -321,7 +322,7 @@ class QuestionSubscriptionView(LaunchpadView):
 
     @property
     def page_title(self):
-        return 'Subscription to question #%s' % self.context.id
+        return 'Subscription'
 
     @property
     def label(self):
@@ -452,8 +453,7 @@ class QuestionSupportLanguageMixin:
                         "The language in which this question is written. "
                         "The languages marked with a star (*) are the "
                         "languages spoken by at least one answer contact in "
-                        "the community."
-                        )),
+                        "the community.")),
                 render_context=self.render_context)
 
     def shouldWarnAboutUnsupportedLanguage(self):
@@ -659,11 +659,12 @@ class QuestionChangeStatusView(LaunchpadFormView):
     cancel_url = next_url
 
 
-class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
+class QuestionEditView(LaunchpadEditFormView):
     """View for editing a Question."""
     schema = IQuestion
     label = 'Edit question'
-    field_names = ["title", "description", "target", "assignee", "whiteboard"]
+    field_names = [
+        "language", "title", "description", "target", "assignee", "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
@@ -684,10 +685,6 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
 
         self.form_fields = self.form_fields.omit("distribution",
             "sourcepackagename", "product")
-
-        # Add the language field with a vocabulary specialized for display
-        # purpose.
-        self.form_fields = self.createLanguageField() + self.form_fields
 
         editable_fields = []
         for field in self.form_fields:
@@ -763,7 +760,6 @@ class LinkFAQMixin:
         """The default link message to use."""
         return '%s suggests this article as an answer to your question:' % (
             self.user.displayname)
-
 
     def getFAQMessageReference(self, faq):
         """Return the reference for the FAQ to use in the linking message."""
@@ -991,7 +987,7 @@ class QuestionWorkflowView(LaunchpadFormView, LinkFAQMixin):
     def original_bug(self):
         """Return the bug that the question was created from or None."""
         for buglink in self.context.bug_links:
-            if (check_permission('launchpad.View',  buglink.bug)
+            if (check_permission('launchpad.View', buglink.bug)
                 and buglink.bug.owner == self.context.owner
                 and buglink.bug.datecreated == self.context.datecreated):
                 return buglink.bug
@@ -1140,7 +1136,10 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
         Adds a message field to the form.
         """
         super(QuestionCreateFAQView, self).setUpFields()
-        self.form_fields += form.Fields(IQuestionLinkFAQForm['message'])
+        self.form_fields += form.Fields(
+            copy_field(IQuestionLinkFAQForm['message']))
+        self.form_fields['message'].field.title = _(
+            'Additional comment for question #%s' % self.context.id)
         self.form_fields['message'].custom_widget = (
             self.custom_widgets['message'])
 

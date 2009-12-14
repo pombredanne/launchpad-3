@@ -5,13 +5,17 @@
 
 import unittest
 
+from storm.store import Store
 from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
+from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.buildqueue import BuildQueue
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
@@ -42,6 +46,40 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         depwait_build.dependencies = 'dep-bin'
 
         return depwait_build
+
+    def testBuildqueueRemoval(self):
+        """Test removing buildqueue items.
+
+        Removing a Buildqueue row should also remove its associated
+        BuildPackageJob and Job rows.
+        """
+        # Create a build in depwait.
+        depwait_build = self._setupSimpleDepwaitContext()
+
+        # Grab the relevant db records for later comparison.
+        store = Store.of(depwait_build)
+        build_package_job = store.find(
+            BuildPackageJob,
+            depwait_build.id == BuildPackageJob.build).one()
+        build_package_job_id = build_package_job.id
+        job_id = store.find(Job, Job.id == build_package_job.job.id).one().id
+        build_queue_id = store.find(
+            BuildQueue, BuildQueue.job == job_id).one().id
+
+        depwait_build.buildqueue_record.destroySelf()
+
+        # Test that the records above no longer exist in the db.
+        self.assertEqual(
+            store.find(
+                BuildPackageJob,
+                BuildPackageJob.id == build_package_job_id).count(),
+            0)
+        self.assertEqual(
+            store.find(Job, Job.id == job_id).count(),
+            0)
+        self.assertEqual(
+            store.find(BuildQueue, BuildQueue.id == build_queue_id).count(),
+            0)
 
     def testUpdateDependenciesWorks(self):
         # Calling `IBuild.updateDependencies` makes the build
