@@ -13,8 +13,9 @@ launchpad-buildd (53) hardy-cat; urgency=low
   * sbuild: change the regexp for dpkg-source extraction to handle both karmic and pre-karmic dpkg.  LP#476036
   * sbuild: use --print-architecture instead of --print-installation-architecture
   * mount-chroot: copy hosts et al into chroot. LP#447919
+  * provide and call check-implicit-function-pointers.
 
- -- LaMont Jones <lamont@canonical.com>  Sun, 13 Dec 2009 16:39:40 -0700
+ -- LaMont Jones <lamont@canonical.com>  Mon, 14 Dec 2009 12:00:10 -0700
 
 launchpad-buildd (52) dapper-cat; urgency=low
 
