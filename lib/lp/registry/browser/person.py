@@ -2684,7 +2684,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
 
         The markup is simply escaped for probationary or invalid users.
         The homepage content is reformatted as HTML and linkified if the user
-        is active
+        is active.
         """
         content = self.context.homepage_content
         if content is None:
