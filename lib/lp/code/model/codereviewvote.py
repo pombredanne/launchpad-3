@@ -16,7 +16,7 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 from lp.code.errors import (
-    ClaimReviewFailed, ReassignReviewFailed, ReviewNotPending)
+    ClaimReviewFailed, ReviewNotPending, UserHasExistingReview)
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 
 
@@ -45,10 +45,25 @@ class CodeReviewVoteReference(SQLBase):
         # Reviews are pending if there is no associated comment.
         return self.comment is None
 
-    def claimReview(self, claimant):
-        """See `ICodeReviewVote`"""
+    def _validatePending(self):
+        """Raise if the review is not pending."""
         if not self.is_pending:
-            raise ClaimReviewFailed('The review is not pending.')
+            raise ReviewNotPending('The review is not pending.')
+
+    def _validateNoReviewForUser(self, user):
+        """Make sure there isn't an existing review for the user."""
+        bmp = self.branch_merge_proposal
+        existing_review = bmp.getUsersVoteReference(user)
+        if existing_review is not None:
+            if existing_review.is_pending:
+                error_str = '%s has already been asked to review this'
+            else:
+                error_str = '%s has already reviewed this'
+            raise UserHasExistingReview(error_str % user.unique_displayname)
+
+    def validateClaimReview(self, claimant):
+        """See `ICodeReviewVote`"""
+        self._validatePending()
         if not self.reviewer.is_team:
             raise ClaimReviewFailed('Cannot claim non-team reviews.')
         if not claimant.inTeam(self.reviewer):
@@ -56,31 +71,22 @@ class CodeReviewVoteReference(SQLBase):
                 '%s is not a member of %s' %
                 (claimant.unique_displayname,
                  self.reviewer.unique_displayname))
-        claimant_review = (
-            self.branch_merge_proposal.getUsersVoteReference(claimant))
-        if claimant_review is not None:
-            if claimant_review.is_pending:
-                error_str = '%s has an existing pending review'
-            else:
-                error_str = '%s has an existing personal review'
-            raise ClaimReviewFailed(
-                error_str % claimant.unique_displayname)
+        self._validateNoReviewForUser(claimant)
+
+    def claimReview(self, claimant):
+        """See `ICodeReviewVote`"""
+        self.validateClaimReview(claimant)
         self.reviewer = claimant
+
+    def validateReasignReview(self, reviewer):
+        """See `ICodeReviewVote`"""
+        self._validatePending()
+        if not reviewer.is_team:
+            self._validateNoReviewForUser(reviewer)
 
     def reassignReview(self, reviewer):
         """See `ICodeReviewVote`"""
-        if not self.is_pending:
-            raise ReviewNotPending('The review is not pending.')
-        if not reviewer.is_team:
-            existing_review = (
-                self.branch_merge_proposal.getUsersVoteReference(reviewer))
-            if existing_review is not None:
-                if existing_review.is_pending:
-                    error_str = '%s has an existing pending review'
-                else:
-                    error_str = '%s has an existing personal review'
-                raise ReassignReviewFailed(
-                    error_str % reviewer.unique_displayname)
+        self.validateReasignReview(reviewer)
         self.reviewer = reviewer
 
     def delete(self):

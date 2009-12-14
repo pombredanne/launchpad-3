@@ -71,6 +71,15 @@ class ICodeReviewVoteReferencePublic(Interface):
 class ICodeReviewVoteReferenceEdit(Interface):
     """Method that require edit permissions."""
 
+    def validateClaimReview(claimant):
+        """Implements the validation for claiming a review.
+
+        :raises ClaimReviewFailed: If the claimant already has a
+            personal review, if the reviewer is not a team, if the
+            claimant is not in the reviewer team, or if the review is
+            not pending.
+        """
+
     @call_with(claimant=REQUEST_USER)
     @export_write_operation()
     def claimReview(claimant):
@@ -85,6 +94,14 @@ class ICodeReviewVoteReferenceEdit(Interface):
             personal review, if the reviewer is not a team, if the
             claimant is not in the reviewer team, or if the review is
             not pending.
+        """
+
+    def validateReasignReview(reviewer):
+        """Implements the validation for reassignment.
+
+        :raises ReviewNotPending: If the review is not pending.
+        :raises ReassignReviewFailed: If the reviewer is an individual and
+            already has a personal review.
         """
 
     @operation_parameters(
