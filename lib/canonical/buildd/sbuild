@@ -1260,6 +1260,13 @@ EOF
 	chdir( $main::cwd );
 
 	my @space_files = ("$dir");
+	if (defined $conf::exit_hook and open TMP, '-|', "$conf::exit_hook <$main::pkg_logfile") {
+		local $/ = undef;
+		my $log = <TMP>;
+		close TMP;
+		$rv |= $?;
+		print PLOG $log;
+	}
 	if ($rv) {
 		print PLOG "FAILED [dpkg-buildpackage died]\n";
 	}
