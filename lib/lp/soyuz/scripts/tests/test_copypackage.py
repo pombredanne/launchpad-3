@@ -36,7 +36,8 @@ from lp.soyuz.interfaces.publishing import (
     IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingStatus, active_publishing_status)
 from lp.soyuz.interfaces.queue import (
-    PackageUploadCustomFormat, PackageUploadStatus)
+    PackageUploadCustomFormat, PackageUploadStatus,
+    QueueInconsistentStateError)
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from lp.soyuz.model.publishing import (
@@ -937,14 +938,18 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         super(DoDelayedCopyTestCase, self).setUp()
         self.test_publisher = SoyuzTestPublisher()
 
+        # Setup to copy into the main archive security pocket
+        self.test_publisher.prepareBreezyAutotest()
+        self.copy_archive = self.test_publisher.ubuntutest.main_archive
+        self.copy_series = self.test_publisher.distroseries
+        self.copy_pocket = PackagePublishingPocket.SECURITY
+
     def createDelayedCopyContext(self):
         """Create a context to allow delayed-copies test.
 
         The returned source publication in a private archive with
         binaries and a custom upload.
         """
-        self.test_publisher.prepareBreezyAutotest()
-
         ppa = self.factory.makeArchive(
             distribution=self.test_publisher.ubuntutest,
             purpose=ArchivePurpose.PPA)
@@ -961,32 +966,33 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
 
         return source
 
-    def test_do_delayed_copy_simple(self):
-        # _do_delayed_copy() return an `IPackageUpload` record configured
-        # as a delayed-copy and with the expected contents (source,
-        # binaries and custom uploads) in ACCEPTED state.
-
-        source = self.createDelayedCopyContext()
-
+    def do_delayed_copy(self, source):
+        """Execute and return the delayed copy."""
         # Make ubuntutest/breezy-autotest CURRENT so uploads to SECURITY
         # pocket can be accepted.
         self.test_publisher.breezy_autotest.status = (
             DistroSeriesStatus.CURRENT)
-
-        # Setup and execute the delayed copy procedure.
-        copy_archive = self.test_publisher.ubuntutest.main_archive
-        copy_series = source.distroseries
-        copy_pocket = PackagePublishingPocket.SECURITY
 
         # Commit for making the just-create library files available.
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
 
         delayed_copy = _do_delayed_copy(
-            source, copy_archive, copy_series, copy_pocket, True)
+            source, self.copy_archive, self.copy_series, self.copy_pocket,
+            True)
 
         self.layer.txn.commit()
         self.layer.switchDbUser('launchpad')
+        return delayed_copy
+
+    def test_do_delayed_copy_simple(self):
+        # _do_delayed_copy() return an `IPackageUpload` record configured
+        # as a delayed-copy and with the expected contents (source,
+        # binaries and custom uploads) in ACCEPTED state.
+        source = self.createDelayedCopyContext()
+
+        # Setup and execute the delayed copy procedure.
+        delayed_copy = self.do_delayed_copy(source)
 
         # A delayed-copy `IPackageUpload` record is returned.
         self.assertTrue(delayed_copy.is_delayed_copy)
@@ -1001,9 +1007,65 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
             delayed_copy.displayname)
 
         # It is targeted to the right publishing context.
-        self.assertEquals(copy_archive, delayed_copy.archive)
-        self.assertEquals(copy_series, delayed_copy.distroseries)
-        self.assertEquals(copy_pocket, delayed_copy.pocket)
+        self.assertEquals(self.copy_archive, delayed_copy.archive)
+        self.assertEquals(self.copy_series, delayed_copy.distroseries)
+        self.assertEquals(self.copy_pocket, delayed_copy.pocket)
+
+        # And it contains the source, build and custom files.
+        self.assertEquals(
+            [source.sourcepackagerelease],
+            [pus.sourcepackagerelease for pus in delayed_copy.sources])
+
+        [build] = source.getBuilds()
+        self.assertEquals(
+            [build],
+            [pub.build for pub in delayed_copy.builds])
+
+        [custom_file] = [
+            custom.libraryfilealias
+            for custom in build.package_upload.customfiles]
+        self.assertEquals(
+            [custom_file],
+            [custom.libraryfilealias for custom in delayed_copy.customfiles])
+
+    def test_do_delayed_copy_wrong_component_no_ancestry(self):
+        """An original PPA upload for an invalid component will have been
+        overridden when uploaded to the PPA, but when copying it to another
+        archive, only the ancestry in the destination archive can be used.
+        If that ancestry doesn't exist, an exception is raised."""
+        # We'll simulate an upload that was overridden to main in the
+        # ppa, by explicitly setting the spr's component to something else.
+        source = self.createDelayedCopyContext()
+        source.sourcepackagerelease.component = getUtility(
+            IComponentSet).new('contrib')
+
+        # Setup and execute the delayed copy procedure. This should
+        # raise an exception, as it won't be able to find an ancestor
+        # who's component can be used for overriding.
+        do_delayed_copy_method = self.do_delayed_copy
+        self.assertRaises(
+            QueueInconsistentStateError, do_delayed_copy_method, source)
+
+    def test_do_delayed_copy_wrong_component_with_ancestry(self):
+        """An original PPA upload for an invalid component will have been
+        overridden when uploaded to the PPA, but when copying it to another
+        archive, only the ancestry in the destination archive can be used.
+        If an ancestor is found in the destination archive, it's component
+        is assumed for this package upload."""
+        # We'll simulate an upload that was overridden to main in the
+        # ppa, by explicitly setting the spr's component to something else.
+        source = self.createDelayedCopyContext()
+        source.sourcepackagerelease.component = getUtility(
+            IComponentSet).new('contrib')
+
+        # This time, we'll ensure that there is already an ancestor for
+        # foocom in the destination archive.
+        ancestor = self.test_publisher.createSource(
+            self.copy_archive, 'foocomm', '0.9')
+
+        # Setup and execute the delayed copy procedure. This should
+        # now result in an accepted delayed upload.
+        delayed_copy = self.do_delayed_copy(source)
 
         # And it contains the source, build and custom files.
         self.assertEquals(
@@ -1062,17 +1124,11 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         # the FULLYBUILT builds are copied.
         source = self.createPartiallyBuiltDelayedCopyContext()
 
-        # Setup and execute the delayed copy procedure.
-        copy_archive = self.test_publisher.ubuntutest.main_archive
-        copy_series = source.distroseries
-        copy_pocket = PackagePublishingPocket.RELEASE
-
         # Make new libraryfiles available by committing the transaction.
         self.layer.txn.commit()
 
         # Perform the delayed-copy including binaries.
-        delayed_copy = _do_delayed_copy(
-            source, copy_archive, copy_series, copy_pocket, True)
+        delayed_copy = self.do_delayed_copy(source)
 
         # Only the i386 build is included in the delayed-copy.
         # For the record, later on, when the delayed-copy gets processed,
