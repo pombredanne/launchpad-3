@@ -107,7 +107,6 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
         else:
             self.adminlabel = 'Settings for language packs'
 
-
     @cachedproperty
     def unused_language_packs(self):
         unused_language_packs = helpers.shortlist(self.context.language_packs)
@@ -169,6 +168,17 @@ class DistroSeriesTemplatesView(LaunchpadView):
         potemplateset = getUtility(IPOTemplateSet)
         return potemplateset.getSubset(distroseries=self.context,
                                        ordered_by_names=True)
+
+
+class DistroSeriesLanguageTagged:
+    """Augmented class for presenting a DistroSeriesLanguage."""
+
+    content = None
+    css_class = ""
+
+    def __init__(self, language, css_class):
+        self.content = language
+        self.css_class = css_class
 
 
 class DistroSeriesView(LaunchpadView, TranslationsMixin):
@@ -234,7 +244,17 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
                     self.context, lang)
                 distroserieslangs.append(distroserieslang)
 
-        return sorted(distroserieslangs, key=lambda a: a.language.englishname)
+        distroserieslangstagged = []
+        for lang in sorted(
+            distroserieslangs, key=lambda a: a.language.englishname):
+            if lang.language in self.translatable_languages:
+                css_class = "preferred-language seen"
+            else:
+                css_class = "not-preferred-language unseen"
+            distroserieslangstagged.append(
+                DistroSeriesLanguageTagged(lang, css_class))
+
+        return distroserieslangstagged
 
     @property
     def potemplates(self):
@@ -244,6 +264,7 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
     def is_translation_focus(self):
         """Is this DistroSeries the translation focus."""
         return self.context.distribution.translation_focus == self.context
+
 
 class DistroSeriesTranslationsMenu(NavigationMenu):
 

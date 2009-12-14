@@ -20,7 +20,7 @@ class IDistroSeriesLanguage(IRosettaStats):
     This exists to cache stats, and be a useful object for traversal in
     Rosetta."""
 
-    id = Attribute("A unique ID")
+    id = Attribute("A unique ID.")
 
     language = Attribute("The language.")
 

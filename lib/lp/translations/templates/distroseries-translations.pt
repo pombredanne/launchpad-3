@@ -6,6 +6,20 @@
 
   <body>
     <div metal:fill-slot="main">
+    
+      <script
+        type="text/javascript"
+        tal:condition="devmode"
+        tal:attributes="src string:${icingroot}/build/translations/translations.js">
+      </script>
+      <script type="text/javascript">
+      LPS.use("node", "translations", function(Y) {
+          Y.on("click", function(e) { 
+            Y.translations.toggle_languages_visibility(e);
+          }, "#toggle-languages-visibility");
+      });
+      </script>
+
       <div class="translation-help-links">
         <a href="https://help.launchpad.net/Translations"
            id="link-to-translations-help"
