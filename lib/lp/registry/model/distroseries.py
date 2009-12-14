@@ -303,19 +303,31 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def packagings(self):
-        # We join through sourcepackagename to be able to ORDER BY it,
-        # and this code also uses prejoins to avoid fetching data later
-        # on.
-        packagings = Packaging.select(
-            "Packaging.sourcepackagename = SourcePackageName.id "
-            "AND DistroSeries.id = Packaging.distroseries "
-            "AND DistroSeries.id = %d" % self.id,
-            prejoinClauseTables=["SourcePackageName", ],
-            clauseTables=["SourcePackageName", "DistroSeries"],
-            prejoins=["productseries", "productseries.product"],
-            orderBy=["SourcePackageName.name"]
-            )
-        return packagings
+        """See `IDistroSeries`."""
+        # Avoid circular import failures.
+        # We join to SourcePackageName, ProductSeries, and Product to cache
+        # the objects that are implcitly needed to work with a
+        # Packaging object.
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        find_spec = (Packaging, SourcePackageName, ProductSeries, Product)
+        origin = [
+            Packaging,
+            Join(
+                SourcePackageName,
+                Packaging.sourcepackagename == SourcePackageName.id),
+            Join(
+                ProductSeries,
+                Packaging.productseries == ProductSeries.id),
+            Join(
+                Product,
+                ProductSeries.product == Product.id)]
+        condition = [Packaging.distroseries == self.id]
+        results = IStore(self).using(*origin).find(find_spec, *condition)
+        results = results.order_by(SourcePackageName.name)
+        return [
+            packaging
+            for (packaging, spn, product_series, product) in results]
 
     @property
     def supported(self):
