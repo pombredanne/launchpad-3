@@ -30,3 +30,4 @@ $stalled_pkg_timeout = 150;
 #        ivtools => 600,
 #        smalleiffel => 600
 #);
+$exit_hook = "/usr/bin/check-implicit-pointer-functions";

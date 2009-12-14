@@ -57,6 +57,7 @@ install:
 	install -m644 sbuild.conf $(target)/etc/sbuild.conf
 	install -m644 example.chroot debian/launchpad-buildd/usr/share/doc/launchpad-buildd/
 	install -m755 debian/upgrade-config $(targetshare)/upgrade-config
+	install -m755 check-implicit-function-pointers $(target)/usr/bin/check-implicit-function-pointers
 	# Okay, that's installed all the slave-related files
 
 
