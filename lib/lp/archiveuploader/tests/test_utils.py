@@ -10,6 +10,7 @@ import sys
 import shutil
 
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.archiveuploader.tests import datadir
 
 
@@ -23,20 +24,71 @@ class TestUtilities(unittest.TestCase):
         """lp.archiveuploader.utils.determine_source_file_type should work."""
         from lp.archiveuploader.utils import determine_source_file_type
 
+        # .dsc -> DSC
         self.assertEquals(
-            SourcePackageFileType.DSC,
-            determine_source_file_type('foo_1.0-1.dsc'))
+            determine_source_file_type('foo_1.0-1.dsc'),
+            SourcePackageFileType.DSC)
+
+        # .diff.gz -> DIFF
         self.assertEquals(
-            SourcePackageFileType.DIFF,
-            determine_source_file_type('foo_1.0-1.diff.gz'))
+            determine_source_file_type('foo_1.0-1.diff.gz'),
+            SourcePackageFileType.DIFF)
+
+        # DIFFs can only be gzipped.
         self.assertEquals(
-            SourcePackageFileType.ORIG_TARBALL,
-            determine_source_file_type('foo_1.0.orig.tar.gz'))
+            determine_source_file_type('foo_1.0.diff.bz2'), None)
+
+        # Plain original tarballs can be gzipped or bzip2ed.
         self.assertEquals(
-            SourcePackageFileType.NATIVE_TARBALL,
-            determine_source_file_type('foo_1.0.tar.gz'))
+            determine_source_file_type('foo_1.0.orig.tar.gz'),
+            SourcePackageFileType.ORIG_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig.tar.bz2'),
+            SourcePackageFileType.ORIG_TARBALL)
+
+        # Component original tarballs too.
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig-foo.tar.gz'),
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.orig-bar.tar.bz2'),
+            SourcePackageFileType.COMPONENT_ORIG_TARBALL)
+
+        # And Debian tarballs...
+        self.assertEquals(
+            determine_source_file_type('foo_1.0-1.debian.tar.gz'),
+            SourcePackageFileType.DEBIAN_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0-2.debian.tar.bz2'),
+            SourcePackageFileType.DEBIAN_TARBALL)
+
+        # And even native tarballs!
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.tar.gz'),
+            SourcePackageFileType.NATIVE_TARBALL)
+        self.assertEquals(
+            determine_source_file_type('foo_1.0.tar.bz2'),
+            SourcePackageFileType.NATIVE_TARBALL)
+
         self.assertEquals(None, determine_source_file_type('foo_1.0'))
         self.assertEquals(None, determine_source_file_type('foo_1.0.blah.gz'))
+
+    def test_determine_binary_file_type(self):
+        """lp.archiveuploader.utils.determine_binary_file_type should work."""
+        from lp.archiveuploader.utils import determine_binary_file_type
+
+        # .deb -> DEB
+        self.assertEquals(
+            determine_binary_file_type('foo_1.0-1_all.deb'),
+            BinaryPackageFileType.DEB)
+
+        # .udeb -> UDEB
+        self.assertEquals(
+            determine_binary_file_type('foo_1.0-1_all.udeb'),
+            BinaryPackageFileType.UDEB)
+
+        self.assertEquals(determine_binary_file_type('foo_1.0'), None)
+        self.assertEquals(determine_binary_file_type('foo_1.0.notdeb'), None)
 
     def testPrefixMultilineString(self):
         """lp.archiveuploader.utils.prefix_multi_line_string should work"""

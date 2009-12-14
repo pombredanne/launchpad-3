@@ -190,7 +190,7 @@
               condition="private_prefix">
   <script type="text/javascript"
           tal:content="string:
-    YUI().use('node', 'event', function(Y) {
+    LPS.use('node', 'event', function(Y) {
       // Prepend/remove 'private-' from team name based on visibility
       // setting.  User can choose to edit it back out, if they wish.
       function visibility_on_change(e) {

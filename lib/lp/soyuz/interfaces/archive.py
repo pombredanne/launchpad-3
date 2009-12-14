@@ -1263,7 +1263,7 @@ class IArchiveSet(Interface):
         """
 
     def getArchivesForDistribution(distribution, name=None, purposes=None,
-        user=None):
+        user=None, exclude_disabled=True):
         """Return a list of all the archives for a distribution.
 
         This will return all the archives for the given distribution, with
@@ -1272,12 +1272,13 @@ class IArchiveSet(Interface):
         :param distribution: target `IDistribution`
         :param name: An optional archive name which will further restrict
             the results to only those archives with this name.
-        :param purposes: An optional achive purpose or list of purposes with
+        :param purposes: An optional archive purpose or list of purposes with
             which to filter the results.
         :param user: An optional `IPerson` who is requesting the archives,
             which is used to include private archives for which the user
             has permission. If it is not supplied, only public archives
             will be returned.
+        :param exclude_disabled: Whether to exclude disabled archives.
 
         :return: A queryset of all the archives for the given
             distribution matching the given params.

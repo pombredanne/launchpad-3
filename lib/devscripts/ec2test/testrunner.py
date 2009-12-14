@@ -359,31 +359,17 @@ class EC2TestRunner:
         # Get any new sourcecode branches as requested
         for dest, src in self.branches:
             fulldest = os.path.join('/var/launchpad/test/sourcecode', dest)
+            # Most sourcecode branches share no history with Launchpad and
+            # might be in different formats so we "branch --standalone" them
+            # to avoid terribly slow on-the-fly conversions.  However, neither
+            # thing is true of canonical-identity or shipit, so we let them
+            # use the Launchpad repository.
             if dest in ('canonical-identity-provider', 'shipit'):
-                # These two branches share some of the history with Launchpad.
-                # So we create a stacked branch on Launchpad so that the shared
-                # history isn't duplicated.
-                user_connection.run_with_ssh_agent(
-                    'bzr branch --no-tree --stacked %s %s' %
-                    (TRUNK_BRANCH, fulldest))
-                # The --overwrite is needed because they are actually two
-                # different branches (canonical-identity-provider was not
-                # branched off launchpad, but some revisions are shared.)
-                user_connection.run_with_ssh_agent(
-                    'bzr pull --overwrite %s -d %s' % (src, fulldest))
-                # The third line is necessary because of the --no-tree option
-                # used initially. --no-tree doesn't create a working tree.
-                # It only works with the .bzr directory (branch metadata and
-                # revisions history). The third line creates a working tree
-                # based on the actual branch.
-                user_connection.run_with_ssh_agent(
-                    'bzr checkout "%s" "%s"' % (fulldest, fulldest))
+                standalone = ''
             else:
-                # The "--standalone" option is needed because some branches
-                # are/were using a different repository format than Launchpad
-                # (bzr-svn branch for example).
-                user_connection.run_with_ssh_agent(
-                    'bzr branch --standalone %s %s' % (src, fulldest))
+                standalone = '--standalone'
+            user_connection.run_with_ssh_agent(
+                'bzr branch %s %s %s' % (standalone, src, fulldest))
         # prepare fresh copy of sourcecode and buildout sources for building
         p = user_connection.perform
         p('rm -rf /var/launchpad/tmp')

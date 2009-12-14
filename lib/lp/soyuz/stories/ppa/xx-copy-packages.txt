@@ -243,7 +243,8 @@ is presented.
 
 James uses the link in the copy summary to go straight to the target
 PPA, his own. There he can see the just copied package as PENDING and
-also marked as pending build for i386.
+also marked as pending build for i386. Note, he is also informed that
+there is actually a newer version already available in hoary.
 
     >>> jblack_browser.getLink('PPA for James Blackwell').click()
     >>> print jblack_browser.title
@@ -252,7 +253,7 @@ also marked as pending build for i386.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    pmount - 0.1-1              Pending    Hoary            Editors  i386
+    pmount - 0.1-1 (Newer...)   Pending    Hoary            Editors  i386
 
 Expanding the details area, James can see that the source copied is
 indeed the same by checking the changelog, also that the binaries
@@ -337,7 +338,7 @@ James goes straight to the copy interface of his PPA.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    pmount - 0.1-1              Pending    Hoary            Editors  i386
+    pmount - 0.1-1 (Newer...)   Pending    Hoary            Editors  i386
 
 Then selects pmount in hoary.
 
@@ -504,7 +505,7 @@ hppa support.
     Source          Published   Status     Series           Section  Build
         Status
     pmount - 0.1-1              Pending    Grumpy           Editors
-    pmount - 0.1-1              Pending    Hoary            Editors
+    pmount - 0.1-1 (Newer...)   Pending    Hoary            Editors
 
 After the binary package go from PENDING->PUBLISHED, the page reflects the
 changes:
@@ -521,7 +522,7 @@ changes:
     Source          Published   Status     Series           Section  Build
         Status
     pmount - 0.1-1              Pending    Grumpy           Editors
-    pmount - 0.1-1              Pending    Hoary            Editors
+    pmount - 0.1-1 (Newer...)   Pending    Hoary            Editors
 
 If James performs exactly the same copy procedure again, a message
 stating that all packages involved were already copied to the
@@ -565,7 +566,7 @@ really deleted.
     Source          Published   Status     Series           Section  Build
         Status
     pmount - 0.1-1              Pending    Grumpy           Editors
-    pmount - 0.1-1              Deleted    Hoary            Editors
+    pmount - 0.1-1 (Newer...)   Deleted    Hoary            Editors
 
 In the minute after James had deleted the package, he discovered that
 'pmount' might work correctly in warty.
@@ -593,7 +594,7 @@ filter dropdown box.
     Source          Published   Status     Series           Section  Build
         Status
     pmount - 0.1-1              Pending    Grumpy           Editors
-    pmount - 0.1-1              Deleted    Hoary            Editors
+    pmount - 0.1-1 (Newer...)   Deleted    Hoary            Editors
 
 James mistakenly requests the copy without including the binaries
 resulting from the hoary build, which are still published in grumpy.
@@ -644,7 +645,7 @@ publication.
         Status
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
-    pmount - 0.1-1              Deleted    Hoary            Editors
+    pmount - 0.1-1 (Newer...)   Deleted    Hoary            Editors
 
 
 === Copying packages to other PPAs you participate ===
@@ -744,7 +745,7 @@ sources and binaries are copied to their PPA.
     Source            Uploader    Published   Status   Series  Section  Build
         Status
     iceweasel...(...) no signer               Pending  Hoary   Editors
-    pmount - 0.1-1    no signer               Pending  Hoary   Editors
+    pmount...(...)    no signer               Pending  Hoary   Editors
 
 James just gives a quick look to the details section of each copied
 sources to ensure the binaries are really there.
@@ -838,7 +839,7 @@ insane because PPA-copy-ui is so cool.
         Status
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
-    pmount - 0.1-1              Deleted    Hoary            Editors
+    pmount - 0.1-1 (Newer...)   Deleted    Hoary            Editors
 
     >>> jblack_pub_ids = getPPAPubIDsFor('jblack')
 
@@ -924,10 +925,10 @@ deleted files will be re-published in his archive.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    pmount - 0.1-1              Pending    Hoary            Editors
+    pmount - 0.1-1 (Newer...)   Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
-    pmount - 0.1-1              Deleted    Hoary            Editors
+    pmount - 0.1-1 (Newer...)   Deleted    Hoary            Editors
 
 James is not yet satisfied and to create some fun we will publish
 different version of foo_1.0 in Mark's and Celso's PPAs and a foo_2.0
@@ -1062,9 +1063,9 @@ do not enforce coherent version ordering across suites.
     >>> print_ppa_packages(jblack_browser.contents)
     Source          Published   Status     Series           Section  Build
         Status
-    foo - 2.0  (changesfile)    Pending    Hoary            Base
+    foo - 2.0  (changesfile)    Pending    Hoary            Base     i386
     foo - 1.1  (changesfile)    Pending    Warty            Base
-    pmount - 0.1-1              Pending    Hoary            Editors
+    pmount - 0.1-1 (Newer...)   Pending    Hoary            Editors
     pmount - 0.1-1              Pending    Warty            Editors
     pmount - 0.1-1              Pending    Grumpy           Editors
 

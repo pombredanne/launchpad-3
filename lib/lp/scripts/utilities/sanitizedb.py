@@ -12,13 +12,14 @@ import re
 import subprocess
 import sys
 
-from storm.locals import Or
+from storm.locals import Or, Not
 import transaction
 from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.database.postgresql import ConnectionString, listReferences
+from canonical.launchpad.scripts.logger import DEBUG2, DEBUG3
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.lp import initZopeless
@@ -64,10 +65,16 @@ class SanitizeDb(LaunchpadScript):
 
     def main(self):
         self.allForeignKeysCascade()
+        triggers_to_disable = [
+            ('bugmessage', 'set_bug_message_count_t'),
+            ('bugmessage', 'set_date_last_message_t'),
+            ]
+        self.disableTriggers(triggers_to_disable)
 
         tables_to_empty = [
             'accountpassword',
             'archiveauthtoken',
+            'archivesubscriber',
             'authtoken',
             'buildqueue',
             'commercialsubscription',
@@ -107,9 +114,6 @@ class SanitizeDb(LaunchpadScript):
         for table in tables_to_empty:
             self.removeTableRows(table)
 
-        self.removeDeactivatedPeople()
-        self.removeDeactivatedAccounts()
-
         self.removePrivatePeople()
         self.removePrivateTeams()
         self.removePrivateBugs()
@@ -124,12 +128,15 @@ class SanitizeDb(LaunchpadScript):
         self.removeInactiveProjects()
         self.removeInactiveProducts()
         self.removeInvalidEmailAddresses()
+        self.removePPAArchivePermissions()
         self.scrambleHiddenEmailAddresses()
         self.scrambleOpenIDIdentifiers()
 
+        self.removeDeactivatedPeopleAndAccounts()
+
         # Remove unlinked records. These might contain private data.
-        self.removeUnlinkedAccounts()
         self.removeUnlinkedEmailAddresses()
+        self.removeUnlinkedAccounts()
         self.removeUnlinked('revision', [
             ('revisioncache', 'revision'),
             ('revisionparent', 'revision'),
@@ -146,59 +153,84 @@ class SanitizeDb(LaunchpadScript):
         # Scrub data after removing all the records we are going to.
         # No point scrubbing data that is going to get removed later.
         columns_to_scrub = [
-            ('account', 'status_comment'),
-            ('distribution', 'reviewer_whiteboard'),
-            ('distributionmirror', 'whiteboard'),
-            ('hwsubmission', 'raw_emailaddress'),
-            ('nameblacklist', 'comment'),
-            ('person', 'personal_standing_reason'),
-            ('person', 'addressline1'),
-            ('person', 'addressline2'),
-            ('person', 'organization'),
-            ('person', 'city'),
-            ('person', 'province'),
-            ('person', 'country'),
-            ('person', 'postcode'),
-            ('person', 'phone'),
-            ('person', 'mail_resumption_date'),
-            ('product', 'reviewer_whiteboard'),
-            ('project', 'reviewer_whiteboard'),
-            ('revisionauthor', 'email'),
-            ('signedcodeofconduct', 'admincomment'),
+            ('account', ['status_comment']),
+            ('distribution', ['reviewer_whiteboard']),
+            ('distributionmirror', ['whiteboard']),
+            ('hwsubmission', ['raw_emailaddress']),
+            ('nameblacklist', ['comment']),
+            ('person', [
+                'personal_standing_reason',
+                'addressline1',
+                'addressline2',
+                'organization',
+                'city',
+                'province',
+                'country',
+                'postcode',
+                'phone',
+                'mail_resumption_date']),
+            ('product', ['reviewer_whiteboard']),
+            ('project', ['reviewer_whiteboard']),
+            ('revisionauthor', ['email']),
+            ('signedcodeofconduct', ['admincomment']),
             ]
         for table, column in columns_to_scrub:
             self.scrubColumn(table, column)
 
+        self.enableTriggers(triggers_to_disable)
+        self.repairData()
+
         self.resetForeignKeysCascade()
         if self.options.dry_run:
-            self.logger.debug("Dry run - rolling back.")
+            self.logger.info("Dry run - rolling back.")
             transaction.abort()
         else:
-            self.logger.debug("Committing.")
+            self.logger.info("Committing.")
             transaction.commit()
 
-    def removeDeactivatedPeople(self):
-        """Remove all suspended and deactivated people."""
-        from canonical.launchpad.interfaces.account import AccountStatus
-        count = self.store.execute("""
-            DELETE FROM Person
-            USING Account
-            WHERE Account.id = Person.account AND Account.status != %s
-            """ % sqlvalues(AccountStatus.ACTIVE)).rowcount
-        self.logger.info(
-            "Removed %d suspended or deactivated people", count)
+    def removeDeactivatedPeopleAndAccounts(self):
+        """Remove all suspended and deactivated people & their accounts.
 
-    def removeDeactivatedAccounts(self):
-        """Remove all suspended or deactivated accounts.
-
-        This needs to be called after removeInactivePeople.
+        Launchpad celebrities are ignored.
         """
+        from canonical.launchpad.database.account import Account
+        from canonical.launchpad.database.emailaddress import EmailAddress
         from canonical.launchpad.interfaces.account import AccountStatus
-        count = self.store.execute("""
-            DELETE FROM Account WHERE Account.status != %s
-            """ % sqlvalues(AccountStatus.ACTIVE)).rowcount
+        from canonical.launchpad.interfaces.launchpad import (
+            ILaunchpadCelebrities)
+        from lp.registry.model.person import Person
+        celebrities = getUtility(ILaunchpadCelebrities)
+        # This is a slow operation due to the huge amount of cascading.
+        # We remove one row at a time for better reporting and PostgreSQL
+        # memory use.
+        deactivated_people = self.store.find(
+            Person,
+            Person.account == Account.id,
+            Account.status != AccountStatus.ACTIVE)
+        total_deactivated_count = deactivated_people.count()
+        deactivated_count = 0
+        for person in deactivated_people:
+            # Ignore celebrities
+            if celebrities.isCelebrityPerson(person.name):
+                continue
+            deactivated_count += 1
+            self.logger.debug(
+                "Removing %d of %d deactivated people (%s)",
+                deactivated_count, total_deactivated_count, person.name)
+            # Clean out the EmailAddress and Account for this person
+            # while we are here, making subsequent unbatched steps
+            # faster. These don't cascade due to the lack of a foreign
+            # key constraint between Person and EmailAddress, and the
+            # ON DELETE SET NULL foreign key constraint between
+            # EmailAddress and Account.
+            self.store.find(
+                EmailAddress, EmailAddress.person == person).remove()
+            self.store.find(Account, Account.id == person.accountID).remove()
+            self.store.remove(person)
+            self.store.flush()
         self.logger.info(
-            "Removed %d suspended or deactivated accounts", count)
+            "Removed %d suspended or deactivated people + email + accounts",
+            deactivated_count)
 
     def removePrivatePeople(self):
         """Remove all private people."""
@@ -208,6 +240,7 @@ class SanitizeDb(LaunchpadScript):
             Person,
             Person.teamowner == None,
             Person.visibility != PersonVisibility.PUBLIC).remove()
+        self.store.flush()
         self.logger.info("Removed %d private people.", count)
 
     def removePrivateTeams(self):
@@ -218,12 +251,14 @@ class SanitizeDb(LaunchpadScript):
             Person,
             Person.teamowner != None,
             Person.visibility != PersonVisibility.PUBLIC).remove()
+        self.store.flush()
         self.logger.info("Removed %d private teams.", count)
 
     def removePrivateBugs(self):
         """Remove all private bugs."""
         from lp.bugs.model.bug import Bug
         count = self.store.find(Bug, Bug.private == True).remove()
+        self.store.flush()
         self.logger.info("Removed %d private bugs.", count)
 
     def removePrivateBugMessages(self):
@@ -231,12 +266,14 @@ class SanitizeDb(LaunchpadScript):
         from lp.bugs.model.bugmessage import BugMessage
         count = self.store.find(
             BugMessage, BugMessage.visible == False).remove()
+        self.store.flush()
         self.logger.info("Removed %d private bug messages.", count)
 
     def removePrivateBranches(self):
         """Remove all private branches."""
         from lp.code.model.branch import Branch
         count = self.store.find(Branch, Branch.private == True).remove()
+        self.store.flush()
         self.logger.info("Removed %d private branches.", count)
 
     def removePrivateHwSubmissions(self):
@@ -244,6 +281,7 @@ class SanitizeDb(LaunchpadScript):
         from canonical.launchpad.database.hwdb import HWSubmission
         count = self.store.find(
             HWSubmission, HWSubmission.private == True).remove()
+        self.store.flush()
         self.logger.info("Removed %d private hardware submissions.", count)
 
     def removePrivateSpecifications(self):
@@ -251,6 +289,7 @@ class SanitizeDb(LaunchpadScript):
         from lp.blueprints.model.specification import Specification
         count = self.store.find(
             Specification, Specification.private == True).remove()
+        self.store.flush()
         self.logger.info("Removed %d private specifications.", count)
 
     def removePrivateLocations(self):
@@ -258,6 +297,7 @@ class SanitizeDb(LaunchpadScript):
         from lp.registry.model.personlocation import PersonLocation
         count = self.store.find(
             PersonLocation, PersonLocation.visible == False).remove()
+        self.store.flush()
         self.logger.info("Removed %d person locations.", count)
 
     def removePrivateArchives(self):
@@ -267,6 +307,7 @@ class SanitizeDb(LaunchpadScript):
         """
         from lp.soyuz.model.archive import Archive
         count = self.store.find(Archive, Archive.private == True).remove()
+        self.store.flush()
         self.logger.info(
             "Removed %d private archives.", count)
 
@@ -278,6 +319,7 @@ class SanitizeDb(LaunchpadScript):
                 Announcement.date_announced == None,
                 Announcement.date_announced > UTC_NOW,
                 Announcement.active == False)).remove()
+        self.store.flush()
         self.logger.info(
             "Removed %d unpublished announcements.", count)
 
@@ -287,6 +329,7 @@ class SanitizeDb(LaunchpadScript):
         from canonical.launchpad.database.librarian import LibraryFileAlias
         count = self.store.find(
             LibraryFileAlias, LibraryFileAlias.restricted == True).remove()
+        self.store.flush()
         self.logger.info("Removed %d restricted librarian files.", count)
 
     def removeInactiveProjects(self):
@@ -294,6 +337,7 @@ class SanitizeDb(LaunchpadScript):
         from lp.registry.model.project import Project
         count = self.store.find(
             Project, Project.active == False).remove()
+        self.store.flush()
         self.logger.info("Removed %d inactive product groups.", count)
 
     def removeInactiveProducts(self):
@@ -301,11 +345,13 @@ class SanitizeDb(LaunchpadScript):
         from lp.registry.model.product import Product
         count = self.store.find(
             Product, Product.active == False).remove()
+        self.store.flush()
         self.logger.info("Removed %d inactive products.", count)
 
     def removeTableRows(self, table):
         """Remove all data from a table."""
         count = self.store.execute("DELETE FROM %s" % table).rowcount
+        self.store.execute("ANALYZE %s" % table)
         self.logger.info("Removed %d %s rows (all).", count, table)
 
     def removeUnlinked(self, table, ignores=()):
@@ -324,10 +370,12 @@ class SanitizeDb(LaunchpadScript):
             if (to_table == table and to_column == 'id'
                 and (from_table, from_column) not in ignores):
                 references.append(
-                    "SELECT %s FROM %s" % (from_column, from_table))
-        subquery = " UNION ".join(references)
-        query = "DELETE FROM %s WHERE id NOT IN (%s)" % (table, subquery)
-        self.logger.debug(query)
+                    "EXCEPT SELECT %s FROM %s" % (from_column, from_table))
+        query = (
+            "DELETE FROM %s USING (SELECT id FROM %s %s) AS Unreferenced "
+            "WHERE %s.id = Unreferenced.id"
+            % (table, table, ' '.join(references), table))
+        self.logger.log(DEBUG2, query)
         count = self.store.execute(query).rowcount
         self.logger.info("Removed %d unlinked %s rows.", count, table)
 
@@ -342,8 +390,21 @@ class SanitizeDb(LaunchpadScript):
                 EmailAddress.status == EmailAddressStatus.OLD,
                 EmailAddress.email.lower().like(
                     '%@example.com', case_sensitive=True))).remove()
+        self.store.flush()
         self.logger.info(
             "Removed %d invalid, unvalidated and old email addresses.", count)
+
+    def removePPAArchivePermissions(self):
+        """Remove ArchivePermission records for PPAs."""
+        from lp.soyuz.interfaces.archive import ArchivePurpose
+        count = self.store.execute("""
+            DELETE FROM ArchivePermission
+            USING Archive
+            WHERE ArchivePermission.archive = Archive.id
+                AND Archive.purpose = %s
+            """ % sqlvalues(ArchivePurpose.PPA)).rowcount
+        self.logger.info(
+            "Removed %d ArchivePermission records linked to PPAs.", count)
 
     def scrambleHiddenEmailAddresses(self):
         """Hide email addresses users have requested to not be public.
@@ -371,42 +432,62 @@ class SanitizeDb(LaunchpadScript):
         count = self.store.execute("""
             UPDATE Account SET
                 openid_identifier =
-                    'rnd' || text(id) || text(round(random()*10000)),
+                    'rnd' || text(id) || 'x' || text(round(random()*10000)),
                 old_openid_identifier =
-                    'rnd' || text(id) || text(round(random()*10000))
+                    'rnd' || text(id) || 'x' || text(round(random()*10000))
             """).rowcount
         self.logger.info("Randomized %d openid identifiers.", count)
-
-    def removeUnlinkedAccounts(self):
-        """Remove Accounts not linked to a Person."""
-        count = self.store.execute("""
-            DELETE FROM Account
-            USING EmailAddress
-            WHERE Account.id = EmailAddress.account
-                AND EmailAddress.person IS NULL
-            """).rowcount
-        self.logger.info("Removed %d accounts not linked to a person", count)
 
     def removeUnlinkedEmailAddresses(self):
         """Remove EmailAddresses not linked to a Person.
 
-        This needs to be called after all the Person records have been
-        removed.
+        We call this before removeUnlinkedAccounts to avoid the
+        ON DELETE SET NULL overhead from the EmailAddress -> Account
+        foreign key constraint.
         """
         from canonical.launchpad.database.emailaddress import EmailAddress
         count = self.store.find(
             EmailAddress, EmailAddress.person == None).remove()
+        self.store.flush()
         self.logger.info(
             "Removed %d email addresses not linked to people.", count)
 
-    def scrubColumn(self, table, column):
+    def removeUnlinkedAccounts(self):
+        """Remove Accounts not linked to a Person."""
+        from canonical.launchpad.database.account import Account
+        from lp.registry.model.person import Person
+        all_accounts = self.store.find(Account)
+        linked_accounts = self.store.find(
+            Account, Account.id == Person.accountID)
+        unlinked_accounts = all_accounts.difference(linked_accounts)
+        total_unlinked_accounts = unlinked_accounts.count()
+        count = 0
+        for account in unlinked_accounts:
+            self.store.remove(account)
+            self.store.flush()
+            count += 1
+            self.logger.debug(
+                "Removed %d of %d unlinked accounts."
+                % (count, total_unlinked_accounts))
+        self.logger.info("Removed %d accounts not linked to a person", count)
+
+    def scrubColumn(self, table, columns):
         """Remove production admin related notes."""
-        count = self.store.execute("""
-            UPDATE %s SET %s = NULL
-            WHERE %s IS NOT NULL
-            """ % (table, column, column)).rowcount
+        query = ["UPDATE %s SET" % table]
+        for column in columns:
+            query.append("%s = NULL" % column)
+            query.append(",")
+        query.pop()
+        query.append("WHERE")
+        for column in columns:
+            query.append("%s IS NOT NULL" % column)
+            query.append("OR")
+        query.pop()
+        self.logger.log(DEBUG3, ' '.join(query))
+        count = self.store.execute(' '.join(query)).rowcount
         self.logger.info(
-            "Scrubbed %d %s.%s entries." % (count, table, column))
+            "Scrubbed %d %s.{%s} entries."
+            % (count, table, ','.join(columns)))
 
     def allForeignKeysCascade(self):
         """Set all foreign key constraints to ON DELETE CASCADE.
@@ -469,7 +550,9 @@ class SanitizeDb(LaunchpadScript):
         self.logger.info(
             "Setting %d constraints to ON DELETE CASCADE",
             len(cascade_sql) / 2)
-        self.store.execute('\n'.join(cascade_sql))
+        for statement in cascade_sql:
+            self.logger.log(DEBUG3, statement)
+            self.store.execute(statement)
 
         # Store the recovery SQL.
         self._reset_foreign_key_sql = restore_sql
@@ -479,7 +562,44 @@ class SanitizeDb(LaunchpadScript):
         self.logger.info(
             "Resetting %d foreign key constraints to initial state.",
             len(self._reset_foreign_key_sql)/2)
-        self.store.execute('\n'.join(self._reset_foreign_key_sql))
+        for statement in self._reset_foreign_key_sql:
+            self.store.execute(statement)
+
+    def disableTriggers(self, triggers_to_disable):
+        """Disable a set of triggers.
+
+        :param triggers_to_disable: List of (table_name, trigger_name).
+        """
+        self.logger.debug("Disabling %d triggers." % len(triggers_to_disable))
+        for table_name, trigger_name in triggers_to_disable:
+            self.logger.debug(
+                "Disabling trigger %s.%s." % (table_name, trigger_name))
+            self.store.execute(
+                "ALTER TABLE %s DISABLE TRIGGER %s"
+                % (table_name, trigger_name))
+
+    def enableTriggers(self, triggers_to_enable):
+        """Renable a set of triggers.
+
+        :param triggers_to_enable: List of (table_name, trigger_name).
+        """
+        self.logger.debug("Enabling %d triggers." % len(triggers_to_enable))
+        for table_name, trigger_name in triggers_to_enable:
+            self.logger.debug(
+                "Enabling trigger %s.%s." % (table_name, trigger_name))
+            self.store.execute(
+                "ALTER TABLE %s ENABLE TRIGGER %s"
+                % (table_name, trigger_name))
+
+    def repairData(self):
+        """After scrubbing, repair any data possibly damaged in the process.
+        """
+        # Repair Bug.message_count and Bug.date_last_message.
+        # The triggers where disabled while we where doing the cascading
+        # deletes because they fail (attempting to change a mutating table).
+        # We can repair these caches by forcing the triggers to run for
+        # every row.
+        self.store.execute("UPDATE BugMessage SET visible=visible")
 
     def _fail(self, error_message):
         self.logger.fatal(error_message)
