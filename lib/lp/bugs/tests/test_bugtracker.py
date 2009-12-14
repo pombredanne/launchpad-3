@@ -8,13 +8,13 @@ import unittest
 from zope.testing.doctest import NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctestunit import DocTestSuite
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.testing import LaunchpadFunctionalLayer
 
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTracker
 from lp.testing import TestCaseWithFactory
-
-from lazr.lifecycle.snapshot import Snapshot
 
 
 class TestBugTracker(TestCaseWithFactory):
