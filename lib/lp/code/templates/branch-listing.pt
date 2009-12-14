@@ -41,7 +41,7 @@ function hide_commit(id) {
 }
 registerLaunchpadFunction(hookUpFilterSubmission);
 
-YUI().use('io-base', 'node', 'json-parse', function(Y) {
+LPS.use('io-base', 'node', 'json-parse', function(Y) {
 
 function doUpdate(transaction_id, response, args) {
     json_values = Y.JSON.parse(response.responseText);

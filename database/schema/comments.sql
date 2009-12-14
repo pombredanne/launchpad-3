@@ -1430,11 +1430,9 @@ COMMENT ON COLUMN DIstroComponentUploader.uploader IS 'The uploader(s) permitted
 
 COMMENT ON TABLE LibraryFileContent IS 'LibraryFileContent: A librarian file''s contents. The librarian stores files in a safe and transactional way. This table represents the contents of those files within the database.';
 COMMENT ON COLUMN LibraryFileContent.datecreated IS 'The date on which this librarian file was created';
-COMMENT ON COLUMN LibraryFileContent.datemirrored IS 'When the file was mirrored from the librarian onto the backup server';
 COMMENT ON COLUMN LibraryFileContent.filesize IS 'The size of the file';
 COMMENT ON COLUMN LibraryFileContent.sha1 IS 'The SHA1 sum of the file''s contents';
 COMMENT ON COLUMN LibraryFileContent.md5 IS 'The MD5 sum of the file''s contents';
-COMMENT ON COLUMN LibraryFileContent.deleted IS 'This file has been removed from disk by the librarian garbage collector.';
 COMMENT ON COLUMN LibraryFileContent.sha256 IS 'The SHA256 sum of the file''s contents';
 
 -- LibraryFileAlias
@@ -1516,7 +1514,6 @@ COMMENT ON COLUMN Build.builder IS 'Points to the builder which has once process
 COMMENT ON COLUMN Build.pocket IS 'Stores the target pocket identifier for this build.';
 COMMENT ON COLUMN Build.dependencies IS 'Contains a debian-like dependency line specifying the current missing-dependencies for this package.';
 COMMENT ON COLUMN Build.archive IS 'Targeted archive for this build.';
-COMMENT ON COLUMN Build.estimated_build_duration IS 'How long does the previous attempt to build this source took in this architecture.';
 COMMENT ON COLUMN Build.build_warnings IS 'Warnings and diagnosis messages provided by the builder while building this job.';
 COMMENT ON COLUMN Build.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
 COMMENT ON COLUMN Build.upload_log IS 'Reference to a LibraryFileAlias containing the upload log messages generated while processing the binaries resulted from this build.';
@@ -1539,6 +1536,7 @@ COMMENT ON COLUMN BuildQueue.lastscore IS 'The last score ascribed to this build
 COMMENT ON COLUMN BuildQueue.manual IS 'Indicates if the current record was or not rescored manually, if so it get skipped from the auto-score procedure.';
 COMMENT ON COLUMN BuildQueue.job IS 'Foreign key to the `Job` table row with the generic job data.';
 COMMENT ON COLUMN BuildQueue.job_type IS 'Type of job (enumeration value), enables us to find/query the correct table with the data specific to this type of job.';
+COMMENT ON COLUMN BuildQueue.estimated_duration IS 'Estimated job duration, based on previous running times of comparable jobs.';
 
 -- Mirrors
 

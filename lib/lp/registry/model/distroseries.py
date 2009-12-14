@@ -86,7 +86,7 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin)
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.soyuz.interfaces.archive import (
@@ -303,19 +303,31 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def packagings(self):
-        # We join through sourcepackagename to be able to ORDER BY it,
-        # and this code also uses prejoins to avoid fetching data later
-        # on.
-        packagings = Packaging.select(
-            "Packaging.sourcepackagename = SourcePackageName.id "
-            "AND DistroSeries.id = Packaging.distroseries "
-            "AND DistroSeries.id = %d" % self.id,
-            prejoinClauseTables=["SourcePackageName", ],
-            clauseTables=["SourcePackageName", "DistroSeries"],
-            prejoins=["productseries", "productseries.product"],
-            orderBy=["SourcePackageName.name"]
-            )
-        return packagings
+        """See `IDistroSeries`."""
+        # Avoid circular import failures.
+        # We join to SourcePackageName, ProductSeries, and Product to cache
+        # the objects that are implcitly needed to work with a
+        # Packaging object.
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        find_spec = (Packaging, SourcePackageName, ProductSeries, Product)
+        origin = [
+            Packaging,
+            Join(
+                SourcePackageName,
+                Packaging.sourcepackagename == SourcePackageName.id),
+            Join(
+                ProductSeries,
+                Packaging.productseries == ProductSeries.id),
+            Join(
+                Product,
+                ProductSeries.product == Product.id)]
+        condition = [Packaging.distroseries == self.id]
+        results = IStore(self).using(*origin).find(find_spec, *condition)
+        results = results.order_by(SourcePackageName.name)
+        return [
+            packaging
+            for (packaging, spn, product_series, product) in results]
 
     @property
     def supported(self):
@@ -1509,6 +1521,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Now copy source and binary packages.
         self._copy_publishing_records(distroarchseries_list)
         self._copy_lucille_config(cur)
+        self._copy_packaging_links(cur)
 
         # Finally, flush the caches because we've altered stuff behind the
         # back of sqlobject.
@@ -1582,6 +1595,49 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             FROM SourcePackageFormatSelection AS spfs
             WHERE spfs.distroseries = %s
             ''' % sqlvalues(self.id, self.parent_series.id))
+
+    def _copy_packaging_links(self, cur):
+        """Copy the packaging links from the parent series to this one."""
+        cur.execute("""
+            INSERT INTO
+                Packaging(
+                    distroseries, sourcepackagename, productseries,
+                    packaging, owner)
+            SELECT
+                ChildSeries.id,
+                Packaging.sourcepackagename,
+                Packaging.productseries,
+                Packaging.packaging,
+                Packaging.owner
+            FROM
+                Packaging
+                -- Joining the parent distroseries permits the query to build
+                -- the data set for the series being updated, yet results are
+                -- in fact the data from the original series.
+                JOIN Distroseries ChildSeries
+                    ON Packaging.distroseries = ChildSeries.parent_series
+            WHERE
+                -- Select only the packaging links that are in the parent
+                -- that are not in the child.
+                ChildSeries.id = %s
+                AND Packaging.sourcepackagename in (
+                    SELECT sourcepackagename
+                    FROM Packaging
+                    WHERE distroseries in (
+                        SELECT id
+                        FROM Distroseries
+                        WHERE id = ChildSeries.parent_series
+                        )
+                    EXCEPT
+                    SELECT sourcepackagename
+                    FROM Packaging
+                    WHERE distroseries in (
+                        SELECT id
+                        FROM Distroseries
+                        WHERE id = ChildSeries.id
+                        )
+                    )
+            """ % self.id)
 
     def copyTranslationsFromParent(self, transaction, logger=None):
         """See `IDistroSeries`."""

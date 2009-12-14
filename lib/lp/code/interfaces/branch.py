@@ -50,7 +50,8 @@ from lazr.restful.declarations import (
     call_with, collection_default_content, export_as_webservice_collection,
     export_as_webservice_entry, export_factory_operation,
     export_operation_as, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_entry, REQUEST_USER)
+    exported, operation_parameters, operation_returns_collection_of,
+    operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
 
@@ -398,10 +399,11 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             description=_(
                 "Make this branch visible only to its subscribers.")))
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))
     @export_write_operation()
-    def setPrivate(private):
+    def setPrivate(private, user):
         """Set the branch privacy for this branch."""
 
     # People attributes
@@ -807,7 +809,20 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""
 
-    def revisions_since(timestamp):
+    def getMainlineBranchRevisions(start_date, end_date=None,
+                                   oldest_first=False):
+        """Return the matching mainline branch revision objects.
+
+        :param start_date: Return revisions that were committed after the
+            start_date.
+        :param end_date: Return revisions that were committed before the
+            end_date
+        :param oldest_first: Defines the ordering of the result set.
+        :returns: A resultset of tuples for
+            (BranchRevision, Revision, RevisionAuthor)
+        """
+
+    def getRevisionsSince(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
     code_is_browseable = Attribute(
@@ -1169,7 +1184,36 @@ class IBranchSet(Interface):
         Either from the external specified in Branch.url, from the URL on
         http://bazaar.launchpad.net/ or the lp: URL.
 
+        This is a frontend shim to `IBranchLookup.getByUrl` to allow it to be
+        exported over the API. If you want to call this from within the
+        Launchpad app, use the `IBranchLookup` version instead.
+
         Return None if no match was found.
+        """
+
+    @operation_parameters(
+        urls=List(
+            title=u'A list of URLs of branches',
+            description=(
+                u'These can be URLs external to '
+                u'Launchpad, lp: URLs, or http://bazaar.launchpad.net/ URLs, '
+                u'or any mix of all these different kinds.'),
+            value_type=TextLine(),
+            required=True))
+    @export_read_operation()
+    def getByUrls(urls):
+        """Finds branches by URL.
+
+        Either from the external specified in Branch.url, from the URL on
+        http://bazaar.launchpad.net/, or from the lp: URL.
+
+        This is a frontend shim to `IBranchLookup.getByUrls` to allow it to be
+        exported over the API. If you want to call this from within the
+        Launchpad app, use the `IBranchLookup` version instead.
+
+        :param urls: An iterable of URLs expressed as strings.
+        :return: A dictionary mapping URLs to branches. If the URL has no
+            associated branch, the URL will map to `None`.
         """
 
     @collection_default_content()

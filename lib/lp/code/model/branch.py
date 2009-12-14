@@ -52,7 +52,7 @@ from lp.code.model.branchmergeproposal import (
      BranchMergeProposal, BranchMergeProposalGetter)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchsubscription import BranchSubscription
-from lp.code.model.revision import Revision
+from lp.code.model.revision import Revision, RevisionAuthor
 from lp.code.model.seriessourcepackagebranch import SeriesSourcePackageBranch
 from lp.code.event.branchmergeproposal import NewBranchMergeProposalEvent
 from lp.code.interfaces.branch import (
@@ -98,16 +98,18 @@ class Branch(SQLBase):
 
     private = BoolCol(default=False, notNull=True)
 
-    def setPrivate(self, private):
+    def setPrivate(self, private, user):
         """See `IBranch`."""
         if private == self.private:
             return
-        policy = IBranchNamespacePolicy(self.namespace)
+        # Only check the privacy policy if the user is not special.
+        if (not user_has_special_branch_access(user)):
+            policy = IBranchNamespacePolicy(self.namespace)
 
-        if private and not policy.canBranchesBePrivate():
-            raise BranchCannotBePrivate()
-        if not private and not policy.canBranchesBePublic():
-            raise BranchCannotBePublic()
+            if private and not policy.canBranchesBePrivate():
+                raise BranchCannotBePrivate()
+            if not private and not policy.canBranchesBePublic():
+                raise BranchCannotBePublic()
         self.private = private
 
     registrant = ForeignKey(
@@ -516,7 +518,26 @@ class Branch(SQLBase):
         """See `IBranch`."""
         return self.revision_history.limit(quantity)
 
-    def revisions_since(self, timestamp):
+    def getMainlineBranchRevisions(self, start_date, end_date=None,
+                                   oldest_first=False):
+        """See `IBranch`."""
+        date_clause = Revision.revision_date >= start_date
+        if end_date is not None:
+            date_clause = And(date_clause, Revision.revision_date <= end_date)
+        result = Store.of(self).find(
+            (BranchRevision, Revision, RevisionAuthor),
+            BranchRevision.branch == self,
+            BranchRevision.sequence != None,
+            BranchRevision.revision == Revision.id,
+            Revision.revision_author == RevisionAuthor.id,
+            date_clause)
+        if oldest_first:
+            result = result.order_by(BranchRevision.sequence)
+        else:
+            result = result.order_by(Desc(BranchRevision.sequence))
+        return result
+
+    def getRevisionsSince(self, timestamp):
         """See `IBranch`."""
         return BranchRevision.select(
             'Revision.id=BranchRevision.revision AND '
@@ -703,14 +724,6 @@ class Branch(SQLBase):
         assert subscription is not None, "User is not subscribed."
         BranchSubscription.delete(subscription.id)
         store.flush()
-
-    def getMainlineBranchRevisions(self, revision_ids):
-        return Store.of(self).find(
-            BranchRevision,
-            BranchRevision.branch == self,
-            BranchRevision.sequence != None,
-            BranchRevision.revision == Revision.id,
-            Revision.revision_id.is_in(revision_ids))
 
     def getBranchRevision(self, sequence=None, revision=None,
                           revision_id=None):
@@ -1183,6 +1196,10 @@ class BranchSet:
     def getByUrl(self, url):
         """See `IBranchSet`."""
         return getUtility(IBranchLookup).getByUrl(url)
+
+    def getByUrls(self, urls):
+        """See `IBranchSet`."""
+        return getUtility(IBranchLookup).getByUrls(urls)
 
     def getBranches(self, limit=50):
         """See `IBranchSet`."""

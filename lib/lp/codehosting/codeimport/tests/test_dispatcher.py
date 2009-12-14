@@ -10,7 +10,6 @@ from optparse import OptionParser
 import os
 import shutil
 import socket
-import sys
 import tempfile
 from textwrap import dedent
 from unittest import TestLoader
@@ -19,9 +18,8 @@ from twisted.trial.unittest import TestCase
 
 from canonical.config import config
 from lp.codehosting.codeimport.dispatcher import CodeImportDispatcher
-from lp.codehosting.codeimport.tests.servers import (
-    QuietFakeLogger)
 from canonical.launchpad import scripts
+from canonical.launchpad.scripts.logger import QuietFakeLogger
 from canonical.testing.layers import TwistedLaunchpadZopelessLayer
 
 

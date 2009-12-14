@@ -88,7 +88,6 @@ class Build(SQLBase):
                      notNull=True)
     dependencies = StringCol(dbName='dependencies', default=None)
     archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
-    estimated_build_duration = IntervalCol(default=None)
 
     date_first_dispatched = UtcDateTimeCol(dbName='date_first_dispatched')
 
@@ -356,7 +355,7 @@ class Build(SQLBase):
         # jobs [1 .. N-1] i.e. for the jobs that are ahead of job N.
         sum_query = """
             SELECT
-                EXTRACT(EPOCH FROM SUM(Build.estimated_build_duration))
+                EXTRACT(EPOCH FROM SUM(BuildQueue.estimated_duration))
             FROM
                 Archive
                 JOIN Build ON
@@ -423,7 +422,7 @@ class Build(SQLBase):
         delay_query = """
             SELECT
                 CAST (EXTRACT(EPOCH FROM
-                        (Build.estimated_build_duration -
+                        (BuildQueue.estimated_duration -
                         (NOW() - Job.date_started))) AS INTEGER)
                     AS remainder
             FROM
@@ -619,6 +618,57 @@ class Build(SQLBase):
             breaks=breaks, essential=essential, installedsize=installedsize,
             architecturespecific=architecturespecific)
 
+    def _estimateDuration(self):
+        """Estimate the build duration."""
+        # Always include the primary archive when looking for
+        # past build times (just in case that none can be found
+        # in a PPA or copy archive).
+        archives = [self.archive.id]
+        if self.archive.purpose != ArchivePurpose.PRIMARY:
+            archives.append(self.distroarchseries.main_archive.id)
+
+        # Look for all sourcepackagerelease instances that match the name
+        # and get the (successfully built) build records for this
+        # package.
+        completed_builds = Build.select("""
+            Build.sourcepackagerelease = SourcePackageRelease.id AND
+            Build.id != %s AND
+            Build.buildduration IS NOT NULL AND
+            SourcePackageRelease.sourcepackagename = SourcePackageName.id AND
+            SourcePackageName.name = %s AND
+            distroarchseries = %s AND
+            archive IN %s AND
+            buildstate = %s
+            """ % sqlvalues(self, self.sourcepackagerelease.name,
+                            self.distroarchseries, archives,
+                            BuildStatus.FULLYBUILT),
+            orderBy=['-datebuilt', '-id'],
+            clauseTables=['SourcePackageName', 'SourcePackageRelease'])
+
+        if completed_builds.count() > 0:
+            # Historic build data exists, use the most recent value.
+            most_recent_build = completed_builds[0]
+            estimated_duration = most_recent_build.buildduration
+        else:
+            # Estimate the build duration based on package size if no
+            # historic build data exists.
+
+            # Get the package size in KB.
+            package_size = self.sourcepackagerelease.getPackageSize()
+
+            if package_size > 0:
+                # Analysis of previous build data shows that a build rate
+                # of 6 KB/second is realistic. Furthermore we have to add
+                # another minute for generic build overhead.
+                estimate = int(package_size/6.0/60 + 1)
+            else:
+                # No historic build times and no package size available,
+                # assume a build time of 5 minutes.
+                estimate = 5
+            estimated_duration = datetime.timedelta(minutes=estimate)
+
+        return estimated_duration
+
     def createBuildQueueEntry(self):
         """See `IBuild`"""
         store = Store.of(self)
@@ -628,9 +678,11 @@ class Build(SQLBase):
         specific_job.build = self.id
         specific_job.job = job.id
         store.add(specific_job)
-        queue_entry = BuildQueue()
-        queue_entry.job = job.id
-        queue_entry.job_type = BuildFarmJobType.PACKAGEBUILD
+        duration_estimate = self._estimateDuration()
+        queue_entry = BuildQueue(
+            estimated_duration=duration_estimate,
+            job_type=BuildFarmJobType.PACKAGEBUILD,
+            job=job.id)
         store.add(queue_entry)
         return queue_entry
 
@@ -1180,6 +1232,7 @@ class BuildSet:
         result_set = store.find(
             Build,
             BuildPackageJob.build == Build.id,
-            BuildPackageJob.job == queue_entry.job)
+            BuildPackageJob.job == BuildQueue.jobID,
+            BuildQueue.job == queue_entry.job)
 
         return result_set.one()

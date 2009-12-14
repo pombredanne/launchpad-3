@@ -1551,6 +1551,11 @@
             permission="zope.Public"
             set_schema="lp.registry.interfaces.productrelease.IProductRelease"/>
     </class>
+    <adapter
+        provides="lp.registry.interfaces.milestone.IMilestone"
+        for="lp.registry.interfaces.productrelease.IProductRelease"
+        factory="lp.registry.model.productrelease.productrelease_to_milestone"
+        permission="zope.Public"/>
 
     <!-- This is class ProductReleaseFile -->
 
@@ -1601,14 +1606,12 @@
         <allow interface="lp.registry.interfaces.distributionmirror.IDistributionMirror" />
         <require
             permission="launchpad.Edit"
-            set_attributes="name displayname description http_base_url
-                            ftp_base_url rsync_base_url enabled speed
-                            country content official_candidate" />
+            set_attributes="name displayname description whiteboard
+                            http_base_url ftp_base_url rsync_base_url enabled
+                            speed country content official_candidate owner" />
         <require
             permission="launchpad.Admin"
-            set_attributes="status owner whiteboard reviewer date_reviewed" />
-        <require
-            permission="launchpad.Admin"
+            set_attributes="status reviewer date_reviewed"
             attributes="destroySelf" />
     </class>
 
@@ -1691,4 +1694,15 @@
         <allow
             interface="lp.registry.interfaces.packaging.IPackagingUtil"/>
     </securedutility>
+
+    <!-- StructuralSubscription -->
+    
+    <class
+        class="lp.registry.model.structuralsubscription.StructuralSubscription">
+        <allow
+            interface="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+        <require
+            permission="zope.Public"
+            set_schema="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"/>
+    </class>
 </configure>

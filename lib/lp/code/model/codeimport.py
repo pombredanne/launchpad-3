@@ -107,6 +107,8 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_cvs,
             RevisionControlSystems.SVN:
                 config.codeimport.default_interval_subversion,
+            RevisionControlSystems.BZR_SVN:
+                config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
                 config.codeimport.default_interval_git,
             RevisionControlSystems.HG:
@@ -225,7 +227,8 @@ class CodeImportSet:
             assert svn_branch_url is None
             assert hg_repo_url is None
             assert git_repo_url is None
-        elif rcs_type == RevisionControlSystems.SVN:
+        elif rcs_type in (RevisionControlSystems.SVN,
+                          RevisionControlSystems.BZR_SVN):
             assert cvs_root is None and cvs_module is None
             assert svn_branch_url is not None
             assert hg_repo_url is None

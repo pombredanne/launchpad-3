@@ -53,12 +53,6 @@ $(API_INDEX): $(WADL_FILE)
 
 apidoc: compile $(API_INDEX)
 
-check_loggerhead_on_merge:
-	# Loggerhead doesn't depend on anything else in rocketfuel and nothing
-	# depends on it (yet).
-	make -C sourcecode/loggerhead check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
-
 check_merge: $(PY)
 	[ `PYTHONPATH= bzr status -S database/schema/ | \
 		grep -v "\(^P\|pending\|security.cfg\|Makefile\|unautovacuumable\|_pythonpath.py\)" | wc -l` -eq 0 ]
@@ -66,13 +60,6 @@ check_merge: $(PY)
 
 check_db_merge: $(PY)
 	${PY} lib/canonical/tests/test_no_conflict_marker.py
-
-# This can be removed once we move to zc.buildout and we have versioned
-# dependencies, but for now we run both Launchpad and all other
-# dependencies tests for any merge to sourcecode.
-check_sourcecode_merge: check
-	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
-		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
 check_config: build
 	bin/test -m canonical.config.tests -vvt test_config
@@ -149,6 +136,9 @@ download-cache:
 	@echo "Missing ./download-cache."
 	@echo "Developers: please run utilities/link-external-sourcecode."
 	@exit 1
+
+buildonce_eggs: $(PY)
+	find eggs -name '*.pyc' -exec rm {} \;
 
 # The download-cache dependency comes *before* eggs so that developers get the
 # warning before the eggs directory is made.  The target for the eggs directory
@@ -335,6 +325,8 @@ potemplates: launchpad.pot
 launchpad.pot:
 	bin/i18nextract.py
 
+# Called by the rocketfuel-setup script. You probably don't want to run this
+# on its own.
 install: reload-apache
 
 copy-certificates:
@@ -353,7 +345,7 @@ enable-apache-launchpad: copy-apache-config copy-certificates
 	a2ensite local-launchpad
 
 reload-apache: enable-apache-launchpad
-	/etc/init.d/apache2 reload
+	/etc/init.d/apache2 restart
 
 static:
 	$(PY) scripts/make-static.py
@@ -372,7 +364,7 @@ ID: compile
 
 .PHONY: apidoc check tags TAGS zcmldocs realclean clean debug stop\
 	start run ftest_build ftest_inplace test_build test_inplace pagetests\
-	check check_loggerhead_on_merge  check_merge check_sourcecode_merge \
+	check check_merge \
 	schema default launchpad.pot check_merge_ui pull scan sync_branches\
 	reload-apache hosted_branches check_db_merge check_mailman check_config\
-	jsbuild clean_js
+	jsbuild clean_js buildonce_eggs

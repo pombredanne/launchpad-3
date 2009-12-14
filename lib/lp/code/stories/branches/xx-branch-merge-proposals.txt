@@ -100,9 +100,20 @@ commit message can be set.
     ...     'Add more <b>mojo</b>')
     >>> nopriv_browser.getControl('Update').click()
 
-    >>> print_tag_with_id(nopriv_browser.contents, 'edit-description')
+    >>> print_tag_with_id(nopriv_browser.contents, 'edit-commit-message')
     Commit Message
     Add more &lt;b&gt;mojo&lt;/b&gt;
+
+A commit message can be removed deleting the text when editing.
+
+    >>> nopriv_browser.getLink(url='edit-commit-message').click()
+    >>> nopriv_browser.getControl(name='field.commit_message').value = (
+    ...     '')
+    >>> nopriv_browser.getControl('Update').click()
+
+    >>> print_tag_with_id(nopriv_browser.contents, 'commit-message')
+    Set commit message
+    ...
 
 
 Deleting merge proposals

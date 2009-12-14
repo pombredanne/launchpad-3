@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime
+from zope.schema import Choice, Datetime, Field, Timedelta
 
 from lazr.restful.fields import Reference
 
@@ -50,6 +50,14 @@ class IBuildQueue(Interface):
     job_type = Choice(
         title=_('Job type'), required=True, vocabulary=BuildFarmJobType,
         description=_("The type of this job."))
+
+    required_build_behavior = Field(
+        title=_('The builder behavior required to run this job.'),
+        required=False, readonly=True)
+
+    estimated_duration = Timedelta(
+        title=_("Estimated Job Duration"), required=True,
+        description=_("Estimated job duration interval."))
 
     def manualScore(value):
         """Manually set a score value to a queue item and lock it."""
