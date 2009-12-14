@@ -29,12 +29,13 @@ class TestFilebugExtras(TestCaseWithFactory):
 
         # Search for a possible duplicate.
         client.waits.forElement(
-            id=u'field.title', timeout=constants.FOR_ELEMENT)
-        client.type(text=u'Broken', id=u'field.title')
+            id=u'field.search', timeout=constants.FOR_ELEMENT)
+        client.type(text=u'Broken', id=u'field.search')
         client.waits.forElement(
             id=u'field.actions.search', timeout=constants.FOR_ELEMENT)
         client.click(id=u'field.actions.search')
-        client.waits.forPageLoad(timeout=constants.PAGE_LOAD)
+        client.waits.forElement(
+            id=u'filebug-form', timeout=constants.FOR_ELEMENT)
 
         # No duplicates were found.
         client.asserts.assertText(
