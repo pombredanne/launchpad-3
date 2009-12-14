@@ -515,19 +515,13 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     __used_for__ = IBranchMergeProposal
     schema = ClaimButton
 
-    @action('Claim', name='claim', validator='_validateClaim')
+    @action('Claim', name='claim')
     def claim_action(self, action, data):
         """Claim this proposal."""
         request = self.context.getVoteReference(data['review_id'])
         if request is not None:
             request.claimReview(self.user)
         self.next_url = canonical_url(self.context)
-
-    def _validateClaim(self, data):
-        """Validate the claim review action."""
-        review = self.context.getVoteReference(data['review_id'])
-        if review is not None:
-            review.validateClaimReview(self.user)
 
     @property
     def comment_location(self):

@@ -12,6 +12,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView)
+from lp.code.errors import ReviewNotPending, UserHasExistingReview
 
 
 class ReassignSchema(Interface):
@@ -39,4 +40,7 @@ class CodeReviewVoteReassign(LaunchpadFormView):
         """Make sure that the reassignment can happen."""
         reviewer = data.get('reviewer')
         if reviewer is not None:
-            self.context.validateReassignReview(reviewer)
+            try:
+                self.context.validateReasignReview(reviewer)
+            except (ReviewNotPending, UserHasExistingReview), e:
+                self.addError(str(e))
