@@ -371,14 +371,7 @@ unpublished versions from full functionality distributions like Ubuntu.
 
 A distro series can have thousands of upstream packaging links. The view
 provides a batch navigator to access the packagings. The default batch size
-is 200. The view filters unpublished versions from full functionality
-distributions like Ubuntu.
-
-    >>> for packaging in hoary.packagings:
-    ...     print packaging.sourcepackagename.name
-    evolution
-    mozilla-firefox
-    netapplet
+is 200.
 
     >>> batch_navigator = view.cached_packagings
     >>> batch_navigator.default_size
@@ -387,6 +380,7 @@ distributions like Ubuntu.
     >>> for packaging in batch_navigator.batch:
     ...     print packaging.sourcepackagename.name
     evolution
+    mozilla-firefox
     netapplet
 
 The show_unlinked_translatables property is False when the batch is after the
