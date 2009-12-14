@@ -65,9 +65,10 @@ from canonical.launchpad import _
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload, is_private_membership,
-    is_valid_public_person, LogoImageUpload, MugshotImageUpload,
-    PasswordField, PersonChoice, PublicPersonChoice, StrippedTextLine)
+    BlacklistableContentNameField, IconImageUpload,
+    is_private_membership_person, is_public_person, LogoImageUpload,
+    MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
+    StrippedTextLine)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.app.interfaces.headings import IRootContext
@@ -125,14 +126,14 @@ def validate_person(obj, attr, value, validate_func):
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
     def validate(person):
-        return not is_valid_public_person(person)
+        return not is_public_person(person)
 
     return validate_person(obj, attr, value, validate)
 
 
 def validate_person_not_private_membership(obj, attr, value):
     """Validate that the person (value) is not a private membership team."""
-    return validate_person(obj, attr, value, is_private_membership)
+    return validate_person(obj, attr, value, is_private_membership_person)
 
 
 class PersonalStanding(DBEnumeratedType):

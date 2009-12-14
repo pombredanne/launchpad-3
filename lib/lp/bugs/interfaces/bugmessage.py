@@ -124,3 +124,5 @@ class IBugComment(IMessage):
         "A list of BugActivityItems associated with this comment.")
     show_footer = Attribute(
         "Whether or not to show a footer for the comment.")
+    patches = Attribute(
+        "Patches attched to this comment.")

@@ -438,7 +438,7 @@
                     addLandingTarget
                     scheduleDiffUpdates
                     getMergeQueue
-                    revisions_since
+                    getRevisionsSince
                     code_is_browseable
                     browse_source_url
                     code_import

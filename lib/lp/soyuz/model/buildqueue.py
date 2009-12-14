@@ -18,6 +18,7 @@ from zope.interface import implements
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, IntervalCol, SQLObjectNotFound)
 from storm.expr import In, Join, LeftJoin
+from storm.store import Store
 
 from canonical import encoding
 from canonical.database.enumcol import EnumCol
@@ -58,7 +59,7 @@ class BuildQueue(SQLBase):
     @property
     def specific_job(self):
         """See `IBuildQueue`."""
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        store = Store.of(self)
         result_set = store.find(
             BuildPackageJob, BuildPackageJob.job == self.job)
         return result_set.one()
@@ -67,6 +68,14 @@ class BuildQueue(SQLBase):
     def date_started(self):
         """See `IBuildQueue`."""
         return self.job.date_started
+
+    def destroySelf(self):
+        """Remove this record and associated job/specific_job."""
+        job = self.job
+        specific_job = self.specific_job
+        SQLBase.destroySelf(self)
+        Store.of(specific_job).remove(specific_job)
+        job.destroySelf()
 
     def manualScore(self, value):
         """See `IBuildQueue`."""
