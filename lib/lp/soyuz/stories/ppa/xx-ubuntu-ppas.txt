@@ -563,7 +563,7 @@ Initially, the PPA is enabled.
     >>> print no_priv_browser.getControl(name='field.enabled').value
     True
 
-After we disable it a warning message is displayed on the PPA page.
+After disabling the PPA a warning message is displayed on its page.
 
     >>> no_priv_browser.getControl(name='field.enabled').value = False
     >>> no_priv_browser.getControl('Save').click()
@@ -571,7 +571,7 @@ After we disable it a warning message is displayed on the PPA page.
     ...     first_tag_by_class(no_priv_browser.contents, 'warning message'))
     This archive has been disabled.
 
-Now let's enable the PPA again.
+Once we re-enable the PPA the warning message is gone.
 
     >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
     >>> print no_priv_browser.getControl(name='field.enabled').value
