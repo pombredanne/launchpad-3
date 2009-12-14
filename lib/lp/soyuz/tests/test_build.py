@@ -59,10 +59,12 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         # Grab the relevant db records for later comparison.
         store = Store.of(depwait_build)
         build_package_job = store.find(
-            BuildPackageJob, depwait_build.id == BuildPackageJob.build).one()
-        job = store.find(Job, Job.id == build_package_job.id).one()
-        build_queue = store.find(
-            BuildQueue, BuildQueue.job == job.id).one()
+            BuildPackageJob,
+            depwait_build.id == BuildPackageJob.build).one()
+        build_package_job_id = build_package_job.id
+        job_id = store.find(Job, Job.id == build_package_job.job.id).one().id
+        build_queue_id = store.find(
+            BuildQueue, BuildQueue.job == job_id).one().id
 
         depwait_build.buildqueue_record.destroySelf()
 
@@ -70,13 +72,13 @@ class TestBuildUpdateDependencies(TestCaseWithFactory):
         self.assertEqual(
             store.find(
                 BuildPackageJob,
-                depwait_build.id == BuildPackageJob.build).count(),
+                BuildPackageJob.id == build_package_job_id).count(),
             0)
         self.assertEqual(
-            store.find(Job, Job.id == build_package_job.id).count(),
+            store.find(Job, Job.id == job_id).count(),
             0)
         self.assertEqual(
-            store.find(BuildQueue, BuildQueue.job == job.id).count(),
+            store.find(BuildQueue, BuildQueue.id == build_queue_id).count(),
             0)
 
     def testUpdateDependenciesWorks(self):

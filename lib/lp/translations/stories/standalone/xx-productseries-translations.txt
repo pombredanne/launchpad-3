@@ -1,4 +1,5 @@
-= ProductSeries translations =
+ProductSeries translations
+==========================
 
 This page shows a list of available languages for user to translate to in
 a single product series, or instructions on how to set up a series for
@@ -113,7 +114,8 @@ translations page.
     >>> serbian_link['href']
     u'/frobnicator/trunk/+lang/sr'
 
-== Upload page and Translations use ==
+Upload page and Translations use
+--------------------------------
 
 If the product a series belongs to is not configured to use Launchpad
 for Translations, the distroseries translations upload page will say so.
@@ -212,3 +214,27 @@ notice but not the link to the project's settings.
     ...         jtv_browser.contents, 'not-translated-in-launchpad'))
     This project is not using Launchpad for translations.
     (Getting started with translating your project in Launchpad)
+
+
+Branch synchronization options
+------------------------------
+
+If automatic import and export are set, but import branch is unset, we only
+indicate that export is happening.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.translations.interfaces.translations import (
+    ...     TranslationsBranchImportMode)
+    >>> branch = factory.makeBranch(product=frobnicator)
+    >>> branch_name = branch.name
+    >>> frobnicator_trunk.branch = None
+    >>> frobnicator_trunk.translations_autoimport_mode = (
+    ...     TranslationsBranchImportMode.IMPORT_TEMPLATES)
+    >>> frobnicator_trunk.translations_branch = branch
+    >>> logout()
+
+    >>> browser.open(frobnicator_trunk_url)
+    >>> print extract_text(browser.contents)
+    Translations...
+    Translations are exported daily to branch
+    ...
