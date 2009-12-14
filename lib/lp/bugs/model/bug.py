@@ -98,6 +98,7 @@ from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.registry.model.mentoringoffer import MentoringOffer
+from lp.registry.model.person import Person
 from lp.registry.model.pillar import pillar_sort_key
 
 
@@ -262,8 +263,9 @@ class Bug(SQLBase):
     @property
     def users_affected(self):
         """See `IBug`."""
-        return [bap.person for bap
-                in Store.of(self).find(BugAffectsPerson, bug=self)]
+        return Store.of(self).find(
+            Person, BugAffectsPerson.person == Person.id,
+            BugAffectsPerson.bug == self)
 
     @property
     def indexed_messages(self):
@@ -1307,10 +1309,11 @@ class Bug(SQLBase):
         :param user: An `IPerson` that may be affected by the bug.
         :return: An `IBugAffectsPerson` or None.
         """
-        return Store.of(self).find(
-            BugAffectsPerson,
-            And(BugAffectsPerson.bug == self,
-                BugAffectsPerson.person == user)).one()
+        if user is None:
+            return None
+        else:
+            return Store.of(self).get(
+                BugAffectsPerson, (self.id, user.id))
 
     def isUserAffected(self, user):
         """See `IBug`."""
@@ -1674,3 +1677,4 @@ class BugAffectsPerson(SQLBase):
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     affected = BoolCol(notNull=True, default=True)
+    __storm_primary__ = "bugID", "personID"

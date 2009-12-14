@@ -1268,10 +1268,10 @@ class PackageRemover(SoyuzScript):
 
         removals = []
         for removable in removables:
-            removed = removable.requestDeletion(
+            removable.requestDeletion(
                 removed_by=removed_by,
                 removal_comment=self.options.removal_comment)
-            removals.append(removed)
+            removals.append(removable.secure_record)
 
         if len(removals) == 1:
             self.logger.info(

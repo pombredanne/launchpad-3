@@ -61,7 +61,6 @@ from lp.soyuz.interfaces.queue import (
     NonBuildableSourceUploadError, QueueBuildAcceptError,
     QueueInconsistentStateError, QueueSourceAcceptError,
     QueueStateWriteProtectedError)
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from lp.soyuz.scripts.processaccepted import (
@@ -1473,8 +1472,7 @@ class PackageUploadSource(SQLBase):
             published_sha1 = published_file.content.sha1
 
             # Multiple orig(s) with the same content are fine.
-            if source_file.filetype == (
-                SourcePackageFileType.ORIG_TARBALL):
+            if source_file.is_orig:
                 if proposed_sha1 == published_sha1:
                     continue
                 raise QueueInconsistentStateError(
