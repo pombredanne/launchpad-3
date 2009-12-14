@@ -2718,7 +2718,9 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         """Return the 10 most recently updated bugtasks for this target."""
         params = BugTaskSearchParams(
             orderby="-date_last_updated", omit_dupes=True, user=self.user)
-        return list(self.context.searchTasks(params)[:10])
+        search = self.context.searchTasks(
+            params, status=UNRESOLVED_BUGTASK_STATUSES)
+        return list(search[:10])
 
     @property
     def addquestion_url(self):
