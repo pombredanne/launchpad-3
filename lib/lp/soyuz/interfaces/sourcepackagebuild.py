@@ -18,6 +18,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipe
@@ -30,6 +31,8 @@ class ISourcePackageBuild(Interface):
     date_created = Datetime(readonly=True, required=True)
 
     distroseries = exported(Reference(IDistroSeries, required=True))
+
+    sourcepackagename = exported(Reference(ISourcePackageName))
 
     buildstate = exported(
         Choice(
@@ -56,7 +59,6 @@ class ISourcePackageBuild(Interface):
     builder = Object(
         title=_("Builder"), schema=IBuilder, required=False,
         description=_("The Builder which address this build request."))
-
 
     date_first_dispatched = exported(
         Datetime(
