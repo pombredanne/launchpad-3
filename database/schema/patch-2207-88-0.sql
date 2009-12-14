@@ -58,6 +58,7 @@ CREATE TABLE SourcePackageBuild (
 CREATE TABLE SourcePackageBuildUpload (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
+    registrant integer NOT NULL REFERENCES Person,
     source_package_build integer NOT NULL REFERENCES SourcePackageBuild,
     archive integer NOT NULL REFERENCES Archive,
     upload_log integer REFERENCES LibraryFileAlias,
