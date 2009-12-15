@@ -596,15 +596,13 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     @property
     def changes_file_url(self):
         """See `ISourcePackagePublishingHistory`."""
-        results = getUtility(IPublishingSet).getChangesFilesForSources(
-            self)
+        changes_lfa = getUtility(IPublishingSet).getChangesFileLFA(
+            self.sourcepackagerelease)
 
-        result = results.one()
-        if result is None:
+        if changes_lfa is None:
             # This should not happen in practice, but the code should
             # not blow up because of bad data.
             return None
-        source, packageupload, spr, changesfile, lfc = result
 
         # Return a webapp-proxied LibraryFileAlias so that restricted
         # librarian files are accessible.  Non-restricted files will get
@@ -614,7 +612,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         from canonical.launchpad.browser.librarian import (
             ProxiedLibraryFileAlias)
 
-        proxied_file = ProxiedLibraryFileAlias(changesfile, self.archive)
+        proxied_file = ProxiedLibraryFileAlias(changes_lfa, self.archive)
         return proxied_file.http_url
 
     def createMissingBuilds(self, architectures_available=None,
@@ -1583,6 +1581,24 @@ class PublishingSet:
 
         result_set.order_by(SourcePackagePublishingHistory.id)
         return result_set
+
+    def getChangesFileLFA(self, spr):
+        """See `IPublishingSet`."""
+        # Import PackageUpload locally to avoid circular imports, since
+        # PackageUpload uses {Secure}SourcePackagePublishingHistory.
+        from lp.soyuz.model.queue import PackageUpload
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            LibraryFileAlias,
+            LibraryFileAlias.id == PackageUpload.changesfileID,
+            PackageUpload.status == PackageUploadStatus.DONE,
+            PackageUpload.distroseriesID == spr.upload_distroseriesID,
+            PackageUpload.archiveID == spr.upload_archiveID)
+
+        result_set.config(distinct=True)
+        result = result_set.one()
+        return result
 
     def getBuildStatusSummariesForSourceIdsAndArchive(self,
                                                       source_ids,

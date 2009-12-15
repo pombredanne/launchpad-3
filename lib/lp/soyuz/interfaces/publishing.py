@@ -1089,6 +1089,15 @@ class IPublishingSet(Interface):
              `SourcePackageRelease`, `LibraryFileAlias`, `LibraryFileContent`)
         """
 
+    def getChangesFileLFA(spr):
+        """The changes file for the given `SourcePackageRelease`.
+
+        :param spr: the `SourcePackageRelease` for which to return the
+            changes file `LibraryFileAlias`.
+
+        :return: an `LibraryFileAlias` instance or None
+        """
+
     def requestDeletion(sources, removed_by, removal_comment=None):
         """Delete the source and binary publications specified.
 
