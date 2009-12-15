@@ -110,7 +110,7 @@ be able to suspend spam accounts.
 The +reviewaccount page does not display account information for registry
 experts.
 
-    >>> content = find_main_content(admin_browser.contents)
+    >>> content = find_main_content(expert_browser.contents)
     >>> print content.find(id='summary')
     None
 

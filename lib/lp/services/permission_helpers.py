@@ -31,9 +31,9 @@ def is_rosetta_expert(user):
 
 
 def is_registry_expert(user):
-    """Check if the user is a Rosetta expert."""
+    """Check if the user is a Registry expert."""
     celebrities = getUtility(ILaunchpadCelebrities)
-    return user.inTeam(celebrities.rosetta_experts)
+    return user.inTeam(celebrities.registry_experts)
 
 
 def is_admin_or_rosetta_expert(user):
