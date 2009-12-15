@@ -6,6 +6,9 @@
 __metaclass__ = type
 __all__ = []
 
+from lp import codehosting # ensure plugins are loaded
+
+from bzrlib.plugins.builder.recipe import RecipeParser
 
 from storm.locals import Int, Reference, Storm, Unicode
 
@@ -47,11 +50,13 @@ class SourcePackageRecipe(Storm):
     def new(self, registrant, owner, distroseries, sourcepackagename, name,
             recipe):
         store = IMasterStore(SourcePackageRecipe)
-        recipe = SourcePackageRecipe()
-        recipe.registrant = registrant
-        recipe.owner = owner
-        recipe.distroseries = distroseries
-        recipe.sourcepackagename = sourcepackagename
-        recipe.name = name
-        store.add(recipe)
-        return recipe
+        sprecipe = SourcePackageRecipe()
+        sprecipe.registrant = registrant
+        sprecipe.owner = owner
+        sprecipe.distroseries = distroseries
+        sprecipe.sourcepackagename = sourcepackagename
+        sprecipe.name = name
+        parser = RecipeParser(recipe)
+        parser.parse()
+        store.add(sprecipe)
+        return sprecipe
