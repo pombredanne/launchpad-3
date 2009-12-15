@@ -38,11 +38,9 @@ class BaseSeriesLanguageView(LaunchpadView):
     label = "Translatable templates"
     series = None
     parent = None
-    translationgroup = None
 
     def initialize(self, series, translationgroup):
         self.series = series
-        self.translationgroup = translationgroup
         self.form = self.request.form
 
         self.batchnav = BatchNavigator(
@@ -58,7 +56,10 @@ class BaseSeriesLanguageView(LaunchpadView):
 
         Return None if there's no translation group for them.
         """
-        return self.translationgroup
+        if (self.context.distroseries):
+            return self.context.distroseries.distribution.translationgroup
+        else:
+            return self.context.productseries.product.translationgroup
 
     @cachedproperty
     def translation_team(self):
@@ -134,25 +135,21 @@ class BaseSeriesLanguageView(LaunchpadView):
             "translations.")
 
 
-class DistroSeriesLanguageView(BaseSeriesLanguageView, LaunchpadView):
+class DistroSeriesLanguageView(BaseSeriesLanguageView):
     """View class to render translation status for an `IDistroSeries`."""
 
     def initialize(self):
-        series = self.context.distroseries
         super(DistroSeriesLanguageView, self).initialize(
-            series=series,
-            translationgroup=series.distribution.translationgroup)
+            series=self.context.distroseries)
         self.parent = self.series.distribution
 
 
-class ProductSeriesLanguageView(BaseSeriesLanguageView, LaunchpadView):
+class ProductSeriesLanguageView(BaseSeriesLanguageView):
     """View class to render translation status for an `IProductSeries`."""
 
     def initialize(self):
-        series = self.context.productseries
         super(ProductSeriesLanguageView, self).initialize(
-            series=series,
-            translationgroup=series.product.translationgroup)
+            series=self.context.productseries)
         self.context.recalculateCounts()
         self.parent = self.series.product
 
