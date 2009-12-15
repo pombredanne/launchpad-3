@@ -40,6 +40,8 @@ def main():
 
     totals = set()
     for referring_table, referring_column in sorted(references):
+        if referring_table == 'libraryfiledownloadcount':
+            continue
         quoted_referring_table = quoteIdentifier(referring_table)
         quoted_referring_column = quoteIdentifier(referring_column)
         cur.execute("""
