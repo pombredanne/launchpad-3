@@ -174,6 +174,10 @@ class TeamMembershipEditView:
             return 'checked'
         return None
 
+    def canChangeStatusSilently(self):
+        """Return True if the logged in user is a Launchpad administrator."""
+        return self.context.canChangeStatusSilently(self.user)
+
     def canChangeExpirationDate(self):
         """Return True if the logged in user can change the expiration date of
         this membership.

@@ -165,6 +165,14 @@ class TeamMembership(SQLBase):
                 template % replacements, force_wrap=True)
             simple_sendmail(from_addr, address, subject, msg)
 
+    def canChangeStatusSilently(self, user):
+        """Ensure that the user is in the Launchpad Administrators group before
+           silently making changes to their membership status."""
+        if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
+            return True
+        else:
+            return False
+
     def canChangeExpirationDate(self, person):
         """See `ITeamMembership`."""
         person_is_admin = self.team in person.getAdministratedTeams()
