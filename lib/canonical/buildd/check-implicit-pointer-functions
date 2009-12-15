@@ -51,9 +51,18 @@ last_implicit_filename = ""
 last_implicit_linenum = -1
 last_implicit_func = ""
 
+errlist = ""
+
+in_line = False
+if len(sys.argv) > 1 and sys.argv[1] == '--inline':
+    in_line = True
+
 rv = 0
 while True:
     line = sys.stdin.readline()
+    if in_line:
+	sys.stdout.write(line)
+	sys.stdout.flush()
     if line == '':
         break
     m = implicit_pattern.match(line)
@@ -68,12 +77,16 @@ while True:
             pointer_linenum = int(m.group(2))
             if (last_implicit_filename == pointer_filename
                 and last_implicit_linenum == pointer_linenum):
-                print "Function `%s' implicitly converted to pointer at " \
+                err = "Function `%s' implicitly converted to pointer at " \
                       "%s:%d" % (last_implicit_func, last_implicit_filename,
                                  last_implicit_linenum)
+		errlist += err+"\n"
+		print err
 		rv=1
 
 if rv:
+    if in_line:
+	print errlist
     print """
 
 Our automated build log filter detected the problem(s) above that will
