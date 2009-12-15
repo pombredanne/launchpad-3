@@ -88,7 +88,8 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         bug_watch_2 = self.factory.makeBugWatch(
             remote_bug=2, bugtracker=gnome_bugzilla)
 
-        # Calling this method shouldn't raise a KeyError.
+        # Calling this method shouldn't raise a KeyError, even though
+        # there's no bug 2 on the bug tracker that we pass to it.
         self.updater._getExternalBugTrackersAndWatches(
             gnome_bugzilla, [bug_watch_1, bug_watch_2])
 
