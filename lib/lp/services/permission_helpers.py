@@ -6,8 +6,11 @@
 __metaclass__ = type
 
 __all__ = [
+    'is_admin',
     'is_admin_or_registry_expert',
     'is_admin_or_rosetta_expert',
+    'is_registry_expert',
+    'is_rosetta_expert',
     ]
 
 from zope.component import getUtility
@@ -15,15 +18,29 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 
 
+def is_admin(user):
+    """Check if the user is a Launchpad admin."""
+    celebrities = getUtility(ILaunchpadCelebrities)
+    return user.inTeam(celebrities.admin)
+
+
+def is_rosetta_expert(user):
+    """Check if the user is a Rosetta expert."""
+    celebrities = getUtility(ILaunchpadCelebrities)
+    return user.inTeam(celebrities.rosetta_experts)
+
+
+def is_registry_expert(user):
+    """Check if the user is a Rosetta expert."""
+    celebrities = getUtility(ILaunchpadCelebrities)
+    return user.inTeam(celebrities.rosetta_experts)
+
+
 def is_admin_or_rosetta_expert(user):
     """Check if the user is a Launchpad admin or a Rosetta expert."""
-    celebrities = getUtility(ILaunchpadCelebrities)
-    return (user.inTeam(celebrities.admin) or
-            user.inTeam(celebrities.rosetta_experts))
+    return is_admin(user) or is_rosetta_expert(user)
 
 
 def is_admin_or_registry_expert(user):
     """Check if the user is a Launchpad admin or a registry expert."""
-    celebrities = getUtility(ILaunchpadCelebrities)
-    return (user.inTeam(celebrities.admin) or
-            user.inTeam(celebrities.registry_experts))
+    return is_admin(user) or is_registry_expert(user)
