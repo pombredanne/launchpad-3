@@ -1177,10 +1177,31 @@ class WebServicePublication(WebServicePublicationMixin,
         form = get_oauth_authorization(request)
 
         consumer_key = form.get('oauth_consumer_key')
-        consumer = getUtility(IOAuthConsumerSet).getByKey(consumer_key)
-        if consumer is None:
-            raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        consumers = getUtility(IOAuthConsumerSet)
+        consumer = consumers.getByKey(consumer_key)
         token_key = form.get('oauth_token')
+        anonymous_request = (token_key == '')
+        if consumer is None:
+            if anonymous_request:
+                # This is the first time anyone has tried to make an
+                # anonymous request using this consumer
+                # name. Dynamically create the consumer.
+                consumer = consumers.new(consumer_key, '')
+            else:
+                # An unknown consumer can never make a non-anonymous
+                # request, because access tokens are registered with a
+                # specific, known consumer.
+                raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        if anonymous_request:
+            # Skip the OAuth verification step and let the user access the
+            # web service as an unauthenticated user.
+            #
+            # XXX leonardr 2009-12-15 bug=496964: Ideally we'd be
+            # auto-creating a token for the anonymous user the first
+            # time, passing it through the OAuth verification step,
+            # and using it on all subsequent anonymous requests.
+            auth_utility = getUtility(IPlacelessAuthUtility)
+            return auth_utility.unauthenticatedPrincipal()
         token = consumer.getAccessToken(token_key)
         if token is None:
             raise Unauthorized('Unknown access token (%s).' % token_key)

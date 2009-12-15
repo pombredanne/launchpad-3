@@ -20,7 +20,8 @@ import unittest
 from BeautifulSoup import (
     BeautifulSoup, CData, Comment, Declaration, NavigableString, PageElement,
     ProcessingInstruction, SoupStrainer, Tag)
-from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
+from contrib.oauth import (
+    OAuthConsumer, OAuthRequest, OAuthSignatureMethod_PLAINTEXT, OAuthToken)
 from urlparse import urljoin
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
@@ -95,10 +96,15 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
         """
         if oauth_consumer_key is not None and oauth_access_key is not None:
             login(ANONYMOUS)
-            self.consumer = getUtility(IOAuthConsumerSet).getByKey(
-                oauth_consumer_key)
-            self.access_token = self.consumer.getAccessToken(
-                oauth_access_key)
+            consumers = getUtility(IOAuthConsumerSet)
+            self.consumer = consumers.getByKey(oauth_consumer_key)
+            if self.consumer is None:
+                # Set up for anonymous access
+                self.consumer = OAuthConsumer(oauth_consumer_key, '')
+                self.access_token = OAuthToken('', '')
+            else:
+                self.access_token = self.consumer.getAccessToken(
+                    oauth_access_key)
             logout()
         else:
             self.consumer = None
@@ -653,6 +659,8 @@ def setUpGlobs(test):
         'foobar123451432', 'salgado-read-nonprivate')
     test.globs['user_webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', 'nopriv-read-nonprivate')
+    test.globs['anon_webservice'] = LaunchpadWebServiceCaller(
+        'anonymous-access', '')
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()

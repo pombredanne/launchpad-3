@@ -56,6 +56,39 @@ web service:
     HTTP/1.1 404 Not Found
     ...
 
+== Anonymous requests ==
+
+A properly signed web service request whose OAuth token key is empty
+is treated as an anonymous request.
+
+    >>> root = 'http://api.launchpad.dev/beta'
+    >>> body = anon_webservice.get(root).jsonBody()
+    >>> print body['projects_collection_link']
+    http://api.launchpad.dev/beta/projects
+    >>> print body['me_link']
+    http://api.launchpad.dev/beta/people/+me
+
+Anonymous requests can't access certain data:
+
+    >>> response = anon_webservice.get(body['me_link'])
+    >>> print response.getheader('status')
+    401 Unauthorized
+    >>> print response.body
+    You need to be logged in to view this URL.
+    ...
+
+Anonymous requests can't change the dataset.
+
+    >>> import simplejson
+    >>> data = simplejson.dumps({'display_name' : "This won't work"})
+    >>> response = anon_webservice.patch(root + "/~salgado",
+    ...     'application/json', data)
+    >>> print response.getheader('status')
+    401 Unauthorized
+    >>> print response.body
+    ...
+    Unauthorized: (<Person at...>, 'displayname', 'launchpad.Edit')
+    ...
 
 == API Requests to other hosts ==
 
