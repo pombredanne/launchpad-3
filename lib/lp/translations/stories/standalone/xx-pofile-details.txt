@@ -133,7 +133,7 @@ Merged accounts
 On the overview page of each translation pofile, users will not see merged 
 accounts.
 
-A new account and a merged account is created for showing this behavior.
+We'll create two new accounts to demonstrate this.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
