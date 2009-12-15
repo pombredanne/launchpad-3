@@ -1586,7 +1586,7 @@ class PublishingSet:
         """See `IPublishingSet`."""
         # Import PackageUpload locally to avoid circular imports, since
         # PackageUpload uses {Secure}SourcePackagePublishingHistory.
-        from lp.soyuz.model.queue import PackageUpload
+        from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         result_set = store.find(
@@ -1594,11 +1594,10 @@ class PublishingSet:
             LibraryFileAlias.id == PackageUpload.changesfileID,
             PackageUpload.status == PackageUploadStatus.DONE,
             PackageUpload.distroseriesID == spr.upload_distroseriesID,
-            PackageUpload.archiveID == spr.upload_archiveID)
-
-        result_set.config(distinct=True)
-        result = result_set.one()
-        return result
+            PackageUpload.archiveID == spr.upload_archiveID,
+            PackageUpload.id == PackageUploadSource.packageuploadID,
+            PackageUploadSource.sourcepackagereleaseID == spr.id)
+        return result_set.one()
 
     def getBuildStatusSummariesForSourceIdsAndArchive(self,
                                                       source_ids,
