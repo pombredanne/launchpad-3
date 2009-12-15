@@ -899,4 +899,11 @@
         factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
         permission="zope.Public" />
 
+    <!-- SourcePackageRecipe -->
+    <securedutility
+       component="lp.soyuz.model.sourcepackagerecipe.SourcePackageRecipe"
+       provides="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource">
+      <allow interface="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource"/>
+    </securedutility>
+
 </configure>
