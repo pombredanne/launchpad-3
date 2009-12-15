@@ -38,7 +38,7 @@ case "$1" in
 	    cp  /usr/share/launchpad-buildd/sbuildrc \
 		/home/${USER}/sbuildrc.tmp
 	    cd /home/${USER}
-	    sed -e's/@ARCHTAG@/'$(dpkg --print-installation-architecture)'/g' \
+	    sed -e's/@ARCHTAG@/'$(dpkg --print-architecture)'/g' \
 		-e's/@FQDN@/'$(hostname --fqdn)'/g' \
 		<sbuildrc.tmp > .sbuildrc
 	    chown $USER:buildd .sbuildrc

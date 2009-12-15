@@ -1,4 +1,4 @@
-launchpad-buildd (53) hardy-cat; urgency=low
+launchpad-buildd (54) hardy-cat; urgency=low
 
   [ William Grant ]
   * debian.py: Tell sbuild to build debug symbols if the
@@ -11,7 +11,7 @@ launchpad-buildd (53) hardy-cat; urgency=low
   * create filecache-default/ccache directories in init.d as well as postinst
   * sbuild: run dpkg-source inside the chroot.  LP#476036
   * sbuild: change the regexp for dpkg-source extraction to handle both karmic and pre-karmic dpkg.  LP#476036
-  * sbuild: use --print-architecture instead of --print-installation-architecture
+  * use --print-architecture instead of --print-installation-architecture
   * mount-chroot: copy hosts et al into chroot. LP#447919
   * provide and call check-implicit-function-pointers.
 

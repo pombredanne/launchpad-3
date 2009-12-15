@@ -30,7 +30,7 @@ fi
 
 cd "$HOME/build-$BUILDID"
 
-hostarch=$(dpkg --print-installation-architecture)
+hostarch=$(dpkg --print-architecture)
 architecturetag=$hostarch
 
 if [ -f /etc/launchpad-buildd/default ]; then
