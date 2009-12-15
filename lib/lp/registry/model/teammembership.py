@@ -360,7 +360,8 @@ class TeamMembership(SQLBase):
         if self.person == self.last_changed_by and self.status == proposed:
             return
 
-        if not silent: self._sendStatusChangeNotification(old_status)
+        if not silent:
+            self._sendStatusChangeNotification(old_status)
 
     def _sendStatusChangeNotification(self, old_status):
         """Send a status change notification to all team admins and the
