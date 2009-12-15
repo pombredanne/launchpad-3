@@ -53,7 +53,7 @@ from lp.services.worlddata.interfaces.country import ICountry
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.browser import StatusCount
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from lp.translations.interfaces.potemplate import IPOTemplateSet

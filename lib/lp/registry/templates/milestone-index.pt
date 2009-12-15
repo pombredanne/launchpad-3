@@ -53,12 +53,12 @@
                   tal:condition="view/milestone/series_target" /></dd>
               </dl>
 
-              <dl>
+              <dl id="version">
                 <dt>Version:</dt>
                 <dd><tal:version replace="context/name" /></dd>
               </dl>
 
-              <dl>
+              <dl id="code-name">
                 <dt>Code name:</dt>
                 <dd>
                   <tal:code-name replace="view/milestone/code_name" />

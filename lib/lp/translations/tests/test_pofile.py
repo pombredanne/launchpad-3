@@ -20,7 +20,7 @@ from lp.translations.interfaces.translationmessage import (
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.testing import TestCaseWithFactory, verifyObject
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from canonical.launchpad.webapp.publisher import canonical_url
 
 
@@ -1210,7 +1210,7 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 class TestPOFileSet(TestCaseWithFactory):
     """Test PO file set methods."""
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         # Create a POFileSet to work with.
@@ -1446,6 +1446,49 @@ class TestPOFileSet(TestCaseWithFactory):
             all_pofiles,
             list_of_tuples_into_list(
                 self.pofileset.getPOFilesWithTranslationCredits()))
+
+    def test_getPOFilesWithTranslationCredits_untranslated(self):
+        # We need absolute DB access to be able to remove a translation
+        # message.
+        LaunchpadZopelessLayer.switchDbUser('postgres')
+
+        # Initially, we only get data from the sampledata, all of which
+        # are untranslated.
+        sampledata_pofiles = list(
+            self.pofileset.getPOFilesWithTranslationCredits(
+                untranslated=True))
+        total = len(sampledata_pofiles)
+        self.assertEquals(3, total)
+
+        # All POFiles with translation credits messages are
+        # returned along with relevant POTMsgSets.
+        potemplate1 = self.factory.makePOTemplate()
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            potemplate1, singular=u'translator-credits', sequence=1)
+
+        sr_pofile = self.factory.makePOFile('sr', potemplate=potemplate1)
+        pofiles_with_credits = (
+            self.pofileset.getPOFilesWithTranslationCredits(
+                untranslated=True))
+        self.assertNotIn((sr_pofile, credits_potmsgset),
+                         list(pofiles_with_credits))
+        self.assertEquals(
+            total,
+            pofiles_with_credits.count())
+
+        # Removing a translation for this message, removes it
+        # from a result set when untranslated=True is passed in.
+        message = credits_potmsgset.getSharedTranslationMessage(
+            sr_pofile.language)
+        message.destroySelf()
+        pofiles_with_credits = (
+            self.pofileset.getPOFilesWithTranslationCredits(
+                untranslated=True))
+        self.assertIn((sr_pofile, credits_potmsgset),
+                      list(pofiles_with_credits))
+        self.assertEquals(
+            total + 1,
+            pofiles_with_credits.count())
 
 
 class TestPOFileStatistics(TestCaseWithFactory):
