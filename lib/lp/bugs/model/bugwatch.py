@@ -29,6 +29,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.message import Message
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import urlappend, urlsplit
@@ -80,7 +81,8 @@ class BugWatch(SQLBase):
     @property
     def bugtasks(self):
         tasks = Store.of(self).find(BugTask, BugTask.bugwatch == self.id)
-        return list(tasks.order_by(Desc(BugTask.datecreated)))
+        tasks = tasks.order_by(Desc(BugTask.datecreated))
+        return shortlist(tasks, 10, 100)
 
     @property
     def title(self):
