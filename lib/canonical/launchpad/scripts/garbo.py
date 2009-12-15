@@ -32,6 +32,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.model.bugnotification import BugNotification
 from lp.code.interfaces.revision import IRevisionSet
+from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
 from lp.registry.model.mailinglist import MailingListSubscription
@@ -657,6 +658,26 @@ class BugNotificationPruner(TunableLoop):
         self.log.debug("Removed %d rows" % num_removed)
 
 
+class JobPruner(TunableLoop):
+    """Prune `BranchJob`s that are in a final state and older than a month old.
+
+    When a BranchJob is completed, it gets set to a final state.  These jobs
+    should be pruned from the database after a month.
+    """
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(JobPruner, self).__init__(log, abort_time)
+        self.job_store = IMasterStore(BranchJob)
+
+    def isDone(self):
+        return True
+
+    def __call__(self, chunk_size):
+        chunk_size = int(chunk_size)
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -760,6 +781,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         MailingListSubscriptionPruner,
         PersonEmailAddressLinkChecker,
         BugNotificationPruner,
+        JobPruner,
         ]
     experimental_tunable_loops = [
         PersonPruner,

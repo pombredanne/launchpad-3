@@ -510,6 +510,10 @@ class TestGarbo(TestCaseWithFactory):
             "'mark@example.com' and 'mark' reference different Accounts")
         self.assertNotEqual(log_output.find(error_message_2), -1)
 
+    def test_JobPruner(self):
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
