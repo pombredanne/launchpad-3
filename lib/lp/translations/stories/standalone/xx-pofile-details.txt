@@ -1,3 +1,6 @@
+POFile Details Page
+===================
+
 Each translation file has an overview page which shows the list of
 contributors.
 
@@ -103,7 +106,9 @@ A POTMsgSet sequence number is also a link to edit a translation.
     >>> print anon_browser.title
     Browsing Spanish translation...
 
-== Invalid input ==
+
+Invalid input
+-------------
 
 Manually filtering by non-existent user warns the user of the problem.
 
@@ -121,3 +126,47 @@ If a person to filter by is not specified, user is notified of that.
     [u'No person to filter by specified.',
     u'This person has made no contributions to this file.']
 
+
+Merged accounts
+---------------
+
+On the overview page of each translation file users will not see merged 
+accounts.
+
+A new account and a merged account is created for showing this behaviour.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+
+    >>> login("admin@canonical.com")
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> translator = factory.makePerson(displayname="Poly Glot")
+    >>> merged_translator = factory.makePerson(displayname="Mere Pere")
+    >>> package = factory.makeSourcePackage(distroseries=hoary)
+    >>> template = factory.makePOTemplate(
+    ...     distroseries=hoary,
+    ...     sourcepackagename=package.sourcepackagename, name='first')
+    >>> language_code = 'es'
+    >>> pofile = factory.makePOFile(language_code, potemplate=template)
+    >>> potmsgset = factory.makePOTMsgSet(template)
+    >>> potmsgset.setSequence(template, 1)
+    >>> translation = factory.makeTranslationMessage(pofile=pofile,
+    ...     translator=merged_translator, potmsgset=potmsgset)
+    >>> potmsgset.setSequence(template, 2)
+    >>> translation = factory.makeTranslationMessage(pofile=pofile,
+    ...     translator=translator, potmsgset=potmsgset)
+    >>> merged_translator.merged = translator
+    >>> logout()
+
+    >>> browser.open(
+    ...     ("http://translations.launchpad.dev/"
+    ...     "ubuntu/hoary/+source/%s/+pots/%s/%s/+details") % (
+    ...     package.name, template.name, language_code))
+    >>> print extract_text(find_main_content(browser.contents))
+    Details for ...
+    Contributors to this translation
+    The following people have made some contribution to this specific
+    translation:
+    Poly Glot (filter)
