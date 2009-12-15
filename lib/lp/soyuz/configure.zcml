@@ -900,6 +900,10 @@
         permission="zope.Public" />
 
     <!-- SourcePackageRecipe -->
+    <class
+       class="lp.soyuz.model.sourcepackagerecipe.SourcePackageRecipe">
+      <allow interface="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
+    </class>
     <securedutility
        component="lp.soyuz.model.sourcepackagerecipe.SourcePackageRecipe"
        provides="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource">

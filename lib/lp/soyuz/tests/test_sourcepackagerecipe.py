@@ -26,8 +26,8 @@ class TestSourcePackageRecipeCreation(TestCaseWithFactory):
         owner = self.factory.makeTeam(owner=registrant)
         distroseries = self.factory.makeDistroSeries()
         sourcepackagename = self.factory.makeSourcePackageName()
-        name = self.factory.getUniqueString()
-        recipe_text = '#'
+        name = self.factory.getUniqueString(u'recipe-name')
+        recipe_text = u'#'
         recipe = getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=distroseries,
             sourcepackagename=sourcepackagename, name=name,
