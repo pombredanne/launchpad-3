@@ -864,6 +864,9 @@ class FileBugInlineFormView(FileBugViewBase):
     """A browser view for displaying the inline filebug form."""
     schema = IBugAddForm
 
+    # We never redirect the inline filebug form.
+    no_ubuntu_redirect = True
+
 
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
@@ -884,6 +887,9 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
     of a page.
     """
     schema = IBugAddForm
+
+    # We never redirect the show similar bugs view.
+    no_ubuntu_redirect = True
 
     # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
     # hack to make the action decorator Just Work across inheritance.
