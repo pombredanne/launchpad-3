@@ -57,22 +57,18 @@ RET=$?
 STATE=$(cat build-progress | awk '{print $2}')
 STEP=$(cat build-progress | awk '{print $3}')
 
-# checking functions may result in a successful build that isn't actually
-# successful
-## If the build was successful; return 0
-#[ "$STATE" = "successful" ] && exit 0
+# If the build was successful; return 0
+[ "$STATE" = "successful" ] && exit 0
 
-if [ "$STATE" = "failed" ]; then
-    # If we think it's a dep-wait problem, exit 1
-    [ "$STEP" = "install-deps" ] && exit 1
+# If we think it's a dep-wait problem, exit 1
+[ "$STEP" = "install-deps" ] && exit 1
 
-    # Is this a state where auto-give-back should kick in; exit 2
-    [ "$STEP" = "find-dsc" ] && exit 2
-    [ "$STEP" = "fetch-src" ] && exit 2
-    [ "$STEP" = "unpack-check" ] && exit 2
-    [ "$STEP" = "check-space" ] && exit 2
-    [ "$STEP" = "install-deps-env" ] && exit 2
-fi
+# Is this a state where auto-give-back should kick in; exit 2
+[ "$STEP" = "find-dsc" ] && exit 2
+[ "$STEP" = "fetch-src" ] && exit 2
+[ "$STEP" = "unpack-check" ] && exit 2
+[ "$STEP" = "check-space" ] && exit 2
+[ "$STEP" = "install-deps-env" ] && exit 2
 
 # Any other reason (which we'll treat as a build failure), exit 3
 exit 3

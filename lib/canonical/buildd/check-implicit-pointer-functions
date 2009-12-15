@@ -82,7 +82,7 @@ while True:
                                  last_implicit_linenum)
 		errlist += err+"\n"
 		print err
-		rv=1
+		rv = 3
 
 if rv:
     if in_line:
