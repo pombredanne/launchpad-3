@@ -108,7 +108,7 @@
       </td>
     </tr>
     <tr>
-      <td colspan="2" style="padding: 3px 3em 0px 0px;">
+      <td style="padding: 3px 3em 0px 0px;">
         <div id="recently-approved"
              tal:attributes="style view/recently_approved_hidden">
           <h3 style="color:black; font-weight:bold; margin: 0px">
