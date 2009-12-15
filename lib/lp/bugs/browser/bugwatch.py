@@ -19,7 +19,6 @@ from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.browser.bugcomment import (
     should_display_remote_comments)
 from canonical.launchpad.fields import URIField
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bug import IBugWatch
 from lp.bugs.interfaces.bugwatch import (
@@ -54,7 +53,6 @@ class BugWatchView(LaunchpadView):
         team, no comments will be returned.
         """
         user = getUtility(ILaunchBag).user
-        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
         if not should_display_remote_comments(user):
             return []
 
