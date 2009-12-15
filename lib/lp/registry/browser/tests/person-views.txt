@@ -9,8 +9,8 @@ Probationary and invalid users
 
 The person +index view provides the is_probationary_or_invalid_user so that
 page features can be disabled because the user may abuse them. Active
-users with karma are not on probation. The user's homepage_content formatted
-as HTML
+users with karma are not on probation; the user's homepage_content is
+formatted as HTML.
 
     >>> from lp.registry.interfaces.person import IPersonSet
 

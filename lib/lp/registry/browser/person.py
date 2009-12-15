@@ -2669,7 +2669,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
 
         Some content should not be rendered when the context is not a an
         established user. For example, probationary and invalid user pages
-        not not be indexed by search engines and their narrative linkified.
+        must not be indexed by search engines and their narrative linkified.
         """
         user = self.context
         if user.isTeam():
