@@ -181,6 +181,8 @@
             tal:attributes="src string:${lp_js}/lp/comment.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/errors.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/team.js"></script>
 
   </tal:devmode>
   <tal:production condition="not:devmode">
