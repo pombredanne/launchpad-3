@@ -1095,7 +1095,7 @@ class IPublishingSet(Interface):
         :param spr: the `SourcePackageRelease` for which to return the
             changes file `LibraryFileAlias`.
 
-        :return: an `LibraryFileAlias` instance or None
+        :return: a `LibraryFileAlias` instance or None
         """
 
     def requestDeletion(sources, removed_by, removal_comment=None):

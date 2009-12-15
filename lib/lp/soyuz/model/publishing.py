@@ -1584,8 +1584,8 @@ class PublishingSet:
 
     def getChangesFileLFA(self, spr):
         """See `IPublishingSet`."""
-        # Import PackageUpload locally to avoid circular imports, since
-        # PackageUpload uses {Secure}SourcePackagePublishingHistory.
+        # Import PackageUpload and PackageUploadSource locally to avoid
+        # circular imports.
         from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
