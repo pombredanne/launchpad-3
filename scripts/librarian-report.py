@@ -10,14 +10,21 @@ __all__ = []
 
 import _pythonpath
 
+from optparse import OptionParser
 import sys
 
 from canonical.database.sqlbase import connect, quoteIdentifier
 from canonical.database.postgresql import listReferences
+from canonical.launchpad.scripts import db_options
 
 
 def main():
-    con = connect('')
+    parser = OptionParser()
+    db_options(parser)
+    options, args = parser.parse_args()
+    if len(args) > 0:
+        parser.error("Too many command line arguments.")
+    con = connect(options.dbuser)
     cur = con.cursor()
 
     # Collect direct references to the LibraryFileAlias table.
@@ -45,7 +52,6 @@ def main():
                 FROM LibraryFileContent AS LFC, LibraryFileAlias AS LFA, %s
                 WHERE LFC.id = LFA.content
                     AND LFA.id = %s.%s
-                    AND LFC.deleted IS FALSE
                     AND (
                         LFA.expires IS NULL
                         OR LFA.expires > CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
