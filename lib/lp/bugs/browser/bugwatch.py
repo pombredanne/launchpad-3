@@ -121,7 +121,7 @@ class BugWatchEditView(LaunchpadFormView):
 
     def bugWatchIsUnlinked(self, action):
         """Return whether the bug watch is unlinked."""
-        return self.context.bugtasks.count() == 0
+        return len(self.context.bugtasks) == 0
 
     @action('Delete Bug Watch', name='delete', condition=bugWatchIsUnlinked)
     def delete_action(self, action, data):

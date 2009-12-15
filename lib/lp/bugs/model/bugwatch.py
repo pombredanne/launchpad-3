@@ -15,34 +15,35 @@ from zope.interface import implements, providedBy
 from zope.component import getUtility
 
 # SQL imports
-from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
-    SQLMultipleJoin)
+from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
 
-from storm.expr import Not
+from storm.expr import Desc, Not
 from storm.store import Store
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from lazr.lifecycle.snapshot import Snapshot
 from lazr.uri import find_uris_in_text
 
-from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-
-from lp.bugs.model.bugmessage import BugMessage
-from lp.bugs.model.bugset import BugSetBase
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.validators.email import valid_email
+from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.interfaces import NotFoundError
+
 from lp.bugs.interfaces.bug import IBugWatch
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     BugWatchErrorType, IBugWatchSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL)
-from canonical.launchpad.validators.email import valid_email
+from lp.bugs.model.bugmessage import BugMessage
+from lp.bugs.model.bugset import BugSetBase
+from lp.bugs.model.bugtask import BugTask
 from lp.registry.interfaces.person import validate_public_person
-from canonical.launchpad.webapp import urlappend, urlsplit
+
 
 BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
@@ -76,9 +77,10 @@ class BugWatch(SQLBase):
         dbName='owner', foreignKey='Person',
         storm_validator=validate_public_person, notNull=True)
 
-    # useful joins
-    bugtasks = SQLMultipleJoin('BugTask', joinColumn='bugwatch',
-        orderBy=['-datecreated'])
+    @property
+    def bugtasks(self):
+        tasks = Store.of(self).find(BugTask, BugTask.bugwatch == self.id)
+        return list(tasks.order_by(Desc(BugTask.datecreated)))
 
     @property
     def title(self):
@@ -162,7 +164,7 @@ class BugWatch(SQLBase):
 
     def destroySelf(self):
         """See `IBugWatch`."""
-        assert self.bugtasks.count() == 0, "Can't delete linked bug watches"
+        assert len(self.bugtasks) == 0, "Can't delete linked bug watches"
         SQLBase.destroySelf(self)
 
     def getLastErrorMessage(self):
