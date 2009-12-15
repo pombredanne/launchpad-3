@@ -100,7 +100,7 @@ class TestOfficialBugTags(TestCaseWithFactory):
             validator=another_new_tag)
 
     # Tags with dots in them are OK, but the IDs of the elements representing
-    # them gets manglex.
+    # them gets mangled.
 
         tag_with_dot = 'tag-with.dot'
         client.type(text=tag_with_dot, id=u'new-tag-text')
