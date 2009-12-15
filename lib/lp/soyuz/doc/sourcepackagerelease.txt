@@ -339,7 +339,7 @@ Another common scenario is that once the package is unembargoed from the
 private PPA, it gets deleted from that private PPA.  At this point the
 package is still public:
 
-    >>> unused = private_publication.requestDeletion(cprov)
+    >>> private_publication.requestDeletion(cprov)
     >>> transaction.commit()
     >>> login('no-priv@canonical.com')
     >>> check_permission('launchpad.View', test_sourcepackagerelease)
