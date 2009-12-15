@@ -2678,12 +2678,29 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             orderBy='-TeamMembership.date_proposed')
         return members[:5]
 
-    @cachedproperty
-    def has_recent_approved_or_proposed_members(self):
-        """Does the team have recently approved or proposed members?"""
-        approved = self.recently_approved_members.count() > 0
-        proposed = self.recently_proposed_members.count() > 0
-        return approved or proposed
+    @property
+    def recently_approved_hidden(self):
+        """Optionally hide the div.
+
+        The AJAX on the page needs the elements to be present
+        but hidden in case it adds a member to the list.
+        """
+        if self.recently_approved_members.count() == 0:
+            return 'visibility: collapse'
+        else:
+            return ''
+
+    @property
+    def recently_proposed_hidden(self):
+        """Optionally hide the div.
+
+        The AJAX on the page needs the elements to be present
+        but hidden in case it adds a member to the list.
+        """
+        if self.recently_proposed_members.count() == 0:
+            return 'visibility: collapse'
+        else:
+            return ''
 
     @cachedproperty
     def openpolls(self):

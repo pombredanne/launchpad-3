@@ -92,8 +92,7 @@
   <tal:can-view
     condition="context/@@+restricted-membership/userCanViewMembership"
     define="overview_menu context/menu:overview">
-  <table style="margin: 0px 0px .5em 0px;"
-    tal:condition="view/has_recent_approved_or_proposed_members">
+  <table style="margin: 0px 0px .5em 0px;">
     <tr>
       <td style="padding: 0px 1em 1em 0px;"
           tal:define="link context/menu:overview/add_member">
@@ -109,16 +108,17 @@
       </td>
     </tr>
     <tr>
-      <td colspan="2" style="padding: 3px 3em 0px 0px;" id="recently-approved"
-        tal:condition="view/recently_approved_members">
-        <h3 style="color:black; font-weight:bold; margin: 0px">
-          Latest members
-        </h3>
-        <ul tal:condition="view/recently_approved_members"
-            id="recently-approved-ul">
-          <li tal:repeat="person view/recently_approved_members"
-              tal:content="structure person/fmt:link" />
-        </ul>
+      <td colspan="2" style="padding: 3px 3em 0px 0px;">
+        <div id="recently-approved"
+             tal:attributes="style view/recently_approved_hidden">
+          <h3 style="color:black; font-weight:bold; margin: 0px">
+            Latest members
+          </h3>
+          <ul id="recently-approved-ul">
+            <li tal:repeat="person view/recently_approved_members"
+                tal:content="structure person/fmt:link" />
+          </ul>
+        </div>
       </td>
       <td style="padding: 0px;" id="recently-applied"
         tal:condition="view/recently_proposed_members">
