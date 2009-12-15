@@ -214,7 +214,7 @@ class ITeamMembership(Interface):
         status=copy_field(status),
         comment=copy_field(reviewer_comment))
     @export_write_operation()
-    def setStatus(status, user, comment=None):
+    def setStatus(status, user, comment=None, silent=False):
         """Set the status of this membership.
 
         The user and comment are stored in last_changed_by and

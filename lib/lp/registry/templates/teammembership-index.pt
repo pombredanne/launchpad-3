@@ -140,6 +140,13 @@
 
           <metal:comment use-macro="template/macros/comment" />
 
+          <tr tal:condition="context/required:launchpad.Admin">
+              <th>Silent:</th>
+              <td>
+                <input type="checkbox" value="no" name="silent" id="silent" />
+              </td>
+          </tr>
+
           <tr>
             <th />
             <td>

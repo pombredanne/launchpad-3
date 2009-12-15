@@ -269,7 +269,7 @@ class TeamMembership(SQLBase):
             team.displayname, config.canonical.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)
 
-    def setStatus(self, status, user, comment=None):
+    def setStatus(self, status, user, comment=None, silent=False):
         """See `ITeamMembership`."""
         if status == self.status:
             return
@@ -360,7 +360,7 @@ class TeamMembership(SQLBase):
         if self.person == self.last_changed_by and self.status == proposed:
             return
 
-        self._sendStatusChangeNotification(old_status)
+        if not silent: self._sendStatusChangeNotification(old_status)
 
     def _sendStatusChangeNotification(self, old_status):
         """Send a status change notification to all team admins and the
