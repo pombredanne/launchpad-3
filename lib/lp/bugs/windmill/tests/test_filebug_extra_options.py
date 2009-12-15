@@ -39,7 +39,7 @@ class TestFilebugExtras(TestCaseWithFactory):
 
         # No duplicates were found.
         client.asserts.assertText(
-            xpath=u"//div[@class='top-portlet']//p",
+            id=u'no-similar-bugs',
             validator=u'No similar bug reports were found.')
 
         # Check out the expander.
