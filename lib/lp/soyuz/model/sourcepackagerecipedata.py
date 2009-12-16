@@ -6,17 +6,20 @@
 __metaclass__ = type
 __all__ = []
 
+from bzrlib.plugins.builder.recipe import RecipeParser
 
-from zope.interface import implements
+from storm.locals import Int, Reference, Store, Storm, Unicode
+
+from zope.component import getUtility
+
+from canonical.launchpad.interfaces.lpstorm import IStore
+
+from lp.code.model.branch import Branch
+from lp.code.interfaces.branch import IBranchSet
 
 
-from lp.soyuz.interfaces.sourcepackagerecipedata import (
-    ISourcePackageRecipeData)
 
-from storm.locals import Int, Reference, Unicode
-
-
-class _SourcePackageRecipeDataBranch:
+class _SourcePackageRecipeDataBranch(Storm):
     __storm_table__ = "SourcePackageRecipeDataBranch"
     id = Int(primary=True)
 
@@ -26,13 +29,14 @@ class _SourcePackageRecipeDataBranch:
     sourcepackagerecipedata_id = Int(
         name='sourcepackagerecipedata', allow_none=False)
     sourcepackagerecipedata = Reference(
-        sourcepackagerecipedata_id, 'SourcePackageRecipeData.id')
+        sourcepackagerecipedata_id, '_SourcePackageRecipeData.id')
+
+    def __init__(self, sprd, branch):
+        self.sourcepackagerecipedata = sprd
+        self.branch = branch
 
 
-class SourcePackageRecipeData:
-    """See `ISourcePackageRecipeData`."""
-
-    implements(ISourcePackageRecipeData)
+class _SourcePackageRecipeData(Storm):
 
     __storm_table__ = "SourcePackageRecipeData"
 
@@ -46,13 +50,21 @@ class SourcePackageRecipeData:
         # Read recipe text out, rewrite branch references.
         pass
 
-    def _set_recipe(self):
+    def _set_recipe(self, recipe):
         # Read recipe text out, rewrite branch references.
-        pass
+        base_branch = RecipeParser(recipe).parse()
+        b = getUtility(IBranchSet).getByUrl(base_branch.url)
+        _SourcePackageRecipeDataBranch(self, b)
+        self._recipe = recipe
 
     recipe = property(_get_recipe, _set_recipe)
 
+    def __init__(self, recipe):
+        self.recipe = recipe
+
     @property
     def referenced_branches(self):
-        # Easy...
-        pass
+        return IStore(self).find(
+            Branch,
+            _SourcePackageRecipeDataBranch.sourcepackagerecipedata == self,
+            Branch.id == _SourcePackageRecipeDataBranch.branch_id)

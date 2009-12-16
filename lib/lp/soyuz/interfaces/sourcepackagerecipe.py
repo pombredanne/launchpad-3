@@ -36,6 +36,8 @@ class ISourcePackageRecipe(Interface):
             constraint=name_validator,
             description=_("The name of this recipe."))
 
+    def getReferencedBranches():
+        """ XXX """
 
 class ISourcePackageRecipeSource(Interface):
     """ XXX """

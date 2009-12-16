@@ -6,23 +6,22 @@
 __metaclass__ = type
 __all__ = []
 
-from lp import codehosting # ensure plugins are loaded
-
-from bzrlib.plugins.builder.recipe import RecipeParser
-
 from storm.locals import Int, Reference, Storm, Unicode
 
-from zope.interface import implements
+from zope.interface import classImplements, implements
 
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
-from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipe
+from lp.soyuz.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipe, ISourcePackageRecipeSource)
+from lp.soyuz.model.sourcepackagerecipedata import _SourcePackageRecipeData
 
 
 class SourcePackageRecipe(Storm):
     __storm_table__ = 'SourcePackageRecipe'
     implements(ISourcePackageRecipe)
+    classImplements(ISourcePackageRecipeSource)
 
     id = Int(primary=True)
 
@@ -44,19 +43,21 @@ class SourcePackageRecipe(Storm):
     name = Unicode(allow_none=True)
 
     recipe_data_id = Int(name='recipe_data', allow_none=True)
-    recipe_data = Reference(recipe_data_id, 'SourcePackageRecipeData.id')
+    recipe_data = Reference(recipe_data_id, '_SourcePackageRecipeData.id')
+
+    def getReferencedBranches(self):
+        return self.recipe_data.referenced_branches
 
     @classmethod
     def new(self, registrant, owner, distroseries, sourcepackagename, name,
             recipe):
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
+        sprecipe.recipe_data = _SourcePackageRecipeData(recipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
         sprecipe.distroseries = distroseries
         sprecipe.sourcepackagename = sourcepackagename
         sprecipe.name = name
-        parser = RecipeParser(recipe)
-        parser.parse()
         store.add(sprecipe)
         return sprecipe
