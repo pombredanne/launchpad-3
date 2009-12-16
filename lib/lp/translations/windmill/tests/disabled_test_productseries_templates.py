@@ -8,7 +8,7 @@ __all__ = []
 
 from windmill.authoring import WindmillTestClient
 
-from canonical.launchpad.windmill.testing import constants, lpuser
+from canonical.launchpad.windmill.testing import lpuser
 from lp.translations.windmill.testing import TranslationsWindmillLayer
 from lp.testing import TestCaseWithFactory
 
@@ -60,8 +60,7 @@ class EnableActionLinksTest(TestCaseWithFactory):
         # All links are inactive to start with.
         for row_num in range(self.MAX_ROW):
             client.waits.forElement(
-                xpath=self._xpath_action_links(row_num, active=False),
-                timeout=constants.FOR_ELEMENT)
+                xpath=self._xpath_action_links(row_num, active=False))
 
         # Action links are activated when the mouse is over the row.
         for row_num in range(self.MAX_ROW):
