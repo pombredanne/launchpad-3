@@ -802,8 +802,14 @@ sense to the members of the team reading it.
 Deactivating memberships can also be done silently (no email notifications
 sent) by Launchpad Administrators.
 
-    >>> setStatus(mirror_admins_membership, TeamMembershipStatus.DEACTIVATED)
-    ...           reviewer=mark, silent=True)
+    >>> thumper = getUtility(IPersonSet).getByName('thumper')
+    >>> hwdb_admins = personset.getByName('hwdb-team')
+    >>> thumper_hwdb_membership = membershipset.getByPersonAndTeam(thumper,
+    ...     hwdb_admins)
+    >>> print thumper_hwdb_membership.status.title
+    Approved
+    >>> setStatus(thumper_hwdb_membership,
+    ...     TeamMembershipStatus.DEACTIVATED, reviewer=mark, silent=True)
     >>> len(stub.test_emails)
     0
 
