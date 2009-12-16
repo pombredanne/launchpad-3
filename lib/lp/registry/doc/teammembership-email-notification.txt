@@ -812,6 +812,8 @@ sent) by Launchpad Administrators.
     ...     TeamMembershipStatus.DEACTIVATED, reviewer=mark, silent=True)
     >>> len(stub.test_emails)
     0
+    >>> print thumper_hwdb_membership.status.title
+    Deactivated
 
 Joining a team with a mailing list
 ----------------------------------
