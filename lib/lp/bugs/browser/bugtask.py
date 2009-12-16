@@ -866,6 +866,7 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
              'summary',
              'tags',
              'visibility',
+             'affects',
              bugtask_change_re,
              ]
 
