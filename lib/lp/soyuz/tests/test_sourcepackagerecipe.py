@@ -44,10 +44,19 @@ class TestSourcePackageRecipeCreation(TestCaseWithFactory):
             (recipe.registrant, recipe.owner, recipe.distroseries,
              recipe.sourcepackagename, recipe.name))
 
-    def makeRecipeText(self, branch=None):
-        if branch is None:
-            branch = self.factory.makeAnyBranch()
-        return MINIMAL_RECIPE_TEXT % branch.bzr_identity
+    def makeRecipeText(self, *branches):
+        """Make a recipe that references `branches`.
+
+        XXX.
+        """
+        if len(branches) == 0:
+            branches = (self.factory.makeAnyBranch(),)
+        base_branch = branches[0]
+        other_branches = branches[1:]
+        text = MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
+        for i, branch in enumerate(other_branches):
+            text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
+        return text
 
     def makeRecipeWithText(self, text):
         """Make a SourcePackageRecipe with `text` and arbitrary other fields.
@@ -66,11 +75,24 @@ class TestSourcePackageRecipeCreation(TestCaseWithFactory):
         self.assertRaises(RecipeParseError, self.makeRecipeWithText, u'')
 
     def test_branch_links_created(self):
-        #
+        # When a recipe is created, we can query it for links to the branch
+        # it references.
         branch = self.factory.makeAnyBranch()
         text = self.makeRecipeText(branch)
         recipe = self.makeRecipeWithText(text)
         self.assertEquals([branch], list(recipe.getReferencedBranches()))
+
+    def test_multiple_branch_links_created(self):
+        # If a recipe links to more than one branch, getReferencedBranches()
+        # returns all of them.
+        branch1 = self.factory.makeAnyBranch()
+        branch2 = self.factory.makeAnyBranch()
+        text = self.makeRecipeText(branch1, branch2)
+        recipe = self.makeRecipeWithText(text)
+        self.assertEquals(
+            sorted([branch1, branch2]),
+            sorted(recipe.getReferencedBranches()))
+
 
 
 def test_suite():

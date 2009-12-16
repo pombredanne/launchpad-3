@@ -8,7 +8,7 @@ __all__ = []
 
 from bzrlib.plugins.builder.recipe import RecipeParser
 
-from storm.locals import Int, Reference, Store, Storm, Unicode
+from storm.locals import Int, Reference, Storm, Unicode
 
 from zope.component import getUtility
 
@@ -36,6 +36,13 @@ class _SourcePackageRecipeDataBranch(Storm):
         self.branch = branch
 
 
+def walk_branch_urls(branch):
+    yield branch.url
+    for child_branch in branch.child_branches:
+        for url in walk_branch_urls(child_branch.recipe_branch):
+            yield url
+
+
 class _SourcePackageRecipeData(Storm):
 
     __storm_table__ = "SourcePackageRecipeData"
@@ -53,8 +60,11 @@ class _SourcePackageRecipeData(Storm):
     def _set_recipe(self, recipe):
         # Read recipe text out, rewrite branch references.
         base_branch = RecipeParser(recipe).parse()
-        b = getUtility(IBranchSet).getByUrl(base_branch.url)
-        _SourcePackageRecipeDataBranch(self, b)
+        db_branches = []
+        for url in walk_branch_urls(base_branch):
+            db_branches.append(getUtility(IBranchSet).getByUrl(url))
+        for db_branch in db_branches:
+            _SourcePackageRecipeDataBranch(self, db_branch)
         self._recipe = recipe
 
     recipe = property(_get_recipe, _set_recipe)
