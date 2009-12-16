@@ -12,7 +12,6 @@ import unittest
 
 import transaction
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -1044,7 +1043,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         source.sourcepackagerelease.component = contrib
         [build] = source.getBuilds()
         [binary] = build.binarypackages
-        removeSecurityProxy(binary).component = contrib
+        binary.override(component=contrib)
         self.layer.txn.commit()
 
         # Setup and execute the delayed copy procedure. This should
@@ -1068,7 +1067,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         source.sourcepackagerelease.component = contrib
         [build] = source.getBuilds()
         [binary] = build.binarypackages
-        removeSecurityProxy(binary).component = contrib
+        binary.override(component=contrib)
         self.layer.txn.commit()
 
         # This time, we'll ensure that there is already an ancestor for
