@@ -47,35 +47,19 @@ class TestFilebugExtras(TestCaseWithFactory):
 
 
 def _test_expander(client):
-    # The collapsible area is present and collapsed.
-    collapsible_area_xpath = (
-        u"//form[@name='launchpadform']"
-        u"//fieldset[contains(.//legend,'Extra options')]")
-    closed_area_xpath = (
-        collapsible_area_xpath +
-        u"/div[@class='collapseWrapper lazr-closed']")
-    opened_area_xpath = (
-        collapsible_area_xpath +
-        u"/div[@class='collapseWrapper lazr-opened']")
-    client.asserts.assertProperty(
-        xpath=collapsible_area_xpath,
-        validator="className|collapsible")
-    client.asserts.assertNode(xpath=closed_area_xpath)
+    extra_opts_form = u"//fieldset[@id='filebug-extra-options']/div"
+    form_closed = u"%s%s" % (extra_opts_form, u"[@class='collapsed']")
+    form_opened = u"%s%s" % (extra_opts_form, u"[@class='expanded']")
 
-    # The extra options are not visible.
-    client.asserts.assertProperty(
-        xpath=closed_area_xpath,
-        validator='style.height|0px')
-    # Click on the legend and it expands.
-    client.click(
-        xpath=collapsible_area_xpath + u"/legend/a")
-    client.waits.forElement(
-        xpath=opened_area_xpath, timeout=constants.FOR_ELEMENT)
+    # The collapsible area is collapsed and doesn't display.
+    client.asserts.assertNode(xpath=form_closed)
 
-    # The extra options are visible now.
-    client.asserts.assertElemJS(
-        xpath=opened_area_xpath,
-        js='element.style.height != "0px"')
+    # Click to expand the extra options form.
+    client.click(link=u'Extra options')
+
+    # The collapsible area is expanded and does display.
+    client.asserts.assertNode(xpath=form_opened)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
