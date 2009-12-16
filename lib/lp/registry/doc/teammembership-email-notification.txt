@@ -10,7 +10,7 @@ for the member.
     ...     return cmp(a[1], b[1])
 
     >>> def setStatus(membership, status, reviewer=None, comment=None,
-    ...     silent=False):
+    ...               silent=False):
     ...     """Set the status of the given membership.
     ...
     ...     Also sets the reviewer and comment, calling flush_database_updates
