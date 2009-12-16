@@ -14,7 +14,6 @@ import transaction
 from psycopg2 import IntegrityError
 from zope.component import getUtility
 from zope.interface import implements
-from storm.expr import Select
 from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
