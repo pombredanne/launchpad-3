@@ -308,7 +308,6 @@ class TeamMembership(SQLBase):
                 "%(team)s is a member of %(person)s."
                 % dict(person=self.person.name, team=self.team.name))
 
-
         old_status = self.status
         self.status = status
 

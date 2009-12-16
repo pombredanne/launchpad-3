@@ -18,21 +18,21 @@
     <div id="membership-summary">
       <div>
         <img src="/@@/team" alt="team" />
-        <strong id="member-count">
+        <strong id="approved-member-count">
           <tal:active content="context/all_member_count" />
         </strong>
         <a tal:attributes="href string:${context/fmt:url/+members}#active"
           >active members</a><tal:invited
             define="invited_member_count context/invited_member_count"
             condition="invited_member_count">,
-          <strong>
+          <strong id="invited-member-count">
             <tal:invited_count content="context/invited_member_count" />
           </strong>
           <a tal:attributes="href string:${context/fmt:url/+members}#invited"
             >invited members</a></tal:invited><tal:proposed
               define="proposed_member_count context/proposed_member_count"
               condition="proposed_member_count">,
-          <strong>
+          <strong id="proposed-member-count">
             <tal:proposed_count content="proposed_member_count" />
           </strong>
           <a tal:attributes="href string:${context/fmt:url/+members}#proposed"
@@ -96,36 +96,38 @@
     <tr>
       <td style="padding: 0px 1em 1em 0px;"
           tal:define="link context/menu:overview/add_member">
-        <span id="add-member-spinner" class="update-in-progress-message"
-              style="display: none">
+        <span id="add-member-spinner"
+              class="hidden update-in-progress-message">
           Saving...
         </span>
         <tal:add-member replace="structure link/fmt:link-icon" />
       </td>
-      <td style="padding: 0px 0px 1em 0px;"
+      <td colspan="2"
+          style="padding: 0px 0px 1em 0px;"
           tal:define="link context/menu:overview/mugshots">
         <tal:mugshots replace="structure link/fmt:link-icon" />
       </td>
     </tr>
+  </table>
+  <table>
     <tr>
-      <td style="padding: 3px 3em 0px 0px;">
-        <div id="recently-approved"
-             tal:attributes="style view/recently_approved_hidden">
-          <h3 style="color:black; font-weight:bold; margin: 0px">
-            Latest members
-          </h3>
-          <ul id="recently-approved-ul">
-            <li tal:repeat="person view/recently_approved_members"
-                tal:content="structure person/fmt:link" />
-          </ul>
-        </div>
+      <td id="recently-approved"
+          style="padding-right: 1em"
+          tal:attributes="class view/recently_approved_hidden">
+        <h3 style="color:black; font-weight:bold; margin: 0px">
+          Latest members
+        </h3>
+        <ul id="recently-approved-ul">
+          <li tal:repeat="person view/recently_approved_members"
+              tal:content="structure person/fmt:link" />
+        </ul>
       </td>
-      <td style="padding: 0px;" id="recently-applied"
-        tal:condition="view/recently_proposed_members">
+      <td id="recently-proposed"
+          tal:attributes="class view/recently_proposed_hidden">
         <h3 style="color:black; font-weight:bold; margin: 0px">
           Pending approval
         </h3>
-        <ul>
+        <ul id="recently-proposed-ul">
           <li tal:repeat="person view/recently_proposed_members"
               tal:content="structure person/fmt:link" />
         </ul>
@@ -136,6 +138,16 @@
       </td>
     </tr>
   </table>
+  <div id="recently-invited"
+        tal:attributes="class view/recently_invited_hidden">
+    <h3 style="color:black; font-weight:bold; margin: 0px">
+      Invited
+    </h3>
+    <ul id="recently-invited-ul">
+      <li tal:repeat="person view/recently_invited_members"
+          tal:content="structure person/fmt:link" />
+    </ul>
+  </div>
   </tal:can-view>
 </div>
 </tal:root>

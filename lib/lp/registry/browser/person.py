@@ -2678,6 +2678,13 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             orderBy='-TeamMembership.date_proposed')
         return members[:5]
 
+    @cachedproperty
+    def recently_invited_members(self):
+        members = self.context.getMembersByStatus(
+            TeamMembershipStatus.INVITED,
+            orderBy='-TeamMembership.date_proposed')
+        return members[:5]
+
     @property
     def recently_approved_hidden(self):
         """Optionally hide the div.
@@ -2686,7 +2693,7 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         but hidden in case it adds a member to the list.
         """
         if self.recently_approved_members.count() == 0:
-            return 'visibility: collapse'
+            return 'hidden'
         else:
             return ''
 
@@ -2698,7 +2705,19 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         but hidden in case it adds a member to the list.
         """
         if self.recently_proposed_members.count() == 0:
-            return 'visibility: collapse'
+            return 'hidden'
+        else:
+            return ''
+
+    @property
+    def recently_invited_hidden(self):
+        """Optionally hide the div.
+
+        The AJAX on the page needs the elements to be present
+        but hidden in case it adds a member to the list.
+        """
+        if self.recently_invited_members.count() == 0:
+            return 'hidden'
         else:
             return ''
 
