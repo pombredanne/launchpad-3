@@ -793,7 +793,7 @@ class BugWatchUpdater(object):
                 bug_watches = bug_watches_by_remote_bug[bug_id]
             except KeyError:
                 # If there aren't any bug watches for this remote bug,
-                # just log a warnign and carry on.
+                # just log a warning and carry on.
                 self.warning(
                     "Spurious remote bug ID: No watches found for "
                     "remote bug %s" % bug_id)
