@@ -681,6 +681,9 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             required=True,
             readonly=False))
 
+    @operation_parameters(
+        break_references=Bool(title=_("Break references to this branch")))
+    @export_write_operation()
     def destroySelf(break_references=False):
         """Delete the specified branch.
 
@@ -865,6 +868,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         :param launchbag: `ILaunchBag`.
         """
 
+    @export_read_operation()
     def canBeDeleted():
         """Can this branch be deleted in its current state.
 
