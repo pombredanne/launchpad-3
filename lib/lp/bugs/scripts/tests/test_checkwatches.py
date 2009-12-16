@@ -15,6 +15,7 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.scripts import checkwatches
+from lp.bugs.tests.externalbugtracker import TestBugzillaAPIXMLRPCTransport
 from lp.testing import TestCaseWithFactory
 
 
@@ -29,6 +30,9 @@ class NonConnectingBugzillaAPI(BugzillaAPI):
     bugs = {
         1: {'product': 'test-product'},
         }
+
+    def getCurrentDBTime(self):
+        return None
 
     def getExternalBugTrackerToUse(self):
         return self
@@ -52,6 +56,18 @@ class NonConnectingBugzillaAPI(BugzillaAPI):
             bug_products[bug_id] = bug_dict['product']
 
         return bug_products
+
+
+class NoBugWatchesByRemoteBugUpdater(checkwatches.BugWatchUpdater):
+    """A subclass of BugWatchUpdater with methods overridden for testing."""
+
+    def _getBugWatchesByRemoteBug(self, bug_watch_ids):
+        """Return an empty dict.
+
+        This method overrides _getBugWatchesByRemoteBug() so that bug
+        497141 can be regression-tested.
+        """
+        return {}
 
 
 class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
@@ -92,6 +108,34 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         # there's no bug 2 on the bug tracker that we pass to it.
         self.updater._getExternalBugTrackersAndWatches(
             gnome_bugzilla, [bug_watch_1, bug_watch_2])
+
+
+class TestBugWatchUpdater(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_bug_497141(self):
+        # Regression test for bug 497141. KeyErrors raised in
+        # BugWatchUpdater.updateBugWatches() shouldn't cause
+        # checkwatches to abort.
+        updater = NoBugWatchesByRemoteBugUpdater(
+            transaction, QuietFakeLogger())
+
+        # Create a couple of bug watches for testing purposes.
+        bug_tracker = self.factory.makeBugTracker()
+        bug_watches = [
+            self.factory.makeBugWatch(bugtracker=bug_tracker)
+            for i in range(2)]
+
+        # Use a test XML-RPC transport to ensure no connections happen.
+        test_transport = TestBugzillaAPIXMLRPCTransport(bug_tracker.baseurl)
+        remote_system = NonConnectingBugzillaAPI(
+            bug_tracker.baseurl, xmlrpc_transport=test_transport)
+
+        # Calling updateBugWatches() shouldn't raise a KeyError, even
+        # though with our broken updater _getExternalBugTrackersAndWatches()
+        # will return an empty dict.
+        updater.updateBugWatches(remote_system, bug_watches)
 
 
 def test_suite():
