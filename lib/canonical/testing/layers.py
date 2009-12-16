@@ -114,6 +114,7 @@ from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
 from lp.services.memcache.client import memcache_client_factory
+from lp.services.osutils import kill_by_pidfile
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
@@ -243,7 +244,10 @@ class BaseLayer:
     @profiled
     def setUp(cls):
         BaseLayer.isSetUp = True
-        # Kill any Librarian left running from a previous test run.
+        # Kill any Memcached or Librarian left running from a previous
+        # test run, or from the parent test process if the current
+        # layer is being run in a subprocess.
+        kill_by_pidfile(MemcachedLayer.getPidFile())
         LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
         try:
@@ -484,15 +488,13 @@ class MemcachedLayer(BaseLayer):
             MemcachedLayer.client.forget_dead_hosts()
             time.sleep(0.1)
 
+        # Store the pidfile for other processes to kill.
+        pidfile = MemcachedLayer.getPidFile()
+        open(pidfile, 'w').write(str(MemcachedLayer._memcached_process.pid))
+
         # Register an atexit hook just in case tearDown doesn't get
         # invoked for some perculiar reason.
-        def terminate_on_exit(pid=MemcachedLayer._memcached_process.pid):
-            try:
-                if pid is not None:
-                    os.kill(pid, signal.SIGKILL)
-            except:
-                pass
-        atexit.register(terminate_on_exit)
+        atexit.register(kill_by_pidfile, pidfile)
 
     @classmethod
     @profiled
@@ -500,10 +502,7 @@ class MemcachedLayer(BaseLayer):
         MemcachedLayer.client.disconnect_all()
         MemcachedLayer.client = None
         # Kill our memcached, and there is no reason to be nice about it.
-        if (MemcachedLayer._memcached_process is not None
-            and MemcachedLayer._memcached_process.pid is not None):
-            os.kill(MemcachedLayer._memcached_process.pid, signal.SIGKILL)
-            MemcachedLayer._memcached_process.wait()
+        kill_by_pidfile(MemcachedLayer.getPidFile())
         MemcachedLayer._memcached_process = None
 
     @classmethod
@@ -517,6 +516,10 @@ class MemcachedLayer(BaseLayer):
     @profiled
     def testTearDown(cls):
         pass
+
+    @classmethod
+    def getPidFile(cls):
+        return os.path.join(config.root, '.memcache.pid')
 
 
 class LibrarianLayer(BaseLayer):
