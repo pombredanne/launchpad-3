@@ -295,6 +295,8 @@ class FileBugViewBase(LaunchpadFormView):
         elif (IDistributionSourcePackage.providedBy(self.context) or
               ISourcePackage.providedBy(self.context)):
             bug_supervisor = self.context.distribution.bug_supervisor
+        else:
+            bug_supervisor = None
 
         # Work out whether the redirect should be overidden.
         do_not_redirect = (
