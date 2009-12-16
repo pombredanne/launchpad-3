@@ -1203,7 +1203,7 @@ class WebServicePublication(WebServicePublicationMixin,
                 # request, because access tokens are registered with a
                 # specific, known consumer.
                 raise Unauthorized('Unknown consumer (%s).' % consumer_key)
-        if consumer is not None and anonymous_request:
+        if anonymous_request:
             # Skip the OAuth verification step and let the user access the
             # web service as an unauthenticated user.
             #
