@@ -58,7 +58,8 @@
 	</textarea>
 	<div class="formHelp">This comment will be sent together with the
 	notification of this change to all team administrators and this
-	member.</div>
+	member<span tal:condition="context/required:launchpad.Admin">, unless
+	the 'Silent' option is selected</span>.</div>
       </td>
     </tr>
   </metal:macro>
@@ -141,10 +142,12 @@
           <metal:comment use-macro="template/macros/comment" />
 
           <tr tal:condition="context/required:launchpad.Admin">
-              <th>Silent:</th>
-              <td>
-                <input type="checkbox" value="no" name="silent" id="silent" />
-              </td>
+            <th>Silent:</th>
+            <td>
+              <input type="checkbox" value="no" name="silent" id="silent" />
+              <div class="formHelp">Do not send notification to anyone of this
+                membership change.</div>
+            </td>
           </tr>
 
           <tr>
