@@ -2462,7 +2462,7 @@ class PersonLanguagesView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        """Redirect back to the +languages page if request originated there."""
+        """Redirect back to the originating page."""
         redirection_url = self.request.get('redirection_url')
         if redirection_url:
             return redirection_url
@@ -2470,7 +2470,7 @@ class PersonLanguagesView(LaunchpadFormView):
 
     @property
     def cancel_url(self):
-        """Redirect back to the +languages page if request originated there."""
+        """Redirect back to the originating page."""
         redirection_url = self.getRedirectionURL()
         if redirection_url:
             return redirection_url

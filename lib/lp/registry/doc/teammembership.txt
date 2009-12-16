@@ -132,7 +132,6 @@ Only the team owner or a launchpad admin can call the addMember method.
 Other users must use the join method if they are going to add themselves
 to a team.
 
-    >>> from zope.security.interfaces import Unauthorized
     >>> mark = personset.getByName('mark')
     >>> t3.addMember(salgado, reviewer=mark, status=TeamMembershipStatus.ADMIN)
     Traceback (most recent call last):
