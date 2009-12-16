@@ -301,10 +301,12 @@ class TeamMembershipEditView:
         else:
             expires = self.context.dateexpires
 
+        silent = self.request.form.get('silent', False)
+
         self.context.setExpirationDate(expires, self.user)
         self.context.setStatus(
             status, self.user, self.request.form_ng.getOne('comment'),
-            self.request.form.get('silent'))
+            silent)
         return True
 
     def _getExpirationDate(self):
