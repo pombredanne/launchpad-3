@@ -789,7 +789,15 @@ class BugWatchUpdater(object):
             )
 
         for bug_id in all_remote_ids:
-            bug_watches = bug_watches_by_remote_bug[bug_id]
+            bug_watches = bug_watches_by_remote_bug.get(bug_id, None)
+            if bug_watches is None:
+                # If there aren't any bug watches for this remote bug,
+                # just log a warnign and carry on.
+                self.warning(
+                    "Erroneous remote bug ID: No watches found for "
+                    "remote bug %s" % bug_id)
+                continue
+
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
             if bug_id in unmodified_remote_ids:
