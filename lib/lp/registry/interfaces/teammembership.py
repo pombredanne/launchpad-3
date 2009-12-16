@@ -16,7 +16,7 @@ __all__ = [
     'TeamMembershipStatus',
     ]
 
-from zope.schema import Choice, Datetime, Int, Text
+from zope.schema import Bool, Choice, Datetime, Int, Text
 from zope.interface import Attribute, Interface
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -212,7 +212,11 @@ class ITeamMembership(Interface):
     @call_with(user=REQUEST_USER)
     @operation_parameters(
         status=copy_field(status),
-        comment=copy_field(reviewer_comment))
+        comment=copy_field(reviewer_comment),
+        silent=Bool(title=_("Do not send notifications of status change.  For "
+                            "use by Launchpad administrators only."),
+                            required=False, default=False))
+
     @export_write_operation()
     def setStatus(status, user, comment=None, silent=False):
         """Set the status of this membership.
