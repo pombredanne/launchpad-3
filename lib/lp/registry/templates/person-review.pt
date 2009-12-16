@@ -33,7 +33,7 @@
             </p>
           </tal:review-person>
 
-          <tal:review-account tal:condition="not: view/is_viewing_person">
+          <tal:review-account tal:condition="python: not view.is_viewing_person and view.is_admin">
             <p>
               The account displayname is not always the same as the Launchpad
               displayname.

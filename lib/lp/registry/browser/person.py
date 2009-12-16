@@ -1701,6 +1701,13 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         from canonical.launchpad.interfaces import IMasterObject
         self.context = IMasterObject(self.context.account)
 
+    def initialize(self):
+        """Adapt fields to be displayed."""
+        if not self.is_admin:
+            self.field_names.remove('displayname')
+            self.field_names.remove('password')
+        super(PersonAccountAdministerView, self).initialize()
+
     @property
     def is_viewing_person(self):
         """Is the view showing an `IPerson`?
