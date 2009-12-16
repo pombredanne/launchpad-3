@@ -9,8 +9,6 @@
   i18n:domain="launchpad"
 >
 <head>
-  <metal:launchpad-stylesheet
-    use-macro="context/@@+base-layout-macros/launchpad-stylesheet" />
   <metal:load-javascript
     use-macro="context/@@+base-layout-macros/load-javascript" />
   <metal:lp-client-cache

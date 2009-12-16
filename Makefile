@@ -109,7 +109,10 @@ pagetests: build
 
 inplace: build
 
-build: $(BZR_VERSION_INFO) compile apidoc jsbuild
+build: $(BZR_VERSION_INFO) compile apidoc jsbuild css_combine
+
+css_combine:
+	${SHHH} bin/combine-css
 
 jsbuild_lazr:
 	# We absolutely do not want to include the lazr.testing module and its
