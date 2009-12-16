@@ -1180,7 +1180,7 @@ class WebServicePublication(WebServicePublicationMixin,
         consumers = getUtility(IOAuthConsumerSet)
         consumer = consumers.getByKey(consumer_key)
         token_key = form.get('oauth_token')
-        anonymous_request = (token_key == '' or token_key is None)
+        anonymous_request = (token_key == '')
         if consumer is None:
             if consumer_key is None:
                 # Most likely the user is trying to make a totally

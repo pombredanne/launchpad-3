@@ -98,19 +98,25 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
             login(ANONYMOUS)
             consumers = getUtility(IOAuthConsumerSet)
             self.consumer = consumers.getByKey(oauth_consumer_key)
-            if self.consumer is None:
-                # The client wants to make a request using an
-                # unrecognized consumer key. Only an anonymous request
-                # (one in which oauth_access_key is the empty string)
-                # will succeed, but we run this code in either case,
-                # so that we can verify that a non-anonymous request
-                # fails.
-                self.consumer = OAuthConsumer(oauth_consumer_key, '')
+            if oauth_access_key == '':
+                # The client wants to make an anonymous request.
                 self.access_token = OAuthToken(oauth_access_key, '')
+                if self.consumer is None:
+                    # The client is trying to make an anonymous
+                    # request with a previously unknown consumer. This
+                    # is fine: we manually create a "fake"
+                    # OAuthConsumer (it's "fake" because it's not
+                    # really an IOAuthConsumer as returned by
+                    # IOAuthConsumerSet.getByKey) to be used in the
+                    # requests we make.
+                    self.consumer = OAuthConsumer(oauth_consumer_key, '')
             else:
-                if oauth_access_key == '':
-                    # The client wants to make an anonymous request
-                    # using a recognized consumer key.
+                if self.consumer is None:
+                    # Requests using this caller will be rejected by
+                    # the server, but we have a test that verifies
+                    # such requests _are_ rejected, so we'll create a
+                    # fake OAuthConsumer object.
+                    self.consumer = OAuthConsumer(oauth_consumer_key, '')
                     self.access_token = OAuthToken(oauth_access_key, '')
                 else:
                     # The client wants to make an authorized request
