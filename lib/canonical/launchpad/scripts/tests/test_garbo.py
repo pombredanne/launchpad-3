@@ -516,8 +516,6 @@ class TestGarbo(TestCaseWithFactory):
 
     def test_JobPruner(self):
 
-        SIXTY_DAYS_AGO = SQL(
-            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '60 days'")
         self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
@@ -528,14 +526,14 @@ class TestGarbo(TestCaseWithFactory):
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
 
         branch_job = BranchUpgradeJob.create(db_branch)
-        branch_job.job.date_finished = SIXTY_DAYS_AGO
-        branch_job.job.job_status = JobStatus.COMPLETED
+        branch_job.job.date_finished = THIRTY_DAYS_AGO
+        transaction.commit()
 
         collector = self.runDaily()
 
         self.assertEqual(
             store.find(Job).count(),
-            1)
+            0)
 
 
 

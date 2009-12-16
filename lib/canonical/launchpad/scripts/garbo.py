@@ -14,6 +14,7 @@ import transaction
 from psycopg2 import IntegrityError
 from zope.component import getUtility
 from zope.interface import implements
+from storm.expr import Select
 from storm.locals import In, SQL, Max, Min
 
 from canonical.config import config
@@ -32,11 +33,11 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
 from lp.bugs.model.bugnotification import BugNotification
 from lp.code.interfaces.revision import IRevisionSet
-from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.code.model.revision import RevisionAuthor, RevisionCache
 from lp.registry.model.mailinglist import MailingListSubscription
 from lp.registry.model.person import Person
+from lp.services.job.model.job import Job
 from lp.services.scripts.base import (
     LaunchpadCronScript, SilentLaunchpadScriptFailure)
 
@@ -658,10 +659,11 @@ class BugNotificationPruner(TunableLoop):
         self.log.debug("Removed %d rows" % num_removed)
 
 
+from lp.code.model.branchjob import BranchJob
 class JobPruner(TunableLoop):
-    """Prune `BranchJob`s that are in a final state and older than a month old.
+    """Prune `Job`s that are in a final state and older than a month old.
 
-    When a BranchJob is completed, it gets set to a final state.  These jobs
+    When a Job is completed, it gets set to a final state.  These jobs
     should be pruned from the database after a month.
     """
 
@@ -669,13 +671,24 @@ class JobPruner(TunableLoop):
 
     def __init__(self, log, abort_time=None):
         super(JobPruner, self).__init__(log, abort_time)
-        self.job_store = IMasterStore(BranchJob)
+        self.job_store = IMasterStore(Job)
 
     def isDone(self):
-        return True
+        return self._ids_to_remove().any() is None
+
+    def _ids_to_remove(self):
+        jobs = self.job_store.find(
+            BranchJob.id)
+        return jobs
+
 
     def __call__(self, chunk_size):
         chunk_size = int(chunk_size)
+        ids_to_remove = list(self._ids_to_remove()[:chunk_size])
+        num_removed = self.job_store.find(
+            BranchJob,
+            In(BranchJob.id, ids_to_remove)).remove()
+        transaction.commit()
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
