@@ -49,7 +49,7 @@ case "$1" in
         install -m 755 -o buildd -g buildd -d $PIDROOT
 
 	# Create any missing directories and chown them appropriately
-	install -d -o buildd -g buildd /home/buildd/filecache-default /home/buildd/ccache
+	install -d -o buildd -g buildd /home/buildd/filecache-default
 
 	for conf in $CONFS; do
 	    echo -n " $conf"
