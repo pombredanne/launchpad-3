@@ -43,7 +43,6 @@ from lp.code.model.branchjob import BranchJob, BranchUpgradeJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.model.person import Person
-from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
 
 
