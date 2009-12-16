@@ -168,10 +168,7 @@ class TeamMembership(SQLBase):
     def canChangeStatusSilently(self, user):
         """Ensure that the user is in the Launchpad Administrators group before
            silently making changes to their membership status."""
-        if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
-            return True
-        else:
-            return False
+        return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
 
     def canChangeExpirationDate(self, person):
         """See `ITeamMembership`."""
