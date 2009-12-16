@@ -215,7 +215,10 @@ def get_comments_for_bugtask(bugtask, truncate=False):
         # All attachments are related to a message, so we can be
         # sure that the BugComment is already created.
         assert comments.has_key(message_id), message_id
-        comments[message_id].bugattachments.append(attachment)
+        if attachment.type == BugAttachmentType.PATCH:
+            comments[message_id].patches.append(attachment)
+        else:
+            comments[message_id].bugattachments.append(attachment)
     comments = sorted(comments.values(), key=attrgetter("index"))
     current_title = bugtask.bug.title
     for comment in comments:
@@ -3096,6 +3099,62 @@ class BugTasksAndNominationsView(LaunchpadView):
             return 'true'
         else:
             return 'false'
+
+    @property
+    def other_users_affected_count(self):
+        """The number of other users affected by this bug."""
+        if self.current_user_affected_status:
+            return self.context.users_affected_count - 1
+        else:
+            return self.context.users_affected_count
+
+    @property
+    def affected_statement(self):
+        """The default "this bug affects" statement to show.
+
+        The outputs of this method should be mirrored in
+        MeTooChoiceSource._getSourceNames() (Javascript).
+        """
+        if self.other_users_affected_count == 1:
+            if self.current_user_affected_status is None:
+                return "This bug affects 1 person. Does this bug affect you?"
+            elif self.current_user_affected_status:
+                return "This bug affects you and 1 other person"
+            else:
+                return "This bug affects 1 person, but not you"
+        elif self.other_users_affected_count > 1:
+            if self.current_user_affected_status is None:
+                return (
+                    "This bug affects %d people. Does this bug "
+                    "affect you?" % (self.other_users_affected_count))
+            elif self.current_user_affected_status:
+                return "This bug affects you and %d other people" % (
+                    self.other_users_affected_count)
+            else:
+                return "This bug affects %d people, but not you" % (
+                    self.other_users_affected_count)
+        else:
+            if self.current_user_affected_status is None:
+                return "Does this bug affect you?"
+            elif self.current_user_affected_status:
+                return "This bug affects you"
+            else:
+                return "This bug doesn't affect you"
+
+    @property
+    def anon_affected_statement(self):
+        """The "this bug affects" statement to show to anonymous users.
+
+        The outputs of this method should be mirrored in
+        MeTooChoiceSource._getSourceNames() (Javascript).
+        """
+        if self.context.users_affected_count == 1:
+            return "This bug affects 1 person"
+        elif self.context.users_affected_count > 1:
+            return "This bug affects %d people" % (
+                self.context.users_affected_count)
+        else:
+            return None
 
 
 class BugTaskTableRowView(LaunchpadView):

@@ -132,7 +132,8 @@ class ProductSeriesTranslationsMixin(TranslationsMixin):
     @property
     def has_imports_enabled(self):
         """Is imports enabled for the series?"""
-        return (self.context.translations_autoimport_mode !=
+        return (self.context.branch is not None and
+                self.context.translations_autoimport_mode !=
                 TranslationsBranchImportMode.NO_IMPORT)
 
     @property
