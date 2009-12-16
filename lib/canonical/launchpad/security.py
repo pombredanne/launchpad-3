@@ -213,10 +213,6 @@ class ReviewProjectSet(ReviewByRegistryExpertsOrAdmins):
     usedfor = IProjectSet
 
 
-class ModeratePerson(ReviewByRegistryExpertsOrAdmins):
-    permission = 'launchpad.Moderate'
-    usedfor = IPerson
-
 class ViewPillar(AuthorizationBase):
     usedfor = IPillar
     permission = 'launchpad.View'
@@ -252,7 +248,8 @@ class ViewAccount(EditAccountBySelfOrAdmin):
     permission = 'launchpad.View'
 
 
-class ModerateAccountByRegistryExpert(EditAccountBySelfOrAdmin):
+class ModerateAccountByRegistryExpert(AuthorizationBase):
+    usedfor = IAccount
     permission = 'launchpad.Moderate'
 
     def checkAuthenticated(self, user):
