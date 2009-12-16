@@ -282,6 +282,10 @@ class TeamMembership(SQLBase):
         if status == self.status:
             return
 
+        if silent:
+            assert self.canChangeStatusSilently(user), (
+                "You may not change user's membership statuses silently.")
+
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
         expired = TeamMembershipStatus.EXPIRED
