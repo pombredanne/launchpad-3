@@ -38,9 +38,13 @@ from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
 from lp.bugs.model.bugnotification import (
     BugNotification, BugNotificationRecipient)
+from lp.code.bzr import BranchFormat, RepositoryFormat
+from lp.code.model.branchjob import BranchUpgradeJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.model.person import Person
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 
 
 class TestGarboScript(TestCase):
@@ -511,7 +515,27 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(log_output.find(error_message_2), -1)
 
     def test_JobPruner(self):
+
+        SIXTY_DAYS_AGO = SQL(
+            "CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '60 days'")
+        self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(Job)
+
+        db_branch, tree = self.create_branch_and_tree(
+            hosted=True, format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+
+        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job.job.date_finished = SIXTY_DAYS_AGO
+        branch_job.job.job_status = JobStatus.COMPLETED
+
+        collector = self.runDaily()
+
+        self.assertEqual(
+            store.find(Job).count(),
+            1)
 
 
 
