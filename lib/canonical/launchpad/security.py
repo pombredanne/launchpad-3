@@ -54,7 +54,7 @@ from canonical.launchpad.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
     IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
 from lp.services.permission_helpers import (
-    is_admin_or_registry_expert, is_admin_or_rosetta_expert)
+    is_admin, is_admin_or_registry_expert, is_admin_or_rosetta_expert)
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
@@ -234,23 +234,29 @@ class ViewPillar(AuthorizationBase):
                     or is_admin_or_registry_expert(user))
 
 
-class EditAccount(AuthorizationBase):
+class EditAccountBySelfOrAdmin(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = IAccount
 
     def checkAccountAuthenticated(self, account):
         if account == self.obj:
             return True
-        user = IPerson(account, None)
-        return user is not None and is_admin_or_registry_expert(user)
+        return super(
+            EditAccountBySelfOrAdmin, self).checkAccountAuthenticated(account)
+
+    def checkAuthenticated(self, user):
+        return is_admin(user)
 
 
-class ModerateAccount(EditAccount):
+class ViewAccount(EditAccountBySelfOrAdmin):
+    permission = 'launchpad.View'
+
+
+class ModerateAccountByRegistryExpert(EditAccountBySelfOrAdmin):
     permission = 'launchpad.Moderate'
 
-
-class ViewAccount(EditAccount):
-    permission = 'launchpad.View'
+    def checkAuthenticated(self, user):
+        return is_admin_or_registry_expert(user)
 
 
 class EditOAuthAccessToken(AuthorizationBase):
