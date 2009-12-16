@@ -1693,8 +1693,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     """Administer an `IAccount` belonging to an `IPerson`."""
     schema = IAccount
     label = "Review person's account"
-    field_names = [
-        'displayname', 'password', 'status', 'status_comment']
     custom_widget(
         'status_comment', TextAreaWidget, height=5, width=60)
     custom_widget('password', PasswordChangeWidget)
@@ -1707,13 +1705,10 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         self.person = self.context
         from canonical.launchpad.interfaces import IMasterObject
         self.context = IMasterObject(self.context.account)
-
-    def initialize(self):
-        """Adapt fields to be displayed."""
-        if not self.is_admin:
-            self.field_names.remove('displayname')
-            self.field_names.remove('password')
-        super(PersonAccountAdministerView, self).initialize()
+        # Set fields to be displayed.
+        self.field_names = ['status', 'status_comment']
+        if self.viewed_by_admin:
+            self.field_names = ['displayname', 'password'] + self.field_names
 
     @property
     def is_viewing_person(self):
@@ -1725,7 +1720,7 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         return False
 
     @property
-    def is_admin(self):
+    def viewed_by_admin(self):
         """Is the user a Launchpad admin?"""
         return check_permission('launchpad.Admin', self.context)
 
