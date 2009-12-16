@@ -43,7 +43,7 @@
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
       icingroot string:${rooturl}+icing/rev${revno};
       devmode modules/canonical.config/config/devmode;
-      yui string:${icingroot}/yui/current/build;
+      yui string:${icingroot}/yui;
       lazr_js string:${icingroot}/lazr/build;
       lp_js string:${icingroot}/build"
   >
@@ -279,7 +279,7 @@
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
-      string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
+      string:${icingroot}/lazr/build/formoverlay/assets/formoverlay-core.css"
       />
   <link rel="stylesheet" type="text/css"
       tal:attributes="href
@@ -301,7 +301,7 @@
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
     icingroot string:${rooturl}+icing/rev${revno};
-    yui string:${icingroot}/yui/current/build;
+    yui string:${icingroot}/yui;
     devmode modules/canonical.config/config/devmode">
   <tal:comment replace="nothing">
     This macro loads the old stylesheet, then the YUI CSS, and finally
