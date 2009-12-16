@@ -170,17 +170,6 @@ class DistroSeriesTemplatesView(LaunchpadView):
                                        ordered_by_names=True)
 
 
-class DistroSeriesLanguageTagged:
-    """Augmented class for presenting a DistroSeriesLanguage."""
-
-    content = None
-    css_class = ""
-
-    def __init__(self, language, css_class):
-        self.content = language
-        self.css_class = css_class
-
-
 class DistroSeriesView(LaunchpadView, TranslationsMixin):
 
     label = "Translation status by language"
@@ -244,17 +233,15 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
                     self.context, lang)
                 distroserieslangs.append(distroserieslang)
 
-        distroserieslangstagged = []
-        for lang in sorted(
-            distroserieslangs, key=lambda a: a.language.englishname):
-            if lang.language in self.translatable_languages:
-                css_class = "preferred-language seen"
-            else:
-                css_class = "not-preferred-language unseen"
-            distroserieslangstagged.append(
-                DistroSeriesLanguageTagged(lang, css_class))
+        return sorted(distroserieslangs, key=lambda a: a.language.englishname)
 
-        return distroserieslangstagged
+    def isPreferredLanguage(self, language):
+        # if there are no preferred languages, mark all
+        # languages as preferred
+        if (len(self.translatable_languages) == 0):
+            return True
+        else:
+            return language in self.translatable_languages
 
     @property
     def potemplates(self):

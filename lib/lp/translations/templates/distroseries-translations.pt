@@ -5,21 +5,15 @@
   metal:use-macro="view/macro:page/main_only">
 
   <body>
-    <div metal:fill-slot="main">
-    
-      <script
-        type="text/javascript"
-        tal:condition="devmode"
-        tal:attributes="src string:${icingroot}/build/translations/translations.js">
-      </script>
-      <script type="text/javascript">
-      LPS.use("node", "translations", function(Y) {
-          Y.on("click", function(e) { 
-            Y.translations.toggle_languages_visibility(e);
-          }, "#toggle-languages-visibility");
-      });
-      </script>
 
+    <div metal:fill-slot="head_epilogue">
+      <metal:translations-js
+        use-macro="context/@@+translations-macros/translations-js" />
+      <metal:languages-table-js
+        use-macro="context/@@+translations-macros/languages-table-js" />
+    </div>
+
+    <div metal:fill-slot="main">
       <div class="translation-help-links">
         <a href="https://help.launchpad.net/Translations"
            id="link-to-translations-help"

@@ -25,61 +25,68 @@
     </thead>
 
     <tbody>
-      <tr tal:repeat="drlang view/distroserieslanguages"
-          tal:attributes="class drlang/css_class">
+      <tal:loop tal:repeat="drlang view/distroserieslanguages">
+        <tal:preferred
+            condition="python: view.isPreferredLanguage(drlang.language)">
+            <tal:set-class
+                define="global series_language_class string:preferred-language" />
+        </tal:preferred>
+        <tal:not-preferred
+            condition="not:python: view.isPreferredLanguage(drlang.language)">
+            <tal:set-class
+                define="global series_language_class string:not-preferred-language" />
+        </tal:not-preferred>
+      <tr tal:attributes="class series_language_class">
         <td>
-          <a tal:attributes="href string:${drlang/content/fmt:url}"
-             tal:content="drlang/content/language/englishname">
+          <a tal:attributes="href string:${drlang/fmt:url}"
+             tal:content="drlang/language/englishname">
              Language Name
           </a>
         </td>
         <td>
-          <span class="sortkey" tal:content="drlang/content/contributor_count">0</span>
+          <span class="sortkey" tal:content="drlang/contributor_count">0</span>
           <tal:count
-            tal:condition="drlang/content/contributor_count"
-            tal:replace="drlang/content/contributor_count">0</tal:count>
-          <tal:count condition="not: drlang/content/contributor_count">
+            tal:condition="drlang/contributor_count"
+            tal:replace="drlang/contributor_count">0</tal:count>
+          <tal:count condition="not: drlang/contributor_count">
             &mdash;
           </tal:count>
         </td>
         <td style="white-space: nowrap">
-          <div tal:replace="structure drlang/content/@@+barchart" />
+          <div tal:replace="structure drlang/@@+barchart" />
         </td>
         <td>
-          <span class="sortkey" tal:content="drlang/content/untranslatedCount">0</span>
+          <span class="sortkey" tal:content="drlang/untranslatedCount">0</span>
           <tal:count
-            tal:condition="drlang/content/untranslatedCount"
-            tal:replace="drlang/content/untranslatedCount">0</tal:count>
-          <tal:count condition="not: drlang/content/untranslatedCount">
+            tal:condition="drlang/untranslatedCount"
+            tal:replace="drlang/untranslatedCount">0</tal:count>
+          <tal:count condition="not: drlang/untranslatedCount">
             &mdash;
           </tal:count>
         </td>
         <td>
-          <span class="sortkey" tal:content="drlang/content/unreviewedCount">0</span>
+          <span class="sortkey" tal:content="drlang/unreviewedCount">0</span>
           <tal:count
-            tal:condition="drlang/content/unreviewedCount"
-            tal:replace="drlang/content/unreviewedCount">0</tal:count>
-          <tal:count condition="not: drlang/content/unreviewedCount">
+            tal:condition="drlang/unreviewedCount"
+            tal:replace="drlang/unreviewedCount">0</tal:count>
+          <tal:count condition="not: drlang/unreviewedCount">
             &mdash;
           </tal:count>
         </td>
         <td>
-          <span class="sortkey" tal:content="drlang/content/updatesCount">0</span>
+          <span class="sortkey" tal:content="drlang/updatesCount">0</span>
           <tal:count
-            tal:condition="drlang/content/updatesCount"
-            tal:replace="drlang/content/updatesCount">0</tal:count>
-          <tal:count condition="not: drlang/content/updatesCount">
+            tal:condition="drlang/updatesCount"
+            tal:replace="drlang/updatesCount">0</tal:count>
+          <tal:count condition="not: drlang/updatesCount">
             &mdash;
           </tal:count>
         </td>
       </tr>
+      </tal:loop>
     </tbody>
   </table>
-  <div align="right">
-    [ <a href="/+editmylanguages">Choose Preferred Languages...</a> 
-      &mdash;
-      <a href="#" id="toggle-languages-visibility">
-        View All Languages</a> 
-    ]
-  </div>
+  <metal:languages-table-actions
+    use-macro="context/@@+translations-macros/languages-table-actions" />
+
 </tal:root>
