@@ -900,6 +900,12 @@ class PersonMenuMixin(CommonMenuLinks):
         text = 'Administer'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Moderate')
+    def administer_account(self):
+        target = '+reviewaccount'
+        text = 'Administer Account'
+        return Link(target, text, icon='edit')
+
 
 class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
 
@@ -909,9 +915,10 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
              'editemailaddresses', 'editlanguages', 'editwikinames',
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
-             'codesofconduct', 'karma', 'administer', 'projects',
-             'activate_ppa', 'maintained', 'view_ppa_subscriptions',
-             'ppa', 'oauth_tokens', 'related_software_summary']
+             'codesofconduct', 'karma', 'administer', 'administer_account',
+             'projects', 'activate_ppa', 'maintained',
+             'view_ppa_subscriptions', 'ppa', 'oauth_tokens',
+             'related_software_summary']
 
     def related_software_summary(self):
         target = '+related-software'
@@ -5814,7 +5821,8 @@ class PersonIndexMenu(NavigationMenu, PersonMenuMixin):
     usedfor = IPersonIndexMenu
     facet = 'overview'
     title = 'Change person'
-    links = ('edit', 'administer', 'branding', 'editpassword')
+    links = ('edit', 'administer', 'administer_account',
+             'branding', 'editpassword')
 
 
 class ITeamIndexMenu(Interface):
