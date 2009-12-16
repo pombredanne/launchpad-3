@@ -12,6 +12,7 @@ import unittest
 
 import transaction
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -944,6 +945,11 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         self.copy_series = self.test_publisher.distroseries
         self.copy_pocket = PackagePublishingPocket.SECURITY
 
+        # Make ubuntutest/breezy-autotest CURRENT so uploads to SECURITY
+        # pocket can be accepted.
+        self.test_publisher.breezy_autotest.status = (
+            DistroSeriesStatus.CURRENT)
+
     def createDelayedCopyContext(self):
         """Create a context to allow delayed-copies test.
 
@@ -964,17 +970,14 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         build.package_upload.addCustom(
             custom_file, PackageUploadCustomFormat.DIST_UPGRADER)
 
+        # Commit for making the just-create library files available.
+        self.layer.txn.commit()
+
         return source
 
     def do_delayed_copy(self, source):
         """Execute and return the delayed copy."""
-        # Make ubuntutest/breezy-autotest CURRENT so uploads to SECURITY
-        # pocket can be accepted.
-        self.test_publisher.breezy_autotest.status = (
-            DistroSeriesStatus.CURRENT)
 
-        # Commit for making the just-create library files available.
-        self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
 
         delayed_copy = _do_delayed_copy(
@@ -1034,10 +1037,15 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         archive, only the ancestry in the destination archive can be used.
         If that ancestry doesn't exist, an exception is raised."""
         # We'll simulate an upload that was overridden to main in the
-        # ppa, by explicitly setting the spr's component to something else.
+        # ppa, by explicitly setting the spr's and bpr's component to
+        # something else.
         source = self.createDelayedCopyContext()
-        source.sourcepackagerelease.component = getUtility(
-            IComponentSet).new('contrib')
+        contrib = getUtility(IComponentSet).new('contrib')
+        source.sourcepackagerelease.component = contrib
+        [build] = source.getBuilds()
+        [binary] = build.binarypackages
+        removeSecurityProxy(binary).component = contrib
+        self.layer.txn.commit()
 
         # Setup and execute the delayed copy procedure. This should
         # raise an exception, as it won't be able to find an ancestor
@@ -1053,10 +1061,15 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         If an ancestor is found in the destination archive, its component
         is assumed for this package upload."""
         # We'll simulate an upload that was overridden to main in the
-        # ppa, by explicitly setting the spr's component to something else.
+        # ppa, by explicitly setting the spr's and bpr's component to
+        # something else.
         source = self.createDelayedCopyContext()
-        source.sourcepackagerelease.component = getUtility(
-            IComponentSet).new('contrib')
+        contrib = getUtility(IComponentSet).new('contrib')
+        source.sourcepackagerelease.component = contrib
+        [build] = source.getBuilds()
+        [binary] = build.binarypackages
+        removeSecurityProxy(binary).component = contrib
+        self.layer.txn.commit()
 
         # This time, we'll ensure that there is already an ancestor for
         # foocom in the destination archive.
@@ -1118,15 +1131,15 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
             changes_file_name=changes_file_name)
         package_upload.addBuild(build_i386)
 
+        # Commit for making the just-create library files available.
+        self.layer.txn.commit()
+
         return source
 
     def test_do_delayed_copy_of_partially_built_sources(self):
         # delayed-copies of partially built sources are allowed and only
         # the FULLYBUILT builds are copied.
         source = self.createPartiallyBuiltDelayedCopyContext()
-
-        # Make new libraryfiles available by committing the transaction.
-        self.layer.txn.commit()
 
         # Perform the delayed-copy including binaries.
         delayed_copy = self.do_delayed_copy(source)
