@@ -16,7 +16,10 @@
             interface="canonical.launchpad.interfaces.IAccountSpecialRestricted" />
         <require
             permission="launchpad.Moderate"
-            set_schema="canonical.launchpad.interfaces.IAccountModerate" />
+            interface="canonical.launchpad.interfaces.IAccountModerate" />
+        <require
+            permission="launchpad.Moderate"
+            set_schema="canonical.launchpad.interfaces.IAccountModerateStatus" />
         <require
             permission="launchpad.Edit"
             set_schema="canonical.launchpad.interfaces.IAccountEdit" />
