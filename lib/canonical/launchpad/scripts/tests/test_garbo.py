@@ -39,7 +39,7 @@ from canonical.testing.layers import (
 from lp.bugs.model.bugnotification import (
     BugNotification, BugNotificationRecipient)
 from lp.code.bzr import BranchFormat, RepositoryFormat
-from lp.code.model.branchjob import BranchUpgradeJob
+from lp.code.model.branchjob import BranchJob, BranchUpgradeJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.model.person import Person
@@ -527,14 +527,23 @@ class TestGarbo(TestCaseWithFactory):
 
         branch_job = BranchUpgradeJob.create(db_branch)
         branch_job.job.date_finished = THIRTY_DAYS_AGO
+        job_id = branch_job.job.id
+
+        self.assertEqual(
+            store.find(
+                BranchJob,
+                BranchJob.branch == db_branch.id).count(),
+                1)
         transaction.commit()
 
         collector = self.runDaily()
 
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
         self.assertEqual(
-            store.find(Job).count(),
-            0)
-
+            store.find(
+                BranchJob,
+                BranchJob.branch == db_branch.id).count(),
+                0)
 
 
 def test_suite():

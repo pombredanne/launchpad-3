@@ -685,9 +685,10 @@ class JobPruner(TunableLoop):
     def __call__(self, chunk_size):
         chunk_size = int(chunk_size)
         ids_to_remove = list(self._ids_to_remove()[:chunk_size])
-        num_removed = self.job_store.find(
-            BranchJob,
-            In(BranchJob.id, ids_to_remove)).remove()
+        num_removed = self.job_store.find(BranchJob).remove()
+        #num_removed = self.job_store.find(
+        #    BranchJob,
+        #    In(BranchJob.id, ids_to_remove)).remove()
         transaction.commit()
 
 
