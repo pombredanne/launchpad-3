@@ -1180,19 +1180,30 @@ class WebServicePublication(WebServicePublicationMixin,
         consumers = getUtility(IOAuthConsumerSet)
         consumer = consumers.getByKey(consumer_key)
         token_key = form.get('oauth_token')
-        anonymous_request = (token_key == '')
+        anonymous_request = (token_key == '' or token_key is None)
         if consumer is None:
+            if consumer_key is None:
+                # Most likely the user is trying to make a totally
+                # unauthenticated request.
+                raise Unauthorized(
+                    'Request is missing an OAuth consumer key.')
             if anonymous_request:
                 # This is the first time anyone has tried to make an
                 # anonymous request using this consumer
                 # name. Dynamically create the consumer.
+                #
+                # In the normal website this wouldn't be possible
+                # because GET requests have their transactions rolled
+                # back. But webservice requests always have their
+                # transactions committed so that we can keep track of
+                # the OAuth nonces and prevent replay attacks.
                 consumer = consumers.new(consumer_key, '')
             else:
                 # An unknown consumer can never make a non-anonymous
                 # request, because access tokens are registered with a
                 # specific, known consumer.
                 raise Unauthorized('Unknown consumer (%s).' % consumer_key)
-        if anonymous_request:
+        if consumer is not None and anonymous_request:
             # Skip the OAuth verification step and let the user access the
             # web service as an unauthenticated user.
             #

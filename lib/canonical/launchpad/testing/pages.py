@@ -99,12 +99,24 @@ class LaunchpadWebServiceCaller(WebServiceCaller):
             consumers = getUtility(IOAuthConsumerSet)
             self.consumer = consumers.getByKey(oauth_consumer_key)
             if self.consumer is None:
-                # Set up for anonymous access
+                # The client wants to make a request using an
+                # unrecognized consumer key. Only an anonymous request
+                # (one in which oauth_access_key is the empty string)
+                # will succeed, but we run this code in either case,
+                # so that we can verify that a non-anonymous request
+                # fails.
                 self.consumer = OAuthConsumer(oauth_consumer_key, '')
-                self.access_token = OAuthToken('', '')
+                self.access_token = OAuthToken(oauth_access_key, '')
             else:
-                self.access_token = self.consumer.getAccessToken(
-                    oauth_access_key)
+                if oauth_access_key == '':
+                    # The client wants to make an anonymous request
+                    # using a recognized consumer key.
+                    self.access_token = OAuthToken(oauth_access_key, '')
+                else:
+                    # The client wants to make an authorized request
+                    # using a recognized consumer key.
+                    self.access_token = self.consumer.getAccessToken(
+                        oauth_access_key)
             logout()
         else:
             self.consumer = None
@@ -660,7 +672,7 @@ def setUpGlobs(test):
     test.globs['user_webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['anon_webservice'] = LaunchpadWebServiceCaller(
-        'anonymous-access', '')
+        'launchpad-library', '')
     test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
