@@ -411,7 +411,7 @@
                 permission="launchpad.Edit"
                 set_attributes="owner priority description"/>
             <require
-                permission="launchpad.Admin"
+                permission="launchpad.TranslationsAdmin"
                 set_attributes="name translation_domain productseries distroseries                                                                                                 sourcepackagename sourcepackageversion                                                                                                 binarypackagename languagepack path header                                                                                                 iscurrent from_sourcepackagename date_last_updated                                                                                                 source_file source_file_format"/>
         </class>
         <adapter

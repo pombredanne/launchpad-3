@@ -360,11 +360,6 @@ class FileBugViewBase(LaunchpadFormView):
             if 'field.actions' in key] != [] or
             self.user.inTeam(bug_supervisor))
 
-    @property
-    def use_asynchronous_dupefinder(self):
-        """Return True if the asynchronous dupe finder can be used."""
-        return IProduct.providedBy(self.context)
-
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
         if self.widget_errors.get("packagename"):
@@ -706,8 +701,17 @@ class FileBugViewBase(LaunchpadFormView):
         raise NotImplementedError
 
     @property
+    def inline_filebug_base_url(self):
+        """Return the base URL for the current request.
+
+        This allows us to build URLs in Javascript without guessing at
+        domains.
+        """
+        return self.request.getRootURL(None)
+
+    @property
     def inline_filebug_form_url(self):
-        """The URL to the inline filebug form.
+        """Return the URL to the inline filebug form.
 
         If a token was passed to this view, it will be be passed through
         to the inline bug filing form via the returned URL.
@@ -719,7 +723,7 @@ class FileBugViewBase(LaunchpadFormView):
 
     @property
     def duplicate_search_url(self):
-        """The URL to the inline duplicate search view."""
+        """Return the URL to the inline duplicate search view."""
         url = canonical_url(self.context, view_name='+filebug-show-similar')
         if self.extra_data_token is not None:
             url = urlappend(url, self.extra_data_token)
@@ -1031,6 +1035,50 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     # Make inheriting the base class' actions work.
     actions = FileBugGuidedView.actions
     schema = IProjectBugAddForm
+
+    @cachedproperty
+    def products_using_malone(self):
+        return [
+            product for product in self.context.products
+            if product.official_malone]
+
+    @property
+    def default_product(self):
+        if len(self.products_using_malone) > 0:
+            return self.products_using_malone[0]
+        else:
+            return None
+
+    @property
+    def inline_filebug_form_url(self):
+        """Return the URL to the inline filebug form.
+
+        If a token was passed to this view, it will be be passed through
+        to the inline bug filing form via the returned URL.
+
+        The URL returned will be the URL of the first of the current
+        Project's products, since that's the product that will be
+        selected by default when the view is rendered.
+        """
+        url = canonical_url(
+            self.default_product, view_name='+filebug-inline-form')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
+    @property
+    def duplicate_search_url(self):
+        """Return the URL to the inline duplicate search view.
+
+        The URL returned will be the URL of the first of the current
+        Project's products, since that's the product that will be
+        selected by default when the view is rendered.
+        """
+        url = canonical_url(
+            self.default_product, view_name='+filebug-show-similar')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
 
     def _getSelectedProduct(self):
         """Return the product that's selected."""

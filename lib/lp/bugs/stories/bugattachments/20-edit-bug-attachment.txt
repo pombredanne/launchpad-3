@@ -58,3 +58,12 @@ The content type of a patch is automatically changed to text/plain.
     >>> user_browser.getControl('Content Type').value
     'text/plain'
 
+Clicking the link "Add patch" in the patches portlet open the form
+to add bug comments with the checkbox "This attachment is a patch"
+enabled.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
+    >>> user_browser.getLink('Add patch').click()
+    >>> patch_checkbox = user_browser.getControl('This attachment is a patch')
+    >>> patch_checkbox.selected
+    True
