@@ -1711,6 +1711,11 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         return False
 
     @property
+    def is_admin(self):
+        """Is the user a Launchpad admin?"""
+        return check_permission('launchpad.Admin', self.context)
+
+    @property
     def email_addresses(self):
         """A list of the user's preferred and validated email addresses."""
         emails = sorted(
