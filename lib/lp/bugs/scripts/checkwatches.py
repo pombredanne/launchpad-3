@@ -796,7 +796,7 @@ class BugWatchUpdater(object):
                 # just log a warning and carry on.
                 self.warning(
                     "Spurious remote bug ID: No watches found for "
-                    "remote bug %s" % bug_id)
+                    "remote bug %s on %s" % (bug_id, remotesystem.baseurl))
                 continue
 
             for bug_watch in bug_watches:
