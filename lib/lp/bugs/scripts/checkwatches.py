@@ -789,12 +789,13 @@ class BugWatchUpdater(object):
             )
 
         for bug_id in all_remote_ids:
-            bug_watches = bug_watches_by_remote_bug.get(bug_id, None)
-            if bug_watches is None:
+            try:
+                bug_watches = bug_watches_by_remote_bug[bug_id]
+            except KeyError:
                 # If there aren't any bug watches for this remote bug,
                 # just log a warnign and carry on.
                 self.warning(
-                    "Erroneous remote bug ID: No watches found for "
+                    "Spurious remote bug ID: No watches found for "
                     "remote bug %s" % bug_id)
                 continue
 

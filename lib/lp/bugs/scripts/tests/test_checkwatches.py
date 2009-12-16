@@ -15,6 +15,7 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.scripts import checkwatches
+from lp.bugs.scripts.checkwatches import CheckWatchesErrorUtility
 from lp.bugs.tests.externalbugtracker import TestBugzillaAPIXMLRPCTransport
 from lp.testing import TestCaseWithFactory
 
@@ -136,6 +137,13 @@ class TestBugWatchUpdater(TestCaseWithFactory):
         # though with our broken updater _getExternalBugTrackersAndWatches()
         # will return an empty dict.
         updater.updateBugWatches(remote_system, bug_watches)
+
+        # An error will have been logged instead of the KeyError being
+        # raised.
+        error_utility = CheckWatchesErrorUtility()
+        last_oops = error_utility.getLastOopsReport()
+        self.assertTrue(
+            last_oops.value.startswith('Spurious remote bug ID'))
 
 
 def test_suite():
