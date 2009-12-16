@@ -659,7 +659,6 @@ class BugNotificationPruner(TunableLoop):
         self.log.debug("Removed %d rows" % num_removed)
 
 
-from lp.code.model.branchjob import BranchJob
 class JobPruner(TunableLoop):
     """Prune `Job`s that are in a final state and older than a month old.
 
@@ -678,17 +677,17 @@ class JobPruner(TunableLoop):
 
     def _ids_to_remove(self):
         jobs = self.job_store.find(
-            BranchJob.id)
+            Job.id,
+            Job.date_finished < THIRTY_DAYS_AGO)
         return jobs
 
 
     def __call__(self, chunk_size):
         chunk_size = int(chunk_size)
         ids_to_remove = list(self._ids_to_remove()[:chunk_size])
-        num_removed = self.job_store.find(BranchJob).remove()
-        #num_removed = self.job_store.find(
-        #    BranchJob,
-        #    In(BranchJob.id, ids_to_remove)).remove()
+        num_removed = self.job_store.find(
+            Job,
+            In(Job.id, ids_to_remove)).remove()
         transaction.commit()
 
 
