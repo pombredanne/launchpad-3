@@ -19,11 +19,10 @@
         />
   <script type="text/javascript"
           tal:content="string:
-    YUI().use('node', 'event', 'lp.picker', 'lp.team', 'lazr.anim',
-              'lp.client.plugins', 'lp.errors', function(Y) {
+    YUI().use('registry.team', function(Y) {
         Y.on('load',
              function(e) {
-                 Y.lp.setup_add_member_handler();
+                 Y.registry.team.setup_add_member_handler();
              },
              window);
     });
