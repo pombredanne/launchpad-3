@@ -216,7 +216,6 @@ class ITeamMembership(Interface):
         silent=Bool(title=_("Do not send notifications of status change.  For "
                             "use by Launchpad administrators only."),
                             required=False, default=False))
-
     @export_write_operation()
     def setStatus(status, user, comment=None, silent=False):
         """Set the status of this membership.
