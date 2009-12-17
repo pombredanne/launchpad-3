@@ -888,6 +888,7 @@
   </securedutility>
   <class class="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob">
     <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+    <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob" />
   </class>
 
   <securedutility

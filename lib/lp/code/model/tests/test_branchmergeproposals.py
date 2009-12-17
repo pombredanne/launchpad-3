@@ -13,6 +13,7 @@ from unittest import TestCase, TestLoader
 
 from pytz import UTC
 from sqlobject import SQLObjectNotFound
+from storm.locals import Store
 from zope.component import getUtility
 import transaction
 from zope.security.proxy import removeSecurityProxy
@@ -1836,7 +1837,17 @@ class TestNextPreviewDiffJob(TestCaseWithFactory):
         bmp = self.factory.makeBranchMergeProposal()
         job = bmp.next_preview_diff_job
         self.assertEqual(bmp, job.branch_merge_proposal)
-
+        self.assertIs(
+            MergeProposalCreatedJob, removeSecurityProxy(job).__class__)
+        job.start()
+        self.assertEqual(job.id, bmp.next_preview_diff_job.id)
+        job.fail()
+        self.assertIs(None, bmp.next_preview_diff_job)
+        updatejob = UpdatePreviewDiffJob.create(bmp)
+        Store.of(updatejob.context).flush()
+        self.assertEqual(updatejob, bmp.next_preview_diff_job)
+        updatejob2 = UpdatePreviewDiffJob.create(bmp)
+        self.assertEqual(updatejob, bmp.next_preview_diff_job)
 
 
 def test_suite():

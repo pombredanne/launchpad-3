@@ -27,6 +27,7 @@ from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import MessageJob, MessageJobAction
@@ -151,7 +152,9 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         self.context = job
 
     def __eq__(self, job):
-        return (self.__class__ is job.__class__ and self.job == job.job)
+        return (
+            self.__class__ is removeSecurityProxy(job.__class__)
+            and self.job == job.job)
 
     def __ne__(self, job):
         return not (self == job)
