@@ -629,7 +629,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
 
     @property
     def pending_diff(self):
-        return context.next_preview_diff_job is not None
+        return self.context.next_preview_diff_job is not None
 
     @cachedproperty
     def preview_diff(self):
