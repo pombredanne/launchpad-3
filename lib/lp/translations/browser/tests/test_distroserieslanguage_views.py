@@ -48,6 +48,8 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
         group = self.factory.makeTranslationGroup(
             self.distroseries.distribution.owner, url=None)
         self.distroseries.distribution.translationgroup = group
+        self.view = DistroSeriesLanguageView(
+            self.dsl, LaunchpadTestRequest()).initialize()
         self.assertEquals(self.view.translation_group, group)
 
     def test_translation_team(self):
@@ -65,7 +67,7 @@ class TestDistroSeriesLanguage(TestCaseWithFactory):
             group, self.language, team)
         # Recreate the view because we are using a cached property.
         self.view = DistroSeriesLanguageView(
-            self.dsl, LaunchpadTestRequest())
+            self.dsl, LaunchpadTestRequest()).initialize()
         self.assertEquals(self.view.translation_team, translator)
 
 def test_suite():

@@ -137,6 +137,8 @@ class TestProductSeriesLanguage(TestCaseWithFactory):
         group = self.factory.makeTranslationGroup(
             self.productseries.product.owner, url=None)
         self.productseries.product.translationgroup = group
+        self.view = ProductSeriesLanguageView(
+            self.psl, LaunchpadTestRequest()).initialize()
         self.assertEquals(self.view.translation_group, group)
 
     def test_translation_team(self):
@@ -154,7 +156,7 @@ class TestProductSeriesLanguage(TestCaseWithFactory):
             group, self.language, team)
         # Recreate the view because we are using a cached property.
         self.view = ProductSeriesLanguageView(
-            self.psl, LaunchpadTestRequest())
+            self.psl, LaunchpadTestRequest()).initialize()
         self.assertEquals(self.view.translation_team, translator)
 
 def test_suite():
