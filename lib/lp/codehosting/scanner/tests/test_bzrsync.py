@@ -184,7 +184,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         This method allow subclasses to instrument the BzrSync instance used
         in syncBranch.
         """
-        return BzrSync(LaunchpadZopelessLayer.txn, db_branch)
+        return BzrSync(db_branch)
 
     def syncAndCount(self, db_branch=None, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
@@ -364,7 +364,7 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing a revision passing the url parameter works.
         self.commitRevision()
         counts = self.getCounts()
-        bzrsync = BzrSync(LaunchpadZopelessLayer.txn, self.db_branch)
+        bzrsync = BzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
         self.assertCounts(
             counts, new_revisions=1, new_numbers=1, new_authors=1)
