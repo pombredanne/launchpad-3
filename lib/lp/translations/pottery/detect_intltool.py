@@ -15,6 +15,7 @@ __all__ = [
 
 import errno
 import os
+import re
 from subprocess import Popen, PIPE
 
 POTFILES_in = "POTFILES.in"
@@ -75,4 +76,21 @@ def find_intltool_dirs():
     return filter(check_potfiles_in, find_potfiles_in())
 
 class ConfigFile(object):
-    pass
+    """Represent a config file and return variables defined in it."""
+
+    def __init__(self, file_or_name):
+        if isinstance(file_or_name, basestring):
+            conf_file = file(file_or_name)
+        else:
+            conf_file = file_or_name
+        self.content_lines = conf_file.readlines()
+
+    def getVariable(self, name):
+        """Search the file for a variable definition with this name."""
+        pattern = re.compile("^%s[ \t]*=[ \t]*([^ \t\n]*)" % re.escape(name))
+        variable = None
+        for line in self.content_lines:
+            result = pattern.match(line)
+            if result is not None:
+                variable = result.group(1)
+        return variable

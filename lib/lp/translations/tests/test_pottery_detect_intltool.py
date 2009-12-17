@@ -108,15 +108,15 @@ class TestConfigFile(TestCase):
             """)))
 
     def test_getVariable_exists(self):
-        self.assertEqual('ccc', configfile.getVariable('CCC'))
-        self.assertEqual('ddd', configfile.getVariable('DDD'))
+        self.assertEqual('ccc', self.configfile.getVariable('CCC'))
+        self.assertEqual('ddd', self.configfile.getVariable('DDD'))
 
     def test_getVariable_empty(self):
-        self.assertEqual('', configfile.getVariable('AAA'))
-        self.assertEqual('', configfile.getVariable('BBB'))
+        self.assertEqual('', self.configfile.getVariable('AAA'))
+        self.assertEqual('', self.configfile.getVariable('BBB'))
 
     def test_getVariable_nonexistent(self):
-        self.assertIs(None, configfile.getVariable('FFF'))
+        self.assertIs(None, self.configfile.getVariable('FFF'))
 
 
 def test_suite():
