@@ -1864,7 +1864,7 @@ class TestNextPreviewDiffJob(TestCaseWithFactory):
         Store.of(updatejob.context).flush()
         self.assertEqual(updatejob, bmp.next_preview_diff_job)
 
-    def test_returns_update_preview_diff_job(self):
+    def test_returns_first__job(self):
         """First-created job is returned."""
         bmp = self.makeBranchMergeProposalNoPending()
         updatejob = UpdatePreviewDiffJob.create(bmp)

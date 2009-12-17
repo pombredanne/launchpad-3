@@ -14,7 +14,7 @@ __all__ = [
     'MergeProposalCreatedJob',
     ]
 
-from email.Utils import parseaddr
+from email.utils import parseaddr
 import transaction
 
 from lazr.delegates import delegates
