@@ -1,7 +1,12 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Module docstring goes here."""
+"""Implementation of the recipe storage.
+
+This is purely an implementation detail of SourcePackageRecipe.recipe_text and
+SourcePackageRecipeBuild.manifest, the classes in this file have no public
+interfaces.
+"""
 
 __metaclass__ = type
 __all__ = []
@@ -18,9 +23,11 @@ from lp.code.model.branch import Branch
 from lp.code.interfaces.branch import IBranchSet
 
 
-
 class _SourcePackageRecipeDataBranch(Storm):
+    """The link between a SourcePackageRecipeData row and a Branch row."""
+
     __storm_table__ = "SourcePackageRecipeDataBranch"
+
     id = Int(primary=True)
 
     branch_id = Int(name='branch', allow_none=False)
@@ -37,6 +44,12 @@ class _SourcePackageRecipeDataBranch(Storm):
 
 
 def walk_branch_urls(branch):
+    """Yield every branch url referenced by `branch` and its children.
+
+    :param branch: A `bzrlib.plugins.builder.recipe.RecipeBranch` object.
+    """
+    # Possibly this should/could be in bzr-builder?
+    # Possibly should/could have direct tests?
     yield branch.url
     for child_branch in branch.child_branches:
         for url in walk_branch_urls(child_branch.recipe_branch):
@@ -44,6 +57,8 @@ def walk_branch_urls(branch):
 
 
 class _SourcePackageRecipeData(Storm):
+    """Essentially, the text of a bzr-builder recipe but with added data.
+    """
 
     __storm_table__ = "SourcePackageRecipeData"
 
@@ -51,14 +66,17 @@ class _SourcePackageRecipeData(Storm):
 
     _recipe = Unicode(name='recipe')
 
-    # Maybe all this stuff should just be on the containing object...
+    # For now, we just store the recipe verbatim.  Soon, we'll want to rewrite
+    # the recipe to replace the branch urls with something that references the
+    # _SourcePackageRecipeDataBranch linking table on write and vice versa on
+    # read.
 
     def _get_recipe(self):
-        # Read recipe text out, rewrite branch references.
+        """The text of the recipe."""
         return self._recipe
 
     def _set_recipe(self, recipe):
-        # Read recipe text out, rewrite branch references.
+        """Set the text of the recipe."""
         IStore(self).find(
             _SourcePackageRecipeDataBranch,
             _SourcePackageRecipeDataBranch.sourcepackagerecipedata == self
@@ -74,10 +92,12 @@ class _SourcePackageRecipeData(Storm):
     recipe = property(_get_recipe, _set_recipe)
 
     def __init__(self, recipe):
+        """Initialize the object from the recipe text."""
         self.recipe = recipe
 
-    @property
-    def referenced_branches(self):
+    def getReferencedBranches(self):
+        """Return an iterator of the Branch objects referenced by this recipe.
+        """
         return IStore(self).find(
             Branch,
             _SourcePackageRecipeDataBranch.sourcepackagerecipedata == self,

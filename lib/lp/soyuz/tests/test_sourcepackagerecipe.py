@@ -14,7 +14,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
+from lp.soyuz.interfaces.sourcepackagerecipe import (
+    ISourcePackageRecipe, ISourcePackageRecipeSource)
 from lp.testing import login_person, TestCaseWithFactory
 
 
@@ -23,32 +24,16 @@ MINIMAL_RECIPE_TEXT = u'''\
 %s
 '''
 
-class TestSourcePackageRecipeCreation(TestCaseWithFactory):
+class TestSourcePackageRecipe(TestCaseWithFactory):
+    """Tests for `SourcePackageRecipe` objects."""
 
     layer = DatabaseFunctionalLayer
 
-    def test_creation(self):
-        # The metadata supplied when a SourcePackageRecipe is created is
-        # present on the new object.
-        registrant = self.factory.makePerson()
-        owner = self.factory.makeTeam(owner=registrant)
-        distroseries = self.factory.makeDistroSeries()
-        sourcepackagename = self.factory.makeSourcePackageName()
-        name = self.factory.getUniqueString(u'recipe-name')
-        recipe_text = self.makeRecipeText()
-        recipe = getUtility(ISourcePackageRecipeSource).new(
-            registrant=registrant, owner=owner, distroseries=distroseries,
-            sourcepackagename=sourcepackagename, name=name,
-            recipe=recipe_text)
-        self.assertEquals(
-            (registrant, owner, distroseries, sourcepackagename, name),
-            (recipe.registrant, recipe.owner, recipe.distroseries,
-             recipe.sourcepackagename, recipe.name))
-
     def makeRecipeText(self, *branches):
-        """Make a recipe that references `branches`.
+        """Make a recipe text that references `branches`.
 
-        XXX.
+        If no branches are passed, return a recipe text that references an
+        arbitrary branch.
         """
         if len(branches) == 0:
             branches = (self.factory.makeAnyBranch(),)
@@ -70,6 +55,35 @@ class TestSourcePackageRecipeCreation(TestCaseWithFactory):
         return getUtility(ISourcePackageRecipeSource).new(
             registrant=registrant, owner=owner, distroseries=distroseries,
             sourcepackagename=sourcepackagename, name=name, recipe=text)
+
+    def test_creation(self):
+        # The metadata supplied when a SourcePackageRecipe is created is
+        # present on the new object.
+        registrant = self.factory.makePerson()
+        owner = self.factory.makeTeam(owner=registrant)
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        name = self.factory.getUniqueString(u'recipe-name')
+        recipe_text = self.makeRecipeText()
+        recipe = getUtility(ISourcePackageRecipeSource).new(
+            registrant=registrant, owner=owner, distroseries=distroseries,
+            sourcepackagename=sourcepackagename, name=name,
+            recipe=recipe_text)
+        self.assertEquals(
+            (registrant, owner, distroseries, sourcepackagename, name),
+            (recipe.registrant, recipe.owner, recipe.distroseries,
+             recipe.sourcepackagename, recipe.name))
+
+    def test_source_implements_interface(self):
+        # The SourcePackageRecipe class implements ISourcePackageRecipeSource.
+        self.assertProvides(
+            getUtility(ISourcePackageRecipeSource),
+            ISourcePackageRecipeSource)
+
+    def test_recipe_implements_interface(self):
+        # SourcePackageRecipe objects implement ISourcePackageRecipe.
+        recipe = self.makeRecipeWithText(self.makeRecipeText())
+        self.assertProvides(recipe, ISourcePackageRecipe)
 
     def test_recipe_access(self):
         # For now, the exact text passed when a recipe is created is available
@@ -102,6 +116,7 @@ class TestSourcePackageRecipeCreation(TestCaseWithFactory):
             sorted(recipe.getReferencedBranches()))
 
     def test_random_user_cant_edit(self):
+        # An arbitrary user can't set attributes.
         branch1 = self.factory.makeAnyBranch()
         text1 = self.makeRecipeText(branch1)
         recipe = self.makeRecipeWithText(text1)
@@ -111,6 +126,8 @@ class TestSourcePackageRecipeCreation(TestCaseWithFactory):
         self.assertRaises(Unauthorized, setattr, recipe, 'recipe_text', text2)
 
     def test_set_recipe_text_resets_branch_references(self):
+        # When the recipe_text is replaced, getReferencedBranches returns
+        # (only) the branches referenced by the new recipe.
         branch1 = self.factory.makeAnyBranch()
         text1 = self.makeRecipeText(branch1)
         recipe = self.makeRecipeWithText(text1)

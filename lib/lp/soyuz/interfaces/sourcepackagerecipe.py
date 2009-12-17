@@ -22,16 +22,28 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 
 
 class ISourcePackageRecipe(IHasOwner):
-    """ XXX """
+    """An ISourcePackageRecipe describes how to build a source package.
+
+    More precisely, it describes how to combine a number of branches into a
+    debianized source tree.
+    """
 
     date_created = Datetime(required=True, readonly=True)
     date_last_modified = Datetime(required=True, readonly=True)
 
-    registrant = Reference(IPerson, title=_("XXX"), readonly=True)
-    owner = Reference(IPerson, title=_("XXX"), readonly=False)
-    distroseries = Reference(IDistroSeries, title=_("XXX"), readonly=True)
+    registrant = Reference(
+        IPerson, title=_("The person who created this recipe"), readonly=True)
+    owner = Reference(
+        IPerson, title=_("The person or team who can edit this recipe"),
+        readonly=False)
+    distroseries = Reference(
+        IDistroSeries, title=_("The distroseries this recipe will build a "
+                               "source package for"),
+        readonly=True)
     sourcepackagename = Reference(
-        ISourcePackageName, title=_("XXX"), readonly=True)
+        ISourcePackageName, title=_("The name of the source package this "
+                                    "recipe will build a source package"),
+        readonly=True)
 
     name = TextLine(
             title=_("Name"), required=True,
@@ -39,13 +51,15 @@ class ISourcePackageRecipe(IHasOwner):
             description=_("The name of this recipe."))
 
     recipe_text = Text(
-        title=_("XXX"), required=True, readonly=False, description=_("XXX"))
+        title=_("The text of the recipe."), required=True, readonly=False)
 
     def getReferencedBranches():
-        """ XXX """
+        """An iterator of the branches referenced by this recipe."""
+
 
 class ISourcePackageRecipeSource(Interface):
-    """ XXX """
+    """A utility of this interface can be used to create and access recipes.
+    """
 
     def new(registrant, owner, distroseries, sourcepackagename, name, recipe):
-        """ XXX """
+        """Create an `ISourcePackageRecipe`."""
