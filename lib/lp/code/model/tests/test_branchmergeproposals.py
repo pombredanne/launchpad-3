@@ -1834,22 +1834,45 @@ class TestNextPreviewDiffJob(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def test_returns_bmp_job(self):
+        """For new proposals, get the MergeProposalCreatedJob."""
         bmp = self.factory.makeBranchMergeProposal()
         job = bmp.next_preview_diff_job
         self.assertEqual(bmp, job.branch_merge_proposal)
         self.assertIs(
             MergeProposalCreatedJob, removeSecurityProxy(job).__class__)
+
+    def test_returns_none_if_job_not_pending(self):
+        """Jobs are shown while pending."""
+        bmp = self.factory.makeBranchMergeProposal()
+        job = bmp.next_preview_diff_job
+        self.assertEqual(job.id, bmp.next_preview_diff_job.id)
         job.start()
         self.assertEqual(job.id, bmp.next_preview_diff_job.id)
         job.fail()
         self.assertIs(None, bmp.next_preview_diff_job)
+
+    def makeBranchMergeProposalNoPending(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        bmp.next_preview_diff_job.start()
+        bmp.next_preview_diff_job.complete()
+        return bmp
+
+    def test_returns_update_preview_diff_job(self):
+        """UpdatePreviewDiffJobs can be returned."""
+        bmp = self.makeBranchMergeProposalNoPending()
         updatejob = UpdatePreviewDiffJob.create(bmp)
         Store.of(updatejob.context).flush()
         self.assertEqual(updatejob, bmp.next_preview_diff_job)
+
+    def test_returns_update_preview_diff_job(self):
+        """First-created job is returned."""
+        bmp = self.makeBranchMergeProposalNoPending()
+        updatejob = UpdatePreviewDiffJob.create(bmp)
         updatejob2 = UpdatePreviewDiffJob.create(bmp)
         self.assertEqual(updatejob, bmp.next_preview_diff_job)
 
     def test_does_not_return_jobs_for_other_proposals(self):
+        """Jobs for other merge proposals are not returned."""
         bmp = self.factory.makeBranchMergeProposal()
         bmp.next_preview_diff_job.start()
         bmp.next_preview_diff_job.complete()
