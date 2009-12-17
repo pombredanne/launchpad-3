@@ -98,16 +98,24 @@ class TestDetectIntltool(TestCase):
 class TestConfigFile(TestCase):
 
     def setUp(self):
-        self.configfile = StringIO(dedent("""\
+        self.configfile = ConfigFile(StringIO(dedent("""\
             # Demo config file
             AAA=
             BBB = 
-            CCC = ccc
+            CCC = ccc 
             DDD=ddd
-            """))
+            """)))
 
     def test_getVariable_exists(self):
-        print ">%s<" % self.configfile.getvalue()
+        self.assertEqual('ccc', configfile.getVariable('CCC'))
+        self.assertEqual('ddd', configfile.getVariable('DDD'))
+
+    def test_getVariable_empty(self):
+        self.assertEqual('', configfile.getVariable('AAA'))
+        self.assertEqual('', configfile.getVariable('BBB'))
+
+    def test_getVariable_nonexistent(self):
+        self.assertIs(None, configfile.getVariable('FFF'))
 
 
 def test_suite():
