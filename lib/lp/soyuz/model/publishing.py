@@ -835,17 +835,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive = self.archive
         if distroseries is None:
             distroseries = self.distroseries
-        if status is None:
-            status = PackagePublishingStatus.PUBLISHED
 
-        ancestries = archive.getPublishedSources(
-            name=self.source_package_name, exact_match=True,
-            status=status, distroseries=distroseries, pocket=pocket)
-
-        if ancestries.count() > 0:
-            return ancestries[0]
-
-        return None
+        return getUtility(IPublishingSet).getSourceAncestry(
+            self.source_package_name, archive, distroseries, pocket,
+            status)
 
     def overrideFromAncestry(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1699,3 +1692,19 @@ class PublishingSet:
             store.execute(query)
 
         return sources + binary_packages
+
+    def getSourceAncestry(
+        self, source_package_name, archive, distroseries, pocket=None,
+        status=None):
+        """See `IPublishingSet`."""
+        if status is None:
+            status = PackagePublishingStatus.PUBLISHED
+
+        ancestries = archive.getPublishedSources(
+            name=source_package_name, exact_match=True,
+            status=status, distroseries=distroseries, pocket=pocket)
+
+        if ancestries.count() > 0:
+            return ancestries[0]
+
+        return None

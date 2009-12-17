@@ -1139,6 +1139,26 @@ class IPublishingSet(Interface):
         the source_package_pub, allowing the use of the cached results.
         """
 
+    def getSourceAncestry(
+        source_package_name, archive, distroseries, pocket=None,
+        status=None):
+        """Return the ancestor of the given source in a particular archive.
+
+        :param source_package_name: The source for which we are checking for
+            an ancestor.
+        :type source_package_name: ``string``
+        :param archive: The archive in which we are looking for an ancestor.
+        :type archive: `IArchive`
+        :param distroseries: The particular series in which we are looking for
+            an ancestor.
+        :type distroseries: `IDistroSeries`
+        :param pocket: An optional pocket to restrict the search.
+        :type pocket: `PackagePublishingPocket`.
+        :param status: An optional status defaulting to PUBLISHED if not
+            provided.
+        :type status: `PackagePublishingStatus`
+        """
+
 active_publishing_status = (
     PackagePublishingStatus.PENDING,
     PackagePublishingStatus.PUBLISHED,
