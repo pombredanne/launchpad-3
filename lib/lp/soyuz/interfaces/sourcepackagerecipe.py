@@ -16,11 +16,12 @@ from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
 
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 
 
-class ISourcePackageRecipe(Interface):
+class ISourcePackageRecipe(IHasOwner):
     """ XXX """
 
     date_created = Datetime(required=True, readonly=True)

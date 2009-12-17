@@ -59,6 +59,10 @@ class _SourcePackageRecipeData(Storm):
 
     def _set_recipe(self, recipe):
         # Read recipe text out, rewrite branch references.
+        IStore(self).find(
+            _SourcePackageRecipeDataBranch,
+            _SourcePackageRecipeDataBranch.sourcepackagerecipedata == self
+            ).remove()
         base_branch = RecipeParser(recipe).parse()
         db_branches = []
         for url in walk_branch_urls(base_branch):

@@ -110,6 +110,16 @@ class TestSourcePackageRecipeCreation(TestCaseWithFactory):
         login_person(self.factory.makePerson())
         self.assertRaises(Unauthorized, setattr, recipe, 'recipe_text', text2)
 
+    def test_set_recipe_text_resets_branch_references(self):
+        branch1 = self.factory.makeAnyBranch()
+        text1 = self.makeRecipeText(branch1)
+        recipe = self.makeRecipeWithText(text1)
+        branch2 = self.factory.makeAnyBranch()
+        text2 = self.makeRecipeText(branch2)
+        login_person(recipe.owner.teamowner)
+        recipe.recipe_text = text2
+        self.assertEquals([branch2], list(recipe.getReferencedBranches()))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
