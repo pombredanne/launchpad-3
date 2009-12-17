@@ -15,8 +15,8 @@
 
   <div id="membership-summary" class="portletBody portletContent"
     style="margin-bottom: 1.5em;">
-    <div id="membership-summary">
-      <div>
+    <div>
+      <div id="membership-counts">
         <img src="/@@/team" alt="team" />
         <strong id="approved-member-count">
           <tal:active content="context/all_member_count" />
@@ -97,7 +97,7 @@
       <td style="padding: 0px 1em 1em 0px;"
           tal:define="link context/menu:overview/add_member">
         <span id="add-member-spinner"
-              class="hidden update-in-progress-message">
+              class="unseen update-in-progress-message">
           Saving...
         </span>
         <tal:add-member replace="structure link/fmt:link-icon" />
@@ -141,7 +141,7 @@
   <div id="recently-invited"
         tal:attributes="class view/recently_invited_hidden">
     <h3 style="color:black; font-weight:bold; margin: 0px">
-      Invited
+      Latest invited
     </h3>
     <ul id="recently-invited-ul">
       <li tal:repeat="person view/recently_invited_members"

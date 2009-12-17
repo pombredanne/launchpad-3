@@ -206,9 +206,8 @@ strong {
     font-weight: bold;
     }
 
-.hidden {
-    display: none;
-}
+.unseen {display: none;}
+
 
 /* Common presentations */
 div.see-all {

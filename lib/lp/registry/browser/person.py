@@ -95,6 +95,7 @@ from datetime import datetime, timedelta
 from itertools import chain
 from operator import attrgetter, itemgetter
 from textwrap import dedent
+from storm.zope.interfaces import IResultSet
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
@@ -2692,8 +2693,8 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         The AJAX on the page needs the elements to be present
         but hidden in case it adds a member to the list.
         """
-        if self.recently_approved_members.count() == 0:
-            return 'hidden'
+        if IResultSet(self.recently_approved_members).is_empty():
+            return 'unseen'
         else:
             return ''
 
@@ -2704,8 +2705,8 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         The AJAX on the page needs the elements to be present
         but hidden in case it adds a member to the list.
         """
-        if self.recently_proposed_members.count() == 0:
-            return 'hidden'
+        if IResultSet(self.recently_proposed_members).is_empty():
+            return 'unseen'
         else:
             return ''
 
@@ -2716,8 +2717,8 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         The AJAX on the page needs the elements to be present
         but hidden in case it adds a member to the list.
         """
-        if self.recently_invited_members.count() == 0:
-            return 'hidden'
+        if IResultSet(self.recently_invited_members).is_empty():
+            return 'unseen'
         else:
             return ''
 

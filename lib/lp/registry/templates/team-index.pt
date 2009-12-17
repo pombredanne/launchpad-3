@@ -86,7 +86,7 @@
     <div class="first yui-u">
       <metal:details use-macro="context/@@+person-macros/team-details" />
     </div>
-    <div class="first yui-u">
+    <div class="yui-u">
       <div tal:content="structure context/@@+portlet-membership" />
     </div>
   </div>
