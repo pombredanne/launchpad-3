@@ -101,15 +101,16 @@ class TestConfigFile(TestCase):
     def setUp(self):
         self.configfile = ConfigFile(StringIO(dedent("""\
             # Demo config file
+            CCC
             AAA=
             BBB = 
-            CCC = ccc 
-            DDD=ddd
+            CCC = ccc # comment
+            DDD=dd.d
             """)))
 
     def test_getVariable_exists(self):
         self.assertEqual('ccc', self.configfile.getVariable('CCC'))
-        self.assertEqual('ddd', self.configfile.getVariable('DDD'))
+        self.assertEqual('dd.d', self.configfile.getVariable('DDD'))
 
     def test_getVariable_empty(self):
         self.assertEqual('', self.configfile.getVariable('AAA'))
