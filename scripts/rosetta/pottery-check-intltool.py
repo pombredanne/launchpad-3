@@ -5,6 +5,8 @@
 
 """Print a list of directories that contain a valid intltool structure."""
 
+import _pythonpath
+
 from lp.translations.pottery.detect_intltool import find_intltool_dirs
 
 
