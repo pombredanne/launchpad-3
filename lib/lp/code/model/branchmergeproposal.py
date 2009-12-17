@@ -145,6 +145,7 @@ class BranchMergeProposal(SQLBase):
             for job_class in job_classes)
         job = Store.of(self).find(
             BranchMergeProposalJob,
+            BranchMergeProposalJob.branch_merge_proposal == self,
             BranchMergeProposalJob.job_type.is_in(type_classes),
             BranchMergeProposalJob.job == Job.id,
             Job._status.is_in([JobStatus.WAITING, JobStatus.RUNNING])

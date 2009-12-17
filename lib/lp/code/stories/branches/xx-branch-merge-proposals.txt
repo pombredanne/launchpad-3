@@ -628,6 +628,22 @@ If the review diff is empty, then we say it is empty.
     Empty
 
 
+Preview diff generation status
+------------------------------
+
+    >>> update = find_tag_by_id(nopriv_browser.contents, 'diff-pending-update')
+    >>> print extract_text(update)
+    Updating diff...
+    An updated diff will be available in a few minutes.  Reload to see the
+    changes.
+    >>> bmp.next_preview_diff_job.start()
+    >>> bmp.next_preview_diff_job.complete()
+    >>> transaction.commit()
+    >>> nopriv_browser.open(url)
+    >>> print find_tag_by_id(nopriv_browser.contents, 'diff-pending-update')
+    None
+
+
 Merge proposal details shown on the branch page
 -----------------------------------------------
 

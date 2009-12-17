@@ -1849,6 +1849,13 @@ class TestNextPreviewDiffJob(TestCaseWithFactory):
         updatejob2 = UpdatePreviewDiffJob.create(bmp)
         self.assertEqual(updatejob, bmp.next_preview_diff_job)
 
+    def test_does_not_return_jobs_for_other_proposals(self):
+        bmp = self.factory.makeBranchMergeProposal()
+        bmp.next_preview_diff_job.start()
+        bmp.next_preview_diff_job.complete()
+        bmp2 = self.factory.makeBranchMergeProposal()
+        self.assertIs(None, bmp.next_preview_diff_job)
+
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
