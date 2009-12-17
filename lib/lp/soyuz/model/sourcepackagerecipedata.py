@@ -9,7 +9,7 @@ interfaces.
 """
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['_SourcePackageRecipeData']
 
 from bzrlib.plugins.builder.recipe import RecipeParser
 
