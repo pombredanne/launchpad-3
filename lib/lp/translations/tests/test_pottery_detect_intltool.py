@@ -11,7 +11,8 @@ import unittest
 from StringIO import StringIO
 from textwrap import dedent
 
-from lp.translations.pottery import detect_intltool
+from lp.translations.pottery.detect_intltool import (
+    ConfigFile, check_potfiles_in, find_intltool_dirs, find_potfiles_in)
 from lp.testing import TestCase
 
 class TestDetectIntltool(TestCase):
@@ -42,19 +43,19 @@ class TestDetectIntltool(TestCase):
         # Find POTFILES.in in a packge with multiple dirs,
         # only one has POTFILES.in.
         self._prepare_package("intltool_POTFILES_in_1")
-        dirs = detect_intltool.find_potfiles_in()
+        dirs = find_potfiles_in()
         self.assertContentEqual(["./po-intltool"], dirs)
 
     def test_detect_potfiles_in_module(self):
         # Find POTFILES.in in a packge with POTFILES.in at different levels.
         self._prepare_package("intltool_POTFILES_in_2")
-        dirs = detect_intltool.find_potfiles_in()
+        dirs = find_potfiles_in()
         self.assertContentEqual(["./po", "./module1/po"], dirs)
 
     def test_check_potfiles_in_content_ok(self):
         # Ideally all files listed in POTFILES.in exist in the source package.
         self._prepare_package("intltool_single_ok")
-        self.assertTrue(detect_intltool.check_potfiles_in("./po")) 
+        self.assertTrue(check_potfiles_in("./po")) 
 
     def test_check_potfiles_in_content_ok_file_added(self):
         # If a file is not listed in POTFILES.in, the file is still good for
@@ -63,7 +64,7 @@ class TestDetectIntltool(TestCase):
         added_file = file("./src/sourcefile_new.c", "w")
         added_file.write("/* Test file. */")
         added_file.close()
-        self.assertTrue(detect_intltool.check_potfiles_in("./po")) 
+        self.assertTrue(check_potfiles_in("./po")) 
 
     def test_check_potfiles_in_content_not_ok_file_removed(self):
         # If a file is missing that is listed in POTFILES.in, the file
@@ -71,20 +72,20 @@ class TestDetectIntltool(TestCase):
         # our purposes.
         self._prepare_package("intltool_single_ok")
         os.remove("./src/sourcefile1.c")
-        self.assertFalse(detect_intltool.check_potfiles_in("./po")) 
+        self.assertFalse(check_potfiles_in("./po")) 
 
     def test_check_potfiles_in_wrong_directory(self):
         # Passing in the wrong directory will cause the check to fail
         # gracefully and return False.
         self._prepare_package("intltool_single_ok")
-        self.assertFalse(detect_intltool.check_potfiles_in("./foo")) 
+        self.assertFalse(check_potfiles_in("./foo")) 
 
     def test_find_intltool_dirs(self):
         # Complete run: find all directories with intltool structure.
         self._prepare_package("intltool_full_ok")
         self.assertContentEqual(
             ["./po-module1", "./po-module2"],
-            detect_intltool.find_intltool_dirs())
+            find_intltool_dirs())
 
     def test_find_intltool_dirs_broken(self):
         # Complete run: part of the intltool structure is broken.
@@ -92,7 +93,7 @@ class TestDetectIntltool(TestCase):
         os.remove("./src/module1/sourcefile1.c")
         self.assertContentEqual(
             ["./po-module2"],
-            detect_intltool.find_intltool_dirs())
+            find_intltool_dirs())
 
 
 class TestConfigFile(TestCase):
