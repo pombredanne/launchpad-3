@@ -593,9 +593,15 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return DecoratedResultSet(result_set, result_to_build)
 
-    @property
-    def changes_file_url(self):
+    def changesFileUrl(self):
         """See `ISourcePackagePublishingHistory`."""
+        # We use getChangesFileLFA() as opposed to getChangesFilesForSources()
+        # because the latter is more geared towards the web UI and taxes the
+        # db much more in terms of the join width and the pre-joined data.
+        #
+        # This property is accessed overwhelmingly via the LP API and calling
+        # getChangesFileLFA() which is much lighter on the db has the
+        # potential of performing significantly better.
         changes_lfa = getUtility(IPublishingSet).getChangesFileLFA(
             self.sourcepackagerelease)
 

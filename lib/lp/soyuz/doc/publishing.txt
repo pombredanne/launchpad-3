@@ -93,7 +93,7 @@ The signer can also be None for packages that were synced (e.g. from Debian):
     >>> print spph.package_signer
     None
 
-There is also a property that returns the changesfile URL.  This is proxied
+There is also a method that returns the .changes file URL. This is proxied
 through the webapp rather than being a librarian URL because the changesfile
 could be private and thus in the restricted librarian.
 
@@ -103,13 +103,13 @@ could be private and thus in the restricted librarian.
 
 The pmount source has no packageupload in the sampledata:
 
-    >>> print spph.changes_file_url
+    >>> print spph.changesFileUrl()
     None
 
 The iceweasel source has good data:
 
     >>> pub = spph.archive.getPublishedSources(name="iceweasel")[0]
-    >>> print pub.changes_file_url
+    >>> print pub.changesFileUrl()
     http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
 
 There is also a helper property to determine whether the current release for
@@ -1368,7 +1368,7 @@ requests. On pending diffs, `LibraryFileAlias` and
     None
 
 getChangesFilesForSources(), provided by IPublishingSet, allows
-call sites to retrieve all changesfiles related to a set of source
+call sites to retrieve all .changes files related to a set of source
 publications.
 
     >>> cprov_changes = publishing_set.getChangesFilesForSources(
@@ -1590,7 +1590,7 @@ Unpublished builds by source.
     Matches
 
 getChangesFileBySources() returns a dictionary mapping each individual
-source package publication to its corresponding changesfile (as a
+source package publication to its corresponding .changes file (as a
 LibraryFileAlias).
 
     >>> all_cprov_sources = cprov.archive.getPublishedSources()
@@ -1607,7 +1607,7 @@ LibraryFileAlias).
     pqr 666 in breezy-autotest
 
 We select the only available publication in Celso's PPA with a valid
-changesfile in the sampledata.
+.changes file in the sampledata.
 
     >>> pub_with_changes = all_cprov_sources[2]
     >>> the_source = pub_with_changes.sourcepackagerelease
