@@ -95,7 +95,8 @@
   <table style="margin: 0px 0px .5em 0px;">
     <tr>
       <td style="padding: 0px 1em 1em 0px;"
-          tal:define="link context/menu:overview/add_member">
+          tal:define="link context/menu:overview/add_member"
+          tal:condition="link/enabled">
         <span id="add-member-spinner"
               class="unseen update-in-progress-message">
           Saving...

@@ -4194,9 +4194,14 @@ class TeamAddMyTeamsView(LaunchpadFormView):
     def continue_action(self, action, data):
         """Make the selected teams join this team."""
         context = self.context
+        is_admin = check_permission('launchpad.Admin', context)
         for team in data['teams']:
-            team.join(context, requester=self.user)
-        if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+            if is_admin:
+                context.addMember(team, reviewer=self.user)
+            else:
+                team.join(context, requester=self.user)
+        if (context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED
+            and not is_admin):
             msg = 'proposed to this team.'
         else:
             msg = 'added to this team.'
