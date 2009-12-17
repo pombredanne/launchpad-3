@@ -10,12 +10,13 @@ import unittest
 from bzrlib.plugins.builder.recipe import RecipeParseError
 
 from zope.component import getUtility
+from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-
 from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
-from lp.testing import TestCaseWithFactory
+from lp.testing import login_person, TestCaseWithFactory
+
 
 MINIMAL_RECIPE_TEXT = u'''\
 # bzr-builder format 0.2 deb-version 1.0
@@ -100,6 +101,14 @@ class TestSourcePackageRecipeCreation(TestCaseWithFactory):
             sorted([branch1, branch2]),
             sorted(recipe.getReferencedBranches()))
 
+    def test_random_user_cant_edit(self):
+        branch1 = self.factory.makeAnyBranch()
+        text1 = self.makeRecipeText(branch1)
+        recipe = self.makeRecipeWithText(text1)
+        branch2 = self.factory.makeAnyBranch()
+        text2 = self.makeRecipeText(branch2)
+        login_person(self.factory.makePerson())
+        self.assertRaises(Unauthorized, setattr, recipe, 'recipe_text', text2)
 
 
 def test_suite():

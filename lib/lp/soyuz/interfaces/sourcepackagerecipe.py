@@ -27,9 +27,10 @@ class ISourcePackageRecipe(Interface):
     date_last_modified = Datetime(required=True, readonly=True)
 
     registrant = Reference(IPerson, title=_("XXX"), readonly=True)
-    owner = Reference(IPerson, title=_("XXX"))
-    distroseries = Reference(IDistroSeries, title=_("XXX"))
-    sourcepackagename = Reference(ISourcePackageName, title=_("XXX"))
+    owner = Reference(IPerson, title=_("XXX"), readonly=False)
+    distroseries = Reference(IDistroSeries, title=_("XXX"), readonly=True)
+    sourcepackagename = Reference(
+        ISourcePackageName, title=_("XXX"), readonly=True)
 
     name = TextLine(
             title=_("Name"), required=True,

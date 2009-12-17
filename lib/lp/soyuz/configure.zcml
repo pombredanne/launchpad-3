@@ -903,6 +903,9 @@
     <class
        class="lp.soyuz.model.sourcepackagerecipe.SourcePackageRecipe">
       <allow interface="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
+      <require
+         permission="launchpad.Edit"
+         set_attributes="recipe_text"/>
     </class>
     <securedutility
        component="lp.soyuz.model.sourcepackagerecipe.SourcePackageRecipe"
