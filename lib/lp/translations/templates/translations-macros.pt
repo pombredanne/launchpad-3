@@ -139,12 +139,6 @@
 </metal:translations-js>
 
 
-
-<metal:comment>
-Maybe in a sunny day we will have a single view for displayer languages
-tables for distribution, products and series. Until then we can use
-these macros.
-</metal:comment>
 <metal:languages-table-js define-macro="languages-table-js">
       <script type="text/javascript">
       LPS.use("node", "translations", function(Y) {
