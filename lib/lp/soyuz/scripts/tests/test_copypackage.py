@@ -1068,13 +1068,14 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         [build] = source.getBuilds()
         [binary] = build.binarypackages
         binary.override(component=contrib)
-        self.layer.txn.commit()
 
         # This time, we'll ensure that there is already an ancestor for
         # foocom in the destination archive.
         ancestor = self.test_publisher.getPubSource(
             'foocomm', '0.9', component='multiverse',
-            archive=self.copy_archive)
+            archive=self.copy_archive,
+            status=PackagePublishingStatus.PUBLISHED)
+        self.layer.txn.commit()
 
         # Setup and execute the delayed copy procedure. This should
         # now result in an accepted delayed upload.

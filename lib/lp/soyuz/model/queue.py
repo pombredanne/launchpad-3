@@ -1305,10 +1305,27 @@ class PackageUploadBuild(SQLBase):
     def checkComponentAndSection(self):
         """See `IPackageUploadBuild`."""
         distroseries = self.packageupload.distroseries
+        is_ppa = self.packageupload.archive.is_ppa
+        is_delayed_copy = self.packageupload.is_delayed_copy
+
         for binary in self.build.binarypackages:
 
-            if (not self.packageupload.archive.is_ppa and
-                binary.component not in distroseries.upload_components):
+            if is_delayed_copy:
+                # For a delayed copy the component will not yet have
+                # had the chance to be overridden, so we'll check the value
+                # that will be overridden by querying the ancestor in
+                # the destination archive - if one is available.
+                binary_name = binary.name
+                ancestry = getUtility(IPublishingSet).getNearestAncestor(
+                    package_name=binary_name,
+                    archive=self.packageupload.archive,
+                    distroseries=self.packageupload.distroseries, binary=True)
+
+                if ancestry is not None:
+                    component = ancestry.component
+
+            if (is_ppa and binary.component not in
+                distroseries.upload_components):
                 # Only complain about non-PPA uploads.
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
@@ -1500,10 +1517,11 @@ class PackageUploadSource(SQLBase):
             # that will be overridden by querying the ancestor in
             # the destination archive - if one is available.
             source_name = self.sourcepackagerelease.name
-            ancestry = getUtility(IPublishingSet).getSourceAncestry(
-                source_package_name=source_name,
+            ancestry = getUtility(IPublishingSet).getNearestAncestor(
+                package_name=source_name,
                 archive=self.packageupload.archive,
                 distroseries=self.packageupload.distroseries)
+
             if ancestry is not None:
                 component = ancestry.component
 

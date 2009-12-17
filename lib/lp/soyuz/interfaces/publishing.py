@@ -1139,14 +1139,14 @@ class IPublishingSet(Interface):
         the source_package_pub, allowing the use of the cached results.
         """
 
-    def getSourceAncestry(
-        source_package_name, archive, distroseries, pocket=None,
-        status=None):
-        """Return the ancestor of the given source in a particular archive.
+    def getNearestAncestor(
+        package_name, archive, distroseries, pocket=None, status=None,
+        binary=False):
+        """Return the ancestor of the given parkace in a particular archive.
 
-        :param source_package_name: The source for which we are checking for
+        :param package_name: The package name for which we are checking for
             an ancestor.
-        :type source_package_name: ``string``
+        :type package_name: ``string``
         :param archive: The archive in which we are looking for an ancestor.
         :type archive: `IArchive`
         :param distroseries: The particular series in which we are looking for
@@ -1157,6 +1157,14 @@ class IPublishingSet(Interface):
         :param status: An optional status defaulting to PUBLISHED if not
             provided.
         :type status: `PackagePublishingStatus`
+        :param binary: An optional argument to look for a binary ancestor
+            instead of the default source.
+        :type binary: ``Boolean``
+
+        :return: The most recent publishing history for the given
+            arguments.
+        :rtype: `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory`
         """
 
 active_publishing_status = (
