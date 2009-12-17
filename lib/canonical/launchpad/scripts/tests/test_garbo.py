@@ -513,7 +513,7 @@ class TestGarbo(TestCaseWithFactory):
             "'mark@example.com' and 'mark' reference different Accounts")
         self.assertNotEqual(log_output.find(error_message_2), -1)
 
-    def test_JobPruner(self):
+    def test_BranchJobPruner(self):
 
         self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
