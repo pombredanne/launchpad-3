@@ -63,7 +63,7 @@ class LanguagesSeriesTest(TestCaseWithFactory):
         # and only user preferred langauges are displayed
         self.client.asserts.assertProperty(
             id=u'toggle-languages-visibility',
-            validator='text|View All Languages')
+            validator='text|View all languages')
         self._assert_languages_visible({
             u'Catalan': True,
             u'Spanish': True,
@@ -75,7 +75,7 @@ class LanguagesSeriesTest(TestCaseWithFactory):
         self._toggle_languages_visiblity()
         self.client.asserts.assertProperty(
             id=u'toggle-languages-visibility',
-            validator='text|View Only Preferred Languages')
+            validator='text|View only preferred languages')
         # All languages should be visible now
         self._assert_languages_visible({
             u'Catalan': True,

@@ -157,10 +157,11 @@
 
 <metal:languages-table-actions define-macro="languages-table-actions">
   <div align="right">
-    [ <a href="/+editmylanguages">Choose Preferred Languages...</a>
-      &mdash;
-      <a href="#" id="toggle-languages-visibility">
-         View All Languages</a>
+    [ <a href="/+editmylanguages">Choose preferred languages...</a>
+      <tal:has-preferred condition="view/translatable_languages">&mdash;
+        <a href="#" id="toggle-languages-visibility">
+          View all languages</a>
+      </tal:has-preferred>
     ]
    </div>
 </metal:languages-table-actions>
