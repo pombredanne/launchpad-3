@@ -55,7 +55,7 @@ class _SourcePackageRecipeData(Storm):
 
     def _get_recipe(self):
         # Read recipe text out, rewrite branch references.
-        pass
+        return self._recipe
 
     def _set_recipe(self, recipe):
         # Read recipe text out, rewrite branch references.

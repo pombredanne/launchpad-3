@@ -10,7 +10,7 @@ from lazr.restful.fields import Reference
 
 from zope.interface import Interface
 
-from zope.schema import Datetime, TextLine
+from zope.schema import Datetime, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
@@ -35,6 +35,9 @@ class ISourcePackageRecipe(Interface):
             title=_("Name"), required=True,
             constraint=name_validator,
             description=_("The name of this recipe."))
+
+    recipe_text = Text(
+        title=_("XXX"), required=True, readonly=False, description=_("XXX"))
 
     def getReferencedBranches():
         """ XXX """

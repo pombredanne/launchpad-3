@@ -45,6 +45,10 @@ class SourcePackageRecipe(Storm):
     recipe_data_id = Int(name='recipe_data', allow_none=True)
     recipe_data = Reference(recipe_data_id, '_SourcePackageRecipeData.id')
 
+    @property
+    def recipe_text(self):
+        return self.recipe_data.recipe
+
     def getReferencedBranches(self):
         return self.recipe_data.referenced_branches
 

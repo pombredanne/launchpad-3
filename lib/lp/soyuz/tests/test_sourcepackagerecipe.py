@@ -70,6 +70,13 @@ class TestSourcePackageRecipeCreation(TestCaseWithFactory):
             registrant=registrant, owner=owner, distroseries=distroseries,
             sourcepackagename=sourcepackagename, name=name, recipe=text)
 
+    def test_recipe_access(self):
+        # For now, the exact text passed when a recipe is created is available
+        # as the 'recipe_text' attribute on the recipe object.
+        text = self.makeRecipeText()
+        recipe = self.makeRecipeWithText(text)
+        self.assertEquals(text, recipe.recipe_text)
+
     def test_invalid_recipe_text(self):
         # Attempting to create a recipe with an invalid recipe text fails.
         self.assertRaises(RecipeParseError, self.makeRecipeWithText, u'')
