@@ -58,8 +58,9 @@
 	</textarea>
 	<div class="formHelp">This comment will be sent together with the
 	notification of this change to all team administrators and this
-	member<span tal:condition="context/required:launchpad.Admin">, unless
-	the 'Silent' option is selected</span>.</div>
+    member<span tal:condition="view/isActive"><span
+    tal:condition="context/required:launchpad.Admin">, unless the 'Silent'
+    option is selected</span></span>.</div>
       </td>
     </tr>
   </metal:macro>
@@ -145,8 +146,8 @@
             <th>Silent:</th>
             <td>
               <input type="checkbox" value="no" name="silent" id="silent" />
-              <div class="formHelp">Do not send notification to anyone of this
-                membership change.</div>
+              <div class="formHelp">Do not send notifications to anyone
+                regarding this membership change.</div>
             </td>
           </tr>
 
