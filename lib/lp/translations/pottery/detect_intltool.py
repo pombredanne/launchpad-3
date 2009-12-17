@@ -19,6 +19,7 @@ from subprocess import Popen, PIPE
 
 POTFILES_in = "POTFILES.in"
 
+
 def run_shell_command(cmd, env=None, input_data=None, raise_on_error=False):
     """Run a shell command and return the output and status."""
     stdin = None
@@ -41,6 +42,7 @@ def run_shell_command(cmd, env=None, input_data=None, raise_on_error=False):
 
     return (status, output, errout)
 
+
 def find_potfiles_in():
     """ Search the current directory and its subdirectories for POTFILES.in.
 
@@ -51,6 +53,7 @@ def find_potfiles_in():
         if POTFILES_in in dirfiles:
             result_dirs.append(dirpath)
     return result_dirs
+
 
 def check_potfiles_in(path):
     """Check if the files listed in the POTFILES.in file exist."""
@@ -64,8 +67,12 @@ def check_potfiles_in(path):
     notexist = os.path.join(path, "notexist")
     return not os.access(notexist, os.R_OK)
 
+
 def find_intltool_dirs():
     """Search the current directory and its subdiretories for intltool
     structure.
     """
     return filter(check_potfiles_in, find_potfiles_in())
+
+class ConfigFile(object):
+    pass

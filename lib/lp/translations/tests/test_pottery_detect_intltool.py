@@ -8,6 +8,9 @@ import tarfile
 import tempfile
 import unittest
 
+from StringIO import StringIO
+from textwrap import dedent
+
 from lp.translations.pottery import detect_intltool
 from lp.testing import TestCase
 
@@ -90,6 +93,21 @@ class TestDetectIntltool(TestCase):
         self.assertContentEqual(
             ["./po-module2"],
             detect_intltool.find_intltool_dirs())
+
+
+class TestConfigFile(TestCase):
+
+    def setUp(self):
+        self.configfile = StringIO(dedent("""\
+            # Demo config file
+            AAA=
+            BBB = 
+            CCC = ccc
+            DDD=ddd
+            """))
+
+    def test_getVariable_exists(self):
+        print ">%s<" % self.configfile.getvalue()
 
 
 def test_suite():
