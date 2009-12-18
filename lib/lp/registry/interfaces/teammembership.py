@@ -35,7 +35,7 @@ from canonical.launchpad import _
 DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
 
 class UserCannotChangeMembershipSilently(Unauthorized):
-    """User not permitted to change status.
+    """User not permitted to change membership status silently.
 
     Raised when a user tries to change someone's membership silently, and is not
     a Launchpad Administrator.
