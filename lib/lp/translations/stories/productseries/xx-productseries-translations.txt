@@ -114,7 +114,7 @@ translations page.
     >>> serbian_link['href']
     u'/frobnicator/trunk/+lang/sr'
 
-Upload page and Translations use
+Upload page and translations use
 --------------------------------
 
 If the product a series belongs to is not configured to use Launchpad
@@ -238,3 +238,32 @@ indicate that export is happening.
     Translations...
     Translations are exported daily to branch
     ...
+
+Translation focus
+-----------------
+
+If translation focus is not set, there is no recommendation of what
+release series should be translated.
+
+    >>> login('admin@canonical.com')
+    >>> distribution = factory.makeDistribution(name='earthian')
+    >>> distroseries = factory.makeDistroRelease(
+    ...     name='1.4', distribution=distribution)
+    >>> logout()
+    >>> print distribution.translation_focus
+    None
+    >>> admin_browser.open('http://translations.launchpad.dev/earthian/1.4')
+    >>> print find_tag_by_id(admin_browser.contents, 'translation-focus')
+    None
+
+If focus is set, nice explanatory text is displayed.
+
+    >>> login('admin@canonical.com')
+    >>> focus_series = factory.makeDistroRelease(
+    ...     name='1.6', distribution=distribution)
+    >>> distribution.translation_focus = focus_series
+    >>> logout()
+    >>> admin_browser.open('http://translations.launchpad.dev/earthian/1.4')
+    >>> print extract_text(
+    ...     find_tag_by_id(admin_browser.contents, 'translation-focus'))
+    Launchpad currently recommends translating 1.6.

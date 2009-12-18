@@ -56,8 +56,12 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distroseries=self.context.distroseries,
             sourcepackagename=self.context.sourcepackagename)
 
-        if not check_permission('launchpad.Admin', sourcepackage_pots):
-            self.context.distroseries.checkTranslationsViewable()
+        # Check that this DistroSeriesLanguage is viewable
+        # When not viewable it will raise 'TranslationUnavailable'
+        self.context.checkTranslationsViewable()
+
+#        if not check_permission('launchpad.TranslationsAdmin', sourcepackage_pots):
+#            self.context.distroseries.checkTranslationsViewable()
 
         return sourcepackage_pots
 

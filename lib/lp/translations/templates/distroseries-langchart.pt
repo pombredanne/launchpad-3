@@ -8,7 +8,7 @@
     <strong>Translations for this series are currently hidden.</strong>
 
     <!-- Bounce regular users to "translations unavailable" page. -->
-    <metal:check-available tal:omit-tag="view/checkTranslationsViewable" />
+    <metal:check-available tal:omit-tag="context/checkTranslationsViewable" />
   </p>
 
 

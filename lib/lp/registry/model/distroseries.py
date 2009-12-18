@@ -120,7 +120,7 @@ from canonical.launchpad.webapp.interfaces import (
     TranslationUnavailable)
 from lp.soyuz.interfaces.sourcepackageformat import (
     ISourcePackageFormatSelectionSet)
-
+from canonical.launchpad.webapp.authorization import check_permission
 
 class SeriesMixin:
     """See `ISeriesMixin`."""
@@ -724,6 +724,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         if not self.hide_all_translations:
             # Yup, viewable.
+            return
+
+        if check_permission('launchpad.TranslationsAdmin', self):
+            # Anyone with admin rights on this series passes.  This
+            # includes Launchpad admins and Rosetta exprets.
             return
 
         future = [
