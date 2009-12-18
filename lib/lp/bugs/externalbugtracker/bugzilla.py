@@ -596,27 +596,14 @@ class BugzillaAPI(Bugzilla):
 
     def getModifiedRemoteBugs(self, bug_ids, last_checked):
         """See `IExternalBugTracker`."""
-        # We marshal last_checked into an xmlrpclib.DateTime since
-        # xmlrpclib can't do so cleanly itself.
-        # XXX 2009-08-21 gmb (bug 254999):
-        #     We can remove this once we upgrade to python 2.5.
-        changed_since = xmlrpclib.DateTime(last_checked.timetuple())
-
-        search_args = {
-            'id': bug_ids,
-            'last_change_time': changed_since,
-            }
-        response_dict = self.xmlrpc_proxy.Bug.search(search_args)
+        response_dict = self.xmlrpc_proxy.Bug.search(
+            {'id': bug_ids, 'last_change_time': last_checked})
         remote_bugs = response_dict['bugs']
-
         # Store the bugs we've imported and return only their IDs.
         self._storeBugs(remote_bugs)
-
         # Marshal the bug IDs into strings before returning them since
         # the remote Bugzilla may return ints rather than strings.
-        bug_ids = [str(remote_bug['id']) for remote_bug in remote_bugs]
-
-        return bug_ids
+        return [str(remote_bug['id']) for remote_bug in remote_bugs]
 
     def getRemoteProduct(self, remote_bug):
         """See `IExternalBugTracker`."""
@@ -833,28 +820,17 @@ class BugzillaLPPlugin(BugzillaAPI):
 
     def getModifiedRemoteBugs(self, bug_ids, last_checked):
         """See `IExternalBugTracker`."""
-        # We marshal last_checked into an xmlrpclib.DateTime since
-        # xmlrpclib can't do so cleanly itself.
-        # XXX 2008-08-05 gmb (bug 254999):
-        #     We can remove this once we upgrade to python 2.5.
-        changed_since = xmlrpclib.DateTime(last_checked.timetuple())
-
-        # Create the arguments that we're going to send to the remote
-        # server. We pass permissive=True to ensure that Bugzilla won't
-        # error if we ask for a bug that doesn't exist.
-        request_args = {
+        # We pass permissive=True to ensure that Bugzilla won't error
+        # if we ask for a bug that doesn't exist.
+        response_dict = self.xmlrpc_proxy.Launchpad.get_bugs({
             'ids': bug_ids,
-            'changed_since': changed_since,
+            'changed_since': last_checked,
             'permissive': True,
-            }
-        response_dict = self.xmlrpc_proxy.Launchpad.get_bugs(request_args)
+            })
         remote_bugs = response_dict['bugs']
-
         # Store the bugs we've imported and return only their IDs.
         self._storeBugs(remote_bugs)
-        bug_ids = [remote_bug['id'] for remote_bug in remote_bugs]
-
-        return bug_ids
+        return [remote_bug['id'] for remote_bug in remote_bugs]
 
     def initializeRemoteBugDB(self, bug_ids, products=None):
         """See `IExternalBugTracker`."""

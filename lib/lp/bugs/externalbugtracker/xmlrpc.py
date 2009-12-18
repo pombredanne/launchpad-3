@@ -64,7 +64,7 @@ class UrlLib2Transport(Transport):
     verbose = False
 
     def __init__(self, endpoint, cookie_jar=None):
-        Transport.__init__(self)
+        Transport.__init__(self, use_datetime=True)
         self.scheme, self.host = urlparse(endpoint)[:2]
         assert (
             self.scheme in ('http', 'https'),
