@@ -98,7 +98,8 @@ class TestDetectIntltool(TestCase):
         # Find a translation domain in Makevars.
         self._prepare_package("intltool_domain_makevars")
         self.assertEqual(
-            "translationdomain", get_translation_domain())
+            "translationdomain",
+            get_translation_domain("po"))
 
 class TestConfigFile(TestCase):
 

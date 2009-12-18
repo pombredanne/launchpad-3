@@ -15,6 +15,7 @@ __all__ = [
 
 import errno
 import os
+import os.path
 import re
 from subprocess import Popen, PIPE
 
@@ -76,8 +77,18 @@ def find_intltool_dirs():
     return filter(check_potfiles_in, find_potfiles_in())
 
 
-def get_translation_domain():
-    return None
+def get_translation_domain(dirname):
+    """Determine the translation domain by parsing various files."""
+    locations = [
+        ('Makevars', 'DOMAIN'),
+    ]
+    value = None
+    for filename, varname in locations:
+        path = os.path.join(dirname, filename)
+        value = ConfigFile(path).getVariable(varname)
+        if value is not None:
+            break
+    return value
 
 
 class ConfigFile(object):
