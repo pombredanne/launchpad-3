@@ -91,7 +91,8 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
             distroserieslang = distroserieslangset.getDummy(
                 self.context, lang)
 
-        if not check_permission('launchpad.TranslationsAdmin', distroserieslang):
+        if not check_permission(
+            'launchpad.TranslationsAdmin', distroserieslang):
             self.context.checkTranslationsViewable()
 
         return distroserieslang

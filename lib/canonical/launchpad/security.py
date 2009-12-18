@@ -1676,7 +1676,7 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
     usedfor = IDistroSeries
 
     def checkAuthenticated(self, user):
-        """Is the user able to manage `IDistroSeries` translations
+        """Is the user able to manage `IDistroSeries` translations.
 
         Disribution managers can also manage IDistroSeries
         """
@@ -1689,7 +1689,7 @@ class AdminDistroSeriesLanguage(AuthorizationBase):
     usedfor = IDistroSeriesLanguage
 
     def checkAuthenticated(self, user):
-        """Is the user able to manage `IDistroSeriesLanguage` translations
+        """Is the user able to manage `IDistroSeriesLanguage` translations.
 
         Disribution managers can also manage IDistroSeriesLanguage
         """

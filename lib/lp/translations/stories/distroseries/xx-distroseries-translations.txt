@@ -1,21 +1,6 @@
 Distribution series translations
 ================================
 
-A translation group is created for Ubuntu, for testing distribution
-translation group owner access level
-
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet, ILaunchpadCelebrities)
-    >>> login('foo.bar@canonical.com')
-    >>> utg_member = factory.makePerson(
-    ...     email="utg-member@ex.com",password="test")
-    >>> utg = factory.makeTranslationGroup(owner=utg_member)
-    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    >>> ubuntu.translationgroup = utg
-    >>> logout()
-    >>> utc_browser = setupBrowser(auth='Basic utg-member@ex.com:test')
-
 This page shows a list of PO templates contained within all source
 packages in a particular distibution series.
 
@@ -59,6 +44,8 @@ And the page is not available either:
     Unauthorized:...
 
 ... but the link is available to administrators:
+
+    >>> utc_browser = setupUTCBrowser()
 
     >>> utc_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
 
