@@ -1142,7 +1142,7 @@ class IPublishingSet(Interface):
     def getNearestAncestor(
         package_name, archive, distroseries, pocket=None, status=None,
         binary=False):
-        """Return the ancestor of the given parkace in a particular archive.
+        """Return the ancestor of the given parkage in a particular archive.
 
         :param package_name: The package name for which we are checking for
             an ancestor.
@@ -1164,7 +1164,7 @@ class IPublishingSet(Interface):
         :return: The most recent publishing history for the given
             arguments.
         :rtype: `ISourcePackagePublishingHistory` or
-            `IBinaryPackagePublishingHistory`
+            `IBinaryPackagePublishingHistory` or None.
         """
 
 active_publishing_status = (

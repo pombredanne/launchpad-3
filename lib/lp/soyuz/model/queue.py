@@ -1324,7 +1324,7 @@ class PackageUploadBuild(SQLBase):
                 if ancestry is not None:
                     component = ancestry.component
 
-            if (is_ppa and binary.component not in
+            if (not is_ppa and binary.component not in
                 distroseries.upload_components):
                 # Only complain about non-PPA uploads.
                 raise QueueBuildAcceptError(
