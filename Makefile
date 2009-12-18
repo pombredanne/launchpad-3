@@ -110,13 +110,16 @@ pagetests: build
 
 inplace: build
 
-build: $(BZR_VERSION_INFO) compile apidoc jsbuild
+build: $(BZR_VERSION_INFO) compile apidoc jsbuild css_combine
+
+css_combine:
+	${SHHH} bin/combine-css
 
 jsbuild_lazr:
 	# We absolutely do not want to include the lazr.testing module and its
 	# jsTestDriver test harness modifications in the lazr.js and launchpad.js
 	# roll-up files.  They fiddle with built-in functions!  See Bug 482340.
-	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/
+	${SHHH} bin/jsbuild $(JSFLAGS) -b $(LAZR_BUILT_JS_ROOT) -x testing/ -c $(LAZR_BUILT_JS_ROOT)/yui
 
 jsbuild: jsbuild_lazr
 	${SHHH} bin/jsbuild \

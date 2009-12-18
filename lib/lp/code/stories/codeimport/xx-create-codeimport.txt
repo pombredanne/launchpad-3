@@ -54,6 +54,14 @@ When the user clicks continue, the import branch is created
     <Link text='http://svn.example.com/firefox/trunk'
            url='http://svn.example.com/firefox/trunk'>
 
+The fact that this is an import via bzr-svn is indicated in a 'title'
+attribute on the text of 'Subversion'.
+
+    >>> svn_span = find_tag_by_id(browser.contents, 'svn-import-details').span
+    >>> print extract_text(svn_span)
+    Subversion
+    >>> print svn_span['title']
+    Subversion via bzr-svn
 
 Requesting a Git import
 =======================
