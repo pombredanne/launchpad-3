@@ -79,11 +79,12 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType, UICreatableBranchType)
+    BranchLifecycleStatus, BranchType, RevisionControlSystems,
+    UICreatableBranchType)
+from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch,
     user_has_special_branch_access)
-from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import CodeImportReviewStatus
 from lp.code.interfaces.codeimportjob import (
@@ -501,6 +502,14 @@ class BranchView(LaunchpadView, FeedsMixin):
         return list(self.context.code_import.results[:10])
 
     @property
+    def is_svn_import(self):
+        """True if an imported branch is a SVN import."""
+        # You should only be calling this if it's a code import
+        assert self.context.code_import
+        return self.context.code_import.rcs_type in \
+               (RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN)
+
+    @property
     def svn_url_is_web(self):
         """True if an imported branch's SVN URL is HTTP or HTTPS."""
         # You should only be calling this if it's an SVN code import
@@ -849,7 +858,6 @@ class BranchDeletionView(LaunchpadFormView):
         The keys are 'delete' and 'alter'; the values are dicts of
         'item', 'reason' and 'allowed'.
         """
-        branch = self.context
         row_dict = {'delete': [], 'alter': [], 'break_link': []}
         for item, action, reason, allowed in (
             self.display_deletion_requirements):
