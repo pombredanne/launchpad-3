@@ -143,7 +143,8 @@ class TestCanSetStatusPOFile(TestCanSetStatusBase):
 
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)
-        self.pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
+        self.pofile = self.factory.makePOFile(
+            'eo', potemplate=self.potemplate)
         self.entry = self.queue.addOrUpdateEntry(
             'demo.po', '#demo', False, self.uploaderperson,
             productseries=self.productseries, pofile=self.pofile)
