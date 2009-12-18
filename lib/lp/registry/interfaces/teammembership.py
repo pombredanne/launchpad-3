@@ -18,13 +18,14 @@ __all__ = [
 
 from zope.schema import Bool, Choice, Datetime, Int, Text
 from zope.interface import Attribute, Interface
+from zope.security.interfaces import Unauthorized
 from lazr.enum import DBEnumeratedType, DBItem
 
 from lazr.restful.interface import copy_field
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
    call_with, export_as_webservice_entry, export_write_operation, exported,
-   operation_parameters, REQUEST_USER)
+   operation_parameters, REQUEST_USER, webservice_error)
 
 from canonical.launchpad import _
 
@@ -33,6 +34,13 @@ from canonical.launchpad import _
 # admin to do so, depending on the team's renewal policy.
 DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT = 7
 
+class UserCannotChangeMembershipSilently(Unauthorized):
+    """User not permitted to change status.
+
+    Raised when a user tries to change someone's membership silently, and is not
+    a Launchpad Administrator.
+    """
+    webservice_error(401) # HTTP Error: 'Unauthorised'
 
 class TeamMembershipStatus(DBEnumeratedType):
     """TeamMembership Status

@@ -40,7 +40,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
     ITeamMembership, ITeamMembershipSet, ITeamParticipation,
-    TeamMembershipStatus)
+    TeamMembershipStatus, UserCannotChangeMembershipSilently)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
@@ -279,9 +279,10 @@ class TeamMembership(SQLBase):
         if status == self.status:
             return
 
-        if silent:
-            assert self.canChangeStatusSilently(user), (
-                "You may not change user's membership statuses silently.")
+        if silent and not self.canChangeStatusSilently(user):
+            raise UserCannotChangeMembershipSilently(
+                "Only Launchpad administrators may change membership status "
+                "silently.")
 
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
