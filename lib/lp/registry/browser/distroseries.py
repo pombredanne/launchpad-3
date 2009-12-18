@@ -82,10 +82,6 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
             raise NotFoundError
         distroserieslang = self.context.getDistroSeriesLanguage(lang)
 
-        # Check that this DistroSeriesLanguage is viewable
-        # When not viewable it will raise 'TranslationUnavailable'
-        self.context.checkTranslationsViewable()
-
         if distroserieslang is None:
             # There is no IDistroSeriesLanguage yet for this IDistroSeries,
             # but we still need to list it as an available language, so we
@@ -95,8 +91,8 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin,
             distroserieslang = distroserieslangset.getDummy(
                 self.context, lang)
 
-#        if not check_permission('launchpad.TranslationsAdmin', distroserieslang):
-#            self.context.checkTranslationsViewable()
+        if not check_permission('launchpad.TranslationsAdmin', distroserieslang):
+            self.context.checkTranslationsViewable()
 
         return distroserieslang
 

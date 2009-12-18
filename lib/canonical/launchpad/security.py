@@ -1671,20 +1671,7 @@ class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
             return OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user)
 
 
-class AdminDistroSeriesLanguage(AdminDistributionTranslations):
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IDistroSeriesLanguage
-
-    def checkAuthenticated(self, user):
-        """Is the user able to manage `IDistroSeriesLanguage` translations
-
-        Disribution managers can also manage IDistroSeriesLanguage
-        """
-        return (AdminDistributionTranslations(
-            self.obj.distroseries.distribution).checkAuthenticated(user))
-
-
-class AdminDistroSeriesTranslations(AdminDistributionTranslations):
+class AdminDistroSeriesTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
 
@@ -1695,6 +1682,19 @@ class AdminDistroSeriesTranslations(AdminDistributionTranslations):
         """
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
+
+
+class AdminDistroSeriesLanguage(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistroSeriesLanguage
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistroSeriesLanguage` translations
+
+        Disribution managers can also manage IDistroSeriesLanguage
+        """
+        return (AdminDistroSeriesTranslations(
+            self.obj.distroseries).checkAuthenticated(user))
 
 
 class BranchSubscriptionEdit(AuthorizationBase):
