@@ -1735,9 +1735,15 @@ class CodeReviewVoteReferenceEdit(AuthorizationBase):
         The registrant may reassign the request to another entity.
         A member of the review team may assign it to themselves.
         A person to whom it is assigned may delegate it to someone else.
+
+        Anyone with edit permissions on the target branch of the merge
+        proposal can also edit the reviews.
         """
-        return (user.inTeam(self.obj.reviewer) or
-                user.inTeam(self.obj.registrant))
+        if user.inTeam(self.obj.reviewer) or user.inTeam(self.obj.registrant):
+            return True
+        target_access = EditBranch(
+            self.obj.branch_merge_proposal.target_branch)
+        return target_access.checkAuthenticated(user)
 
 
 class CodeReviewCommentView(AuthorizationBase):
