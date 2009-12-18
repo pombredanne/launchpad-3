@@ -7,11 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BadBranchMergeProposalSearchContext',
-    'BadStateTransition',
-    'BranchMergeProposalExists',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
-    'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
@@ -20,9 +16,8 @@ __all__ = [
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
-    'UserNotBranchReviewer',
-    'WrongBranchMergeProposal',
     ]
+
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from zope.event import notify
@@ -45,38 +40,6 @@ from lazr.restful.declarations import (
     export_read_operation, export_write_operation, exported,
     operation_parameters, operation_returns_entry, rename_parameters_as,
     REQUEST_USER)
-
-
-class InvalidBranchMergeProposal(Exception):
-    """Raised during the creation of a new branch merge proposal.
-
-    The text of the exception is the rule violation.
-    """
-
-
-class BranchMergeProposalExists(InvalidBranchMergeProposal):
-    """Raised if there is already a matching BranchMergeProposal."""
-
-
-class UserNotBranchReviewer(Exception):
-    """The user who attempted to review the merge proposal isn't a reviewer.
-
-    A specific reviewer may be set on a branch.  If a specific reviewer
-    isn't set then any user in the team of the owner of the branch is
-    considered a reviewer.
-    """
-
-
-class BadStateTransition(Exception):
-    """The user requested a state transition that is not possible."""
-
-
-class WrongBranchMergeProposal(Exception):
-    """The comment requested is not associated with this merge proposal."""
-
-
-class BadBranchMergeProposalSearchContext(Exception):
-    """The context is not valid for a branch merge proposal search."""
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
