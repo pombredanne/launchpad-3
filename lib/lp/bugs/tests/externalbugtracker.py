@@ -65,7 +65,7 @@ def new_bugtracker(bugtracker_type, base_url='http://bugs.some.where'):
     while bugtracker_set.getByName("%s-%d" % (name, index)) is not None:
         index += 1
     name += '-%d' % index
-    bugtracker = BugTracker(
+    BugTracker(
         name=name,
         title='%s *TESTING*' % (bugtracker_type.title,),
         bugtrackertype=bugtracker_type,
@@ -282,7 +282,6 @@ class TestBugzilla(Bugzilla):
             buglist_xml = read_test_file(self.buglist_file)
             bug_ids = str(form[self.bug_id_form_element]).split(',')
             bug_li_items = []
-            status_tag = None
             for bug_id in bug_ids:
                 bug_id = int(bug_id)
                 if bug_id not in self.bugzilla_bugs:
@@ -593,7 +592,6 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             "One of ('ids', 'products') should be specified")
 
         bugs_to_return = []
-        bugs = dict(self.bugs)
 
         # We enforce permissiveness, since we'll always call this method
         # with permissive=True in the Real World.
@@ -1617,8 +1615,7 @@ class Urlib2TransportTestHandler(BaseHandler):
         The response body is an XMLRPC response. In addition we set the
         info of the response to contain a cookie.
         """
-        assert (
-            isinstance(req, Request),
+        assert isinstance(req, Request), (
             'Expected a urllib2.Request, got %s' % req)
 
         if 'testError' in req.data:

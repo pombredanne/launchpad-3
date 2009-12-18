@@ -554,7 +554,7 @@ class BugzillaAPI(Bugzilla):
         bug_ids_to_retrieve = []
         for bug_id in bug_ids:
             try:
-                actual_bug_id = self._getActualBugId(bug_id)
+                self._getActualBugId(bug_id)
             except BugNotFound:
                 bug_ids_to_retrieve.append(bug_id)
 
@@ -586,7 +586,7 @@ class BugzillaAPI(Bugzilla):
         try:
             status = self._bugs[actual_bug_id]['status']
             resolution = self._bugs[actual_bug_id]['resolution']
-        except KeyError, error:
+        except KeyError:
             raise UnparseableBugData
 
         if resolution != '':
@@ -805,7 +805,7 @@ class BugzillaLPPlugin(BugzillaAPI):
         token_text = internal_xmlrpc_server.newBugTrackerToken()
 
         try:
-            user_id = self.xmlrpc_proxy.Launchpad.login(
+            self.xmlrpc_proxy.Launchpad.login(
                 {'token': token_text})
         except xmlrpclib.Fault, fault:
             message = 'XML-RPC Fault: %s "%s"' % (
