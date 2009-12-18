@@ -309,28 +309,3 @@ exist anymore.
     NotFound:...
 
 
-Working with hidden languages
------------------------------
-
-We are going to work with visible (Spanish) and non visible
-(Spanish (Spain)) languages.
-
-Here we can see that Spanish (Spain) is not visible.
-
-    >>> admin_browser.open(
-    ...     'http://translations.launchpad.dev/+languages/es_ES/+admin')
-    >>> print admin_browser.getControl('The English name').value
-    Spanish (Spain)
-    >>> admin_browser.getControl('Visible').selected
-    False
-
-But Spanish is visible.
-
-    >>> admin_browser.open(
-    ...     'http://translations.launchpad.dev/+languages/es/+admin')
-    >>> print admin_browser.getControl('The English name').value
-    Spanish
-    >>> admin_browser.getControl('Visible').selected
-    True
-
-
