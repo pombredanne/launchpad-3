@@ -503,7 +503,7 @@ class Publisher(object):
         f = open(os.path.join(
             self._config.distsroot, full_name, "Release"), "w")
 
-        stanza = DISTRORELEASE_STANZA % (
+        stanza = (DISTRORELEASE_STANZA % (
                     self._getOrigin(),
                     self._getLabel(),
                     full_name,
@@ -511,7 +511,8 @@ class Publisher(object):
                     distroseries.name,
                     datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
                     " ".join(sorted(list(all_architectures))),
-                    " ".join(reorder_components(all_components)), drsummary)
+                    " ".join(reorder_components(all_components)),
+                    drsummary)).encode("utf-8")
         f.write(stanza)
 
         f.write("MD5Sum:\n")
@@ -577,13 +578,13 @@ class Publisher(object):
         f = open(os.path.join(self._config.distsroot, full_name,
                               component, architecture, "Release"), "w")
 
-        stanza = DISTROARCHRELEASE_STANZA % (
+        stanza = (DISTROARCHRELEASE_STANZA % (
                 full_name,
                 distroseries.version,
                 component,
                 self._getOrigin(),
                 self._getLabel(),
-                clean_architecture)
+                unicode(clean_architecture))).encode("utf-8")
         f.write(stanza)
         f.close()
 

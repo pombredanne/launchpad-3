@@ -30,6 +30,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.code.errors import (
+    BadBranchMergeProposalSearchContext, BadStateTransition,
+    UserNotBranchReviewer, WrongBranchMergeProposal)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
@@ -41,10 +44,8 @@ from lp.code.event.branchmergeproposal import (
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
-    BadBranchMergeProposalSearchContext, BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter, UserNotBranchReviewer,
-    WrongBranchMergeProposal)
+    IBranchMergeProposal, IBranchMergeProposalGetter)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.code.mail.branch import RecipientReason
 from lp.registry.model.person import Person
@@ -546,7 +547,11 @@ class BranchMergeProposal(SQLBase):
         # Lower case the review type.
         review_type = self._normalizeReviewType(review_type)
         vote_reference = self.getUsersVoteReference(reviewer, review_type)
-        if vote_reference is None:
+        # If there is no existing review for the reviewer, then create a new
+        # one.  If the reviewer is a team, then we don't care if there is
+        # already an existing pending review, as some projects expect multiple
+        # reviews from a team.
+        if vote_reference is None or reviewer.is_team:
             vote_reference = CodeReviewVoteReference(
                 branch_merge_proposal=self,
                 registrant=registrant,
@@ -638,7 +643,7 @@ class BranchMergeProposal(SQLBase):
         return Store.of(self).find(
             CodeReviewVoteReference,
             CodeReviewVoteReference.branch_merge_proposal == self,
-            query).one()
+            query).order_by(CodeReviewVoteReference.date_created).first()
 
     def _getTeamVoteReference(self, user, review_type):
         """Get a vote reference where the user is in the review team.
@@ -649,7 +654,8 @@ class BranchMergeProposal(SQLBase):
             CodeReviewVoteReference,
             CodeReviewVoteReference.branch_merge_proposal == self,
             CodeReviewVoteReference.review_type == review_type,
-            CodeReviewVoteReference.comment == None)
+            CodeReviewVoteReference.comment == None
+            ).order_by(CodeReviewVoteReference.date_created)
         for ref in refs:
             if user.inTeam(ref.reviewer):
                 return ref
