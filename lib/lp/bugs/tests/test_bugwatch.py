@@ -11,13 +11,15 @@ from urlparse import urlunsplit
 
 from zope.component import getUtility
 
-from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.webapp import urlsplit
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
+
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.webapp import urlsplit
-from canonical.testing import LaunchpadFunctionalLayer
+from lp.testing import ANONYMOUS, TestCaseWithFactory, login
 
 
 class ExtractBugTrackerAndBugTestBase(unittest.TestCase):
@@ -309,6 +311,20 @@ class GoogleCodeBugTrackerExtractBugTrackerAndBugTest(
     bug_id = '12345'
 
 
+class TestBugWatchBugTasks(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugWatchBugTasks, self).setUp('test@canonical.com')
+        self.bug_watch = self.factory.makeBugWatch()
+
+    def test_bugtasks(self):
+        # BugWatch.bugtasks is always a list.
+        self.assertIsInstance(
+            self.bug_watch.bugtasks, list)
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
@@ -331,6 +347,7 @@ def test_suite():
        PHPProjectBugTrackerExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(
         GoogleCodeBugTrackerExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(TestBugWatchBugTasks))
     return suite
 
 
