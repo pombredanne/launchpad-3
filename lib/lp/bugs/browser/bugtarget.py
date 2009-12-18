@@ -272,17 +272,8 @@ class FileBugViewBase(LaunchpadFormView):
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
-
-        if (config.malone.ubuntu_disable_filebug and
-            self.targetIsUbuntu() and
-            self.extra_data_token is None and
-            not self.no_ubuntu_redirect):
-            # The user is trying to file a new Ubuntu bug via the web
-            # interface and without using apport. Redirect to a page
-            # explaining the preferred bug-filing procedure.
-            self.request.response.redirect(
-                config.malone.ubuntu_bug_filing_url)
-        if self.extra_data_token is not None:
+        if (not self.redirect_ubuntu_filebug and
+            self.extra_data_token is not None):
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
                 self.widgets['title'].setRenderedValue(
@@ -296,6 +287,29 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(
                 'Extra debug information will be added to the bug report'
                 ' automatically.')
+
+    @cachedproperty
+    def redirect_ubuntu_filebug(self):
+        if IDistribution.providedBy(self.context):
+            bug_supervisor = self.context.bug_supervisor
+        elif (IDistributionSourcePackage.providedBy(self.context) or
+              ISourcePackage.providedBy(self.context)):
+            bug_supervisor = self.context.distribution.bug_supervisor
+        else:
+            bug_supervisor = None
+
+        # Work out whether the redirect should be overidden.
+        do_not_redirect = (
+            self.request.form.get('no-redirect') is not None or
+            [key for key in self.request.form.keys()
+            if 'field.actions' in key] != [] or
+            self.user.inTeam(bug_supervisor))
+
+        return (
+            config.malone.ubuntu_disable_filebug and
+            self.targetIsUbuntu() and
+            self.extra_data_token is None and
+            not do_not_redirect)
 
     @property
     def field_names(self):
@@ -345,20 +359,6 @@ class FileBugViewBase(LaunchpadFormView):
                 (IMaloneApplication.providedBy(self.context) and
                  self.request.form.get('field.bugtarget.distribution') ==
                  ubuntu.name))
-
-    @property
-    def no_ubuntu_redirect(self):
-        if IDistribution.providedBy(self.context):
-            bug_supervisor = self.context.bug_supervisor
-        elif (IDistributionSourcePackage.providedBy(self.context) or
-              ISourcePackage.providedBy(self.context)):
-            bug_supervisor = self.context.distribution.bug_supervisor
-
-        return (
-            self.request.form.get('no-redirect') is not None or
-            [key for key in self.request.form.keys()
-            if 'field.actions' in key] != [] or
-            self.user.inTeam(bug_supervisor))
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -966,6 +966,15 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
 
     focused_element_id = 'field.title'
     show_summary_in_results = True
+
+    def initialize(self):
+        FilebugShowSimilarBugsView.initialize(self)
+        if self.redirect_ubuntu_filebug:
+            # The user is trying to file a new Ubuntu bug via the web
+            # interface and without using apport. Redirect to a page
+            # explaining the preferred bug-filing procedure.
+            self.request.response.redirect(
+                config.malone.ubuntu_bug_filing_url)
 
     @safe_action
     @action("Continue", name="search", validator="validate_search")
