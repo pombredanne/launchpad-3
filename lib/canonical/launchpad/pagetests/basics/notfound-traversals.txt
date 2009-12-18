@@ -191,7 +191,6 @@ Test the DARBPR page for a REMOVED package:
 ...                 host='translations.launchpad.dev')
 
 >>> check("/ubuntu/hoary/+source/evolution/+changelog")
->>> check("/ubuntu/hoary/+source/evolution/+packaging")
 >>> check("/ubuntu/hoary/+source/evolution/+edit-packaging", auth=True)
 >>> check("/ubuntu/hoary/+source/evolution/+gethelp")
 

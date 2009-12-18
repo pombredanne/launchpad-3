@@ -395,11 +395,11 @@
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
-            set_attributes="description displayname"/>
+            set_attributes="description displayname enabled"/>
         <require
             permission="launchpad.Commercial"
             set_attributes="authorized_size buildd_secret
-                            enabled external_dependencies private
+                            external_dependencies private
                             require_virtualized relative_build_score "/>
         <require
             permission="launchpad.Admin"
@@ -891,5 +891,12 @@
         <allow
             interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
     </class>
+
+    <!-- BinaryPackageBuildBehavior -->
+    <adapter
+        for="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"
+        provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
+        factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
+        permission="zope.Public" />
 
 </configure>

@@ -289,13 +289,33 @@ ol.subordinate {
     display: inline;
     margin: 0 0.25em 0.75em 0;
     }
+.three-column-list dl {
+    width: 31%;
+    float: left;
+    display: inline;
+    margin: 0 0.25em 0.75em 0;
+    }
 .two-column-list li {
     width: 48%;
     float: left;
     display: inline;
     margin: 0 0.25em 0 0;
     }
-.two-column-list:after {
+.three-column-list li {
+    width: 31%;
+    float: left;
+    display: inline;
+    margin: 0 0.25em 0 0;
+    }
+/* Keep the abilty to hide list entries. */
+.two-column-list dl.unseen,
+.two-column-list li.unseen,
+.three-column-list dl.unseen,
+.three-column-list li.unseen {
+    display: none;
+    }
+.two-column-list:after,
+.three-column-list:after {
     content: ".";
     display: block;
     height: 0;
@@ -546,6 +566,9 @@ ul.latest-ppa-updates li {
     background-repeat: no-repeat;
     background-position:right center;
 }
+table#packages_list tr.superseded {
+    background-color: #eee;
+}
 /* The following could be generalised for use to the following selector:
  * .side .portlet li.nth-child(odd)
  * if needed. */
@@ -673,6 +696,19 @@ form.translations div.alignment .secondary label {
     font-weight: normal;
     padding: 2px 1em 2px 2px;
 }
+
+/* Templates listing.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+templates
+ *   https://translations.launchpad.dev/evolution/trunk/+templates
+ */
+
+.inactive-template td {
+    background-color: #fee;
+    color: #855;
+}
+
 
 /* Translations statistics and legend.
  *
@@ -890,6 +926,7 @@ body.tab-bugs #portlet-subscribers .sprite {
 .greenbar {background:url(icon-sprites-3) 0 -446px repeat-x;}
 .purplebar {background:url(icon-sprites-3) 0 -476px repeat-x;}
 .favorite-yes {background:url(icon-sprites-3) 0 -530px no-repeat;}
+.haspatch-icon {background:url(icon-sprites-3) 0 -562px no-repeat;}
 
 /*large*/
 .large-branch {background:url(icon-sprites-large) 0 0 no-repeat;}
@@ -947,3 +984,13 @@ body.tab-bugs #portlet-subscribers .sprite {
 .codeimportREVIEWED  {color: green;}
 .codeimportSUSPENDED {color: red;}
 .codeimportFAILING   {color: red;}
+
+.distromirrorstatusUP {color: green;}
+.distromirrorstatusONEHOURBEHIND {color: green;}
+.distromirrorstatusTWOHOURSBEHIND {color: green;}
+.distromirrorstatusFOURHOURSBEHIND {color: green;}
+.distromirrorstatusSIXHOURSBEHIND {color: #f60;}
+.distromirrorstatusONEDAYBEHIND {color: #f60;}
+.distromirrorstatusTWODAYSBEHIND {color: red;}
+.distromirrorstatusONEWEEKBEHIND {color: red;}
+.distromirrorstatusUNKNOWN {color: grey;}

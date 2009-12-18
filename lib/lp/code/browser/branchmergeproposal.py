@@ -31,6 +31,7 @@ __all__ = [
     'latest_proposals_for_each_branch',
     ]
 
+from collections import defaultdict
 import operator
 
 import simplejson
@@ -71,14 +72,15 @@ from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
     CodeReviewVote)
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, WrongBranchMergeProposal)
+from lp.code.errors import WrongBranchMergeProposal
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
 from lp.code.interfaces.diff import IPreviewDiff
 from lp.registry.interfaces.person import IPersonSet
-from lp.services.comments.interfaces.conversation import IConversation
+from lp.services.comments.interfaces.conversation import (
+    IComment, IConversation)
 
 from lazr.delegates import delegates
 from lazr.restful.interface import copy_field
@@ -503,6 +505,36 @@ class DiffRenderingMixin:
         return diff_text.count('\n') >= config.diff.max_format_lines
 
 
+class ICodeReviewNewRevisions(Interface):
+    """Marker interface used to register views for CodeReviewNewRevisions."""
+
+
+class CodeReviewNewRevisions:
+    """Represents a logical grouping of revisions.
+
+    Each object instance represents a number of revisions scanned at a
+    particular time.
+    """
+    implements(IComment, ICodeReviewNewRevisions)
+
+    def __init__(self, revisions, date, branch):
+        self.revisions = revisions
+        self.branch = branch
+        self.has_body = False
+        self.has_footer = True
+        # The date attribute is used to sort the comments in the conversation.
+        self.date = date
+
+
+class CodeReviewNewRevisionsView(LaunchpadView):
+    """The view for rendering the new revisions."""
+
+    @property
+    def codebrowse_url(self):
+        """Return the link to codebrowse for this branch."""
+        return self.context.branch.codebrowse_url()
+
+
 class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
                               BranchMergeProposalRevisionIdMixin,
                               BranchMergeProposalStatusMixin,
@@ -519,15 +551,48 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def claim_action(self, action, data):
         """Claim this proposal."""
         request = self.context.getVoteReference(data['review_id'])
-        if request.reviewer == self.user:
-            return
-        request.reviewer = self.user
+        if request is not None:
+            request.claimReview(self.user)
         self.next_url = canonical_url(self.context)
 
     @property
     def comment_location(self):
         """Location of page for commenting on this proposal."""
         return canonical_url(self.context, view_name='+comment')
+
+    @property
+    def revision_end_date(self):
+        """The cutoff date for showing revisions.
+
+        If the proposal has been merged, then we stop at the merged date. If
+        it is rejected, we stop at the reviewed date. For superseded
+        proposals, it should ideally use the non-existant date_last_modified,
+        but could use the last comment date.
+        """
+        status = self.context.queue_status
+        if status == BranchMergeProposalStatus.MERGED:
+            return self.context.date_merged
+        if status == BranchMergeProposalStatus.REJECTED:
+            return self.context.date_reviewed
+        # Otherwise return None representing an open end date.
+        return None
+
+    def _getRevisionsSinceReviewStart(self):
+        """Get the grouped revisions since the review started."""
+        # Work out the start of the review.
+        start_date = self.context.date_review_requested
+        if start_date is None:
+            start_date = self.context.date_created
+        source = self.context.source_branch
+        resultset = source.getMainlineBranchRevisions(
+            start_date, self.revision_end_date, oldest_first=True)
+        # Now group by date created.
+        groups = defaultdict(list)
+        for branch_revision, revision, revision_author in resultset:
+            groups[revision.date_created].append(branch_revision)
+        return [
+            CodeReviewNewRevisions(revisions, date, source)
+            for date, revisions in groups.iteritems()]
 
     @cachedproperty
     def conversation(self):
@@ -536,6 +601,7 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
         comments = [
             CodeReviewDisplayComment(comment)
             for comment in self.context.all_comments]
+        comments.extend(self._getRevisionsSinceReviewStart())
         comments = sorted(comments, key=operator.attrgetter('date'))
         return CodeReviewConversation(comments)
 

@@ -69,12 +69,6 @@
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
-  <browser:url
-    for="canonical.launchpad.interfaces.IMailingListSet"
-    path_expression="string:+mailinglists"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
-    />
-
   <!-- RDF downloadable documents -->
   <browser:page
     for="canonical.launchpad.interfaces.ILaunchpadRoot"
