@@ -1879,9 +1879,9 @@ class TestNextPreviewDiffJob(TestCaseWithFactory):
         """Jobs are shown while pending."""
         bmp = self.factory.makeBranchMergeProposal()
         job = bmp.next_preview_diff_job
-        self.assertEqual(job.id, bmp.next_preview_diff_job.id)
+        self.assertEqual(job, bmp.next_preview_diff_job)
         job.start()
-        self.assertEqual(job.id, bmp.next_preview_diff_job.id)
+        self.assertEqual(job, bmp.next_preview_diff_job)
         job.fail()
         self.assertIs(None, bmp.next_preview_diff_job)
 

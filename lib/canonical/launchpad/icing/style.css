@@ -1104,7 +1104,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   height: 2.5em;
 }
 
-#branch-pending-writes, #diff-pending-update {
+.pending-update {
   background: #FFF59C;
   width: 40em;
   margin: 1em auto;
@@ -1117,7 +1117,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   -webkit-border-radius: 5px;
 }
 
-#branch-pending-writes h3, #diff-pending-update h3 {
+.pending-update h3{
   color: black;
   font-weight: bold;
   text-align: center;

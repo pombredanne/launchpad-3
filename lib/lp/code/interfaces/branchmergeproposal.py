@@ -118,7 +118,8 @@ class IBranchMergeProposal(IPrivacy):
         IStaticDiff, title=_('The diff to be used for reviews.'),
         readonly=True)
 
-    next_preview_diff_job = Attribute('foo')
+    next_preview_diff_job = Attribute(
+        'The next BranchMergeProposalJob that will update a preview diff.')
 
     preview_diff = exported(
         Reference(
@@ -475,10 +476,6 @@ class IBranchMergeProposal(IPrivacy):
 
 class IBranchMergeProposalJob(Interface):
     """A Job related to a Branch Merge Proposal."""
-
-    id = Int(
-        title=_('DB ID'), required=True, readonly=True,
-        description=_("Database id for this BranchJob."))
 
     branch_merge_proposal = Object(
         title=_('The BranchMergeProposal this job is about'),
