@@ -1080,6 +1080,8 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         # Setup and execute the delayed copy procedure. This should
         # now result in an accepted delayed upload.
         delayed_copy = self.do_delayed_copy(source)
+        self.assertEquals(
+            PackageUploadStatus.ACCEPTED, delayed_copy.status)
 
         # And it contains the source, build and custom files.
         self.assertEquals(
