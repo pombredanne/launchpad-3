@@ -172,6 +172,24 @@ now renew the membership.
     ...     print tag.renderContents()
     Membership renewed until ...
 
+If the user double clicks or goes back to a cached version of the page
+and tries to resubmit the form, it will skip the actual renewal process,
+and it will display the same message. This prevents the user from being
+confused, which would be the case if a double click on the submit button
+provided no information as to whether the membership was renewed.
+
+    >>> browser.goBack()
+    >>> browser.getControl('Renew').click()
+    >>> browser.url
+    'http://launchpad.dev/~landscape-developers'
+    >>> for tag in find_tags_by_class(
+    ...         browser.contents, 'informational message'):
+    ...     print tag.renderContents()
+    Membership renewed until ...
+
+When the page is loaded again, there is no form since the membership
+will no longer be expiring soon.
+
     >>> browser.open('http://launchpad.dev/~landscape-developers'
     ...              '/+expiringmembership/ubuntu-mirror-admins')
     >>> print extract_text(find_tag_by_id(browser.contents, 'maincontent'))

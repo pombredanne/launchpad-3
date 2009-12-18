@@ -61,7 +61,7 @@ from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.answers.model.question import QuestionTargetSearch
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 from lp.registry.interfaces.person import validate_public_person

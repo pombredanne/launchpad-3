@@ -1562,7 +1562,8 @@ class ArchiveSet:
             Archive.purpose == ArchivePurpose.PPA)
 
     def getArchivesForDistribution(self, distribution, name=None,
-                                   purposes=None, user=None):
+                                   purposes=None, user=None,
+                                   exclude_disabled=True):
         """See `IArchiveSet`."""
         extra_exprs = []
 
@@ -1576,6 +1577,12 @@ class ArchiveSet:
 
         if name is not None:
             extra_exprs.append(Archive.name == name)
+
+        if exclude_disabled:
+            public_archive = And(Archive.private == False,
+                                 Archive.enabled == True)
+        else:
+            public_archive = (Archive.private == False)
 
         if user is not None:
             admins = getUtility(ILaunchpadCelebrities).admin
@@ -1601,16 +1608,13 @@ class ArchiveSet:
                 # that consists of themselves.
                 extra_exprs.append(
                     Or(
-                        And(Archive.private == False,
-                            Archive.enabled == True),
+                        public_archive,
                         Archive.ownerID.is_in(user_teams_subselect)))
 
         else:
             # Anonymous user; filter to include only public archives in
             # the results.
-            extra_exprs.append(Archive.private == False)
-            extra_exprs.append(Archive.enabled == True)
-
+            extra_exprs.append(public_archive)
 
         query = Store.of(distribution).find(
             Archive,

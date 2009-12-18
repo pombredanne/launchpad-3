@@ -50,7 +50,7 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
-
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
@@ -65,10 +65,10 @@ from canonical.launchpad import _
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
-    MugshotImageUpload, ParticipatingPersonChoice, PasswordField,
-    PublicPersonChoice, StrippedTextLine, is_private_membership,
-    is_valid_public_person)
+    BlacklistableContentNameField, IconImageUpload,
+    is_private_membership_person, is_public_person, LogoImageUpload,
+    MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
+    StrippedTextLine)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.app.interfaces.headings import IRootContext
@@ -126,14 +126,14 @@ def validate_person(obj, attr, value, validate_func):
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
     def validate(person):
-        return not is_valid_public_person(person)
+        return not is_public_person(person)
 
     return validate_person(obj, attr, value, validate)
 
 
 def validate_person_not_private_membership(obj, attr, value):
     """Validate that the person (value) is not a private membership team."""
-    return validate_person(obj, attr, value, is_private_membership)
+    return validate_person(obj, attr, value, is_private_membership_person)
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -333,7 +333,7 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
     MODERATED = DBItem(1, """
         Moderated Team
 
-        All subscriptions for this team are subject to approval by one of
+        All subscriptions for this team are subject to approval by one of 
         the team's administrators.
         """)
 
@@ -366,17 +366,17 @@ class PersonVisibility(DBEnumeratedType):
     PRIVATE_MEMBERSHIP = DBItem(20, """
         Private Membership
 
-        Only Launchpad admins and team members can view the
-        membership list for this team.  The team is severely restricted in the
+        Only Launchpad admins and team members can view the 
+        membership list for this team. The team is severely restricted in the 
         roles it can assume.
         """)
 
     PRIVATE = DBItem(30, """
         Private
 
-        Only Launchpad admins and team members can view the membership list
-        for this team or its name.  The team roles are restricted to
-        subscribing to bugs, being bug supervisor, owning code branches, and
+        Only Launchpad admins and team members can view the membership list 
+        for this team or its name.  The team roles are restricted to 
+        subscribing to bugs, being bug supervisor, owning code branches, and 
         having a PPA.
         """)
 
@@ -1076,7 +1076,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
         This includes teams for which the person is the owner, a direct
         member with admin privilege, or member of a team with such
-        privileges.
+        privileges.  It excludes teams which have been merged.
         """
 
     def getTeamAdminsEmailAddresses():
@@ -1198,75 +1198,92 @@ class IPersonViewRestricted(Interface):
     # activemembers.value_type.schema will be set to IPerson once
     # IPerson is defined.
     activemembers = exported(
-        CollectionField(
-            title=_("List of members with ADMIN or APPROVED status"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("List of members with ADMIN or APPROVED status"),
+                value_type=Reference(schema=Interface))),
         exported_as='members')
     adminmembers = exported(
-        CollectionField(
-            title=_("List of this team's admins."),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("List of this team's admins."),
+                value_type=Reference(schema=Interface))),
         exported_as='admins')
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
     allmembers = exported(
-        CollectionField(
-            title=_("All participants of this team."),
-            description=_(
-                "List of all direct and indirect people and teams who, one "
-                "way or another, are a part of this team. If you want a "
-                "method to check if a given person is a member of a team, "
-                "you should probably look at IPerson.inTeam()."),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All participants of this team."),
+                description=_(
+                    "List of all direct and indirect people and teams who, "
+                    "one way or another, are a part of this team. If you "
+                    "want a method to check if a given person is a member "
+                    "of a team, you should probably look at "
+                    "IPerson.inTeam()."),
+                value_type=Reference(schema=Interface))),
         exported_as='participants')
-    approvedmembers = Attribute("List of members with APPROVED status")
+    approvedmembers = doNotSnapshot(
+        Attribute("List of members with APPROVED status"))
     deactivated_member_count = Attribute("Number of deactivated members")
-    deactivatedmembers = Attribute("List of members with DEACTIVATED status")
     deactivatedmembers = exported(
-        CollectionField(
-            title=_(
-                "All members whose membership is in the DEACTIVATED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_(
+                    "All members whose membership is in the "
+                    "DEACTIVATED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='deactivated_members')
     expired_member_count = Attribute("Number of EXPIRED members.")
     expiredmembers = exported(
-        CollectionField(
-            title=_("All members whose membership is in the EXPIRED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is in the "
+                        "EXPIRED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='expired_members')
-    inactivemembers = Attribute(
-        "List of members with EXPIRED or DEACTIVATED status")
+    inactivemembers = doNotSnapshot(
+        Attribute(
+            "List of members with EXPIRED or DEACTIVATED status"))
     inactive_member_count = Attribute("Number of inactive members")
     invited_members = exported(
-        CollectionField(
-            title=_("All members whose membership is in the INVITED state"),
-            value_type=Reference(schema=Interface)))
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is "
+                        "in the INVITED state"),
+                value_type=Reference(schema=Interface))))
+
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
-        CollectionField(
-            title=_("Active TeamMemberships for this object's members."),
-            description=_(
-                "Active TeamMemberships are the ones with the ADMIN or "
-                "APPROVED status.  The results are ordered using "
-                "Person.sortingColumns."),
-            readonly=True, required=False,
-            value_type=Reference(schema=ITeamMembership)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("Active TeamMemberships for this object's members."),
+                description=_(
+                    "Active TeamMemberships are the ones with the ADMIN or "
+                    "APPROVED status.  The results are ordered using "
+                    "Person.sortingColumns."),
+                readonly=True, required=False,
+                value_type=Reference(schema=ITeamMembership))),
         exported_as='members_details')
-    pendingmembers = Attribute(
-        "List of members with INVITED or PROPOSED status")
+    pendingmembers = doNotSnapshot(
+        Attribute(
+            "List of members with INVITED or PROPOSED status"))
     proposedmembers = exported(
-        CollectionField(
-            title=_("All members whose membership is in the PROPOSED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is in the "
+                        "PROPOSED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
     mapped_participants_count = Attribute(
         "The number of mapped participants")
-    unmapped_participants = CollectionField(
-        title=_("List of participants with no coordinates recorded."),
-        value_type=Reference(schema=Interface))
+    unmapped_participants = doNotSnapshot(
+        CollectionField(
+            title=_("List of participants with no coordinates recorded."),
+            value_type=Reference(schema=Interface)))
     unmapped_participants_count = Attribute(
         "The number of unmapped participants")
 
@@ -1501,8 +1518,7 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
 
 # Set the schemas to the newly defined interface for classes that deferred
 # doing so when defined.
-PublicPersonChoice.schema = IPerson
-ParticipatingPersonChoice.schema = IPerson
+PersonChoice.schema = IPerson
 
 
 class INewPersonForm(IPerson):

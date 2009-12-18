@@ -442,8 +442,9 @@ class TranslationImportQueueEntry(SQLBase):
         # Get or create an IPOFile based on the info we guess.
         pofile = potemplate.getPOFileByLang(language.code, variant=variant)
         if pofile is None:
-            pofile = potemplate.newPOFile(
-                language.code, variant=variant, requester=self.importer)
+            pofile = potemplate.newPOFile(language.code, variant=variant)
+            if pofile.canEditTranslations(self.importer):
+                pofile.owner = self.importer
 
         if self.is_published:
             # This entry comes from upstream, which means that the path we got

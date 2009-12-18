@@ -71,7 +71,7 @@ from lp.blueprints.model.specification import (
 from lp.blueprints.model.sprint import HasSprintsMixin
 from lp.translations.model.translationimportqueue import (
     HasTranslationImportsMixin, ITranslationImportQueue)
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
@@ -546,8 +546,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         """See `IBugTarget`."""
         return get_bug_tags_open_count(BugTask.product == self, user)
 
-    branches = SQLMultipleJoin('Branch', joinColumn='product',
-        orderBy='id')
     series = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 

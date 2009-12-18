@@ -354,6 +354,36 @@ The source packages list is presented publicly.
     iceweasel           1.0             no signer (2007-07-09)
     pmount              0.1-1           no signer (2007-07-09)
 
+If a ppa package has been superseded by an package in the primary
+archive for the distroseries, this will be indicated with a link
+to the newer version.
+
+    # Publish a newer version of iceweasel in hoary.
+    >>> login('admin@canonical.com')
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> new_version = test_publisher.getPubSource(
+    ...     distroseries=warty, version="1.1", sourcename='iceweasel')
+    >>> import transaction
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> anon_browser.reload()
+    >>> print_archive_package_rows(anon_browser.contents)
+    Package             Version         Uploaded by
+    cdrkit              1.0             no signer (2007-07-09)
+    commercialpackage   1.0-1           no signer
+    iceweasel           1.0 (Newer version available)
+                                        no signer (2007-07-09)
+    pmount              0.1-1           no signer (2007-07-09)
+
+The link itself will point to the newer version in the distro series.
+
+    >>> print anon_browser.getLink('Newer version').url
+    http://launchpad.dev/ubuntu/warty/+source/iceweasel/1.1
+
 A Latest updates portlet is included on the index page indicating the
 latest published sources with their states.
 
@@ -417,7 +447,8 @@ explicitly set the 'Any Series' filter and get the same result:
     Package             Version         Uploaded by
     cdrkit              1.0             no signer (2007-07-09)
     commercialpackage   1.0-1           no signer
-    iceweasel           1.0             no signer (2007-07-09)
+    iceweasel           1.0 (Newer version available)
+                                        no signer (2007-07-09)
     pmount              0.1-1           no signer (2007-07-09)
 
 If the packages are filtered by a particular series, then the result

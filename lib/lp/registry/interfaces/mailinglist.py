@@ -46,16 +46,14 @@ class MailingListStatus(DBEnumeratedType):
     """Team mailing list status.
 
     Team mailing lists can be in one of several states, which this class
-    tracks.  A team owner first requests that a mailing list be created for
-    their team; this is called registering the list.  This request will then
-    be either approved or declined by a Launchpad administrator.
-
-    If a list request is approved, its creation will be requested of Mailman,
-    but it takes time for Mailman to act on this request.  During this time,
-    the state of the list is 'constructing'.  Mailman will then either succeed
-    or fail to create the list.  If it succeeds, the list is active until such
-    time as the team owner requests that the list be made inactive.
+    tracks.
     """
+
+    # REGISTERED and DECLINED are obsolete states, no longer used.
+    # Originally, mailing lists requests had to be approved by a member of
+    # ~mailing-list-experts but we've since changed that to allow for
+    # auto-approval.  We keep these states for historical purposes, but no
+    # longer use them.
 
     REGISTERED = DBItem(1, """
         Registered; request creation
@@ -223,6 +221,9 @@ class IMailingList(Interface):
         description=_('The date on which this mailing list was registered.'),
         required=True, readonly=True)
 
+    # Mailing lists are auto-approved now so these fields are no longer used,
+    # but we won't drop the columns from the database because they might be
+    # useful for the historical record.
     reviewer = PublicPersonChoice(
         title=_('Reviewer'),
         description=_(
@@ -288,21 +289,6 @@ class IMailingList(Interface):
             'it should be able to handle messages.'),
         readonly=True)
 
-    def review(reviewer, status):
-        """Review the mailing list's registration.
-
-        :param reviewer: The person who reviewed the mailing list registration
-            request.
-        :param status: The status that the reviewer is giving this
-            registration request.  `status` must be be either
-            `MailingListStatus.APPROVED` or `MailingListStatus.DECLINED`.
-            Prior to the review, the status of the mailing list must be
-            `MailingListStatus.REGISTERED`.
-        :raises AssertionError: When the mailing list is not in the
-            `MailingListStatus.REGISTERED` state, or `status` is an invalid
-            value.
-        """
-
     def startConstructing():
         """Set the status to the `MailingListStatus.CONSTRUCTING` state.
 
@@ -350,12 +336,6 @@ class IMailingList(Interface):
 
         :raises AssertionError: When prior to reactivation, the status of the
             mailing list is not `MailingListStatus.INACTIVE`.
-        """
-
-    def cancelRegistration():
-        """Delete this mailing list from the database.
-
-        Only mailing lists in the REGISTERED state can be deleted.
         """
 
     def getSubscription(person):
@@ -519,13 +499,6 @@ class IMailingListSet(Interface):
             the format (Full Name, email address)
         :rtype: dictionary mapping team names to iterators
         """
-
-    registered_lists = Set(
-        title=_('Registered lists'),
-        description=_(
-            'All mailing lists with status `MailingListStatus.REGISTERED`.'),
-        value_type=Object(schema=IMailingList),
-        readonly=True)
 
     approved_lists = Set(
         title=_('Approved lists'),

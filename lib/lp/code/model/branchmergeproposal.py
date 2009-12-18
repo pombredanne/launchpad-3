@@ -30,6 +30,9 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.code.errors import (
+    BadBranchMergeProposalSearchContext, BadStateTransition,
+    UserNotBranchReviewer, WrongBranchMergeProposal)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.codereviewcomment import CodeReviewComment
 from lp.code.model.codereviewvote import (
@@ -42,10 +45,8 @@ from lp.code.event.branchmergeproposal import (
 from lp.code.interfaces.branch import IBranchNavigationMenu
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.code.interfaces.branchmergeproposal import (
-    BadBranchMergeProposalSearchContext, BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
-    IBranchMergeProposal, IBranchMergeProposalGetter, UserNotBranchReviewer,
-    WrongBranchMergeProposal)
+    IBranchMergeProposal, IBranchMergeProposalGetter)
 from lp.code.interfaces.branchtarget import IHasBranchTarget
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.product import IProduct
@@ -336,7 +337,6 @@ class BranchMergeProposal(SQLBase):
     def setAsWorkInProgress(self):
         """See `IBranchMergeProposal`."""
         self._transitionToState(BranchMergeProposalStatus.WORK_IN_PROGRESS)
-        self.date_review_requested = None
         self.reviewer = None
         self.date_reviewed = None
         self.reviewed_revision_id = None
@@ -502,15 +502,33 @@ class BranchMergeProposal(SQLBase):
         self.syncUpdate()
         return proposal
 
+    def _normalizeReviewType(self, review_type):
+        """Normalse the review type.
+
+        If review_type is None, it stays None.  Otherwise the review_type is
+        converted to lower case, and if the string is empty is gets changed to
+        None.
+        """
+        if review_type is not None:
+            review_type = review_type.strip()
+            if review_type == '':
+                review_type = None
+            else:
+                review_type = review_type.lower()
+        return review_type
+
     def nominateReviewer(self, reviewer, registrant, review_type=None,
                          _date_created=DEFAULT, _notify_listeners=True):
         """See `IBranchMergeProposal`."""
         # Return the existing vote reference or create a new one.
         # Lower case the review type.
-        if review_type is not None:
-            review_type = review_type.lower()
+        review_type = self._normalizeReviewType(review_type)
         vote_reference = self.getUsersVoteReference(reviewer, review_type)
-        if vote_reference is None:
+        # If there is no existing review for the reviewer, then create a new
+        # one.  If the reviewer is a team, then we don't care if there is
+        # already an existing pending review, as some projects expect multiple
+        # reviews from a team.
+        if vote_reference is None or reviewer.is_team:
             vote_reference = CodeReviewVoteReference(
                 branch_merge_proposal=self,
                 registrant=registrant,
@@ -559,6 +577,7 @@ class BranchMergeProposal(SQLBase):
         #:param _date_created: The date the message was created.  Provided
         #    only for testing purposes, as it can break
         # BranchMergeProposal.root_message.
+        review_type = self._normalizeReviewType(review_type)
         assert owner is not None, 'Merge proposal messages need a sender'
         parent_message = None
         if parent is not None:
@@ -590,8 +609,7 @@ class BranchMergeProposal(SQLBase):
     def getUsersVoteReference(self, user, review_type=None):
         """Get the existing vote reference for the given user."""
         # Lower case the review type.
-        if review_type is not None:
-            review_type = review_type.lower()
+        review_type = self._normalizeReviewType(review_type)
         if user is None:
             return None
         if user.is_team:
@@ -602,7 +620,7 @@ class BranchMergeProposal(SQLBase):
         return Store.of(self).find(
             CodeReviewVoteReference,
             CodeReviewVoteReference.branch_merge_proposal == self,
-            query).one()
+            query).order_by(CodeReviewVoteReference.date_created).first()
 
     def _getTeamVoteReference(self, user, review_type):
         """Get a vote reference where the user is in the review team.
@@ -613,7 +631,8 @@ class BranchMergeProposal(SQLBase):
             CodeReviewVoteReference,
             CodeReviewVoteReference.branch_merge_proposal == self,
             CodeReviewVoteReference.review_type == review_type,
-            CodeReviewVoteReference.comment == None)
+            CodeReviewVoteReference.comment == None
+            ).order_by(CodeReviewVoteReference.date_created)
         for ref in refs:
             if user.inTeam(ref.reviewer):
                 return ref
@@ -656,9 +675,7 @@ class BranchMergeProposal(SQLBase):
         """See `IBranchMergeProposal`."""
         if _validate:
             validate_message(original_email)
-        # Lower case the review type.
-        if review_type is not None:
-            review_type = review_type.lower()
+        review_type = self._normalizeReviewType(review_type)
         code_review_message = CodeReviewComment(
             branch_merge_proposal=self, message=message, vote=vote,
             vote_tag=review_type)

@@ -399,10 +399,11 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             description=_(
                 "Make this branch visible only to its subscribers.")))
 
+    @call_with(user=REQUEST_USER)
     @operation_parameters(
         private=Bool(title=_("Keep branch confidential")))
     @export_write_operation()
-    def setPrivate(private):
+    def setPrivate(private, user):
         """Set the branch privacy for this branch."""
 
     # People attributes
@@ -808,7 +809,20 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
     def getMergeQueue():
         """The proposals that are QUEUED to land on this branch."""
 
-    def revisions_since(timestamp):
+    def getMainlineBranchRevisions(start_date, end_date=None,
+                                   oldest_first=False):
+        """Return the matching mainline branch revision objects.
+
+        :param start_date: Return revisions that were committed after the
+            start_date.
+        :param end_date: Return revisions that were committed before the
+            end_date
+        :param oldest_first: Defines the ordering of the result set.
+        :returns: A resultset of tuples for
+            (BranchRevision, Revision, RevisionAuthor)
+        """
+
+    def getRevisionsSince(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
     code_is_browseable = Attribute(

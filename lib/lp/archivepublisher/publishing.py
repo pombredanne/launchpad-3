@@ -437,6 +437,17 @@ class Publisher(object):
             raise AssertionError(
                 "Oops, tainting RELEASE pocket of %s." % distroseries)
 
+    def _getLabel(self):
+        """Return the contents of the Release file Label field.
+
+        :return: a text that should be used as the value of the Release file
+            'Label' field.
+        """
+        if self.archive.is_ppa:
+            return self.archive.displayname
+        else:
+            return self.distro.displayname
+
     def _getOrigin(self):
         """Return the contents of the Release file Origin field.
 
@@ -492,15 +503,16 @@ class Publisher(object):
         f = open(os.path.join(
             self._config.distsroot, full_name, "Release"), "w")
 
-        stanza = DISTRORELEASE_STANZA % (
+        stanza = (DISTRORELEASE_STANZA % (
                     self._getOrigin(),
-                    self.distro.displayname,
+                    self._getLabel(),
                     full_name,
                     distroseries.version,
                     distroseries.name,
                     datetime.utcnow().strftime("%a, %d %b %Y %k:%M:%S UTC"),
                     " ".join(sorted(list(all_architectures))),
-                    " ".join(reorder_components(all_components)), drsummary)
+                    " ".join(reorder_components(all_components)),
+                    drsummary)).encode("utf-8")
         f.write(stanza)
 
         f.write("MD5Sum:\n")
@@ -566,13 +578,13 @@ class Publisher(object):
         f = open(os.path.join(self._config.distsroot, full_name,
                               component, architecture, "Release"), "w")
 
-        stanza = DISTROARCHRELEASE_STANZA % (
+        stanza = (DISTROARCHRELEASE_STANZA % (
                 full_name,
                 distroseries.version,
                 component,
                 self._getOrigin(),
-                self.distro.displayname,
-                clean_architecture)
+                self._getLabel(),
+                unicode(clean_architecture))).encode("utf-8")
         f.write(stanza)
         f.close()
 
