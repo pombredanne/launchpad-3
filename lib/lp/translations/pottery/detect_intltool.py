@@ -75,6 +75,11 @@ def find_intltool_dirs():
     """
     return filter(check_potfiles_in, find_potfiles_in())
 
+
+def get_translation_domain():
+    return None
+
+
 class ConfigFile(object):
     """Represent a config file and return variables defined in it."""
 

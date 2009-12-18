@@ -12,7 +12,8 @@ from StringIO import StringIO
 from textwrap import dedent
 
 from lp.translations.pottery.detect_intltool import (
-    ConfigFile, check_potfiles_in, find_intltool_dirs, find_potfiles_in)
+    ConfigFile, check_potfiles_in, find_intltool_dirs, find_potfiles_in,
+    get_translation_domain)
 from lp.testing import TestCase
 
 class TestDetectIntltool(TestCase):
@@ -84,17 +85,20 @@ class TestDetectIntltool(TestCase):
         # Complete run: find all directories with intltool structure.
         self._prepare_package("intltool_full_ok")
         self.assertContentEqual(
-            ["./po-module1", "./po-module2"],
-            find_intltool_dirs())
+            ["./po-module1", "./po-module2"], find_intltool_dirs())
 
     def test_find_intltool_dirs_broken(self):
         # Complete run: part of the intltool structure is broken.
         self._prepare_package("intltool_full_ok")
         os.remove("./src/module1/sourcefile1.c")
         self.assertContentEqual(
-            ["./po-module2"],
-            find_intltool_dirs())
+            ["./po-module2"], find_intltool_dirs())
 
+    def test_get_translation_domain_makevars(self):
+        # Find a translation domain in Makevars.
+        self._prepare_package("intltool_domain_makevars")
+        self.assertEqual(
+            "translationdomain", get_translation_domain())
 
 class TestConfigFile(TestCase):
 
