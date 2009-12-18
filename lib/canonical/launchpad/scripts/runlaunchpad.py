@@ -183,18 +183,6 @@ SERVICES = {
     }
 
 
-def make_css_slimmer():
-    import contrib.slimmer
-    inputfile = make_abspath(
-        'lib/canonical/launchpad/icing/style.css')
-    outputfile = make_abspath(
-        'lib/canonical/launchpad/icing/+style-slimmer.css')
-
-    cssdata = open(inputfile, 'rb').read()
-    slimmed = contrib.slimmer.slimmer(cssdata, 'css')
-    open(outputfile, 'w').write(slimmed)
-
-
 def get_services_to_run(requested_services):
     """Return a list of services (TacFiles) given a list of service names.
 
@@ -258,9 +246,6 @@ def start_launchpad(argv=list(sys.argv)):
 
     # Store our process id somewhere
     make_pidfile('launchpad')
-
-    # Create a new compressed +style-slimmer.css from style.css in +icing.
-    make_css_slimmer()
 
     # Create the ZCML override file based on the instance.
     config.generate_overrides()
