@@ -48,8 +48,8 @@ class TestFilebugExtras(TestCaseWithFactory):
 
 def _test_expander(client):
     extra_opts_form = u"//fieldset[@id='filebug-extra-options']/div"
-    form_closed = u"%s%s" % (extra_opts_form, u"[@class='collapsed']")
-    form_opened = u"%s%s" % (extra_opts_form, u"[@class='expanded']")
+    form_closed = u"%s[@class='collapsed']" % extra_opts_form
+    form_opened = u"%s[@class='expanded']" % extra_opts_form
 
     # The collapsible area is collapsed and doesn't display.
     client.asserts.assertNode(xpath=form_closed)
