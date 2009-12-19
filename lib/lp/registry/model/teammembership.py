@@ -281,7 +281,7 @@ class TeamMembership(SQLBase):
 
         if silent and not self.canChangeStatusSilently(user):
             raise UserCannotChangeMembershipSilently(
-                "Only Launchpad administrators may change membership status "
+                "Only Launchpad administrators may change membership statuses "
                 "silently.")
 
         approved = TeamMembershipStatus.APPROVED
