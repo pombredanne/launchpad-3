@@ -786,6 +786,15 @@ div.translation-help-links div {
     padding: 1em 1em 1em 0;
 }
 
+/* Timeline Graph */
+div.yui-timelinegraph-content .yui-timelinegraph-zoom-box {
+  visibility: hidden;
+}
+
+div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
+  visibility: visible;
+}
+
 /* == Sprites == */
 .sprite {
     padding: 2px 0 5px 18px;

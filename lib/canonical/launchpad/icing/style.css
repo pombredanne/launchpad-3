@@ -822,15 +822,6 @@ div#branch-description {
     margin-top: 1em;
 }
 
-/* Timeline Graph */
-div.yui-timelinegraph-content .yui-timelinegraph-zoom-box {
-  visibility: hidden;
-}
-
-div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
-  visibility: visible;
-}
-
 .product.series, .series {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
