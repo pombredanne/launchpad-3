@@ -5,6 +5,10 @@
 .yui-t4 .yui-b {
     width: 21%;
     }
+.yui-t4 .yui-main {
+    clear: both;
+    float: left;
+    }
 .yui-t4 .yui-main .yui-b {
     width: auto;
     margin-right: 24%;
