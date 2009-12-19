@@ -17,15 +17,6 @@
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>
     </metal:heading>
 
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/@@+portlet-status-details" />
-  </metal:leftportlets>
-
-  <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-search" />
-    <div tal:replace="structure context/@@+portlet-alsoreportedin" />
-  </metal:rightportlets>
-
     <div metal:fill-slot="main">
       <p tal:condition="context/bug/duplicateof" class="informational message">
         This bug is a duplicate of
