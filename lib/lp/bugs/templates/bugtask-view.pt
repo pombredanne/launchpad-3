@@ -8,15 +8,6 @@
   metal:use-macro="view/macro:page/main_only"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <img alt="" src="/@@/bug" />
-        <a tal:attributes="href context/bug/fmt:url"
-        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
-      </div>
-      <h1 tal:content="context/bug/title">Foo doesn't work</h1>
-    </metal:heading>
-
     <div metal:fill-slot="main">
       <p tal:condition="context/bug/duplicateof" class="informational message">
         This bug is a duplicate of
