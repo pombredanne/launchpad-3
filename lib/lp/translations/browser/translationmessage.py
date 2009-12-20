@@ -842,7 +842,8 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
     def tabindex_chain(self):
         try:
             tabindex = []
-            for dictionary in self.translationmessage_view.translation_dictionaries:
+            message = self.translationmessage_view
+            for dictionary in message.translation_dictionaries:
                 tabindex.append(dictionary['html_id_translation'] + '_new')
             return ' '.join(tabindex)
 

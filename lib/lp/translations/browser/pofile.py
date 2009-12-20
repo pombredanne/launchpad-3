@@ -503,8 +503,6 @@ class POFileFilteredView(LaunchpadView):
 
     DEFAULT_BATCH_SIZE = 50
 
-    page_title = "Contributions"
-
     @property
     def _person_name(self):
         """Person's display name.  Graceful about unknown persons."""
