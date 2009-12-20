@@ -80,6 +80,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event/event.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${yui}/event/event-key.js"></script>            
+    <script type="text/javascript"
             tal:attributes="src string:${yui}/event-custom/event-custom.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event-simulate/event-simulate.js"></script>

@@ -42,12 +42,13 @@
       <a href=""
          tal:condition="not:context/potmsgset/is_translation_credit"
          tal:attributes="
+           id string:${view/html_id}_singular_copy_text;
            onClick string:
              javascript:copyInnerHTMLById(
                '${view/html_id}_singular',
                '${view/html_id_singular}_new');;
              selectWidget('${view/html_id_singular}_new_select', event);;
-             return false;;
+             return false;; 
          "><img alt="Copy text" title="Copy text" src="/@@/copy" /></a>
     </tal:form-writeable>
   </td>

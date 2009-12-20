@@ -829,6 +829,27 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
         self._redirectToNextPage()
         return True
 
+    @property
+    def autofocus_html_id(self):
+        try:
+            first_message = self.translationmessage_view
+            first_field = first_message.translation_dictionaries[0]
+            return first_field['html_id_translation']
+        except IndexError:
+            return False
+
+    @property
+    def tabindex_chain(self):
+        try:
+            tabindex = []
+            for dictionary in self.translationmessage_view.translation_dictionaries:
+                tabindex.append(dictionary['html_id_translation'] + '_new')
+            return ' '.join(tabindex)
+
+        except IndexError:
+            return ""
+
+
 class CurrentTranslationMessageView(LaunchpadView):
     """Holds all data needed to show an ITranslationMessage.
 
