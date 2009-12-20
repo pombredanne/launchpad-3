@@ -243,6 +243,22 @@ To change its status, use setStatus(status).
     >>> print webservice.get(
     ...     salgado_landscape['self_link']).jsonBody()['status']
     Deactivated
+    
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setStatus', {},
+    ...     status='Approved', silent=True)
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print webservice.get(
+    ...     salgado_landscape['self_link']).jsonBody()['status']
+    Approved
+    
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setStatus', {},
+    ...     status='Deactivated', silent=True)
+    HTTP/1.1 200 Ok
+    ...
 
     # Now revert the change to salgado's membership to not break other tests
     # further down.
