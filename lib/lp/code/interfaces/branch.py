@@ -681,6 +681,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             required=True,
             readonly=False))
 
+    @export_operation_as('delete')
     @operation_parameters(
         break_references=Bool(title=_("Break references to this branch")))
     @export_write_operation()
