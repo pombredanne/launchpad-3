@@ -73,24 +73,24 @@ class TestCanSetStatusBase(TestCaseWithFactory):
 
     def test_canSetStatus_rosetta_expert_no_target(self):
         # If the entry has no import target set, even Rosetta experts
-        # cannot set it to approved.
+        # cannot set it to approved or imported.
         self.entry.potemplate = None
         self.entry.pofile = None
         self._assertCanSetStatus(self.rosetta_experts, self.entry,
             #  A      B     D     F     I    NR
-            [False, True, True, True, True, True])
+            [False, True, True, True, False, True])
 
     def test_canSetStatus_uploader(self):
         # The uploader can set some statuses.
         self._assertCanSetStatus(self.uploaderperson, self.entry,
             #  A      B     D     F      I     NR
-            [False, False, True, False, False, True])
+            [False, True, True, False, False, True])
 
     def test_canSetStatus_owner(self):
         # The owner gets the same permissions.
         self._assertCanSetStatus(self.productseries.product.owner, self.entry,
             #  A      B     D     F      I     NR
-            [False, False, True, False, False, True])
+            [False, True, True, False, False, True])
 
     def _setUpUbuntu(self):
         self.ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -143,7 +143,8 @@ class TestCanSetStatusPOFile(TestCanSetStatusBase):
 
         self.potemplate = self.factory.makePOTemplate(
             productseries=self.productseries)
-        self.pofile = self.factory.makePOFile('eo', potemplate=self.potemplate)
+        self.pofile = self.factory.makePOFile(
+            'eo', potemplate=self.potemplate)
         self.entry = self.queue.addOrUpdateEntry(
             'demo.po', '#demo', False, self.uploaderperson,
             productseries=self.productseries, pofile=self.pofile)
