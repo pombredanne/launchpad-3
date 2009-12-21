@@ -34,7 +34,9 @@
           <img src="/@@/flame-icon" alt=""/>
           <a href="+affectsmetoo" class="js-action"
              ><span class="value" tal:content="view/affected_statement" /></a>
-          <img class="editicon" src="/@@/edit" alt="Edit" />
+          <a href="+affectsmetoo">
+            <img class="editicon" src="/@@/edit" alt="Edit" />
+          </a>
         </span>
         <script type="text/javascript" tal:content="string:
           LPS.use('event', 'bugs.bugtask_index', function(Y) {

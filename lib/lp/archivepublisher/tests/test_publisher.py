@@ -908,6 +908,7 @@ class TestPublisher(TestPublisherBase):
         """
         allowed_suites = []
         cprov = getUtility(IPersonSet).getByName('cprov')
+        cprov.archive.displayname = u'PPA for Celso Provid\xe8lo'
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
 
@@ -940,8 +941,8 @@ class TestPublisher(TestPublisherBase):
         release_md5_line = release_contents[md5_header_index + 17]
         self.assertEqual(
             release_md5_line,
-            (' 7214f0271efc59dd335c17e1d720c9e7              '
-             '129 main/source/Release'))
+            (' eadc1fbb1a878a2ee6dc66d7cd8d46dc              '
+            '130 main/source/Release'))
         # We can't probe checksums of compressed files because they contain
         # timestamps, their checksum varies with time.
         bz2_sources_md5_line = release_contents[md5_header_index + 16]
@@ -961,8 +962,8 @@ class TestPublisher(TestPublisherBase):
         release_sha1_line = release_contents[sha1_header_index + 17]
         self.assertEqual(
             release_sha1_line,
-            (' 22ac13fb5e2bc0589d76182c5a747bad08a5d291              '
-             '129 main/source/Release'))
+            (' 1a8d788a6d2d30e0cab002ab82e9f2921f7a2a61              '
+             '130 main/source/Release'))
         # See above.
         bz2_sources_sha1_line = release_contents[sha1_header_index + 16]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha1_line)
@@ -981,8 +982,8 @@ class TestPublisher(TestPublisherBase):
         release_sha256_line = release_contents[sha256_header_index + 17]
         self.assertEqual(
             release_sha256_line,
-            (' c0e66e8b219c495b28d53ba207eb7175da5b5af90055544f597ee17'
-             'ad2177abf              129 main/source/Release'))
+            (' 795a3f17d485cc1983f588c53fb8c163599ed191be9741e61ca411f'
+             '1e2c505aa              130 main/source/Release'))
         # See above.
         bz2_sources_sha256_line = release_contents[sha256_header_index + 16]
         self.assertTrue('main/source/Sources.bz2' in bz2_sources_sha256_line)
@@ -991,7 +992,7 @@ class TestPublisher(TestPublisherBase):
 
         # The Label: field should be set to the archive displayname
         self.assertEqual(release_contents[1],
-            'Label: PPA for Celso Providelo')
+            'Label: PPA for Celso Provid\xc3\xa8lo')
 
         # Architecture Release files also have a distinct Origin: for PPAs.
         arch_release_file = os.path.join(

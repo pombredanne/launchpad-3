@@ -230,7 +230,7 @@ Create a mock slave so the builder can operate - one with a failed package.
 
     >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.PACKAGEFAIL'))
 
-    >>> bqItem3 = a_build.createBuildQueueEntry()
+    >>> bqItem3 = a_build.buildqueue_record
     >>> setupBuildQueue(bqItem3, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
