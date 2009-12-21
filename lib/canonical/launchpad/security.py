@@ -1678,7 +1678,7 @@ class AdminDistroSeriesTranslations(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Is the user able to manage `IDistroSeries` translations.
 
-        Disribution managers can also manage IDistroSeries
+        Distribution managers can also manage IDistroSeries
         """
         return (AdminDistributionTranslations(
             self.obj.distribution).checkAuthenticated(user))
@@ -1691,7 +1691,7 @@ class AdminDistroSeriesLanguage(AuthorizationBase):
     def checkAuthenticated(self, user):
         """Is the user able to manage `IDistroSeriesLanguage` translations.
 
-        Disribution managers can also manage IDistroSeriesLanguage
+        Distribution managers can also manage IDistroSeriesLanguage
         """
         return (AdminDistroSeriesTranslations(
             self.obj.distroseries).checkAuthenticated(user))

@@ -45,24 +45,24 @@ And the page is not available either:
 
 ... but the link is available to administrators:
 
-    >>> utc_browser = setupUTCBrowser()
+    >>> dtc_browser = setupDTCBrowser()
+    >>> dtc_browser = setupDTCBrowser()
+    >>> dtc_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
 
-    >>> utc_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-
-    >>> utc_browser.getLink('Change settings').click()
+    >>> dtc_browser.getLink('Change settings').click()
 
 Once the administrator hides all translations...
 
-    >>> utc_browser.getControl(
+    >>> dtc_browser.getControl(
     ...     'Hide translations for this release').selected = True
-    >>> utc_browser.getControl('Change').click()
-    >>> print utc_browser.url
+    >>> dtc_browser.getControl('Change').click()
+    >>> print dtc_browser.url
     http://translations.launchpad.dev/ubuntu/hoary
 
 ...a notice about the fact shows up on the overview page.
 
     >>> notices = find_tags_by_class(
-    ...     utc_browser.contents, 'visibility-notice')
+    ...     dtc_browser.contents, 'visibility-notice')
     >>> for notice in notices:
     ...     print extract_text(notice)
     Translations for this series are currently hidden.
@@ -92,7 +92,7 @@ the system tells them that they're not allowed to see those pages.
 
 Translations administrator have access series with hidden translations.
 
-    >>> utc_browser.open(
+    >>> dtc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
 
 Non existing languages are not viewable. English is a special case
@@ -124,7 +124,7 @@ non-administrative users.
 However, source package translations are still available to the
 administrators.
 
-    >>> utc_browser.open(
+    >>> dtc_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+sources/evolution')
 
@@ -132,21 +132,21 @@ There is also an option to set/unset whether translation imports for a
 distribution should be deferred. That option is set also from the same
 form where we hide all translations and an admin is able to change it:
 
-    >>> utc_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-    >>> utc_browser.getLink('Change settings').click()
-    >>> utc_browser.getControl(
+    >>> dtc_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
+    >>> dtc_browser.getLink('Change settings').click()
+    >>> dtc_browser.getControl(
     ...     'Defer translation imports').selected
     False
-    >>> utc_browser.getControl(
+    >>> dtc_browser.getControl(
     ...     'Defer translation imports').selected = True
-    >>> utc_browser.getControl('Change').click()
-    >>> print utc_browser.url
+    >>> dtc_browser.getControl('Change').click()
+    >>> print dtc_browser.url
     http://translations.launchpad.dev/ubuntu/hoary
 
 Once the system accepts the submission, we can see such change applied.
 
-    >>> utc_browser.getLink('Change settings').click()
-    >>> utc_browser.getControl(
+    >>> dtc_browser.getLink('Change settings').click()
+    >>> dtc_browser.getControl(
     ...     'Defer translation imports').selected
     True
 

@@ -39,7 +39,7 @@ from canonical.testing import PageTestLayer
 from lazr.restful.testing.webservice import WebServiceCaller
 from lp.testing import ANONYMOUS, login, login_person, logout
 from lp.testing.factory import LaunchpadObjectFactory
-
+from lp.registry.interfaces.person import NameAlreadyTaken
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
     """HTTPCaller subclass that do not carry cookies across requests.
@@ -636,17 +636,24 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     return LaunchpadWebServiceCaller(consumer_key, access_token.key)
 
 
-def setupUTCBrowser():
-    """Testbrowser configured for Ubuntu Translations Coordinators."""
+def setupDTCBrowser():
+    """Testbrowser configured for Distribution Translations Coordinators.
 
+    Ubuntu is the configured distribution.
+    """
     login('foo.bar@canonical.com')
-    utg_member = LaunchpadObjectFactory().makePerson(
-         email="utg-member@ex.com", password="test")
-    utg = LaunchpadObjectFactory().makeTranslationGroup(owner=utg_member)
-    ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-    ubuntu.translationgroup = utg
+    try:
+        dtg_member = LaunchpadObjectFactory().makePerson(
+            email="dtg-member@ex.com", password="test")
+    except NameAlreadyTaken:
+        # We have already created the translations coordinator
+        pass
+    else:
+        dtg = LaunchpadObjectFactory().makeTranslationGroup(owner=dtg_member)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ubuntu.translationgroup = dtg
     logout()
-    return setupBrowser(auth='Basic utg-member@ex.com:test')
+    return setupBrowser(auth='Basic dtg-member@ex.com:test')
 
 
 def stop():
@@ -669,7 +676,7 @@ def setUpGlobs(test):
     test.globs['user_webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['setupBrowser'] = setupBrowser
-    test.globs['setupUTCBrowser'] = setupUTCBrowser
+    test.globs['setupDTCBrowser'] = setupDTCBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
     test.globs['user_browser'] = setupBrowser(
