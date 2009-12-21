@@ -112,7 +112,6 @@ publication to play with first.
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
     binary_file_urls: []
-    changes_file_url: u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
     component_name: u'main'
     date_created: ...
     date_made_pending: None
@@ -135,6 +134,10 @@ publication to play with first.
     source_package_name: u'testwebservice'
     source_package_version: u'666'
     status: u'Pending'
+
+    >>> webservice.named_get(
+    ...     pubs['entries'][0]['self_link'], 'changesFileUrl').jsonBody()
+    u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
 
 
 Unsigned sources
