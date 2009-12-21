@@ -29,7 +29,7 @@
           tal:attributes="href first_page_url"
           class="first"
           rel="first"
-          accesskey="1"
+          accesskey="A"
         >First</a>
         <span tal:condition="not:first_page_url" class="first inactive"
         >First</span>
