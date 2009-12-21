@@ -46,7 +46,7 @@ And the page is not available either:
 ... but the link is available to administrators:
 
     >>> dtc_browser = setupDTCBrowser()
-    >>> dtc_browser = setupDTCBrowser()
+
     >>> dtc_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
 
     >>> dtc_browser.getLink('Change settings').click()

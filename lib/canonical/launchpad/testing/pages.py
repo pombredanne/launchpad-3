@@ -41,6 +41,7 @@ from lp.testing import ANONYMOUS, login, login_person, logout
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.registry.interfaces.person import NameAlreadyTaken
 
+
 class UnstickyCookieHTTPCaller(HTTPCaller):
     """HTTPCaller subclass that do not carry cookies across requests.
 
