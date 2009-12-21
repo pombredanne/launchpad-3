@@ -23,37 +23,6 @@ def fudged_get_external_bugtracker(bugtracker):
     return BugzillaAPI(bugtracker.baseurl)
 
 
-class NonConnectingBugzillaAPI(BugzillaAPI):
-    """A non-connected version of the BugzillaAPI ExternalBugTracker."""
-
-    bugs = {
-        1: {'product': 'test-product'},
-        }
-
-    def getExternalBugTrackerToUse(self):
-        return self
-
-    def getProductsForRemoteBugs(self, remote_bugs):
-        """Return the products for some remote bugs.
-
-        This method is basically the same as that of the superclass but
-        without the call to initializeRemoteBugDB().
-        """
-        bug_products = {}
-        for bug_id in bug_ids:
-            # If one of the bugs we're trying to get the product for
-            # doesn't exist, just skip it.
-            try:
-                actual_bug_id = self._getActualBugId(bug_id)
-            except BugNotFound:
-                continue
-
-            bug_dict = self._bugs[actual_bug_id]
-            bug_products[bug_id] = bug_dict['product']
-
-        return bug_products
-
-
 class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -96,4 +65,3 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
