@@ -114,7 +114,7 @@ The template in the other distroseries links back to this one.
 When the branch or the source package contains less than five templates
 they are all displayed on the template page.
 
-A source package with for templates are created.
+A source package with five templates is created.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
@@ -140,7 +140,7 @@ A source package with for templates are created.
     ...     sourcepackagename=package.sourcepackagename, name='fifth')
     >>> logout()
 
-Visiting any template from the same page, user see link to the other
+Visiting any template from the same page, user sees link to the other
 templates.
 
     >>> browser.open(
@@ -155,7 +155,7 @@ templates.
 For five template, the page displays the first four templates in
 alphabetical order, and a link to the page listing all templates.
 
-Another template is added to the same source package to test this behaviour.
+Another template is added to the same source package.
 
     >>> login('admin@canonical.com')
     >>> template = factory.makePOTemplate(
@@ -179,7 +179,7 @@ For more than five template, the page displays the first four templates in
 alphabetical order, and a link to the page listing
 all templates, stating the number of other templates.
 
-Another template is added to the same source package to test this behaviour.
+Another template is added to the same source package.
 
     >>> login('admin@canonical.com')
     >>> template = factory.makePOTemplate(
@@ -202,6 +202,47 @@ Another template is added to the same source package to test this behaviour.
     ...     'http://translations.launchpad.dev/'
     ...     'ubuntu/hoary/+source/%s/+translations') % (
     ...     package.name))
+    True
+
+A product series with 7 templates is created and for product series, the
+other templates link is leading to a page showing all templates for
+that product series.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> login('admin@canonical.com')
+    >>> product = factory.makeProduct(name="fusa", official_rosetta=True)
+    >>> product_trunk = product.getSeries('trunk')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='first')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='second')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='third')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='forth')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='fifth')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='sixth')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='seventh')
+    >>> logout()
+
+    >>> browser.open((
+    ...     "http://translations.launchpad.dev/"
+    ...     "fusa/trunk/+pots/%s") % template.name)
+    >>> relatives = find_tag_by_id(
+    ...     browser.contents, 'potemplate-relatives')
+    >>> print extract_text(relatives)
+    Other templates here: fifth, first, forth, second
+    and 2 other templates.
+
+    >>> browser.getLink('2 other templates').click()
+    >>> browser.url == (
+    ...     'http://translations.launchpad.dev/'
+    ...     'fusa/trunk/+templates')
     True
 
 

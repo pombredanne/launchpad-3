@@ -47,13 +47,9 @@
              tal:content="pot/name">A POTemplate
           </a><tal:comma condition="not: repeat/pot/end">, 
         </tal:comma></tal:relatives_by_source><!--
-          --><tal:more condition="view/more_templates_by_source">
-          and
-          <a  tal:attributes="href request/URL/5"
-              tal:content="view/more_templates_by_source">
-            17 other templates
-          </a>.
-          </tal:more>
+          --><tal:more-templates content="structure view/more_templates_by_source">
+          and <a href="#">17 other templates</a>
+          </tal:more-templates>
       </p>
     </div>
 

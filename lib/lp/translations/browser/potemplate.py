@@ -286,12 +286,25 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
         by_source_count = self.context.relatives_by_source.count()
         if (by_source_count > self.SHOW_RELATED_TEMPLATES):
             other = by_source_count - self.SHOW_RELATED_TEMPLATES
-            if other == 1:
-                return "one other template"
+            if (self.context.distroseries):
+                # XXX adiroiban 2009-12-21 bug=499058: A canonical_url for
+                # SourcePackageName is needed to avoid hardcoding this URL.
+                url = (canonical_url(
+                    self.context.distroseries, rootsite="translations") +
+                    "/+source/" + self.context.sourcepackagename.name + 
+                    "/+translations")
             else:
-                return "%d other templates" % other
+                url = canonical_url(
+                    self.context.productseries,
+                    rootsite="translations",
+                    view_name="+templates")
+            if other == 1:
+                return " and <a href=\"%s\">one other template</a>." % url
+            else:
+                return " and <a href=\"%s\">%d other templates</a>." % (
+                    url, other)
         else:
-            return None
+            return ""
 
     @property
     def related_templates_by_name(self):
