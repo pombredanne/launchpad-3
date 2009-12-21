@@ -23,10 +23,10 @@ def remove_tree(path):
         shutil.rmtree(path)
 
 
-def kill_by_pidfile(pidfile_path, remove=True):
+def kill_by_pidfile(pidfile_path):
     """Kill a process identified by the pid stored in a file.
 
-    :param remove: If True, the pidfile_path is removed on success.
+    The pid file is removed from disk.
     """
     if not os.path.exists(pidfile_path):
         return
@@ -62,8 +62,7 @@ def kill_by_pidfile(pidfile_path, remove=True):
                 # Already terminated
                 pass
     finally:
-        if remove:
-            remove_if_exists(pidfile_path)
+        remove_if_exists(pidfile_path)
 
 
 def remove_if_exists(path):
