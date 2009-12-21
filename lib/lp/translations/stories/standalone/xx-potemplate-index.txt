@@ -204,9 +204,10 @@ Another template is added to the same source package.
     ...     package.name))
     True
 
-A product series with 7 templates is created
 The "other templates" link for product series templates is leading to a
 page showing all templates for that product series.
+
+A product series with 7 templates is created.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces.launchpad import (
