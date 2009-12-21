@@ -14,11 +14,11 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
-from email.Encoders import encode_base64
-from email.Utils import make_msgid, formatdate
-from email.Message import Message as EmailMessage
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
+from email.encoders import encode_base64
+from email.utils import make_msgid, formatdate
+from email.message import Message as EmailMessage
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
 import os.path
