@@ -33,8 +33,7 @@ Sample Person can access the +mailinglist page.
 No Privileges Person is added as a member of the Aardvarks.
 
     >>> no_priv = person_set.getByEmail('no-priv@canonical.com')
-    >>> aardvarks.addMember(no_priv, sample_person)
-    (True, <DBItem TeamMembershipStatus.APPROVED, (2) Approved>)
+    >>> ignored = aardvarks.addMember(no_priv, sample_person)
 
 But regular members can't access the +mailinglist page.
 
@@ -54,8 +53,8 @@ administrator.
     ...     no_priv, aardvarks)
     >>> team_membership.status
     <DBItem TeamMembershipStatus.APPROVED...
-    >>> team_membership.setStatus(TeamMembershipStatus.ADMIN, sample_person)
-    True
+    >>> ignored = team_membership.setStatus(
+    ...     TeamMembershipStatus.ADMIN, sample_person)
 
 Now No Privileges Person has permission to request mailing lists.
 
@@ -210,8 +209,7 @@ The owner of a team can see information about the mailing list.
 
 A non-owner member can see information about the mailing list.
 
-    >>> pmt.addMember(sample_person, owner)
-    (True, <DBItem TeamMembershipStatus.APPROVED...
+    >>> ignored = pmt.addMember(sample_person, owner)
     >>> login('test@canonical.com')
     >>> view = create_initialized_view(pmt, '+index')
     >>> print view.archive_url

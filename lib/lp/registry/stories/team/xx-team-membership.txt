@@ -177,15 +177,14 @@ But in the second browser with the stale data we get an error message:
 An admin can see the former members of the team.
 
     >>> browser.open('http://launchpad.dev/~name18/+members')
-    >>> soup = find_main_content(browser.contents)
-    >>> print extract_text(soup.find(id='inactivemembers'))
+    >>> print extract_text(
+    ...     find_tag_by_id(browser.contents, 'inactivemembers'))
     Name    Joined in   Status...
 
 Other users cannot see the former members of the team.
 
     >>> user_browser.open('http://launchpad.dev/~name18/+members')
-    >>> soup = find_main_content(user_browser.contents)
-    >>> print soup.find(id='inactivemembers')
+    >>> print find_tag_by_id(user_browser.contents, 'inactivemembers')
     None
 
 
