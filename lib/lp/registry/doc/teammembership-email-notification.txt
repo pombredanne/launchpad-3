@@ -9,14 +9,16 @@ for the member.
     >>> def by_to_addrs(a, b):
     ...     return cmp(a[1], b[1])
 
-    >>> def setStatus(membership, status, reviewer=None, comment=None):
+    >>> def setStatus(membership, status, reviewer=None, comment=None,
+    ...               silent=False):
     ...     """Set the status of the given membership.
     ...
     ...     Also sets the reviewer and comment, calling flush_database_updates
     ...     and transaction.commit after, to ensure the changes are flushed to
     ...     the database.
     ...     """
-    ...     membership.setStatus(status, reviewer, comment=comment)
+    ...     membership.setStatus(status, reviewer, comment=comment,
+    ...         silent=silent)
     ...     flush_database_updates()
     ...     transaction.commit()
 
@@ -784,7 +786,7 @@ sense to the members of the team reading it.
     >>> mirror_admins_membership = membershipset.getByPersonAndTeam(
     ...     mirror_admins, ubuntu_team)
     >>> setStatus(mirror_admins_membership, TeamMembershipStatus.DEACTIVATED,
-    ...           reviewer=mark)
+    ...           reviewer=mark, silent=False)
     >>> len(stub.test_emails)
     6
 
@@ -801,6 +803,21 @@ sense to the members of the team reading it.
     <http://launchpad.dev/~ubuntu-team>
     ----------------------------------------
 
+Deactivating memberships can also be done silently (no email notifications
+sent) by Launchpad Administrators.
+
+    >>> thumper = getUtility(IPersonSet).getByName('thumper')
+    >>> hwdb_admins = personset.getByName('hwdb-team')
+    >>> thumper_hwdb_membership = membershipset.getByPersonAndTeam(thumper,
+    ...     hwdb_admins)
+    >>> print thumper_hwdb_membership.status.title
+    Approved
+    >>> setStatus(thumper_hwdb_membership,
+    ...     TeamMembershipStatus.DEACTIVATED, reviewer=mark, silent=True)
+    >>> len(stub.test_emails)
+    0
+    >>> print thumper_hwdb_membership.status.title
+    Deactivated
 
 Joining a team with a mailing list
 ----------------------------------

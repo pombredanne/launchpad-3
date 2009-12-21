@@ -229,7 +229,7 @@ from canonical.launchpad.webapp.login import (
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.tales import (
-    DateTimeFormatterAPI, PersonFormatterAPI)
+    DateTimeFormatterAPI, FormattersAPI, PersonFormatterAPI)
 from lazr.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
@@ -2463,7 +2463,7 @@ class PersonLanguagesView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        """Redirect back to the originating page."""
+        """Redirect to the +languages page if request originated there."""
         redirection_url = self.request.get('redirection_url')
         if redirection_url:
             return redirection_url
@@ -2471,7 +2471,7 @@ class PersonLanguagesView(LaunchpadFormView):
 
     @property
     def cancel_url(self):
-        """Redirect back to the originating page."""
+        """Redirect to the +languages page if request originated there."""
         redirection_url = self.getRedirectionURL()
         if redirection_url:
             return redirection_url
@@ -2664,6 +2664,38 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         """
         return bool(self.context.gpgkeys) or (
             check_permission('launchpad.Edit', self.context))
+
+    @cachedproperty
+    def is_probationary_or_invalid_user(self):
+        """True when the user is not active or does not have karma.
+
+        Some content should not be rendered when the context is not a an
+        established user. For example, probationary and invalid user pages
+        must not be indexed by search engines and their narrative linkified.
+        """
+        user = self.context
+        if user.isTeam():
+            # Teams are always valid and do not have probationary rules.
+            return False
+        else:
+            return user.karma == 0 or not user.is_valid_person
+
+    @cachedproperty
+    def homepage_content(self):
+        """The user's HTML formatted homepage content.
+
+        The markup is simply escaped for probationary or invalid users.
+        The homepage content is reformatted as HTML and linkified if the user
+        is active.
+        """
+        content = self.context.homepage_content
+        if content is None:
+            return None
+        elif self.is_probationary_or_invalid_user:
+            return cgi.escape(content)
+        else:
+            formatter = FormattersAPI
+            return formatter(content).text_to_html()
 
     @cachedproperty
     def recently_approved_members(self):
@@ -3175,6 +3207,12 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
             self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
+
+    def render(self):
+        """See `LaunchpadView`."""
+        if self.context.account_status == AccountStatus.SUSPENDED:
+            self.request.response.setStatus(410)
+        return super(PersonIndexView, self).render()
 
     @property
     def page_title(self):
