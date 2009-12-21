@@ -1070,11 +1070,14 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         binary.override(component=contrib)
 
         # This time, we'll ensure that there is already an ancestor for
-        # foocom in the destination archive.
+        # foocom in the destination archive with binaries.
         ancestor = self.test_publisher.getPubSource(
             'foocomm', '0.9', component='multiverse',
             archive=self.copy_archive,
             status=PackagePublishingStatus.PUBLISHED)
+        ancestor_bins = self.test_publisher.getPubBinaries(
+            binaryname='foo-bin', archive=self.copy_archive,
+            status=PackagePublishingStatus.PUBLISHED, pub_source=ancestor)
         self.layer.txn.commit()
 
         # Setup and execute the delayed copy procedure. This should

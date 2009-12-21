@@ -1309,6 +1309,7 @@ class PackageUploadBuild(SQLBase):
         is_delayed_copy = self.packageupload.is_delayed_copy
 
         for binary in self.build.binarypackages:
+            component = binary.component
 
             if is_delayed_copy:
                 # For a delayed copy the component will not yet have
@@ -1324,7 +1325,7 @@ class PackageUploadBuild(SQLBase):
                 if ancestry is not None:
                     component = ancestry.component
 
-            if (not is_ppa and binary.component not in
+            if (not is_ppa and component not in
                 distroseries.upload_components):
                 # Only complain about non-PPA uploads.
                 raise QueueBuildAcceptError(
