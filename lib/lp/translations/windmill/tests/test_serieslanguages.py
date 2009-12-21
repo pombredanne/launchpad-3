@@ -12,7 +12,7 @@ from windmill.authoring import WindmillTestClient
 from zope.component import getUtility
 
 from canonical.launchpad.windmill.testing.constants import (
-    FOR_ELEMENT, PAGE_LOAD, SLEEP)
+    PAGE_LOAD, SLEEP)
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.launchpad.windmill.testing.lpuser import login_person
 from lp.translations.windmill.testing import TranslationsWindmillLayer
@@ -24,7 +24,7 @@ UNSEEN_VALIDATOR='className|unseen'
 
 
 class LanguagesSeriesTest(TestCaseWithFactory):
-    """Test for filtering preferred languages in serieslanguages table."""
+    """Tests for serieslanguages."""
 
     layer = TranslationsWindmillLayer
 
@@ -43,13 +43,10 @@ class LanguagesSeriesTest(TestCaseWithFactory):
                     xpath=xpath, validator=UNSEEN_VALIDATOR)
 
     def test_serieslanguages_table(self):
-        """Test that filtering on the +languages page works.
+        """Test for filtering preferred languages in serieslanguages table.
 
-        The test cannot fully cover all languages on the page and so just
-        tests three with a search string of 'de':
-        German, because it's language code is 'de' but the names does not,
-        Mende, because it contains a 'de' but the language code does not,
-        French, because neither its name nor language code contain 'de'.
+        The test cannot fully cover all languages so we just test with a
+        person having Catalan and Spanish as preferred languages.
         """
         self.client = WindmillTestClient('SeriesLanguages Tables')
         start_url = 'http://translations.launchpad.dev:8085/ubuntu'
