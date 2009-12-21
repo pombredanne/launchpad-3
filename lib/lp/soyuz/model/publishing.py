@@ -599,7 +599,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # because the latter is more geared towards the web UI and taxes the
         # db much more in terms of the join width and the pre-joined data.
         #
-        # This property is accessed overwhelmingly via the LP API and calling
+        # This method is accessed overwhelmingly via the LP API and calling
         # getChangesFileLFA() which is much lighter on the db has the
         # potential of performing significantly better.
         changes_lfa = getUtility(IPublishingSet).getChangesFileLFA(
