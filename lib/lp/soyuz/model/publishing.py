@@ -613,13 +613,8 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
         # Return a webapp-proxied LibraryFileAlias so that restricted
         # librarian files are accessible.  Non-restricted files will get
         # a 302 so that webapp threads are not tied up.
-
-        # Avoid circular imports.
-        from canonical.launchpad.browser.librarian import (
-            ProxiedLibraryFileAlias)
-
-        proxied_file = ProxiedLibraryFileAlias(changes_lfa, self.archive)
-        return proxied_file.http_url
+        the_url = self._proxied_urls((changes_lfa,), self.archive)[0]
+        return the_url
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
