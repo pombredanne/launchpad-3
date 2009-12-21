@@ -178,7 +178,7 @@ mpcreationjobs:
 
 run: inplace stop
 	$(RM) thread*.request
-	bin/run -r librarian,google-webservice -i $(LPCONFIG)
+	bin/run -r librarian,google-webservice,memcached -i $(LPCONFIG)
 
 start-gdb: inplace stop support_files
 	$(RM) thread*.request
@@ -188,7 +188,8 @@ start-gdb: inplace stop support_files
 
 run_all: inplace stop hosted_branches
 	$(RM) thread*.request
-	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice -i $(LPCONFIG)
+	bin/run -i ${LPCONFIG} -r \
+	    librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice,memcached
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
