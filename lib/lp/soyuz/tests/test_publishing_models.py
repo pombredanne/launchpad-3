@@ -76,7 +76,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
         # even though it is no longer published.
         self.assertContentEqual(self.builds[1:3], unpublished_builds)
 
-    def test_changesFileLFA(self):
+    def test_getChangesFileLFA(self):
         # The getChangesFileLFA() method finds the right LFAs.
         lfas = (
             self.publishing_set.getChangesFileLFA(hist.sourcepackagerelease)
