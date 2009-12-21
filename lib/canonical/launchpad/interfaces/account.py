@@ -10,9 +10,7 @@ __all__ = [
     'AccountStatus',
     'AccountCreationRationale',
     'IAccount',
-    'IAccountEdit',
     'IAccountModerate',
-    'IAccountModerateStatus',
     'IAccountPrivate',
     'IAccountPublic',
     'IAccountSet',
@@ -183,7 +181,7 @@ class AccountCreationRationale(DBEnumeratedType):
         """)
 
 
-class IAccountBase(Interface):
+class IAccountPublic(Interface):
     """Base information on an `IAccount`."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
@@ -194,6 +192,10 @@ class IAccountBase(Interface):
     is_valid = Bool(
         title=_("True if this account is active and has a valid email."),
         required=True, readonly=True)
+
+    status = Choice(
+        title=_("The status of this account"), required=True,
+        readonly=False, vocabulary=AccountStatus)
 
     # We should use schema=IEmailAddress here, but we can't because that would
     # cause circular dependencies.
@@ -244,19 +246,6 @@ class IAccountBase(Interface):
         """
 
 
-class IAccountStatus(Interface):
-    """The status attribute gets its own Interface.
-
-    Status needs to be in both IAccountModerate and IAccountPublic."""
-    status = Choice(
-        title=_("The status of this account"), required=True,
-        readonly=False, vocabulary=AccountStatus)
-
-
-class IAccountPublic(IAccountBase, IAccountStatus):
-    """Public information on an `IAccount`."""
-
-
 class IAccountPrivate(Interface):
     """Private information on an `IAccount`."""
     date_created = Datetime(
@@ -299,13 +288,6 @@ class IAccountModerate(Interface):
         required=False, readonly=False)
 
 
-class IAccountModerateStatus(IAccountModerate, IAccountStatus):
-    """Attributes of `IAccount` protected with launchpad.Moderate.
-
-    These are the attributes that are setable with launchpad.Moderate.
-    """
-
-
 class IAccountSpecialRestricted(Interface):
     """Attributes of `IAccount` protected with launchpad.Special."""
 
@@ -334,13 +316,8 @@ class IAccountSpecialRestricted(Interface):
         """
 
 
-class IAccountEdit(IAccountBase, IAccountPrivate,
-                   IAccountSpecialRestricted):
-    """Attributes of `IAccount` protected with launchpad.Edit."""
-
-
-class IAccount(IAccountBase, IAccountModerate, IAccountPrivate,
-               IAccountSpecialRestricted, IAccountStatus):
+class IAccount(IAccountPublic, IAccountModerate, IAccountPrivate,
+               IAccountSpecialRestricted):
     """Interface describing an `Account`."""
 
 

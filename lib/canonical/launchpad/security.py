@@ -253,6 +253,10 @@ class ViewAccount(EditAccountBySelfOrAdmin):
     permission = 'launchpad.View'
 
 
+class SpecialAccount(EditAccountBySelfOrAdmin):
+    permission = 'launchpad.Special'
+
+
 class ModerateAccountByRegistryExpert(AuthorizationBase):
     usedfor = IAccount
     permission = 'launchpad.Moderate'
@@ -656,15 +660,6 @@ class EditPersonBySelf(AuthorizationBase):
     def checkAuthenticated(self, user):
         """A user can edit the Person who is herself."""
         return self.obj.id == user.id
-
-
-class EditAccountBySelf(AuthorizationBase):
-    permission = 'launchpad.Special'
-    usedfor = IAccount
-
-    def checkAccountAuthenticated(self, account):
-        """A user can edit the Account who is herself."""
-        return self.obj == account
 
 
 class ViewPublicOrPrivateTeamMembers(AuthorizationBase):

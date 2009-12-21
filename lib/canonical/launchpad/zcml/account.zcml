@@ -19,10 +19,10 @@
             interface="canonical.launchpad.interfaces.IAccountModerate" />
         <require
             permission="launchpad.Moderate"
-            set_schema="canonical.launchpad.interfaces.IAccountModerateStatus" />
+            set_attributes="status date_status_set status_comment" />
         <require
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.IAccountEdit" />
+            set_attributes="displayname password" />
     </class>
 
     <securedutility

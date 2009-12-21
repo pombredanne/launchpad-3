@@ -86,10 +86,13 @@ A LookupError is raised if the identifier is not used by any account.
 
 = The Account object =
 
-The account implements the IAccount interface.
+The account implements the IAccount interface but not all attributes are
+accessible for the owner.
 
+    >>> login('foo.bar@canonical.com')
     >>> verifyObject(IAccount, account)
     True
+    >>> login('no-priv@canonical.com')
 
 An account has a displayname, and a preferred email address.
 
@@ -143,8 +146,9 @@ AccountPassword table.
     >>> account.password
     u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
 
-And other account metadata.
+And other account metadata. Some are only accessible for admins.
 
+    >>> login('foo.bar@canonical.com')
     >>> account.date_created
     datetime.datetime(...)
 
