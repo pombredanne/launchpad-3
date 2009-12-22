@@ -261,6 +261,54 @@ class TestLibrarianGarbageCollection(TestCase):
         # Our recently expired LibraryFileAlias is still available.
         LibraryFileAlias.get(self.f1_id)
 
+    def test_deleteWellExpiredAliases(self):
+        # LibraryFileAlias records that are expired are unlinked from their
+        # content.
+
+        # Flag one of our LibraryFileAliases with an expiry date in the past
+        self.ztm.begin()
+        f1 = LibraryFileAlias.get(self.f1_id)
+        past = datetime.utcnow().replace(tzinfo=utc) - timedelta(days=30)
+        f1.expires = past
+        del f1
+        self.ztm.commit()
+
+        # Unlink expired LibraryFileAliases.
+        librariangc.expire_aliases(self.con)
+
+        self.ztm.begin()
+        # Make sure the well expired f1 is still there, but has no content.
+        f1 = LibraryFileAlias.get(self.f1_id)
+        self.assert_(f1.content is None)
+        # f2 should still have content, as it isn't flagged for expiry.
+        f2 = LibraryFileAlias.get(self.f2_id)
+        self.assert_(f2.content is not None)
+
+    def test_ignoreRecentlyExpiredAliases(self):
+        # LibraryFileAlias records that have expired recently are not
+        # garbage collected.
+
+        # Flag one of our LibraryFileAliases with an expiry date in the
+        # recent past.
+        self.ztm.begin()
+        f1 = LibraryFileAlias.get(self.f1_id)
+        past = datetime.utcnow().replace(tzinfo=utc) - timedelta(days=1)
+        f1.expires = past
+        del f1
+        self.ztm.commit()
+
+        # Unlink expired LibraryFileAliases.
+        librariangc.expire_aliases(self.con)
+
+        self.ztm.begin()
+        # Make sure f1 is still there and has content. This ensures that
+        # our stay of execution is still working.
+        f1 = LibraryFileAlias.get(self.f1_id)
+        self.assert_(f1.content is not None)
+        # f2 should still have content, as it isn't flagged for expiry.
+        f2 = LibraryFileAlias.get(self.f2_id)
+        self.assert_(f2.content is not None)
+
     def test_DeleteUnreferencedContent(self):
         # Merge the duplicates. This creates an
         # unreferenced LibraryFileContent
