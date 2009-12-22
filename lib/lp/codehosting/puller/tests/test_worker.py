@@ -681,11 +681,11 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         self.assertSentNetstrings(['startMirroring', '0'])
 
     def test_mirrorSucceeded(self):
-        # Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'.
+        # Calling 'mirrorSucceeded' sends the revids and 'mirrorSucceeded'.
         self.protocol.startMirroring()
         self.resetBuffers()
-        self.protocol.mirrorSucceeded(1234)
-        self.assertSentNetstrings(['mirrorSucceeded', '1', '1234'])
+        self.protocol.mirrorSucceeded('rev1', 'rev2')
+        self.assertSentNetstrings(['mirrorSucceeded', '2', 'rev1', 'rev2'])
 
     def test_mirrorFailed(self):
         # Calling 'mirrorFailed' sends the error message.
