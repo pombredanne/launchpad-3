@@ -39,9 +39,8 @@ CREATE TABLE SourcePackageRecipe (
     recipe_data integer NOT NULL REFERENCES SourcePackageRecipeData
 );
 
-CREATE UNIQUE INDEX sourcepackagerecipe__owner_distroseries_sourcepackagename_name
-    ON SourcePackageRecipe
- USING btree(distroseries, sourcepackagename, name);
+ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipe__owner__distroseries__sourcepackagename__name
+     UNIQUE (owner, distroseries, sourcepackagename, name);
 
 CREATE TABLE SourcePackageBuild (
     id serial PRIMARY KEY,
