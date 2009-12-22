@@ -81,6 +81,7 @@ def get_translation_domain(dirname):
     """Determine the translation domain by parsing various files."""
     locations = [
         ('Makefile.in.in', 'PACKAGE'),
+        ('../configure.ac', 'PACKAGE'),
         ('Makevars', 'DOMAIN'),
     ]
     value = None
