@@ -784,7 +784,7 @@ class BugWatchUpdater(object):
             "local bugs: %(local_ids)s"
             )
 
-        for bug_id in all_remote_ids:
+        for remote_bug_id in all_remote_ids:
             # Start a fresh transaction every time round the loop.
             self.txn.begin()
 
@@ -792,10 +792,10 @@ class BugWatchUpdater(object):
             # does much more than it needs to.
             bug_watches_by_remote_bug = (
                 self._getBugWatchesByRemoteBug(bug_watch_ids))
-            bug_watches = bug_watches_by_remote_bug[bug_id]
+            bug_watches = bug_watches_by_remote_bug[remote_bug_id]
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
-            if bug_id in unmodified_remote_ids:
+            if remote_bug_id in unmodified_remote_ids:
                 continue
 
             # Save the remote bug URL in case we need to log an error.
@@ -814,12 +814,13 @@ class BugWatchUpdater(object):
                 #      necessary and can be refactored out when bug
                 #      136391 is dealt with.
                 try:
-                    new_remote_status = remotesystem.getRemoteStatus(bug_id)
+                    new_remote_status = (
+                        remotesystem.getRemoteStatus(remote_bug_id))
                     new_malone_status = self._convertRemoteStatus(
                         remotesystem, new_remote_status)
 
-                    new_remote_importance = remotesystem.getRemoteImportance(
-                        bug_id)
+                    new_remote_importance = (
+                        remotesystem.getRemoteImportance(remote_bug_id))
                     new_malone_importance = (
                         remotesystem.convertRemoteImportance(
                             new_remote_importance))
@@ -829,13 +830,13 @@ class BugWatchUpdater(object):
                         error, error_type_message_default)
                     self.warning(
                         message % {
-                            'bug_id': bug_id,
+                            'bug_id': remote_bug_id,
                             'base_url': remotesystem.baseurl,
                             'local_ids': local_ids,
                             },
                         properties=[
                             ('URL', remote_bug_url),
-                            ('bug_id', bug_id),
+                            ('bug_id', remote_bug_id),
                             ('local_ids', local_ids),
                             ] + self._getOOPSProperties(remotesystem),
                         info=sys.exc_info())
@@ -880,10 +881,10 @@ class BugWatchUpdater(object):
                 # Send the error to the log too.
                 self.error(
                     "Failure updating bug %r on %s (local bugs: %s)." %
-                            (bug_id, bug_tracker_url, local_ids),
+                            (remote_bug_id, bug_tracker_url, local_ids),
                     properties=[
                         ('URL', remote_bug_url),
-                        ('bug_id', bug_id),
+                        ('bug_id', remote_bug_id),
                         ('local_ids', local_ids)] +
                         self._getOOPSProperties(remotesystem))
 
