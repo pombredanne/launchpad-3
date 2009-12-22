@@ -8,7 +8,6 @@ PY=$(WD)/bin/py
 PYTHONPATH:=$(WD)/lib:$(WD)/lib/mailman:${PYTHONPATH}
 BUILDOUT_CFG=buildout.cfg
 VERBOSITY=-vv
-XVFB_RUN=xvfb-run -s '-screen 0 1024x768x24'
 
 TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
@@ -70,7 +69,7 @@ check_config: build
 check: clean build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database.
-	${XVFB_RUN} ${PY} -t ./test_on_merge.py $(VERBOSITY)
+	${PY} -t ./test_on_merge.py $(VERBOSITY)
 
 jscheck: build
 	# Run all JavaScript integration tests.  The test runner takes care of
@@ -189,8 +188,8 @@ start-gdb: inplace stop support_files
 
 run_all: inplace stop hosted_branches
 	$(RM) thread*.request
-	bin/run -i ${LPCONFIG} -r \
-	    librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice,memcached
+	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice,memcached \
+	    -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py -f

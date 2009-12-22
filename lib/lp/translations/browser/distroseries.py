@@ -195,7 +195,7 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
             hidden and the user is not one of the limited caste that is
             allowed to access them.
         """
-        if check_permission('launchpad.Admin', self.context):
+        if check_permission('launchpad.TranslationsAdmin', self.context):
             # Anyone with admin rights on this series passes.  This
             # includes Launchpad admins.
             return

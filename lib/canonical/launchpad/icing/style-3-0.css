@@ -5,9 +5,14 @@
 .yui-t4 .yui-b {
     width: 21%;
     }
+.yui-t4 .yui-main {
+    clear: both;
+    float: left;
+    margin-right: -25%;
+    }
 .yui-t4 .yui-main .yui-b {
     width: auto;
-    margin-right: 24%;
+    margin-right: 25%;
     }
 .footer {
     clear: both;
@@ -29,6 +34,10 @@
 .footer .lp-arcana .search-icon {
     background: url(icon-sprites) 100% -191px no-repeat;
     }
+.footer .sitemessage {
+    text-align: right;
+}
+
 .footer .colophon {
     margin: 3em 3em 1em 3em;
     text-align: center;
@@ -783,6 +792,15 @@ div.translation-help-links div {
     text-align: center;
     vertical-align: middle;
     padding: 1em 1em 1em 0;
+}
+
+/* Timeline Graph */
+div.yui-timelinegraph-content .yui-timelinegraph-zoom-box {
+  visibility: hidden;
+}
+
+div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
+  visibility: visible;
 }
 
 /* == Sprites == */

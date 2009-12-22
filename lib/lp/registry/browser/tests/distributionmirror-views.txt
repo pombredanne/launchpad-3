@@ -326,7 +326,7 @@ Deletion is permanent.
     >>> view.errors
     []
     >>> print view.next_url
-    http://launchpad.dev/ubuntu
+    http://launchpad.dev/ubuntu/+pendingreviewmirrors
 
     >>> transaction.commit()
     >>> print ubuntu.getMirrorByName('secret.me-archive')
