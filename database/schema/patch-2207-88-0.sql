@@ -2,21 +2,30 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE SourcePackageRecipeData (
     id serial PRIMARY KEY,
-    recipe text NOT NULL
+    base_branch integer NOT NULL REFERENCES Branch,
+    recipe_format text NOT NULL,
+    deb_version_template text NOT NULL
 );
 
-CREATE TABLE SourcePackageRecipeDataBranch (
+CREATE TABLE SourcePackageRecipeDataInstruction (
     id serial PRIMARY KEY,
-    sourcepackagerecipedata integer NOT NULL REFERENCES SourcePackageRecipeData,
-    branch integer NOT NULL REFERENCES branch
+    name text, -- NOT NULL?
+    type integer NOT NULL, -- MERGE == 1, NEST == 2
+    comment text,
+    line_number integer NOT NULL,
+    branch integer NOT NULL REFERENCES Branch,
+    revspec text,
+    directory text,
+    recipe integer REFERENCES SourcePackageRecipeData,
+    parent_instruction integer REFERENCES SourcePackageRecipeDataInstruction
 );
 
-CREATE INDEX sourcepackagerecipedatabranch__sourcepackagerecipe
-    ON SourcePackageRecipeDataBranch USING btree(sourcepackagerecipedata);
-CREATE INDEX sourcepackagerecipedatabranch__branch
-    ON SourcePackageRecipeDataBranch USING btree(branch);
-
--- unique on (branch, sourcepackagerecipe) ??
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__name__recipe
+     UNIQUE (name, recipe);
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__line_number__recipe
+     UNIQUE (line_number, recipe);
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__directory_not_null
+     CHECK ((type = 1 AND directory IS NULL) OR (type != 2 AND directory IS NOT NULL));
 
 CREATE TABLE SourcePackageRecipe (
     id serial PRIMARY KEY,
