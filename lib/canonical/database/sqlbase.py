@@ -341,27 +341,17 @@ class ZopelessTransactionManager(object):
             cls._dbhost = dbhost
             cls._dbuser = dbuser
             cls._isolation = isolation
-            cls._reset_store()
+            cls._reset_stores()
             cls._installed = cls
         return cls._installed
 
     @staticmethod
-    def _reset_store():
-        """Reset the MAIN DEFAULT store.
+    def _reset_stores():
+        """Reset the active stores.
 
         This is required for connection setting changes to be made visible.
-
-        Other stores do not need to be reset, as code using other stores
-        or explicit flavors isn't using this compatibility layer.
         """
-        main_store = _get_sqlobject_store()
-        # XXX: salgado, 2009-11-06, bug=253542: The import is here to work
-        # around a particularly convoluted circular import.
-        from canonical.launchpad.webapp.interfaces import (
-            IStoreSelector, AUTH_STORE, DEFAULT_FLAVOR)
-        auth_store = getUtility(IStoreSelector).get(
-            AUTH_STORE, DEFAULT_FLAVOR)
-        for store in [main_store, auth_store]:
+        for name, store in getUtility(IZStorm).iterstores():
             connection = store._connection
             if connection._state == storm.database.STATE_CONNECTED:
                 if connection._raw_connection is not None:
@@ -392,7 +382,7 @@ class ZopelessTransactionManager(object):
         assert cls._installed is not None, (
             "ZopelessTransactionManager not installed")
         config.pop(cls._CONFIG_OVERLAY_NAME)
-        cls._reset_store()
+        cls._reset_stores()
         cls._installed = None
 
     @classmethod
