@@ -17,7 +17,7 @@ The karma action set +index view lists all the karma actions.
 
     >>> user = getUtility(ILaunchBag).user
     >>> view = create_view(karmaactionset, '+index', principal=user,
-    ...     PATH_INFO='/karmaaction')
+    ...     path_info='/karmaaction')
     >>> print extract_text(find_tag_by_id(view(), 'karmas'))
     Category        Action          Points
     bugs            Bug Accepted    5

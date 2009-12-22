@@ -207,6 +207,7 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
         # If an entry is not in NEEDS_REVIEW state, it must not be approved.
         pot_path = self.factory.getUniqueString()+".pot"
         entry = self._upload_file(pot_path)
+        entry.potemplate = self.factory.makePOTemplate()
         not_approve_status = (
             RosettaImportStatus.IMPORTED,
             RosettaImportStatus.DELETED,
