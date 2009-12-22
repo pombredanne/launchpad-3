@@ -20,7 +20,7 @@ from canonical.launchpad.webapp import urlsplit
 from canonical.testing import LaunchpadFunctionalLayer
 
 
-class ExtractBugTrackerAndBugTestBase(unittest.TestCase):
+class ExtractBugTrackerAndBugTestBase:
     """Test base for testing BugWatchSet.extractBugTrackerAndBug."""
     layer = LaunchpadFunctionalLayer
 
@@ -83,7 +83,8 @@ class ExtractBugTrackerAndBugTestBase(unittest.TestCase):
                 "NoBugTrackerFound wasn't raised by extractBugTrackerAndBug")
 
 
-class MantisExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class MantisExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with Mantis URLs."""
 
     bugtracker_type = BugTrackerType.MANTIS
@@ -92,7 +93,8 @@ class MantisExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '3224'
 
 
-class BugzillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class BugzillaExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with Bugzilla URLs."""
 
     bugtracker_type = BugTrackerType.BUGZILLA
@@ -101,7 +103,8 @@ class BugzillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '3224'
 
 
-class IssuezillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class IssuezillaExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with Issuezilla.
 
     Issuezilla is practically the same as Buzilla, so we treat it as a
@@ -114,7 +117,8 @@ class IssuezillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '3224'
 
 
-class RoundUpExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class RoundUpExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with RoundUp URLs."""
 
     bugtracker_type = BugTrackerType.ROUNDUP
@@ -123,7 +127,8 @@ class RoundUpExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '377'
 
 
-class TracExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class TracExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with Trac URLs."""
 
     bugtracker_type = BugTrackerType.TRAC
@@ -132,7 +137,8 @@ class TracExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '42'
 
 
-class DebbugsExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class DebbugsExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with Debbugs URLs."""
 
     bugtracker_type = BugTrackerType.DEBBUGS
@@ -142,7 +148,7 @@ class DebbugsExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 
 class DebbugsExtractBugTrackerAndBugShorthandTest(
-    ExtractBugTrackerAndBugTestBase):
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure extractBugTrackerAndBug works for short Debbugs URLs."""
 
     bugtracker_type = BugTrackerType.DEBBUGS
@@ -154,7 +160,8 @@ class DebbugsExtractBugTrackerAndBugShorthandTest(
         # bugs.debian.org is already registered, so no dice.
         pass
 
-class SFExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class SFExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with SF URLs.
 
     We have only one SourceForge tracker registered in Launchpad, so we
@@ -214,7 +221,8 @@ class SFTracker2ExtractBugTrackerAndBugTest(SFExtractBugTrackerAndBugTest):
     bug_id = '1568562'
 
 
-class XForgeExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class XForgeExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure extractBugTrackerAndBug works with SourceForge-like URLs.
     """
 
@@ -226,7 +234,8 @@ class XForgeExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '90812'
 
 
-class RTExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class RTExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with RT URLs."""
 
     bugtracker_type = BugTrackerType.RT
@@ -235,7 +244,8 @@ class RTExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '2379'
 
 
-class CpanExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class CpanExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with CPAN URLs."""
 
     bugtracker_type = BugTrackerType.RT
@@ -244,7 +254,8 @@ class CpanExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     bug_id = '2379'
 
 
-class SavannahExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class SavannahExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with Savannah URLs.
     """
 
@@ -259,7 +270,8 @@ class SavannahExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
         pass
 
 
-class SavaneExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+class SavaneExtractBugTrackerAndBugTest(
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with Savane URLs.
     """
 
@@ -270,7 +282,7 @@ class SavaneExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
 
 
 class EmailAddressExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase):
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with email addresses.
     """
 
@@ -288,7 +300,7 @@ class EmailAddressExtractBugTrackerAndBugTest(
 
 
 class PHPProjectBugTrackerExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase):
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works with PHP bug URLs.
     """
 
@@ -299,7 +311,7 @@ class PHPProjectBugTrackerExtractBugTrackerAndBugTest(
 
 
 class GoogleCodeBugTrackerExtractBugTrackerAndBugTest(
-    ExtractBugTrackerAndBugTestBase):
+    ExtractBugTrackerAndBugTestBase, unittest.TestCase):
     """Ensure BugWatchSet.extractBugTrackerAndBug works for Google Code URLs.
     """
 
@@ -310,28 +322,7 @@ class GoogleCodeBugTrackerExtractBugTrackerAndBugTest(
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(BugzillaExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(IssuezillaExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(RoundUpExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(TracExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugTest))
-    suite.addTest(
-        unittest.makeSuite(DebbugsExtractBugTrackerAndBugShorthandTest))
-    suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(SFTracker2ExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(XForgeExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(RTExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(CpanExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(SavannahExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(SavaneExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(EmailAddressExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(
-       PHPProjectBugTrackerExtractBugTrackerAndBugTest))
-    suite.addTest(unittest.makeSuite(
-        GoogleCodeBugTrackerExtractBugTrackerAndBugTest))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)
 
 
 if __name__ == '__main__':
