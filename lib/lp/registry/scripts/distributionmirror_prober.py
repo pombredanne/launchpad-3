@@ -8,6 +8,8 @@ import os
 import urllib2
 import urlparse
 
+from datetime import datetime
+
 from zope.component import getUtility
 
 from twisted.internet import defer, protocol, reactor
@@ -509,6 +511,11 @@ class ArchiveMirrorProberCallbacks(object):
             # about it.
             logger = logging.getLogger('distributionmirror-prober')
             logger.error(msg)
+        return None
+
+    def logMessage(self, message):
+        timestamp = datetime.ctime(datetime.now())
+        self.log_file.write("[%s] %s" % (timestamp, message))
         return None
 
 
