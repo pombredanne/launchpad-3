@@ -689,6 +689,7 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         """Delete the specified branch.
 
         BranchRevisions associated with this branch will also be deleted.
+
         :param break_references: If supplied, break any references to this
             branch by deleting items with mandatory references and
             NULLing other references.
