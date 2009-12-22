@@ -260,7 +260,7 @@ class TestTranslationBranchApprover(TestCaseWithFactory):
             approver.approve(entry)
             self.assertEqual(status, entry.status)
 
-    def test_approve_new_sharing_template(self):
+    def test_approveNewSharingTemplate(self):
         # When the approver creates a new template, the new template
         # gets copies of any existing POFiles for templates that it will
         # share translations with.
