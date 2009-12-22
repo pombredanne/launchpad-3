@@ -28,7 +28,6 @@ from bzrlib.urlutils import join as urljoin
 from bzrlib.upgrade import upgrade
 
 from canonical.cachedproperty import cachedproperty
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.codeimport.foreigntree import (
     CVSWorkingTree, SubversionWorkingTree)
 from lp.codehosting.codeimport.tarball import (
@@ -78,7 +77,7 @@ class BazaarBranchStore:
 
     def push(self, db_branch_id, bzr_tree, required_format):
         """Push up `bzr_tree` as the Bazaar branch for `code_import`."""
-        ensure_base(self.transport)
+        self.transport.create_prefix()
         branch_from = bzr_tree.branch
         target_url = self._getMirrorURL(db_branch_id)
         try:
@@ -262,7 +261,7 @@ class ImportDataStore:
             source_transport = get_transport('.')
         remote_name = self._getRemoteName(filename)
         local_file = source_transport.get(filename)
-        ensure_base(self._transport)
+        self._transport.create_prefix()
         try:
             self._transport.put_file(remote_name, local_file)
         finally:

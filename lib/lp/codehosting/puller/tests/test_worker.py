@@ -21,7 +21,6 @@ from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.transport import get_transport
 
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.puller.worker import (
     BranchLoopError, BranchMirrorer, BranchReferenceForbidden,
     PullerWorkerProtocol, StackedOnBranchNotFound,
@@ -134,7 +133,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         source_tree.commit('commit message')
         # Make the directory.
         dest = get_transport(to_mirror.dest)
-        ensure_base(dest)
+        dest.create_prefix()
         dest.mkdir('.bzr')
         # 'dest' is not a branch.
         self.assertRaises(

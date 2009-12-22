@@ -11,7 +11,6 @@ __metaclass__ = type
 __all__ = [
     'add_exception_logging_hook',
     'DenyingServer',
-    'ensure_base',
     'get_branch_stacked_on_url',
     'get_vfs_format_classes',
     'HttpAsLocalTransport',
@@ -26,8 +25,7 @@ import sys
 
 from bzrlib import config, trace
 from bzrlib.errors import (
-    NoSuchFile, NotStacked, UnstackableBranchFormat,
-    UnstackableRepositoryFormat)
+    NotStacked, UnstackableBranchFormat, UnstackableRepositoryFormat)
 from bzrlib.remote import RemoteBranch, RemoteBzrDir, RemoteRepository
 from bzrlib.transport import register_transport, unregister_transport
 from bzrlib.transport.local import LocalTransport
@@ -103,21 +101,6 @@ def get_branch_stacked_on_url(a_bzrdir):
     if not stacked_on_url:
         raise NotStacked(a_bzrdir.root_transport.base)
     return stacked_on_url
-
-
-# XXX: JonathanLange 2007-06-13 bugs=120135:
-# This should probably be part of bzrlib.
-# XXX can kill this now?
-def ensure_base(transport):
-    """Make sure that the base directory of `transport` exists.
-
-    If the base directory does not exist, try to make it. If the parent of the
-    base directory doesn't exist, try to make that, and so on.
-    """
-    try:
-        transport.ensure_base()
-    except NoSuchFile:
-        transport.create_prefix()
 
 
 _exception_logging_hooks = []

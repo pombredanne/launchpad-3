@@ -83,7 +83,6 @@ from zope.interface import implements, Interface
 
 from lp.codehosting.vfs.branchfsclient import (
     BlockingProxy, BranchFileSystemClient, trap_fault)
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.vfs.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
     get_chrooted_transport, get_readonly_transport, TranslationError)
@@ -281,7 +280,7 @@ class BranchTransportDispatch:
         self._checkPath(trailing_path)
         transport = self.base_transport.clone(branch_id_to_path(data['id']))
         try:
-            ensure_base(transport)
+            transport.create_prefix()
         except TransportNotPossible:
             # Silently ignore TransportNotPossible. This is raised when the
             # base transport is read-only.
