@@ -4,6 +4,7 @@
 from datetime import datetime
 import gzip
 import os
+import re
 import pytz
 from zope.component import getUtility
 
@@ -18,6 +19,7 @@ from canonical.launchpad.webapp.interfaces import (
 
 
 parser = apachelog.parser(apachelog.formats['extended'])
+multi_whitespace_re = re.compile('\s\s+')
 
 
 def get_files_to_parse(root, file_names):
@@ -176,6 +178,9 @@ def get_host_date_status_and_request(line):
 
 def get_method_and_path(request):
     """Extract the method of the request and path of the requested file."""
+    # Normalize white spaces in the request string to make sure we won't get
+    # too many values when we split it.
+    request = multi_whitespace_re.sub(' ', request)
     L = request.split(' ')
     # HTTP 1.0 requests might omit the HTTP version so we must cope with them.
     if len(L) == 2:
