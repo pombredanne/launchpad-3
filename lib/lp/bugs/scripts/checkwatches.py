@@ -752,10 +752,6 @@ class BugWatchUpdater(object):
             self.txn.commit()
             raise
 
-        self.txn.begin()
-        bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
-            bug_watch_ids)
-
         # Whether we can import and / or push comments is determined on
         # a per-bugtracker-type level.
         can_import_comments = (
@@ -789,6 +785,13 @@ class BugWatchUpdater(object):
             )
 
         for bug_id in all_remote_ids:
+            # Start a fresh transaction every time round the loop.
+            self.txn.begin()
+
+            # XXX: This is expensive to calculate, and seems like it
+            # does much more than it needs to.
+            bug_watches_by_remote_bug = (
+                self._getBugWatchesByRemoteBug(bug_watch_ids))
             bug_watches = bug_watches_by_remote_bug[bug_id]
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
@@ -859,17 +862,11 @@ class BugWatchUpdater(object):
             except (KeyboardInterrupt, SystemExit):
                 # We should never catch KeyboardInterrupt or SystemExit.
                 raise
-            except Exception, error:
-                # If something unexpected goes wrong, we shouldn't break the
-                # updating of the other bugs.
 
-                # Restart the transaction so that subsequent
-                # bug watches will get recorded.
+            except Exception, error:
+                # Restart transaction before recording the error.
                 self.txn.abort()
                 self.txn.begin()
-                bug_watches_by_remote_bug = self._getBugWatchesByRemoteBug(
-                    bug_watch_ids)
-
                 # We record errors against the bug watches and update
                 # their lastchecked dates so that we don't try to
                 # re-check them every time checkwatches runs.
@@ -880,8 +877,7 @@ class BugWatchUpdater(object):
                 # We need to commit the transaction, in case the next
                 # bug fails to update as well.
                 self.txn.commit()
-                self.txn.begin()
-
+                # Send the error to the log too.
                 self.error(
                     "Failure updating bug %r on %s (local bugs: %s)." %
                             (bug_id, bug_tracker_url, local_ids),
@@ -890,6 +886,10 @@ class BugWatchUpdater(object):
                         ('bug_id', bug_id),
                         ('local_ids', local_ids)] +
                         self._getOOPSProperties(remotesystem))
+
+            else:
+                # All is well, save it now.
+                self.txn.commit()
 
     def importBug(self, external_bugtracker, bugtracker, bug_target,
                   remote_bug):
