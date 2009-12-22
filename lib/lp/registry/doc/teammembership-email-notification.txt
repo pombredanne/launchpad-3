@@ -815,6 +815,28 @@ sent) by Launchpad Administrators.
     >>> print thumper_hwdb_membership.status.title
     Deactivated
 
+People who are not Launchpad Administrators, may not change other's membership
+statues silently.
+
+    >>> kamion = getUtility(IPersonSet).getByName('kamion')
+    >>> stevea = getUtility(IPersonSet).getByName('stevea')
+    >>> login_person(kamion)
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> kamion_ubuntu_team_membership = membershipset.getByPersonAndTeam(
+    ...     kamion, ubuntu_team)
+    >>> stevea_ubuntu_team_membership = membershipset.getByPersonAndTeam(
+    ...     stevea, ubuntu_team)
+    >>> print kamion_ubuntu_team_membership.status.title
+    Administrator
+    >>> print stevea_ubuntu_team_membership.status.title
+    Approved
+    >>> setStatus(stevea_ubuntu_team_membership,
+    ...     TeamMembershipStatus.DEACTIVATED, reviewer=kamion, silent=True)
+    Traceback (most recent call last):
+    UserCannotChangeMembershipSilently: ...
+    >>> print stevea_ubuntu_team_membership.status.title
+    Approved
+
 Joining a team with a mailing list
 ----------------------------------
 
