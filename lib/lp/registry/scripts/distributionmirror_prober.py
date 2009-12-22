@@ -409,7 +409,7 @@ class ArchiveMirrorProberCallbacks(object):
                % (self.mirror_class_name,
                   self._getSeriesPocketAndComponentDescription(), self.url,
                   failure.getErrorMessage()))
-        self.log_file.write(msg)
+        self.logMessage(msg)
         failure.trap(*self.expected_failures)
 
     def ensureMirrorSeries(self, http_status):
@@ -423,7 +423,7 @@ class ArchiveMirrorProberCallbacks(object):
         mirror = self.ensureMethod(
             self.series, self.pocket, self.component)
 
-        self.log_file.write(msg)
+        self.logMessage(msg)
         return mirror
 
     def updateMirrorFreshness(self, arch_or_source_mirror):
@@ -479,7 +479,7 @@ class ArchiveMirrorProberCallbacks(object):
                    '%s.\n' % (url, self.mirror_class_name,
                               self._getSeriesPocketAndComponentDescription(),
                               freshness.title))
-            self.log_file.write(msg)
+            self.logMessage(msg)
             arch_or_source_mirror.freshness = freshness
 
     def _getSeriesPocketAndComponentDescription(self):
@@ -528,6 +528,11 @@ class MirrorCDImageProberCallbacks(object):
         self.distroseries = distroseries
         self.flavour = flavour
         self.log_file = log_file
+    
+    def logMessage(self, message):
+        timestamp = datetime.ctime(datetime.now())
+        self.log_file.write("[%s] %s" % (timestamp, message))
+        return None
 
     def ensureOrDeleteMirrorCDImageSeries(self, result):
         """Check if the result of the deferredList contains only success and
@@ -554,7 +559,7 @@ class MirrorCDImageProberCallbacks(object):
 
         mirror = self.mirror.ensureMirrorCDImageSeries(
             self.distroseries, self.flavour)
-        self.log_file.write(
+        self.logMessage(
             "Found all ISO images for series %s and flavour %s.\n"
             % (self.distroseries.title, self.flavour))
         return mirror
