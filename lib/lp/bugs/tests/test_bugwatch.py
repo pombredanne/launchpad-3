@@ -17,7 +17,9 @@ from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.registry.interfaces.person import IPersonSet
 from canonical.launchpad.webapp import urlsplit
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+
+from lp.testing import TestCaseWithFactory
 
 
 class ExtractBugTrackerAndBugTestBase:
@@ -319,6 +321,39 @@ class GoogleCodeBugTrackerExtractBugTrackerAndBugTest(
     bug_url = 'http://code.google.com/p/myproject/issues/detail?id=12345'
     base_url = 'http://code.google.com/p/myproject/issues'
     bug_id = '12345'
+
+
+class TestBugWatchSet(TestCaseWithFactory):
+    """Tests for the bugwatch updating system."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_getBugWatchesForRemoteBug(self):
+        # getBugWatchesForRemoteBug() returns bug watches from that
+        # refer to the remote bug.
+        bug_watches_alice = [
+            self.factory.makeBugWatch(remote_bug="alice"),
+            ]
+        bug_watches_bob = [
+            self.factory.makeBugWatch(remote_bug="bob"),
+            self.factory.makeBugWatch(remote_bug="bob"),
+            ]
+        bug_watch_set = getUtility(IBugWatchSet)
+        # Passing in the remote bug ID gets us every bug watch that
+        # refers to that remote bug.
+        self.failUnlessEqual(
+            set(bug_watches_alice),
+            set(bug_watch_set.getBugWatchesForRemoteBug('alice')))
+        self.failUnlessEqual(
+            set(bug_watches_bob),
+            set(bug_watch_set.getBugWatchesForRemoteBug('bob')))
+        # The search can be narrowed by passing in a list or other
+        # iterable collection of bug watch IDs.
+        bug_watches_limited = bug_watches_alice + bug_watches_bob[:1]
+        self.failUnlessEqual(
+            set(bug_watches_bob[:1]),
+            set(bug_watch_set.getBugWatchesForRemoteBug('bob', [
+                        bug_watch.id for bug_watch in bug_watches_limited])))
 
 
 def test_suite():

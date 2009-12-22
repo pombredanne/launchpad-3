@@ -18,7 +18,7 @@ from zope.component import getUtility
 from sqlobject import (ForeignKey, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from storm.expr import Not
+from storm.expr import In, Not
 from storm.store import Store
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -34,6 +34,7 @@ from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.bugs.interfaces.bug import IBugWatch
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
@@ -43,6 +44,7 @@ from lp.bugs.interfaces.bugwatch import (
 from canonical.launchpad.validators.email import valid_email
 from lp.registry.interfaces.person import validate_public_person
 from canonical.launchpad.webapp import urlappend, urlsplit
+
 
 BUG_TRACKER_URL_FORMATS = {
     BugTrackerType.BUGZILLA:    'show_bug.cgi?id=%s',
@@ -600,3 +602,10 @@ class BugWatchSet(BugSetBase):
 
         raise UnrecognizedBugTrackerURL(url)
 
+    def getBugWatchesForRemoteBug(self, remote_bug, bug_watch_ids=None):
+        """See `IBugWatchSet`."""
+        query = IStore(BugWatch).find(
+            BugWatch, BugWatch.remotebug == remote_bug)
+        if bug_watch_ids is not None:
+            query = query.find(In(BugWatch.id, bug_watch_ids))
+        return query
