@@ -77,6 +77,16 @@ def find_intltool_dirs():
     return filter(check_potfiles_in, find_potfiles_in())
 
 
+substitution_pattern = re.compile("@([^@]+)@")
+
+def get_substitution(variabletext):
+    """Get possible substitution from a variable test."""
+    result = substitution_pattern.search(variabletext)
+    if result is not None:
+        return result.group(1)
+    return None
+
+
 def get_translation_domain(dirname):
     """Determine the translation domain by parsing various files."""
     locations = [
@@ -86,12 +96,29 @@ def get_translation_domain(dirname):
         ('Makevars', 'DOMAIN'),
     ]
     value = None
+    substitution = None
     for filename, varname in locations:
         path = os.path.join(dirname, filename)
         if not os.access(path, os.R_OK):
             continue
-        value = ConfigFile(path).getVariable(varname)
-        if value is not None:
+        if value is None:
+            value = ConfigFile(path).getVariable(varname)
+            if value is None:
+                # No value found, try next file.
+                continue
+            substitution = get_substitution(value)
+            if substitution is None:
+                # The value has been found, no substitution needed.
+                break
+            if substitution == varname:
+                # Do not search the current file for the substitution because
+                # the name is identical.
+                continue
+        # This part is only reached if a value has been found but still needs
+        # a substitution.
+        subst_value = ConfigFile(path).getVariable(substitution)
+        if subst_value is not None:
+            value = value.replace("@%s@" % substitution, subst_value)
             break
     return value
 
