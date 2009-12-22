@@ -82,11 +82,14 @@ def get_translation_domain(dirname):
     locations = [
         ('Makefile.in.in', 'GETTEXT_PACKAGE'),
         ('../configure.ac', 'GETTEXT_PACKAGE'),
+        ('../configure.in', 'GETTEXT_PACKAGE'),
         ('Makevars', 'DOMAIN'),
     ]
     value = None
     for filename, varname in locations:
         path = os.path.join(dirname, filename)
+        if not os.access(path, os.R_OK):
+            continue
         value = ConfigFile(path).getVariable(varname)
         if value is not None:
             break
