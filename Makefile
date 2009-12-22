@@ -189,8 +189,8 @@ start-gdb: inplace stop support_files
 
 run_all: inplace stop hosted_branches
 	$(RM) thread*.request
-	bin/run -i ${LPCONFIG} -r \
-	    librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice,memcached
+	bin/run -r librarian,buildsequencer,sftp,mailman,codebrowse,google-webservice,memcached \
+	    -i $(LPCONFIG)
 
 run_codebrowse: build
 	BZR_PLUGIN_PATH=bzrplugins $(PY) sourcecode/launchpad-loggerhead/start-loggerhead.py -f
