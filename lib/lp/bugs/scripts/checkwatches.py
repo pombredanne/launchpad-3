@@ -414,26 +414,6 @@ class BugWatchUpdater(object):
         """Return the bug watch with id `bug_watch_id`."""
         return getUtility(IBugWatchSet).get(bug_watch_id)
 
-    def _getBugWatchesByRemoteBug(self, bug_watch_ids):
-        """Returns a dictionary of bug watches mapped to remote bugs.
-
-        For each bug watch id fetches the corresponding bug watch and
-        appends it to a list of bug watches pointing to one remote
-        bug - the key of the returned mapping.
-        """
-        bug_watches_by_remote_bug = {}
-        for bug_watch_id in bug_watch_ids:
-            bug_watch = self._getBugWatch(bug_watch_id)
-            remote_bug = bug_watch.remotebug
-            # There can be multiple bug watches pointing to the same
-            # remote bug; because of that, we need to store lists of bug
-            # watches related to the remote bug, and later update the
-            # status of each one of them.
-            if remote_bug not in bug_watches_by_remote_bug:
-                bug_watches_by_remote_bug[remote_bug] = []
-            bug_watches_by_remote_bug[remote_bug].append(bug_watch)
-        return bug_watches_by_remote_bug
-
     def _getExternalBugTrackersAndWatches(self, bug_tracker, bug_watches):
         """Return an `ExternalBugTracker` instance for `bug_tracker`."""
         remotesystem = externalbugtracker.get_external_bugtracker(
@@ -788,11 +768,9 @@ class BugWatchUpdater(object):
             # Start a fresh transaction every time round the loop.
             self.txn.begin()
 
-            # XXX: This is expensive to calculate, and seems like it
-            # does much more than it needs to.
-            bug_watches_by_remote_bug = (
-                self._getBugWatchesByRemoteBug(bug_watch_ids))
-            bug_watches = bug_watches_by_remote_bug[remote_bug_id]
+            bug_watches = list(
+                getUtility(IBugWatchSet).getBugWatchesForRemoteBug(
+                    remote_bug_id, bug_watch_ids))
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
             if remote_bug_id in unmodified_remote_ids:
