@@ -152,6 +152,7 @@ so that they are treated as "key: value" pairs.
     priority: P1
     product: Marvin
     resolution: FIXED
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
@@ -177,6 +178,7 @@ one bug will be returned (assuming they all exist and are accessible).
     priority: P1
     product: Marvin
     resolution: FIXED
+    see_also: []
     severity: normal
     status: RESOLVED
     summary: That bloody robot still exists.
@@ -192,6 +194,7 @@ one bug will be returned (assuming they all exist and are accessible).
     priority: P1
     product: HeartOfGold
     resolution:
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -214,6 +217,7 @@ Bug aliases can also be used to request remote bugs.
     priority: P1
     product: HeartOfGold
     resolution: 
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -258,6 +262,7 @@ set of remote bugs.
     priority: P1
     product: HeartOfGold
     resolution: 
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.
@@ -307,6 +312,7 @@ only return bugs which affect those products.
     priority: P1
     product: HeartOfGold
     resolution: 
+    see_also: []
     severity: high
     status: NEW
     summary: Collect unknown persons in docking bay 2.

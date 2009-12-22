@@ -19,8 +19,10 @@ from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 from bzrlib.errors import BzrError
 from bzrlib.plugin import load_plugins
+from bzrlib.revisionspec import RevisionSpec
 from bzrlib.trace import report_exception
 from bzrlib.transport import get_transport
+from bzrlib import ui
 from bzrlib.workingtree import WorkingTree
 
 from devscripts import get_launchpad_root
@@ -37,12 +39,28 @@ def parse_config_file(file_handle):
     for line in file_handle:
         if line.startswith('#'):
             continue
-        yield [token.strip() for token in line.split('=')]
+        yield line.split()
 
 
 def interpret_config_entry(entry):
     """Interpret a single parsed line from the config file."""
-    return entry[0], entry[1], len(entry) > 2
+    branch_name = entry[0]
+    components = entry[1].split(';revno=')
+    branch_url = components[0]
+    if len(components) == 1:
+        revision = None
+    else:
+        assert len(components) == 2, 'Bad branch URL: ' + entry[1]
+        revision = components[1] or None
+    if len(entry) > 2:
+        assert len(entry) == 3 and entry[2].lower() == 'optional', (
+            'Bad configuration line: should be space delimited values of '
+            'sourcecode directory name, branch URL [, "optional"]\n' +
+            ' '.join(entry))
+        optional = True
+    else:
+        optional = False
+    return branch_name, branch_url, revision, optional
 
 
 def interpret_config(config_entries, public_only):
@@ -55,9 +73,10 @@ def interpret_config(config_entries, public_only):
     """
     config = {}
     for entry in config_entries:
-        branch_name, branch_url, optional = interpret_config_entry(entry)
+        branch_name, branch_url, revision, optional = interpret_config_entry(
+            entry)
         if not optional or not public_only:
-            config[branch_name] = (branch_url, optional)
+            config[branch_name] = (branch_url, revision, optional)
     return config
 
 
@@ -99,10 +118,33 @@ def find_branches(directory):
         for branch in BzrDir.find_branches(transport))
 
 
+def get_revision_id(revision, from_branch, tip=False):
+    """Return revision id for a revision number and a branch.
+
+    If the revision is empty, the revision_id will be None.
+
+    If ``tip`` is True, the revision value will be ignored.
+    """
+    if not tip and revision:
+        spec = RevisionSpec.from_string(revision)
+        return spec.as_revision_id(from_branch)
+    # else return None
+
+
+def _format_revision_name(revision, tip=False):
+    """Formatting helper to return human-readable identifier for revision.
+
+    If ``tip`` is True, the revision value will be ignored.
+    """
+    if not tip and revision:
+        return 'revision %s' % (revision,)
+    else:
+        return 'tip'
+
 def get_branches(sourcecode_directory, new_branches,
-                 possible_transports=None):
+                 possible_transports=None, tip=False):
     """Get the new branches into sourcecode."""
-    for project, (branch_url, optional) in new_branches.iteritems():
+    for project, (branch_url, revision, optional) in new_branches.iteritems():
         destination = os.path.join(sourcecode_directory, project)
         try:
             remote_branch = Branch.open(
@@ -115,28 +157,33 @@ def get_branches(sourcecode_directory, new_branches,
                 raise
         possible_transports.append(
             remote_branch.bzrdir.root_transport)
-        print 'Getting %s from %s' % (project, branch_url)
+        print 'Getting %s from %s at %s' % (
+                project, branch_url, _format_revision_name(revision, tip))
         # If the 'optional' flag is set, then it's a branch that shares
         # history with Launchpad, so we should share repositories. Otherwise,
         # we should avoid sharing repositories to avoid format
         # incompatibilities.
         force_new_repo = not optional
+        revision_id = get_revision_id(revision, remote_branch, tip)
         remote_branch.bzrdir.sprout(
-            destination, create_tree_if_local=True,
+            destination, revision_id=revision_id, create_tree_if_local=True,
             source_branch=remote_branch, force_new_repo=force_new_repo,
             possible_transports=possible_transports)
 
 
 def update_branches(sourcecode_directory, update_branches,
-                    possible_transports=None):
+                    possible_transports=None, tip=False):
     """Update the existing branches in sourcecode."""
     if possible_transports is None:
         possible_transports = []
     # XXX: JonathanLange 2009-11-09: Rather than updating one branch after
     # another, we could instead try to get them in parallel.
-    for project, (branch_url, optional) in update_branches.iteritems():
+    for project, (branch_url, revision, optional) in (
+        update_branches.iteritems()):
+        # Update project from branch_url.
         destination = os.path.join(sourcecode_directory, project)
-        print 'Updating %s' % (project,)
+        print 'Updating %s to %s' % (
+                project, _format_revision_name(revision, tip)),
         local_tree = WorkingTree.open(destination)
         try:
             remote_branch = Branch.open(
@@ -149,9 +196,19 @@ def update_branches(sourcecode_directory, update_branches,
                 raise
         possible_transports.append(
             remote_branch.bzrdir.root_transport)
-        local_tree.pull(
-            remote_branch, overwrite=True,
+        revision_id = get_revision_id(revision, remote_branch, tip)
+        result = local_tree.pull(
+            remote_branch, stop_revision=revision_id, overwrite=True,
             possible_transports=possible_transports)
+        if result.old_revno == result.new_revno:
+            print '(No change)'
+        else:
+            if result.old_revno < result.new_revno:
+                change = 'Updated'
+            else:
+                change = 'Reverted'
+            print '(%s from %s to %s)' % (
+                change, result.old_revno, result.new_revno)
 
 
 def remove_branches(sourcecode_directory, removed_branches):
@@ -166,7 +223,7 @@ def remove_branches(sourcecode_directory, removed_branches):
 
 
 def update_sourcecode(sourcecode_directory, config_filename, public_only,
-                      dry_run):
+                      tip, dry_run):
     """Update the sourcecode."""
     config_file = open(config_filename)
     config = interpret_config(parse_config_file(config_file), public_only)
@@ -179,8 +236,8 @@ def update_sourcecode(sourcecode_directory, config_filename, public_only,
         print 'Branches to update:', updated.keys()
         print 'Branches to remove:', list(removed)
     else:
-        get_branches(sourcecode_directory, new, possible_transports)
-        update_branches(sourcecode_directory, updated, possible_transports)
+        get_branches(sourcecode_directory, new, possible_transports, tip)
+        update_branches(sourcecode_directory, updated, possible_transports, tip)
         remove_branches(sourcecode_directory, removed)
 
 
@@ -201,8 +258,11 @@ def main(args):
         '--public-only', action='store_true',
         help='Only fetch/update the public sourcecode branches.')
     parser.add_option(
+        '--tip', action='store_true',
+        help='Ignore revision constraints for all branches and pull tip')
+    parser.add_option(
         '--dry-run', action='store_true',
-        help='Only fetch/update the public sourcecode branches.')
+        help='Do nothing, but report what would have been done.')
     options, args = parser.parse_args(args)
     root = get_launchpad_root()
     if len(args) > 1:
@@ -217,8 +277,11 @@ def main(args):
         parser.error("Too many arguments.")
     print 'Sourcecode: %s' % (sourcecode_directory,)
     print 'Config: %s' % (config_filename,)
+    # Tell bzr to use the terminal (if any) to show progress bars
+    ui.ui_factory = ui.make_ui_for_terminal(
+        sys.stdin, sys.stdout, sys.stderr)
     load_plugins()
     update_sourcecode(
         sourcecode_directory, config_filename,
-        options.public_only, options.dry_run)
+        options.public_only, options.tip, options.dry_run)
     return 0

@@ -7,11 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BadBranchMergeProposalSearchContext',
-    'BadStateTransition',
-    'BranchMergeProposalExists',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
-    'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
@@ -20,9 +16,8 @@ __all__ = [
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
-    'UserNotBranchReviewer',
-    'WrongBranchMergeProposal',
     ]
+
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from zope.event import notify
@@ -41,41 +36,10 @@ from lp.services.job.interfaces.job import IJob, IRunnableJob
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from lazr.restful.fields import CollectionField, Reference
 from lazr.restful.declarations import (
-    call_with, export_as_webservice_entry, export_read_operation,
-    export_write_operation, exported, operation_parameters,
-    operation_returns_entry, rename_parameters_as, REQUEST_USER)
-
-
-class InvalidBranchMergeProposal(Exception):
-    """Raised during the creation of a new branch merge proposal.
-
-    The text of the exception is the rule violation.
-    """
-
-
-class BranchMergeProposalExists(InvalidBranchMergeProposal):
-    """Raised if there is already a matching BranchMergeProposal."""
-
-
-class UserNotBranchReviewer(Exception):
-    """The user who attempted to review the merge proposal isn't a reviewer.
-
-    A specific reviewer may be set on a branch.  If a specific reviewer
-    isn't set then any user in the team of the owner of the branch is
-    considered a reviewer.
-    """
-
-
-class BadStateTransition(Exception):
-    """The user requested a state transition that is not possible."""
-
-
-class WrongBranchMergeProposal(Exception):
-    """The comment requested is not associated with this merge proposal."""
-
-
-class BadBranchMergeProposalSearchContext(Exception):
-    """The context is not valid for a branch merge proposal search."""
+    call_with, export_as_webservice_entry, export_factory_operation,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_entry, rename_parameters_as,
+    REQUEST_USER)
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
@@ -170,7 +134,8 @@ class IBranchMergeProposal(IPrivacy):
         Summary(
             title=_("Commit Message"), required=False,
             description=_("The commit message that should be used when "
-                          "merging the source branch.")))
+                          "merging the source branch."),
+            strip_text=True))
 
     queue_position = exported(
         Int(
@@ -454,7 +419,8 @@ class IBranchMergeProposal(IPrivacy):
         vote=Choice(vocabulary=CodeReviewVote), review_type=Text(),
         parent=Reference(schema=Interface))
     @call_with(owner=REQUEST_USER)
-    @export_write_operation()
+    # ICodeReviewComment supplied as Interface to avoid circular imports.
+    @export_factory_operation(Interface, [])
     def createComment(owner, subject, content=None, vote=None,
                       review_type=None, parent=None):
         """Create an ICodeReviewComment associated with this merge proposal.

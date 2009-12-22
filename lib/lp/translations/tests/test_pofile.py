@@ -20,7 +20,7 @@ from lp.translations.interfaces.translationmessage import (
 from lp.translations.interfaces.translationcommonformat import (
     ITranslationFileData)
 from lp.testing import TestCaseWithFactory, verifyObject
-from canonical.testing import ZopelessDatabaseLayer
+from canonical.testing import LaunchpadZopelessLayer, ZopelessDatabaseLayer
 from canonical.launchpad.webapp.publisher import canonical_url
 
 
@@ -668,6 +668,39 @@ class TestTranslationSharedPOFile(TestCaseWithFactory):
             self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
         self.assertEquals(found_translations, [self.potmsgset])
 
+    def test_getPOTMsgSetChangedInLaunchpad_diverged_imported(self):
+        # If there is a diverged imported (but non-current) message
+        # and a shared current message, it should not be listed as changed.
+        # Even though that is generally incorrect, this is a situation
+        # we can't come to with new code and is a residue of old data
+        # (see bug #455680 for details).
+
+        # To hit the bug, we need:
+        # 1) Shared imported and current translation.
+        # 2) Diverged, imported, non-current message.
+        shared = self.factory.makeSharedTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Shared imported current"], is_imported=True)
+        diverged = self.factory.makeTranslationMessage(
+            pofile=self.devel_sr_pofile, potmsgset=self.potmsgset,
+            translations=[u"Diverged imported non-current"],
+            is_imported=True, force_diverged=True)
+        # As we can't come to this situation using existing code,
+        # we modify the is_current flag directly.
+        diverged.is_current = False
+
+        self.assertEquals(shared.is_imported, True)
+        self.assertEquals(shared.is_current, True)
+        self.assertIs(shared.potemplate, None)
+        self.assertEquals(diverged.is_imported, True)
+        self.assertEquals(diverged.is_current, False)
+        self.assertEquals(diverged.potemplate, self.devel_potemplate)
+
+        # Such POTMsgSet is not considered changed in this PO file.
+        found_translations = list(
+            self.devel_sr_pofile.getPOTMsgSetChangedInLaunchpad())
+        self.assertEquals(found_translations, [])
+
     def test_getPOTMsgSetChangedInLaunchpad_SharedDiverged(self):
         # Test listing of changed in LP for shared/diverged messages.
 
@@ -878,59 +911,70 @@ class TestSharedPOFileCreation(TestCaseWithFactory):
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('eo'))
         self.assertNotEqual(None, stable_potemplate.getPOFileByLang('de'))
 
+
 class TestTranslationCredits(TestCaseWithFactory):
     """Test generation of translation credits."""
-    
+
     layer = ZopelessDatabaseLayer
-    
+
     def setUp(self):
         super(TestTranslationCredits, self).setUp()
         self.pofile = self.factory.makePOFile('sr')
         self.potemplate = self.pofile.potemplate
-        
+
         self.potmsgset = self.factory.makePOTMsgSet(
             potemplate=self.potemplate, sequence=1)
         self.credits_potmsgset = self.factory.makePOTMsgSet(
             potemplate=self.potemplate, singular=u'translator-credits')
-    
+
+    def compose_launchpad_credits_text(self, imported_credits_text):
+        return u"%s\n\nLaunchpad Contributions:\n  %s" % (
+                imported_credits_text,
+                "\n  ".join(["%s %s" % (person.displayname,
+                                        canonical_url(person))
+                             for person in self.pofile.contributors])
+            )
+
     def test_prepareTranslationCredits_extending(self):
         # This test ensures that continuous updates to the translation credits
         # don't result in duplicate entries.
         # Only the 'translator-credits' message is covered right now.
         person = self.factory.makePerson()
-        
+
         imported_credits_text = u"Imported Contributor <name@project.org>"
-        launchpad_credits_text = u"%s\n\nLaunchpad Contributions:\n  %s %s" % (
-            imported_credits_text, person.displayname, canonical_url(person))
-        
+
         # Import a translation credits message to 'translator-credits'.
         self.factory.makeTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.credits_potmsgset,
             translations=[imported_credits_text],
             is_imported=True)
-        
+
         # `person` updates the translation using Launchpad.
         self.factory.makeTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.potmsgset,
             translator=person)
-        
+
         # The first translation credits export.
         credits_text = self.pofile.prepareTranslationCredits(
             self.credits_potmsgset)
-        self.assertEquals(launchpad_credits_text, credits_text)
-        
+        self.assertEquals(
+            self.compose_launchpad_credits_text(imported_credits_text),
+            credits_text)
+
         # Now, re-import this generated message.
         self.factory.makeTranslationMessage(
             pofile=self.pofile,
             potmsgset=self.credits_potmsgset,
             translations=[credits_text],
             is_imported=True)
-        
+
         credits_text = self.pofile.prepareTranslationCredits(
             self.credits_potmsgset)
-        self.assertEquals(launchpad_credits_text, credits_text)
+        self.assertEquals(
+            self.compose_launchpad_credits_text(imported_credits_text),
+            credits_text)
 
 
 class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
@@ -1166,7 +1210,7 @@ class TestTranslationPOFilePOTMsgSetOrdering(TestCaseWithFactory):
 class TestPOFileSet(TestCaseWithFactory):
     """Test PO file set methods."""
 
-    layer = ZopelessDatabaseLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         # Create a POFileSet to work with.
@@ -1353,6 +1397,99 @@ class TestPOFileSet(TestCaseWithFactory):
         pofiles = self.pofileset.getPOFilesTouchedSince(yesterday)
         self.assertContentEqual([pofile1], pofiles)
 
+    def test_getPOFilesWithTranslationCredits(self):
+        # Initially, we only get data from the sampledata.
+        sampledata_pofiles = list(
+            self.pofileset.getPOFilesWithTranslationCredits())
+        total = len(sampledata_pofiles)
+        self.assertEquals(3, total)
+
+        def list_of_tuples_into_list(list_of_tuples):
+            return [item[0] for item in list_of_tuples]
+
+        # All POFiles with translation credits messages are
+        # returned along with relevant POTMsgSets.
+        potemplate1 = self.factory.makePOTemplate()
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            potemplate1, singular=u'translator-credits', sequence=1)
+
+        sr_pofile = self.factory.makePOFile('sr', potemplate=potemplate1)
+        self.assertIn(sr_pofile,
+                      list_of_tuples_into_list(
+                          self.pofileset.getPOFilesWithTranslationCredits()))
+        self.assertEquals(
+            total + 1,
+            self.pofileset.getPOFilesWithTranslationCredits().count())
+
+        # If there's another POFile on this template, it's returned as well.
+        de_pofile = self.factory.makePOFile('de', potemplate=potemplate1)
+        self.assertIn(de_pofile,
+                      list_of_tuples_into_list(
+                          self.pofileset.getPOFilesWithTranslationCredits()))
+
+        # If another POTemplate has a translation credits message, it's
+        # returned as well.
+        potemplate2 = self.factory.makePOTemplate()
+        kde_credits_potmsgset = self.factory.makePOTMsgSet(
+            potemplate2, singular=u'Your names',
+            context=u'NAME OF TRANSLATORS', sequence=1)
+        sr_kde_pofile = self.factory.makePOFile('sr', potemplate=potemplate2)
+        self.assertIn(sr_kde_pofile,
+                      list_of_tuples_into_list(
+                          self.pofileset.getPOFilesWithTranslationCredits()))
+
+        # And let's confirm that the full listing contains all of the
+        # above.
+        all_pofiles = list_of_tuples_into_list(sampledata_pofiles)
+        all_pofiles.extend([sr_pofile, de_pofile, sr_kde_pofile])
+        self.assertContentEqual(
+            all_pofiles,
+            list_of_tuples_into_list(
+                self.pofileset.getPOFilesWithTranslationCredits()))
+
+    def test_getPOFilesWithTranslationCredits_untranslated(self):
+        # We need absolute DB access to be able to remove a translation
+        # message.
+        LaunchpadZopelessLayer.switchDbUser('postgres')
+
+        # Initially, we only get data from the sampledata, all of which
+        # are untranslated.
+        sampledata_pofiles = list(
+            self.pofileset.getPOFilesWithTranslationCredits(
+                untranslated=True))
+        total = len(sampledata_pofiles)
+        self.assertEquals(3, total)
+
+        # All POFiles with translation credits messages are
+        # returned along with relevant POTMsgSets.
+        potemplate1 = self.factory.makePOTemplate()
+        credits_potmsgset = self.factory.makePOTMsgSet(
+            potemplate1, singular=u'translator-credits', sequence=1)
+
+        sr_pofile = self.factory.makePOFile('sr', potemplate=potemplate1)
+        pofiles_with_credits = (
+            self.pofileset.getPOFilesWithTranslationCredits(
+                untranslated=True))
+        self.assertNotIn((sr_pofile, credits_potmsgset),
+                         list(pofiles_with_credits))
+        self.assertEquals(
+            total,
+            pofiles_with_credits.count())
+
+        # Removing a translation for this message, removes it
+        # from a result set when untranslated=True is passed in.
+        message = credits_potmsgset.getSharedTranslationMessage(
+            sr_pofile.language)
+        message.destroySelf()
+        pofiles_with_credits = (
+            self.pofileset.getPOFilesWithTranslationCredits(
+                untranslated=True))
+        self.assertIn((sr_pofile, credits_potmsgset),
+                      list(pofiles_with_credits))
+        self.assertEquals(
+            total + 1,
+            pofiles_with_credits.count())
+
 
 class TestPOFileStatistics(TestCaseWithFactory):
     """Test PO files statistics calculation."""
@@ -1452,20 +1589,48 @@ class TestPOFile(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    # The sequence number 0 is put at the beginning of the data to verify that
+    # it really gets sorted to the end.
+    TEST_MESSAGES = [
+        {'msgid':'computer', 'string':'komputilo', 'sequence':0},
+        {'msgid':'mouse', 'string':'muso', 'sequence':0},
+        {'msgid':'Good morning', 'string':'Bonan matenon', 'sequence':2},
+        {'msgid':'Thank you', 'string':'Dankon', 'sequence':1},
+        ]
+    EXPECTED_SEQUENCE = [1, 2, 0, 0]
+
     def setUp(self):
         # Create a POFile to calculate statistics on.
         super(TestPOFile, self).setUp()
-        self.pofile = self.factory.makePOFile('sr')
+        self.pofile = self.factory.makePOFile('eo')
         self.potemplate = self.pofile.potemplate
-
-        # Create a single POTMsgSet that is used across all tests.
-        self.potmsgset = self.factory.makePOTMsgSet(self.potemplate,
-                                                    sequence=1)
 
     def test_makeTranslatableMessage(self):
         # TranslatableMessages can be created from the PO file
-        message = self.pofile.makeTranslatableMessage(self.potmsgset)
+        potmsgset = self.factory.makePOTMsgSet(self.potemplate,
+                                                    sequence=1)
+        message = self.pofile.makeTranslatableMessage(potmsgset)
         verifyObject(ITranslatableMessage, message)
+
+    def _createMessageSet(self, testmsg):
+        # Create a message set from the test data.
+        pomsgset = self.factory.makePOTMsgSet(
+            self.potemplate, testmsg['msgid'], sequence=testmsg['sequence'])
+        pomsgset.updateTranslation(
+            self.pofile, self.pofile.owner,
+            {0:testmsg['string'],},
+            True, None, force_edition_rights=True)
+
+    def test_getTranslationRows_sequence(self):
+        # Test for correct sorting of obsolete messages (where sequence=0).
+        msgsets = [
+            self._createMessageSet(msg) for msg in self.TEST_MESSAGES]
+        for rownum, row in enumerate(
+            self.pofile.getTranslationRows()):
+            self.failUnlessEqual(
+                row.sequence, self.EXPECTED_SEQUENCE[rownum],
+                "getTranslationRows does not sort obsolete messages "
+                "(sequence=0) to the end of the file.")
 
 
 def test_suite():

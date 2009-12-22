@@ -16,6 +16,7 @@ __all__ = [
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
     'IDistributionSet',
+    'NoPartnerArchive',
     'NoSuchDistribution',
     ]
 
@@ -34,7 +35,7 @@ from lazr.restful.declarations import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
@@ -201,7 +202,7 @@ class IDistributionPublic(
         "All unofficial mirrors of this Distribution.")
     pending_review_mirrors = Attribute(
         "All mirrors of this Distribution that haven't been reviewed yet.")
-    serieses = exported(
+    series = exported(
         CollectionField(
             title=_("DistroSeries inside this Distribution"),
             # Really IDistroSeries, see below.
@@ -289,8 +290,8 @@ class IDistributionPublic(
     @operation_returns_collection_of(Interface)
     @export_operation_as(name="getDevelopmentSeries")
     @export_read_operation()
-    def getDevelopmentSerieses():
-        """Return the DistroSerieses which are marked as in development."""
+    def getDevelopmentSeries():
+        """Return the DistroSeries which are marked as in development."""
 
     @operation_parameters(
         name_or_version=TextLine(title=_("Name or version"), required=True))
@@ -309,9 +310,9 @@ class IDistributionPublic(
         """
 
     def newMirror(owner, speed, country, content, displayname=None,
-                  description=None, http_base_url=None, ftp_base_url=None,
-                  rsync_base_url=None, enabled=False,
-                  official_candidate=False):
+                  description=None, http_base_url=None,
+                  ftp_base_url=None, rsync_base_url=None, enabled=False,
+                  official_candidate=False, whiteboard=None):
         """Create a new DistributionMirror for this distribution.
 
         At least one of http_base_url or ftp_base_url must be provided in
@@ -511,13 +512,6 @@ class IDistributionPublic(
               bug watches or to products that use_malone.
         """
 
-    def getCustomLanguageCode(sourcepackagename, language_code):
-        """Look up `ICustomLanguageCode`.
-
-        A `SourcePackageName` in a Distribution may override some
-        language codes for translation import purposes.
-        """
-
     def userCanEdit(user):
         """Can the user edit this distribution?"""
 
@@ -585,6 +579,15 @@ class NoSuchDistribution(NameLookupFailed):
     """Raised when we try to find a distribution that doesn't exist."""
 
     _message_prefix = "No such distribution"
+
+
+class NoPartnerArchive(Exception):
+    """Raised when a partner archive is needed, but none exists."""
+
+    def __init__(self, distribution):
+        Exception.__init__(
+            self, "Partner archive for distro '%s' not found"
+            % (distribution.name,))
 
 
 # Monkey patching to fix circular imports done in

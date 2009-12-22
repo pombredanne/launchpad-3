@@ -32,6 +32,8 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.queue import NonBuildableSourceUploadError
+from lp.soyuz.interfaces.sourcepackageformat import (
+    ISourcePackageFormatSelectionSet, SourcePackageFormat)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet, NotFoundError)
 from canonical.launchpad.testing.fakepackager import FakePackager
@@ -507,7 +509,7 @@ class TestPPAUploadProcessor(TestPPAUploadProcessorBase):
         self.assertEmail(ppa_header="cprov", recipients=expected_recipients)
 
     def testPPADistroSeriesOverrides(self):
-        """It's possible to override target distroserieses of PPA uploads.
+        """It's possible to override target distroseries of PPA uploads.
 
         Similar to usual PPA uploads:
 
@@ -946,6 +948,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         except NotFoundError:
             self.fail('bar_1.0.orig.tar.gz is not yet published.')
 
+        # Please note: this upload goes to the Ubuntu main archive.
         upload_dir = self.queueUpload("bar_1.0-10")
         self.processUpload(self.uploadprocessor, upload_dir)
         # Discard the announcement email and check the acceptance message
@@ -961,6 +964,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Make the official bar orig.tar.gz available in the system.
         self.uploadNewBarToUbuntu()
 
+        # Please note: the upload goes to the PPA.
         # Upload a higher version of 'bar' to a PPA that relies on the
         # availability of orig.tar.gz published in ubuntu.
         upload_dir = self.queueUpload("bar_1.0-10", "~name16/ubuntu")
@@ -1032,6 +1036,7 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         # Make the official bar orig.tar.gz available in the system.
         self.uploadNewBarToUbuntu()
 
+        # Please note: the upload goes to the PPA.
         # Upload a higher version of 'bar' to a PPA that relies on the
         # availability of orig.tar.gz published in the PPA itself.
         upload_dir = self.queueUpload("bar_1.0-10-ppa-orig", "~name16/ubuntu")
@@ -1157,6 +1162,51 @@ class TestPPAUploadProcessorFileLookups(TestPPAUploadProcessorBase):
         self.assertEqual(
             self.uploadprocessor.last_processed_upload.queue_root.status,
             PackageUploadStatus.DONE)
+
+    def test30QuiltMultipleReusedOrigs(self):
+        """Official orig*.tar.* can be reused for PPA uploads.
+
+        The 3.0 (quilt) format supports multiple original tarballs. In a
+        PPA upload, any number of these can be reused from the primary
+        archive.
+        """
+        # We need to accept unsigned .changes and .dscs, and 3.0 (quilt)
+        # sources.
+        self.options.context = 'absolutely-anything'
+        getUtility(ISourcePackageFormatSelectionSet).add(
+            self.breezy, SourcePackageFormat.FORMAT_3_0_QUILT)
+
+        # First upload a complete 3.0 (quilt) source to the primary
+        # archive.
+        upload_dir = self.queueUpload("bar_1.0-1_3.0-quilt")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        self.assertEqual(
+            self.uploadprocessor.last_processed_upload.queue_root.status,
+            PackageUploadStatus.NEW)
+
+        [queue_item] = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name="bar",
+            version="1.0-1", exact_match=True)
+        queue_item.setAccepted()
+        queue_item.realiseUpload()
+        self.layer.commit()
+        unused = stub.test_emails.pop()
+
+        # Now upload a 3.0 (quilt) source with missing orig*.tar.* to a
+        # PPA. All of the missing files will be retrieved from the
+        # primary archive.
+        upload_dir = self.queueUpload(
+            "bar_1.0-2_3.0-quilt_without_orig", "~name16/ubuntu")
+        self.assertEquals(
+            self.processUpload(self.uploadprocessor, upload_dir),
+            ['accepted'])
+
+        queue_item = self.uploadprocessor.last_processed_upload.queue_root
+
+        self.assertEqual(queue_item.status, PackageUploadStatus.DONE)
+        self.assertEqual(
+            queue_item.sources[0].sourcepackagerelease.files.count(), 5)
 
 
 class TestPPAUploadProcessorQuotaChecks(TestPPAUploadProcessorBase):

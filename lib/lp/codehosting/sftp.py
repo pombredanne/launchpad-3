@@ -20,6 +20,7 @@ __all__ = [
     ]
 
 
+from copy import copy
 import errno
 import os
 import stat
@@ -319,6 +320,10 @@ class TransportSFTPServer:
         """
         for stat_result, filename in zip(stat_results, filenames):
             shortname = urlutils.unescape(filename).encode('utf-8')
+            stat_result = copy(stat_result)
+            for attribute in ['st_uid', 'st_gid', 'st_mtime', 'st_nlink']:
+                if getattr(stat_result, attribute, None) is None:
+                    setattr(stat_result, attribute, 0)
             longname = lsLine(shortname, stat_result)
             attr_dict = self._translate_stat(stat_result)
             yield (shortname, longname, attr_dict)
@@ -429,6 +434,7 @@ class TransportSFTPServer:
             bzr_errors.NoSuchFile: filetransfer.FX_NO_SUCH_FILE,
             bzr_errors.FileExists: filetransfer.FX_FILE_ALREADY_EXISTS,
             bzr_errors.DirectoryNotEmpty: filetransfer.FX_FAILURE,
+            bzr_errors.TransportError: filetransfer.FX_FAILURE,
             FileIsADirectory: filetransfer.FX_FILE_IS_A_DIRECTORY,
             }
         # Bazaar expects makeDirectory to fail with exactly the string "mkdir

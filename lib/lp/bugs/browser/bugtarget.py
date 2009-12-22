@@ -13,7 +13,6 @@ __all__ = [
     "FileBugAdvancedView",
     "FileBugGuidedView",
     "FileBugViewBase",
-    "FrontPageFileBugGuidedView",
     "OfficialBugTagsManageView",
     "ProjectFileBugGuidedView",
     ]
@@ -57,10 +56,11 @@ from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
+from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import (
-    CreateBugParams, IBugAddForm, IFrontPageBugAddForm, IProjectBugAddForm)
+    CreateBugParams, IBugAddForm, IProjectBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
@@ -78,7 +78,6 @@ from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.publisher import HTTP_MOVED_PERMANENTLY
 from canonical.widgets.bug import BugTagsWidget, LargeBugTagsWidget
 from canonical.widgets.bugtask import NewLineToSpacesWidget
-from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 from lp.registry.vocabularies import ValidPersonOrTeamVocabulary
 
@@ -273,17 +272,8 @@ class FileBugViewBase(LaunchpadFormView):
 
     def initialize(self):
         LaunchpadFormView.initialize(self)
-
-        if (config.malone.ubuntu_disable_filebug and
-            self.targetIsUbuntu() and
-            self.extra_data_token is None and
-            not self.no_ubuntu_redirect):
-            # The user is trying to file a new Ubuntu bug via the web
-            # interface and without using apport. Redirect to a page
-            # explaining the preferred bug-filing procedure.
-            self.request.response.redirect(
-                config.malone.ubuntu_bug_filing_url)
-        if self.extra_data_token is not None:
+        if (not self.redirect_ubuntu_filebug and
+            self.extra_data_token is not None):
             # self.extra_data has been initialized in publishTraverse().
             if self.extra_data.initial_summary:
                 self.widgets['title'].setRenderedValue(
@@ -297,6 +287,29 @@ class FileBugViewBase(LaunchpadFormView):
             self.request.response.addNotification(
                 'Extra debug information will be added to the bug report'
                 ' automatically.')
+
+    @cachedproperty
+    def redirect_ubuntu_filebug(self):
+        if IDistribution.providedBy(self.context):
+            bug_supervisor = self.context.bug_supervisor
+        elif (IDistributionSourcePackage.providedBy(self.context) or
+              ISourcePackage.providedBy(self.context)):
+            bug_supervisor = self.context.distribution.bug_supervisor
+        else:
+            bug_supervisor = None
+
+        # Work out whether the redirect should be overidden.
+        do_not_redirect = (
+            self.request.form.get('no-redirect') is not None or
+            [key for key in self.request.form.keys()
+            if 'field.actions' in key] != [] or
+            self.user.inTeam(bug_supervisor))
+
+        return (
+            config.malone.ubuntu_disable_filebug and
+            self.targetIsUbuntu() and
+            self.extra_data_token is None and
+            not do_not_redirect)
 
     @property
     def field_names(self):
@@ -345,23 +358,7 @@ class FileBugViewBase(LaunchpadFormView):
         return (self.context == ubuntu or
                 (IMaloneApplication.providedBy(self.context) and
                  self.request.form.get('field.bugtarget.distribution') ==
-                 ubuntu.name) or
-                (IDistributionSourcePackage.providedBy(self.context) and
-                 self.context.distribution == ubuntu))
-
-    @property
-    def no_ubuntu_redirect(self):
-        if IDistribution.providedBy(self.context):
-            bug_supervisor = self.context.bug_supervisor
-        elif (IDistributionSourcePackage.providedBy(self.context) or
-              ISourcePackage.providedBy(self.context)):
-            bug_supervisor = self.context.distribution.bug_supervisor
-
-        return (
-            self.request.form.get('no-redirect') is not None or
-            [key for key in self.request.form.keys()
-            if 'field.actions' in key] != [] or
-            self.user.inTeam(bug_supervisor))
+                 ubuntu.name))
 
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
@@ -372,7 +369,6 @@ class FileBugViewBase(LaunchpadFormView):
 
     def validate(self, data):
         """Make sure the package name, if provided, exists in the distro."""
-
         # The comment field is only required if filing a new bug.
         if self.submit_bug_action.submitted():
             comment = data.get('comment')
@@ -411,11 +407,11 @@ class FileBugViewBase(LaunchpadFormView):
                 try:
                     distribution.guessPackageNames(packagename)
                 except NotFoundError:
-                    if distribution.serieses:
-                        # If a distribution doesn't have any serieses,
+                    if distribution.series:
+                        # If a distribution doesn't have any series,
                         # it won't have any source packages published at
                         # all, so we set the error only if there are
-                        # serieses.
+                        # series.
                         packagename_error = (
                             '"%s" does not exist in %s. Please choose a '
                             "different package. If you're unsure, please "
@@ -704,6 +700,35 @@ class FileBugViewBase(LaunchpadFormView):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
 
+    @property
+    def inline_filebug_base_url(self):
+        """Return the base URL for the current request.
+
+        This allows us to build URLs in Javascript without guessing at
+        domains.
+        """
+        return self.request.getRootURL(None)
+
+    @property
+    def inline_filebug_form_url(self):
+        """Return the URL to the inline filebug form.
+
+        If a token was passed to this view, it will be be passed through
+        to the inline bug filing form via the returned URL.
+        """
+        url = canonical_url(self.context, view_name='+filebug-inline-form')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
+    @property
+    def duplicate_search_url(self):
+        """Return the URL to the inline duplicate search view."""
+        url = canonical_url(self.context, view_name='+filebug-show-similar')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
     def publishTraverse(self, request, name):
         """See IBrowserPublisher."""
         if self.extra_data_token is not None:
@@ -835,6 +860,11 @@ class FileBugViewBase(LaunchpadFormView):
         return guidelines
 
 
+class FileBugInlineFormView(FileBugViewBase):
+    """A browser view for displaying the inline filebug form."""
+    schema = IBugAddForm
+
+
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
 
@@ -855,7 +885,14 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
     """
     schema = IBugAddForm
 
+    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
+    # hack to make the action decorator Just Work across inheritance.
+    actions = FileBugViewBase.actions
+    custom_widget('title', TextWidget, displayWidth=40)
+    custom_widget('tags', BugTagsWidget)
+
     _MATCHING_BUGS_LIMIT = 10
+    show_summary_in_results = False
 
     @property
     def search_context(self):
@@ -898,22 +935,46 @@ class FilebugShowSimilarBugsView(FileBugViewBase):
 
         return matching_bugs
 
+    @property
+    def show_duplicate_list(self):
+        """Return whether or not to show the duplicate list.
+
+        We only show the dupes if:
+          - The context uses Malone AND
+          - There are dupes to show AND
+          - There are no widget errors.
+        """
+        return (
+            self.contextUsesMalone and
+            len(self.similar_bugs) > 0 and
+            len(self.widget_errors) == 0)
+
 
 class FileBugGuidedView(FilebugShowSimilarBugsView):
-    # XXX: Brad Bollenbach 2006-10-04: This assignment to actions is a
-    # hack to make the action decorator Just Work across inheritance.
-    actions = FileBugViewBase.actions
-    custom_widget('title', TextWidget, displayWidth=65)
-    custom_widget('tags', BugTagsWidget)
 
     _SEARCH_FOR_DUPES = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-search.pt")
     _FILEBUG_FORM = ViewPageTemplateFile(
         "../templates/bugtarget-filebug-submit-bug.pt")
 
+    # XXX 2009-07-17 Graham Binns
+    #     As above, this assignment to actions is to make sure that the
+    #     actions from the ancestor views are preserved, otherwise they
+    #     get nuked.
+    actions = FilebugShowSimilarBugsView.actions
     template = _SEARCH_FOR_DUPES
 
     focused_element_id = 'field.title'
+    show_summary_in_results = True
+
+    def initialize(self):
+        FilebugShowSimilarBugsView.initialize(self)
+        if self.redirect_ubuntu_filebug:
+            # The user is trying to file a new Ubuntu bug via the web
+            # interface and without using apport. Redirect to a page
+            # explaining the preferred bug-filing procedure.
+            self.request.response.redirect(
+                config.malone.ubuntu_bug_filing_url)
 
     @safe_action
     @action("Continue", name="search", validator="validate_search")
@@ -952,20 +1013,6 @@ class FileBugGuidedView(FilebugShowSimilarBugsView):
         except InputErrors:
             return None
 
-    @property
-    def show_duplicate_list(self):
-        """Return whether or not to show the duplicate list.
-
-        We only show the dupes if:
-          - The context uses Malone AND
-          - There are dupes to show AND
-          - There are no widget errors.
-        """
-        return (
-            self.contextUsesMalone and
-            len(self.similar_bugs) > 0 and
-            len(self.widget_errors) == 0)
-
     def validate_search(self, action, data):
         """Make sure some keywords are provided."""
         try:
@@ -998,6 +1045,50 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     actions = FileBugGuidedView.actions
     schema = IProjectBugAddForm
 
+    @cachedproperty
+    def products_using_malone(self):
+        return [
+            product for product in self.context.products
+            if product.official_malone]
+
+    @property
+    def default_product(self):
+        if len(self.products_using_malone) > 0:
+            return self.products_using_malone[0]
+        else:
+            return None
+
+    @property
+    def inline_filebug_form_url(self):
+        """Return the URL to the inline filebug form.
+
+        If a token was passed to this view, it will be be passed through
+        to the inline bug filing form via the returned URL.
+
+        The URL returned will be the URL of the first of the current
+        Project's products, since that's the product that will be
+        selected by default when the view is rendered.
+        """
+        url = canonical_url(
+            self.default_product, view_name='+filebug-inline-form')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
+    @property
+    def duplicate_search_url(self):
+        """Return the URL to the inline duplicate search view.
+
+        The URL returned will be the URL of the first of the current
+        Project's products, since that's the product that will be
+        selected by default when the view is rendered.
+        """
+        url = canonical_url(
+            self.default_product, view_name='+filebug-show-similar')
+        if self.extra_data_token is not None:
+            url = urlappend(url, self.extra_data_token)
+        return url
+
     def _getSelectedProduct(self):
         """Return the product that's selected."""
         assert self.widgets['product'].hasValidInput(), (
@@ -1010,143 +1101,22 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
         return self._getSelectedProduct()
 
 
-class FrontPageFileBugMixin:
-    """Provides common methods for front-page bug-filing forms."""
-
-    frontpage_form = True
-
-    def contextUsesMalone(self):
-        """Checks whether the current context uses Malone for bug tracking.
-
-        If a bug is being filed against a product or distro then that product
-        or distro's official_malone property is used to determine the return
-        value of contextUsesMalone(). Otherwise, contextUsesMalone() will
-        always return True, since doing otherwise will cause the front page
-        file bug forms to be hidden.
-        """
-        product_or_distro = self.getProductOrDistroFromContext()
-
-        if product_or_distro is None:
-            return True
-        else:
-            return product_or_distro.official_malone
-
-    def contextIsProduct(self):
-        """Is the context a product?"""
-        product_or_distro = self.getProductOrDistroFromContext()
-        return IProduct.providedBy(product_or_distro)
-
-    @property
-    def bugtarget(self):
-        """The bugtarget we're currently assuming.
-
-        This needs to be obtained from form data because we're on the
-        front page, and not already within a product/distro/etc
-        context.
-        """
-        if self.widgets['bugtarget'].hasValidInput():
-            return self.widgets['bugtarget'].getInputValue()
-        else:
-            return None
-
-    def getProductOrDistroFromContext(self):
-        """Return the product or distribution relative to the context.
-
-        For instance, if the context is an IDistroSeries, return the
-        distribution related to it. This method will return None if the
-        context is not related to a product or a distro.
-        """
-        # We need to find a product or distribution from what we've had
-        # submitted to us.
-        context = self.bugtarget
-        if context is None:
-            return None
-
-        if IProduct.providedBy(context) or IDistribution.providedBy(context):
-            return context
-        elif IProductSeries.providedBy(context):
-            return context.product
-        elif (IDistroSeries.providedBy(context) or
-              IDistributionSourcePackage.providedBy(context)):
-            return context.distribution
-        else:
-            return None
-
-
-class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
-    """Browser view class for the top-level +filebug page."""
-    schema = IFrontPageBugAddForm
-    custom_widget('bugtarget', LaunchpadTargetWidget)
-
-    # Make inheriting the base class' actions work.
-    actions = FileBugGuidedView.actions
-
-    @property
-    def initial_values(self):
-        return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
-
-    def validate_search(self, action, data):
-        """Validates the parameters for the similar-bug search."""
-        errors = FileBugGuidedView.validate_search(self, action, data)
-        try:
-            data['bugtarget'] = self.widgets['bugtarget'].getInputValue()
-
-            # Check that Malone is actually used by this bugtarget.
-            if (IProduct.providedBy(data['bugtarget']) or
-                IDistribution.providedBy(data['bugtarget'])):
-                product_or_distro = data['bugtarget']
-            elif IProductSeries.providedBy(data['bugtarget']):
-                product_or_distro = data['bugtarget'].product
-            elif (IDistroSeries.providedBy(data['bugtarget']) or
-                  IDistributionSourcePackage.providedBy(data['bugtarget'])):
-                product_or_distro = data['bugtarget'].distribution
-            else:
-                product_or_distro = None
-
-            if (product_or_distro is not None and
-                not product_or_distro.official_malone):
-                self.setFieldError('bugtarget',
-                                    "%s does not use Launchpad as its bug "
-                                    "tracker" %
-                                    product_or_distro.displayname)
-
-        except InputErrors, error:
-            self.setFieldError("bugtarget", error.doc())
-            errors.append(error)
-        return errors
-
-    def getSecurityContext(self):
-        """See FileBugViewBase."""
-        try:
-            bugtarget = self.widgets['bugtarget'].getInputValue()
-        except InputErrors:
-            return None
-        if IDistributionSourcePackage.providedBy(bugtarget):
-            return bugtarget.distribution
-        else:
-            assert (
-                IProduct.providedBy(bugtarget) or
-                IDistribution.providedBy(bugtarget)), (
-                "Unknown bug target: %r" % bugtarget)
-            return bugtarget
-
-
 class BugTargetBugListingView:
     """Helper methods for rendering bug listings."""
 
     @property
     def series_list(self):
         if IDistribution(self.context, None):
-            serieses = self.context.serieses
+            series = self.context.series
         elif IProduct(self.context, None):
-            serieses = self.context.serieses
+            series = self.context.series
         elif IDistroSeries(self.context, None):
-            serieses = self.context.distribution.serieses
+            series = self.context.distribution.series
         elif IProductSeries(self.context, None):
-            serieses = self.context.product.serieses
+            series = self.context.product.series
         else:
             raise AssertionError("series_list called with illegal context")
-        return serieses
+        return series
 
     @property
     def series_buglistings(self):
@@ -1326,7 +1296,7 @@ class BugTargetBugTagsView(LaunchpadView):
         tags = self.getUsedBugTagsWithURLs()
         other_tags = [tag for tag in tags if tag['tag'] not in official_tags]
         popular_tags = [tag['tag'] for tag in sorted(
-            other_tags, key=itemgetter('count'))[:10]]
+            other_tags, key=itemgetter('count'), reverse=True)[:10]]
         tags = [
             tag for tag in tags
             if tag['tag'] in official_tags + popular_tags]

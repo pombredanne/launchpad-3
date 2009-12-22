@@ -23,7 +23,7 @@ from lp.services.scripts.interfaces.scriptactivity import (
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT)
 from canonical.launchpad.interfaces.launchpad import ILaunchBag
-from lp.testing import TestCase, TestCaseWithFactory
+from lp.testing import TestCaseWithFactory
 from lp.testing.factory import LaunchpadObjectFactory
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.launchpad.xmlrpc import faults
@@ -36,7 +36,7 @@ from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.model.tests.test_branchpuller import AcquireBranchToPullTests
 from lp.code.xmlrpc.codehosting import (
     BranchFileSystem, BranchPuller, LAUNCHPAD_ANONYMOUS, LAUNCHPAD_SERVICES,
-    iter_split, run_with_login)
+    run_with_login)
 
 
 UTC = pytz.timezone('UTC')
@@ -1109,23 +1109,6 @@ class BranchFileSystemTest(TestCaseWithFactory):
             trailing_path='.bzr')
 
 
-class TestIterateSplit(TestCase):
-    """Tests for iter_split."""
-
-    def test_iter_split(self):
-        # iter_split loops over each way of splitting a string in two using
-        # the given splitter.
-        self.assertEqual([('one', '')], list(iter_split('one', '/')))
-        self.assertEqual([], list(iter_split('', '/')))
-        self.assertEqual(
-            [('one/two', ''), ('one', 'two')],
-            list(iter_split('one/two', '/')))
-        self.assertEqual(
-            [('one/two/three', ''), ('one/two', 'three'),
-             ('one', 'two/three')],
-            list(iter_split('one/two/three', '/')))
-
-
 class LaunchpadDatabaseFrontend:
     """A 'frontend' to Launchpad's branch services.
 
@@ -1182,7 +1165,5 @@ def test_suite():
                       'layer': FunctionalLayer}),
         ]
     multiply_tests(puller_tests, scenarios, suite)
-    suite.addTests(
-        map(loader.loadTestsFromTestCase,
-            [TestRunWithLogin, TestIterateSplit]))
+    suite.addTests(loader.loadTestsFromTestCase(TestRunWithLogin))
     return suite

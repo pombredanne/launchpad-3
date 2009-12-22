@@ -8,6 +8,12 @@ which support is desired:
     >>> print browser.title
     Questions : Ubuntu
 
+The user sees an involvement link to ask a question.
+
+    >>> link = find_tag_by_id(browser.contents, 'involvement').a
+    >>> print extract_text(link)
+    Ask a question
+
 Asking a new question requires logging in:
 
     >>> browser.getLink('Ask a question').click()
@@ -95,9 +101,9 @@ mouse is left over the question's title.
     ennvironment plugin is requested.
     <BLANKLINE>
     1) The plugin finder service indicates that JRE is available
-    2) next screen indicates JRE &quot;not available&quot; and requests
-    &quot;manual install&quot;
-    3) clicking on &quot;manual install&quot; open java web site.......
+    2) next screen indicates JRE "not available" and requests
+    "manual install"
+    3) clicking on "manual install" open java web site.......
 
 Similarly, the beginning of the FAQ's content appears when the mouse
 hovers on the FAQ's title:
@@ -123,7 +129,7 @@ summary he provided.
 
 If the user doesn't provide details, he'll get an error message:
 
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There is 1 error.
@@ -133,7 +139,7 @@ And if he decides to remove the title, he'll be brought back to the
 first step:
 
     >>> user_browser.getControl('Summary').value = ''
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
     >>> for message in get_feedback_messages(user_browser.contents):
     ...     print message
     There are 2 errors.
@@ -151,15 +157,15 @@ redirect the user to the question page.
     ... "http://java.com/en/download/help/testvm.xml, the page loads ok and\n"
     ... "shows my java version. But if I move the mouse on the page, firefox\n"
     ... "crashes.\n")
-    >>> user_browser.getControl('Add').click()
+    >>> user_browser.getControl('Post Question').click()
     >>> user_browser.url
     '.../ubuntu/+source/mozilla-firefox/+question/...'
-    >>> user_browser.title
-    'Questions : \xe2\x80\x9cmozilla-firefox\xe2\x80\x9d package : Ubuntu'
+    >>> print user_browser.title
+    Question #... : Questions : ...mozilla-firefox... package : Ubuntu
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'registration'))
-    Open... Question #..., asked...by...No Privileges Person...
+    Asked by No Privileges Person on ...
     >>> contents = find_main_content(user_browser.contents)
     >>> print extract_text(contents.find('div', 'report'))
     I use Ubuntu on AMD64 ...

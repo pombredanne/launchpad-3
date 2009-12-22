@@ -20,13 +20,13 @@
       use-macro="context/@@launchpad_widget_macros/yui2calendar-dependencies" />
 
     <script type="text/javascript">
-      YUI().use('node', 'lp.calendar', function(Y) {
+      LPS.use('node', 'lp.calendar', function(Y) {
           // Ensure that when the picker is used the radio button switches
           // from 'Never' to 'On' and the expiry field is enabled.
           Y.on("available", function(e) {
-              var choose_link = Y.get("#expiration-widget a.js-action");
-              var radio_on = Y.get("#date");
-              var expiration_date = Y.get(
+              var choose_link = Y.one("#expiration-widget a.js-action");
+              var radio_on = Y.one("#date");
+              var expiration_date = Y.one(
                   document.getElementById('membership.expirationdate'));
               choose_link.on('click', function(e) {
                 expiration_date.set('disabled', false);
@@ -58,7 +58,9 @@
 	</textarea>
 	<div class="formHelp">This comment will be sent together with the
 	notification of this change to all team administrators and this
-	member.</div>
+	member<span tal:condition="view/isActive"><span
+	tal:condition="context/required:launchpad.Admin">, unless the 'Silent'
+	option is selected</span></span>.</div>
       </td>
     </tr>
   </metal:macro>
@@ -139,6 +141,15 @@
           </tr>
 
           <metal:comment use-macro="template/macros/comment" />
+
+          <tr tal:condition="context/required:launchpad.Admin">
+            <th>Change silently:</th>
+            <td>
+              <input type="checkbox" value="no" name="silent" id="silent" />
+              <div class="formHelp">Do not send notifications to anyone
+                regarding this membership change.</div>
+            </td>
+          </tr>
 
           <tr>
             <th />
@@ -289,7 +300,7 @@
       </div>
 
       <div tal:condition="view/isInvited">
-        <p>
+        <p id="not-responded">
           <metal:person use-macro="template/macros/person" />
           has been invited to join this team, but hasn't responded to the
           invitation yet.

@@ -214,6 +214,9 @@ class IPOFile(IRosettaStats):
     def canEditTranslations(person):
         """Whether the given person is able to add/edit translations."""
 
+    def setOwnerIfPrivileged(person):
+        """Set `owner` to `person`, provided `person` has edit rights."""
+
     def canAddSuggestions(person):
         """Whether the given person is able to add new suggestions."""
 
@@ -359,6 +362,13 @@ class IPOFileSet(Interface):
 
         The number of items in the sequence will only be less than batch_size
         if the end of the table has been reached.
+        """
+
+    def getPOFilesWithTranslationCredits():
+        """Get all POFiles with potential translation credits messages.
+
+        Returns a ResultSet of (POFile, POTMsgSet) tuples, ordered by
+        POFile.id.
         """
 
     def getPOFilesTouchedSince(date):

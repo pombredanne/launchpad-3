@@ -262,6 +262,15 @@ class TestRevisionGetBranch(TestCaseWithFactory):
         self.assertEqual(
             b1, self.revision.getBranch(allow_private=True, allow_junk=False))
 
+    def testGetBranchSourcePackage(self):
+        # Branches targetting source packages are not junk.
+        b1 = self.factory.makePackageBranch()
+        b1.createBranchRevision(1, self.revision)
+        b2 = self.factory.makePersonalBranch(owner=self.author)
+        b2.createBranchRevision(1, self.revision)
+        self.assertEqual(
+            b1, self.revision.getBranch(allow_private=True, allow_junk=False))
+
 
 class GetPublicRevisionsTestCase(TestCaseWithFactory):
     """A base class for the tests for people, products and projects."""

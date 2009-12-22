@@ -10,8 +10,6 @@
       <script type='text/javascript' tal:content="string:var yui_base='${yui}';" />
       <script type='text/javascript' id='available-official-tags-js'
               tal:content="view/available_official_tags_js" />
-      <script type="text/javascript"
-        tal:content="string:var subscriber_ids = ${view/subscriber_ids_js};" />
       <tal:devmode condition="devmode">
        <script type="text/javascript"
                 tal:define="lp_js string:${icingroot}/build"
@@ -25,19 +23,36 @@
                 tal:define="lp_js string:${icingroot}/build"
                 tal:attributes="src string:${lp_js}/bugs/bug_tags_entry.js">
         </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/lp/comment.js">
+        </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/lp/errors.js">
+        </script>
+        <script type="text/javascript"
+                tal:define="lp_js string:${icingroot}/build"
+                tal:attributes="src string:${lp_js}/code/popupdiff.js">
+        </script>
       </tal:devmode>
       <script type="text/javascript">
-        YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index', function(Y) {
+        LPS.use('base', 'node', 'oop', 'event', 'bugs.bugtask_index',
+                  'code.branchmergeproposal.popupdiff', function(Y) {
             Y.bugs.setup_bugtask_index();
+            Y.on('load', function(e) {
+              Y.code.branchmergeproposal.popupdiff.connect_diff_links();
+            }, window);
         });
       </script>
       <style type="text/css">
         /* A page-specific fix for inline text are editing to line up box. */
         #edit-description .yui-ieditor-input { top: 0; }
         /* Align the 'add comment' link to the right of the comment box. */
-        #add-comment-form textarea { width: 100%; max-width=60em;}
+        #add-comment-form textarea { width: 100%; }
         #add-comment-form { max-width: 60em; padding-bottom: 4em; }
         #add-comment-form .actions {float: right;}
+        .bug-branch-summary dd { font-size: 85% }
       </style>
     </metal:block>
 
@@ -111,7 +126,7 @@
         <tal:description
             define="global description context/bug/description/fmt:obfuscate-email/fmt:text-to-html" />
 
-        <div id="edit-description"
+        <div id="edit-description" class="lazr-multiline-edit"
           tal:content="structure view/bug_description_html"
           />
 
@@ -140,7 +155,7 @@
                 <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit"></a>
               <script type="text/javascript">
-                  YUI().use('event', 'node', 'bugs.bug_tags_entry', function(Y) {
+                  LPS.use('event', 'node', 'bugs.bug_tags_entry', function(Y) {
                       // XXX intellectronica 2009-04-16 bug #362309:
                       // The load event fires very late on bug pages that take a
                       // long time to render, but we prefer to use it since the
@@ -149,7 +164,7 @@
                       // non-JS form, we first disable the link. This is awful and
                       // must be fixed as soon as YUI3 is fixed.
                       if (LP.client.links['me'] !== undefined) {
-                          Y.get('#edit-tags-trigger').on('click', function(e) {
+                          Y.one('#edit-tags-trigger').on('click', function(e) {
                               e.halt();
                           });
                       }
@@ -182,30 +197,21 @@
       </div>
 
       <div id="branches-and-cves">
-        <div id="branches"
-            tal:define="linked_branches view/linked_branches"
-            tal:condition="linked_branches"
+        <div id="bug-branches-container"
             style="float: left">
+          <tal:branches
+              define="linked_branches view/linked_branches"
+              condition="linked_branches">
 
-          <h2>Related branches</h2>
+            <div id="bug-branches">
+              <h2>Related branches</h2>
 
-          <tal:bug-branches repeat="linked_branch linked_branches">
-            <div tal:define="show_edit linked_branch/required:launchpad.Edit"
-                 tal:condition="linked_branch/branch/required:launchpad.View">
-              <div class="bug-branch-summary">
-                <tal:branch-ref replace="structure linked_branch/branch/fmt:link"/>
-                (<span tal:content="linked_branch/branch/lifecycle_status/title"
-                tal:attributes="class string:branchstatus${linked_branch/branch/lifecycle_status/name}"
-                >Experimental</span>)
-                <a title="Remove link"
-                   tal:condition="show_edit"
-                   tal:attributes="href string:${linked_branch/branch/fmt:url}/+bug/${linked_branch/bug/id}/+delete;">
-                  <img src="/@@/remove"/>
-                </a>
-              </div>
+              <tal:bug-branches repeat="linked_branch linked_branches">
+                <tal:bug-branch replace="structure linked_branch/@@+bug-branch" />
+              </tal:bug-branches>
             </div>
-          </tal:bug-branches>
-        </div><!-- branches -->
+          </tal:branches>
+        </div><!-- bug-branch-container -->
 
         <div tal:condition="context/bug/cves" class="cves">
           <h2>CVE References</h2>
@@ -243,6 +249,12 @@
                   metal:use-macro="context/@@bugcomment-macros/activity-box" />
           </tal:is-activity>
         </tal:comment>
+        <div style="float: right;">
+          <tal:activity_log
+              define="context_menu context/menu:context"
+              content="structure context_menu/activitylog/render" />
+        </div>
+        <div class="clearfix"></div>
 
         <tal:comment-list-complete
             tal:condition="not:view/visible_comments_truncated_for_display">
@@ -281,6 +293,12 @@
               <script type="text/javascript">
                 var button = document.getElementById('field.actions.save');
                 button.style.display = 'none';
+              </script>
+              <script type="text/javascript">
+                LPS.use('lp.comment', function(Y) {
+                    var comment = new Y.lp.Comment();
+                    comment.render();
+                });
               </script>
             </div>
             <tal:attachment-link

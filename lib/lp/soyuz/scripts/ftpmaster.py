@@ -1046,7 +1046,7 @@ class LpQueryDistro(LaunchpadScript):
         """
         # XXX sabdfl 2007-05-27: Isn't this a bit risky, if there are
         # multiple series with the desired status?
-        for series in self.location.distribution.serieses:
+        for series in self.location.distribution.series:
             if series.status == status:
                 return series
         raise NotFoundError(
@@ -1268,10 +1268,10 @@ class PackageRemover(SoyuzScript):
 
         removals = []
         for removable in removables:
-            removed = removable.requestDeletion(
+            removable.requestDeletion(
                 removed_by=removed_by,
                 removal_comment=self.options.removal_comment)
-            removals.append(removed)
+            removals.append(removable.secure_record)
 
         if len(removals) == 1:
             self.logger.info(

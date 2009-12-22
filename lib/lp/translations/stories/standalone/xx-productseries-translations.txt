@@ -1,4 +1,5 @@
-= ProductSeries translations =
+ProductSeries translations
+==========================
 
 This page shows a list of available languages for user to translate to in
 a single product series, or instructions on how to set up a series for
@@ -113,7 +114,8 @@ translations page.
     >>> serbian_link['href']
     u'/frobnicator/trunk/+lang/sr'
 
-== Upload page and Translations use ==
+Upload page and Translations use
+--------------------------------
 
 If the product a series belongs to is not configured to use Launchpad
 for Translations, the distroseries translations upload page will say so.
@@ -122,27 +124,14 @@ finding and throwing the switch.
 
     >>> owner_browser = setupBrowser('Basic test@canonical.com:test')
 
-    >>> def find_notice(contents):
-    ...     """Find & return "not set up to use Translations" notice.
-    ...
-    ...     :return: notice text, or None.
-    ...     """
-    ...     output = None
-    ...     notices = find_tags_by_class(
-    ...         contents, 'not-translated-in-launchpad')
-    ...     for tag in notices:
-    ...         if output is None:
-    ...             output = ''
-    ...         output += tag.renderContents()
-    ...     return output
-
 Evolution is set up to use Launchpad Translations, so the notice does
 not appear there.
 
     >>> owner_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'evolution/trunk/+translations-upload')
-    >>> print find_notice(owner_browser.contents)
+    >>> print find_tag_by_id(
+    ...     owner_browser.contents, 'not-translated-in-launchpad')
     None
 
 Nor does it appear on the template upload pages.
@@ -150,7 +139,8 @@ Nor does it appear on the template upload pages.
     >>> owner_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'evolution/trunk/+pots/evolution-2.2/+upload')
-    >>> print find_notice(owner_browser.contents)
+    >>> print find_tag_by_id(
+    ...     owner_browser.contents, 'not-translated-in-launchpad')
     None
 
 Now this is changed: Evolution's owner configures it not to use
@@ -165,13 +155,12 @@ When the owner now visits the upload page for trunk, there's a notice.
     >>> owner_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'bazaar/trunk/+translations-upload')
-    >>> print find_notice(owner_browser.contents)
-    <...>
-    This project is not configured to use Launchpad for translations.
-    </...>
-    You can change this in the
-    <a...> project settings</a>. (<a...>Getting started with translating your
-    project in Launchpad</a>)
+    >>> print extract_text(
+    ...     find_tag_by_id(
+    ...         owner_browser.contents, 'not-translated-in-launchpad'))
+    This project is not using Launchpad for translations.
+    You can change this in the project settings. (Getting
+    started with translating your project in Launchpad)
 
 The notice links to the project settings where the option can be set.
 
@@ -184,13 +173,12 @@ An administrator also sees the notice.
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/'
     ...     'bazaar/trunk/+translations-upload')
-    >>> print find_notice(admin_browser.contents)
-    <...>
-    This project is not configured to use Launchpad for translations.
-    </...>
-    You can change this in the
-    <a...> project settings</a>. (<a...>Getting started with translating your
-    project in Launchpad</a>)
+    >>> print extract_text(
+    ...     find_tag_by_id(
+    ...         admin_browser.contents, 'not-translated-in-launchpad'))
+    This project is not using Launchpad for translations.
+    You can change this in the project settings. (Getting
+    started with translating your project in Launchpad)
 
 A Translations admin who is neither a Launchpad admin nor the project
 owner (and so won't be able to change the project's settings) sees the
@@ -221,7 +209,32 @@ notice but not the link to the project's settings.
     ...     'http://translations.launchpad.dev/'
     ...     'bazaar/trunk/+translations-upload')
 
-    >>> print find_notice(jtv_browser.contents)
-    <...>
-    This project is not configured to use Launchpad for translations.
-    </strong>
+    >>> print extract_text(
+    ...     find_tag_by_id(
+    ...         jtv_browser.contents, 'not-translated-in-launchpad'))
+    This project is not using Launchpad for translations.
+    (Getting started with translating your project in Launchpad)
+
+
+Branch synchronization options
+------------------------------
+
+If automatic import and export are set, but import branch is unset, we only
+indicate that export is happening.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from lp.translations.interfaces.translations import (
+    ...     TranslationsBranchImportMode)
+    >>> branch = factory.makeBranch(product=frobnicator)
+    >>> branch_name = branch.name
+    >>> frobnicator_trunk.branch = None
+    >>> frobnicator_trunk.translations_autoimport_mode = (
+    ...     TranslationsBranchImportMode.IMPORT_TEMPLATES)
+    >>> frobnicator_trunk.translations_branch = branch
+    >>> logout()
+
+    >>> browser.open(frobnicator_trunk_url)
+    >>> print extract_text(browser.contents)
+    Translations...
+    Translations are exported daily to branch
+    ...

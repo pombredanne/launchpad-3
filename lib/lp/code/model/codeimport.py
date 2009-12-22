@@ -33,7 +33,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.registry.model.productseries import ProductSeries
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.enums import (
     BranchType, CodeImportResultStatus, CodeImportReviewStatus,
@@ -105,6 +104,8 @@ class CodeImport(SQLBase):
             RevisionControlSystems.CVS:
                 config.codeimport.default_interval_cvs,
             RevisionControlSystems.SVN:
+                config.codeimport.default_interval_subversion,
+            RevisionControlSystems.BZR_SVN:
                 config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
                 config.codeimport.default_interval_git,
@@ -219,7 +220,8 @@ class CodeImportSet:
             assert cvs_root is not None and cvs_module is not None
             assert svn_branch_url is None
             assert git_repo_url is None
-        elif rcs_type == RevisionControlSystems.SVN:
+        elif rcs_type in (RevisionControlSystems.SVN,
+                          RevisionControlSystems.BZR_SVN):
             assert cvs_root is None and cvs_module is None
             assert svn_branch_url is not None
             assert git_repo_url is None
@@ -238,11 +240,10 @@ class CodeImportSet:
             else:
                 review_status = CodeImportReviewStatus.NEW
         # Create the branch for the CodeImport.
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        namespace = get_branch_namespace(vcs_imports, product)
+        namespace = get_branch_namespace(registrant, product)
         import_branch = namespace.createBranch(
             branch_type=BranchType.IMPORTED, name=branch_name,
-            registrant=vcs_imports)
+            registrant=registrant)
 
         code_import = CodeImport(
             registrant=registrant, owner=registrant, branch=import_branch,

@@ -7,8 +7,10 @@
 
 __metaclass__ = type
 
+import contextlib
 import datetime
 import errno
+from itertools import repeat
 import logging
 import os
 import re
@@ -236,10 +238,12 @@ class ErrorReportingUtility:
     lasterrordir = None
     lastid = 0
 
-
     def __init__(self):
         self.lastid_lock = threading.Lock()
         self.configure()
+        self._oops_messages = {}
+        self._oops_message_key_iter = (
+            index for index, _ignored in enumerate(repeat(None)))
 
     def configure(self, section_name=None):
         """Configure the utility using the named section form the config.
@@ -399,113 +403,144 @@ class ErrorReportingUtility:
         return oops, filename
 
     def raising(self, info, request=None, now=None):
-        """See IErrorReportingUtility.raising()"""
+        """See IErrorReportingUtility.raising()
+
+        :param now: The datetime to use as the current time.  Will be
+            determined if not supplied.  Useful for testing.  Not part of
+            IErrorReportingUtility).
+        """
         self._raising(info, request=request, now=now, informational=False)
 
     def _raising(self, info, request=None, now=None, informational=False):
         """Private method used by raising() and handling()."""
+        entry = self._makeErrorReport(info, request, now, informational)
+        if entry is None:
+            return
+        # As a side-effect, _makeErrorReport updates self.lastid.
+        filename = self.getOopsFilename(self.lastid, entry.time)
+        entry.write(open(filename, 'wb'))
+        if request:
+            request.oopsid = entry.id
+            request.oops = entry
+
+        if self.copy_to_zlog:
+            self._do_copy_to_zlog(
+                entry.time, entry.type, entry.url, info, entry.id)
+
+    def _makeErrorReport(self, info, request=None, now=None,
+                         informational=False):
+        """Return an ErrorReport for the supplied data.
+
+        As a side-effect, self.lastid is updated to the integer oops id.
+        :param info: Output of sys.exc_info()
+        :param request: The IErrorReportRequest which provides context to the
+            info.
+        :param now: The datetime to use as the current time.  Will be
+            determined if not supplied.  Useful for testing.
+        :param informational: If true, the report is flagged as informational
+            only.
+        """
         if now is not None:
             now = now.astimezone(UTC)
         else:
             now = datetime.datetime.now(UTC)
-        try:
-            tb_text = None
+        tb_text = None
 
-            strtype = str(getattr(info[0], '__name__', info[0]))
-            if strtype in self._ignored_exceptions:
-                return
+        strtype = str(getattr(info[0], '__name__', info[0]))
+        if strtype in self._ignored_exceptions:
+            return
 
-            if not isinstance(info[2], basestring):
-                tb_text = ''.join(format_exception(*info,
-                                                   **{'as_html': False}))
+        if not isinstance(info[2], basestring):
+            tb_text = ''.join(format_exception(*info,
+                                               **{'as_html': False}))
+        else:
+            tb_text = info[2]
+        tb_text = _safestr(tb_text)
+
+        url = None
+        username = None
+        req_vars = []
+        pageid = ''
+
+        if request:
+            # XXX jamesh 2005-11-22: Temporary fix, which Steve should
+            #      undo. URL is just too HTTPRequest-specific.
+            if safe_hasattr(request, 'URL'):
+                url = request.URL
+
+            if WebServiceLayer.providedBy(request):
+                webservice_error = getattr(
+                    info[0], '__lazr_webservice_error__', 500)
+                if webservice_error / 100 != 5:
+                    request.oopsid = None
+                    # Return so the OOPS is not generated.
+                    return
+
+            missing = object()
+            principal = getattr(request, 'principal', missing)
+            if safe_hasattr(principal, 'getLogin'):
+                login = principal.getLogin()
+            elif principal is missing or principal is None:
+                # Request has no principal.
+                login = None
             else:
-                tb_text = info[2]
-            tb_text = _safestr(tb_text)
+                # Request has an UnauthenticatedPrincipal.
+                login = 'unauthenticated'
+                if strtype in (
+                    self._ignored_exceptions_for_unauthenticated_users):
+                    return
 
-            url = None
-            username = None
-            req_vars = []
-            pageid = ''
+            if principal is not None and principal is not missing:
+                username = _safestr(
+                    ', '.join([
+                            unicode(login),
+                            unicode(request.principal.id),
+                            unicode(request.principal.title),
+                            unicode(request.principal.description)]))
 
-            if request:
-                # XXX jamesh 2005-11-22: Temporary fix, which Steve should
-                #      undo. URL is just too HTTPRequest-specific.
-                if safe_hasattr(request, 'URL'):
-                    url = request.URL
+            if getattr(request, '_orig_env', None):
+                pageid = request._orig_env.get('launchpad.pageid', '')
 
-                if WebServiceLayer.providedBy(request):
-                    webservice_error = getattr(
-                        info[0], '__lazr_webservice_error__', 500)
-                    if webservice_error / 100 != 5:
-                        request.oopsid = None
-                        # Return so the OOPS is not generated.
-                        return
-
-                missing = object()
-                principal = getattr(request, 'principal', missing)
-                if safe_hasattr(principal, 'getLogin'):
-                    login = principal.getLogin()
-                elif principal is missing or principal is None:
-                    # Request has no principal.
-                    login = None
+            for key, value in request.items():
+                if _is_sensitive(request, key):
+                    req_vars.append((_safestr(key), '<hidden>'))
                 else:
-                    # Request has an UnauthenticatedPrincipal.
-                    login = 'unauthenticated'
-                    if strtype in (
-                        self._ignored_exceptions_for_unauthenticated_users):
-                        return
+                    req_vars.append((_safestr(key), _safestr(value)))
+            if IXMLRPCRequest.providedBy(request):
+                args = request.getPositionalArguments()
+                req_vars.append(('xmlrpc args', _safestr(args)))
+        # XXX AaronBentley 2009-11-26 bug=488950: There should be separate
+        # storage for oops messages.
+        req_vars.extend(
+            ('<oops-message-%d>' % key, str(message)) for key, message
+             in self._oops_messages.iteritems())
+        req_vars.sort()
+        strv = _safestr(info[1])
 
-                if principal is not None and principal is not missing:
-                    username = _safestr(
-                        ', '.join([
-                                unicode(login),
-                                unicode(request.principal.id),
-                                unicode(request.principal.title),
-                                unicode(request.principal.description)]))
+        strurl = _safestr(url)
 
-                if getattr(request, '_orig_env', None):
-                    pageid = request._orig_env.get('launchpad.pageid', '')
+        duration = get_request_duration()
 
-                req_vars = []
-                for key, value in request.items():
-                    if _is_sensitive(request, key):
-                        req_vars.append((_safestr(key), '<hidden>'))
-                    else:
-                        req_vars.append((_safestr(key), _safestr(value)))
-                if IXMLRPCRequest.providedBy(request):
-                    args = request.getPositionalArguments()
-                    req_vars.append(('xmlrpc args', _safestr(args)))
-                req_vars.sort()
-            strv = _safestr(info[1])
+        statements = sorted(
+            (start, end, _safestr(database_id), _safestr(statement))
+            for (start, end, database_id, statement)
+                in get_request_statements())
 
-            strurl = _safestr(url)
-
-            duration = get_request_duration()
-
-            statements = sorted(
-                (start, end, _safestr(database_id), _safestr(statement))
-                for (start, end, database_id, statement)
-                    in get_request_statements())
-
-            oopsid, filename = self.newOopsId(now)
-
-            entry = ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
-                                username, strurl, duration,
-                                req_vars, statements,
-                                informational)
-            entry.write(open(filename, 'wb'))
-
-            if request:
-                request.oopsid = oopsid
-                request.oops = entry
-
-            if self.copy_to_zlog:
-                self._do_copy_to_zlog(now, strtype, strurl, info, oopsid)
-        finally:
-            info = None
+        oopsid, filename = self.newOopsId(now)
+        return ErrorReport(oopsid, strtype, strv, now, pageid, tb_text,
+                           username, strurl, duration,
+                           req_vars, statements,
+                           informational)
 
     def handling(self, info, request=None, now=None):
-        """Flag ErrorReport as informational only."""
+        """Flag ErrorReport as informational only.
+
+        :param info: Output of sys.exc_info()
+        :param request: The IErrorReportRequest which provides context to the
+            info.
+        :param now: The datetime to use as the current time.  Will be
+            determined if not supplied.  Useful for testing.
+        """
         self._raising(info, request=request, now=now, informational=True)
 
     def _do_copy_to_zlog(self, now, strtype, url, info, oopsid):
@@ -530,6 +565,14 @@ class ErrorReportingUtility:
             except:
                 logging.getLogger('SiteError').exception(
                     '%s (%s)' % (url, oopsid))
+
+    @contextlib.contextmanager
+    def oopsMessage(self, message):
+        """Add an oops message to be included in oopses from this context."""
+        key = self._oops_message_key_iter.next()
+        self._oops_messages[key] = message
+        yield
+        del self._oops_messages[key]
 
 
 globalErrorUtility = ErrorReportingUtility()

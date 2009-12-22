@@ -41,7 +41,7 @@ function hide_commit(id) {
 }
 registerLaunchpadFunction(hookUpFilterSubmission);
 
-YUI().use('io-base', 'node', 'json-parse', function(Y) {
+LPS.use('io-base', 'node', 'json-parse', function(Y) {
 
 function doUpdate(transaction_id, response, args) {
     json_values = Y.JSON.parse(response.responseText);
@@ -64,7 +64,7 @@ function renderSpark() {
 
         spark_div = branch_sparks[spark_div][0];
 
-        if (Y.get('#' + spark_div) !== null) {
+        if (Y.one('#' + spark_div) !== null) {
             json_url = branch_sparks[0][1];
             var container = spark_div;
             var uri = json_url;
@@ -249,7 +249,7 @@ function sparkline(branch_id, o) {
               link rather than having a space after it.
             </tal:comment>
             <tal:series-link>
-              <a tal:attributes="href series/fmt:url" tal:content="series/name">
+              <a tal:attributes="href series/fmt:url:mainsite" tal:content="series/name">
                 trunk
               </a></tal:series-link><tal:comma condition="not: repeat/series/end">,</tal:comma>
           </tal:associated-series>

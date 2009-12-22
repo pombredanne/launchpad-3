@@ -19,17 +19,22 @@ constant value.
     >>> from lp.registry.browser.root import LaunchpadRootIndexView
     >>> LaunchpadRootIndexView._get_day_of_year = staticmethod(
     ...                                                 fake_get_day_of_year)
+
+Anonymous users will see the list of featured projects with links to the
+projects' pages in Launchpad. The "project of the day" is listed separately.
+
     >>> anon_browser.open('http://launchpad.dev/')
     >>> featured = find_tag_by_id(anon_browser.contents, 'homepage-featured')
     >>> print extract_text(featured.h2)
     Featured projects
 
-We show the featured projects in our sample data, the "project of the day" is
-"GNOME" and it is listed first:
-
-    >>> for link in featured.findAll('a'):
-    ...     print extract_text(link)
+    >>> top_project = featured.find('', 'featured-project-top')
+    >>> print extract_text(top_project.h3)
     GNOME
+
+    >>> featured_list = featured.find('', 'featured-projects-list')
+    >>> for link in featured_list.findAll('a'):
+    ...     print extract_text(link)
     Gnome Applets
     Bazaar
     Mozilla Firefox
@@ -38,7 +43,6 @@ We show the featured projects in our sample data, the "project of the day" is
     the Mozilla Project
     Mozilla Thunderbird
     Ubuntu
-    Browse all ... projects
 
 == Adding a featured project ==
 
@@ -88,9 +92,13 @@ is now at index '4' and is therefore displayed as the top project:
 
     >>> anon_browser.open('http://launchpad.dev/')
     >>> featured = find_tag_by_id(anon_browser.contents, 'homepage-featured')
-    >>> for link in featured.findAll('a'):
-    ...     print extract_text(link)
+    >>> top_project = featured.find('', 'featured-project-top')
+    >>> print extract_text(top_project.h3)
     Gentoo
+
+    >>> featured_list = featured.find('', 'featured-projects-list')
+    >>> for link in featured_list.findAll('a'):
+    ...     print extract_text(link)
     Apache
     Gnome Applets
     Bazaar
@@ -100,8 +108,6 @@ is now at index '4' and is therefore displayed as the top project:
     the Mozilla Project
     Mozilla Thunderbird
     Ubuntu
-    Browse all ... projects
-
 
 == Removing a project ==
 

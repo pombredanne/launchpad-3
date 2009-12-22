@@ -51,9 +51,7 @@ arent' any other attachments, the portlet won't show up at all.
     'http://.../+bug/2'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
-    Attachment "<a href="...">Great deal</a>" has been deleted. It will
-    be possible to download it until it has been automatically removed
-    from the server.
+    Attachment "<a href="...">Great deal</a>" has been deleted.
 
     >>> print find_portlet(user_browser.contents, 'Bug attachments')
     None
@@ -66,3 +64,9 @@ longer be visible.
     ----------------------------------------
     <p>Oddly enough the bug system seems only capable...</p>
     ----------------------------------------
+
+XXX Abel Deuring, 2009-11-25: We should check here that attempts to
+access the Librarian file for the deleted bug attachment do indeed
+result in a 404 error, in order to avoid future misunderstandings
+about the Librarian file deletion process as described in bug 387188.
+Unfortunately, this is at present not possible, see bug 113083.

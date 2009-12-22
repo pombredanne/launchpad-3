@@ -115,6 +115,6 @@ class ProductView(LaunchpadView):
     @cachedproperty
     def untranslatable_series(self):
         """Return series which are not yet set up for translations."""
-        all_series = set(self.context.serieses)
+        all_series = set(self.context.series)
         translatable = set(self.context.translatable_series)
         return all_series - translatable

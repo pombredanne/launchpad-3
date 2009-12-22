@@ -31,13 +31,13 @@ from lp.buildmaster.buildergroup import BuilderGroup
 from canonical.config import config
 
 
-def determineArchitecturesToBuild(pubrec, legal_archserieses,
+def determineArchitecturesToBuild(pubrec, legal_archseries,
                                   distroseries, pas_verify=None):
     """Return a list of architectures for which this publication should build.
 
     This function answers the question: given a publication, what
     architectures should we build it for? It takes a set of legal
-    distroarchserieses and the distribution series for which we are
+    distroarchseries and the distribution series for which we are
     building, and optionally a BuildDaemonPackagesArchSpecific
     (informally known as 'P-a-s') instance.
 
@@ -59,7 +59,7 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
 
     :param: pubrec: `ISourcePackagePublishingHistory` representing the
         source publication.
-    :param: legal_archserieses: a list of all initialized `DistroArchSeries`
+    :param: legal_archseries: a list of all initialized `DistroArchSeries`
         to be considered.
     :param: distroseries: the context `DistroSeries`.
     :param: pas_verify: optional P-a-s verifier object/component.
@@ -76,23 +76,23 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
 
     # The 'PPA supported' flag only applies to virtualized archives
     if pubrec.archive.require_virtualized:
-        legal_archserieses = [
-            arch for arch in legal_archserieses if arch.supports_virtualized]
+        legal_archseries = [
+            arch for arch in legal_archseries if arch.supports_virtualized]
         # Cope with no virtualization support at all. It usually happens when
         # a distroseries is created and initialized, by default no
         # architecture supports its. Distro-team might take some time to
         # decide which architecture will be allowed for PPAs and queue-builder
         # will continue to work meanwhile.
-        if not legal_archserieses:
+        if not legal_archseries:
             return []
 
-    legal_arch_tags = set(arch.architecturetag for arch in legal_archserieses)
+    legal_arch_tags = set(arch.architecturetag for arch in legal_archseries)
 
     if hint_string == 'any':
         package_tags = legal_arch_tags
     elif hint_string == 'all':
         nominated_arch = distroseries.nominatedarchindep
-        legal_archseries_ids = [arch.id for arch in legal_archserieses]
+        legal_archseries_ids = [arch.id for arch in legal_archseries]
         assert nominated_arch.id in legal_archseries_ids, (
             'nominatedarchindep is not present in legal_archseries: %s' %
             ' '.join(legal_arch_tags))
@@ -117,9 +117,9 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     else:
         build_tags = package_tags
 
-    sorted_archserieses = sorted(legal_archserieses,
+    sorted_archseries = sorted(legal_archseries,
                                  key=operator.attrgetter('architecturetag'))
-    return [arch for arch in sorted_archserieses
+    return [arch for arch in sorted_archseries
             if arch.architecturetag in build_tags]
 
 
@@ -137,7 +137,7 @@ class BuilddMaster:
         self._logger = logger
         self._tm = tm
         self.librarian = getUtility(ILibrarianClient)
-        self._archserieses = {}
+        self._archseries = {}
         self._logger.info("Buildd Master has been initialised")
 
     def commit(self):
@@ -153,7 +153,7 @@ class BuilddMaster:
         # Is there a chroot for this archseries?
         if distroarchseries.getChroot():
             # Fill out the contents.
-            self._archserieses.setdefault(distroarchseries, {})
+            self._archseries.setdefault(distroarchseries, {})
 
     def setupBuilders(self, archseries):
         """Setting up a group of builder slaves for a given DistroArchSeries.
@@ -167,7 +167,7 @@ class BuilddMaster:
         their processorfamily values are the same (compatible processors).
         """
         # Determine the builders for this distroarchseries...
-        if archseries not in self._archserieses:
+        if archseries not in self._archseries:
             # Avoid entering in the huge loop if we don't find at least
             # one architecture for which we can build on.
             self._logger.debug(
@@ -180,7 +180,7 @@ class BuilddMaster:
         # query the global annotation registry and verify if
         # we have already done the builder checks for the
         # processor family in question. if it's already done
-        # simply refer to that information in the _archserieses
+        # simply refer to that information in the _archseries
         # attribute.
         if 'builders' not in notes[archseries.processorfamily]:
 
@@ -198,13 +198,13 @@ class BuilddMaster:
 
         # consolidate the annotation for the architecture release
         # in the private attribute _archreleases
-        self._archserieses[archseries]["builders"] = \
+        self._archseries[archseries]["builders"] = \
             notes[archseries.processorfamily]["builders"]
 
     def createMissingBuilds(self, distroseries):
         """Ensure that each published package is completly built."""
         self._logger.info("Processing %s" % distroseries.name)
-        # Do not create builds for distroserieses with no nominatedarchindep
+        # Do not create builds for distroseries with no nominatedarchindep
         # they can't build architecture independent packages properly.
         if not distroseries.nominatedarchindep:
             self._logger.debug(
@@ -254,7 +254,7 @@ class BuilddMaster:
         self._logger.info("Scanning for build queue entries that are missing")
 
         buildset = getUtility(IBuildSet)
-        builds = buildset.getPendingBuildsForArchSet(self._archserieses)
+        builds = buildset.getPendingBuildsForArchSet(self._archseries)
 
         if not builds:
             return
@@ -280,8 +280,10 @@ class BuilddMaster:
             "scanActiveBuilders() found %d active build(s) to check"
             % queueItems.count())
 
+        build_set = getUtility(IBuildSet)
         for job in queueItems:
-            proc = job.archseries.processorfamily
+            build = build_set.getByQueueEntry(job)
+            proc = build.distroarchseries.processorfamily
             try:
                 builders = notes[proc]["builders"]
             except KeyError:
@@ -296,12 +298,12 @@ class BuilddMaster:
 
     def scoreCandidates(self):
         """Iterate over the pending buildqueue entries and re-score them."""
-        if not self._archserieses:
+        if not self._archseries:
             self._logger.info("No architecture found to rescore.")
             return
 
         # Get the current build job candidates.
-        archseries = self._archserieses.keys()
+        archseries = self._archseries.keys()
         bqset = getUtility(IBuildQueueSet)
         candidates = bqset.calculateCandidates(archseries)
 
@@ -309,7 +311,7 @@ class BuilddMaster:
                           % candidates.count())
 
         for job in candidates:
-            uptodate_build = getUtility(IBuildSet).getByBuildID(job.build.id)
+            uptodate_build = getUtility(IBuildSet).getByQueueEntry(job)
             if uptodate_build.buildstate != BuildStatus.NEEDSBUILD:
                 continue
             job.score()

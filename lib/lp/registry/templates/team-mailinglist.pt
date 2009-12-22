@@ -36,6 +36,10 @@
           can subscribe and post to the team mailing list. The team
           mailing list may also be used as the team's contact address.
         </p>
+        <p id="ubuntu-notice"><strong>Ubuntu mailing lists should not be
+          created here.  Create them
+          at <a href="https://lists.ubuntu.com">lists.ubuntu.com</a> instead.
+        </strong></p>
 
         <p>
           &#187; <a href="http://help.launchpad.net/ListHelp">Help for mailing lists</a>

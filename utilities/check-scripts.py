@@ -1,4 +1,4 @@
-#! /usr/bin/python2.4
+#! /usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -10,10 +10,11 @@ Usage hint:
 % utilities/check-scripts.py
 """
 # pylint: disable-msg=W0403
+import _pythonpath
+
 import os
 import sys
 
-import _pythonpath
 from lp.services.scripts.tests import find_lp_scripts
 from lp.testing import run_script
 
