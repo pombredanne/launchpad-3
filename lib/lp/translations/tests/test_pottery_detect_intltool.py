@@ -115,6 +115,13 @@ class TestDetectIntltool(TestCase):
             "packagename-ac",
             get_translation_domain("po"))
 
+    def test_get_translation_domain_configure_in(self):
+        # Find a translation domain in Makefile.in.in.
+        self._prepare_package("intltool_domain_configure_in")
+        self.assertEqual(
+            "packagename-in",
+            get_translation_domain("po"))
+
 
 class TestConfigFile(TestCase):
 
