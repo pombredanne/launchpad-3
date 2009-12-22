@@ -2611,7 +2611,7 @@ class PersonSet:
             )
         return team_name_query
 
-    def find(self, text):
+    def find(self, text=""):
         """See `IPersonSet`."""
         if not text:
             # Return an empty result set.
@@ -2665,7 +2665,7 @@ class PersonSet:
 
     def findPerson(
             self, text="", exclude_inactive_accounts=True,
-            must_have_email=False):
+            must_have_email=False, created_before=None, created_after=None):
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()

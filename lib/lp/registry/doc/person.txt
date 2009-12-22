@@ -58,6 +58,11 @@ meaningless because teams cannot post to mailing lists.
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> verifyObject(IPersonSet, personset)
+    True
+
 You can create a new person using the createPersonAndEmail method of
 IPersonSet. All you need for that is a valid email address. You can also
 hide the user email addresses.

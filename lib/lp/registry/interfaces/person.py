@@ -1652,7 +1652,7 @@ class IPersonSet(Interface):
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
 
-    def isNameBlacklisted(self, name):
+    def isNameBlacklisted(name):
         """Is the given name blacklisted by Launchpad Administrators?"""
 
     def createPersonAndEmail(
@@ -1804,7 +1804,8 @@ class IPersonSet(Interface):
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def findPerson(text="", exclude_inactive_accounts=True,
-                   must_have_email=False):
+                   must_have_email=False,
+                   created_before=None, created_after=None):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1845,7 +1846,7 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def merge(from_person, to_person, deactivate_members=False, user=None):
+    def merge(from_person, to_person):
         """Merge a person/team into another.
 
         The old person/team (from_person) will be left as an atavism.
@@ -1864,7 +1865,7 @@ class IPersonSet(Interface):
         develops. -- StuartBishop 20050812
         """
 
-    def getValidPersons(self, persons):
+    def getValidPersons(persons):
         """Get all the Persons that are valid.
 
         This method is more effective than looking at
