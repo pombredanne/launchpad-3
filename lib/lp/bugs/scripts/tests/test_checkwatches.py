@@ -13,20 +13,22 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import login
-from lp.bugs.tests.externalbugtracker import new_bugtracker
 from canonical.launchpad.interfaces import (BugTaskStatus, BugTrackerType,
     IBugSet, IBugTaskSet, ILaunchpadCelebrities, IPersonSet,
     IProductSet, IQuestionSet)
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.bugs.tests.externalbugtracker import new_bugtracker
 
-class TestCheckwatches(unittest.TestCase):
-    """Tests for the bugwatch updating system."""
+
+class TestUpdateBugsWithLinkedQuestions(unittest.TestCase):
+    """Tests for updating bugs with linked questions."""
+
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
         """Set up bugs, watches and questions to test with."""
-        super(TestCheckwatches, self).setUp()
+        super(TestUpdateBugsWithLinkedQuestions, self).setUp()
 
         # For test_can_update_bug_with_questions we need a bug that has
         # a question linked to it.
