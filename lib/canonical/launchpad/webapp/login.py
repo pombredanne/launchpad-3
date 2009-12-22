@@ -13,6 +13,8 @@ import random
 
 from BeautifulSoup import UnicodeDammit
 
+from openid.consumer.consumer import CANCEL, Consumer, FAILURE, SUCCESS
+
 from zope.component import getUtility
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.event import notify
@@ -23,11 +25,12 @@ from z3c.ptcompat import ViewPageTemplateFile
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.account import AccountStatus
+from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.interfaces.authtoken import (
     IAuthTokenSet, LoginTokenType)
 from canonical.launchpad.interfaces.emailaddress import IEmailAddressSet
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
+from canonical.launchpad.interfaces.openidconsumer import IOpenIDConsumerStore
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.validation import valid_password
@@ -37,7 +40,9 @@ from canonical.launchpad.webapp.interfaces import (
     CookieAuthLoggedInEvent, ILaunchpadPrincipal, IPlacelessAuthUtility,
     IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
+from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class UnauthorizedView(SystemErrorView):
@@ -189,6 +194,123 @@ class CaptchaMixin:
         op1 = random.randint(1, self.captcha_answer - 1)
         op2 = self.captcha_answer - op1
         return '%d + %d =' % (op1, op2)
+
+
+class OpenIDLogin(LaunchpadView):
+    _openid_session_ns = 'OPENID'
+
+    def _getConsumer(self):
+        session = ISession(self.request)[self._openid_session_ns]
+        openid_store = getUtility(IOpenIDConsumerStore)
+        return Consumer(session, openid_store)
+
+    def render(self):
+        # Allow unauthenticated users to have sessions for the OpenID
+        # handshake to work.
+        allowUnauthenticatedSession(self.request)
+        consumer = self._getConsumer()
+        self.openid_request = consumer.begin(
+            allvhosts.configs['openid'].rooturl)
+
+        return_to = self.return_to_url
+        trust_root = self.request.getApplicationURL()
+        assert not self.openid_request.shouldSendRedirect(), (
+            "Our fixed OpenID server should not need us to redirect.")
+        form_html = self.openid_request.htmlMarkup(trust_root, return_to)
+
+        # Need to commit here because the consumer.begin() call above will
+        # insert rows into the OpenIDAssociations table.
+        import transaction
+        transaction.commit()
+
+        return form_html
+
+    @property
+    def return_to_url(self):
+        url = self.request.getURL(1)
+        return urlappend(url, '+openid-callback')
+
+    # XXX: Copied here from the old login view; currently unused here.
+    def iter_form_items(self):
+        """Iterate over keys and single values, excluding stuff we don't
+        want such as '-C' and things starting with self.form_prefix.
+        """
+        for name, value in self.request.form.items():
+            # XXX SteveAlexander 2005-04-11: Exclude '-C' because this is
+            #     left in from sys.argv in Zope3 using python's
+            #     cgi.FieldStorage to process requests.
+            if name == '-C' or name == 'loggingout':
+                continue
+            if name.startswith(self.form_prefix):
+                continue
+            if isinstance(value, list):
+                value_list = value
+            else:
+                value_list = [value]
+            for value_list_item in value_list:
+                yield (name, value_list_item)
+
+    # XXX: Copied here from the old login view; currently unused here.
+    def preserve_query(self):
+        """Return zero or more hidden inputs that preserve the URL's query."""
+        L = []
+        html = u'<input type="hidden" name="%s" value="%s" />'
+        for name, value in self.iter_form_items():
+            # Thanks to apport (https://launchpad.net/bugs/61171), we need to
+            # do this here.
+            value = UnicodeDammit(value).markup
+            L.append(html % (name, cgi.escape(value, quote=True)))
+        return '\n'.join(L)
+
+
+class OpenIDCallbackView(OpenIDLogin):
+    """The OpenID callback page for logging into Launchpad.
+
+    This is the page the OpenID provider will send the user's browser to,
+    after the user has authenticated on the provider.
+    """
+
+    @cachedproperty
+    def openid_response(self):
+        consumer = self._getConsumer()
+        return consumer.complete(self.request.form, self.request.getURL())
+
+    def login(self, account):
+        loginsource = getUtility(IPlacelessLoginSource)
+        # We don't have a logged in principal, so we must remove the security
+        # proxy of the account's preferred email.
+        from zope.security.proxy import removeSecurityProxy
+        email = removeSecurityProxy(account.preferredemail).email
+        logInPrincipal(
+            self.request, loginsource.getPrincipalByLogin(email), email)
+
+    def render(self):
+        if self.openid_response.status == SUCCESS:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(
+                self.openid_response.identity_url.split('/')[-1])
+            self.login(account)
+            # TODO: Preserve the query string for everything other than openid
+            # stuff.
+            self.request.response.redirect(self.request.getURL(1))
+        else:
+            return OpenIDLoginErrorView(
+                self.context, self.request, self.openid_response)()
+
+
+class OpenIDLoginErrorView(LaunchpadView):
+
+    template = ViewPageTemplateFile("../templates/login-error.pt")
+
+    def __init__(self, context, request, openid_response):
+        super(OpenIDLoginErrorView, self).__init__(context, request)
+        assert self.account is None, (
+            "Don't try to render this page when the user is logged in.")
+        if openid_response.status == CANCEL:
+            self.login_error = "User cancelled"
+        elif openid_response.status == FAILURE:
+            self.login_error = openid_response.message
+        else:
+            self.login_error = "Unknown error: %s" % openid_response
 
 
 class LoginOrRegister(CaptchaMixin):
