@@ -834,17 +834,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive = self.archive
         if distroseries is None:
             distroseries = self.distroseries
-        if status is None:
-            status = PackagePublishingStatus.PUBLISHED
 
-        ancestries = archive.getPublishedSources(
-            name=self.source_package_name, exact_match=True,
-            status=status, distroseries=distroseries, pocket=pocket)
-
-        if ancestries.count() > 0:
-            return ancestries[0]
-
-        return None
+        return getUtility(IPublishingSet).getNearestAncestor(
+            self.source_package_name, archive, distroseries, pocket,
+            status)
 
     def overrideFromAncestry(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -1100,17 +1093,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive = self.archive
         if distroseries is None:
             distroseries = self.distroarchseries.distroseries
-        if status is None:
-            status = PackagePublishingStatus.PUBLISHED
 
-        ancestries = archive.getAllPublishedBinaries(
-            name=self.binary_package_name, exact_match=True, pocket=pocket,
-            status=status, distroarchseries=distroseries.architectures)
-
-        if ancestries.count() > 0:
-            return ancestries[0]
-
-        return None
+        return getUtility(IPublishingSet).getNearestAncestor(
+            self.binary_package_name, archive, distroseries, pocket,
+            status, binary=True)
 
     def overrideFromAncestry(self):
         """See `IBinaryPackagePublishingHistory`."""
@@ -1715,3 +1701,24 @@ class PublishingSet:
             store.execute(query)
 
         return sources + binary_packages
+
+    def getNearestAncestor(
+        self, package_name, archive, distroseries, pocket=None,
+        status=None, binary=False):
+        """See `IPublishingSet`."""
+        if status is None:
+            status = PackagePublishingStatus.PUBLISHED
+
+        if binary:
+            ancestries = archive.getAllPublishedBinaries(
+                name=package_name, exact_match=True, pocket=pocket,
+                status=status, distroarchseries=distroseries.architectures)
+        else:
+            ancestries = archive.getPublishedSources(
+                name=package_name, exact_match=True, pocket=pocket,
+                status=status, distroseries=distroseries)
+
+        if ancestries.count() > 0:
+            return ancestries[0]
+
+        return None
