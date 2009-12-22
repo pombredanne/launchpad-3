@@ -527,12 +527,6 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             title=_("Source Package Version"),
             required=False, readonly=True))
 
-    changes_file_url = exported(
-        Text(
-            title=_("Changes File URL"),
-            description=_("A URL for this source publication's changes file "
-                          "for the source upload.")))
-
     source_file_urls = exported(
         List(
             value_type=Text(),
@@ -610,6 +604,13 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         The builds are ordered by `DistroArchSeries.architecturetag`.
 
         :return: a list of `IBuilds`.
+        """
+
+    @export_read_operation()
+    def changesFileUrl():
+        """The .changes file URL for this source publication.
+
+        :return: the .changes file URL for this source (a string).
         """
 
     def getUnpublishedBuilds(build_states=None):
@@ -1087,6 +1088,15 @@ class IPublishingSet(Interface):
         :return: a storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `PackageUpload`,
              `SourcePackageRelease`, `LibraryFileAlias`, `LibraryFileContent`)
+        """
+
+    def getChangesFileLFA(spr):
+        """The changes file for the given `SourcePackageRelease`.
+
+        :param spr: the `SourcePackageRelease` for which to return the
+            changes file `LibraryFileAlias`.
+
+        :return: a `LibraryFileAlias` instance or None
         """
 
     def requestDeletion(sources, removed_by, removal_comment=None):
