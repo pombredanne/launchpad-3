@@ -140,7 +140,7 @@ A source package with five templates is created.
     ...     sourcepackagename=package.sourcepackagename, name='fifth')
     >>> logout()
 
-Visiting any template from the same page, user sees link to the other
+Visiting any template from the same page, the user sees links to the other
 templates.
 
     >>> browser.open(
@@ -152,7 +152,7 @@ templates.
     >>> print extract_text(relatives)
     Other templates here: first, forth, second, third
 
-For five template, the page displays the first four templates in
+For five templates, the page displays the first four templates in
 alphabetical order, and a link to the page listing all templates.
 
 Another template is added to the same source package.
@@ -175,7 +175,7 @@ Another template is added to the same source package.
 
     >>> browser.getLink('one other template').click()
 
-For more than five template, the page displays the first four templates in
+For more than five templates, the page displays the first four templates in
 alphabetical order, and a link to the page listing
 all templates, stating the number of other templates.
 
