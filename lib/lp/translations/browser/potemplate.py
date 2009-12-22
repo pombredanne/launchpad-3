@@ -299,9 +299,9 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                     rootsite="translations",
                     view_name="+templates")
             if other == 1:
-                return " and <a href=\"%s\">one other template</a>." % url
+                return " and <a href=\"%s\">one other template</a>" % url
             else:
-                return " and <a href=\"%s\">%d other templates</a>." % (
+                return " and <a href=\"%s\">%d other templates</a>" % (
                     url, other)
         else:
             return ""

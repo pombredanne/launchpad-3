@@ -74,7 +74,7 @@ that there are alternates that may be translated.
     >>> alternate_notice = find_tag_by_id(anon_browser.contents,
     ...                                   'potemplate-relatives')
     >>> print extract_text(alternate_notice)
-    Other templates here: evolution-2.2
+    Other templates here: evolution-2.2.
 
 The notice links to the alternate template.
 
@@ -150,7 +150,7 @@ templates.
     >>> relatives = find_tag_by_id(
     ...     browser.contents, 'potemplate-relatives')
     >>> print extract_text(relatives)
-    Other templates here: first, forth, second, third
+    Other templates here: first, forth, second, third.
 
 For five templates, the page displays the first four templates in
 alphabetical order, and a link to the page listing all templates.
