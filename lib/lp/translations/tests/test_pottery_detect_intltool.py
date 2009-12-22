@@ -109,25 +109,52 @@ class TestDetectIntltool(TestCase):
             get_translation_domain("po"))
 
     def test_get_translation_domain_configure_ac(self):
-        # Find a translation domain in Makefile.in.in.
+        # Find a translation domain in configure.ac.
         self._prepare_package("intltool_domain_configure_ac")
         self.assertEqual(
             "packagename-ac",
             get_translation_domain("po"))
 
     def test_get_translation_domain_configure_in(self):
-        # Find a translation domain in Makefile.in.in.
+        # Find a translation domain in configure.in.
         self._prepare_package("intltool_domain_configure_in")
         self.assertEqual(
             "packagename-in",
             get_translation_domain("po"))
 
     def test_get_translation_domain_makefile_in_in_substitute(self):
-        # Find a translation domain in Makefile.in.in.
+        # Find a translation domain in Makefile.in.in with substitution from
+        # configure.ac.
         self._prepare_package("intltool_domain_makefile_in_in_substitute")
+        self.assertEqual(
+            "domainname-ac-in-in",
+            get_translation_domain("po"))
+
+    def test_get_translation_domain_makefile_in_in_substitute_same_name(self):
+        # Find a translation domain in Makefile.in.in with substitution from
+        # configure.ac from a variable with the same name as in
+        # Makefile.in.in.
+        self._prepare_package(
+            "intltool_domain_makefile_in_in_substitute_same_name")
         self.assertEqual(
             "packagename-ac-in-in",
             get_translation_domain("po"))
+
+    def test_get_translation_domain_makefile_in_in_substitute_same_file(self):
+        # Find a translation domain in Makefile.in.in with substition from
+        # the same file.
+        self._prepare_package(
+            "intltool_domain_makefile_in_in_substitute_same_file")
+        self.assertEqual(
+            "domain-in-in-in-in",
+            get_translation_domain("po"))
+
+    def test_get_translation_domain_makefile_in_in_substitute_broken(self):
+        # Find no translation domain in Makefile.in.in when the substition
+        # cannot be fulfilled.
+        self._prepare_package(
+            "intltool_domain_makefile_in_in_substitute_broken")
+        self.assertIs(None, get_translation_domain("po"))
 
 
 class TestConfigFile(TestCase):
