@@ -10,6 +10,7 @@ import sys
 import shutil
 
 from lp.registry.interfaces.sourcepackage import SourcePackageFileType
+from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
 from lp.archiveuploader.tests import datadir
 
 
@@ -71,6 +72,23 @@ class TestUtilities(unittest.TestCase):
 
         self.assertEquals(None, determine_source_file_type('foo_1.0'))
         self.assertEquals(None, determine_source_file_type('foo_1.0.blah.gz'))
+
+    def test_determine_binary_file_type(self):
+        """lp.archiveuploader.utils.determine_binary_file_type should work."""
+        from lp.archiveuploader.utils import determine_binary_file_type
+
+        # .deb -> DEB
+        self.assertEquals(
+            determine_binary_file_type('foo_1.0-1_all.deb'),
+            BinaryPackageFileType.DEB)
+
+        # .udeb -> UDEB
+        self.assertEquals(
+            determine_binary_file_type('foo_1.0-1_all.udeb'),
+            BinaryPackageFileType.UDEB)
+
+        self.assertEquals(determine_binary_file_type('foo_1.0'), None)
+        self.assertEquals(determine_binary_file_type('foo_1.0.notdeb'), None)
 
     def testPrefixMultilineString(self):
         """lp.archiveuploader.utils.prefix_multi_line_string should work"""
