@@ -935,17 +935,17 @@ class POFileTranslateView(BaseTranslationView):
             first_field = first_message.translation_dictionaries[0]
             return first_field['html_id_translation']
         except IndexError:
-            return False
+            return ""
 
     @property
-    def tabindex_chain(self):
+    def translations_order(self):
         try:
-            tabindex = []
+            order = []
             for message in self.translationmessage_views:
                 for dictionary in message.translation_dictionaries:
-                    tabindex.append(
+                    order.append(
                         dictionary['html_id_translation'] + '_new')
-            return ' '.join(tabindex)
+            return ' '.join(order)
 
         except IndexError:
             return ""

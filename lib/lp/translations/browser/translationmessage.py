@@ -836,16 +836,16 @@ class CurrentTranslationMessagePageView(BaseTranslationView):
             first_field = first_message.translation_dictionaries[0]
             return first_field['html_id_translation']
         except IndexError:
-            return False
+            return ""
 
     @property
-    def tabindex_chain(self):
+    def translations_order(self):
         try:
-            tabindex = []
+            order = []
             message = self.translationmessage_view
             for dictionary in message.translation_dictionaries:
-                tabindex.append(dictionary['html_id_translation'] + '_new')
-            return ' '.join(tabindex)
+                order.append(dictionary['html_id_translation'] + '_new')
+            return ' '.join(order)
 
         except IndexError:
             return ""

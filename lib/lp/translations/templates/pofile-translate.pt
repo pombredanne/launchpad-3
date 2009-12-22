@@ -25,7 +25,7 @@
           Y.on('domready', Y.lp.pofile.initializeKeyBindings);
           Y.on('domready', Y.lp.pofile.updateNotificationBox);
           Y.on('domready', function(e) {
-            Y.one('#' + autofocus_field).focus();
+            Y.lp.pofile.setFocus(autofocus_field);
           });
       });
     </script>
