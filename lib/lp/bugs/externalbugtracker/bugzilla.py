@@ -444,6 +444,10 @@ class BugzillaAPI(Bugzilla):
         else:
             self.xmlrpc_transport = xmlrpc_transport
 
+    def getExternalBugTrackerToUse(self):
+        """The Bugzilla API has been chosen, so return self."""
+        return self
+
     @property
     def xmlrpc_proxy(self):
         """Return an `xmlrpclib.ServerProxy` to self.xmlrpc_endpoint."""
@@ -783,6 +787,10 @@ class BugzillaLPPlugin(BugzillaAPI):
     implements(
         ISupportsBackLinking, ISupportsCommentImport,
         ISupportsCommentPushing)
+
+    def getExternalBugTrackerToUse(self):
+        """The Bugzilla LP Plugin has been chosen, so return self."""
+        return self
 
     def _authenticate(self):
         """Authenticate with the remote Bugzilla instance.

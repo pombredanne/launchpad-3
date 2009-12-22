@@ -139,6 +139,7 @@ class CodebrowseService(Service):
         process.stdin.close()
         stop_at_exit(process)
 
+
 class GoogleWebService(Service):
 
     @property
@@ -149,6 +150,30 @@ class GoogleWebService(Service):
         if self.should_launch:
             process = googletestservice.start_as_process()
             stop_at_exit(process)
+
+
+class MemcachedService(Service):
+    """A local memcached service for developer environments."""
+    @property
+    def should_launch(self):
+        return config.memcached.launch
+
+
+    def launch(self):
+        cmd = [
+            'memcached',
+            '-m', str(config.memcached.memory_size),
+            '-l', str(config.memcached.address),
+            '-p', str(config.memcached.port),
+            '-U', str(config.memcached.port),
+            ]
+        if config.memcached.verbose:
+            cmd.append('-vv')
+        else:
+            cmd.append('-v')
+        process = subprocess.Popen(cmd, stdin=subprocess.PIPE)
+        process.stdin.close()
+        stop_at_exit(process)
 
 
 def stop_at_exit(process):
@@ -180,6 +205,7 @@ SERVICES = {
     'mailman': MailmanService(),
     'codebrowse': CodebrowseService(),
     'google-webservice': GoogleWebService(),
+    'memcached': MemcachedService(),
     }
 
 
