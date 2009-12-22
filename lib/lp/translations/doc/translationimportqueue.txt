@@ -133,9 +133,10 @@ And the date_status_changed is newer
     True
 
 Let's change now its status to imported and see what happens. To do it,
-we need to be logged in as an admin.
+we need to be logged in as an admin and set an import target.
 
     >>> login('carlos@canonical.com')
+    >>> entry.pofile = factory.makePOFile('sr')
     >>> entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
 
 The status change updates date_status_changed as well.
@@ -202,6 +203,7 @@ to be imported.
 
 But if that entry is imported, the guessing algorithm works.
 
+    >>> pot_entry.potemplate = factory.makePOTemplate()
     >>> pot_entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> guessed_pofile = po_sr_entry.getGuessedPOFile()
     >>> guessed_pofile is None
@@ -971,11 +973,13 @@ We also need to set an import target.
 
     >>> login('carlos@canonical.com')
     >>> entry1.potemplate = factory.makePOTemplate(
+    ...     name=u"evolution",
     ...     distroseries=hoary_distroseries,
     ...     sourcepackagename=evolution_sourcepackagename)
     >>> entry1.pofile = factory.makePOFile('sr', potemplate=entry1.potemplate)
     >>> entry1.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
     >>> entry2.potemplate = factory.makePOTemplate(
+    ...     name=u"firefox",
     ...     productseries=productseries)
     >>> entry2.setStatus(RosettaImportStatus.APPROVED, rosetta_experts)
 
@@ -1107,8 +1111,8 @@ Current entries in the queue are:
 
     >>> queue = getUtility(ITranslationImportQueue)
     >>> print_queue_entries(queue)
-    hoary evolution | generic-string1    | po/sr.po
-    firefox         | generic-string3    | foo/bar.pot
+    hoary evolution | evolution          | po/sr.po
+    firefox         | firefox            | foo/bar.pot
     evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
     evolution       | evolution-2.2-test | po/pt_BR.po
     firefox         | None               | foo/bar.po
@@ -1128,8 +1132,8 @@ product. There will be three new entries from the tarball.
 And those new entries in the queue appear in the list.
 
     >>> print_queue_entries(queue)
-    hoary evolution | generic-string1    | po/sr.po
-    firefox         | generic-string3    | foo/bar.pot
+    hoary evolution | evolution          | po/sr.po
+    firefox         | firefox            | foo/bar.pot
     evolution       | evolution-2.2-test | po/evolution-2.2-test.pot
     evolution       | evolution-2.2-test | po/pt_BR.po
     firefox         | None               | foo/bar.po
@@ -1518,6 +1522,7 @@ imported successfully, ending up in the IMPORTED state.
     >>> entry = translationimportqueue.addOrUpdateEntry(
     ...     u'po/nl.po', 'hoi', True, rosetta_experts,
     ...      productseries=evolution_productseries)
+    >>> entry.pofile = factory.makePOFile('nl')
     >>> entry.setStatus(RosettaImportStatus.IMPORTED, rosetta_experts)
     >>> print_queue_entries(translationimportqueue)
     evolution   | None        | po/nl.po
