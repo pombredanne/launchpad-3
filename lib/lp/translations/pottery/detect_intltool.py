@@ -80,8 +80,8 @@ def find_intltool_dirs():
 def get_translation_domain(dirname):
     """Determine the translation domain by parsing various files."""
     locations = [
-        ('Makefile.in.in', 'PACKAGE'),
-        ('../configure.ac', 'PACKAGE'),
+        ('Makefile.in.in', 'GETTEXT_PACKAGE'),
+        ('../configure.ac', 'GETTEXT_PACKAGE'),
         ('Makevars', 'DOMAIN'),
     ]
     value = None
