@@ -125,6 +125,9 @@ def get_translation_domain(dirname):
         if subst_value is not None:
             value = value.replace("@%s@" % substitution, subst_value)
             break
+    if get_substitution(value) is not None:
+        # Substitution failed.
+        return None
     return value
 
 
