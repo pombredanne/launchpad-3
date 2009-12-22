@@ -88,7 +88,12 @@ def get_substitution(variabletext):
 
 
 def get_translation_domain(dirname):
-    """Determine the translation domain by parsing various files."""
+    """Determine the translation domain by parsing various files.
+
+    Goes through a list of file names and possible variable names to find
+    the translation domains. If the found value contains a substitution, it
+    continues to search for the substitution to return a completed value.
+    """
     locations = [
         ('Makefile.in.in', 'GETTEXT_PACKAGE'),
         ('../configure.ac', 'GETTEXT_PACKAGE'),
@@ -112,7 +117,7 @@ def get_translation_domain(dirname):
                 break
             if substitution == varname:
                 # Do not search the current file for the substitution because
-                # the name is identical.
+                # the name is identical and we'd get a recursion.
                 continue
         # This part is only reached if a value has been found but still needs
         # a substitution.
