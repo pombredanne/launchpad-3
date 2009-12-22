@@ -52,7 +52,7 @@ CREATE TABLE SourcePackageBuild (
     -- add: recipe and manifest
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     distroseries integer NOT NULL REFERENCES distroseries,
-    sourcepackgename integer NOT NULL REFERENCES SourcePackageName,
+    sourcepackagename integer NOT NULL REFERENCES SourcePackageName,
     build_state integer NOT NULL,
     date_built timestamp without time zone,
     build_duration interval,
