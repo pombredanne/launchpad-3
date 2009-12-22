@@ -2,21 +2,30 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE SourcePackageRecipeData (
     id serial PRIMARY KEY,
-    recipe text NOT NULL
+    base_branch integer NOT NULL REFERENCES Branch,
+    recipe_format text NOT NULL,
+    deb_version_template text NOT NULL
 );
 
-CREATE TABLE SourcePackageRecipeDataBranch (
+CREATE TABLE SourcePackageRecipeDataInstruction (
     id serial PRIMARY KEY,
-    sourcepackagerecipedata integer NOT NULL REFERENCES SourcePackageRecipeData,
-    branch integer NOT NULL REFERENCES branch
+    name text, -- NOT NULL?
+    type integer NOT NULL, -- MERGE == 1, NEST == 2
+    comment text,
+    line_number integer NOT NULL,
+    branch integer NOT NULL REFERENCES Branch,
+    revspec text,
+    directory text,
+    recipe integer REFERENCES SourcePackageRecipeData,
+    parent_instruction integer REFERENCES SourcePackageRecipeDataInstruction
 );
 
-CREATE INDEX sourcepackagerecipedatabranch__sourcepackagerecipe
-    ON SourcePackageRecipeDataBranch USING btree(sourcepackagerecipedata);
-CREATE INDEX sourcepackagerecipedatabranch__branch
-    ON SourcePackageRecipeDataBranch USING btree(branch);
-
--- unique on (branch, sourcepackagerecipe) ??
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__name__recipe
+     UNIQUE (name, recipe);
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__line_number__recipe
+     UNIQUE (line_number, recipe);
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__directory_not_null
+     CHECK ((type = 1 AND directory IS NULL) OR (type != 2 AND directory IS NOT NULL));
 
 CREATE TABLE SourcePackageRecipe (
     id serial PRIMARY KEY,
@@ -30,9 +39,8 @@ CREATE TABLE SourcePackageRecipe (
     recipe_data integer NOT NULL REFERENCES SourcePackageRecipeData
 );
 
-CREATE UNIQUE INDEX sourcepackagerecipe__owner_distroseries_sourcepackagename_name
-    ON SourcePackageRecipe
- USING btree(distroseries, sourcepackagename, name);
+ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipe__owner__distroseries__sourcepackagename__name
+     UNIQUE (owner, distroseries, sourcepackagename, name);
 
 CREATE TABLE SourcePackageBuild (
     id serial PRIMARY KEY,
@@ -43,7 +51,7 @@ CREATE TABLE SourcePackageBuild (
     -- add: recipe and manifest
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     distroseries integer NOT NULL REFERENCES distroseries,
-    sourcepacakgename integer NOT NULL REFERENCES SourcePackageName,
+    sourcepackagename integer NOT NULL REFERENCES SourcePackageName,
     build_state integer NOT NULL,
     date_built timestamp without time zone,
     build_duration interval,
