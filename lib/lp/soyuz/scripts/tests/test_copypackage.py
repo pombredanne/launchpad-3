@@ -947,7 +947,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         # Make ubuntutest/breezy-autotest CURRENT so uploads to SECURITY
         # pocket can be accepted.
         self.test_publisher.breezy_autotest.status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
 
     def createDelayedCopyContext(self):
         """Create a context to allow delayed-copies test.
