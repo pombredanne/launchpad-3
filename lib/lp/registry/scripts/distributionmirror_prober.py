@@ -512,7 +512,7 @@ class ArchiveMirrorProberCallbacks(LoggingMixin):
                % (failure.getErrorMessage(), url,
                   self._getSeriesPocketAndComponentDescription()))
         if failure.check(*self.expected_failures) is not None:
-            self.log_file.write(msg)
+            self.logMessage(msg)
         else:
             # This is not an error we expect from an HTTP server, so we log it
             # using the cronscript's logger and wait for kiko to complain
