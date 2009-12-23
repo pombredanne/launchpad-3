@@ -55,6 +55,22 @@ class TestLibrarianGarbageCollection(TestCase):
         self.client = LibrarianClient()
         librariangc.log = MockLogger()
 
+        # A value we use in a number of tests. This represents the
+        # stay of execution hard coded into the garbage collector.
+        # We don't destroy any data unless it has been waiting to be
+        # destroyed for longer than this period. We pick a value
+        # that is close enough to the stay of execution so that
+        # forgetting timezone information will break things, but
+        # far enough so that how long it takes the test to run
+        # is not an issue. 'stay_of_excution - 1 hour' fits these
+        # criteria.
+        self.recent_past = (
+            datetime.utcnow().replace(tzinfo=utc)
+            - timedelta(days=6, hours=23))
+        # A time beyond the stay of execution.
+        self.ancient_past = (
+            datetime.utcnow().replace(tzinfo=utc) - timedelta(days=30))
+
         self.f1_id, self.f2_id = self._makeDupes()
 
         self.layer.switchDbUser(config.librarian_gc.dbuser)
@@ -65,12 +81,6 @@ class TestLibrarianGarbageCollection(TestCase):
         # want to be sure it is working correctly.
         path = librariangc.get_file_path(self.f1_id)
         self.failUnless(os.path.exists(path), "Librarian uploads failed")
-
-        # A value we use in a number of tests
-        self.recent_past = (
-                datetime.utcnow().replace(tzinfo=utc)
-                - timedelta(days=6, hours=23)
-                )
 
         # Make sure that every file the database knows about exists on disk.
         # We manually remove them for tests that need to cope with missing
@@ -124,14 +134,12 @@ class TestLibrarianGarbageCollection(TestCase):
 
         # Set the last accessed time into the past so they will be garbage
         # collected
-        past = datetime.utcnow() - timedelta(days=30)
-        past = past.replace(tzinfo=utc)
-        f1.last_accessed = past
-        f2.last_accessed = past
-        f1.date_created = past
-        f2.date_created = past
-        f1.content.datecreated = past
-        f2.content.datecreated = past
+        f1.last_accessed = self.ancient_past
+        f2.last_accessed = self.ancient_past
+        f1.date_created = self.ancient_past
+        f2.date_created = self.ancient_past
+        f1.content.datecreated = self.ancient_past
+        f2.content.datecreated = self.ancient_past
 
         del f1, f2
 
@@ -219,8 +227,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Flag one of our LibraryFileAliases with an expiry date in the past
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
-        past = datetime.utcnow().replace(tzinfo=utc) - timedelta(days=30)
-        f1.expires = past
+        f1.expires = self.ancient_past
         del f1
         self.ztm.commit()
 
@@ -268,8 +275,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # Flag one of our LibraryFileAliases with an expiry date in the past
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
-        past = datetime.utcnow().replace(tzinfo=utc) - timedelta(days=30)
-        f1.expires = past
+        f1.expires = self.ancient_past
         del f1
         self.ztm.commit()
 
@@ -292,8 +298,7 @@ class TestLibrarianGarbageCollection(TestCase):
         # recent past.
         self.ztm.begin()
         f1 = LibraryFileAlias.get(self.f1_id)
-        past = datetime.utcnow().replace(tzinfo=utc) - timedelta(days=1)
-        f1.expires = past
+        f1.expires = self.recent_past # Within stay of execution.
         del f1
         self.ztm.commit()
 

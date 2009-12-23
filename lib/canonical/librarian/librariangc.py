@@ -213,7 +213,8 @@ class ExpireAliases:
                 SELECT id FROM LibraryFileAlias
                 WHERE
                     content IS NOT NULL
-                    AND expires < CURRENT_TIMESTAMP - interval '1 week'
+                    AND expires < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                        - interval '1 week'
                 LIMIT %d)
             """ % chunksize)
         self.total_expired += cur.rowcount
