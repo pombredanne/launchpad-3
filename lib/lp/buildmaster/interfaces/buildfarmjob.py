@@ -93,11 +93,15 @@ class IBuildFarmJob(Interface):
         `virtualized` parameters.
 
         The SELECT query to be returned needs to select the following data
+
             1 - BuildQueue.job
             2 - BuildQueue.lastscore
             3 - BuildQueue.estimated_duration
             4 - Processor.id    [optional]
             5 - virtualized     [optional]
+
+        Please do *not* order the result set since it will be UNIONed and
+        ordered only then.
 
         Job types that are processor independent or do not care about
         virtualization should return NULL for the optional data in the result

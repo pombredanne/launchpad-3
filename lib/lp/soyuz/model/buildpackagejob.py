@@ -195,7 +195,7 @@ class BuildPackageJob(Storm):
                 AND Build.processor = %s
                 AND Archive.require_virtualized = %s
         """ % sqlvalues(
-            BuildFarmJobType.BINARYBUILD, JobStatus.WAITING,
+            BuildFarmJobType.PACKAGEBUILD, JobStatus.WAITING,
             BuildStatus.NEEDSBUILD, minscore, processor, virtualized)
 
     @property
