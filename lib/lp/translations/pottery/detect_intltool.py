@@ -77,14 +77,46 @@ def find_intltool_dirs():
     return filter(check_potfiles_in, find_potfiles_in())
 
 
-substitution_pattern = re.compile("@([^@]+)@")
+class Substitution(object):
+    """Find and replace substitutions.
 
-def get_substitution(variabletext):
-    """Get possible substitution from a variable test."""
-    result = substitution_pattern.search(variabletext)
-    if result is not None:
-        return result.group(1)
-    return None
+    Handles a single substitution per variable text.
+    """
+
+    autoconf_pattern = re.compile("@([^@]+)@")
+    makefile_pattern = re.compile("\$\(?([^ \t\n\)]+)\)?")
+
+    @staticmethod
+    def get(variabletext):
+        """Factory method. Check if a substitution is present in the value.
+
+        :param variabletext: A variable value with possible substitution.
+        :returns: A Substitution object or None if no substitution was found.
+        """
+        subst = Substitution(variabletext)
+        if subst.name is not None:
+            return subst
+        return None
+
+    def __init__(self, variabletext):
+        """Extract substitution name from variable text."""
+        self.text = variabletext
+        self.replaced = False
+        result = self.autoconf_pattern.search(self.text)
+        if result is None:
+            result = self.makefile_pattern.search(self.text)
+        if result is None:
+            self._replacement = None
+            self.name = None
+        else:
+            self._replacement = result.group(0)
+            self.name = result.group(1)
+
+    def replace(self, value):
+        """Return a copy of the variable text with the substitution resolved.
+        """
+        self.replaced = True
+        return self.text.replace(self._replacement, value)
 
 
 def get_translation_domain(dirname):
@@ -111,21 +143,21 @@ def get_translation_domain(dirname):
             if value is None:
                 # No value found, try next file.
                 continue
-            substitution = get_substitution(value)
+            substitution = Substitution.get(value)
             if substitution is None:
                 # The value has been found, no substitution needed.
                 break
-            if substitution == varname:
+            if substitution.name == varname:
                 # Do not search the current file for the substitution because
                 # the name is identical and we'd get a recursion.
                 continue
         # This part is only reached if a value has been found but still needs
         # a substitution.
-        subst_value = ConfigFile(path).getVariable(substitution)
+        subst_value = ConfigFile(path).getVariable(substitution.name)
         if subst_value is not None:
-            value = value.replace("@%s@" % substitution, subst_value)
+            value = substitution.replace(subst_value)
             break
-    if get_substitution(value) is not None:
+    if substitution is not None and not substitution.replaced:
         # Substitution failed.
         return None
     return value
