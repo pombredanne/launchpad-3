@@ -66,12 +66,12 @@ the remote server.
     >>> time_dict = server.Bugzilla.time()
     >>> for key in sorted(time_dict):
     ...     print "%s: %s" % (key, time_dict[key])
-    db_time: 20080501T01:01:01
+    db_time: 2008-05-01 01:01:01
     tz_name: UTC
     tz_offset: +0000
     tz_short_name: UTC
-    web_time: 20080501T01:01:01
-    web_time_utc: 20080501T01:01:01
+    web_time: 2008-05-01 01:01:01
+    web_time_utc: 2008-05-01 01:01:01
 
 If the remote server is in a different timezone, the db_time and
 web_time items will be in the server's local timezone whilst
@@ -82,12 +82,12 @@ web_time_utc will be in UTC.
     >>> time_dict = server.Bugzilla.time()
     >>> for key in sorted(time_dict):
     ...     print "%s: %s" % (key, time_dict[key])
-    db_time: 20080501T01:01:01
+    db_time: 2008-05-01 01:01:01
     tz_name: CET
     tz_offset: +0100
     tz_short_name: CET
-    web_time: 20080501T01:01:01
-    web_time_utc: 20080501T00:01:01
+    web_time: 2008-05-01 01:01:01
+    web_time_utc: 2008-05-01 00:01:01
 
 
 Getting bugs from the server
@@ -105,11 +105,11 @@ list of dicts containing those bugs' data.
     alias: 
     assigned_to: test@canonical.com
     component: GPPSystems
-    creation_time: 20080610T16:19:53
+    creation_time: 2008-06-10 16:19:53
     id: 1
     internals:...
     is_open: True
-    last_change_time: 20080610T16:19:53
+    last_change_time: 2008-06-10 16:19:53
     priority: P1
     product: Marvin
     resolution: FIXED
@@ -158,11 +158,11 @@ date / time.
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
-    creation_time: 20080611T09:23:12
+    creation_time: 2008-06-11 09:23:12
     id: 2
     internals:...
     is_open: True
-    last_change_time: 20080611T09:24:29
+    last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
     resolution: 
@@ -188,11 +188,11 @@ results to those IDs.
     alias: 
     assigned_to: test@canonical.com
     component: GPPSystems
-    creation_time: 20080610T16:19:53
+    creation_time: 2008-06-10 16:19:53
     id: 1
     internals:...
     is_open: True
-    last_change_time: 20080610T16:19:53
+    last_change_time: 2008-06-10 16:19:53
     priority: P1
     product: Marvin
     resolution: FIXED
@@ -232,11 +232,11 @@ It's possible to search for bugs filed on a particular product.
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
-    creation_time: 20080611T09:23:12
+    creation_time: 2008-06-11 09:23:12
     id: 2
     internals:...
     is_open: True
-    last_change_time: 20080611T09:24:29
+    last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
     resolution: 
@@ -257,11 +257,11 @@ You can search for more than one product.
     alias: 
     assigned_to: test@canonical.com
     component: GPPSystems
-    creation_time: 20080610T16:19:53
+    creation_time: 2008-06-10 16:19:53
     id: 1
     internals:...
     is_open: True
-    last_change_time: 20080610T16:19:53
+    last_change_time: 2008-06-10 16:19:53
     priority: P1
     product: Marvin
     resolution: FIXED
@@ -272,11 +272,11 @@ You can search for more than one product.
     alias: bug-two
     assigned_to: marvin@heartofgold.ship
     component: Crew
-    creation_time: 20080611T09:23:12
+    creation_time: 2008-06-11 09:23:12
     id: 2
     internals:...
     is_open: True
-    last_change_time: 20080611T09:24:29
+    last_change_time: 2008-06-11 09:24:29
     priority: P1
     product: HeartOfGold
     resolution: 
@@ -321,14 +321,14 @@ the comments for those bugs.
         id: 1
         is_private: False
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
     <BLANKLINE>
         author: marvin
         bug_id: 1
         id: 3
         is_private: False
         text: Life? Don't talk to me about life.
-        time: 20080616T13:22:29
+        time: 2008-06-16 13:22:29
     <BLANKLINE>
     <BLANKLINE>
     Bug 2:
@@ -337,14 +337,14 @@ the comments for those bugs.
         id: 2
         is_private: False
         text: Bring the passengers to the bridge please Marvin.
-        time: 20080616T13:08:08
+        time: 2008-06-16 13:08:08
     <BLANKLINE>
         author: Ford Prefect <ford.prefect@h2g2.com>
         bug_id: 2
         id: 4
         is_private: False
         text: I appear to have become a perfectly safe penguin.
-        time: 20080617T20:28:40
+        time: 2008-06-17 20:28:40
     <BLANKLINE>
     <BLANKLINE>
 
@@ -366,14 +366,14 @@ those comments in a 'comments' dict.
         id: 1
         is_private: False
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
     Comment 4:
         author: Ford Prefect <ford.prefect@h2g2.com>
         bug_id: 2
         id: 4
         is_private: False
         text: I appear to have become a perfectly safe penguin.
-        time: 20080617T20:28:40
+        time: 2008-06-17 20:28:40
     <BLANKLINE>
 
 Note that only comments have been returned when only 'comment_ids' have
@@ -499,11 +499,11 @@ The URL will now have been added to the bug's see_also list.
     alias: 
     assigned_to: test@canonical.com
     component: GPPSystems
-    creation_time: 20080610T16:19:53
+    creation_time: 2008-06-10 16:19:53
     id: 1
     internals:...
     is_open: True
-    last_change_time: 20080610T16:19:53
+    last_change_time: 2008-06-10 16:19:53
     priority: P1
     product: Marvin
     resolution: FIXED

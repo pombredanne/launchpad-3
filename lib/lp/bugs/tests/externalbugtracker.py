@@ -526,17 +526,12 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         if local_datetime is None:
             local_datetime = datetime(2008, 5, 1, 1, 1, 1)
 
-        # We return xmlrpc dateTimes rather than doubles since that's
-        # what BugZilla will return.
-        local_time = xmlrpclib.DateTime(local_datetime.timetuple())
-
         utc_offset_delta = timedelta(seconds=self.utc_offset)
         utc_date_time = local_datetime - utc_offset_delta
 
-        utc_time = xmlrpclib.DateTime(utc_date_time.timetuple())
         return {
-            'local_time': local_time,
-            'utc_time': utc_time,
+            'local_time': local_datetime,
+            'utc_time': utc_date_time,
             'tz_name': self.timezone,
             }
 
@@ -642,14 +637,6 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
                 bug_dict['product'] not in products):
                 continue
 
-            # Update the DateTime fields of the bug dict so that they
-            # look like ones that would be sent over XML-RPC.
-            for time_field in ('creation_time', 'last_change_time'):
-                datetime_value = bug_dict[time_field]
-                timestamp = time.mktime(datetime_value.timetuple())
-                xmlrpc_datetime = xmlrpclib.DateTime(timestamp)
-                bug_dict[time_field] = xmlrpc_datetime
-
             bugs_to_return.append(bug_dict)
 
         # "Why are you returning a list here?" I hear you cry. Well,
@@ -660,15 +647,9 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
 
     def _copy_comment(self, comment, fields_to_return=None):
         # Copy wanted fields.
-        comment = dict(
+        return dict(
             (key, value) for (key, value) in comment.iteritems()
             if fields_to_return is None or key in fields_to_return)
-        # Replace the time field with an XML-RPC DateTime.
-        if 'time' in comment:
-            comment['time'] = xmlrpclib.DateTime(
-                comment['time'].timetuple())
-        return comment
-
 
     def comments(self, arguments):
         """Return comments for a given set of bugs."""
