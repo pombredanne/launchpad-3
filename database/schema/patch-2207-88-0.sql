@@ -48,7 +48,7 @@ CREATE TABLE SourcePackageBuild (
 
     -- I've dropped: processor, sourcepackagerelease, pocket, dependencies
     -- changed: distroarchseries to distroseries
-    -- add: recipe and manifest
+    -- added: recipe and manifest
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     distroseries integer NOT NULL REFERENCES distroseries,
     sourcepackagename integer NOT NULL REFERENCES SourcePackageName,
