@@ -594,14 +594,14 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
         assert permissive, "get_bugs() must be called with permissive=True"
 
         # If a changed_since argument is specified, marshall it into a
-        # datetime so that we can use it for comparisons.
-        # XXX 2008-08-05 gmb (bug 254999):
-        #     We can remove these lines once we upgrade to python 2.5.
+        # datetime so that we can use it for comparisons. Even though
+        # xmlrpclib in Python 2.5 groks datetime, by the time this
+        # method is called xmlrpclib has already converted all
+        # datetimes to xmlrpclib.DateTime.
         changed_since = arguments.get('changed_since')
         if changed_since is not None:
-            changed_since_timetuple = time.strptime(
-                str(changed_since), '%Y%m%dT%H:%M:%S')
-            changed_since = datetime(*changed_since_timetuple[:6])
+            changed_since = datetime.strptime(
+                changed_since.value, '%Y%m%dT%H:%M:%S')
 
         # If we have some products but no bug_ids we just get all the
         # bug IDs for those products and stuff them in the bug_ids list

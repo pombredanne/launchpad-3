@@ -135,16 +135,7 @@ will cause the method to only return bugs that have changed since that
 date / time.
 
     >>> from datetime import datetime
-    >>> from xmlrpclib import DateTime
     >>> last_change_time = datetime(2008, 6, 11, 9, 0, 0)
-
-    # XXX 2009-08-21 gmb (bug 254999):
-    #     We can remove this once we upgrade to python 2.5. We encode
-    #     last_change_time into an XML-RPC DateTime manually. This is
-    #     because xmlrpclib can't handle DateTime encoding within a
-    #     dict.
-    >>> last_change_time = DateTime(last_change_time.timetuple())
-
     >>> return_value = server.Bug.search({
     ...     'last_change_time': last_change_time,
     ...     })
@@ -175,7 +166,6 @@ Specifying a range of IDs when calling Bug.search() will limit the
 results to those IDs.
 
     >>> last_change_time = datetime(2007, 6, 10, 1, 1, 1)
-    >>> last_change_time = DateTime(last_change_time.timetuple())
     >>> return_value = server.Bug.search({
     ...     'id': [1],
     ...     'last_change_time': last_change_time,
@@ -206,11 +196,6 @@ returned.
 
     >>> from datetime import timedelta
     >>> last_change_time = datetime.now() + timedelta(days=42)
-
-    >>> # XXX 2008-08-05 gmb (bug 254999):
-    >>> #     We can remove this once we upgrade to python 2.5.
-    >>> last_change_time = DateTime(last_change_time.timetuple())
-
     >>> return_value = server.Bug.search({
     ...     'last_change_time': last_change_time,
     ...     })
