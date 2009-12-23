@@ -307,9 +307,11 @@ class TestBuildPackageJob(TestBuildJobBase):
         # Please note that we do not require the results to be in any
         # particular order.
 
+        # Processor == 3 -> HPPA
         # SELECT id,name,title FROM processor
         #  id | name  |     title      
         # ----+-------+----------------
+        #   1 | 386   | Intel 386
         #   2 | amd64 | AMD 64bit
         #   3 | hppa  | HPPA Processor
 
@@ -355,3 +357,21 @@ class TestBuildPackageJob(TestBuildJobBase):
             (21, 1019, timedelta(0, 1140),      3,      False)]
         self.assertEqual(sorted(result_set), sorted(expected_results))
         # As we can see it was absent as expected.
+
+    def test_processor(self):
+        # Test that BuildPackageJob returns the correct processor.
+        build, bq = find_job(self, 'gcc', '386')
+        bpj = bq.specific_job
+        self.assertEqual(bpj.processor.id, 1)
+        build, bq = find_job(self, 'bison', 'hppa')
+        bpj = bq.specific_job
+        self.assertEqual(bpj.processor.id, 3)
+
+    def test_virtualized(self):
+        # Test that BuildPackageJob returns the correct virtualized flag.
+        build, bq = find_job(self, 'apg', '386')
+        bpj = bq.specific_job
+        self.assertEqual(bpj.virtualized, False)
+        build, bq = find_job(self, 'flex', 'hppa')
+        bpj = bq.specific_job
+        self.assertEqual(bpj.virtualized, False)
