@@ -11,6 +11,7 @@ __metaclass__ = type
 import httplib
 import logging
 import os
+import re
 from StringIO import StringIO
 import unittest
 
@@ -36,7 +37,8 @@ from lp.registry.scripts.distributionmirror_prober import (
     RedirectAwareProberProtocol, probe_archive_mirror, probe_cdimage_mirror,
     should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
     MIN_REQUESTS_TO_CONSIDER_RATIO, _build_request_for_cdimage_file_list,
-    restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager)
+    restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager,
+    LoggingMixin)
 from lp.registry.tests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 from canonical.testing import LaunchpadZopelessLayer, TwistedLayer
@@ -792,6 +794,27 @@ class TestCDImageFileListFetching(unittest.TestCase):
         request = _build_request_for_cdimage_file_list(url)
         self.failUnlessEqual(request.headers['Pragma'], 'no-cache')
         self.failUnlessEqual(request.headers['Cache-control'], 'no-cache')
+
+
+class TestLoggingMixin(unittest.TestCase):
+
+    def _get_prober(self):
+        class Prober(LoggingMixin):
+            def __init__(self):
+                self.log_file = logfile = StringIO()
+        return Prober()
+
+    def setUp(self):
+        self.prober = self._get_prober()
+
+    def test_logMessage(self):
+        self.prober.logMessage('Looking')
+        self.prober.log_file.seek(0)
+        message = self.prober.log_file.read()
+        # We expect something like "Wed Dec 23 10:49:24 2009: Looking".
+        pattern = re.compile(r'\w\w\w \w\w\w \d\d \d\d:\d\d:\d\d \d\d\d\d: Looking')
+        match = pattern.match(message)
+        self.assertTrue(match is not None)
 
 
 def test_suite():
