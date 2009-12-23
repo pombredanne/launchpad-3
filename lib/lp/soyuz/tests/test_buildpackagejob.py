@@ -56,8 +56,8 @@ def nth_builder(test, build, n):
         pass
     return builder
 
-def assign_to_builder(test, job_name, builder_number):
-    build, bq = find_job(test, job_name)
+def assign_to_builder(test, job_name, builder_number, processor='386'):
+    build, bq = find_job(test, job_name, processor)
     builder = nth_builder(test, build, builder_number)
     bq.markAsBuilding(builder)
 
@@ -266,13 +266,6 @@ class TestPendingJobsQuery(TestBuildQueueBase):
             bq = build.buildqueue_record
             bq.lastscore = score
             bq.estimated_duration = timedelta(seconds=duration)
-        #for build in self.builds:
-        #    bq = build.buildqueue_record
-        #    spr = build.sourcepackagerelease
-        #    print "j:%2s %12s p:%5s v:%5s e:%s *** s:%5s" % (
-        #        bq.job.id, spr.name, build.processor.name,
-        #        build.is_virtualized, bq.estimated_duration, bq.lastscore)
-
 
     def test_x86_pending_queries(self):
         # Make sure the query returned by pendingJobsQuery() selects the
@@ -301,31 +294,55 @@ class TestPendingJobsQuery(TestBuildQueueBase):
         # The pending x86 jobs with score 1010 or higher are as follows.
         # Please note that we do not require the results to be in any
         # particular order.
+
+        # Processor == 1 -> Intel 386
+        # SELECT id,name,title FROM processor
+        #  id | name  |     title      
+        # ----+-------+----------------
+        #   1 | 386   | Intel 386
+        #   2 | amd64 | AMD 64bit
+        #   3 | hppa  | HPPA Processor
+
         expected_results = [
-            (12, 1010, timedelta(0, 600),  1, False),
-            (14, 1012, timedelta(0, 720),  1, False),
-            (16, 1014, timedelta(0, 840),  1, False),
-            (18, 1016, timedelta(0, 960),  1, False),
-            (20, 1018, timedelta(0, 1080), 1, False),
-            (22, 1020, timedelta(0, 1200), 1, False)]
-        self.assertEqual(result_set, expected_results)
-        # How about builds with lower scores?
+        #   job  score estimated_duration   processor   virtualized
+            (12, 1010, timedelta(0, 600),       1,      False),
+            (14, 1012, timedelta(0, 720),       1,      False),
+            (16, 1014, timedelta(0, 840),       1,      False),
+            (18, 1016, timedelta(0, 960),       1,      False),
+            (20, 1018, timedelta(0, 1080),      1,      False),
+            (22, 1020, timedelta(0, 1200),      1,      False)]
+        self.assertEqual(sorted(result_set), sorted(expected_results))
+        # How about builds with lower scores? Please note also that no
+        # hppa builds are listed.
         query = bpj.pendingJobsQuery(0, *builder_key(build))
         result_set = store.execute(query).get_all()
         expected_results = [
-            (22, 1020, timedelta(0, 1200), 1, False),
-            (20, 1018, timedelta(0, 1080), 1, False),
-            (18, 1016, timedelta(0, 960),  1, False),
-            (16, 1014, timedelta(0, 840),  1, False),
-            (14, 1012, timedelta(0, 720),  1, False),
-            (12, 1010, timedelta(0, 600),  1, False),
-            (10, 1008, timedelta(0, 480),  1, False),
-            (8,  1006, timedelta(0, 360),  1, False),
-            (6,  1004, timedelta(0, 240),  1, False),
-            (4,  1002, timedelta(0, 120),  1, False)]
-        self.assertEqual(result_set, expected_results)
+        #   job  score estimated_duration   processor   virtualized
+            (22, 1020, timedelta(0, 1200),      1,      False),
+            (20, 1018, timedelta(0, 1080),      1,      False),
+            (18, 1016, timedelta(0, 960),       1,      False),
+            (16, 1014, timedelta(0, 840),       1,      False),
+            (14, 1012, timedelta(0, 720),       1,      False),
+            (12, 1010, timedelta(0, 600),       1,      False),
+            (10, 1008, timedelta(0, 480),       1,      False),
+            (8,  1006, timedelta(0, 360),       1,      False),
+            (6,  1004, timedelta(0, 240),       1,      False),
+            (4,  1002, timedelta(0, 120),       1,      False)]
+        self.assertEqual(sorted(result_set), sorted(expected_results))
         # How about builds with higher scores?
         query = bpj.pendingJobsQuery(2500, *builder_key(build))
         result_set = store.execute(query).get_all()
         expected_results = []
-        self.assertEqual(result_set, expected_results)
+        self.assertEqual(sorted(result_set), sorted(expected_results))
+
+        # We will start the 'flex' job now and see whether it still turns
+        # up in our pending job list.
+        assign_to_builder(self, 'flex', 1)
+        query = bpj.pendingJobsQuery(1016, *builder_key(build))
+        result_set = store.execute(query).get_all()
+        expected_results = [
+        #   job  score estimated_duration   processor   virtualized
+            (22, 1020, timedelta(0, 1200),      1,      False),
+            (18, 1016, timedelta(0, 960),       1,      False)]
+        self.assertEqual(sorted(result_set), sorted(expected_results))
+        # As we can see it was absent as expected.
