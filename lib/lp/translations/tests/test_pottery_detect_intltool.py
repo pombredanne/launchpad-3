@@ -10,6 +10,7 @@ import unittest
 from StringIO import StringIO
 from textwrap import dedent
 
+from canonical.launchpad.scripts.tests import run_script
 from lp.translations.pottery.detect_intltool import (
     ConfigFile, check_potfiles_in, find_intltool_dirs, find_potfiles_in,
     get_translation_domain)
@@ -83,14 +84,14 @@ class TestDetectIntltool(TestCase):
     def test_find_intltool_dirs(self):
         # Complete run: find all directories with intltool structure.
         self._prepare_package("intltool_full_ok")
-        self.assertContentEqual(
+        self.assertEqual(
             ["./po-module1", "./po-module2"], find_intltool_dirs())
 
     def test_find_intltool_dirs_broken(self):
         # Complete run: part of the intltool structure is broken.
         self._prepare_package("intltool_full_ok")
         os.remove("./src/module1/sourcefile1.c")
-        self.assertContentEqual(
+        self.assertEqual(
             ["./po-module2"], find_intltool_dirs())
 
     def test_get_translation_domain_makevars(self):
@@ -163,6 +164,18 @@ class TestDetectIntltool(TestCase):
         self.assertEqual(
             "domainname-in42",
             get_translation_domain("po"))
+
+    def test_pottery_check_intltool_script(self):
+        # Let the script run to see it works fine.
+        self._prepare_package("intltool_full_ok")
+
+        return_code, stdout, stderr = run_script(
+            'scripts/rosetta/pottery-check-intltool.py', [])
+
+        self.assertEqual(dedent("""\
+            ./po-module1 (packagename-module1)
+            ./po-module2 (packagename-module2)
+            """), stdout)
 
 
 class TestConfigFile(TestCase):

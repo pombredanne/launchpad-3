@@ -78,7 +78,7 @@ def find_intltool_dirs():
     """Search the current directory and its subdiretories for intltool
     structure.
     """
-    return filter(check_potfiles_in, find_potfiles_in())
+    return sorted(filter(check_potfiles_in, find_potfiles_in()))
 
 
 def get_translation_domain(dirname):
