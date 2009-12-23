@@ -8,29 +8,33 @@ package in the current directory."""
 
 __metaclass__ = type
 __all__ = [
-    'find_potfiles_in',
     'check_potfiles_in',
+    'get_translation_domain',
     'find_intltool_dirs',
+    'find_potfiles_in',
     ]
 
 import errno
-import os
 import os.path
 import re
 from subprocess import Popen, PIPE
 
 POTFILES_in = "POTFILES.in"
-
+STATUS_OK = 0
 
 def run_shell_command(cmd, env=None, input_data=None, raise_on_error=False):
-    """Run a shell command and return the output and status."""
+    """Run a shell command and return the output and status.
+
+    Copied from Damned Lies source code.
+    """
     stdin = None
     if input_data:
         stdin = PIPE
     if env:
         os.environ.update(env)
         env = os.environ
-    pipe = Popen(cmd, shell=True, env=env, stdin=stdin, stdout=PIPE, stderr=PIPE)
+    pipe = Popen(
+        cmd, shell=True, env=env, stdin=stdin, stdout=PIPE, stderr=PIPE)
     if input_data:
         try:
             pipe.stdin.write(input_data)
@@ -75,48 +79,6 @@ def find_intltool_dirs():
     structure.
     """
     return filter(check_potfiles_in, find_potfiles_in())
-
-
-class Substitution(object):
-    """Find and replace substitutions.
-
-    Handles a single substitution per variable text.
-    """
-
-    autoconf_pattern = re.compile("@([^@]+)@")
-    makefile_pattern = re.compile("\$\(?([^ \t\n\)]+)\)?")
-
-    @staticmethod
-    def get(variabletext):
-        """Factory method. Check if a substitution is present in the value.
-
-        :param variabletext: A variable value with possible substitution.
-        :returns: A Substitution object or None if no substitution was found.
-        """
-        subst = Substitution(variabletext)
-        if subst.name is not None:
-            return subst
-        return None
-
-    def __init__(self, variabletext):
-        """Extract substitution name from variable text."""
-        self.text = variabletext
-        self.replaced = False
-        result = self.autoconf_pattern.search(self.text)
-        if result is None:
-            result = self.makefile_pattern.search(self.text)
-        if result is None:
-            self._replacement = None
-            self.name = None
-        else:
-            self._replacement = result.group(0)
-            self.name = result.group(1)
-
-    def replace(self, value):
-        """Return a copy of the variable text with the substitution resolved.
-        """
-        self.replaced = True
-        return self.text.replace(self._replacement, value)
 
 
 def get_translation_domain(dirname):
@@ -182,3 +144,45 @@ class ConfigFile(object):
             if result is not None:
                 variable = result.group(1)
         return variable
+
+
+class Substitution(object):
+    """Find and replace substitutions.
+
+    Handles a single substitution per variable text.
+    """
+
+    autoconf_pattern = re.compile("@([^@]+)@")
+    makefile_pattern = re.compile("\$\(?([^ \t\n\)]+)\)?")
+
+    @staticmethod
+    def get(variabletext):
+        """Factory method. Check if a substitution is present in the value.
+
+        :param variabletext: A variable value with possible substitution.
+        :returns: A Substitution object or None if no substitution was found.
+        """
+        subst = Substitution(variabletext)
+        if subst.name is not None:
+            return subst
+        return None
+
+    def __init__(self, variabletext):
+        """Extract substitution name from variable text."""
+        self.text = variabletext
+        self.replaced = False
+        result = self.autoconf_pattern.search(self.text)
+        if result is None:
+            result = self.makefile_pattern.search(self.text)
+        if result is None:
+            self._replacement = None
+            self.name = None
+        else:
+            self._replacement = result.group(0)
+            self.name = result.group(1)
+
+    def replace(self, value):
+        """Return a copy of the variable text with the substitution resolved.
+        """
+        self.replaced = True
+        return self.text.replace(self._replacement, value)
