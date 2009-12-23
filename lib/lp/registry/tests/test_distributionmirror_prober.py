@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 
+from datetime import datetime
 import httplib
 import logging
 import os
@@ -798,10 +799,15 @@ class TestCDImageFileListFetching(unittest.TestCase):
 
 class TestLoggingMixin(unittest.TestCase):
 
+    def _fake_gettime(self):
+        # Fake the current time.
+        fake_time = datetime(2004, 10, 20, 12, 00, 00, 000000)
+        return fake_time
+
     def _get_prober(self):
         class Prober(LoggingMixin):
             def __init__(self):
-                self.log_file = logfile = StringIO()
+                self.log_file = StringIO()
         return Prober()
 
     def setUp(self):
@@ -812,9 +818,20 @@ class TestLoggingMixin(unittest.TestCase):
         self.prober.log_file.seek(0)
         message = self.prober.log_file.read()
         # We expect something like "Wed Dec 23 10:49:24 2009: Looking".
-        pattern = re.compile(r'\w\w\w \w\w\w \d\d \d\d:\d\d:\d\d \d\d\d\d: Looking')
+        pattern = re.compile(r'\w\w\w \w\w\w \d\d \d\d:\d\d:\d\d \d\d\d\d: '
+            'Looking')
         match = pattern.match(message)
         self.assertTrue(match is not None)
+
+    def test_logMessage_fake_time(self):
+        self.prober = LoggingMixin()
+        self.prober.log_file = StringIO()
+        self.prober._getTime = self._fake_gettime
+        self.prober.logMessage("Ubuntu Warty Released")
+        self.prober.log_file.seek(0)
+        message = self.prober.log_file.read()
+        self.failUnlessEqual('Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
+            message)
 
 
 def test_suite():
