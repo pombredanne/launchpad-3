@@ -7,25 +7,24 @@ __metaclass__ = type
 
 import unittest
 
+from zope.component import getUtility
 from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.browser.launchpad import LaunchpadRootNavigation
-from lp.testing import TestCaseWithFactory
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.webapp import canonical_url
-from canonical.testing.layers import DatabaseFunctionalLayer
+from canonical.launchpad.webapp.interfaces import GoneError
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.launchpad.webapp.url import urlappend
+from canonical.testing.layers import DatabaseFunctionalLayer
+
+from lp.registry.interfaces.person import IPersonSet, PersonVisibility
+from lp.testing import login_person, TestCaseWithFactory
+from lp.testing.views import create_view
 
 
-class TestBranchTraversal(TestCaseWithFactory):
-    """Branches are traversed to from IPersons. Test we can reach them.
-
-    This class tests the `PersonNavigation` class to see that we can traverse
-    to branches from such objects.
-    """
-
-    layer = DatabaseFunctionalLayer
+class TraversalMixin:
 
     def assertNotFound(self, path):
         self.assertRaises(NotFound, self.traverse, path)
@@ -34,7 +33,7 @@ class TestBranchTraversal(TestCaseWithFactory):
         redirection = self.traverse(segments)
         self.assertEqual(url, redirection.target)
 
-    def traverse(self, path):
+    def traverse(self, path, first_segment):
         """Traverse to 'segments' using a 'LaunchpadRootNavigation' object.
 
         Using the Zope traversal machinery, traverse to the path given by
@@ -43,11 +42,25 @@ class TestBranchTraversal(TestCaseWithFactory):
         :param segments: A list of path segments.
         :return: The object found.
         """
-        request = LaunchpadTestRequest(PATH_INFO=urlappend('/+branch', path))
+        request = LaunchpadTestRequest(
+            PATH_INFO=urlappend('/%s' % first_segment, path))
         segments = reversed(path.split('/'))
         request.setTraversalStack(segments)
         traverser = LaunchpadRootNavigation(None, request=request)
-        return traverser.publishTraverse(request, '+branch')
+        return traverser.publishTraverse(request, first_segment)
+
+
+class TestBranchTraversal(TestCaseWithFactory, TraversalMixin):
+    """Branches are traversed to from IPersons. Test we can reach them.
+
+    This class tests the `PersonNavigation` class to see that we can traverse
+    to branches from such objects.
+    """
+
+    layer = DatabaseFunctionalLayer
+
+    def traverse(self, path):
+        return super(TestBranchTraversal, self).traverse(path, '+branch')
 
     def test_unique_name_traversal(self):
         # Traversing to /+branch/<unique_name> redirects to the page for that
@@ -115,6 +128,75 @@ class TestBranchTraversal(TestCaseWithFactory):
     def test_invalid_product_name(self):
         # 404 if the thing following +branch has an invalid product name.
         self.assertNotFound('a')
+
+
+class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestPersonTraversal, self).setUp()
+        self.any_user = self.factory.makePerson()
+        self.admin = getUtility(IPersonSet).getByName('name16')
+
+    def test_person(self):
+        # Verify a user is returned.
+        name = 'active-person'
+        person = self.factory.makePerson(name=name)
+        segment = '~%s' % name
+        traversed = self.traverse(segment, segment)
+        self.assertEqual(person, traversed)
+
+    def test_suspended_person_visible_to_admin_only(self):
+        # Verify a suspended user is only traversable by an admin.
+        name = 'suspended-person'
+        person = self.factory.makePerson(name=name)
+        login_person(self.admin)
+        person.account_status = AccountStatus.SUSPENDED
+        segment = '~%s' % name
+        # Admins can see the suspended user.
+        traversed = self.traverse(segment, segment)
+        self.assertEqual(person, traversed)
+        # Regular users cannot see the suspended user.
+        login_person(self.any_user)
+        self.assertRaises(GoneError, self.traverse, segment, segment)
+
+    def test_public_team(self):
+        # Verify a public team is returned.
+        name = 'public-team'
+        team = self.factory.makeTeam(name=name)
+        segment = '~%s' % name
+        traversed = self.traverse(segment, segment)
+        self.assertEqual(team, traversed)
+
+    def test_private_team_visible_to_admin_and_members_only(self):
+        # Verify a private team is  team is returned.
+        name = 'private-team'
+        team = self.factory.makeTeam(name=name)
+        login_person(self.admin)
+        team.visibility = PersonVisibility.PRIVATE
+        segment = '~%s' % name
+        # Admins can traverse tot he team
+        traversed = self.traverse(segment, segment)
+        self.assertEqual(team, traversed)
+        # Members can traverse to the team.
+        login_person(team.teamowner)
+        traversed = self.traverse(segment, segment)
+        self.assertEqual(team, traversed)
+        # All other user cannot traverse to the team.
+        login_person(self.any_user)
+        self.assertRaises(NotFound, self.traverse, segment, segment)
+
+
+class TestErrorViews(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def test_GoneError(self):
+        error = GoneError('User is suspended')
+        view = create_view(error, 'index.html')
+        self.assertEqual('Error: Page gone', view.page_title)
+        self.assertEqual(410, view.request.response.getStatus())
 
 
 def test_suite():
