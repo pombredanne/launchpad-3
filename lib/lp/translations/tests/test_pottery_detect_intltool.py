@@ -20,7 +20,7 @@ class TestDetectIntltool(TestCase):
 
     def setUp(self):
         super(TestDetectIntltool, self).setUp()
-        # Determine test directoy and create temporary working directory.
+        # Determine test directory and create temporary working directory.
         self.curdir = os.getcwd()
         self.testdir = os.path.join(self.curdir, os.path.dirname(__file__))
         self.workdir = tempfile.mkdtemp()
@@ -41,14 +41,14 @@ class TestDetectIntltool(TestCase):
         os.chdir(packagename)
 
     def test_detect_potfiles_in(self):
-        # Find POTFILES.in in a packge with multiple dirs,
-        # only one has POTFILES.in.
+        # Find POTFILES.in in a package with multiple dirs when only one has
+        # POTFILES.in.
         self._prepare_package("intltool_POTFILES_in_1")
         dirs = find_potfiles_in()
         self.assertContentEqual(["./po-intltool"], dirs)
 
     def test_detect_potfiles_in_module(self):
-        # Find POTFILES.in in a packge with POTFILES.in at different levels.
+        # Find POTFILES.in in a package with POTFILES.in at different levels.
         self._prepare_package("intltool_POTFILES_in_2")
         dirs = find_potfiles_in()
         self.assertContentEqual(["./po", "./module1/po"], dirs)
