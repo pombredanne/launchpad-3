@@ -28,7 +28,7 @@ from canonical.launchpad.webapp.sorting import expand_numbers
 from lp.bugs.model.bugtarget import HasBugsBase
 from lp.blueprints.model.specification import Specification
 from lp.registry.model.productrelease import ProductRelease
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, IBugTaskSet)

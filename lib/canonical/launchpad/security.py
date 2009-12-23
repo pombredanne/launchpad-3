@@ -479,6 +479,7 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
         """Allow Launchpad's admins and Rosetta experts edit all fields."""
         return is_admin_or_rosetta_expert(user)
 
+
 class AdminProductTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IProduct
@@ -1103,27 +1104,63 @@ class EditCodeImportMachine(OnlyVcsImportsAndAdmins):
     usedfor = ICodeImportMachine
 
 
+class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
+                                    EditDistributionByDistroOwnersOrAdmins):
+    """Class for deciding who can administer distribution translations.
+
+    This class is used for `launchpad.TranslationsAdmin` privilege on
+    `IDistribution` and `IDistroSeries` and corresponding `IPOTemplate`s,
+    and limits access to Rosetta experts, Launchpad admins and distribution
+    translation group owner.
+    """
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistribution
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistribution` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or people allowed
+        to edit distribution details are able to change translation settings
+        for a distribution.
+        """
+        # Translation group owner for a distribution is also a
+        # translations administrator for it.
+        translation_group = self.obj.translationgroup
+        if translation_group and user.inTeam(translation_group.owner):
+            return True
+        else:
+            return (
+                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
+                EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
+                    self, user))
+
+
+# Please keep AdminPOTemplateSubset in sync with this, unless you
+# know exactly what you are doing.
 class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
+    """Controls administration of an `IPOTemplate`.
+
+    Allow all persons that can also administer the translations to
+    which this template belongs to and also translation group owners.
+
+    Product owners does not have administrative privileges.
+    """
+    permission = 'launchpad.TranslationsAdmin'
     usedfor = IPOTemplate
 
     def checkAuthenticated(self, user):
-        """Allow LP/Translations admins, and for distros, owners and
-        translation group owners.
-        """
-        if OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user):
-            return True
-
         template = self.obj
         if template.distroseries is not None:
-            distro = template.distroseries.distribution
-            if user.inTeam(distro.owner):
-                return True
-            translation_group = distro.translationgroup
-            if translation_group and user.inTeam(translation_group.owner):
-                return True
+            # Template is on a distribution.
+            distribution = template.distroseries.distribution
+            return (
+                AdminDistributionTranslations(
+                    distribution).checkAuthenticated(user))
 
-        return False
+        else:
+            # Template is on a product.
+            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(
+                self, user)
 
 
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
@@ -1607,19 +1644,57 @@ class AdminBranch(AuthorizationBase):
                 user.inTeam(celebs.bazaar_experts))
 
 
+# Please keep this in sync with AdminPOTemplateDetails.  Note that
+# this permission controls access to browsing into individual
+# potemplates, but it's on a different object (POTemplateSubset)
+# from AdminPOTemplateDetails, even though it looks almost identical
 class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
+    """Controls administration of an `IPOTemplateSubset`.
+
+    Allow all persons that can also administer the translations to
+    which this template belongs to and also translation group owners.
+
+    Product owners does not have administrative privileges.
+    """
+    permission = 'launchpad.TranslationsAdmin'
     usedfor = IPOTemplateSubset
 
+    def checkAuthenticated(self, user):
+        template_set = self.obj
+        if template_set.distroseries is not None:
+            distribution = template_set.distroseries.distribution
+            return (
+                AdminDistributionTranslations(
+                    distribution).checkAuthenticated(user))
+        else:
+            # Template is on a product.
+            return OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user)
 
-class AdminDistroSeriesLanguage(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IDistroSeriesLanguage
 
-
-class AdminDistroSeriesTranslations(OnlyRosettaExpertsAndAdmins):
+class AdminDistroSeriesTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistroSeries` translations.
+
+        Distribution managers can also manage IDistroSeries
+        """
+        return (AdminDistributionTranslations(
+            self.obj.distribution).checkAuthenticated(user))
+
+
+class AdminDistroSeriesLanguage(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistroSeriesLanguage
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistroSeriesLanguage` translations.
+
+        Distribution managers can also manage IDistroSeriesLanguage
+        """
+        return (AdminDistroSeriesTranslations(
+            self.obj.distroseries).checkAuthenticated(user))
 
 
 class BranchSubscriptionEdit(AuthorizationBase):
@@ -1676,9 +1751,15 @@ class CodeReviewVoteReferenceEdit(AuthorizationBase):
         The registrant may reassign the request to another entity.
         A member of the review team may assign it to themselves.
         A person to whom it is assigned may delegate it to someone else.
+
+        Anyone with edit permissions on the target branch of the merge
+        proposal can also edit the reviews.
         """
-        return (user.inTeam(self.obj.reviewer) or
-                user.inTeam(self.obj.registrant))
+        if user.inTeam(self.obj.reviewer) or user.inTeam(self.obj.registrant):
+            return True
+        target_access = EditBranch(
+            self.obj.branch_merge_proposal.target_branch)
+        return target_access.checkAuthenticated(user)
 
 
 class CodeReviewCommentView(AuthorizationBase):
@@ -1789,24 +1870,6 @@ class AdminDistroSeriesLanguagePacks(
             EditDistroSeriesByOwnersOrDistroOwnersOrAdmins.checkAuthenticated(
                 self, user) or
             user.inTeam(self.obj.distribution.language_pack_admin))
-
-
-class AdminDistributionTranslations(OnlyRosettaExpertsAndAdmins,
-                                    EditDistributionByDistroOwnersOrAdmins):
-    permission = 'launchpad.TranslationsAdmin'
-    usedfor = IDistribution
-
-    def checkAuthenticated(self, user):
-        """Is the user able to manage `IDistribution` translations settings?
-
-        Any Launchpad/Launchpad Translations administrator or people allowed
-        to edit distribution details are able to change translation settings
-        for a distribution.
-        """
-        return (
-            OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user) or
-            EditDistributionByDistroOwnersOrAdmins.checkAuthenticated(
-                self, user))
 
 
 class AdminLanguagePack(OnlyRosettaExpertsAndAdmins):

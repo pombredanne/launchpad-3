@@ -1,0 +1,18 @@
+We have a report that we run as necessary to see what is using the Librarian
+storage.
+
+    >>> import os.path
+    >>> from canonical.config import config
+    >>> path = os.path.join(config.root, 'scripts', 'librarian-report.py')
+
+    >>> import subprocess
+    >>> proc = subprocess.Popen(
+    ...     path, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+    ...     stdin=subprocess.PIPE)
+    >>> (out, ignored) = proc.communicate()
+    >>> print '\n' + out
+    <BLANKLINE>
+    ...
+    0 bytes    messageapproval in 0 files
+    ...
+

@@ -379,6 +379,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'priority': 'P1',
             'product': 'Marvin',
             'resolution': 'FIXED',
+            'see_also': [],
             'severity': 'normal',
             'status': 'RESOLVED',
             'summary': "That bloody robot still exists.",
@@ -394,6 +395,7 @@ class TestBugzillaXMLRPCTransport(UrlLib2Transport):
             'priority': 'P1',
             'product': 'HeartOfGold',
             'resolution': '',
+            'see_also': [],
             'severity': 'high',
             'status': 'NEW',
             'summary': 'Collect unknown persons in docking bay 2.',
@@ -773,6 +775,7 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
             'comments',
             'get',
             'search',
+            'update_see_also',
             ],
         'Bugzilla': [
             'time',
@@ -991,6 +994,73 @@ class TestBugzillaAPIXMLRPCTransport(TestBugzillaXMLRPCTransport):
         # expand sequences of length 1. Trying to do that on a dict will
         # cause it to explode.
         return [{'id': comment_id}]
+
+    def update_see_also(self, arguments):
+        """Update the see_also references for a bug."""
+        assert 'ids' in arguments, (
+            "You must specify a set of IDs with which to work.")
+        assert ('add' in arguments or 'remove' in arguments), (
+            "You must specify a list of links to add or remove.")
+
+        changes = {}
+
+        for bug_id in arguments['ids']:
+            bug_id = int(bug_id)
+
+            # If the bug ID doesn't exist, raise a Fault.
+            if bug_id not in self.bugs:
+                raise xmlrpclib.Fault(101, "Bug #%s does not exist." % bug_id)
+
+            see_also_list = self.bugs[bug_id].get('see_also', [])
+
+            # Remove any items first. That way, if they're also in the
+            # 'add' section they'll get re-added.
+            for url in arguments.get('remove', []):
+                if url not in see_also_list:
+                    continue
+
+                if changes.get(bug_id) is None:
+                    changes[bug_id] = {}
+
+                if changes[bug_id].get('see_also') is None:
+                    changes[bug_id]['see_also'] = {}
+
+                if changes[bug_id]['see_also'].get('removed') is None:
+                    changes[bug_id]['see_also']['removed'] = []
+
+                see_also_list.remove(url)
+                changes[bug_id]['see_also']['removed'].append(url)
+
+            # Add any items to the list.
+            for url in arguments.get('add', []):
+                if url in see_also_list:
+                    # Ignore existing urls.
+                    continue
+
+                if ('launchpad' not in url and
+                    'show_bug.cgi' not in url):
+                    raise xmlrpclib.Fault(
+                        112, "Bug URL %s is invalid." % url)
+
+                if changes.get(bug_id) is None:
+                    changes[bug_id] = {}
+
+                if changes[bug_id].get('see_also') is None:
+                    changes[bug_id]['see_also'] = {}
+
+                if changes[bug_id]['see_also'].get('added') is None:
+                    changes[bug_id]['see_also']['added'] = []
+
+                see_also_list.append(url)
+                changes[bug_id]['see_also']['added'].append(url)
+
+            # Replace the bug's existing see_also list.
+            self.bugs[bug_id]['see_also'] = see_also_list
+
+        # We have to return a list here because xmlrpclib will try to
+        # expand sequences of length 1. Trying to do that on a dict will
+        # cause it to explode.
+        return [{'changes': changes}]
 
 
 class TestMantis(Mantis):

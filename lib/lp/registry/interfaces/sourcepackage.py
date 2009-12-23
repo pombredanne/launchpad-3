@@ -310,13 +310,31 @@ class SourcePackageFileType(DBEnumeratedType):
         This is an Ubuntu "diff" file, containing changes that need to be
         made to upstream code for the packaging on Ubuntu. Typically this
         diff creates additional directories with patches and documentation
-        used to build the binary packages for Ubuntu.  """)
+        used to build the binary packages for Ubuntu.
+
+        This is only part of the 1.0 source package format.""")
 
     NATIVE_TARBALL = DBItem(6, """
         Native Tarball
 
         This is a tarball, usually of a mixture of Ubuntu and upstream code,
         used in the build process for this source package.  """)
+
+    DEBIAN_TARBALL = DBItem(7, """
+        Debian Tarball
+
+        This file is an Ubuntu "orig" file, typically an upstream tarball or
+        other lightly-modified upstreamish thing.
+
+        This is only part of the 3.0 (quilt) source package format.""")
+
+    COMPONENT_ORIG_TARBALL = DBItem(8, """
+        Component Orig Tarball
+
+        This file is an Ubuntu component "orig" file, typically an upstream
+        tarball containing a component of the source package.
+
+        This is only part of the 3.0 (quilt) source package format.""")
 
 
 class SourcePackageType(DBEnumeratedType):

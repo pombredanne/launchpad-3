@@ -56,7 +56,8 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             distroseries=self.context.distroseries,
             sourcepackagename=self.context.sourcepackagename)
 
-        if not check_permission('launchpad.Admin', sourcepackage_pots):
+        if not check_permission(
+            'launchpad.TranslationsAdmin', sourcepackage_pots):
             self.context.distroseries.checkTranslationsViewable()
 
         return sourcepackage_pots
@@ -93,7 +94,7 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     usedfor = ISourcePackage
     facet = 'overview'
     links = [
-        'distribution_source_package', 'packaging', 'edit_packaging',
+        'distribution_source_package', 'edit_packaging',
         'changelog', 'builds', 'set_upstream',
         ]
 
@@ -105,9 +106,6 @@ class SourcePackageOverviewMenu(ApplicationMenu):
 
     def changelog(self):
         return Link('+changelog', 'View changelog', icon='list')
-
-    def packaging(self):
-        return Link('+packaging', 'Show upstream links', icon='info')
 
     def edit_packaging(self):
         return Link('+edit-packaging', 'Change upstream link', icon='edit')
@@ -290,16 +288,6 @@ class SourcePackageView:
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
-
-
-class SourcePackagePackaging(SourcePackageView):
-    """A View to show where the package is packged."""
-
-    page_title = 'Upstream links'
-
-    @property
-    def label(self):
-        return "Upstream links for %s" % self.context.title
 
 
 class SourcePackageHelpView:

@@ -226,7 +226,8 @@ from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from canonical.launchpad.webapp.tales import (
+    DateTimeFormatterAPI, FormattersAPI)
 from lazr.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
@@ -548,7 +549,10 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
     @action(_("Renew"), name="renew")
     def renew_action(self, action, data):
         member = self.context.person
-        member.renewTeamMembership(self.context.team)
+        # This if-statement prevents an exception if the user
+        # double clicks on the submit button.
+        if self.context.canBeRenewedByMember():
+            member.renewTeamMembership(self.context.team)
         self.request.response.addInfoNotification(
             _("Membership renewed until ${date}.", mapping=dict(
                     date=self.context.dateexpires.strftime('%Y-%m-%d'))))
@@ -2444,7 +2448,8 @@ class PersonLanguagesView(LaunchpadFormView):
     def getRedirectionURL(self):
         request = self.request
         referrer = request.getHeader('referer')
-        if referrer and referrer.startswith(request.getApplicationURL()):
+        if referrer and (referrer.startswith(request.getApplicationURL()) or
+                         referrer.find('+languages') != -1):
             return referrer
         else:
             return ''
@@ -2456,10 +2461,20 @@ class PersonLanguagesView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        """Redirect to this url after successfully processing the form."""
+        """Redirect to the +languages page if request originated there."""
+        redirection_url = self.request.get('redirection_url')
+        if redirection_url:
+            return redirection_url
         return canonical_url(self.context)
 
-    cancel_url = next_url
+    @property
+    def cancel_url(self):
+        """Redirect to the +languages page if request originated there."""
+        redirection_url = self.getRedirectionURL()
+        if redirection_url:
+            return redirection_url
+        return canonical_url(self.context)
+
 
     @action(_("Save"), name="save")
     def submitLanguages(self, action, data):
@@ -2499,9 +2514,6 @@ class PersonLanguagesView(LaunchpadFormView):
         if len(messages) > 0:
             message = structured('<br />'.join(messages))
             self.request.response.addInfoNotification(message)
-        redirection_url = self.request.get('redirection_url')
-        if redirection_url:
-            self.request.response.redirect(redirection_url)
 
     @property
     def answers_url(self):
@@ -2650,6 +2662,38 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         """
         return bool(self.context.gpgkeys) or (
             check_permission('launchpad.Edit', self.context))
+
+    @cachedproperty
+    def is_probationary_or_invalid_user(self):
+        """True when the user is not active or does not have karma.
+
+        Some content should not be rendered when the context is not a an
+        established user. For example, probationary and invalid user pages
+        must not be indexed by search engines and their narrative linkified.
+        """
+        user = self.context
+        if user.isTeam():
+            # Teams are always valid and do not have probationary rules.
+            return False
+        else:
+            return user.karma == 0 or not user.is_valid_person
+
+    @cachedproperty
+    def homepage_content(self):
+        """The user's HTML formatted homepage content.
+
+        The markup is simply escaped for probationary or invalid users.
+        The homepage content is reformatted as HTML and linkified if the user
+        is active.
+        """
+        content = self.context.homepage_content
+        if content is None:
+            return None
+        elif self.is_probationary_or_invalid_user:
+            return cgi.escape(content)
+        else:
+            formatter = FormattersAPI
+            return formatter(content).text_to_html()
 
     @cachedproperty
     def recently_approved_members(self):
@@ -3125,6 +3169,12 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
             self.request.needs_gmap2 = True
         if self.request.method == "POST":
             self.processForm()
+
+    def render(self):
+        """See `LaunchpadView`."""
+        if self.context.account_status == AccountStatus.SUSPENDED:
+            self.request.response.setStatus(410)
+        return super(PersonIndexView, self).render()
 
     @property
     def page_title(self):
@@ -4114,9 +4164,13 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         for team in self.user.getAdministratedTeams():
             if team == self.context:
                 continue
+            elif team.visibility != PersonVisibility.PUBLIC:
+                continue
             elif team in self.context.activemembers:
+                # The team is already a member of the context object.
                 continue
             elif self.context.hasParticipationEntryFor(team):
+                # The context object is a member/submember of the team.
                 continue
             candidates.append(team)
         return candidates
