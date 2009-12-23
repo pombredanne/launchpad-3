@@ -56,7 +56,7 @@ __metaclass__ = type
 class LoggingMixin:
 
     def _getTime(self):
-        return datetime.now()
+        return datetime.utcnow()
 
     def logMessage(self, message):
         timestamp = datetime.ctime(self._getTime())
