@@ -553,6 +553,18 @@ class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
         return user.inTeam(self.obj.teamowner) or user.inTeam(admins)
 
 
+class ModerateTeamByRegistryExpertsTeamOrLaunchpadAdmins(AuthorizationBase):
+    permission = 'launchpad.Moderate'
+    usedfor = ITeam
+
+    def checkAuthenticated(self, user):
+        """Only Registry expoerts and Launchpad admins need this."""
+        celebrities = getUtility(ILaunchpadCelebrities)
+        admins = celebrities.admin
+        registry_experts = celebrities.registry_experts
+        return user.inTeam(registry_experts) or user.inTeam(admins)
+
+
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ITeam

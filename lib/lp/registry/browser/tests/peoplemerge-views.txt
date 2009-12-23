@@ -8,7 +8,8 @@ Team Merges
 
     >>> from lp.registry.interfaces.person import IPersonSet
     >>> person_set = getUtility(IPersonSet)
-    >>> login("foo.bar@canonical.com")
+    >>> registry_expert = person_set.getByName('mark')
+    >>> login_person(registry_expert)
 
 A team (name21) can be merged into another (ubuntu-team).
 
@@ -68,6 +69,9 @@ Attempting to merge a non-existent team results in an error.
 For regular users to merge Launchpad profiles, we require that they confirm
 ownership of the merged profile's email addresses, so it's not possible for
 them to merge a profile which has no email address.
+
+    >>> admin = person_set.getByName('name16')
+    >>> login_person(admin)
 
     # First we need to forge a person without a single email address.
     >>> from lp.registry.interfaces.person import PersonCreationRationale

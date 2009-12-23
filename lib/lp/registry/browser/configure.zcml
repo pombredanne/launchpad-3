@@ -1211,7 +1211,7 @@
             template="../templates/people-adminrequestmerge.pt"/>
         <browser:page
             for="lp.registry.interfaces.person.IPersonSet"
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             class="lp.registry.browser.peoplemerge.AdminTeamMergeView"
             name="+adminteammerge"
             template="../templates/people-adminrequestmerge.pt"/>
