@@ -531,7 +531,7 @@ class MirrorCDImageProberCallbacks(LoggingMixin):
         self.distroseries = distroseries
         self.flavour = flavour
         self.log_file = log_file
-    
+
     def ensureOrDeleteMirrorCDImageSeries(self, result):
         """Check if the result of the deferredList contains only success and
         then ensure we have a MirrorCDImageSeries for self.distroseries and
