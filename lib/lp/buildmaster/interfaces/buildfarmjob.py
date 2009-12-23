@@ -12,8 +12,12 @@ __all__ = [
     'BuildFarmJobType',
     ]
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
+
+from canonical.launchpad import _
 from lazr.enum import DBEnumeratedType, DBItem
+from lazr.restful.fields import Reference
+from lp.soyuz.interfaces.processor import IProcessor
 
 
 class BuildFarmJobType(DBEnumeratedType):
@@ -69,3 +73,60 @@ class IBuildFarmJob(Interface):
     def jobAborted():
         """'Job aborted' life cycle event, handle as appropriate."""
 
+    def pendingJobsQuery(minscore, processor, virtualized):
+        """String SELECT query yielding pending jobs with given minimum score.
+
+        This will be used for the purpose of job dispatch time estimation
+        for a build job of interest (JOI).
+        In order to estimate the dispatch time for the JOI we need to
+        calculate the sum of the estimated durations of the *pending* jobs
+        ahead of JOI.
+
+        Depending on the build farm job type the JOI may or may not be tied
+        to a particular processor type.
+        Binary builds for example are always built for a specific processor
+        whereas "create a source package from recipe" type jobs do not care
+        about processor types or virtualization.
+
+        When implementing this method for processor independent build farm job
+        types (e.g. recipe build) you may safely ignore the `processor` and
+        `virtualized` parameters.
+
+        The SELECT query to be returned needs to select the following data
+            1 - BuildQueue.job
+            2 - BuildQueue.lastscore
+            3 - BuildQueue.estimated_duration
+            4 - Processor.id    [optional]
+            5 - virtualized     [optional]
+
+        Job types that are processor independent or do not care about
+        virtualization should return NULL for the optional data in the result
+        set.
+
+        :param minscore: the pending jobs selected by the returned
+            query should have score >= minscore
+        :param processor: the job of interest (JOI) is tied to this
+            processor, this information can be used to further narrow
+            down the pending jobs that will result from the returned
+            query. Please note: processor independent job types may
+            safely ignore this parameter.
+        :param virtualized: the job of interest (JOI) can only run
+            on builders with this virtualization setting.
+            Again, this information can be used to narrow down the
+            pending jobs that will result from the returned query and
+            processor independent job types may safely ignore it.
+        :return: a string SELECT clause that can be used to find
+            the pending jobs of the appropriate type.
+        """
+
+    processor = Reference(
+        IProcessor, title=_("Processor"),
+        description=_(
+            "The Processor required by this build farm job. "
+            "For processor independent job types please return None."))
+
+    virtualized = Attribute(
+        _(
+            "The virtualization setting required by this build farm job. "
+            "For job types that do not care about virtualization please "
+            "return None."))

@@ -38,3 +38,18 @@ class BuildFarmJob:
         """See `IBuildFarmJob`."""
         pass
 
+    @staticmethod
+    def pendingJobsQuery(minscore, processor, virtualized):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError
+
+    @property
+    def processor(self):
+        """See `IBuildFarmJob`."""
+        return None
+
+    @property
+    def virtualized(self):
+        """See `IBuildFarmJob`."""
+        return None
+
