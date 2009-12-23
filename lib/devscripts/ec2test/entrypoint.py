@@ -13,6 +13,7 @@ import rlcompleter
 import sys
 
 from bzrlib.errors import BzrCommandError
+from bzrlib import ui
 
 from devscripts.ec2test import builtins
 from devscripts.ec2test.controller import (
@@ -32,6 +33,9 @@ def main():
 
     We run the specified command, or give help if none was specified.
     """
+    ui.ui_factory = ui.make_ui_for_terminal(
+        sys.stdin, sys.stdout, sys.stderr)
+
     controller = EC2CommandController()
     controller.install_bzrlib_hooks()
     controller.load_module(builtins)
