@@ -50,6 +50,14 @@ PER_HOST_REQUESTS = 2
 # start connecting.
 OVERALL_REQUESTS = 100
 
+__metaclass__ = type
+
+
+class LoggingMixin:
+    def logMessage(self, message):
+        timestamp = datetime.ctime(datetime.now())
+        self.log_file.write(timestamp + ": " + message)
+
 
 class RequestManager:
 
@@ -375,7 +383,7 @@ class UnknownURLScheme(ProberError):
                 "URLs: %s" % self.url)
 
 
-class ArchiveMirrorProberCallbacks(object):
+class ArchiveMirrorProberCallbacks(LoggingMixin):
 
     expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
 
@@ -513,13 +521,8 @@ class ArchiveMirrorProberCallbacks(object):
             logger.error(msg)
         return None
 
-    def logMessage(self, message):
-        timestamp = datetime.ctime(datetime.now())
-        self.log_file.write("[%s] %s" % (timestamp, message))
-        return None
 
-
-class MirrorCDImageProberCallbacks(object):
+class MirrorCDImageProberCallbacks(LoggingMixin):
 
     expected_failures = (BadResponseCode, ProberTimeout, ConnectionSkipped)
 
@@ -529,11 +532,6 @@ class MirrorCDImageProberCallbacks(object):
         self.flavour = flavour
         self.log_file = log_file
     
-    def logMessage(self, message):
-        timestamp = datetime.ctime(datetime.now())
-        self.log_file.write("[%s] %s" % (timestamp, message))
-        return None
-
     def ensureOrDeleteMirrorCDImageSeries(self, result):
         """Check if the result of the deferredList contains only success and
         then ensure we have a MirrorCDImageSeries for self.distroseries and
