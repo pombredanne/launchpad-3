@@ -73,6 +73,18 @@ def find_intltool_dirs():
     return sorted(filter(check_potfiles_in, find_potfiles_in()))
 
 
+def _try_substitution(path, substitution):
+    """Try to find a substitution in the given config file.
+
+    :returns: The completed substitution or None if none was found.
+    """
+    subst_value = ConfigFile(path).getVariable(substitution.name)
+    if subst_value is None:
+        # No substitution found.
+        return None
+    return substitution.replace(subst_value)
+
+
 def get_translation_domain(dirname):
     """Get the translation domain for this PO directory.
 
@@ -99,25 +111,26 @@ def get_translation_domain(dirname):
     for filename, varname in locations:
         path = os.path.join(dirname, filename)
         if not os.access(path, os.R_OK):
+            # Skip non-existent files.
             continue
-        if value is None:
+        if substitution is None:
             value = ConfigFile(path).getVariable(varname)
-            if value is None:
-                # No value found, try next file.
-                continue
-            substitution = Substitution.get(value)
-            if substitution is None:
-                # The value has been found, no substitution needed.
-                break
-            if substitution.name == varname:
-                # Do not search the current file for the substitution because
-                # the name is identical and we'd get a recursion.
-                continue
-        # This part is only reached if a value has been found but still needs
-        # a substitution.
-        subst_value = ConfigFile(path).getVariable(substitution.name)
-        if subst_value is not None:
-            value = substitution.replace(subst_value)
+            if value is not None:
+                # Check if the value need a substitution.
+                substitution = Substitution.get(value)
+                if substitution is not None:
+                    # Try to substitute with value from current file but
+                    # avoid recursion.
+                    if substitution.name != varname:
+                        value = _try_substitution(path, substitution)
+                    else:
+                        # The value has not been found yet but is now stored
+                        # in the Substitution instance.
+                        value = None
+        else:
+            value = _try_substitution(path, substitution)
+        if value is not None:
+            # A value has been found.
             break
     if substitution is not None and not substitution.replaced:
         # Substitution failed.
