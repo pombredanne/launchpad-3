@@ -3,10 +3,7 @@
 
 """Test BuildQueue features."""
 
-import unittest
-
-from datetime import datetime, timedelta
-from pytz import utc
+from datetime import timedelta
 
 from zope.component import getUtility
 
@@ -15,7 +12,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
@@ -37,7 +34,7 @@ def find_job(test, name, processor='386'):
         return (None, None)
 
 def builder_key(build):
-    return (build.processor.id,build.is_virtualized)
+    return (build.processor.id, build.is_virtualized)
 
 def nth_builder(test, build, n):
     builder = None
@@ -76,10 +73,10 @@ class TestBuildJobBase(TestCaseWithFactory):
 
         self.builders = dict()
         # x86 native
-        self.builders[(1,False)] = [self.i8, self.i9]
+        self.builders[(1, False)] = [self.i8, self.i9]
 
         # hppa native
-        self.builders[(3,True)] = [self.h6, self.h7]
+        self.builders[(3, True)] = [self.h6, self.h7]
 
         # Ensure all builders are operational.
         for builders in self.builders.values():
@@ -145,18 +142,21 @@ class TestBuildPackageJob(TestBuildJobBase):
                 architecturehintlist='any').createMissingBuilds())
         self.builds.extend(
             self.publisher.getPubSource(
-                sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
+                sourcename="firefox",
+                status=PackagePublishingStatus.PUBLISHED,
                 archive=self.non_ppa,
                 architecturehintlist='any').createMissingBuilds())
         self.builds.extend(
             self.publisher.getPubSource(
-                sourcename="cobblers", status=PackagePublishingStatus.PUBLISHED,
+                sourcename="cobblers",
+                status=PackagePublishingStatus.PUBLISHED,
                 archive=self.non_ppa,
                 architecturehintlist='any').createMissingBuilds())
         self.builds.extend(
             self.publisher.getPubSource(
                 sourcename="thunderpants",
-                status=PackagePublishingStatus.PUBLISHED, archive=self.non_ppa,
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.non_ppa,
                 architecturehintlist='any').createMissingBuilds())
         self.builds.extend(
             self.publisher.getPubSource(
