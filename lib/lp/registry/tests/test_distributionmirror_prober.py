@@ -804,36 +804,17 @@ class TestLoggingMixin(unittest.TestCase):
         fake_time = datetime(2004, 10, 20, 12, 00, 00, 000000)
         return fake_time
 
-    def _get_prober(self):
-        class Prober(LoggingMixin):
-            def __init__(self):
-                self.log_file = StringIO()
-        return Prober()
-
-    def setUp(self):
-        self.prober = self._get_prober()
-
-    def test_logMessage(self):
-        self.prober.logMessage('Looking')
-        self.prober.log_file.seek(0)
-        message = self.prober.log_file.read()
-        # We expect something like "Wed Dec 23 10:49:24 2009: Looking".
-        pattern = re.compile(r'\w\w\w \w\w\w \d\d \d\d:\d\d:\d\d \d\d\d\d: '
-            'Looking')
-        match = pattern.match(message)
-        self.assertTrue(match is not None)
-
-    def test_logMessage_fake_time(self):
-        self.prober = LoggingMixin()
-        self.prober.log_file = StringIO()
-        self.prober._getTime = self._fake_gettime
-        self.prober.logMessage("Ubuntu Warty Released")
-        self.prober.log_file.seek(0)
-        message = self.prober.log_file.read()
+    def test_logMessage_output(self):
+        logger = LoggingMixin()
+        logger.log_file = StringIO()
+        logger._getTime = self._fake_gettime
+        logger.logMessage("Ubuntu Warty Released")
+        logger.log_file.seek(0)
+        message = logger.log_file.read()
         self.failUnlessEqual('Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
             message)
 
-    def test_logMessage_ensure_message(self):
+    def test_logMessage_integration(self):
         logger = LoggingMixin()
         logger.log_file = StringIO()
         logger.logMessage("Probing...")
