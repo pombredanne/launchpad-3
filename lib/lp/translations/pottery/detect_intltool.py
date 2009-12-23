@@ -17,36 +17,9 @@ __all__ = [
 import errno
 import os.path
 import re
-from subprocess import Popen, PIPE
+from subprocess import call
 
 POTFILES_in = "POTFILES.in"
-STATUS_OK = 0
-
-def run_shell_command(cmd, env=None, input_data=None, raise_on_error=False):
-    """Run a shell command and return the output and status.
-
-    Copied from Damned Lies source code.
-    """
-    stdin = None
-    if input_data:
-        stdin = PIPE
-    if env:
-        os.environ.update(env)
-        env = os.environ
-    pipe = Popen(
-        cmd, shell=True, env=env, stdin=stdin, stdout=PIPE, stderr=PIPE)
-    if input_data:
-        try:
-            pipe.stdin.write(input_data)
-        except IOError, e:
-            if e.errno != errno.EPIPE:
-                raise
-    (output, errout) = pipe.communicate()
-    status = pipe.returncode
-    if raise_on_error and status != STATUS_OK:
-        raise OSError(status, errout)
-
-    return (status, output, errout)
 
 
 def find_potfiles_in():
@@ -63,11 +36,32 @@ def find_potfiles_in():
 
 def check_potfiles_in(path):
     """Check if the files listed in the POTFILES.in file exist."""
-    command = ("cd \"%(dir)s\" && rm -f missing notexist && "
-               "intltool-update -m" % { "dir" : path, })
-    (status, output, errs) = run_shell_command(command)
+    current_path = os.getcwd()
 
-    if status != 0:
+    try:
+        os.chdir(path)
+    except OSError, e:
+        # Abort nicely if directory does not exist.
+        if e.errno == errno.ENOENT:
+            return False
+        raise
+    try:
+        for unlink_name in ['missing', 'notexist']:
+            try:
+                os.unlink(unlink_name)
+            except OSError, e:
+                # It's ok if the files are missing.
+                if e.errno != errno.ENOENT:
+                    raise
+        devnull = open("/dev/null", "w")
+        returncode = call(
+            ["/usr/bin/intltool-update", "-m"],
+            stdout=devnull, stderr=devnull)
+        devnull.close()
+    finally:
+        os.chdir(current_path)
+
+    if returncode != 0:
         return False
 
     notexist = os.path.join(path, "notexist")
