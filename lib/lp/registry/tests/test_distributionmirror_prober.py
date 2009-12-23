@@ -833,6 +833,14 @@ class TestLoggingMixin(unittest.TestCase):
         self.failUnlessEqual('Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
             message)
 
+    def test_logMessage_ensure_message(self):
+        logger = LoggingMixin()
+        logger.log_file = StringIO()
+        logger.logMessage("Probing...")
+        logger.log_file.seek(0)
+        message = logger.log_file.read()
+        self.assertNotEqual(None, message)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
