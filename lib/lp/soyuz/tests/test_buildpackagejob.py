@@ -346,3 +346,80 @@ class TestPendingJobsQuery(TestBuildQueueBase):
             (18, 1016, timedelta(0, 960),       1,      False)]
         self.assertEqual(sorted(result_set), sorted(expected_results))
         # As we can see it was absent as expected.
+
+    def test_hppa_pending_queries(self):
+        # Make sure the query returned by pendingJobsQuery() selects the
+        # proper jobs.
+        #
+        # The hppa builds are as follows:
+        #
+        # j: 3        gedit p: hppa v:False e:0:01:00 *** s: 1001
+        # j: 5      firefox p: hppa v:False e:0:03:00 *** s: 1003
+        # j: 7     cobblers p: hppa v:False e:0:05:00 *** s: 1005
+        # j: 9 thunderpants p: hppa v:False e:0:07:00 *** s: 1007
+        # j:11          apg p: hppa v:False e:0:09:00 *** s: 1009
+        # j:13          vim p: hppa v:False e:0:11:00 *** s: 1011
+        # j:15          gcc p: hppa v:False e:0:13:00 *** s: 1013
+        # j:17        bison p: hppa v:False e:0:15:00 *** s: 1015
+        # j:19         flex p: hppa v:False e:0:17:00 *** s: 1017
+        # j:21     postgres p: hppa v:False e:0:19:00 *** s: 1019
+        #
+        # Please note: the higher scored jobs are lower in the list.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        build, bq = find_job(self, 'vim', 'hppa')
+        bpj = bq.specific_job
+        query = bpj.pendingJobsQuery(1011, *builder_key(build))
+        result_set = store.execute(query).get_all()
+        # The pending hppa jobs with score 1011 or higher are as follows.
+        # Please note that we do not require the results to be in any
+        # particular order.
+
+        # SELECT id,name,title FROM processor
+        #  id | name  |     title      
+        # ----+-------+----------------
+        #   2 | amd64 | AMD 64bit
+        #   3 | hppa  | HPPA Processor
+
+        expected_results = [
+        #   job  score estimated_duration   processor   virtualized
+            (13, 1011, timedelta(0, 660),       3,      False),
+            (15, 1013, timedelta(0, 780),       3,      False),
+            (17, 1015, timedelta(0, 900),       3,      False),
+            (19, 1017, timedelta(0, 1020),      3,      False),
+            (21, 1019, timedelta(0, 1140),      3,      False)]
+        self.assertEqual(sorted(result_set), sorted(expected_results))
+        # How about builds with lower scores? Please note also that no
+        # hppa builds are listed.
+        query = bpj.pendingJobsQuery(0, *builder_key(build))
+        result_set = store.execute(query).get_all()
+        expected_results = [
+        #   job  score estimated_duration   processor   virtualized
+            (3,  1001, timedelta(0, 60),        3,      False),
+            (5,  1003, timedelta(0, 180),       3,      False),
+            (7,  1005, timedelta(0, 300),       3,      False),
+            (9,  1007, timedelta(0, 420),       3,      False),
+            (11, 1009, timedelta(0, 540),       3,      False),
+            (13, 1011, timedelta(0, 660),       3,      False),
+            (15, 1013, timedelta(0, 780),       3,      False),
+            (17, 1015, timedelta(0, 900),       3,      False),
+            (19, 1017, timedelta(0, 1020),      3,      False),
+            (21, 1019, timedelta(0, 1140),      3,      False)]
+        self.assertEqual(sorted(result_set), sorted(expected_results))
+        # How about builds with higher scores?
+        query = bpj.pendingJobsQuery(2500, *builder_key(build))
+        result_set = store.execute(query).get_all()
+        expected_results = []
+        self.assertEqual(sorted(result_set), sorted(expected_results))
+
+        # We will start the 'flex' job now and see whether it still turns
+        # up in our pending job list.
+        assign_to_builder(self, 'flex', 1, 'hppa')
+        query = bpj.pendingJobsQuery(1014, *builder_key(build))
+        result_set = store.execute(query).get_all()
+        expected_results = [
+        #   job  score estimated_duration   processor   virtualized
+            (17, 1015, timedelta(0, 900),       3,      False),
+            (21, 1019, timedelta(0, 1140),      3,      False)]
+        self.assertEqual(sorted(result_set), sorted(expected_results))
+        # As we can see it was absent as expected.
