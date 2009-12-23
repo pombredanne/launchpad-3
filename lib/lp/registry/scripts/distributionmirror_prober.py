@@ -54,11 +54,16 @@ __metaclass__ = type
 
 
 class LoggingMixin:
+    """Common logging class for archive and releases mirror messages."""
 
     def _getTime(self):
+        """Return the current UTC time."""
         return datetime.utcnow()
 
     def logMessage(self, message):
+        """Append a UTC timestamp to the message returned by the mirror
+        prober.
+        """
         timestamp = datetime.ctime(self._getTime())
         self.log_file.write(timestamp + ": " + message)
 
