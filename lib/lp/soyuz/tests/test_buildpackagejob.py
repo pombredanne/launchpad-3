@@ -24,14 +24,6 @@ from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
 
-def almost_equal(a, b, deviation=1):
-    # Compare the values tolerating the given deviation. This used to
-    # avoid spurious failures in time based tests.
-    if abs(a - b) <= deviation:
-        return True
-    else:
-        return False
-
 def find_job(test, name, processor='386'):
     result = None
     for build in test.builds:
@@ -61,93 +53,33 @@ def assign_to_builder(test, job_name, builder_number, processor='386'):
     builder = nth_builder(test, build, builder_number)
     bq.markAsBuilding(builder)
 
-def check_mintime_to_builder(test, build, bq, free_builders, min_time):
-    builders = bq._freeBuildersCount(*builder_key(build))
-    delay = bq._minTimeToNextBuilderAvailable(False)
-    test.assertEqual(builders, free_builders, "Wrong number of free builders")
-    test.assertTrue(
-        almost_equal(delay, min_time),
-        "Wrong min time to next available builder (%s != %s)"
-        % (delay, min_time))
 
-def set_remaining_time_for_running_job(bq, remainder):
-    offset = bq.estimated_duration.seconds - remainder
-    bq.setDateStarted(
-        datetime.utcnow().replace(tzinfo=utc) - timedelta(seconds=offset))
-
-def check_job_delay_estimate(test, build, bq, expected_delay):
-    now = datetime.utcnow()
-    estimate = bq.getEstimatedJobStartTime()
-    estimate -= now
-    estimate = estimate.seconds
-    test.assertTrue(
-        almost_equal(estimate, expected_delay),
-        "Expected (%s) and estimated delay (%s) for %s do not match"
-         % (expected_delay, estimate, build.sourcepackagerelease.name))
-
-
-class TestBuildQueueBase(TestCaseWithFactory):
+class TestBuildJobBase(TestCaseWithFactory):
     """Setup the test publisher and some builders."""
 
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        super(TestBuildQueueBase, self).setUp()
+        super(TestBuildJobBase, self).setUp()
         self.publisher = SoyuzTestPublisher()
         self.publisher.prepareBreezyAutotest()
 
-        # First make nine 'i386' builders.
-        self.i1 = self.factory.makeBuilder(name='i386-v-1')
-        self.i2 = self.factory.makeBuilder(name='i386-v-2')
-        self.i3 = self.factory.makeBuilder(name='i386-v-3')
-        self.i4 = self.factory.makeBuilder(name='i386-v-4')
-        self.i5 = self.factory.makeBuilder(name='i386-v-5')
-        self.i6 = self.factory.makeBuilder(name='i386-n-6', virtualized=False)
-        self.i7 = self.factory.makeBuilder(name='i386-n-7', virtualized=False)
         self.i8 = self.factory.makeBuilder(name='i386-n-8', virtualized=False)
         self.i9 = self.factory.makeBuilder(name='i386-n-9', virtualized=False)
 
-        # Next make seven 'hppa' builders.
         processor_fam = ProcessorFamilySet().getByName('hppa')
         proc = processor_fam.processors[0]
-        self.h1 = self.factory.makeBuilder(name='hppa-v-1', processor=proc)
-        self.h2 = self.factory.makeBuilder(name='hppa-v-2', processor=proc)
-        self.h3 = self.factory.makeBuilder(name='hppa-v-3', processor=proc)
-        self.h4 = self.factory.makeBuilder(name='hppa-v-4', processor=proc)
-        self.h5 = self.factory.makeBuilder(
-            name='hppa-n-5', processor=proc, virtualized=False)
         self.h6 = self.factory.makeBuilder(
             name='hppa-n-6', processor=proc, virtualized=False)
         self.h7 = self.factory.makeBuilder(
             name='hppa-n-7', processor=proc, virtualized=False)
 
-        # Finally make five 'amd64' builders.
-        processor_fam = ProcessorFamilySet().getByName('amd64')
-        proc = processor_fam.processors[0]
-        self.a1 = self.factory.makeBuilder(name='amd64-v-1', processor=proc)
-        self.a2 = self.factory.makeBuilder(name='amd64-v-2', processor=proc)
-        self.a3 = self.factory.makeBuilder(name='amd64-v-3', processor=proc)
-        self.a4 = self.factory.makeBuilder(
-            name='amd64-n-4', processor=proc, virtualized=False)
-        self.a5 = self.factory.makeBuilder(
-            name='amd64-n-5', processor=proc, virtualized=False)
-
         self.builders = dict()
         # x86 native
-        self.builders[(1,False)] = [self.i6, self.i7, self.i8, self.i9]
-        # x86 virtual
-        self.builders[(1,True)] = [
-            self.i1, self.i2, self.i3, self.i4, self.i5]
-
-        # amd64 native
-        self.builders[(2,True)] = [self.a4, self.a5]
-        # amd64 virtual
-        self.builders[(2,False)] = [self.a1, self.a2, self.a3]
+        self.builders[(1,False)] = [self.i8, self.i9]
 
         # hppa native
-        self.builders[(3,True)] = [self.h5, self.h6, self.h7]
-        # hppa virtual
-        self.builders[(3,False)] = [self.h1, self.h2, self.h3, self.h4]
+        self.builders[(3,True)] = [self.h6, self.h7]
 
         # Ensure all builders are operational.
         for builders in self.builders.values():
@@ -160,14 +92,14 @@ class TestBuildQueueBase(TestCaseWithFactory):
         getUtility(IBuilderSet)['frog'].builderok = False
 
 
-class TestPendingJobsQuery(TestBuildQueueBase):
+class TestBuildPackageJob(TestBuildJobBase):
     """Test dispatch time estimates for binary builds (i.e. single build
     farm job type) targetting a single processor architecture and the primary
     archive.
     """
     def setUp(self):
         """Set up some native x86 builds for the test archive."""
-        super(TestPendingJobsQuery, self).setUp()
+        super(TestBuildPackageJob, self).setUp()
         # The builds will be set up as follows:
         #
         # j: 3        gedit p: hppa v:False e:0:01:00 *** s: 1001
