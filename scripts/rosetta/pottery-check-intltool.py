@@ -7,8 +7,12 @@
 
 import _pythonpath
 
-from lp.translations.pottery.detect_intltool import find_intltool_dirs
+
+from lp.translations.pottery.detect_intltool import (
+    find_intltool_dirs, get_translation_domain)
 
 
 if __name__ == "__main__":
-    print "\n".join(find_intltool_dirs())
+    for dirname in find_intltool_dirs():
+        translation_domain = get_translation_domain(dirname) or "<unknown>"
+        print "%s (%s)" % (dirname, translation_domain)
