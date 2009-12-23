@@ -150,7 +150,7 @@ class ConfigFile(object):
 
     def getVariable(self, name):
         """Search the file for a variable definition with this name."""
-        pattern = re.compile("^%s[ \t]*=[ \t]*([^ \t\n]*)" % re.escape(name))
+        pattern = re.compile("^%s[ \t]*=[ \t]*([^\s]*)" % re.escape(name))
         variable = None
         for line in self.content_lines:
             result = pattern.match(line)
@@ -162,15 +162,24 @@ class ConfigFile(object):
 class Substitution(object):
     """Find and replace substitutions.
 
-    Handles a single substitution per variable text.
+    Variable texts may contain other variables which should be substituted
+    for their value. These are either marked by surrounding @ signs (autoconf
+    style) or preceded by a $ sign with optional () (make style).
+
+    This class identifies a single such substitution in a variable text and
+    extract the name of the variable who's value is to be inserted. It also
+    facilitates the actual replacement so that caller does not have to worry
+    about the substitution style that is being used.
     """
 
     autoconf_pattern = re.compile("@([^@]+)@")
-    makefile_pattern = re.compile("\$\(?([^ \t\n\)]+)\)?")
+    makefile_pattern = re.compile("\$\(?([^\s\)]+)\)?")
 
     @staticmethod
     def get(variabletext):
-        """Factory method. Check if a substitution is present in the value.
+        """Factory method.
+
+        Creates a Substitution instance and checks if it found a substitution.
 
         :param variabletext: A variable value with possible substitution.
         :returns: A Substitution object or None if no substitution was found.
