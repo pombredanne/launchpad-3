@@ -189,13 +189,18 @@ class Substitution(object):
             return subst
         return None
 
+    def _searchForPatterns(self):
+        """Search for all the available patterns in variable text."""
+        result = self.autoconf_pattern.search(self.text)
+        if result is None:
+            result = self.makefile_pattern.search(self.text)
+        return result
+
     def __init__(self, variabletext):
         """Extract substitution name from variable text."""
         self.text = variabletext
         self.replaced = False
-        result = self.autoconf_pattern.search(self.text)
-        if result is None:
-            result = self.makefile_pattern.search(self.text)
+        result = self._searchForPatterns()
         if result is None:
             self._replacement = None
             self.name = None
