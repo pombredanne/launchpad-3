@@ -9,6 +9,13 @@ import unittest
 
 import mimetypes
 from lp.testing import TestCase
+from lp.services.mime import customizeMimetypes
+
+
+# In our run-time environment this call is made via the initialization section
+# of buildout.cfg but that initialization is not done for tests so it must be
+# done manually here.
+customizeMimetypes()
 
 
 class TestBzip(TestCase):
@@ -34,7 +41,6 @@ class TestBzip(TestCase):
         (application, encoding) = mimetypes.guess_type(filename)
         self.assertEqual('application/x-tar', application)
         self.assertEqual('bzip2', encoding)
-
 
 
 def test_suite():
