@@ -176,7 +176,7 @@ class TestPersonTraversal(TestCaseWithFactory, TraversalMixin):
         login_person(self.admin)
         team.visibility = PersonVisibility.PRIVATE
         segment = '~%s' % name
-        # Admins can traverse tot he team
+        # Admins can traverse to the team.
         traversed = self.traverse(segment, segment)
         self.assertEqual(team, traversed)
         # Members can traverse to the team.
