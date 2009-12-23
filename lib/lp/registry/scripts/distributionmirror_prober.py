@@ -563,7 +563,7 @@ class MirrorCDImageProberCallbacks(LoggingMixin):
         return mirror
 
     def logMissingURL(self, failure, url):
-        self.log_file.write(
+        self.logMessage(
             "Failed %s: %s\n" % (url, failure.getErrorMessage()))
         return failure
 
