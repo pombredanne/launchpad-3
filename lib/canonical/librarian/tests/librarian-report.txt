@@ -1,15 +1,13 @@
 We have a report that we run as necessary to see what is using the Librarian
 storage.
 
-    >>> import os.path
-    >>> from canonical.config import config
-    >>> path = os.path.join(config.root, 'scripts', 'librarian-report.py')
+    >>> from canonical.launchpad.ftests.script import run_script
+    >>> script = 'scripts/librarian-report.py'
 
-    >>> import subprocess
-    >>> proc = subprocess.Popen(
-    ...     path, stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-    ...     stdin=subprocess.PIPE)
-    >>> (out, ignored) = proc.communicate()
+    >>> rv, out, err = run_script(script)
+    >>> print rv
+    0
+    >>> print err
     >>> print '\n' + out
     <BLANKLINE>
     ...
@@ -19,11 +17,11 @@ storage.
 
 We can filter on date to produce deltas.
 
-    >>> proc = subprocess.Popen(
-    ...     [path, '--from=2005/01/01', '--until=2005/12/31'],
-    ...     stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-    ...     stdin=subprocess.PIPE)
-    >>> (out, ignored) = proc.communicate()
+    >>> rv, out, err = run_script(
+    ...     script, ['--from=2005/01/01', '--until=2005/12/31'])
+    >>> print rv
+    0
+    >>> print err
     >>> print '\n' + out
     <BLANKLINE>
     ...
