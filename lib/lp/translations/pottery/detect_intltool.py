@@ -19,17 +19,15 @@ import os.path
 import re
 from subprocess import call
 
-POTFILES_in = "POTFILES.in"
-
 
 def find_potfiles_in():
-    """ Search the current directory and its subdirectories for POTFILES.in.
+    """Search the current directory and its subdirectories for POTFILES.in.
 
     :returns: A list of names of directories that contain a file POTFILES.in.
     """
     result_dirs = []
     for dirpath, dirnames, dirfiles in os.walk("."):
-        if POTFILES_in in dirfiles:
+        if "POTFILES.in" in dirfiles:
             result_dirs.append(dirpath)
     return result_dirs
 
@@ -76,11 +74,19 @@ def find_intltool_dirs():
 
 
 def get_translation_domain(dirname):
-    """Determine the translation domain by parsing various files.
+    """Get the translation domain for this PO directory.
 
-    Goes through a list of file names and possible variable names to find
-    the translation domains. If the found value contains a substitution, it
-    continues to search for the substitution to return a completed value.
+    Imitates some of the behavior of intltool-update to find out which
+    translation domain the build environment provides. The domain is usually
+    defined in the GETTEXT_PACKAGE variable in one of the build files. Another
+    variant is DOMAIN in the Makevars file. This function goes through the
+    ordered list of these possible locations, the order having been copied
+    from intltool-update, and tries to find a valid value.
+
+    If the found value contains a substitution, either autoconf style (@...@)
+    or make style ($(...)), the search is continued in the same file and down
+    the list of files, now searching for the substitution. Multiple
+    substitutions or multi-level substitutions are not supported.
     """
     locations = [
         ('Makefile.in.in', 'GETTEXT_PACKAGE'),
