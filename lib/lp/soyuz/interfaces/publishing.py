@@ -13,6 +13,7 @@ __all__ = [
     'IBinaryPackagePublishingHistory',
     'ICanPublishPackages',
     'IFilePublishing',
+    'IPublishingEdit',
     'IPublishingSet',
     'ISecureBinaryPackagePublishingHistory',
     'ISecureSourcePackagePublishingHistory',
@@ -230,7 +231,7 @@ class IArchiveSafePublisher(Interface):
         """
 
 
-class IPublishing(Interface):
+class IPublishingView(Interface):
     """Base interface for all *Publishing classes"""
 
     files = Attribute("Files included in this publication.")
@@ -282,17 +283,6 @@ class IPublishing(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
-    @operation_parameters(
-        removed_by=Reference(schema=IPerson, title=_("Removed by")),
-        removal_comment=TextLine(title=_("Removal comment"), required=False))
-    @export_write_operation()
-    def requestDeletion(removed_by, removal_comment=None):
-        """Delete this publication.
-
-        :param removed_by: `IPerson` responsible for the removal.
-        :param removal_comment: optional text describing the removal reason.
-        """
-
     def requestObsolescence():
         """Make this publication obsolete.
 
@@ -327,6 +317,22 @@ class IPublishing(Interface):
 
         :raise: AssertionError if the context publishing record is not in
             PENDING status.
+        """
+
+
+class IPublishingEdit(Interface):
+    """Base interface for writeable *Publishing classes."""
+    export_as_webservice_entry()
+
+    @operation_parameters(
+        removed_by=Reference(schema=IPerson, title=_("Removed by")),
+        removal_comment=TextLine(title=_("Removal comment"), required=False))
+    @export_write_operation()
+    def requestDeletion(removed_by, removal_comment=None):
+        """Delete this publication.
+
+        :param removed_by: `IPerson` responsible for the removal.
+        :param removal_comment: optional text describing the removal reason.
         """
 
 
@@ -392,7 +398,7 @@ class ISourcePackageFilePublishing(IFilePublishing):
             )
 
 
-class ISecureSourcePackagePublishingHistory(IPublishing):
+class ISecureSourcePackagePublishingHistory(IPublishingView):
     """A source package publishing history record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -705,7 +711,7 @@ class IBinaryPackageFilePublishing(IFilePublishing):
             )
 
 
-class ISecureBinaryPackagePublishingHistory(IPublishing):
+class ISecureBinaryPackagePublishingHistory(IPublishingView):
     """A binary package publishing record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
