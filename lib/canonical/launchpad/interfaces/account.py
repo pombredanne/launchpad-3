@@ -308,8 +308,7 @@ class IAccountSpecialRestricted(Interface):
         """
 
 
-class IAccount(IAccountPublic, IAccountModerate, IAccountPrivate,
-               IAccountSpecialRestricted):
+class IAccount(IAccountPublic, IAccountPrivate, IAccountSpecialRestricted):
     """Interface describing an `Account`."""
 
 
