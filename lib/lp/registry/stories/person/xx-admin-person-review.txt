@@ -94,7 +94,7 @@ Partial access for registry experts
 Members of the registry team get partial access to the review accont page to
 be able to suspend spam accounts.
 
-    >>> login('foo.bar@canonical.com')  
+    >>> login('foo.bar@canonical.com')
     >>> registry_expert = factory.makePerson(email='expert@example.com',
     ...                                      password='test')
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
