@@ -3170,12 +3170,6 @@ class PersonIndexView(XRDSContentNegotiationMixin, PersonView):
         if self.request.method == "POST":
             self.processForm()
 
-    def render(self):
-        """See `LaunchpadView`."""
-        if self.context.account_status == AccountStatus.SUSPENDED:
-            self.request.response.setStatus(410)
-        return super(PersonIndexView, self).render()
-
     @property
     def page_title(self):
         context = self.context

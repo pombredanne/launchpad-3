@@ -70,6 +70,7 @@ from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.karma import IKarmaActionSet
+from canonical.launchpad.interfaces.account import AccountStatus
 from canonical.launchpad.interfaces.hwdb import IHWDBApplication
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
@@ -102,7 +103,7 @@ from canonical.launchpad.webapp import (
     stepto)
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import (
-    IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
+    GoneError, IBreadcrumb, ILaunchBag, ILaunchpadRoot, INavigationMenu,
     NotFoundError, POSTToNonCanonicalURL)
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -593,14 +594,20 @@ class LaunchpadRootNavigation(Navigation):
                     status=301)
             else:
                 person = getUtility(IPersonSet).getByName(name[1:])
+                if person is None:
+                    return person
                 # Check to see if this is a team, and if so, whether the
                 # logged in user is allowed to view the team, by virtue of
                 # team membership or Launchpad administration.
-                if (person is None or
-                    not person.is_team or
-                    check_permission('launchpad.View', person)):
-                    return person
-                raise NotFound(self.context, name)
+                if (person.is_team
+                    and not check_permission('launchpad.View', person)):
+                    raise NotFound(self.context, name)
+                # Only admins are permitted to see suspended users.
+                if person.account_status == AccountStatus.SUSPENDED:
+                    if not check_permission('launchpad.Admin', person):
+                        raise GoneError(
+                            'User is suspended: %s' % name)
+                return person
 
         # Dapper and Edgy shipped with https://launchpad.net/bazaar hard coded
         # into the Bazaar Launchpad plugin (part of Bazaar core). So in theory
@@ -937,7 +944,7 @@ class ApplicationButtons(LaunchpadView):
         Button(blueprints="Track blueprints through approval and "
             "implementation."),
         Button(translations="Localize software into your favorite language."),
-        Button(answers="Ask and answer questions about software.")
+        Button(answers="Ask and answer questions about software."),
         ]
 
     def render(self):
