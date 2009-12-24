@@ -1682,14 +1682,30 @@ class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
             return OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user)
 
 
-class AdminDistroSeriesLanguage(OnlyRosettaExpertsAndAdmins):
-    permission = 'launchpad.Admin'
-    usedfor = IDistroSeriesLanguage
-
-
-class AdminDistroSeriesTranslations(OnlyRosettaExpertsAndAdmins):
+class AdminDistroSeriesTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistroSeries` translations.
+
+        Distribution managers can also manage IDistroSeries
+        """
+        return (AdminDistributionTranslations(
+            self.obj.distribution).checkAuthenticated(user))
+
+
+class AdminDistroSeriesLanguage(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistroSeriesLanguage
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IDistroSeriesLanguage` translations.
+
+        Distribution managers can also manage IDistroSeriesLanguage
+        """
+        return (AdminDistroSeriesTranslations(
+            self.obj.distroseries).checkAuthenticated(user))
 
 
 class BranchSubscriptionEdit(AuthorizationBase):
@@ -1746,9 +1762,15 @@ class CodeReviewVoteReferenceEdit(AuthorizationBase):
         The registrant may reassign the request to another entity.
         A member of the review team may assign it to themselves.
         A person to whom it is assigned may delegate it to someone else.
+
+        Anyone with edit permissions on the target branch of the merge
+        proposal can also edit the reviews.
         """
-        return (user.inTeam(self.obj.reviewer) or
-                user.inTeam(self.obj.registrant))
+        if user.inTeam(self.obj.reviewer) or user.inTeam(self.obj.registrant):
+            return True
+        target_access = EditBranch(
+            self.obj.branch_merge_proposal.target_branch)
+        return target_access.checkAuthenticated(user)
 
 
 class CodeReviewCommentView(AuthorizationBase):
