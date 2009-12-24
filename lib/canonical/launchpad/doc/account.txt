@@ -167,11 +167,12 @@ And other account metadata.
     u'No Privileges Person'
 
 When the status is changed, the date_status_set is updated in the
-database.
+database. Only an admin can change the status.
 
     >>> from canonical.launchpad.interfaces.account import AccountStatus
 
     >>> original_date_status_set = account.date_status_set
+    >>> login('foo.bar@canonical.com')
     >>> account.status = AccountStatus.SUSPENDED
 
     # Shouldn't be necessary with Storm!
@@ -181,6 +182,7 @@ database.
     True
 
     >>> account.status = AccountStatus.ACTIVE
+    >>> login('no-priv@canonical.com')
 
 The Account's displayname is synced to the Person's displayname if there
 is one. If the Person.displayname is changed, the Account.displayname is
