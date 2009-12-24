@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
+    'IBuildFarmJobDispatchEstimation',
     'BuildFarmJobType',
     ]
 
@@ -73,6 +74,22 @@ class IBuildFarmJob(Interface):
     def jobAborted():
         """'Job aborted' life cycle event, handle as appropriate."""
 
+    processor = Reference(
+        IProcessor, title=_("Processor"),
+        description=_(
+            "The Processor required by this build farm job. "
+            "For processor-independent job types please return None."))
+
+    virtualized = Attribute(
+        _(
+            "The virtualization setting required by this build farm job. "
+            "For job types that do not care about virtualization please "
+            "return None."))
+
+
+class IBuildFarmJobDispatchEstimation(Interface):
+    """Operations needed for job dipatch time estimation."""
+
     def getPendingJobsQuery(min_score, processor, virtualized):
         """String SELECT query yielding pending jobs with given minimum score.
 
@@ -109,28 +126,11 @@ class IBuildFarmJob(Interface):
 
         :param min_score: the pending jobs selected by the returned
             query should have score >= min_score
-        :param processor: the job of interest (JOI) is tied to this
-            processor, this information can be used to further narrow
-            down the pending jobs that will result from the returned
-            query. Please note: processor independent job types may
-            safely ignore this parameter.
-        :param virtualized: the job of interest (JOI) can only run
-            on builders with this virtualization setting.
-            Again, this information can be used to narrow down the
-            pending jobs that will result from the returned query and
-            processor independent job types may safely ignore it.
+        :param processor: the type of processor that the jobs are expected
+            to run on
+        :param virtualized: whether the jobs are expected to run on the
+            `processor` natively or inside a virtual machine.
         :return: a string SELECT clause that can be used to find
             the pending jobs of the appropriate type.
         """
 
-    processor = Reference(
-        IProcessor, title=_("Processor"),
-        description=_(
-            "The Processor required by this build farm job. "
-            "For processor independent job types please return None."))
-
-    virtualized = Attribute(
-        _(
-            "The virtualization setting required by this build farm job. "
-            "For job types that do not care about virtualization please "
-            "return None."))

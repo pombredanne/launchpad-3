@@ -10,13 +10,13 @@ import pytz
 
 from storm.locals import Int, Reference, Storm
 
-from zope.interface import implements
+from zope.interface import classProvides, implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob)
+    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobDispatchEstimation)
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
@@ -28,6 +28,8 @@ from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 class BuildPackageJob(Storm):
     """See `IBuildPackageJob`."""
     implements(IBuildFarmJob, IBuildPackageJob)
+    classProvides(IBuildFarmJobDispatchEstimation)
+
     __storm_table__ = 'buildpackagejob'
     id = Int(primary=True)
 
