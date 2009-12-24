@@ -643,14 +643,6 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
     def setUp(self):
         TrialTestCase.setUp(self)
         PullerBranchTestCase.setUp(self)
-        # XXX MichaelHudson, 2009-11-21, bug=464174:
-        # TestCaseWithMemoryTransport likes to set these environment variables
-        # to unicode strings and Twisted's spawnProcess doesn't like that
-        # (reasonably enough).
-        os.environ['BZR_HOME'] = os.environ['BZR_HOME'].encode(
-            sys.getfilesystemencoding())
-        os.environ['HOME'] = os.environ['HOME'].encode(
-            sys.getfilesystemencoding())
         self.makeCleanDirectory(config.codehosting.hosted_branches_root)
         self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
         branch_id = self.factory.makeAnyBranch(

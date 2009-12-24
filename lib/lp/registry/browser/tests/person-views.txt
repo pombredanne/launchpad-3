@@ -93,36 +93,6 @@ If the user has no homepage content, the view's value is None.
     None
 
 
-Account status and profile page status codes
---------------------------------------------
-
-The PersonIndexView sets the HTTP status code is 410 when the profile is for
-a suspended account.
-
-    # Only admins can change an account.
-    >>> login_person(active_user)
-    >>> IMasterObject(invalid_user.account).status = AccountStatus.SUSPENDED
-    >>> login(ANONYMOUS)
-    >>> view = create_initialized_view(
-    ...     invalid_user, '+index', principal=ANONYMOUS,
-    ...     server_url='http://launchpad.dev',
-    ...     path_info="/~%s" % invalid_user.name)
-
-    >>> content = view()
-    >>> view.request.response.getStatus()
-    410
-
-Otherwise it does nothing (which in Zope's case the response is 599).
-
-    >>> view = create_initialized_view(
-    ...     active_user, '+index', principal=ANONYMOUS,
-    ...     server_url='http://launchpad.dev',
-    ...     path_info="/~%s" % active_user.name)
-    >>> content = view()
-    >>> view.request.response.getStatus()
-    599
-
-
 Email address disclosure
 ------------------------
 
