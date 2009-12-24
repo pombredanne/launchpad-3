@@ -215,28 +215,39 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
         fromlist = list(fromlist)
         module_all = getattr(module, '__all__', None)
         # "from foo import *" is naughty if foo has no __all__
-        if fromlist == ['*'] and module_all is None:
-            error = FromStarPolicyViolation(import_into, name)
-            naughty_imports.add(error)
-            raise error
-        elif (fromlist != ['*'] and module_all and
-              not is_test_module(import_into)):
-            # "from foo import bar" is naughty if bar isn't in foo.__all__
-            # (and foo actually has an __all__).  Unless foo is within a tests
-            # or ftests module or bar is itself a module.
+        if module_all is None:
+            if fromlist == ['*']:
+                error = FromStarPolicyViolation(import_into, name)
+                naughty_imports.add(error)
+                raise error
+        else:
+            # "from foo import *" is allowed if foo has an __all__
+            if fromlist == ['*']:
+                return module
+            # We don't bother checking imports into test modules.
+            if is_test_module(import_into):
+                return module
+            # Check that each thing we are importing into the module is either
+            # in __all__, is a module itself, or is a specific exception.
             for attrname in fromlist:
+                if attrname == '__doc__':
+                    # You can always import __doc__.
+                    continue
+                if isinstance(
+                    getattr(module, attrname, None), types.ModuleType):
+                    # You can import modules even when they aren't declared in
+                    # __all__.
+                    continue
                 if (attrname in ('adapter', 'provideHandler')
                     and module.__name__ == 'zope.component'):
                     # 'adapter' and 'provideHandler' are not in
                     # zope.component.__all__, but that's where they should be
                     # imported from.
                     continue
-                if attrname != '__doc__' and attrname not in module_all:
-                    if not isinstance(
-                        getattr(module, attrname, None), types.ModuleType):
-                        error = NotInModuleAllPolicyViolation(
-                            import_into, name, attrname)
-                        naughty_imports.add(error)
+                if attrname not in module_all:
+                    error = NotInModuleAllPolicyViolation(
+                        import_into, name, attrname)
+                    naughty_imports.add(error)
     return module
 
 
