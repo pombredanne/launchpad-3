@@ -209,15 +209,17 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
         if import_into not in warned_database_imports:
             raise error
 
+    # We only want to warn about "from foo import bar" violations in our
+    # own code.
     if fromlist is not None and import_into.startswith('canonical'):
-        # We only want to warn about "from foo import bar" violations in our
-        # own code.
-        if list(fromlist) == ['*'] and not hasattr(module, '__all__'):
-            # "from foo import *" is naughty if foo has no __all__
+        fromlist = list(fromlist)
+        module_all = getattr(module, '__all__', None)
+        # "from foo import *" is naughty if foo has no __all__
+        if fromlist == ['*'] and module_all is None:
             error = FromStarPolicyViolation(import_into, name)
             naughty_imports.add(error)
             raise error
-        elif (list(fromlist) != ['*'] and hasattr(module, '__all__') and
+        elif (fromlist != ['*'] and module_all and
               not is_test_module(import_into)):
             # "from foo import bar" is naughty if bar isn't in foo.__all__
             # (and foo actually has an __all__).  Unless foo is within a tests
@@ -229,14 +231,12 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
                     # zope.component.__all__, but that's where they should be
                     # imported from.
                     continue
-                if attrname != '__doc__' and attrname not in module.__all__:
+                if attrname != '__doc__' and attrname not in module_all:
                     if not isinstance(
                         getattr(module, attrname, None), types.ModuleType):
                         error = NotInModuleAllPolicyViolation(
                             import_into, name, attrname)
                         naughty_imports.add(error)
-                        # Not raising on NotInModuleAllPolicyViolation yet.
-                        #raise error
     return module
 
 
