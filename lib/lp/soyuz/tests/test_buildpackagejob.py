@@ -9,17 +9,20 @@ from zope.component import getUtility
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJobDispatchEstimation)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.builder import IBuilderSet
-from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
-
 
 def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
@@ -190,9 +193,9 @@ class TestBuildPackageJob(TestBuildJobBase):
                 status=PackagePublishingStatus.PUBLISHED,
                 archive=self.non_ppa,
                 architecturehintlist='any').createMissingBuilds())
-        # Set up the builds so that we have a lot of variety when it comes
-        # to score and estimated duration etc. so that the queries under test
-        # get exercised properly.
+        # We want the builds to have a lot of variety when it comes to score
+        # and estimated duration etc. so that the queries under test get
+        # exercised properly.
         score = 1000
         duration = 0
         for build in self.builds:
@@ -376,3 +379,6 @@ class TestBuildPackageJob(TestBuildJobBase):
         build, bq = find_job(self, 'flex', 'hppa')
         bpj = bq.specific_job
         self.assertEqual(bpj.virtualized, False)
+
+    def test_provides_dispatch_estimation_interface(self):
+        verifyObject(IBuildFarmJobDispatchEstimation, BuildPackageJob)
