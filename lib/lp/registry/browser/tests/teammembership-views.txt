@@ -62,8 +62,7 @@ is applied during the stepto traversal--it is not a named view in ZCML.
     >>> from lp.registry.browser.person import TeamInvitationView
 
     >>> login_person(team_owner)
-    >>> super_team.addMember(team, team_owner)
-    True
+    >>> ignored = super_team.addMember(team, team_owner)
     >>> membership = membership_set.getByPersonAndTeam(team, super_team)
     >>> login_person(team.teamowner)
     >>> view = TeamInvitationView(membership, request)

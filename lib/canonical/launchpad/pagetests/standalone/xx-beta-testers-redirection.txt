@@ -239,7 +239,7 @@ Add Foo Bar to the beta team.
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
     >>> launchpad_beta_testers = getUtility(
     ...     ILaunchpadCelebrities).launchpad_beta_testers
-    >>> launchpad_beta_testers.addMember(foo_bar, reviewer=foo_bar)
+    >>> ignored = launchpad_beta_testers.addMember(foo_bar, reviewer=foo_bar)
     >>> foo_bar.inTeam(launchpad_beta_testers)
     True
 

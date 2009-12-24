@@ -941,7 +941,7 @@ section will still not appear for anyone but people with lp.edit.
 
     >>> login("admin@canonical.com")
     >>> team = factory.makeTeam()
-    >>> team.addMember(sample_person, sample_person)
+    >>> ignored = team.addMember(sample_person, sample_person)
     >>> ppa = factory.makeArchive(distribution=ubuntu, owner=team)
 
     >>> login(ANONYMOUS)
