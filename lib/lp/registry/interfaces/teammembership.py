@@ -14,6 +14,7 @@ __all__ = [
     'ITeamMembershipSet',
     'ITeamParticipation',
     'TeamMembershipStatus',
+    'UserCannotChangeMembershipSilently',
     ]
 
 from zope.schema import Bool, Choice, Datetime, Int, Text
