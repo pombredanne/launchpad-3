@@ -232,7 +232,7 @@ class IArchiveSafePublisher(Interface):
 
 
 class IPublishingView(Interface):
-    """Base interface for all *Publishing classes"""
+    """Base interface for all Publishing classes"""
 
     files = Attribute("Files included in this publication.")
     secure_record = Attribute("Correspondent secure package history record.")
@@ -321,7 +321,7 @@ class IPublishingView(Interface):
 
 
 class IPublishingEdit(Interface):
-    """Base interface for writeable *Publishing classes."""
+    """Base interface for writeable Publishing classes."""
     export_as_webservice_entry()
 
     @operation_parameters(
