@@ -90,7 +90,7 @@ class IBuildFarmJob(Interface):
 class IBuildFarmJobDispatchEstimation(Interface):
     """Operations needed for job dipatch time estimation."""
 
-    def getPendingJobsQuery(min_score, processor, virtualized):
+    def composePendingJobsQuery(min_score, processor, virtualized):
         """String SELECT query yielding pending jobs with given minimum score.
 
         This will be used for the purpose of job dispatch time estimation
@@ -125,9 +125,9 @@ class IBuildFarmJobDispatchEstimation(Interface):
         set.
 
         :param min_score: the pending jobs selected by the returned
-            query should have score >= min_score
+            query should have score >= min_score.
         :param processor: the type of processor that the jobs are expected
-            to run on
+            to run on.
         :param virtualized: whether the jobs are expected to run on the
             `processor` natively or inside a virtual machine.
         :return: a string SELECT clause that can be used to find

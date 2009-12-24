@@ -223,7 +223,7 @@ class TestBuildPackageJob(TestBuildJobBase):
 
         build, bq = find_job(self, 'apg')
         bpj = bq.specific_job
-        query = bpj.getPendingJobsQuery(1010, *builder_key(build))
+        query = bpj.composePendingJobsQuery(1010, *builder_key(build))
         result_set = store.execute(query).get_all()
         # The pending x86 jobs with score 1010 or higher are as follows.
         # Please note that we do not require the results to be in any
@@ -248,7 +248,7 @@ class TestBuildPackageJob(TestBuildJobBase):
         self.assertEqual(sorted(result_set), sorted(expected_results))
         # How about builds with lower scores? Please note also that no
         # hppa builds are listed.
-        query = bpj.getPendingJobsQuery(0, *builder_key(build))
+        query = bpj.composePendingJobsQuery(0, *builder_key(build))
         result_set = store.execute(query).get_all()
         expected_results = [
         #   job  score estimated_duration   processor   virtualized
@@ -264,7 +264,7 @@ class TestBuildPackageJob(TestBuildJobBase):
             (4,  1002, timedelta(0, 120),       1,      False)]
         self.assertEqual(sorted(result_set), sorted(expected_results))
         # How about builds with higher scores?
-        query = bpj.getPendingJobsQuery(2500, *builder_key(build))
+        query = bpj.composePendingJobsQuery(2500, *builder_key(build))
         result_set = store.execute(query).get_all()
         expected_results = []
         self.assertEqual(sorted(result_set), sorted(expected_results))
@@ -272,7 +272,7 @@ class TestBuildPackageJob(TestBuildJobBase):
         # We will start the 'flex' job now and see whether it still turns
         # up in our pending job list.
         assign_to_builder(self, 'flex', 1)
-        query = bpj.getPendingJobsQuery(1016, *builder_key(build))
+        query = bpj.composePendingJobsQuery(1016, *builder_key(build))
         result_set = store.execute(query).get_all()
         expected_results = [
         #   job  score estimated_duration   processor   virtualized
@@ -302,7 +302,7 @@ class TestBuildPackageJob(TestBuildJobBase):
 
         build, bq = find_job(self, 'vim', 'hppa')
         bpj = bq.specific_job
-        query = bpj.getPendingJobsQuery(1011, *builder_key(build))
+        query = bpj.composePendingJobsQuery(1011, *builder_key(build))
         result_set = store.execute(query).get_all()
         # The pending hppa jobs with score 1011 or higher are as follows.
         # Please note that we do not require the results to be in any
@@ -326,7 +326,7 @@ class TestBuildPackageJob(TestBuildJobBase):
         self.assertEqual(sorted(result_set), sorted(expected_results))
         # How about builds with lower scores? Please note also that no
         # hppa builds are listed.
-        query = bpj.getPendingJobsQuery(0, *builder_key(build))
+        query = bpj.composePendingJobsQuery(0, *builder_key(build))
         result_set = store.execute(query).get_all()
         expected_results = [
         #   job  score estimated_duration   processor   virtualized
@@ -342,7 +342,7 @@ class TestBuildPackageJob(TestBuildJobBase):
             (21, 1019, timedelta(0, 1140),      3,      False)]
         self.assertEqual(sorted(result_set), sorted(expected_results))
         # How about builds with higher scores?
-        query = bpj.getPendingJobsQuery(2500, *builder_key(build))
+        query = bpj.composePendingJobsQuery(2500, *builder_key(build))
         result_set = store.execute(query).get_all()
         expected_results = []
         self.assertEqual(sorted(result_set), sorted(expected_results))
@@ -350,7 +350,7 @@ class TestBuildPackageJob(TestBuildJobBase):
         # We will start the 'flex' job now and see whether it still turns
         # up in our pending job list.
         assign_to_builder(self, 'flex', 1, 'hppa')
-        query = bpj.getPendingJobsQuery(1014, *builder_key(build))
+        query = bpj.composePendingJobsQuery(1014, *builder_key(build))
         result_set = store.execute(query).get_all()
         expected_results = [
         #   job  score estimated_duration   processor   virtualized

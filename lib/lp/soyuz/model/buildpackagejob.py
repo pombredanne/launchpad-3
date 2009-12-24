@@ -173,7 +173,7 @@ class BuildPackageJob(Storm):
         self.build.buildstate = BuildStatus.BUILDING
 
     @staticmethod
-    def getPendingJobsQuery(min_score, processor, virtualized):
+    def composePendingJobsQuery(min_score, processor, virtualized):
         """See `IBuildFarmJob`."""
         return """
             SELECT 
