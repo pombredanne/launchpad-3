@@ -64,14 +64,15 @@ Attempting to merge a non-existent team results in an error.
     Invalid value
 
 
-== People merge ==
+People merge
+------------
 
 For regular users to merge Launchpad profiles, we require that they confirm
 ownership of the merged profile's email addresses, so it's not possible for
 them to merge a profile which has no email address.
 
     >>> admin = person_set.getByName('name16')
-    >>> login_person(admin)
+    >>> login_person(registry_expert)
 
     # First we need to forge a person without a single email address.
     >>> from lp.registry.interfaces.person import PersonCreationRationale

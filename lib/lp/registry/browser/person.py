@@ -1118,8 +1118,14 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+reassign'
         text = 'Change owner'
         summary = 'Change the owner of the team'
-        # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Moderate')
+    def delete(self):
+        target = '+delete'
+        text = 'Delete'
+        summary = 'Delete this team'
+        return Link(target, text, summary, icon='trash-icon')
 
     @enabled_with_permission('launchpad.View')
     def members(self):
@@ -5865,7 +5871,7 @@ class TeamIndexMenu(TeamNavigationMenuBase):
     usedfor = ITeamIndexMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('edit', 'join', 'add_member', 'add_my_teams',
+    links = ('edit', 'delete', 'join', 'add_member', 'add_my_teams',
              'leave')
 
 

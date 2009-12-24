@@ -76,7 +76,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
-    IPerson, ITeam, PersonVisibility)
+    IPerson, IPersonSet, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
@@ -529,7 +529,6 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
             return True
         return user.inTeam(self.obj.target.owner)
 
-
 class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IMilestone
@@ -540,6 +539,11 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
         them."""
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class ModeratePersonSetByExpertsOrAdmins(ReviewByRegistryExpertsOrAdmins):
+    permission = 'launchpad.Moderate'
+    usedfor = IPersonSet
 
 
 class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
@@ -553,18 +557,6 @@ class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
         return user.inTeam(self.obj.teamowner) or user.inTeam(admins)
 
 
-class ModerateTeamByRegistryExpertsTeamOrLaunchpadAdmins(AuthorizationBase):
-    permission = 'launchpad.Moderate'
-    usedfor = ITeam
-
-    def checkAuthenticated(self, user):
-        """Only Registry expoerts and Launchpad admins need this."""
-        celebrities = getUtility(ILaunchpadCelebrities)
-        admins = celebrities.admin
-        registry_experts = celebrities.registry_experts
-        return user.inTeam(registry_experts) or user.inTeam(admins)
-
-
 class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     permission = 'launchpad.Edit'
     usedfor = ITeam
@@ -575,6 +567,17 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         The Launchpad admins also have launchpad.Edit on all teams.
         """
         return can_edit_team(self.obj, user)
+
+
+class ModerateTeam(ReviewByRegistryExpertsOrAdmins):
+    permission = 'launchpad.Moderate'
+    usedfor = ITeam
+
+    def checkAuthenticated(self, user):
+        """Launchpad admin, registry experts, team admins and owners."""
+        return (
+            super(ModerateTeam, self).checkAuthenticated(user)
+            or can_edit_team(self.obj, user))
 
 
 class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):

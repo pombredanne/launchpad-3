@@ -1170,6 +1170,12 @@
             permission="launchpad.Edit"
             class="lp.registry.browser.team.ProposedTeamMembersEditView"
             template="../templates/team-editproposed.pt"/>
+        <browser:page
+            for="lp.registry.interfaces.person.ITeam"
+            permission="launchpad.Moderate"
+            class="lp.registry.browser.peoplemerge.DeleteTeamView"
+            name="+delete"
+            template="../templates/team-delete.pt"/>
         <browser:defaultView
             for="lp.registry.interfaces.person.IPersonSet"
             name="+index"/>
