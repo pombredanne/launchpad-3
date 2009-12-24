@@ -57,6 +57,7 @@ warned_database_imports = text_lines_to_set("""
 # that are allowed to be imported, whether or not they are in __all__.
 valid_imports_not_in_all = {
     'zope.component': set(['adapter', 'provideHandler']),
+    'textwrap': set(['dedent']),
     }
 
 
@@ -185,8 +186,7 @@ def import_fascist(module_name, globals={}, locals={}, from_list=[]):
             raise
     # Python's re module imports some odd stuff every time certain regexes
     # are used.  Let's optimize this.
-    # Also, 'dedent' is not in textwrap.__all__.
-    if module_name == 'sre' or module_name == 'textwrap':
+    if module_name == 'sre':
         return module
 
     # Mailman 2.1 code base is originally circa 1998, so yeah, no __all__'s.
