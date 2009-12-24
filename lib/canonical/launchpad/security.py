@@ -256,6 +256,10 @@ class ViewAccount(EditAccountBySelfOrAdmin):
 class SpecialAccount(EditAccountBySelfOrAdmin):
     permission = 'launchpad.Special'
 
+    def checkAuthenticated(self, user):
+        """Extend permission to registry experts."""
+        return is_admin_or_registry_expert(user)
+
 
 class ModerateAccountByRegistryExpert(AuthorizationBase):
     usedfor = IAccount

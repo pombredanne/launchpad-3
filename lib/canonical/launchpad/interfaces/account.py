@@ -10,7 +10,6 @@ __all__ = [
     'AccountStatus',
     'AccountCreationRationale',
     'IAccount',
-    'IAccountModerate',
     'IAccountPrivate',
     'IAccountPublic',
     'IAccountSet',
@@ -273,12 +272,9 @@ class IAccountPrivate(Interface):
         """
 
 
-class IAccountModerate(Interface):
-    """Attributes of `IAccount` protected with launchpad.Moderate.
+class IAccountSpecialRestricted(Interface):
+    """Attributes of `IAccount` protected with launchpad.Special."""
 
-    These are the attributes which are readable with launchpad.Moderate, in
-    addition to the public attributes which include the status.
-    """
     date_status_set = Datetime(
         title=_('Date status last modified.'),
         required=True, readonly=False)
@@ -286,10 +282,6 @@ class IAccountModerate(Interface):
     status_comment = Text(
         title=_("Why are you deactivating your account?"),
         required=False, readonly=False)
-
-
-class IAccountSpecialRestricted(Interface):
-    """Attributes of `IAccount` protected with launchpad.Special."""
 
     # XXX sinzui 2008-07-14 bug=248518:
     # This method would assert the password is not None, but
