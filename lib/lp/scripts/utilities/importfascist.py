@@ -52,6 +52,14 @@ warned_database_imports = text_lines_to_set("""
     """)
 
 
+# Sometimes, third-party modules don't export all of their public APIs through
+# __all__. The following dict maps from such modules to a list of attributes
+# that are allowed to be imported, whether or not they are in __all__.
+valid_imports_not_in_all = {
+    'zope.component': set(['adapter', 'provideHandler']),
+    }
+
+
 def database_import_allowed_into(module_path):
     """Return True if database code is allowed to be imported into the given
     module path.  Otherwise, returns False.
@@ -232,6 +240,8 @@ def import_fascist(module_name, globals={}, locals={}, from_list=[]):
             if is_test_module(import_into):
                 # We don't bother checking imports into test modules.
                 return module
+            allowed_from_list = valid_imports_not_in_all.get(
+                module_name, set())
             for attrname in from_list:
                 # Check that each thing we are importing into the module is
                 # either in __all__, is a module itself, or is a specific
@@ -244,11 +254,9 @@ def import_fascist(module_name, globals={}, locals={}, from_list=[]):
                     # You can import modules even when they aren't declared in
                     # __all__.
                     continue
-                if (attrname in ('adapter', 'provideHandler')
-                    and module.__name__ == 'zope.component'):
-                    # 'adapter' and 'provideHandler' are not in
-                    # zope.component.__all__, but that's where they should be
-                    # imported from.
+                if attrname in allowed_from_list:
+                    # Some things can be imported even if they aren't in
+                    # __all__.
                     continue
                 if attrname not in module_all:
                     error = NotInModuleAllPolicyViolation(
