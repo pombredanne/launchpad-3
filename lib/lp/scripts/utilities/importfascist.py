@@ -156,11 +156,11 @@ class NotFoundPolicyViolation(JackbootError):
 
 
 # pylint: disable-msg=W0102,W0602
-def import_fascist(module_name, globals={}, locals={}, fromlist=[]):
+def import_fascist(module_name, globals={}, locals={}, from_list=[]):
     global naughty_imports
 
     try:
-        module = original_import(module_name, globals, locals, fromlist)
+        module = original_import(module_name, globals, locals, from_list)
     except ImportError:
         # XXX sinzui 2008-04-17 bug=277274:
         # import_fascist screws zope configuration module which introspects
@@ -172,7 +172,7 @@ def import_fascist(module_name, globals={}, locals={}, fromlist=[]):
         # module.
         if module_name.startswith('zope.app.layers.'):
             module_name = module_name[16:]
-            module = original_import(module_name, globals, locals, fromlist)
+            module = original_import(module_name, globals, locals, from_list)
         else:
             raise
     # Python's re module imports some odd stuff every time certain regexes
@@ -199,7 +199,7 @@ def import_fascist(module_name, globals={}, locals={}, fromlist=[]):
     # Check the "NotFoundError" policy.
     if (import_into.startswith('canonical.launchpad.database') and
         module_name == 'zope.exceptions'):
-        if fromlist and 'NotFoundError' in fromlist:
+        if from_list and 'NotFoundError' in from_list:
             raise NotFoundPolicyViolation(import_into)
 
     # Check the database import policy.
@@ -214,25 +214,25 @@ def import_fascist(module_name, globals={}, locals={}, fromlist=[]):
             raise error
 
     # Check the import from __all__ policy.
-    if fromlist is not None and import_into.startswith('canonical'):
+    if from_list is not None and import_into.startswith('canonical'):
         # We only want to warn about "from foo import bar" violations in our
         # own code.
-        fromlist = list(fromlist)
+        from_list = list(from_list)
         module_all = getattr(module, '__all__', None)
         if module_all is None:
-            if fromlist == ['*']:
+            if from_list == ['*']:
                 # "from foo import *" is naughty if foo has no __all__
                 error = FromStarPolicyViolation(import_into, module_name)
                 naughty_imports.add(error)
                 raise error
         else:
-            if fromlist == ['*']:
+            if from_list == ['*']:
                 # "from foo import *" is allowed if foo has an __all__
                 return module
             if is_test_module(import_into):
                 # We don't bother checking imports into test modules.
                 return module
-            for attrname in fromlist:
+            for attrname in from_list:
                 # Check that each thing we are importing into the module is
                 # either in __all__, is a module itself, or is a specific
                 # exception.
