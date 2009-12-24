@@ -193,7 +193,8 @@ The owner of a PPA can delete packages.
     >>> logout()
     >>> from canonical.launchpad.testing.pages import webservice_for_person
     >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
-    >>> cprov_webservice = webservice_for_person(cprov, permission=OAuthPermission.WRITE_PUBLIC)
+    >>> cprov_webservice = webservice_for_person(cprov, 
+    ...     permission=OAuthPermission.WRITE_PUBLIC)
     >>> response = cprov_webservice.named_post(
     ...     package, 'requestDeletion', removed_by=cprov_link,
     ...     removal_comment="No longer needed")
