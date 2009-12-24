@@ -76,6 +76,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus, IPublishingSet)
+from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
 from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
@@ -1095,6 +1096,9 @@ class Archive(SQLBase):
         # Find and validate the source package names in source_names.
         sources = []
         for name in source_names:
+            # Check to see if the source package exists, and raise a useful
+            # error if it doesn't.
+            getUtility(ISourcePackageNameSet)[name]
             # Grabbing the item at index 0 ensures it's the most recent
             # publication.
             sources.append(
@@ -1106,6 +1110,9 @@ class Archive(SQLBase):
     def syncSource(self, source_name, version, from_archive, to_pocket,
                    to_series=None, include_binaries=False):
         """See `IArchive`."""
+        # Check to see if the source package exists, and raise a useful error
+        # if it doesn't.
+        getUtility(ISourcePackageNameSet)[source_name]
         # Find and validate the source package version required.
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True)[0]
