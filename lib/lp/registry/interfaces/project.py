@@ -63,8 +63,8 @@ class IProjectPublic(
     ICanGetMilestonesDirectly, IHasAppointedDriver, IHasBranches, IHasBugs,
     IHasDrivers, IHasBranchVisibilityPolicy, IHasIcon, IHasLogo,
     IHasMentoringOffers, IHasMergeProposals, IHasMilestones, IHasMugshot,
-    IHasOwner, IHasSpecifications, IHasSprints, IHasTranslationGroup,
-    IMakesAnnouncements, IKarmaContext, IPillar, IRootContext):
+    IHasOwner, IHasSpecifications, IHasSprints, IMakesAnnouncements,
+    IKarmaContext, IPillar, IRootContext):
     """Public IProject properties."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -279,7 +279,8 @@ class IProjectPublic(
         """Return a ProjectSeries object with name `series_name`."""
 
 
-class IProject(IProjectPublic, IStructuralSubscriptionTarget):
+class IProject(IProjectPublic, IStructuralSubscriptionTarget,
+    IHasTranslationGroup):
     """A Project."""
 
     export_as_webservice_entry('project_group')

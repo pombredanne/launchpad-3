@@ -273,9 +273,14 @@
             interface="canonical.launchpad.interfaces.IFAQCollection"/>
         <allow
             interface="canonical.launchpad.interfaces.IQuestionCollection"/>
+        <allow
+            interface="lp.translations.interfaces.translationgroup.IHasTranslationGroup"/>
         <require
             permission="launchpad.Edit"
             set_schema="lp.registry.interfaces.project.IProjectPublic"/>
+        <require
+            permission="launchpad.TranslationsAdmin"
+            set_schema="lp.translations.interfaces.translationgroup.IHasTranslationGroup"/>
 
         <!-- IStructuralSubscriptionTarget -->
 
@@ -1077,8 +1082,7 @@
                             redeemSubscriptionVoucher releaseroot
                             remote_product screenshotsurl
                             security_contact sourceforgeproject
-                            summary title translationgroup
-                            translationpermission wikiurl"/>
+                            summary title wikiurl"/>
 
         <!-- mark 2006-04-10 I put "name" in the admin group because
                         with Bazaar now in place, lots of people can have personal
@@ -1094,6 +1098,9 @@
         <require
             permission="launchpad.Admin"
             set_attributes="name autoupdate registrant"/>
+        <require
+            permission="launchpad.TranslationsAdmin"
+            set_attributes="translationgroup translationpermission"/>
         <require
             permission="zope.Public"
             attributes="
@@ -1370,10 +1377,13 @@
             interface="lp.registry.interfaces.distribution.IDistributionDriverRestricted"/>
         <require
             permission="launchpad.Edit"
-            set_attributes="displayname title summary description                                                                                         translation_focus translationgroup translationpermission                                                                                         driver members owner security_contact mirror_admin                                                                                         homepage_content icon logo mugshot enable_bug_expiration                                                                                         bug_reporting_guidelines official_blueprints                                                                                         official_malone official_rosetta official_answers                                                                                         official_bug_tags"/>
+            set_attributes="displayname title summary description                                                                                         translation_focus                                                                                          driver members owner security_contact mirror_admin                                                                                         homepage_content icon logo mugshot enable_bug_expiration                                                                                         bug_reporting_guidelines official_blueprints                                                                                         official_malone official_rosetta official_answers                                                                                         official_bug_tags"/>
         <require
             permission="launchpad.TranslationsAdmin"
-            set_attributes="language_pack_admin"/>
+            set_attributes="
+                language_pack_admin
+                translationgroup
+                translationpermission"/>
 
         <!-- IHasAliases -->
 

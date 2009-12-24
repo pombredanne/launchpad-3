@@ -799,10 +799,10 @@
         template="../templates/hastranslationimports-index.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
-        name="+changetranslators"
+        name="+settings"
         for="lp.registry.interfaces.product.IProduct"
-        class="lp.translations.browser.product.ProductChangeTranslatorsView"
-        permission="launchpad.Edit"
+        class="lp.translations.browser.product.ProductChangeSettingsView"
+        permission="launchpad.TranslationsAdmin"
         template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:pages
@@ -852,10 +852,10 @@
         class="lp.translations.browser.translations.HelpTranslateButtonView"
         permission="zope.Public"/>
     <browser:page
-        name="+changetranslators"
+        name="+settings"
         for="lp.registry.interfaces.project.IProject"
-        class="lp.translations.browser.project.ProjectChangeTranslatorsView"
-        permission="launchpad.Edit"
+        class="lp.translations.browser.project.ProjectChangeSettingsView"
+        permission="launchpad.TranslationsAdmin"
         template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
 
@@ -890,7 +890,7 @@
         name="+settings"
         for="lp.registry.interfaces.distribution.IDistribution"
         class="lp.translations.browser.distribution.DistributionSettingsView"
-        permission="launchpad.Edit"
+        permission="launchpad.TranslationsAdmin"
         template="../templates/set-translators.pt"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page

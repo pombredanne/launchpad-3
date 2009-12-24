@@ -28,7 +28,7 @@ class ProjectTranslationsMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Edit')
     def settings(self):
         text = 'Settings'
-        return Link('+changetranslators', text, icon='edit')
+        return Link('+settings', text, icon='edit')
 
     def products(self):
         text = 'Products'
@@ -52,7 +52,7 @@ class ProjectView(LaunchpadView):
         return list(all_products - translatables)
 
 
-class ProjectChangeTranslatorsView(TranslationsMixin, ProjectEditView):
+class ProjectChangeSettingsView(TranslationsMixin, ProjectEditView):
     label = "Set permissions and policies"
     page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]

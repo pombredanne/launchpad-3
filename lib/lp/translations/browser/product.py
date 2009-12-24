@@ -41,7 +41,7 @@ class ProductTranslationsMenu(NavigationMenu):
     @enabled_with_permission('launchpad.Edit')
     def settings(self):
         text = 'Settings'
-        return Link('+changetranslators', text, icon='edit')
+        return Link('+settings', text, icon='edit')
 
     @enabled_with_permission('launchpad.AnyPerson')
     def translationdownload(self):
@@ -62,7 +62,7 @@ class ProductTranslationsMenu(NavigationMenu):
         return Link(link, text, icon='translation')
 
 
-class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
+class ProductChangeSettingsView(TranslationsMixin, ProductEditView):
     label = "Set permissions and policies"
     page_title = "Permissions and policies"
     field_names = ["translationgroup", "translationpermission"]

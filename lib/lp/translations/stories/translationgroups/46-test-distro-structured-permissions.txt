@@ -29,7 +29,7 @@ as the translation group for the netapplet product...
 ... and its associated project, GNOME.
 
     >>> admin_browser.open(
-    ...     'http://translations.launchpad.dev/gnome/+changetranslators')
+    ...     'http://translations.launchpad.dev/gnome/+settings')
     >>> admin_browser.getControl('Translation group').displayValue = [
     ...     'Just a testing team']
     >>> admin_browser.getControl(

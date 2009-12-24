@@ -480,6 +480,20 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
         return is_admin_or_rosetta_expert(user)
 
 
+class AdminProjectTranslations(AuthorizationBase):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IProject
+
+    def checkAuthenticated(self, user):
+        """Is the user able to manage `IProject` translations settings?
+
+        Any Launchpad/Launchpad Translations administrator or owners are
+        able to change translation settings for a product.
+        """
+        return (user.inTeam(self.obj.owner) or
+                is_admin_or_rosetta_expert(user))
+
+
 class AdminProductTranslations(AuthorizationBase):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IProduct

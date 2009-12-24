@@ -1,13 +1,33 @@
+Product and projects translations settings
+==========================================
+
+Accessing the translations settings page
+----------------------------------------
+
 The translation work for a product can be assigned to a translation group.
 
-    >>> admin_browser.open(
-    ... 'http://translations.launchpad.dev/evolution/+changetranslators')
-    >>> print admin_browser.title
+    >>> from zope.component import getUtility
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> login(ANONYMOUS)
+    >>> rosetta_expert = factory.makePerson(
+    ...     email='re@example.com', password='test')
+    >>> rosetta_expert.join(
+    ...     getUtility(ILaunchpadCelebrities).rosetta_experts)
+    >>> logout()
+    >>> rosetta_expert_browser = setupBrowser(
+    ...     auth="Basic re@example.com:test")
+
+    >>> rosetta_expert_browser.open(
+    ...     'http://translations.launchpad.dev/evolution/+settings')
+    >>> print rosetta_expert_browser.title
     Permissions and policies...
 
-    >>> hint = find_tag_by_id(admin_browser.contents, 'form_extra_info')
+    >>> hint = find_tag_by_id(rosetta_expert_browser.contents, 'form_extra_info')
     >>> print hint
     <p...
     Select the translation group that will be managing...
     ...The Evolution Groupware Application...
     ...
+

@@ -12,7 +12,7 @@
             tal:content="context/translationpermission/title">certain</a>
     permissions.
   </p>
-  <div tal:condition="context/required:launchpad.Edit">
+  <div tal:condition="context/required:launchpad.TranslationsAdmin">
     <a class="edit sprite"
        tal:define="link context/menu:navigation/settings"
        tal:attributes="href link/url"
