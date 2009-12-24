@@ -209,8 +209,8 @@ class OpenIDLogin(LaunchpadView):
         # handshake to work.
         allowUnauthenticatedSession(self.request)
         consumer = self._getConsumer()
-        self.openid_request = consumer.begin(
-            allvhosts.configs['openid'].rooturl)
+        self.openid_request = consumer.begin('https://launchpad.dev/+openid')
+            #allvhosts.configs['openid'].rooturl)
 
         return_to = self.return_to_url
         trust_root = self.request.getApplicationURL()
@@ -299,6 +299,7 @@ class OpenIDCallbackView(OpenIDLogin):
 
 class OpenIDLoginErrorView(LaunchpadView):
 
+    page_title = 'Foo'
     template = ViewPageTemplateFile("../templates/login-error.pt")
 
     def __init__(self, context, request, openid_response):

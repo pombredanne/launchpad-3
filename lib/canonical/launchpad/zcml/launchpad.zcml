@@ -176,13 +176,13 @@
       layer="canonical.launchpad.layers.DebugLayer"
       />
 
+  <!-- OpenID RP views -->
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       class="canonical.launchpad.webapp.login.OpenIDLogin"
       permission="zope.Public"
-      name="+login"
+      name="+login-openid"
       />
-
   <browser:page
       for="*"
       class="canonical.launchpad.webapp.login.OpenIDCallbackView"
@@ -190,12 +190,26 @@
       name="+openid-callback"
       />
 
+  <!-- OpenID Provider views -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      class="canonical.launchpad.webapp.fake_openid.FakeOpenIDAuthView"
+      permission="zope.Public"
+      name="+openid-auth"
+      />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      class="canonical.launchpad.webapp.fake_openid.FakeOpenIDIndexView"
+      permission="zope.Public"
+      name="+openid"
+      />
+
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       template="../templates/launchpad-login.pt"
       class="canonical.launchpad.webapp.login.LoginOrRegister"
       permission="zope.Public"
-      name="+login-old"
+      name="+login"
       />
 
   <browser:page

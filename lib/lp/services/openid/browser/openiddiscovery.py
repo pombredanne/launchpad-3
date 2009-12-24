@@ -44,9 +44,12 @@ class XRDSContentNegotiationMixin:
         # already there.
         current_url = self._getURL()
         expected_url = canonical_url(self.context)
-        if current_url != expected_url:
-            self.request.response.redirect(expected_url)
-            return ''
+        # XXX: Commented out because this doesn't play well with having
+        # (/+openid) as the index view of the provider -- this code expects
+        # that the provider will be on the root (/).
+#         if current_url != expected_url:
+#             self.request.response.redirect(expected_url)
+#             return ''
 
         if self.enable_xrds_discovery:
             # Tell the user agent that we do different things depending on

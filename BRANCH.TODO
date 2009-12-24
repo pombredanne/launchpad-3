@@ -3,16 +3,44 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
-= Functionality needed in the callback view =
+* As discussed with Francis, it's not worth porting the team-restricted login
+stuff to the new system, so we'll drop it.
+
+* Functionality needed in the callback view:
  - reactivate accounts when credentials belong to a deactivated profile
  - create Person entries when the credentials don't exist in our db
  - forbid to log suspended accounts in. btw, I guess we're going to copy the
    AccountStatus table to the main db.
- - is it worth to keep the team-restricted login stuff?
 
     # To test all this I'll just have to monkey patch
     # OpenIDCallbackView.openid_response to return my hand-crafted
     # openid response.
+
+* Must keep the old +login view (probably renamed to +login-old) so that our
+windmill tests can log in. It will still be needed to fix the windmill helper
+for logging in (./lib/canonical/launchpad/windmill/testing/lpuser.py), as it
+just follows the links to login. To do that we'll need to keep the
+AccountPassword table in the main database instead of just the account table
+
+* Some tests use anon_browser.open() on protected pages so that they get
+reidrected to +login and can show how the protected page works when the user
+is not logged in, including the preserved query string. If we want to keep
+doing that in these tests, we'll need an OpenID provider accessible to the
+test suite. One option would be to include a crippled version of the one in
+c-i-p in our tree, to be used only in tests.
+(lib/canonical/launchpad/pagetests/oauth/authorize-token.txt is one of the
+tests that rely on +login)
+
+ - Does not work for /people/+me, because when the OpenID provider sends the user back to /people/+me/+openid-callback, there's a redirect to /~person/+openid-callback, which causes the openid dance to fail:
+* <openid.consumer.consumer.FailureResponse id=None message="return_to does not match return URL. Expected 'https://launchpad.dev/%7Ename16/+openid-callback', got u'https://launchpad.dev/people/+me/+openid-callback?janrain_nonce=2009-12-23T14%3A47%3A47ZsgdbOJ'">
+  I think this is a general problem with OpenID and login.lp.net because when
+you log into login.lp.net and is sent to the callback page (in lp.net), that
+page will see you as logged in, regardless of the openid response, because the
+cookie is shared, and that causes /people/+me/+openid-callback to redirect to
+/~name16/+openid-callback, which causes the error above.
+  One way around this is to always use /+openid-callback as the return_to URL,
+and include a lp_redirect_to URL in the query string, where LP will send the
+user to, once the openid dance is completed.
 
 
 = These points seem to be moot, actually =
