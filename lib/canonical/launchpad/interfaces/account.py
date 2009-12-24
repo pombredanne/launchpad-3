@@ -181,20 +181,20 @@ class AccountCreationRationale(DBEnumeratedType):
 
 
 class IAccountPublic(Interface):
-    """Base information on an `IAccount`."""
+    """Public information on an `IAccount`."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
     displayname = StrippedTextLine(
         title=_('Display Name'), required=True, readonly=False,
         description=_("Your name as you would like it displayed."))
 
-    is_valid = Bool(
-        title=_("True if this account is active and has a valid email."),
-        required=True, readonly=True)
-
     status = Choice(
         title=_("The status of this account"), required=True,
         readonly=False, vocabulary=AccountStatus)
+
+    is_valid = Bool(
+        title=_("True if this account is active and has a valid email."),
+        required=True, readonly=True)
 
     # We should use schema=IEmailAddress here, but we can't because that would
     # cause circular dependencies.

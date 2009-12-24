@@ -146,9 +146,8 @@ AccountPassword table.
     >>> account.password
     u'K7Qmeansl6RbuPfulfcmyDQOzp70OxVh5Fcf'
 
-And other account metadata. Some are only accessible for admins.
+And other account metadata.
 
-    >>> login('foo.bar@canonical.com')
     >>> account.date_created
     datetime.datetime(...)
 
