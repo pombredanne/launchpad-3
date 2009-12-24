@@ -224,7 +224,8 @@ def import_fascist(module_name, globals={}, locals={}, from_list=[]):
             raise error
 
     # Check the import from __all__ policy.
-    if from_list is not None and import_into.startswith('canonical'):
+    if from_list is not None and (
+        import_into.startswith('canonical') or import_into.startswith('lp')):
         # We only want to warn about "from foo import bar" violations in our
         # own code.
         from_list = list(from_list)
