@@ -195,10 +195,14 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
         # We could find out by jumping up the stack a frame.
         # Let's not for now.
         import_into = '__import__ hook'
+
+    # Check the "NotFoundError" policy.
     if (import_into.startswith('canonical.launchpad.database') and
         name == 'zope.exceptions'):
         if fromlist and 'NotFoundError' in fromlist:
             raise NotFoundPolicyViolation(import_into)
+
+    # Check the database import policy.
     if (name.startswith(database_root) and
         not database_import_allowed_into(import_into)):
         error = DatabaseImportPolicyViolation(import_into, name)
@@ -209,27 +213,29 @@ def import_fascist(name, globals={}, locals={}, fromlist=[]):
         if import_into not in warned_database_imports:
             raise error
 
-    # We only want to warn about "from foo import bar" violations in our
-    # own code.
+    # Check the import from __all__ policy.
     if fromlist is not None and import_into.startswith('canonical'):
+        # We only want to warn about "from foo import bar" violations in our
+        # own code.
         fromlist = list(fromlist)
         module_all = getattr(module, '__all__', None)
-        # "from foo import *" is naughty if foo has no __all__
         if module_all is None:
             if fromlist == ['*']:
+                # "from foo import *" is naughty if foo has no __all__
                 error = FromStarPolicyViolation(import_into, name)
                 naughty_imports.add(error)
                 raise error
         else:
-            # "from foo import *" is allowed if foo has an __all__
             if fromlist == ['*']:
+                # "from foo import *" is allowed if foo has an __all__
                 return module
-            # We don't bother checking imports into test modules.
             if is_test_module(import_into):
+                # We don't bother checking imports into test modules.
                 return module
-            # Check that each thing we are importing into the module is either
-            # in __all__, is a module itself, or is a specific exception.
             for attrname in fromlist:
+                # Check that each thing we are importing into the module is
+                # either in __all__, is a module itself, or is a specific
+                # exception.
                 if attrname == '__doc__':
                     # You can always import __doc__.
                     continue
@@ -255,7 +261,6 @@ def report_naughty_imports():
     if naughty_imports:
         print
         print '** %d import policy violations **' % len(naughty_imports)
-        current_type = None
 
         database_violations = []
         fromstar_violations = []
