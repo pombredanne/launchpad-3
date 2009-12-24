@@ -73,7 +73,7 @@ class IBuildFarmJob(Interface):
     def jobAborted():
         """'Job aborted' life cycle event, handle as appropriate."""
 
-    def pendingJobsQuery(minscore, processor, virtualized):
+    def getPendingJobsQuery(minscore, processor, virtualized):
         """String SELECT query yielding pending jobs with given minimum score.
 
         This will be used for the purpose of job dispatch time estimation
