@@ -22,30 +22,31 @@ from lp.testing import TestCaseWithFactory
 
 
 def find_job(test, name, processor='386'):
-    result = None
+    """Find build and queue instance for the given source and processor."""
     for build in test.builds:
         if (build.sourcepackagerelease.name == name
             and build.processor.name == processor):
-            result = build
-            break
-    if result is not None:
-        return (result, result.buildqueue_record)
-    else:
-        return (None, None)
+            return (build, build.buildqueue_record)
+    return (None, None)
+
 
 def builder_key(build):
+    """Return processor and virtualization for the given build."""
     return (build.processor.id, build.is_virtualized)
 
-def nth_builder(test, build, n):
-    builder = None
-    builders = test.builders.get(builder_key(build), [])
-    try:
-        builder = builders[n-1]
-    except IndexError:
-        pass
-    return builder
 
 def assign_to_builder(test, job_name, builder_number, processor='386'):
+    """Simulate assigning a build to a builder."""
+    def nth_builder(test, build, n):
+        """Get builder #n for the given build processor and virtualization."""
+        builder = None
+        builders = test.builders.get(builder_key(build), [])
+        try:
+            builder = builders[n-1]
+        except IndexError:
+            pass
+        return builder
+
     build, bq = find_job(test, job_name, processor)
     builder = nth_builder(test, build, builder_number)
     bq.markAsBuilding(builder)
@@ -189,7 +190,9 @@ class TestBuildPackageJob(TestBuildJobBase):
                 status=PackagePublishingStatus.PUBLISHED,
                 archive=self.non_ppa,
                 architecturehintlist='any').createMissingBuilds())
-        # Set up the builds for test.
+        # Set up the builds so that we have a lot of variety when it comes
+        # to score and estimated duration etc. so that the queries under test
+        # get exercised properly.
         score = 1000
         duration = 0
         for build in self.builds:
@@ -200,8 +203,7 @@ class TestBuildPackageJob(TestBuildJobBase):
             bq.estimated_duration = timedelta(seconds=duration)
 
     def test_x86_pending_queries(self):
-        # Make sure the query returned by getPendingJobsQuery() selects the
-        # proper jobs.
+        # Select x86 jobs with equal or better score.
         #
         # The x86 builds are as follows:
         #
@@ -280,8 +282,7 @@ class TestBuildPackageJob(TestBuildJobBase):
         # As we can see it was absent as expected.
 
     def test_hppa_pending_queries(self):
-        # Make sure the query returned by getPendingJobsQuery() selects the
-        # proper jobs.
+        # Select hppa jobs with equal or better score.
         #
         # The hppa builds are as follows:
         #
