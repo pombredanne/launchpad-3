@@ -171,7 +171,7 @@ class BuildPackageJob(Storm):
         self.build.buildstate = BuildStatus.BUILDING
 
     @staticmethod
-    def getPendingJobsQuery(minscore, processor, virtualized):
+    def getPendingJobsQuery(min_score, processor, virtualized):
         """See `IBuildFarmJob`."""
         return """
             SELECT 
@@ -196,7 +196,7 @@ class BuildPackageJob(Storm):
                 AND Archive.require_virtualized = %s
         """ % sqlvalues(
             BuildFarmJobType.PACKAGEBUILD, JobStatus.WAITING,
-            BuildStatus.NEEDSBUILD, minscore, processor, virtualized)
+            BuildStatus.NEEDSBUILD, min_score, processor, virtualized)
 
     @property
     def processor(self):

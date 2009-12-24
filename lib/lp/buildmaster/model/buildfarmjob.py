@@ -39,7 +39,7 @@ class BuildFarmJob:
         pass
 
     @staticmethod
-    def getPendingJobsQuery(minscore, processor, virtualized):
+    def getPendingJobsQuery(min_score, processor, virtualized):
         """See `IBuildFarmJob`."""
         raise NotImplementedError
 

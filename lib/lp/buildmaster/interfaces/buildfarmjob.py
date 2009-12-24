@@ -73,7 +73,7 @@ class IBuildFarmJob(Interface):
     def jobAborted():
         """'Job aborted' life cycle event, handle as appropriate."""
 
-    def getPendingJobsQuery(minscore, processor, virtualized):
+    def getPendingJobsQuery(min_score, processor, virtualized):
         """String SELECT query yielding pending jobs with given minimum score.
 
         This will be used for the purpose of job dispatch time estimation
@@ -107,8 +107,8 @@ class IBuildFarmJob(Interface):
         virtualization should return NULL for the optional data in the result
         set.
 
-        :param minscore: the pending jobs selected by the returned
-            query should have score >= minscore
+        :param min_score: the pending jobs selected by the returned
+            query should have score >= min_score
         :param processor: the job of interest (JOI) is tied to this
             processor, this information can be used to further narrow
             down the pending jobs that will result from the returned
