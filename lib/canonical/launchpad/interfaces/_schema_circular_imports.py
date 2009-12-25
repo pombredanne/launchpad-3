@@ -306,3 +306,19 @@ patch_reference_property(
 patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
+
+# IHasBugs
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'assignee', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_reporter', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_supervisor', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_commenter', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'bug_subscriber', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'owner', IPerson)
+patch_plain_parameter_type(
+    IHasBugs, 'searchTasks', 'affected_user', IPerson)

@@ -25,7 +25,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import Tag
 from lp.bugs.interfaces.bugtask import (
     BugTagsSearchCombinator, IBugTask, IBugTaskSearch)
-from lp.registry.interfaces.person import IPerson
 from lazr.enum import DBEnumeratedType
 from lazr.restful.fields import Reference
 from lazr.restful.interface import copy_field
@@ -71,13 +70,13 @@ class IHasBugs(Interface):
         search_text=copy_field(IBugTaskSearch['searchtext']),
         status=copy_field(IBugTaskSearch['status']),
         importance=copy_field(IBugTaskSearch['importance']),
-        assignee=Reference(schema=IPerson),
-        bug_reporter=Reference(schema=IPerson),
-        bug_supervisor=Reference(schema=IPerson),
-        bug_commenter=Reference(schema=IPerson),
-        bug_subscriber=Reference(schema=IPerson),
-        owner=Reference(schema=IPerson),
-        affected_user=Reference(schema=IPerson),
+        assignee=Reference(schema=Interface),
+        bug_reporter=Reference(schema=Interface),
+        bug_supervisor=Reference(schema=Interface),
+        bug_commenter=Reference(schema=Interface),
+        bug_subscriber=Reference(schema=Interface),
+        owner=Reference(schema=Interface),
+        affected_user=Reference(schema=Interface),
         has_patch=copy_field(IBugTaskSearch['has_patch']),
         has_cve=copy_field(IBugTaskSearch['has_cve']),
         tags=copy_field(IBugTaskSearch['tag']),
