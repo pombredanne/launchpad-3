@@ -1511,7 +1511,7 @@ class IPersonSpecialRestricted(Interface):
         """
 
 
-class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
+class IPerson(IPersonPublic, IHasBugs, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
               IHasStanding, ISetLocation, IRootContext):
     """A Person."""
