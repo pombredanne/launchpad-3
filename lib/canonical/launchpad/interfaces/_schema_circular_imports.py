@@ -24,11 +24,11 @@ from canonical.launchpad.components.apihelpers import (
 
 from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscription, IStructuralSubscriptionTarget)
-from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bug import IBug, IFrontPageBugAddForm
 from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtask import IBugTask
-from lp.bugs.interfaces.bugtarget import IHasBugs
+from lp.bugs.interfaces.bugtarget import IHasBugs, IBugTarget
 from lp.soyuz.interfaces.build import (
     BuildStatus, IBuild)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -67,6 +67,11 @@ from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, PackageUploadCustomFormat, PackageUploadStatus)
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.interfaces.message import (
+    IIndexedMessage, IMessage, IUserToUserEmail)
+    
+from lp.bugs.interfaces.bugtracker import IBugTracker
+from lp.bugs.interfaces.bugwatch import IBugWatch
 
 
 IBranch['bug_branches'].value_type.schema = IBugBranch
@@ -325,3 +330,32 @@ patch_plain_parameter_type(
     
 # IBugTask
 patch_reference_property(IBugTask, 'owner', IPerson)
+
+# IBugWatch
+patch_reference_property(IBugWatch, 'owner', IPerson)
+
+# IIndexedMessage
+patch_reference_property(IIndexedMessage, 'inside', IBugTask)
+
+# IMessage
+patch_reference_property(IMessage, 'owner', IPerson)
+
+# IUserToUserEmail
+patch_reference_property(IUserToUserEmail, 'sender', IPerson)
+patch_reference_property(IUserToUserEmail, 'recipient', IPerson)
+
+# IBug
+patch_plain_parameter_type(
+    IBug, 'addNomination', 'target', IBugTarget)
+patch_plain_parameter_type(
+    IBug, 'canBeNominatedFor', 'target', IBugTarget)
+patch_plain_parameter_type(
+    IBug, 'getNominationFor', 'target', IBugTarget)
+patch_plain_parameter_type(
+    IBug, 'getNominations', 'target', IBugTarget)
+    
+# IFrontPageBugAddForm
+patch_reference_property(IFrontPageBugAddForm, 'bugtarget', IBugTarget)
+
+# IBugTracker
+patch_reference_property(IBugTracker, 'owner', IPerson)

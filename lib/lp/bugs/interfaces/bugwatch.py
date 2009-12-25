@@ -22,7 +22,6 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import StrippedTextLine
 from canonical.launchpad.interfaces.launchpad import IHasBug
-from lp.registry.interfaces.person import IPerson
 from lp.bugs.interfaces.bugtracker import IBugTracker
 
 from lazr.restful.declarations import (
@@ -134,7 +133,7 @@ class IBugWatch(IHasBug):
         exported_as='date_created')
     owner = exported(
         Reference(title=_('Owner'), required=True,
-                  readonly=True, schema=IPerson))
+                  readonly=True, schema=Interface))
 
     # Useful joins.
     bugtasks = exported(

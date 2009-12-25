@@ -27,7 +27,6 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     ContentNameField, StrippedTextLine, URIField)
-from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 
@@ -216,7 +215,7 @@ class IBugTracker(Interface):
             required=False),
         exported_as='base_url_aliases')
     owner = exported(
-        Reference(title=_('Owner'), schema=IPerson),
+        Reference(title=_('Owner'), schema=Interface),
         exported_as='registrant')
     contactdetails = exported(
         Text(

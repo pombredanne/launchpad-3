@@ -96,6 +96,8 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.authorization import check_permission
 
+from lp.bugs.interfaces.bugtarget import IHasBugs
+
 PRIVATE_TEAM_PREFIX = 'private-'
 
 
