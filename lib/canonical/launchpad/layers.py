@@ -57,6 +57,10 @@ class DebugLayer(Interface):
     """
 
 
+class TestOpenIDLayer(LaunchpadLayer):
+    """The `TestOpenIDLayer` layer."""
+
+
 class PageTestLayer(LaunchpadLayer):
     """The `PageTestLayer` layer. (need to register a 404 view for this and
     for the debug page too.  and make the debugview a base class in the

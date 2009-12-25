@@ -1,0 +1,46 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <securedutility
+        class="canonical.launchpad.systemhomes.TestOpenIDApplication"
+        provides="canonical.launchpad.interfaces.ITestOpenIDApplication">
+      <allow interface="canonical.launchpad.interfaces.ITestOpenIDApplication"/>
+    </securedutility>
+
+    <browser:navigation
+        module="canonical.launchpad.browser.testopenid"
+        classes="TestOpenIDNavigation"
+        />
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+        for="canonical.launchpad.interfaces.ITestOpenIDApplication"
+        factory="canonical.launchpad.browser.testopenid.TestOpenIDRootUrlData"
+        />
+
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.ITestOpenIDApplication"
+        name="+index"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.launchpad.ITestOpenIDApplication"
+        class="canonical.launchpad.webapp.fake_openid.FakeOpenIDAuthView"
+        permission="zope.Public"
+        name="+openid-auth"
+        />
+    <browser:page
+        for="canonical.launchpad.interfaces.launchpad.ITestOpenIDApplication"
+        class="canonical.launchpad.webapp.fake_openid.FakeOpenIDIndexView"
+        permission="zope.Public"
+        name="+index"
+        />
+
+</configure>

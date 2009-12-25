@@ -209,8 +209,9 @@ class OpenIDLogin(LaunchpadView):
         # handshake to work.
         allowUnauthenticatedSession(self.request)
         consumer = self._getConsumer()
-        self.openid_request = consumer.begin('https://launchpad.dev/+openid')
+        self.openid_request = consumer.begin(
             #allvhosts.configs['openid'].rooturl)
+            'https://launchpad.dev/testopenid')
 
         return_to = self.return_to_url
         trust_root = self.request.getApplicationURL()

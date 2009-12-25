@@ -15,11 +15,11 @@ class FakeOpenIDIndexView(XRDSContentNegotiationMixin, LaunchpadView):
     @property
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return 'https://launchpad.dev/+openid-auth'
+        return 'https://launchpad.dev/testopenid/+openid-auth'
 
 
 class FakeOpenIDAuthView(LaunchpadView):
-    server_url = 'https://launchpad.dev/+openid'
+    server_url = 'https://launchpad.dev/testopenid'
 
     def render(self):
         from openid.server.server import Server
@@ -53,4 +53,4 @@ class FakeOpenIDAuthView(LaunchpadView):
         assert self.openid_request is not None, (
             'No OpenID request to respond to.')
         return self.openid_request.answer(
-            True, identity='https://testopenid.launchpad.dev/+id/mark_oid')
+            True, identity='https://openid.launchpad.dev/+id/mark_oid')

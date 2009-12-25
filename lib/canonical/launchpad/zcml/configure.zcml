@@ -32,6 +32,7 @@
     <include file="personnotification.zcml" />
     <include file="personproduct.zcml" />
     <include file="temporaryblobstorage.zcml" />
+    <include file="testopenid.zcml" />
     <include file="webservice.zcml" />
 
     <include file="fields.zcml" />

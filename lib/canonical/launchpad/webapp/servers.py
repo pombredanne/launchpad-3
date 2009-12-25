@@ -46,7 +46,8 @@ from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
 from canonical.launchpad.interfaces.launchpad import (
-    IFeedsApplication, IPrivateApplication, IWebServiceApplication)
+    IFeedsApplication, IPrivateApplication, ITestOpenIDApplication,
+    IWebServiceApplication)
 from canonical.launchpad.interfaces.oauth import (
     ClockSkew, IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError)
 import canonical.launchpad.layers
@@ -1121,6 +1122,17 @@ class FeedsBrowserRequest(LaunchpadBrowserRequest):
     """Request type for a launchpad feed."""
     implements(canonical.launchpad.layers.FeedsLayer)
 
+
+# ---- testopenid
+
+class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
+    implements(canonical.launchpad.layers.TestOpenIDLayer)
+
+
+class TestOpenIDBrowserPublication(LaunchpadBrowserPublication):
+    root_object_interface = ITestOpenIDApplication
+
+
 # ---- web service
 
 class WebServicePublication(WebServicePublicationMixin,
@@ -1409,6 +1421,10 @@ def register_launchpad_request_publication_factories():
         XMLRPCRequestPublicationFactory(
             'xmlrpc', PublicXMLRPCRequest, PublicXMLRPCPublication)
         ]
+
+    if config.devmode:
+        factories.append(VHRP('testopenid', TestOpenIDBrowserRequest,
+                              TestOpenIDBrowserPublication))
 
     # We may also have a private XML-RPC server.
     private_port = None

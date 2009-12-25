@@ -75,7 +75,7 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
     IRosettaApplication, IStructuralHeaderPresentation,
-    IStructuralObjectPresentation)
+    IStructuralObjectPresentation, ITestOpenIDApplication)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
@@ -564,6 +564,7 @@ class LaunchpadRootNavigation(Navigation):
         'token': ILoginTokenSet,
         '+groups': ITranslationGroupSet,
         'translations': IRosettaApplication,
+        'testopenid': ITestOpenIDApplication,
         'questions': IQuestionSet,
         '+rpconfig': IOpenIDRPConfigSet,
         # These three have been renamed, and no redirects done, as the old
