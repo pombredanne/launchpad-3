@@ -60,7 +60,6 @@ from lp.bugs.interfaces.bugwatch import (
 from lp.soyuz.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from lp.registry.interfaces.mentoringoffer import ICanBeMentored
-from lp.registry.interfaces.person import IPerson
 from canonical.launchpad.searchbuilder import all, any, NULL
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
@@ -471,7 +470,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                                  "length of time between the creation date "
                                  "and now."))
     owner = exported(
-        Reference(title=_("The owner"), schema=IPerson, readonly=True))
+        Reference(title=_("The owner"), schema=Interface, readonly=True))
     target = exported(Reference(
         title=_('Target'), required=True, schema=Interface, # IBugTarget
         readonly=True,
