@@ -53,7 +53,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
-    IPublishingSet, ISecureBinaryPackagePublishingHistory,
+    IPublishingEdit, IPublishingSet, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PoolFileOverwriteError)
@@ -471,7 +471,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
        Excluding embargoed stuff
     """
-    implements(ISourcePackagePublishingHistory)
+    implements(ISourcePackagePublishingHistory, IPublishingEdit)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
@@ -889,7 +889,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
 
-    implements(IBinaryPackagePublishingHistory)
+    implements(IBinaryPackagePublishingHistory, IPublishingEdit)
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
