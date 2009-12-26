@@ -27,9 +27,11 @@ from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.component import getUtility
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces import (
-    IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities)
+    IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities,
+    TeamMembershipStatus)
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
@@ -40,7 +42,8 @@ from lazr.restful.testing.webservice import WebServiceCaller
 from lp.testing import ANONYMOUS, login, login_person, logout
 from lp.testing.factory import LaunchpadObjectFactory
 from lp.registry.interfaces.person import NameAlreadyTaken
-
+from canonical.launchpad.interfaces.emailaddress import (
+    EmailAddressAlreadyTaken)
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
     """HTTPCaller subclass that do not carry cookies across requests.
@@ -645,6 +648,7 @@ def setupDTCBrowser():
     login('foo.bar@canonical.com')
     try:
         dtg_member = LaunchpadObjectFactory().makePerson(
+            name='ubuntu-translations-coordinator',
             email="dtg-member@ex.com", password="test")
     except NameAlreadyTaken:
         # We have already created the translations coordinator
@@ -655,6 +659,27 @@ def setupDTCBrowser():
         ubuntu.translationgroup = dtg
     logout()
     return setupBrowser(auth='Basic dtg-member@ex.com:test')
+
+
+def setupRosettaExpertBrowser():
+    """Testbrowser configured for Rosetta Experts."""
+
+    login('admin@canonical.com')
+    try:
+        rosetta_expert = LaunchpadObjectFactory().makePerson(
+            name='rosetta-experts-member',
+            email='re@ex.com', password='test')
+    except NameAlreadyTaken:
+        # We have already created an Rosetta expert
+        pass
+    else:
+        rosetta_experts_team = removeSecurityProxy(getUtility(
+            ILaunchpadCelebrities).rosetta_experts)
+        rosetta_experts_team.addMember(
+            rosetta_expert, reviewer=rosetta_experts_team,
+            status=TeamMembershipStatus.ADMIN)
+    logout()
+    return setupBrowser(auth='Basic re@ex.com:test')
 
 
 def stop():
@@ -678,6 +703,7 @@ def setUpGlobs(test):
         'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['setupBrowser'] = setupBrowser
     test.globs['setupDTCBrowser'] = setupDTCBrowser
+    test.globs['setupRosettaExpertBrowser'] = setupRosettaExpertBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
     test.globs['user_browser'] = setupBrowser(

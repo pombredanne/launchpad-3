@@ -1,33 +1,59 @@
 Product and projects translations settings
 ==========================================
 
-Accessing the translations settings page
-----------------------------------------
+A product owner and Rosetta expert browser is created.
 
-The translation work for a product can be assigned to a translation group.
-
-    >>> from zope.component import getUtility
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
-    >>> login(ANONYMOUS)
-    >>> rosetta_expert = factory.makePerson(
-    ...     email='re@example.com', password='test')
-    >>> rosetta_expert.join(
-    ...     getUtility(ILaunchpadCelebrities).rosetta_experts)
+    >>> login('admin@canonical.com')
+    >>> product_owner = factory.makePerson(
+    ...     email="po@ex.com", password="test")
+    >>> chestii = factory.makeProduct(
+    ...     name='chestii', owner=product_owner, official_rosetta=True)
     >>> logout()
-    >>> rosetta_expert_browser = setupBrowser(
-    ...     auth="Basic re@example.com:test")
+    >>> re_browser = setupRosettaExpertBrowser()
+    >>> po_browser = setupBrowser("Basic po@ex.com:test")
 
-    >>> rosetta_expert_browser.open(
-    ...     'http://translations.launchpad.dev/evolution/+settings')
-    >>> print rosetta_expert_browser.title
-    Permissions and policies...
+Visiting the main product's translations page, product and Rosetta
+administrators sees the "Change permissions" link, leading to the
+translations settings page.
 
-    >>> hint = find_tag_by_id(rosetta_expert_browser.contents, 'form_extra_info')
-    >>> print hint
-    <p...
-    Select the translation group that will be managing...
-    ...The Evolution Groupware Application...
+    >>> re_browser.open(
+    ...     'http://translations.launchpad.dev/chestii')
+    >>> re_browser.getLink('Change permissions').click()
+    >>> print re_browser.url
+    http://translations.launchpad.dev/chestii/+settings
+
+    >>> po_browser.open(
+    ...     'http://translations.launchpad.dev/chestii')
+    >>> po_browser.getLink('Change permissions').click()
+    >>> print po_browser.url
+    http://translations.launchpad.dev/chestii/+settings
+
+Other persons will not see the link to settigs page.
+
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/chestii')
+    >>> browser.getLink('Change permissions')
+    Traceback (most recent call last):
     ...
+    LinkNotFoundError...
+
+An attempt to access the settins url will not be authorized.
+
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/chestii/+settings')
+    Traceback (most recent call last):
+    ...
+    Unauthorized...
+
+From the settings page, translations group and translation permissions
+can be changed.
+
+    >>> hint = find_tag_by_id(re_browser.contents, 'form_extra_info')
+    >>> print extract_text(hint)
+    Select the translation group that will be managing...
+
+    >>> re_browser.getControl('Translation permissions policy').value = ['CLOSED']
+    >>> re_browser.getControl('Change').click()
+    >>> print re_browser.url
+    http://translations.launchpad.dev/chestii
 
