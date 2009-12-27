@@ -107,7 +107,6 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
         else:
             self.adminlabel = 'Settings for language packs'
 
-
     @cachedproperty
     def unused_language_packs(self):
         unused_language_packs = helpers.shortlist(self.context.language_packs)
@@ -236,6 +235,14 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
 
         return sorted(distroserieslangs, key=lambda a: a.language.englishname)
 
+    def isPreferredLanguage(self, language):
+        # if there are no preferred languages, mark all
+        # languages as preferred
+        if (len(self.translatable_languages) == 0):
+            return True
+        else:
+            return language in self.translatable_languages
+
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
@@ -244,6 +251,7 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
     def is_translation_focus(self):
         """Is this DistroSeries the translation focus."""
         return self.context.distribution.translation_focus == self.context
+
 
 class DistroSeriesTranslationsMenu(NavigationMenu):
 
