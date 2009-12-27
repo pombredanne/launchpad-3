@@ -248,7 +248,7 @@ class CodeImportNewView(CodeImportBaseView):
     custom_widget('rcs_type', LaunchpadRadioWidget)
 
     initial_values = {
-        'rcs_type': RevisionControlSystems.SVN,
+        'rcs_type': RevisionControlSystems.BZR_SVN,
         'branch_name': 'trunk',
         }
 
@@ -279,7 +279,8 @@ class CodeImportNewView(CodeImportBaseView):
         fields = soup.findAll('input')
         [cvs_button, svn_button, git_button, hg_button, empty_marker] = [
             field for field in fields
-            if field.get('value') in ['CVS', 'SVN', 'GIT', 'HG', '1']]
+            if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', 'HG', '1']]
+>>>>>>> MERGE-SOURCE
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
         git_button['onclick'] = 'updateWidgets()'
@@ -385,7 +386,7 @@ class CodeImportNewView(CodeImportBaseView):
             data['git_repo_url'] = None
             data['hg_repo_url'] = None
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
-        elif rcs_type == RevisionControlSystems.SVN:
+        elif rcs_type == RevisionControlSystems.BZR_SVN:
             data['cvs_root'] = None
             data['cvs_module'] = None
             data['git_repo_url'] = None
@@ -404,7 +405,8 @@ class CodeImportNewView(CodeImportBaseView):
             data['git_repo_url'] = None
             self._validateHg(data.get('hg_repo_url'))
         else:
-            raise AssertionError('Unknown revision control type.')
+            raise AssertionError(
+                'Unexpected revision control type %r.' % rcs_type)
 
 
 class EditCodeImportForm(Interface):
@@ -492,7 +494,8 @@ class CodeImportEditView(CodeImportBaseView):
         if self.code_import.rcs_type == RevisionControlSystems.CVS:
             self.form_fields = self.form_fields.omit(
                 'svn_branch_url', 'git_repo_url', 'hg_repo_url')
-        elif self.code_import.rcs_type == RevisionControlSystems.SVN:
+        elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
+                                           RevisionControlSystems.BZR_SVN):
             self.form_fields = self.form_fields.omit(
                 'cvs_root', 'cvs_module', 'git_repo_url', 'hg_repo_url')
         elif self.code_import.rcs_type == RevisionControlSystems.GIT:
@@ -530,7 +533,8 @@ class CodeImportEditView(CodeImportBaseView):
             self._validateCVS(
                 data.get('cvs_root'), data.get('cvs_module'),
                 self.code_import)
-        elif self.code_import.rcs_type == RevisionControlSystems.SVN:
+        elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
+                                           RevisionControlSystems.BZR_SVN):
             self._validateSVN(
                 data.get('svn_branch_url'), self.code_import)
         elif self.code_import.rcs_type == RevisionControlSystems.GIT:

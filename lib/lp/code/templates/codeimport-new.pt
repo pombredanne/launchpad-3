@@ -128,7 +128,7 @@
           updateField(form['field.cvs_root'], rcs_type == 'CVS');
           updateField(form['field.cvs_module'], rcs_type == 'CVS');
           // SVN
-          updateField(form['field.svn_branch_url'], rcs_type == 'SVN');
+          updateField(form['field.svn_branch_url'], rcs_type == 'BZR_SVN');
         }
         registerLaunchpadFunction(updateWidgets);
         //]]>

@@ -29,6 +29,9 @@
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
+            <require
+                permission="launchpad.Edit"
+                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
         </class>
 
         <!-- BinaryPackageFilePublishing -->
@@ -119,6 +122,9 @@
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
+            <require
+                permission="launchpad.Edit"
+                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
         </class>
 
         <!-- SourcePackageFilePublishing -->
@@ -395,11 +401,11 @@
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
-            set_attributes="description displayname"/>
+            set_attributes="description displayname enabled"/>
         <require
             permission="launchpad.Commercial"
             set_attributes="authorized_size buildd_secret
-                            enabled external_dependencies private
+                            external_dependencies private
                             require_virtualized relative_build_score "/>
         <require
             permission="launchpad.Admin"
