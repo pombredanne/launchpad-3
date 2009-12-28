@@ -90,7 +90,7 @@ shouldn't see eg. Japanese.
 Next, if he chooses to view all the languages, he should see Japanese
 among the languages on the page.
 
-    >>> browser.getLink('View Template & All Languages...').click()
+    >>> browser.getLink('View template & all languages...').click()
     >>> 'Japanese' in browser.contents
     True
 
