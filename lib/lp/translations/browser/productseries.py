@@ -42,6 +42,7 @@ from canonical.widgets.itemswidgets import (
 
 from lp.translations.browser.poexportrequest import BaseExportView
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from lp.translations.interfaces.productserieslanguage import (
@@ -479,18 +480,12 @@ class ProductSeriesTranslationsBzrImportView(LaunchpadFormView,
                 _("The import has been requested."))
 
 
-class ProductSeriesTemplatesView(LaunchpadView):
+class ProductSeriesTemplatesView(BaseSeriesTemplatesView):
     """Show a list of all templates for the ProductSeries."""
 
-    is_distroseries = False
-    label = "Translation templates"
-    page_title = "All templates"
-
-    def iter_templates(self):
-        """Return an iterator of all `IPOTemplates` for the series."""
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(productseries=self.context,
-                                       ordered_by_names=True)
+    def initialize(self):
+        super(ProductSeriesTemplatesView, self).initialize(
+            series=self.context, is_distroseries=False)
 
 
 class LinkTranslationsBranchView(LaunchpadEditFormView):

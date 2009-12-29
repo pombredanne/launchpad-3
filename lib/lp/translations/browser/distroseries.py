@@ -28,6 +28,7 @@ from canonical.launchpad.webapp.publisher import (
 
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.translations.browser.translations import TranslationsMixin
+from lp.translations.browser.potemplate import BaseSeriesTemplatesView
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -157,17 +158,12 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
             [canonical_url(self.context), '+language-packs'])
 
 
-class DistroSeriesTemplatesView(LaunchpadView):
+class DistroSeriesTemplatesView(BaseSeriesTemplatesView):
     """Show a list of all templates for the DistroSeries."""
 
-    is_distroseries = True
-    label = "Translation templates"
-    page_title = "All templates"
-
-    def iter_templates(self):
-        potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(distroseries=self.context,
-                                       ordered_by_names=True)
+    def initialize(self):
+        super(DistroSeriesTemplatesView, self).initialize(
+            series=self.context, is_distroseries=True)
 
 
 class DistroSeriesView(LaunchpadView, TranslationsMixin):

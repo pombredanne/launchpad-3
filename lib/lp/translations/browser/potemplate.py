@@ -21,6 +21,7 @@ __all__ = [
     'POTemplateUploadView',
     'POTemplateView',
     'POTemplateViewPreferred',
+    'BaseSeriesTemplatesView',
     ]
 
 import cgi
@@ -727,3 +728,40 @@ class POTemplateBreadcrumb(Breadcrumb):
     @property
     def text(self):
         return smartquote('Template "%s"' % self.context.name)
+
+
+class BaseSeriesTemplatesView(LaunchpadView):
+    """Show a list of all templates for the Series."""
+
+    is_distroseries = True
+    distroseries = None
+    productseries = None
+    label = "Translation templates"
+    page_title = "All templates"
+
+    def initialize(self, series, is_distroseries=True):
+        self.is_distroseries = is_distroseries
+        if is_distroseries:
+            self.distroseries = series
+        else:
+            self.productseries = series
+
+    def iter_templates(self):
+        potemplateset = getUtility(IPOTemplateSet)
+        return potemplateset.getSubset(
+            productseries=self.productseries,
+            distroseries=self.distroseries,
+            ordered_by_names=True)
+
+    def rowCSSClass(self, template):
+        if template.iscurrent:
+            return "active-template"
+        else:
+            return "inactive-template"
+
+    def isVisible(self, template):
+        if (template.iscurrent or
+            check_permission('launchpad.Edit', template)):
+            return True
+        else:
+            return False
