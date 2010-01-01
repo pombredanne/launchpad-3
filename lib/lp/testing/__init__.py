@@ -6,18 +6,28 @@
 __metaclass__ = type
 __all__ = [
     'ANONYMOUS',
+    'capture_events',
     'FakeTime',
+    'get_lsb_information',
     'is_logged_in',
     'login',
     'login_person',
     'logout',
+    'map_branch_contents',
+    'normalize_whitespace',
     'record_statements',
+    'run_with_login',
+    'run_with_storm_debug',
     'run_script',
     'TestCase',
     'TestCaseWithFactory',
     'test_tales',
     'time_counter',
+    # XXX: This really shouldn't be exported from here. People should import
+    # it from Zope.
     'verifyObject',
+    'validate_mock_class',
+    'with_anonymous_login',
     ]
 
 from datetime import datetime, timedelta
@@ -689,6 +699,8 @@ def capture_events(callable_obj, *args, **kwargs):
         zope.event.subscribers[:] = old_subscribers
 
 
+# XXX: This doesn't seem like a generically-useful testing function. Perhaps
+# it should go in a sub-module or something? -- jml
 def get_lsb_information():
     """Returns a dictionary with the LSB host information.
 
@@ -786,6 +798,8 @@ def normalize_whitespace(string):
     return " ".join(string.split())
 
 
+# XXX: This doesn't seem to be a generically useful testing function. Perhaps
+# it should go into a sub-module? -- jml
 def map_branch_contents(branch_url):
     """Return all files in branch at `branch_url`.
 
