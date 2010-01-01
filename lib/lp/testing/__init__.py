@@ -30,11 +30,11 @@ __all__ = [
     'with_anonymous_login',
     ]
 
-from datetime import datetime, timedelta
-from pprint import pformat
 import copy
+from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
+from pprint import pformat
 import shutil
 import subprocess
 import tempfile
@@ -51,6 +51,9 @@ from storm.store import Store
 from storm.tracer import install_tracer, remove_tracer_type
 
 import transaction
+
+from twisted.python.util import mergeFunctionMetadata
+
 from zope.component import getUtility
 import zope.event
 from zope.interface.verify import verifyClass, verifyObject
@@ -58,10 +61,9 @@ from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
 from canonical.launchpad.webapp import errorlog
-from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-
+from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
 from lp.testing._login import (
@@ -69,8 +71,6 @@ from lp.testing._login import (
 # canonical.launchpad.ftests expects test_tales to be imported from here.
 # XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
-
-from twisted.python.util import mergeFunctionMetadata
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
