@@ -50,6 +50,7 @@ from storm.expr import Variable
 from storm.store import Store
 from storm.tracer import install_tracer, remove_tracer_type
 
+import testtools
 import transaction
 
 from twisted.python.util import mergeFunctionMetadata
@@ -190,71 +191,8 @@ def run_with_storm_debug(function, *args, **kwargs):
         debug(False)
 
 
-class TestCase(unittest.TestCase):
+class TestCase(testtools.TestCase):
     """Provide Launchpad-specific test facilities."""
-
-    # Python 2.4 monkeypatch:
-    if getattr(unittest.TestCase, '_exc_info', None) is None:
-        _exc_info = unittest.TestCase._TestCase__exc_info
-        # We would not expect to need to make this property writeable, but
-        # twisted.trial.unittest.TestCase.__init__ chooses to write to it in
-        # the same way that the __init__ of the standard library's
-        # unittest.TestCase.__init__ does, as part of its own method of
-        # arranging for pre-2.5 compatibility.
-        class MonkeyPatchDescriptor:
-            def __get__(self, obj, type):
-                return obj._TestCase__testMethodName
-            def __set__(self, obj, value):
-                obj._TestCase__testMethodName = value
-        _testMethodName = MonkeyPatchDescriptor()
-
-    def __init__(self, *args, **kwargs):
-        unittest.TestCase.__init__(self, *args, **kwargs)
-        self._cleanups = []
-
-    def __str__(self):
-        """Return the fully qualified Python name of the test.
-
-        Zope uses this method to determine how to print the test in the
-        runner. We use the test's id in order to make the test easier to find,
-        and also so that modifications to the id will show up. This is
-        particularly important with bzrlib-style test multiplication.
-        """
-        return self.id()
-
-    def _runCleanups(self, result):
-        """Run the cleanups that have been added with addCleanup.
-
-        See the docstring for addCleanup for more information.
-
-        Returns True if all cleanups ran without error, False otherwise.
-        """
-        ok = True
-        while self._cleanups:
-            function, arguments, keywordArguments = self._cleanups.pop()
-            try:
-                function(*arguments, **keywordArguments)
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self._exc_info())
-                ok = False
-        return ok
-
-    def addCleanup(self, function, *arguments, **keywordArguments):
-        """Add a cleanup function to be called before tearDown.
-
-        Functions added with addCleanup will be called in reverse order of
-        adding after the test method and before tearDown.
-
-        If a function added with addCleanup raises an exception, the error
-        will be recorded as a test error, and the next cleanup will then be
-        run.
-
-        Cleanup functions are always called before a test finishes running,
-        even if setUp is aborted by an exception.
-        """
-        self._cleanups.append((function, arguments, keywordArguments))
 
     def installFixture(self, fixture):
         """Install 'fixture', an object that has a `setUp` and `tearDown`.
@@ -372,55 +310,12 @@ class TestCase(unittest.TestCase):
         self.assertTrue(zope_isinstance(instance, assert_class),
             '%r is not an instance of %r' % (instance, assert_class))
 
-    def assertIs(self, expected, observed):
-        """Assert that `expected` is the same object as `observed`."""
-        self.assertTrue(expected is observed,
-                        "%r is not %r" % (expected, observed))
-
-    def assertIsNot(self, expected, observed, msg=None):
-        """Assert that `expected` is not the same object as `observed`."""
-        if msg is None:
-            msg = "%r is %r" % (expected, observed)
-        self.assertTrue(expected is not observed, msg)
-
-    def assertIn(self, needle, haystack):
-        """Assert that 'needle' is in 'haystack'."""
-        self.assertTrue(
-            needle in haystack, '%r not in %r' % (needle, haystack))
-
-    def assertNotIn(self, needle, haystack):
-        """Assert that 'needle' is not in 'haystack'."""
-        self.assertFalse(
-            needle in haystack, '%r in %r' % (needle, haystack))
-
     def assertContentEqual(self, iter1, iter2):
         """Assert that 'iter1' has the same content as 'iter2'."""
         list1 = sorted(iter1)
         list2 = sorted(iter2)
         self.assertEqual(
             list1, list2, '%s != %s' % (pformat(list1), pformat(list2)))
-
-    def assertRaises(self, excClass, callableObj, *args, **kwargs):
-        """Assert that a callable raises a particular exception.
-
-        :param excClass: As for the except statement, this may be either an
-            exception class, or a tuple of classes.
-        :param callableObj: A callable, will be passed ``*args`` and
-            ``**kwargs``.
-
-        Returns the exception so that you can examine it.
-        """
-        try:
-            callableObj(*args, **kwargs)
-        except excClass, e:
-            return e
-        else:
-            if getattr(excClass, '__name__', None) is not None:
-                excName = excClass.__name__
-            else:
-                # probably a tuple
-                excName = str(excClass)
-            raise self.failureException, "%s not raised" % excName
 
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):
@@ -455,47 +350,8 @@ class TestCase(unittest.TestCase):
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
-    def run(self, result=None):
-        if result is None:
-            result = self.defaultTestResult()
-        result.startTest(self)
-        testMethod = getattr(self, self._testMethodName)
-        try:
-            try:
-                self.setUp()
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self._exc_info())
-                self._runCleanups(result)
-                return
-
-            ok = False
-            try:
-                testMethod()
-                ok = True
-            except self.failureException:
-                result.addFailure(self, self._exc_info())
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self._exc_info())
-
-            cleanupsOk = self._runCleanups(result)
-            try:
-                self.tearDown()
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self._exc_info())
-                ok = False
-            if ok and cleanupsOk:
-                result.addSuccess(self)
-        finally:
-            result.stopTest(self)
-
     def setUp(self):
-        unittest.TestCase.setUp(self)
+        testtools.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
 
