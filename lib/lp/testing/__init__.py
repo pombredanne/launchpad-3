@@ -324,6 +324,7 @@ class TestCase(testtools.TestCase):
         If the exception isn't raised or the exception_content doesn't
         match what was raised an AssertionError is raised.
         """
+        # XXX: This doesn't check the type of the exception at all. -- jml
         exception_name = str(exception).split('.')[-1]
 
         try:
