@@ -4,6 +4,21 @@
 # pylint: disable-msg=W0401,C0301
 
 __metaclass__ = type
+__all__ = [
+    'ANONYMOUS',
+    'FakeTime',
+    'is_logged_in',
+    'login',
+    'login_person',
+    'logout',
+    'record_statements',
+    'run_script',
+    'TestCase',
+    'TestCaseWithFactory',
+    'test_tales',
+    'time_counter',
+    'verifyObject',
+    ]
 
 from datetime import datetime, timedelta
 from pprint import pformat
@@ -18,7 +33,6 @@ import unittest
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDir, format_registry
-from bzrlib.errors import InvalidURLJoin
 from bzrlib.transport import get_transport
 
 import pytz
@@ -36,12 +50,14 @@ from zope.security.proxy import (
 from canonical.launchpad.webapp import errorlog
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
-# Import the login and logout functions here as it is a much better
-# place to import them from in tests.
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 
+# Import the login and logout functions here as it is a much better
+# place to import them from in tests.
 from lp.testing._login import (
     ANONYMOUS, is_logged_in, login, login_person, logout)
+# canonical.launchpad.ftests expects test_tales to be imported from here.
+# XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
 
 from twisted.python.util import mergeFunctionMetadata
@@ -425,7 +441,7 @@ class TestCase(unittest.TestCase):
         The config values will be restored during test tearDown.
         """
         name = self.factory.getUniqueString()
-        body = '\n'.join(["%s: %s"%(k, v) for k, v in kwargs.iteritems()])
+        body = '\n'.join(["%s: %s" % (k, v) for k, v in kwargs.iteritems()])
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
@@ -793,6 +809,7 @@ def map_branch_contents(branch_url):
         tree.unlock()
 
     return contents
+
 
 def validate_mock_class(mock_class):
     """Validate method signatures in mock classes derived from real classes.
