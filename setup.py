@@ -54,6 +54,7 @@ setup(
         'setuptools',
         'sourcecodegen',
         'storm',
+        'testtools',
         'transaction',
         'Twisted', 
         'wadllib',
