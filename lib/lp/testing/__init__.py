@@ -324,16 +324,8 @@ class TestCase(testtools.TestCase):
         If the exception isn't raised or the exception_content doesn't
         match what was raised an AssertionError is raised.
         """
-        # XXX: This doesn't check the type of the exception at all. -- jml
-        exception_name = str(exception).split('.')[-1]
-
-        try:
-            func(*args)
-        except exception, err:
-            self.assertEqual(str(err), exception_content)
-        else:
-            raise AssertionError(
-                "'%s' was not raised" % exception_name)
+        err = self.assertRaises(exception, func, *args)
+        self.assertEqual(exception_content, str(err))
 
     def assertBetween(self, lower_bound, variable, upper_bound):
         """Assert that 'variable' is strictly between two boundaries."""
