@@ -280,7 +280,6 @@ class CodeImportNewView(CodeImportBaseView):
         [cvs_button, svn_button, git_button, hg_button, empty_marker] = [
             field for field in fields
             if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', 'HG', '1']]
->>>>>>> MERGE-SOURCE
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
         git_button['onclick'] = 'updateWidgets()'

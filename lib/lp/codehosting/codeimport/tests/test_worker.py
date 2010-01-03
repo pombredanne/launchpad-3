@@ -689,8 +689,6 @@ class TestActualImportMixin:
         retcode = subprocess.call(
             [script_path] + source_details.asArguments(),
             stderr=output, stdout=output)
-        if retcode != 0:
-            import pdb; pdb.set_trace()
         self.assertEqual(retcode, 0)
 
         # It's important that the subprocess writes to stdout or stderr
