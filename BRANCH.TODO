@@ -3,6 +3,10 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
+* We'll probably need to keep the old login page around, to be used when
+developing.  Either that or enable the testopenid vhost, serving a real openid
+provider.
+
 * As discussed with Francis, it's not worth porting the team-restricted login
 stuff to the new system, so we'll drop it.
 
