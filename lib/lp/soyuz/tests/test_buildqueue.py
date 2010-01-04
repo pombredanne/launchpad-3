@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=C0324
 
 """Test BuildQueue features."""
 
@@ -179,7 +180,8 @@ class TestBuilderData(TestBuildQueueBase):
                 archive=self.non_ppa).createMissingBuilds())
         self.builds.extend(
             self.publisher.getPubSource(
-                sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
+                sourcename="firefox",
+                status=PackagePublishingStatus.PUBLISHED,
                 archive=self.non_ppa).createMissingBuilds())
         self.builds.extend(
             self.publisher.getPubSource(
