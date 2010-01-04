@@ -34,7 +34,6 @@ from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
 from canonical.launchpad.webapp import errorlog
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
 # Import the login and logout functions here as it is a much better
@@ -588,7 +587,7 @@ class TestCaseWithFactory(TestCase):
         # This is a work-around for some failures on PQM, arguably caused by
         # relying on test set-up that is happening in the Makefile rather than
         # the actual test set-up.
-        ensure_base(get_transport(base))
+        get_transport(base).create_prefix()
         return os.path.join(base, branch_id_to_path(branch.id))
 
     def createMirroredBranchAndTree(self):
