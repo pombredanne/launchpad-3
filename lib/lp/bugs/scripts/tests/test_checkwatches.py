@@ -62,13 +62,13 @@ class NonConnectingBugzillaAPI(BugzillaAPI):
 class NoBugWatchesByRemoteBugUpdater(checkwatches.BugWatchUpdater):
     """A subclass of BugWatchUpdater with methods overridden for testing."""
 
-    def _getBugWatchesByRemoteBug(self, bug_watch_ids):
-        """Return an empty dict.
+    def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
+        """Return an empty list.
 
-        This method overrides _getBugWatchesByRemoteBug() so that bug
+        This method overrides _getBugWatchesForRemoteBug() so that bug
         497141 can be regression-tested.
         """
-        return {}
+        return []
 
 
 class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
