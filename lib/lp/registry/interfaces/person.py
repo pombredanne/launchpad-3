@@ -1425,9 +1425,6 @@ class IPersonEditRestricted(Interface):
         team.
         """
 
-    def deactivateAllMembers(comment, reviewer):
-        """Deactivate all the members of this team."""
-
     @operation_parameters(
         team=copy_field(ITeamMembership['team']),
         comment=Text())
@@ -1459,6 +1456,13 @@ class IPersonEditRestricted(Interface):
         must be active (APPROVED or ADMIN) and set to expire in less than
         DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
         """
+
+
+class IPersonModerate(Interface):
+    """IPerson attributes that require launchpad.Moderate."""
+
+    def deactivateAllMembers(comment, reviewer):
+        """Deactivate all the members of this team."""
 
 
 class IPersonCommAdminWriteRestricted(Interface):
@@ -1511,7 +1515,7 @@ class IPersonSpecialRestricted(Interface):
 
 class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
               IPersonCommAdminWriteRestricted, IPersonSpecialRestricted,
-              IHasStanding, ISetLocation, IRootContext):
+              IPersonModerate, IHasStanding, ISetLocation, IRootContext):
     """A Person."""
     export_as_webservice_entry(plural_name='people')
 

@@ -92,6 +92,7 @@ class AdminMergeBaseView(LaunchpadFormView):
     # subclasses.
     should_confirm_email_reassignment = False
     should_confirm_member_deactivation = False
+    merge_message = _('Merge completed successfully.')
 
     dupe_person_emails = ()
     dupe_person = None
@@ -100,6 +101,10 @@ class AdminMergeBaseView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(getUtility(IPersonSet))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.target_person)
 
     def validate(self, data):
         """Check that user is not attempting to merge a person into itself."""
@@ -143,9 +148,7 @@ class AdminMergeBaseView(LaunchpadFormView):
             naked_email.accountID = self.target_person.accountID
         flush_database_updates()
         getUtility(IPersonSet).merge(self.dupe_person, self.target_person)
-        self.request.response.addInfoNotification(_(
-            'Merge completed successfully.'))
-        self.next_url = canonical_url(self.target_person)
+        self.request.response.addInfoNotification(self.merge_message)
 
 
 class AdminPeopleMergeView(AdminMergeBaseView):
@@ -261,6 +264,8 @@ class DeleteTeamView(AdminTeamMergeView):
     """A view that deletes a team by merging it with Registry experts."""
 
     page_title = 'Delete'
+    field_names = ['dupe_person', 'target_person']
+    merge_message = _('Team deleted.')
 
     @property
     def label(self):
@@ -274,16 +279,23 @@ class DeleteTeamView(AdminTeamMergeView):
             # are injected during __init__ because the base classes assume the
             # values are submitted. The validation performed by the base
             # classes are still required to ensure the team can be deleted.
-            default_values = {
-                'field.dupe_person': self.context.name,
-                'field.target_person': getUtility(
-                    ILaunchpadCelebrities).registry_experts.name,
-                }
-            self.request.form.update(default_values)
+            self.request.form.update(self.default_values)
+
+    @property
+    def default_values(self):
+        return {
+            'field.dupe_person': self.context.name,
+            'field.target_person': getUtility(
+                ILaunchpadCelebrities).registry_experts.name,
+            }
 
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+    @property
+    def next_url(self):
+        return canonical_url(getUtility(IPersonSet))
 
     @property
     def has_mailing_list(self):
