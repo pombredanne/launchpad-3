@@ -91,7 +91,7 @@ them from their index.
 Partial access for registry experts
 -----------------------------------
 
-Members of the registry team get partial access to the review accont page to
+Members of the registry team get partial access to the review account page to
 be able to suspend spam accounts.
 
     >>> login('foo.bar@canonical.com')
@@ -122,7 +122,7 @@ password.
     >>> print content.find(name='field.password')
     None
 
-The only option for registry experts is to change an accounts status and to
+The only option for registry experts is to change an account's status and to
 provide a reason why they did it. After suspending the account the
 page will only be visible to admins, so the registry expert will be
 redirected to the "people" main page.
