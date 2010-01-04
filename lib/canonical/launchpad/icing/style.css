@@ -470,13 +470,6 @@ hr {
 
 /* === Universal page layout === */
 
-/* All pages include the sitemessage in the footer if one is defined
-   in the config. */
-.sitemessage {
-    font-size: 13px;
-    text-align: right;
-}
-
 /* === Login control === */
 /* At the top right of the page is a link to log in or a button to log out: */
 #logincontrol {
@@ -818,15 +811,6 @@ body.tab-overview #description fieldset, div#branch-description fieldset {
 
 div#branch-description {
     margin-top: 1em;
-}
-
-/* Timeline Graph */
-div.yui-timelinegraph-content .yui-timelinegraph-zoom-box {
-  visibility: hidden;
-}
-
-div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
-  visibility: visible;
 }
 
 .product.series, .series {margin-bottom: 1em;}
@@ -1432,12 +1416,12 @@ ul.cross-reference {font-size: 1.25em;}
 
 #project-cloud-preview a {
   padding-left: 0.5em;
-  padding-right: 0.5em,
+  padding-right: 0.5em;
 }
 
 #project-tags a {
   padding-left: 0.5em;
-  padding-right: 0.5em,
+  padding-right: 0.5em;
 }
 
 /* Clouds of links. */

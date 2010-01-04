@@ -16,33 +16,45 @@
 
   <tal:block condition="view/pofiles">
     <div class="top-portlet">
-      <tal:with_group condition="view/translation_group">
-        <p tal:condition="view/translation_team">
-          <tal:product replace="structure
-            view/parent/fmt:link">Evolution</tal:product>
-          is translated by
-          <tal:team replace="structure
-                             view/translation_team/translator/fmt:link">
-            Serbian translators</tal:team> — if you need help, or your
-          translations are not being reviewed, please get in touch with them.
-        </p>
+      <div id="group-team-info">
+        <tal:with_group condition="view/translation_group">
+          <p tal:condition="view/translation_team">
+            These
+            <tal:product replace="structure
+              view/parent/fmt:link">Evolution</tal:product>
+            translations are managed by
+            <tal:team replace="structure
+                               view/translation_team/translator/fmt:link">
+              Serbian translators</tal:team>.
+          </p>
 
-        <p tal:condition="not:view/translation_team">
-          There is no team to translate
-          <tal:product replace="structure
-            view/parent/fmt:link">Evolution</tal:product>
-          to
-          <a tal:attributes="href context/language/fmt:url"
-             tal:content="context/language/englishname">Serbian</a>.
-          To set one up, please get in touch with
-          <a tal:replace="structure view/translation_group/fmt:link"
-             >Launchpad Translators</a>
-          coordinator.
-        </p>
-      </tal:with_group>
-
-      <p>
-        Choose a template name to begin translating.
+          <p tal:condition="not:view/translation_team">
+            There is no team to manage
+            <tal:product replace="structure
+              view/parent/fmt:link">Evolution</tal:product>
+            translations to
+            <a tal:attributes="href context/language/fmt:url"
+               tal:content="context/language/englishname">Serbian</a>.
+            To set one up, please get in touch with
+            <a tal:replace="structure view/translation_group/owner/fmt:link"
+               >Launchpad Translators</a>.
+          </p>
+        </tal:with_group>
+        <tal:without_group condition="not: view/translation_group">
+          <p>
+            There is no translation group to manage
+            <tal:product replace="structure
+              view/parent/fmt:link">Evolution</tal:product>
+            translations.
+          </p>
+        </tal:without_group>
+      </div>
+      <p id="translation-access-level">
+        <span 
+          tal:condition="view/translation_group"
+          tal:replace="structure view/access_level_description">
+            You can add suggestions for these translations.
+        </span>
         Templates which are more important to translate are listed first.
       </p>
     </div>

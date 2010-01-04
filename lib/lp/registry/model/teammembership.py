@@ -40,7 +40,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.teammembership import (
     CyclicalTeamMembershipError, DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
     ITeamMembership, ITeamMembershipSet, ITeamParticipation,
-    TeamMembershipStatus)
+    TeamMembershipStatus, UserCannotChangeMembershipSilently)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
@@ -165,6 +165,11 @@ class TeamMembership(SQLBase):
                 template % replacements, force_wrap=True)
             simple_sendmail(from_addr, address, subject, msg)
 
+    def canChangeStatusSilently(self, user):
+        """Ensure that the user is in the Launchpad Administrators group before
+           silently making changes to their membership status."""
+        return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+
     def canChangeExpirationDate(self, person):
         """See `ITeamMembership`."""
         person_is_admin = self.team in person.getAdministratedTeams()
@@ -269,10 +274,15 @@ class TeamMembership(SQLBase):
             team.displayname, config.canonical.noreply_from_address)
         simple_sendmail(from_addr, to_addrs, subject, msg)
 
-    def setStatus(self, status, user, comment=None):
+    def setStatus(self, status, user, comment=None, silent=False):
         """See `ITeamMembership`."""
         if status == self.status:
             return False
+
+        if silent and not self.canChangeStatusSilently(user):
+            raise UserCannotChangeMembershipSilently(
+                "Only Launchpad administrators may change membership statuses "
+                "silently.")
 
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
@@ -356,7 +366,8 @@ class TeamMembership(SQLBase):
         # When a member proposes himself, a more detailed notification is
         # sent to the team admins by a subscriber of JoinTeamEvent; that's
         # why we don't send anything here.
-        if self.person != self.last_changed_by or self.status != proposed:
+        if ((self.person != self.last_changed_by or self.status != proposed)
+            and not silent):
             self._sendStatusChangeNotification(old_status)
         return True
 

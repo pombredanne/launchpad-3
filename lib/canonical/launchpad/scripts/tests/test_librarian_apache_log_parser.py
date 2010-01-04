@@ -47,6 +47,12 @@ class TestRequestParsing(TestCase):
         request = 'GET //8196569//foo HTTP/1.1'
         self.assertMethodAndFileIDAreCorrect(request)
 
+    def test_multiple_consecutive_white_spaces(self):
+        # Some request strings might have multiple consecutive white spaces,
+        # but they're parsed just like if they didn't have the extra spaces.
+        request = 'GET /8196569/mediumubuntulogo.png  HTTP/1.1'
+        self.assertMethodAndFileIDAreCorrect(request)
+
     def test_return_value_for_https_path(self):
         request = ('GET https://launchpadlibrarian.net/8196569/'
                    'mediumubuntulogo.png HTTP/1.1')
