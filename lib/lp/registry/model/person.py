@@ -2693,12 +2693,21 @@ class PersonSet:
                 base_query,
                 EmailAddress.person == Person.id
                 )
+        if created_before is not None:
+            base_query = And(
+                base_query,
+                Person.datecreated < created_before
+                )
+        if created_after is not None:
+            base_query = And(
+                base_query,
+                Person.datecreated > created_after
+                )
 
         # Short circuit for returning all users in order
         if not text:
-            #query = SQL(' AND '.join(base_query), tables=clause_tables)
-            results = store.find(Person, base_query).order_by(orderBy)
-            return results
+            results = store.find(Person, base_query)
+            return results.order_by(Person._storm_sortingColumns)
 
         # We use a UNION here because this makes things *a lot* faster
         # than if we did a single SELECT with the two following clauses

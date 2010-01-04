@@ -890,6 +890,18 @@ Searching only for People based on their names or email addresses:
     Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
                              u'justdave@bugzilla.org']
 
+The created_before and created_after arguments can use used to restrict the
+matches by the IPerson.datecreated value.
+
+    >>> from datetime import datetime
+    >>> import pytz
+
+    >>> created_after = datetime(2008, 6, 1, tzinfo=pytz.UTC)
+    >>> created_before = datetime(2008, 7, 1, tzinfo=pytz.UTC)
+    >>> print_people(personset.findPerson(text='',
+    ...     created_after=created_after, created_before=created_before))
+    Brad Crittenden (bac): [u'bac@canonical.com']
+
 By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to
 include them as well.

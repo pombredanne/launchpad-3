@@ -1825,6 +1825,9 @@ class IPersonSet(Interface):
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
         address.
+        
+        If created_before or created_after are not None, they are used to
+        restrict the search to the dates provided.
         """
 
     @operation_parameters(
