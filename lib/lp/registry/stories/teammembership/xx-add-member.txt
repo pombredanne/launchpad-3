@@ -171,7 +171,7 @@ one admin is browsing the invitation page, another admin might be doing the
 same. When an admin accepts or declines an invitation, the other admin can't
 take action on that invitation anymore.
 
-First invite ubuntu-team to be member of the name20 team.
+First invite name20 to be a member of ubuntu-team.
 
     >>> browser = setupBrowser(
     ...     auth='Basic colin.watson@ubuntulinux.com:test')

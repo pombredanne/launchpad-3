@@ -267,7 +267,7 @@ Can we add t2 as a member of t3? No, we prevent this kind of loop, and users
 can't do this because our vocabularies won't allow members that would cause
 loops.
 
-    >>> foobar = personset.getByName('name16')
+    >>> foobar = personset.getByEmail('foo.bar@canonical.com')
     >>> login_person(foobar)
     >>> t3.addMember(t2, reviewer)
     Traceback (most recent call last):
