@@ -3,11 +3,10 @@
 
 __metaclass__ = type
 
-import os
-
 from lp.testing import TestCase
 
-from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.readonly import (
+    is_read_only, remove_read_only_file, touch_read_only_file)
 
 
 class TestReadOnlyMode(TestCase):
@@ -18,14 +17,9 @@ class TestReadOnlyMode(TestCase):
 
         # When a file named 'read-only.txt' exists under the root of the tree,
         # we run in read-only mode.
-        root = os.path.join(
-            os.path.dirname(__file__), os.pardir, os.pardir, os.pardir,
-            os.pardir)
-        file_path = os.path.join(root, 'read-only.txt')
-        f = open(file_path, 'w')
-        f.close()
+        touch_read_only_file()
         self.assertTrue(is_read_only())
-        os.remove(file_path)
+        remove_read_only_file()
 
         # Once the file is removed, we're back into read-write mode.
         self.assertFalse(is_read_only())

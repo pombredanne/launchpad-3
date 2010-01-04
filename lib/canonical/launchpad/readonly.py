@@ -19,7 +19,27 @@ signal.
 import os
 
 
+root = os.path.join(
+    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir)
+file_path = os.path.join(root, 'read-only.txt')
+
+
 def is_read_only():
-    root = os.path.join(
-        os.path.dirname(__file__), os.pardir, os.pardir, os.pardir)
-    return os.path.isfile(os.path.join(root, 'read-only.txt'))
+    return os.path.isfile(file_path)
+
+
+def touch_read_only_file():
+    """Create an empty file named read-only.txt under the root of the tree.
+
+    This function must not be called if a file with that name already exists.
+    """
+    assert not is_read_only(), (
+        "This function must not be called when a read-only.txt file "
+        "already exists.")
+    f = open(file_path, 'w')
+    f.close()
+
+
+def remove_read_only_file():
+    """Remove the file named read-only.txt from the root of the tree."""
+    os.remove(file_path)
