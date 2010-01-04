@@ -25,6 +25,7 @@ from lp.testing import TestCaseWithFactory
 
 
 def find_job(test, name, processor='386'):
+    """Find build and queue instance for the given source and processor."""
     result = None
     for build in test.builds:
         if (build.sourcepackagerelease.name == name
@@ -292,25 +293,46 @@ class TestBuilderData(TestBuildQueueBase):
         processor_fam = ProcessorFamilySet().getByName('x86')
         proc_386 = processor_fam.processors[0]
         build = self.builds[0]
+        # The build in question is an x86/native one.
         self.assertEqual(build.processor.id, proc_386.id)
         self.assertEqual(build.is_virtualized, False)
         bq = build.buildqueue_record
+        builder_data = bq._getBuilderData()
+        builders_in_total, builders_for_job, builder_stats = builder_data
+        # We have 4 x86 native builders.
+        self.assertEqual(
+            builder_stats[(proc_386.id,False)], 4,
+            "The number of native x86 builders is wrong")
+        # Initially all 4 builders are free.
         free_count = bq._freeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(free_count, 4)
+        # Once we assign a build to one of them we should see the free
+        # builders count drop by one.
         assign_to_builder(self, 'postgres', 1)
         free_count = bq._freeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(free_count, 3)
+        # When we assign another build to one of them we should see the free
+        # builders count drop by one again.
         assign_to_builder(self, 'gcc', 2)
         free_count = bq._freeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(free_count, 2)
+        # Let's use up another builder.
         assign_to_builder(self, 'apg', 3)
         free_count = bq._freeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(free_count, 1)
+        # And now for the last one.
         assign_to_builder(self, 'flex', 4)
         free_count = bq._freeBuildersCount(
             build.processor, build.is_virtualized)
         self.assertEqual(free_count, 0)
+        # If we reset the 'flex' build the builder that was assigned to it
+        # will be free again.
+        build, bq = find_job(self, 'flex')
+        bq.reset()
+        free_count = bq._freeBuildersCount(
+            build.processor, build.is_virtualized)
+        self.assertEqual(free_count, 1)
