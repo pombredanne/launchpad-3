@@ -11,6 +11,9 @@ MISCROOT=$ARCHIVEROOT/../ubuntu-misc
 LOCKROOT=$ARCHIVEROOT/..
 GERMINATEROOT=$ARCHIVEROOT/../ubuntu-germinate
 
+LAUNCHPADROOT=/srv/launchpad.net/codelines/current
+MAINTAINCE_CHECK=$LAUNCHPADROOT/lib/lp/soyuz/scripts/maintenance-check.py
+
 ## Check to see if another germinate run is in progress
 
 LOCKFILE=$LOCKROOT/cron.germinate.lock
@@ -41,10 +44,11 @@ for component in main universe restricted multiverse; do
 done
 
 > "$MISCROOT/more-extra.override.$suite.main.new"
+
+germinate_components=main,universe,restricted,multiverse
 for distro in ubuntu kubuntu edubuntu xubuntu mythbuntu netbook; do
   DISTRO="$(echo $distro | tr a-z A-Z)"
   germinate_suite="$distro.$suite"
-  germinate_components=main,universe,restricted,multiverse
   for arch in i386 amd64 lpia powerpc sparc ia64 armel; do
     # Grab local copy of Packages and InstallerPackages files
     for component in main universe restricted multiverse; do
@@ -121,5 +125,11 @@ for distro in ubuntu kubuntu edubuntu xubuntu mythbuntu netbook; do
   done
 done
 echo " done."
+
+# now generate the Supported extra overrides
+$MAINTAINCE_CHECK $suite >> "$MISCROOT/more-extra.override.$suite.main.supported"
+if [ $? -eq 0 ]; then
+    cat "$MISCROOT/more-extra.override.$suite.main.supported" >> "$MISCROOT/more-extra.override.$suite.main.new"
+fi
 
 mv -f "$MISCROOT/more-extra.override.$suite.main.new" "$MISCROOT/more-extra.override.$suite.main"
