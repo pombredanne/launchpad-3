@@ -2,12 +2,13 @@
  Private team visibility
 =========================
 
-Private and private membership team restrict the visibility of their
+Private and private membership teams restrict the visibility of their
 attributes to select sets of users in order to prevent leaking
 confidential data.
 
 Private teams restrict the viewing of the membership list
-to administrators and other members of the team.
+to team administrators, other members of the team, and Launchpad
+administrators .
 
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> priv_owner = factory.makePerson(name="priv-owner")
