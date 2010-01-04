@@ -462,7 +462,7 @@ class BugWatchUpdater(object):
             remotesystem_for_others.sync_comments = False
 
             for bug_watch in bug_watches:
-                if (remote_products[bug_watch.remotebug] in
+                if (remote_products.get(bug_watch.remotebug, None) in
                     self._syncable_gnome_products):
                     syncable_watches.append(bug_watch)
                 else:
@@ -789,7 +789,16 @@ class BugWatchUpdater(object):
             )
 
         for bug_id in all_remote_ids:
-            bug_watches = bug_watches_by_remote_bug[bug_id]
+            try:
+                bug_watches = bug_watches_by_remote_bug[bug_id]
+            except KeyError:
+                # If there aren't any bug watches for this remote bug,
+                # just log a warning and carry on.
+                self.warning(
+                    "Spurious remote bug ID: No watches found for "
+                    "remote bug %s on %s" % (bug_id, remotesystem.baseurl))
+                continue
+
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
             if bug_id in unmodified_remote_ids:

@@ -184,7 +184,7 @@ class POTemplateMenu(NavigationMenu):
         text = 'Settings'
         return Link('+edit', text)
 
-    @enabled_with_permission('launchpad.Admin')
+    @enabled_with_permission('launchpad.TranslationsAdmin')
     def administer(self):
         text = 'Administer'
         return Link('+admin', text)
@@ -282,9 +282,29 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
         return by_source
 
     @property
-    def has_more_templates_by_source(self):
+    def more_templates_by_source_link(self):
         by_source_count = self.context.relatives_by_source.count()
-        return by_source_count > self.SHOW_RELATED_TEMPLATES
+        if (by_source_count > self.SHOW_RELATED_TEMPLATES):
+            other = by_source_count - self.SHOW_RELATED_TEMPLATES
+            if (self.context.distroseries):
+                # XXX adiroiban 2009-12-21 bug=499058: A canonical_url for
+                # SourcePackageName is needed to avoid hardcoding this URL.
+                url = (canonical_url(
+                    self.context.distroseries, rootsite="translations") +
+                    "/+source/" + self.context.sourcepackagename.name + 
+                    "/+translations")
+            else:
+                url = canonical_url(
+                    self.context.productseries,
+                    rootsite="translations",
+                    view_name="+templates")
+            if other == 1:
+                return " and <a href=\"%s\">one other template</a>" % url
+            else:
+                return " and <a href=\"%s\">%d other templates</a>" % (
+                    url, other)
+        else:
+            return ""
 
     @property
     def related_templates_by_name(self):
@@ -438,7 +458,7 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
                         warning = (
                             "A file could not be uploaded because its "
                             "name matched multiple existing uploads, for "
-                            "different templates." )
+                            "different templates.")
                         ul_conflicts = (
                             "The conflicting file name was:<br /> "
                             "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
@@ -482,8 +502,11 @@ class POTemplateUploadView(LaunchpadView, TranslationsMixin):
 
 
 class POTemplateViewPreferred(POTemplateView):
+    """View class that shows only users preferred templates."""
+
     def pofiles(self):
         return POTemplateView.pofiles(self, preferred_only=True)
+
 
 class POTemplateEditView(LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
@@ -548,7 +571,7 @@ class POTemplateExportView(BaseExportView):
         if what == 'all':
             export_potemplate = True
 
-            pofiles =  self.context.pofiles
+            pofiles = self.context.pofiles
         elif what == 'some':
             pofiles = []
             export_potemplate = 'potemplate' in self.request.form
@@ -580,6 +603,7 @@ class POTemplateExportView(BaseExportView):
         """Return a list of PO files available for export."""
 
         class BrowserPOFile:
+
             def __init__(self, value, browsername):
                 self.value = value
                 self.browsername = browsername
@@ -688,7 +712,7 @@ class POTemplateSubsetNavigation(Navigation):
             raise AssertionError('Unknown context for %s' % potemplate.title)
 
         if ((official_rosetta and potemplate.iscurrent) or
-            check_permission('launchpad.Admin', self.context)):
+            check_permission('launchpad.TranslationsAdmin', self.context)):
             # The target is using officially Launchpad Translations and the
             # template is available to be translated, or the user is a is a
             # Launchpad administrator in which case we show everything.
@@ -699,6 +723,7 @@ class POTemplateSubsetNavigation(Navigation):
 
 class POTemplateBreadcrumb(Breadcrumb):
     """Breadcrumb for `IPOTemplate`."""
+
     @property
     def text(self):
         return smartquote('Template "%s"' % self.context.name)

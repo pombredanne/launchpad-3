@@ -1,10 +1,12 @@
 = Changing the Bazaar import settings for a product series =
+
 Product maintainers can request a one-time import of translation files
 from the Bazaar branch that is officially linked to the release series
 of a product. This function complements the general import settings
 found on the "Settings" page.
 
 == Getting there ==
+
 The maintainer of a product sees a menu option called "Settings" that
 leads to the settings page.
 
@@ -17,6 +19,7 @@ leads to the settings page.
     http://translations.l...d.dev/evolution/trunk/+translations-settings
 
 == The branch display ==
+
 An official Bazaar branch is linked to this product settings. It is
 displayed on the page.
 
@@ -45,6 +48,7 @@ message also directs to the page where the branch can be set.
     http://launchpad.dev/evolution/trunk/+linkbranch
 
 == Pointer to one-time import ==
+
 The user is also reminded that a one-time import of translation files
 can be requested and a link to that page is provided.
 
@@ -60,6 +64,7 @@ can be requested and a link to that page is provided.
     http://translations.l...d.dev/evolution/trunk/+request-bzr-import
 
 == Changing the setting ==
+
 The setting is changed by selecting the desired mode with the radio
 buttons in the form.
 
@@ -82,4 +87,3 @@ buttons in the form.
     ( ) None
     (*) Import template files
     ( ) Import template and translation files
-

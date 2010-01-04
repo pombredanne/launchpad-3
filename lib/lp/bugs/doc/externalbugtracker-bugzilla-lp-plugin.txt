@@ -26,6 +26,17 @@ which it shares some functionality.
     True
 
 
+Getting the tracker to use
+--------------------------
+
+Instances of BugzillaLPPlugin always assume that they are the
+appropriate bug tracker to use. They do not sniff the remote system to
+check for support; they assume that has been done elsewhere.
+
+    >>> bugzilla.getExternalBugTrackerToUse() is bugzilla
+    True
+
+
 Authentication
 --------------
 
@@ -210,6 +221,7 @@ The bug data is stored as a list of dicts:
         priority: P1
         product: Marvin
         resolution: FIXED
+        see_also:...
         severity: normal
         status: RESOLVED
         summary: That bloody robot still exists.
@@ -226,6 +238,7 @@ The bug data is stored as a list of dicts:
         priority: P1
         product: HeartOfGold
         resolution:
+        see_also:...
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
@@ -555,6 +568,7 @@ bug IDs if those bugs belong to one of a given set of products.
         priority: P1
         product: HeartOfGold
         resolution:
+        see_also: []
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.

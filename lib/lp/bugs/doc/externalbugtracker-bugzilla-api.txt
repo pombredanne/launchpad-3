@@ -23,6 +23,17 @@ transport for the purposes of testing.
     True
 
 
+Getting the tracker to use
+--------------------------
+
+Instances of BugzillaAPI always assume that they are the appropriate
+bug tracker to use. They do not sniff the remote system to check for
+support; they assume that has been done elsewhere.
+
+    >>> bugzilla.getExternalBugTrackerToUse() is bugzilla
+    True
+
+
 Authentication
 --------------
 
@@ -145,6 +156,7 @@ The bug data is stored as a list of dicts:
         priority: P1
         product: Marvin
         resolution: FIXED
+        see_also: []
         severity: normal
         status: RESOLVED
         summary: That bloody robot still exists.
@@ -161,6 +173,7 @@ The bug data is stored as a list of dicts:
         priority: P1
         product: HeartOfGold
         resolution:
+        see_also: []
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
@@ -198,6 +211,7 @@ dicts to demonstrate this.
         priority: P1
         product: HeartOfGold
         resolution:
+        see_also: []
         severity: high
         status: NEW
         summary: Collect unknown persons in docking bay 2.
@@ -560,3 +574,32 @@ The comment will be stored on the remote server with the other comments.
     This is a new remote comment.
     <BLANKLINE>
 
+
+Linking a Launchpad bug to a remote bug
+---------------------------------------
+
+BugzillaAPI implements the ISupportsBackLinking interface, which means
+that it can be used to tell the remote bug tracker that a given remote
+bug is linked to a Launchpad bug.
+
+    >>> from canonical.launchpad.interfaces import ISupportsBackLinking
+    >>> verifyObject(ISupportsBackLinking, bugzilla)
+    True
+
+BugzillaAPI.setLaunchpadBugId() can be used to set the Launchpad bug ID
+for a given bug.
+
+setLaunchpadBugId() requires the user to be logged in.
+
+    >>> bugzilla.xmlrpc_transport.expireCookie(
+    ...     bugzilla.xmlrpc_transport.auth_cookie)
+
+    >>> bugzilla.xmlrpc_transport.print_method_calls = True
+    >>> bugzilla.setLaunchpadBugId(bug_watch.remotebug, bug_watch.bug.id)
+    CALLED Bug.update_see_also({'add':
+        ['http://bugs.launchpad.dev/bugs...'], 'ids': [1]})
+
+BugzillaAPI.getLaunchpadBugId() will currently always return None due to
+bug 490267.
+
+    >>> bugzilla.getLaunchpadBugId(bug_watch.remotebug)

@@ -54,7 +54,7 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
+    ArchivePurpose, CannotCopy, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
     NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
@@ -77,7 +77,7 @@ from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.soyuz.scripts.packagecopier import CannotCopy, do_copy
+from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -1096,7 +1096,9 @@ class Archive(SQLBase):
         # Find and validate the source package names in source_names.
         sources = []
         for name in source_names:
-            source_package_name = getUtility(ISourcePackageNameSet)[name]
+            # Check to see if the source package exists, and raise a useful
+            # error if it doesn't.
+            getUtility(ISourcePackageNameSet)[name]
             # Grabbing the item at index 0 ensures it's the most recent
             # publication.
             sources.append(
@@ -1108,8 +1110,10 @@ class Archive(SQLBase):
     def syncSource(self, source_name, version, from_archive, to_pocket,
                    to_series=None, include_binaries=False):
         """See `IArchive`."""
+        # Check to see if the source package exists, and raise a useful error
+        # if it doesn't.
+        getUtility(ISourcePackageNameSet)[source_name]
         # Find and validate the source package version required.
-        source_package_name = getUtility(ISourcePackageNameSet)[source_name]
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True)[0]
 
@@ -1562,7 +1566,8 @@ class ArchiveSet:
             Archive.purpose == ArchivePurpose.PPA)
 
     def getArchivesForDistribution(self, distribution, name=None,
-                                   purposes=None, user=None):
+                                   purposes=None, user=None,
+                                   exclude_disabled=True):
         """See `IArchiveSet`."""
         extra_exprs = []
 
@@ -1576,6 +1581,12 @@ class ArchiveSet:
 
         if name is not None:
             extra_exprs.append(Archive.name == name)
+
+        if exclude_disabled:
+            public_archive = And(Archive.private == False,
+                                 Archive.enabled == True)
+        else:
+            public_archive = (Archive.private == False)
 
         if user is not None:
             admins = getUtility(ILaunchpadCelebrities).admin
@@ -1601,16 +1612,13 @@ class ArchiveSet:
                 # that consists of themselves.
                 extra_exprs.append(
                     Or(
-                        And(Archive.private == False,
-                            Archive.enabled == True),
+                        public_archive,
                         Archive.ownerID.is_in(user_teams_subselect)))
 
         else:
             # Anonymous user; filter to include only public archives in
             # the results.
-            extra_exprs.append(Archive.private == False)
-            extra_exprs.append(Archive.enabled == True)
-
+            extra_exprs.append(public_archive)
 
         query = Store.of(distribution).find(
             Archive,

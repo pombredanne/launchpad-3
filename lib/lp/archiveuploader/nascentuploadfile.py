@@ -33,7 +33,7 @@ from zope.component import getUtility
 from lp.archiveuploader.utils import (
     prefix_multi_line_string, re_taint_free, re_isadeb, re_issource,
     re_no_epoch, re_no_revision, re_valid_version, re_valid_pkg_name,
-    re_extract_src_version)
+    re_extract_src_version, determine_source_file_type)
 from canonical.encoding import guess as guess_encoding
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageNameSet)
@@ -48,6 +48,7 @@ from lp.soyuz.interfaces.queue import (
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingPriority)
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.model.files import SourceFileMixin
 from canonical.librarian.utils import filechunks
 
 
@@ -331,7 +332,7 @@ class PackageUploadFile(NascentUploadFile):
         return getUtility(ISectionSet)[self.section_name]
 
 
-class SourceUploadFile(PackageUploadFile):
+class SourceUploadFile(SourceFileMixin, PackageUploadFile):
     """Files mentioned in changesfile as source (orig, diff, tar).
 
     This class only check consistency on information contained in
@@ -339,6 +340,11 @@ class SourceUploadFile(PackageUploadFile):
     Further checks on file contents and package consistency are done
     in DSCFile.
     """
+
+    @property
+    def filetype(self):
+        return determine_source_file_type(self.filename)
+
     def verify(self):
         """Verify the uploaded source file.
 
@@ -351,7 +357,7 @@ class SourceUploadFile(PackageUploadFile):
                 "Architecture field." % (self.filename))
 
         version_chopped = re_no_epoch.sub('', self.version)
-        if self.filename.endswith("orig.tar.gz"):
+        if self.is_orig:
             version_chopped = re_no_revision.sub('', version_chopped)
 
         source_match = re_issource.match(self.filename)
@@ -688,7 +694,7 @@ class BaseBinaryUploadFile(PackageUploadFile):
                             tar_checker.ancient_files[first_file])
                         yield UploadError(
                             "%s: has %s file(s) with a time stamp too "
-                            "far into the future (e.g. %s [%s])."
+                            "far in the past (e.g. %s [%s])."
                              % (self.filename, len(ancient_files), first_file,
                                 timestamp))
                     return

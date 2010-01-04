@@ -43,7 +43,7 @@
       rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
       icingroot string:${rooturl}+icing/rev${revno};
       devmode modules/canonical.config/config/devmode;
-      yui string:${icingroot}/yui/3.0.0pr2/build;
+      yui string:${icingroot}/yui;
       lazr_js string:${icingroot}/lazr/build;
       lp_js string:${icingroot}/build"
   >
@@ -53,16 +53,44 @@
   </tal:comment>
 
   <tal:devmode condition="devmode">
+
+    <tal:comment replace="nothing">
+      Instead of loading the yui.js seed we will load three of it's five
+      sub-components.
+
+      We leave out get.js and loader.js, effectively disabling
+      dynamic loading of modules.
+
+      XXX mars 2009-11-03
+      To see what modules are missing you have to change yui-base.js to
+      yui-base-debug.js and move the <script/> node outside of this block.
+
+      This will hopefully be fixed in YUI itself.
+      See http://yuilibrary.com/projects/yui3/ticket/2528368
+    </tal:comment>
     <script type="text/javascript"
-            tal:attributes="src string:${yui}/yui/yui.js"></script>
+            tal:attributes="src string:${yui}/yui/yui-base.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${yui}/yui/yui-log.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${yui}/yui/yui-later.js"></script>
+
     <script type="text/javascript"
             tal:attributes="src string:${yui}/oop/oop.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event/event.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${yui}/event-custom/event-custom.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${yui}/event-simulate/event-simulate.js"></script>
+    <script type="text/javascript"
             tal:attributes="src string:${yui}/dom/dom.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/node/node.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${yui}/node-focusmanager/node-focusmanager.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${yui}/node/node-event-simulate.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/dump/dump.js"></script>
     <script type="text/javascript"
@@ -81,6 +109,8 @@
             tal:attributes="src string:${yui}/classnamemanager/classnamemanager.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/plugin/plugin.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${yui}/pluginhost/pluginhost.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/widget/widget.js"></script>
     <script type="text/javascript"
@@ -160,6 +190,10 @@
 
   <script type="text/javascript"
       tal:content="string:var cookie_scope = '${request/lp:cookie_scope}';"></script>
+  <script type="text/javascript">
+    // Define a global YUI sandbox that should be used by everyone.
+    var LPS = YUI();
+  </script>
 </metal:load-javascript>
 
 
@@ -192,7 +226,7 @@
   <metal:load-lavascript use-macro="context/@@+base-layout-macros/load-javascript" />
 
   <script type="text/javascript">
-    YUI().use('node', 'lp', function(Y) {
+    LPS.use('node', 'lp', function(Y) {
         Y.on('load', function(e) {
             sortables_init();
             initInlineHelp();
@@ -209,80 +243,18 @@
 </metal:page-javascript>
 
 
-<metal:launchpad-stylesheet define-macro="launchpad-stylesheet"
-  tal:define="
-      revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
-      rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-      icingroot string:${rooturl}+icing/rev${revno};
-      devmode modules/canonical.config/config/devmode"
-  >
-  <style
-    type="text/css"
-    media="screen, print"
-    tal:condition="not: devmode"
-    tal:content="string:@import url(${icingroot}/+style-slimmer.css);"/>
-  <style
-    type="text/css"
-    media="screen, print"
-    tal:condition="devmode"
-    tal:content="string:@import url(${icingroot}/style.css);"/>
-
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/lazr/assets/skins/sam/lazr.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/inlineedit/assets/skins/sam/editor.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/autocomplete/assets/skins/sam/autocomplete.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/overlay/assets/skins/sam/pretty-overlay.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/formoverlay/assets/formoverlay.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/picker/assets/skins/sam/picker.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/activator/assets/skins/sam/activator.css"
-      />
-  <link rel="stylesheet" type="text/css"
-      tal:attributes="href
-      string:${icingroot}/lazr/build/choiceedit/assets/choiceedit-core.css"
-      />
-</metal:launchpad-stylesheet>
-
-
 <metal:launchpad-stylesheet-3-0 define-macro="launchpad-stylesheet-3-0"
   tal:define="
     revno modules/canonical.launchpad.versioninfo/revno | string:unknown;
     rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-    icingroot string:${rooturl}+icing/rev${revno};
-    yui string:${icingroot}/yui/3.0.0pr2/build;
-    devmode modules/canonical.config/config/devmode">
+    icingroot string:${rooturl}+icing/rev${revno}">
   <tal:comment replace="nothing">
-    This macro loads the old stylesheet, then the YUI CSS, and finally
-    the new stylesheet.
+    This macro loads a single css file containing all our stylesheets.
+    If you need to include a new css file here, add it to
+    buildout-templates/bin/combine-css.in instead.
   </tal:comment>
-  <metal:old-style-sheet use-macro="context/@@+base-layout-macros/launchpad-stylesheet" />
-  <link rel="stylesheet" type="text/css"
-    tal:attributes="href string:${yui}/cssreset/reset.css" />
-  <link rel="stylesheet" type="text/css"
-    tal:attributes="href string:${yui}/cssfonts/fonts.css" />
-  <link rel="stylesheet" type="text/css"
-    tal:attributes="href string:${yui}/cssgrids/grids.css" />
-
   <style type="text/css" media="screen, print"
-    tal:content="string:@import url(${icingroot}/style-3-0.css);"/>
+    tal:content="string:@import url(${icingroot}/combo.css);"/>
 </metal:launchpad-stylesheet-3-0>
 
 

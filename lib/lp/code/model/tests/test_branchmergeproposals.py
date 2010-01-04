@@ -26,6 +26,8 @@ from lazr.lifecycle.event import ObjectModifiedEvent
 from canonical.launchpad.interfaces import IPrivacy
 from canonical.launchpad.interfaces.message import IMessageJob
 from canonical.launchpad.webapp.testing import verifyObject
+from lp.code.errors import (
+    BadStateTransition, WrongBranchMergeProposal)
 from lp.code.event.branchmergeproposal import (
     NewBranchMergeProposalEvent, NewCodeReviewCommentEvent,
     ReviewerNominatedEvent)
@@ -36,11 +38,10 @@ from lp.code.enums import (
     BranchType, CodeReviewNotificationLevel, CodeReviewVote,
     BranchVisibilityRule)
 from lp.code.interfaces.branchmergeproposal import (
-    BadStateTransition,
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
-    IMergeProposalCreatedJob, notify_modified, WrongBranchMergeProposal)
+    IMergeProposalCreatedJob, notify_modified)
 from lp.code.model.branchmergeproposaljob import (
     BranchMergeProposalJob, BranchMergeProposalJobType,
     CreateMergeProposalJob, MergeProposalCreatedJob, UpdatePreviewDiffJob)
@@ -443,6 +444,13 @@ class TestBranchMergeProposalRequestReview(TestCaseWithFactory):
         proposal.requestReview()
         self.assertEqual(
             proposal.date_created, proposal.date_review_requested)
+
+    def test_date_not_reset_on_wip(self):
+        # If a proposal has been in needs review state, and is moved back into
+        # work in progress, the date_review_requested is not reset.
+        proposal = self._createMergeProposal(needs_review=True)
+        proposal.setAsWorkInProgress()
+        self.assertIsNot(None, proposal.date_review_requested)
 
 
 class TestBranchMergeProposalQueueing(TestCase):
@@ -1520,6 +1528,38 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
             ['general-1', 'general-2'],
             sorted([review.review_type for review in votes]))
 
+    def test_nominate_multiple_with_same_types(self):
+        # There can be multiple reviews for a team with the same review_type.
+        reviewer = self.factory.makePerson()
+        review_team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            reviewer=review_team, review_type='general')
+        merge_proposal.nominateReviewer(
+            reviewer=review_team,
+            registrant=merge_proposal.registrant,
+            review_type='general')
+
+        votes = list(merge_proposal.votes)
+        self.assertEqual(
+            [(review_team, 'general'), (review_team, 'general')],
+            [(review.reviewer, review.review_type) for review in votes])
+
+    def test_nominate_multiple_team_reviews_with_no_type(self):
+        # There can be multiple reviews for a team with no review type set.
+        reviewer = self.factory.makePerson()
+        review_team = self.factory.makeTeam(owner=reviewer)
+        merge_proposal, reviewer = self.makeProposalWithReviewer(
+            reviewer=review_team, review_type=None)
+        merge_proposal.nominateReviewer(
+            reviewer=review_team,
+            registrant=merge_proposal.registrant,
+            review_type=None)
+
+        votes = list(merge_proposal.votes)
+        self.assertEqual(
+            [(review_team, None), (review_team, None)],
+            [(review.reviewer, review.review_type) for review in votes])
+
     def test_nominate_updates_reference(self):
         """The existing reference is updated on re-nomination."""
         merge_proposal = self.factory.makeBranchMergeProposal()
@@ -1642,6 +1682,7 @@ class TestBranchMergeProposalNominateReviewer(TestCaseWithFactory):
         self.assertEqual(comment, vote.comment)
         # Still only one vote.
         self.assertEqual(1, len(list(merge_proposal.votes)))
+
 
 class TestBranchMergeProposalResubmit(TestCaseWithFactory):
 

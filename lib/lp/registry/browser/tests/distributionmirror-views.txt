@@ -49,12 +49,14 @@ The view provides a label, page_title, and cancel_url
 A HTTP or FTP URL is required to register a mirror.
 
     >>> view.field_names
-    ['displayname', 'description', 'http_base_url', 'ftp_base_url',
-     'rsync_base_url', 'speed', 'country', 'content', 'official_candidate']
+    ['displayname', 'description', 'whiteboard', 'http_base_url',
+     'ftp_base_url', 'rsync_base_url', 'speed', 'country', 'content',
+     'official_candidate']
 
     >>> form = {
     ...     'field.displayname': 'Illuminati',
     ...     'field.description': 'description',
+    ...     'field.whiteboard': 'whiteboard',
     ...     'field.http_base_url': 'http://secret.me/',
     ...     'field.ftp_base_url': '',
     ...     'field.rsync_base_url': '',
@@ -239,8 +241,9 @@ The +edit view provides a label, page_title, and cancel_url.
 The user can edit the mirror fields.
 
     >>> view.field_names
-    ['name', 'displayname', 'description', 'http_base_url', 'ftp_base_url',
-     'rsync_base_url', 'speed', 'country', 'content', 'official_candidate']
+    ['name', 'displayname', 'description', 'whiteboard', 'http_base_url',
+     'ftp_base_url', 'rsync_base_url', 'speed', 'country', 'content',
+     'official_candidate']
 
     >>> print mirror.ftp_base_url
     None
@@ -323,7 +326,7 @@ Deletion is permanent.
     >>> view.errors
     []
     >>> print view.next_url
-    http://launchpad.dev/ubuntu
+    http://launchpad.dev/ubuntu/+pendingreviewmirrors
 
     >>> transaction.commit()
     >>> print ubuntu.getMirrorByName('secret.me-archive')
@@ -359,7 +362,7 @@ The archive mirror page summarizes the current state of the mirror.
 The page shows the mirror status
 
     >>> print extract_text(find_tag_by_id(content, 'status'))
-    Official Ubuntu Linux Mirror registered by Mark Shuttleworth ...
+    Official Ubuntu Linux mirror administered by Mark Shuttleworth, ...
 
 The page contains a source list...
 

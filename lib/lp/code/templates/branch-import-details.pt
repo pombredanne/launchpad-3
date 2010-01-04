@@ -32,8 +32,8 @@
                 Try again
               </a>
               <script type="text/javascript">
-                  YUI().use('event', 'node', function(Y) {
-                    Y.on("domready", function () { Y.get('#tryagainlink').setStyle('display', 'inline') });
+                  LPS.use('event', 'node', function(Y) {
+                    Y.on("domready", function () { Y.one('#tryagainlink').setStyle('display', 'inline') });
                   });
               </script>
             </form>
@@ -45,15 +45,18 @@
           </p>
         </tal:git-import>
 
-        <tal:svn-import condition="code_import/rcs_type/enumvalue:SVN">
-          <p>This branch is an import of the Subversion branch from
-          <tal:is-web-url condition="view/svn_url_is_web">
-            <a tal:attributes="href code_import/svn_branch_url"
-                    tal:content="code_import/svn_branch_url" />.
-          </tal:is-web-url>
-          <tal:not-web-url condition="not: view/svn_url_is_web">
+        <tal:svn-import condition="view/is_svn_import">
+          <p id="svn-import-details">
+            This branch is an import of the
+            <span tal:attributes="title code_import/rcs_type/title">Subversion</span>
+            branch from
+            <tal:is-web-url condition="view/svn_url_is_web">
+              <a tal:attributes="href code_import/svn_branch_url"
+                 tal:content="code_import/svn_branch_url" />.
+            </tal:is-web-url>
+            <tal:not-web-url condition="not: view/svn_url_is_web">
               <span tal:replace="code_import/svn_branch_url" />.
-          </tal:not-web-url>
+            </tal:not-web-url>
           </p>
         </tal:svn-import>
 

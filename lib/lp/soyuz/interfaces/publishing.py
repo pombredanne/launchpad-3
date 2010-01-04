@@ -13,6 +13,7 @@ __all__ = [
     'IBinaryPackagePublishingHistory',
     'ICanPublishPackages',
     'IFilePublishing',
+    'IPublishingEdit',
     'IPublishingSet',
     'ISecureBinaryPackagePublishingHistory',
     'ISecureSourcePackagePublishingHistory',
@@ -39,9 +40,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_returns_collection_of)
-
+    export_as_webservice_entry, export_read_operation, export_write_operation,
+    exported, operation_parameters, operation_returns_collection_of)
 
 #
 # Exceptions
@@ -231,8 +231,8 @@ class IArchiveSafePublisher(Interface):
         """
 
 
-class IPublishing(Interface):
-    """Base interface for all *Publishing classes"""
+class IPublishingView(Interface):
+    """Base interface for all Publishing classes"""
 
     files = Attribute("Files included in this publication.")
     secure_record = Attribute("Correspondent secure package history record.")
@@ -283,17 +283,6 @@ class IPublishing(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
-    def requestDeletion(removed_by, removal_comment=None):
-        """Delete this publication.
-
-        :param removed_by: `IPerson` responsible for the removal.
-        :param removal_comment: optional text describing the removal reason.
-
-        :return: The deleted publishing record, either:
-            `ISourcePackagePublishingHistory` or
-            `IBinaryPackagePublishingHistory`.
-        """
-
     def requestObsolescence():
         """Make this publication obsolete.
 
@@ -328,6 +317,22 @@ class IPublishing(Interface):
 
         :raise: AssertionError if the context publishing record is not in
             PENDING status.
+        """
+
+
+class IPublishingEdit(Interface):
+    """Base interface for writeable Publishing classes."""
+    export_as_webservice_entry()
+
+    @operation_parameters(
+        removed_by=Reference(schema=IPerson, title=_("Removed by")),
+        removal_comment=TextLine(title=_("Removal comment"), required=False))
+    @export_write_operation()
+    def requestDeletion(removed_by, removal_comment=None):
+        """Delete this publication.
+
+        :param removed_by: `IPerson` responsible for the removal.
+        :param removal_comment: optional text describing the removal reason.
         """
 
 
@@ -393,7 +398,7 @@ class ISourcePackageFilePublishing(IFilePublishing):
             )
 
 
-class ISecureSourcePackagePublishingHistory(IPublishing):
+class ISecureSourcePackagePublishingHistory(IPublishingView):
     """A source package publishing history record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -511,7 +516,7 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute")
     meta_supersededby = Attribute(
-        "Return an IDistribuitionSourcePackageRelease meta object "
+        "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the supersededby attribute. if supersededby "
         "is None return None.")
     meta_distroseriessourcepackagerelease = Attribute(
@@ -569,6 +574,11 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             description=_('The IPerson who signed the source package.'),
             required=False, readonly=True,
         ))
+
+    newer_distroseries_version = Attribute(
+        "An `IDistroSeriosSourcePackageRelease` with a newer version of this "
+        "package that has been published in the main distribution series, "
+        "if one exists, or None.")
 
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
@@ -701,7 +711,7 @@ class IBinaryPackageFilePublishing(IFilePublishing):
             )
 
 
-class ISecureBinaryPackagePublishingHistory(IPublishing):
+class ISecureBinaryPackagePublishingHistory(IPublishingView):
     """A binary package publishing record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -1133,6 +1143,34 @@ class IPublishingSet(Interface):
         for details. The call is just proxied here so that it can also be
         used with an ArchiveSourcePublication passed in as
         the source_package_pub, allowing the use of the cached results.
+        """
+
+    def getNearestAncestor(
+        package_name, archive, distroseries, pocket=None, status=None,
+        binary=False):
+        """Return the ancestor of the given parkage in a particular archive.
+
+        :param package_name: The package name for which we are checking for
+            an ancestor.
+        :type package_name: ``string``
+        :param archive: The archive in which we are looking for an ancestor.
+        :type archive: `IArchive`
+        :param distroseries: The particular series in which we are looking for
+            an ancestor.
+        :type distroseries: `IDistroSeries`
+        :param pocket: An optional pocket to restrict the search.
+        :type pocket: `PackagePublishingPocket`.
+        :param status: An optional status defaulting to PUBLISHED if not
+            provided.
+        :type status: `PackagePublishingStatus`
+        :param binary: An optional argument to look for a binary ancestor
+            instead of the default source.
+        :type binary: ``Boolean``
+
+        :return: The most recent publishing history for the given
+            arguments.
+        :rtype: `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory` or None.
         """
 
 active_publishing_status = (

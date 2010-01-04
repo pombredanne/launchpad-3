@@ -761,7 +761,7 @@
             name="+reviewaccount"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonAccountAdministerView"
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             template="../templates/person-review.pt"/>
         <browser:page
             name="+claimteam"
@@ -1310,6 +1310,7 @@
     <browser:menus
         classes="
             MilestoneContextMenu
+            MilestoneInlineNavigationMenu
             MilestoneOverviewMenu
             MilestoneOverviewNavigationMenu"
         module="lp.registry.browser.milestone"/>
@@ -1934,13 +1935,6 @@
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
-        class="lp.registry.browser.sourcepackage.SourcePackagePackaging"
-        name="+packaging"
-        facet="overview"
-        template="../templates/sourcepackage-packaging.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        permission="zope.Public"
         class="lp.registry.browser.sourcepackage.SourcePackageHelpView"
         name="+gethelp"
         facet="answers"
@@ -2114,4 +2108,22 @@
         facet="overview"
         template="../templates/sourcepackage-edit-packaging.pt"
         />
+
+    <browser:page
+        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
+        name="+subscribe"
+        permission="launchpad.AnyPerson"
+        facet="bugs"
+        class="lp.registry.browser.structuralsubscription.StructuralSubscriptionView"
+        template="../templates/structural-subscriptions-manage.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
+        name="+portlet-structural-subscribers"
+        facet="bugs"
+        permission="zope.Public"
+        template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
+    <browser:url
+        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
+        path_expression="string:+subscription/${subscriber/name}"
+        attribute_to_parent="target"/>
 </configure>

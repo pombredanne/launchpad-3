@@ -45,12 +45,6 @@ The Answer Tracker
     >>> canonical_url(getUtility(IQuestionSet))
     u'http://answers.launchpad.dev/questions'
 
-The set of mailing lists
-
-    >>> from canonical.launchpad.interfaces import IMailingListSet
-    >>> canonical_url(getUtility(IMailingListSet))
-    u'http://launchpad.dev/+mailinglists'
-
 Launchpad Translations (Rosetta) canonical_url examples are in
 lib/lp/translations/doc/canonical_url_examples.txt.
 
@@ -94,8 +88,8 @@ An ISignedCodeOfConduct
 
 An ICodeOfConduct
 
-    >>> canonical_url(cocset['1.0'])
-    u'http://launchpad.dev/codeofconduct/1.0'
+    >>> canonical_url(cocset['1.1'])
+    u'http://launchpad.dev/codeofconduct/1.1'
 
 
 == Distributions, distroseriess and so on ==

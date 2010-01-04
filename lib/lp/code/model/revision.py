@@ -26,7 +26,7 @@ from sqlobject import (
     BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound,
     SQLMultipleJoin)
 
-from canonical.database.constants import DEFAULT
+from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
@@ -218,16 +218,20 @@ class RevisionSet:
         return author
 
     def new(self, revision_id, log_body, revision_date, revision_author,
-            parent_ids, properties):
+            parent_ids, properties, _date_created=None):
         """See IRevisionSet.new()"""
         if properties is None:
             properties = {}
+        if _date_created is None:
+            _date_created = UTC_NOW
         author = self.acquireRevisionAuthor(revision_author)
 
-        revision = Revision(revision_id=revision_id,
-                            log_body=log_body,
-                            revision_date=revision_date,
-                            revision_author=author)
+        revision = Revision(
+            revision_id=revision_id,
+            log_body=log_body,
+            revision_date=revision_date,
+            revision_author=author,
+            date_created=_date_created)
         # Don't create future revisions.
         if revision.revision_date > revision.date_created:
             revision.revision_date = revision.date_created
