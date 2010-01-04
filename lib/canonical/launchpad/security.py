@@ -687,6 +687,11 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(admins) or user.inTeam(self.obj):
             return True
+        # We also grant visibility of the private team to administrators of
+        # other teams that have been invited to join the private team.
+        for invitee in self.obj.invited_members:
+            if invitee.is_team and user in invitee.getDirectAdministrators():
+                return True
         return False
 
 
