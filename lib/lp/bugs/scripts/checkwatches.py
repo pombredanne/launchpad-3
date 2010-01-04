@@ -666,7 +666,7 @@ class BugWatchUpdater(object):
             'unmodified_remote_ids': unmodified_remote_ids,
             }
 
-    def getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
+    def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
         """Return a list of bug watches for the given remote bug.
 
         The returned watches will all be members of `bug_watch_ids`.
@@ -779,7 +779,7 @@ class BugWatchUpdater(object):
             # Start a fresh transaction every time round the loop.
             self.txn.begin()
 
-            bug_watches = self.getBugWatchesForRemoteBug(
+            bug_watches = self._getBugWatchesForRemoteBug(
                 remote_bug_id, bug_watch_ids)
             if len(bug_watches) == 0:
                 # If there aren't any bug watches for this remote bug,

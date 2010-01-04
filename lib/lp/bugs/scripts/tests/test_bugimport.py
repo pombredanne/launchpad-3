@@ -892,7 +892,7 @@ class TestBugWatchUpdater(BugWatchUpdater):
         """See `BugWatchUpdater`."""
         return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
 
-    def getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
+    def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
         """Returns a list of fake bug watch objects.
 
         We override this method so that we always return bug watches
