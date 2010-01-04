@@ -2,3 +2,92 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+** 58 import policy violations **
+
+There were 58 imports of names not appearing in the __all__.
+You should not import IBug from canonical.launchpad.interfaces._schema_circular_imports:
+   lp.bugs.browser.bug
+   lp.bugs.browser.bugtarget
+   lp.bugs.subscribers.bugactivity
+   lp.bugs.subscribers.buglastupdated
+You should not import IDistribution from canonical.launchpad.interfaces._schema_circular_imports:
+   lp.bugs.browser.bugtarget
+You should not import IPerson from canonical.launchpad.interfaces._schema_circular_imports:
+   lp.bugs.subscribers.bug
+   lp.bugs.subscribers.bugactivity
+You should not import IBugTracker from lp.bugs.interfaces.bugwatch:
+   lp.registry.browser.product
+You should not import BranchFormat from lp.code.interfaces.branch:
+   lp.codehosting.scanner.bzrsync
+You should not import ControlFormat from lp.code.interfaces.branch:
+   lp.codehosting.scanner.bzrsync
+You should not import RepositoryFormat from lp.code.interfaces.branch:
+   lp.codehosting.scanner.bzrsync
+You should not import IReclaimBranchSpaceJob from lp.code.interfaces.branchjob:
+   lp.code.model.branchjob
+You should not import IReclaimBranchSpaceJobSource from lp.code.interfaces.branchjob:
+   lp.code.model.branch
+   lp.code.model.branchjob
+You should not import IRevisionsAddedJob from lp.code.interfaces.branchjob:
+   lp.code.model.branchjob
+You should not import IUpdatePreviewDiffJobSource from lp.code.interfaces.branchmergeproposal:
+   lp.code.model.branchmergeproposaljob
+You should not import notify_modified from lp.code.interfaces.branchmergeproposal:
+   lp.codehosting.scanner.mergedetection
+You should not import BranchSubscriptionNotificationLevel from lp.code.interfaces.branchsubscription:
+   lp.codehosting.scanner.email
+You should not import CodeImportReviewStatus from lp.code.interfaces.codeimport:
+   lp.code.browser.branch
+You should not import CodeImportJobState from lp.code.interfaces.codeimportjob:
+   lp.code.browser.branch
+   lp.code.model.codeimport
+You should not import UpdatePreviewDiffJob from lp.code.model.branchmergeproposaljob:
+   lp.code.model.branch
+You should not import iter_split from lp.code.xmlrpc.codehosting:
+   lp.code.model.branchnamespace
+   lp.codehosting.inmemory
+You should not import schedule_diff_updates from lp.codehosting.scanner.bzrsync:
+   lp.codehosting.scanner.branch_scanner
+You should not import schedule_translation_upload from lp.codehosting.scanner.bzrsync:
+   lp.codehosting.scanner.branch_scanner
+You should not import BadUrlScheme from lp.codehosting.vfs.branchfs:
+   lp.codehosting.puller.worker
+You should not import ISeriesMixin from lp.registry.interfaces.distroseries:
+   lp.registry.model.distroseries
+You should not import IBugTask from lp.registry.interfaces.milestone:
+   lp.registry.browser.mentoringoffer
+You should not import IProductRelease from lp.registry.interfaces.milestone:
+   lp.bugs.subscribers.bugactivity
+You should not import IEmailAddress from lp.registry.interfaces.person:
+   lp.registry.browser.person
+You should not import IDistributionSourcePackage from lp.registry.interfaces.product:
+   lp.registry.browser.distributionsourcepackage
+   lp.registry.browser.structuralsubscription
+   lp.registry.model.distributionsourcepackage
+You should not import IProject from lp.registry.interfaces.product:
+   lp.bugs.browser.bugtarget
+You should not import BaseRunnableJob from lp.services.job.runner:
+   lp.code.model.branchjob
+   lp.code.model.branchmergeproposaljob
+You should not import extract_bug_numbers from lp.soyuz.browser.sourcepackagerelease:
+   lp.registry.browser.distributionsourcepackage
+You should not import extract_email_addresses from lp.soyuz.browser.sourcepackagerelease:
+   lp.registry.browser.distributionsourcepackage
+You should not import linkify_changelog from lp.soyuz.browser.sourcepackagerelease:
+   lp.registry.browser.distributionsourcepackage
+You should not import PoolFileNotFound from lp.soyuz.scripts.gina.packages:
+   lp.soyuz.scripts.gina.handlers
+You should not import get_dsc_path from lp.soyuz.scripts.gina.packages:
+   lp.soyuz.scripts.gina.handlers
+You should not import prioritymap from lp.soyuz.scripts.gina.packages:
+   lp.soyuz.scripts.gina.handlers
+You should not import urgencymap from lp.soyuz.scripts.gina.packages:
+   lp.soyuz.scripts.gina.handlers
+You should not import ITranslationImportQueue from lp.translations.model.translationimportqueue:
+   lp.registry.model.product
+You should not import UTC from pytz:
+   lp.translations.scripts.po_import
+   lp.translations.scripts.translations_to_branch
+You should not import ComponentLookupError from zope.component:
+   lp.bugs.browser.bugtask
