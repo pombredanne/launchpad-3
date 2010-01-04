@@ -1175,6 +1175,8 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
                 self, user)
 
 
+# Please keep EditPOTemplateSubset in sync with this, unless you
+# know exactly what you are doing.
 class EditPOTemplateDetails(AdminPOTemplateDetails, EditByOwnersOrAdmins):
     permission = 'launchpad.Edit'
     usedfor = IPOTemplate
@@ -1656,7 +1658,7 @@ class AdminBranch(AuthorizationBase):
                 user.inTeam(celebs.bazaar_experts))
 
 
-# Please keep this in sync with AdminPOTemplateDetails.  Note that
+# Please keep this in sync with AdminPOTemplateDetails. Note that
 # this permission controls access to browsing into individual
 # potemplates, but it's on a different object (POTemplateSubset)
 # from AdminPOTemplateDetails, even though it looks almost identical
@@ -1681,6 +1683,29 @@ class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
         else:
             # Template is on a product.
             return OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user)
+
+
+# Please keep EditPOTemplate in sync with this, unless you
+# know exactly what you are doing. Note that this permission controls
+# access to browsing into individual potemplates, but it's on a different
+# object (POTemplateSubset) from EditPOTemplateDetails,
+# even though it looks almost identical
+class EditPOTemplateSubset(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IPOTemplateSubset
+
+    def checkAuthenticated(self, user):
+        """Allow anyone with admin rights; owners, product owners and
+        distribution owners; and for distros, translation group owners.
+        """
+        if (self.obj.productseries is not None and
+            user.inTeam(self.obj.productseries.product.owner)):
+            # The user is the owner of the product.
+            return True
+
+        return (
+            AdminPOTemplateSubset(self.obj).checkAuthenticated(user) or
+            EditByOwnersOrAdmins(self.obj).checkAuthenticated(user))
 
 
 class AdminDistroSeriesTranslations(AuthorizationBase):
