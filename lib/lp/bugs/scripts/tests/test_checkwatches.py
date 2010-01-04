@@ -20,7 +20,7 @@ from lp.bugs.tests.externalbugtracker import TestBugzillaAPIXMLRPCTransport
 from lp.testing import TestCaseWithFactory
 
 
-def fudged_get_external_bugtracker(bugtracker):
+def always_BugzillaAPI_get_external_bugtracker(bugtracker):
     """A version of get_external_bugtracker that returns BugzillaAPI."""
     return BugzillaAPI(bugtracker.baseurl)
 
@@ -83,7 +83,7 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         self.original_get_external_bug_tracker = (
             checkwatches.externalbugtracker.get_external_bugtracker)
         checkwatches.externalbugtracker.get_external_bugtracker = (
-            fudged_get_external_bugtracker)
+            always_BugzillaAPI_get_external_bugtracker)
 
         # Create an updater with a limited set of syncable gnome
         # products.
@@ -148,4 +148,3 @@ class TestBugWatchUpdater(TestCaseWithFactory):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

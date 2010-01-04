@@ -13,8 +13,6 @@
     <script type="text/javascript" src="/+icing/FormatAndColor.js"></script>
     <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
   </metal:block>
-  <metal:portlets fill-slot="portlets">
-  </metal:portlets>
   <body>
     <tal:side metal:fill-slot="side">
       <div id="involvement" class="portlet involvement">

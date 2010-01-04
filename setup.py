@@ -45,6 +45,7 @@ setup(
         'mocker',
         'oauth',
         'paramiko',
+        'python-memcached',
         'pyasn1',
         'python-openid',
         'pytz',
