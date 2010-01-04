@@ -1771,6 +1771,7 @@ reg ./emailtemplates/membership-member-renewed.txt
     ./emailtemplates/upload-rejection.txt
     ./emailtemplates/bug-notification-verbose.txt
 reg ./codesofconduct
+reg ./codesofconduct/1.1.txt
 reg ./codesofconduct/1.0.1.txt
 reg ./codesofconduct/1.0.txt
 reg ./codesofconduct/README
@@ -2875,7 +2876,7 @@ reg ./pagetests/gpg-coc/11-handle-special-keys.txt
 reg ./pagetests/gpg-coc/97-cocnotfound.txt
 reg ./pagetests/gpg-coc/98-cocacknowledge.txt
 reg ./pagetests/gpg-coc/99-coc-presentation.txt
-reg ./pagetests/gpg-coc/reformatted_101_coc.asc
+reg ./pagetests/gpg-coc/reformatted_11_coc.asc
 reg ./pagetests/gpg-coc/truncated_coc.asc
 bug ./pagetests/guided-filebug
 bug ./pagetests/guided-filebug/xx-advanced-filebug-tags.txt

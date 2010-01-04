@@ -28,7 +28,8 @@ from zope.component import getUtility
 from zope.testbrowser.testing import Browser
 from zope.testing import doctest
 
-from canonical.launchpad.interfaces import IOAuthConsumerSet, OAUTH_REALM
+from canonical.launchpad.interfaces import (
+    IOAuthConsumerSet, OAUTH_REALM, ILaunchpadCelebrities)
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, SpecialOutputChecker, strip_prefix)
 from canonical.launchpad.webapp import canonical_url
@@ -38,6 +39,7 @@ from canonical.testing import PageTestLayer
 from lazr.restful.testing.webservice import WebServiceCaller
 from lp.testing import ANONYMOUS, login, login_person, logout
 from lp.testing.factory import LaunchpadObjectFactory
+from lp.registry.interfaces.person import NameAlreadyTaken
 
 
 class UnstickyCookieHTTPCaller(HTTPCaller):
@@ -350,9 +352,10 @@ def extract_text(content, extract_image_text=False, skip_tags=None):
             #
             # The CData class does not override slicing though, so by slicing
             # node first, we're effectively turning it into a concrete unicode
-            # instance, which does not wrap the contents when its __unicode__()
-            # is called of course.  We could remove the unicode() call
-            # here, but we keep it for consistency and clarity purposes.
+            # instance, which does not wrap the contents when its
+            # __unicode__() is called of course.  We could remove the
+            # unicode() call here, but we keep it for consistency and clarity
+            # purposes.
             result.append(unicode(node[:]))
         elif isinstance(node, NavigableString):
             result.append(unicode(node))
@@ -634,6 +637,26 @@ def webservice_for_person(person, consumer_key='launchpad-library',
     return LaunchpadWebServiceCaller(consumer_key, access_token.key)
 
 
+def setupDTCBrowser():
+    """Testbrowser configured for Distribution Translations Coordinators.
+
+    Ubuntu is the configured distribution.
+    """
+    login('foo.bar@canonical.com')
+    try:
+        dtg_member = LaunchpadObjectFactory().makePerson(
+            email="dtg-member@ex.com", password="test")
+    except NameAlreadyTaken:
+        # We have already created the translations coordinator
+        pass
+    else:
+        dtg = LaunchpadObjectFactory().makeTranslationGroup(owner=dtg_member)
+        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        ubuntu.translationgroup = dtg
+    logout()
+    return setupBrowser(auth='Basic dtg-member@ex.com:test')
+
+
 def stop():
     # Temporarily restore the real stdout.
     old_stdout = sys.stdout
@@ -654,6 +677,7 @@ def setUpGlobs(test):
     test.globs['user_webservice'] = LaunchpadWebServiceCaller(
         'launchpad-library', 'nopriv-read-nonprivate')
     test.globs['setupBrowser'] = setupBrowser
+    test.globs['setupDTCBrowser'] = setupDTCBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
     test.globs['user_browser'] = setupBrowser(

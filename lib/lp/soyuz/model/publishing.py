@@ -53,7 +53,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
-    IPublishingSet, ISecureBinaryPackagePublishingHistory,
+    IPublishingEdit, IPublishingSet, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PoolFileOverwriteError)
@@ -471,7 +471,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
        Excluding embargoed stuff
     """
-    implements(ISourcePackagePublishingHistory)
+    implements(ISourcePackagePublishingHistory, IPublishingEdit)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
@@ -835,17 +835,10 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive = self.archive
         if distroseries is None:
             distroseries = self.distroseries
-        if status is None:
-            status = PackagePublishingStatus.PUBLISHED
 
-        ancestries = archive.getPublishedSources(
-            name=self.source_package_name, exact_match=True,
-            status=status, distroseries=distroseries, pocket=pocket)
-
-        if ancestries.count() > 0:
-            return ancestries[0]
-
-        return None
+        return getUtility(IPublishingSet).getNearestAncestor(
+            self.source_package_name, archive, distroseries, pocket,
+            status)
 
     def overrideFromAncestry(self):
         """See `ISourcePackagePublishingHistory`."""
@@ -897,7 +890,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
 
-    implements(IBinaryPackagePublishingHistory)
+    implements(IBinaryPackagePublishingHistory, IPublishingEdit)
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
@@ -1101,17 +1094,10 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             archive = self.archive
         if distroseries is None:
             distroseries = self.distroarchseries.distroseries
-        if status is None:
-            status = PackagePublishingStatus.PUBLISHED
 
-        ancestries = archive.getAllPublishedBinaries(
-            name=self.binary_package_name, exact_match=True, pocket=pocket,
-            status=status, distroarchseries=distroseries.architectures)
-
-        if ancestries.count() > 0:
-            return ancestries[0]
-
-        return None
+        return getUtility(IPublishingSet).getNearestAncestor(
+            self.binary_package_name, archive, distroseries, pocket,
+            status, binary=True)
 
     def overrideFromAncestry(self):
         """See `IBinaryPackagePublishingHistory`."""
@@ -1699,3 +1685,24 @@ class PublishingSet:
             store.execute(query)
 
         return sources + binary_packages
+
+    def getNearestAncestor(
+        self, package_name, archive, distroseries, pocket=None,
+        status=None, binary=False):
+        """See `IPublishingSet`."""
+        if status is None:
+            status = PackagePublishingStatus.PUBLISHED
+
+        if binary:
+            ancestries = archive.getAllPublishedBinaries(
+                name=package_name, exact_match=True, pocket=pocket,
+                status=status, distroarchseries=distroseries.architectures)
+        else:
+            ancestries = archive.getPublishedSources(
+                name=package_name, exact_match=True, pocket=pocket,
+                status=status, distroseries=distroseries)
+
+        if ancestries.count() > 0:
+            return ancestries[0]
+
+        return None

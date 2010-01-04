@@ -12,12 +12,14 @@ from urlparse import urlunsplit
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.webapp import urlsplit
+from canonical.testing import (
+    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
     IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from lp.registry.interfaces.person import IPersonSet
-from canonical.launchpad.webapp import urlsplit
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 from lp.testing import TestCaseWithFactory
 
@@ -354,6 +356,20 @@ class TestBugWatchSet(TestCaseWithFactory):
             set(bug_watches_bob[:1]),
             set(bug_watch_set.getBugWatchesForRemoteBug('bob', [
                         bug_watch.id for bug_watch in bug_watches_limited])))
+
+
+class TestBugWatchBugTasks(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestBugWatchBugTasks, self).setUp('test@canonical.com')
+        self.bug_watch = self.factory.makeBugWatch()
+
+    def test_bugtasks(self):
+        # BugWatch.bugtasks is always a list.
+        self.assertIsInstance(
+            self.bug_watch.bugtasks, list)
 
 
 def test_suite():

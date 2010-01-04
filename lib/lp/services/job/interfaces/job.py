@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IJob',
+    'IRunnableJob',
     'JobStatus',
     'LeaseHeld',
     ]

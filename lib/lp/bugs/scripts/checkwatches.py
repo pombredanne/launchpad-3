@@ -442,7 +442,7 @@ class BugWatchUpdater(object):
             remotesystem_for_others.sync_comments = False
 
             for bug_watch in bug_watches:
-                if (remote_products[bug_watch.remotebug] in
+                if (remote_products.get(bug_watch.remotebug, None) in
                     self._syncable_gnome_products):
                     syncable_watches.append(bug_watch)
                 else:

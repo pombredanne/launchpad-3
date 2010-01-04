@@ -79,6 +79,7 @@ Our review request is listed in the votes collection.
     branch_merge_proposal_link: u'http://api.launchpad.dev/beta/~.../+merge/...'
     comment_link: None
     date_created: u'...'
+    is_pending: True
     registrant_link: u'http://api.launchpad.dev/beta/~person-name...'
     resource_type_link: u'http://api.launchpad.dev/beta/#code_review_vote_reference'
     review_type: u'green'
@@ -194,6 +195,7 @@ The votes on a branch merge proposal can be checked through the API.
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
     comment_link: u'http://.../~source/fooix/fix-it/+merge/.../comments/...'
     date_created: u'...'
+    is_pending: False
     registrant_link: u'http://.../~person-name...'
     resource_type_link: u'http://.../#code_review_vote_reference'
     review_type: u'code'
@@ -221,6 +223,7 @@ A review can be requested of the person 'target'.
     branch_merge_proposal_link: u'http://.../~source/fooix/fix-it/+merge/...'
     comment_link: None
     date_created: u'...'
+    is_pending: True
     registrant_link: u'http://.../~target'
     resource_type_link: u'http://.../#code_review_vote_reference'
     review_type: u'code'
