@@ -123,15 +123,17 @@ password.
     None
 
 The only option for registry experts is to change an accounts status and to
-provide a reason why they did it.
+provide a reason why they did it. After suspending the account the
+page will only be visible to admins, so the registry expert will be
+redirected to the "people" main page.
 
     >>> control = expert_browser.getControl(name='field.status_comment')
     >>> control.value = 'This is SPAM!'
     >>> expert_browser.getControl(
     ...     'The status of this account').value = ['SUSPENDED']
     >>> expert_browser.getControl('Change').click()
-    >>> print expert_browser.title
-    No Privileges Person does not use Launchpad
+    >>> print expert_browser.url
+    http://launchpad.dev/people
 
 
 Restricted to admins
