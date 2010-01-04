@@ -8,6 +8,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildBehaviorMismatch',
     'IBuildFarmJobBehavior',
     ]
 
