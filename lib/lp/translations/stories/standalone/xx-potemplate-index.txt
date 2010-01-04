@@ -44,23 +44,6 @@ that represents, when the translation was updated, and by whom.
     Xhosa                   22           ...         ...     ...     &mdash;
     Zulu                    22           ...         ...     &mdash; &mdash;
 
-When products have more than one template, the page informs the user
-that there are alternates that may be translated.
-
-    >>> anon_browser.open("http://translations.launchpad.dev/"
-    ...     "evolution/trunk/+pots/evolution-2.2-test")
-    >>> alternate_notice = find_tag_by_id(anon_browser.contents,
-    ...                                   'potemplate-relatives')
-    >>> print extract_text(alternate_notice)
-    Other templates here: evolution-2.2
-
-The notice links to the alternate template.
-
-    >>> print alternate_notice
-    <p...>
-    <span>Other templates here:</span>
-    <a href="/evolution/trunk/+pots/evolution-2.2">evolution-2.2</a>...
-    </p>
 
 English is not translatable. We do not display English in the list of
 languages when the user speaks English or even when English
@@ -80,13 +63,36 @@ English translations, but they are not displayed to the user.
     Finnish               ...          ...         ...   ...   P\xf6ll\xe4
 
 
+Finding related templates
+-------------------------
+
+When products have more than one template, the page informs the user
+that there are alternates that may be translated.
+
+    >>> anon_browser.open("http://translations.launchpad.dev/"
+    ...     "evolution/trunk/+pots/evolution-2.2-test")
+    >>> alternate_notice = find_tag_by_id(anon_browser.contents,
+    ...                                   'potemplate-relatives')
+    >>> print extract_text(alternate_notice)
+    Other templates here: evolution-2.2.
+
+The notice links to the alternate template.
+
+    >>> print alternate_notice
+    <p...>
+    <span>Other templates here:</span>
+    <a href="/evolution/trunk/+pots/evolution-2.2">evolution-2.2</a>...
+    </p>
+
+
 DistroSeries and ProductSeries links to related templates 
 ---------------------------------------------------------
 
 We are presented not only with links to alternate templates from the same
 source, but also with links to the same template in (other) distroseries.
 
-    >>> anon_browser.open('http://translations.launchpad.dev/evolution/trunk/+pots/evolution-2.2')
+    >>> anon_browser.open('http://translations.launchpad.dev/evolution'
+    ...     '/trunk/+pots/evolution-2.2')
     >>> alternate_notice = find_tag_by_id(anon_browser.contents,
     ...                                   'potemplate-rel-by-name')
     >>> print extract_text(alternate_notice)
@@ -96,13 +102,149 @@ source, but also with links to the same template in (other) distroseries.
 
 The template in the other distroseries links back to this one.
 
-    >>> anon_browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2')
+    >>> anon_browser.open('http://translations.launchpad.dev/ubuntu'
+    ...     '/hoary/+source/evolution/+pots/evolution-2.2')
     >>> alternate_notice = find_tag_by_id(anon_browser.contents,
     ...                                   'potemplate-rel-by-name')
     >>> print extract_text(alternate_notice)
     Templates with the same name elsewhere: Evolution trunk
     >>> print alternate_notice
     <p...<a href="/evolution/trunk/+pots/evolution-2.2"...
+
+When the branch or the source package contains less than five templates
+they are all displayed on the template page.
+
+A source package with five templates is created.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> login('admin@canonical.com')
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> package = factory.makeSourcePackage(distroseries=hoary)
+    >>> template = factory.makePOTemplate(
+    ...     distroseries=hoary,
+    ...     sourcepackagename=package.sourcepackagename, name='first')
+    >>> template = factory.makePOTemplate(
+    ...     distroseries=hoary,
+    ...     sourcepackagename=package.sourcepackagename, name='second')
+    >>> template = factory.makePOTemplate(
+    ...     distroseries=hoary,
+    ...     sourcepackagename=package.sourcepackagename, name='third')
+    >>> template = factory.makePOTemplate(
+    ...     distroseries=hoary,
+    ...     sourcepackagename=package.sourcepackagename, name='forth')
+    >>> template = factory.makePOTemplate(
+    ...     distroseries=hoary,
+    ...     sourcepackagename=package.sourcepackagename, name='fifth')
+    >>> logout()
+
+Visiting any template from the same page, the user sees links to the other
+templates.
+
+    >>> browser.open(
+    ...     ("http://translations.launchpad.dev/"
+    ...     "ubuntu/hoary/+source/%s/+pots/%s") % (
+    ...     package.name, template.name))
+    >>> relatives = find_tag_by_id(
+    ...     browser.contents, 'potemplate-relatives')
+    >>> print extract_text(relatives)
+    Other templates here: first, forth, second, third.
+
+For five templates, the page displays the first four templates in
+alphabetical order, and a link to the page listing all templates.
+
+Another template is added to the same source package.
+
+    >>> login('admin@canonical.com')
+    >>> template = factory.makePOTemplate(
+    ...     distroseries=hoary,
+    ...     sourcepackagename=package.sourcepackagename, name='sixth')
+    >>> logout()
+
+    >>> browser.open(
+    ...     ("http://translations.launchpad.dev/"
+    ...     "ubuntu/hoary/+source/%s/+pots/%s") % (
+    ...     package.name, template.name))
+    >>> relatives = find_tag_by_id(
+    ...     browser.contents, 'potemplate-relatives')
+    >>> print extract_text(relatives)
+    Other templates here: fifth, first, forth, second
+    and one other template.
+
+    >>> browser.getLink('one other template').click()
+
+For more than five templates, the page displays the first four templates in
+alphabetical order, and a link to the page listing
+all templates, stating the number of other templates.
+
+Another template is added to the same source package.
+
+    >>> login('admin@canonical.com')
+    >>> template = factory.makePOTemplate(
+    ...     distroseries=hoary,
+    ...     sourcepackagename=package.sourcepackagename, name='seventh')
+    >>> logout()
+
+    >>> browser.open((
+    ...     "http://translations.launchpad.dev/"
+    ...     "ubuntu/hoary/+source/%s/+pots/%s") % (
+    ...     package.name, template.name))
+    >>> relatives = find_tag_by_id(
+    ...     browser.contents, 'potemplate-relatives')
+    >>> print extract_text(relatives)
+    Other templates here: fifth, first, forth, second
+    and 2 other templates.
+
+    >>> browser.getLink('2 other templates').click()
+    >>> browser.url == ((
+    ...     'http://translations.launchpad.dev/'
+    ...     'ubuntu/hoary/+source/%s/+translations') % (
+    ...     package.name))
+    True
+
+The "other templates" link for product series templates is leading to a
+page showing all templates for that product series.
+
+A product series with 7 templates is created.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> login('admin@canonical.com')
+    >>> product = factory.makeProduct(name="fusa", official_rosetta=True)
+    >>> product_trunk = product.getSeries('trunk')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='first')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='second')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='third')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='forth')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='fifth')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='sixth')
+    >>> template = factory.makePOTemplate(
+    ...     productseries=product_trunk, name='seventh')
+    >>> logout()
+
+    >>> browser.open((
+    ...     "http://translations.launchpad.dev/"
+    ...     "fusa/trunk/+pots/%s") % template.name)
+    >>> relatives = find_tag_by_id(
+    ...     browser.contents, 'potemplate-relatives')
+    >>> print extract_text(relatives)
+    Other templates here: fifth, first, forth, second
+    and 2 other templates.
+
+    >>> browser.getLink('2 other templates').click()
+    >>> browser.url == (
+    ...     'http://translations.launchpad.dev/'
+    ...     'fusa/trunk/+templates')
+    True
 
 
 Administering templates
@@ -163,4 +305,5 @@ and "Change details" should be also accessible.
     >>> admin_browser.getLink('Change permissions').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/ubuntu/+settings
+
 
