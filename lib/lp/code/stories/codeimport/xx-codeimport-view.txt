@@ -1,4 +1,5 @@
-= Code imports =
+Code imports
+============
 
 For now, there is no link to the page that lists all code imports, so
 we browse there directly:
@@ -31,7 +32,8 @@ for that import:
     'http://code.launchpad.dev/~vcs-imports/gnome-terminal/import'
 
 
-= Filtering the code import list =
+Filtering the code import list
+==============================
 
 The code import listing is filterable, though only on review status so
 far.  There are no invalid imports in the sample data, so if we filter
