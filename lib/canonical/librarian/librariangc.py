@@ -182,6 +182,55 @@ def merge_duplicates(con):
         con.commit()
 
 
+class ExpireAliases:
+    """Expire expired LibraryFileAlias records.
+
+    This simply involves setting the LibraryFileAlias.content to NULL.
+    Unreferenced LibraryFileContent records are cleaned up elsewhere.
+    """
+    implements(ITunableLoop)
+
+    def __init__(self, con):
+        self.con = con
+        self.total_expired = 0
+        self._done = False
+
+    def isDone(self):
+        if self._done:
+            log.info(
+                "Expired %d LibraryFileAlias records." % self.total_expired)
+            return True
+        else:
+            return False
+
+    def __call__(self, chunksize):
+        chunksize = int(chunksize)
+        cur = self.con.cursor()
+        cur.execute("""
+            UPDATE LibraryFileAlias
+            SET content=NULL
+            WHERE id IN (
+                SELECT id FROM LibraryFileAlias
+                WHERE
+                    content IS NOT NULL
+                    AND expires < CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
+                        - interval '1 week'
+                LIMIT %d)
+            """ % chunksize)
+        self.total_expired += cur.rowcount
+        if cur.rowcount == 0:
+            self._done = True
+        else:
+            log.debug("Expired %d LibraryFileAlias records." % cur.rowcount)
+        self.con.commit()
+
+
+def expire_aliases(con):
+    """Invoke ExpireLibraryFileAliases."""
+    loop_tuner = DBLoopTuner(ExpireAliases(con), 5, log=log)
+    loop_tuner.run()
+
+
 class UnreferencedLibraryFileAliasPruner:
     """Delete unreferenced LibraryFileAliases.
 

@@ -16,11 +16,7 @@ from bzrlib.smart import server
 from bzrlib.tests import (
     multiply_tests, TestCase, TestCaseWithTransport, TestLoader,
     TestNotApplicable)
-try:
-    from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
-except ImportError:
-    from bzrlib.tests.branch_implementations import (
-        TestCaseWithBzrDir, branch_scenarios)
+from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
 
 from lp.codehosting.bzrutils import (
     add_exception_logging_hook, DenyingServer, get_branch_stacked_on_url,
