@@ -321,3 +321,34 @@ to show up.
     landscape-developers Public
     launchpad-users Public
     private-membership-team Public
+
+
+Delete team
+-----------
+
+Users with launchpad.Moderate such as team admins and registry experts
+can delete teams.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> registry_experts = getUtility(ILaunchpadCelebrities).registry_experts
+    >>> team_owner = factory.makePerson()
+    >>> team_member = factory.makePerson()
+    >>> deletable_team = factory.makeTeam(owner=team_owner)
+    >>> login_person(team_owner)
+    >>> deletable_team.addMember(team_member, reviewer=team_owner)
+    >>> view = create_initialized_view(deletable_team, '+delete')
+
+    >>> login_person(team_member)
+    >>> check_permission('launchpad.Moderate', view)
+    False
+
+    >>> login_person(registry_experts.teamowner)
+    >>> check_permission('launchpad.Moderate', view)
+    True
+
+    >>> login_person(team_owner)
+    >>> check_permission('launchpad.Moderate', view)
+    True
+
