@@ -51,7 +51,8 @@ The page also contains a link back to the +review page.
     >>> print link.text
     edit[IMG] Review the user's Launchpad information
 
-The admin can update the user's account.
+The admin can update the user's account. Suspending an account will give a
+feedback message.
 
     >>> admin_browser.getControl(
     ...     'The status of this account').value = ['SUSPENDED']
@@ -61,6 +62,8 @@ The admin can update the user's account.
 
     >>> print admin_browser.title
     The one and only Salgado does not use Launchpad
+    >>> print get_feedback_messages(admin_browser.contents)[0]
+    The account "The one and only Salgado" has been suspended.
 
 The admin can see the account information of a user that does not use
 Launchpad, and can change the account too. Note that all pages that belong
@@ -125,7 +128,8 @@ password.
 The only option for registry experts is to change an account's status and to
 provide a reason why they did it. After suspending the account the
 page will only be visible to admins, so the registry expert will be
-redirected to the "people" main page.
+redirected to the "people" main page. A feedback message informs the expert
+about the suspension.
 
     >>> control = expert_browser.getControl(name='field.status_comment')
     >>> control.value = 'This is SPAM!'
@@ -134,6 +138,8 @@ redirected to the "people" main page.
     >>> expert_browser.getControl('Change').click()
     >>> print expert_browser.url
     http://launchpad.dev/people
+    >>> print get_feedback_messages(expert_browser.contents)[0]
+    The account "No Privileges Person" has been suspended.
 
 
 Restricted to admins

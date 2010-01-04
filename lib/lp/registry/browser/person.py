@@ -1758,6 +1758,9 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
             # email is sent to the user.
             data['password'] = 'invalid'
             self.person.setPreferredEmail(None)
+            self.request.response.addNoticeNotification(
+                u'The account "%s" has been suspended.' % (
+                    self.context.displayname))
         if (data['status'] == AccountStatus.ACTIVE
             and self.context.status != AccountStatus.ACTIVE):
             self.request.response.addNoticeNotification(
