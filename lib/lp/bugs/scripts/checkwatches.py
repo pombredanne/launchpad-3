@@ -781,6 +781,15 @@ class BugWatchUpdater(object):
 
             bug_watches = self.getBugWatchesForRemoteBug(
                 remote_bug_id, bug_watch_ids)
+            if len(bug_watches) == 0:
+                # If there aren't any bug watches for this remote bug,
+                # just log a warning and carry on.
+                self.warning(
+                    "Spurious remote bug ID: No watches found for "
+                    "remote bug %s on %s" % (
+                        remote_bug_id, remotesystem.baseurl))
+                continue
+
             for bug_watch in bug_watches:
                 bug_watch.lastchecked = UTC_NOW
             if remote_bug_id in unmodified_remote_ids:
