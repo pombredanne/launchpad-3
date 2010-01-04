@@ -3,10 +3,7 @@
 
 """Test BuildQueue features."""
 
-import unittest
-
-from datetime import datetime, timedelta
-from pytz import utc
+from datetime import timedelta
 
 from zope.component import getUtility
 
@@ -15,7 +12,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.builder import IBuilderSet
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
