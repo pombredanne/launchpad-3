@@ -24,16 +24,11 @@ from lp.testing import TestCaseWithFactory
 
 def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
-    result = None
     for build in test.builds:
         if (build.sourcepackagerelease.name == name
             and build.processor.name == processor):
-            result = build
-            break
-    if result is not None:
-        return (result, result.buildqueue_record)
-    else:
-        return (None, None)
+            return (build, build.buildqueue_record)
+    return (None, None)
 
 
 def nth_builder(test, build, n):
