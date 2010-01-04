@@ -148,7 +148,7 @@ The view provides a label, page_title, and cancel url to present the page.
 
 The view uses the same form fields as the team merge view, but it does not
 render them because their values are preset. Only the action is rendered,
-and it is only rendered if canDelete() returns True
+and it is only rendered if canDelete() returns True.
 
     >>> from canonical.launchpad.testing.pages import find_tag_by_id
 
