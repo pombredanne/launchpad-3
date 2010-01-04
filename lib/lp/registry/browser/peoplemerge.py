@@ -273,13 +273,20 @@ class DeleteTeamView(AdminTeamMergeView):
 
     def __init__(self, context, request):
         super(DeleteTeamView, self).__init__(context, request)
-        if 'field.actions.delete' in self.request.form:
+        if ('field.dupe_person' in self.request.form
+            or 'field.target_person' in self.request.form):
+            self.addError(
+                'The dupe_person and target_person data cannot be submitted.')
+        elif 'field.actions.delete' in self.request.form:
             # In the case of deleting a team, the form values are always
             # the context team, and the registry experts team. These values
             # are injected during __init__ because the base classes assume the
             # values are submitted. The validation performed by the base
             # classes are still required to ensure the team can be deleted.
             self.request.form.update(self.default_values)
+        else:
+            # Show the page explaining the action.
+            pass
 
     @property
     def default_values(self):
