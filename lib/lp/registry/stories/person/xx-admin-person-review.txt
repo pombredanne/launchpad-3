@@ -51,22 +51,24 @@ The page also contains a link back to the +review page.
     >>> print link.text
     edit[IMG] Review the user's Launchpad information
 
-The admin can update the user's account.
+The admin can update the user's account. Suspending an account will give a
+feedback message.
 
     >>> admin_browser.getControl(
     ...     'The status of this account').value = ['SUSPENDED']
     >>> admin_browser.getControl(
     ...     name='field.status_comment').value = 'Bad boy.'
     >>> admin_browser.getControl('Change').click()
-    Traceback (most recent call last):
-     ...
-    HTTPError: HTTP Error 410: Gone
 
     >>> print admin_browser.title
     The one and only Salgado does not use Launchpad
+    >>> print get_feedback_messages(admin_browser.contents)[0]
+    The account "The one and only Salgado" has been suspended.
 
 The admin can see the account information of a user that does not use
-Launchpad, and can change the account too.
+Launchpad, and can change the account too. Note that all pages that belong
+to a suspended user have a 410 status code to ensure search engines remove
+them from their index.
 
     >>> admin_browser.getLink('Administer').click()
     >>> admin_browser.getLink(url='+reviewaccount').click()
@@ -87,6 +89,57 @@ Launchpad, and can change the account too.
     >>> for message in get_feedback_messages(admin_browser.contents):
     ...     print message
     The user is reactivated. He must use the "forgot password" to log in.
+
+
+Partial access for registry experts
+-----------------------------------
+
+Members of the registry team get partial access to the review account page to
+be able to suspend spam accounts.
+
+    >>> login('foo.bar@canonical.com')
+    >>> registry_expert = factory.makePerson(email='expert@example.com',
+    ...                                      password='test')
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> from zope.component import getUtility
+    >>> registry_team = getUtility(ILaunchpadCelebrities).registry_experts
+    >>> registry_team.addMember(registry_expert, registry_team.teamowner)
+    >>> print registry_expert.inTeam(registry_team)
+    True
+    >>> logout()
+
+    >>> expert_browser = setupBrowser(auth='Basic expert@example.com:test')
+    >>> expert_browser.open('http://launchpad.dev/~no-priv/+reviewaccount')
+    >>> print expert_browser.title
+    Review person's account...
+
+The +reviewaccount page does not display account information for registry
+experts. It also has no form elements to change the display name or the
+password.
+
+    >>> content = find_main_content(expert_browser.contents)
+    >>> print content.find(id='summary')
+    None
+    >>> print content.find(name='field.displayname')
+    None
+    >>> print content.find(name='field.password')
+    None
+
+The only option for registry experts is to change an account's status and to
+provide a reason why they did it. After suspending the account the
+page will only be visible to admins, so the registry expert will be
+redirected to the "people" main page. A feedback message informs the expert
+about the suspension.
+
+    >>> control = expert_browser.getControl(name='field.status_comment')
+    >>> control.value = 'This is SPAM!'
+    >>> expert_browser.getControl(
+    ...     'The status of this account').value = ['SUSPENDED']
+    >>> expert_browser.getControl('Change').click()
+    >>> print expert_browser.url
+    http://launchpad.dev/people
+    >>> print get_feedback_messages(expert_browser.contents)[0]
+    The account "No Privileges Person" has been suspended.
 
 
 Restricted to admins

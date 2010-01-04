@@ -61,7 +61,7 @@ when he visits his profile page.
     >>> browser.raiseHttpErrors = False
     >>> browser.open('http://launchpad.dev/~bad-user')
     >>> print browser.title
-    Bad-user does not use Launchpad
+    Error: Page gone
 
 He believes he can still use his Launchpad profile because he knows his
 password.
