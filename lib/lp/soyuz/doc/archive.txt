@@ -955,6 +955,7 @@ it continues to be considered 'available for deletion'.
     >>> len(removal_candidate.getPublishedBinaries())
     1
 
+    >>> login("celso.providelo@canonical.com")
     >>> removal_candidate.requestDeletion(cprov, 'go away !')
     >>> syncUpdate(removal_candidate.secure_record)
 
@@ -1977,6 +1978,7 @@ archive using an archive name:
 After making two of the archives private, the getArchivesForDistribution()
 method will by default only return public archives:
 
+    >>> login("foo.bar@canonical.com")
     >>> my_copy_archive = archive_set.getArchivesForDistribution(
     ...     ubuntu, name='my-copy-archive')[0]
     >>> my_copy_archive.buildd_secret = 'really secret'
