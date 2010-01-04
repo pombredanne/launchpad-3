@@ -181,6 +181,9 @@ class BuildQueue(SQLBase):
             if my_processor is not None:
                 if (my_processor.id == processor and
                     my_virtualized == virtualized):
+                    # The job on hand can only run on builders with a
+                    # particular processor/virtualization combination and
+                    # this is how many of these we have.
                     builders_for_job = count
             builders_in_total += count
             builder_stats[(processor, virtualized)] = count
