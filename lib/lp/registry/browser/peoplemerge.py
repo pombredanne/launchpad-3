@@ -103,7 +103,7 @@ class AdminMergeBaseView(LaunchpadFormView):
         return canonical_url(getUtility(IPersonSet))
 
     @property
-    def next_url(self):
+    def success_url(self):
         return canonical_url(self.target_person)
 
     def validate(self, data):
@@ -149,6 +149,7 @@ class AdminMergeBaseView(LaunchpadFormView):
         flush_database_updates()
         getUtility(IPersonSet).merge(self.dupe_person, self.target_person)
         self.request.response.addInfoNotification(self.merge_message)
+        self.next_url = self.success_url
 
 
 class AdminPeopleMergeView(AdminMergeBaseView):
@@ -301,7 +302,7 @@ class DeleteTeamView(AdminTeamMergeView):
         return canonical_url(self.context)
 
     @property
-    def next_url(self):
+    def success_url(self):
         return canonical_url(getUtility(IPersonSet))
 
     @property
