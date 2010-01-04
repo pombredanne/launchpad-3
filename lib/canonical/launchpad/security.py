@@ -71,7 +71,8 @@ from lp.translations.interfaces.pofile import IPOFile
 from lp.translations.interfaces.potemplate import (
     IPOTemplate, IPOTemplateSubset)
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory)
+    IBinaryPackagePublishingHistory, IPublishingEdit,
+    ISourcePackagePublishingHistory)
 from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from lp.registry.interfaces.packaging import IPackaging
@@ -2138,6 +2139,15 @@ class ViewSourcePackagePublishingHistory(AuthorizationBase):
 
     def checkUnauthenticated(self):
         return not self.obj.archive.private
+
+
+class EditPublishing(AuthorizationBase):
+    """Restrict editing of source and binary packages.."""
+    permission = "launchpad.Edit"
+    usedfor = IPublishingEdit
+
+    def checkAuthenticated(self, user):
+        return AppendArchive(self.obj.archive).checkAuthenticated(user)
 
 
 class ViewBinaryPackagePublishingHistory(ViewSourcePackagePublishingHistory):
