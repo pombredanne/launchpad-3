@@ -75,9 +75,18 @@ The public team is not yet a member of the priv-team.
     >>> pub_owner in priv_team.activemembers
     False
 
-But the public team's owner can see the priv-team's bits since his team
+The public team's owner can now see the priv-team's bits since his team
 has been invited to join.
 
     >>> login_person(pub_owner)
     >>> print priv_team.name
     priv-team
+
+But a non-admin member of the public team still cannot see anything
+about the team.
+
+    >>> login_person(pub_member)
+    >>> print priv_team.name
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (<Person at ... priv-team (Priv Team)>, 'name', 'launchpad.View')
