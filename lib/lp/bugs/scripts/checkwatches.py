@@ -798,7 +798,9 @@ class BugWatchUpdater(object):
             # Save the remote bug URL in case we need to log an error.
             remote_bug_url = bug_watches[0].url
 
-            local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
+            local_ids = ", ".join(
+                str(bug_id) for bug_id in sorted(
+                    watch.bug.id for watch in bug_watches))
             try:
                 new_remote_status = None
                 new_malone_status = None
