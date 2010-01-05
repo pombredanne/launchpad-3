@@ -84,7 +84,7 @@
         <tbody>
           <tal:templates repeat="template view/iter_templates">
             <tal:not-current condition="not: template/iscurrent">
-              <tal:admin condition="template/required:launchpad.TranslationsAdmin">
+              <tal:admin condition="template/required:launchpad.Edit">
                 <tr class="template_row inactive-template">
                   <td tal:condition="view/is_distroseries"
                       tal:content="template/sourcepackagename/name"

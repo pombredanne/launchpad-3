@@ -39,8 +39,9 @@ class RevisionKarmaAllocator(LaunchpadCronScript):
         count = 0
         revision_set = getUtility(IRevisionSet)
         # Break into bits.
-        revisions = list(
-            revision_set.getRevisionsNeedingKarmaAllocated()[:100])
+        result_set = revision_set.getRevisionsNeedingKarmaAllocated()
+        self.logger.info("%d revisions to update", result_set.count())
+        revisions = list(result_set[:100])
         while len(revisions) > 0:
             for revision in revisions:
                 # Find the appropriate branch, and allocate karma to it.
