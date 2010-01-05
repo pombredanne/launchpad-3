@@ -13,7 +13,7 @@ import unittest
 import psycopg2
 # from zope.testing.testrunner import dont_retry, RetryTest
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.testing import mockdb, DatabaseLayer
 from canonical.testing.mockdb import ScriptPlayer, ScriptRecorder
 
@@ -92,7 +92,7 @@ class MockDbTestCase(unittest.TestCase):
         """Open a connection to the (possibly fake) database."""
         if connection_string is None:
             connection_string = "%s user=%s" % (
-                    config.database.main_master, config.launchpad.dbuser)
+                    dbconfig.main_master, config.launchpad.dbuser)
         if self.mode == 'direct':
             con = psycopg2.connect(connection_string)
             #con = canonical.ftests.pgsql._org_connect(connection_string)
@@ -161,7 +161,7 @@ class MockDbTestCase(unittest.TestCase):
     def testFailedConnection(self):
         # Ensure failed database connections are reproducable.
         for mode in self.modes():
-            connection_string = config.database.main_master
+            connection_string = dbconfig.main_master
             connection_string = re.sub(
                     r"dbname=\S*", r"dbname=not_a_sausage", connection_string)
             self.assertRaises(

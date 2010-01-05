@@ -29,7 +29,7 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.database.interfaces import ISQLBase
 
 
@@ -268,8 +268,8 @@ class ZopelessTransactionManager(object):
     @classmethod
     def _get_zopeless_connection_config(self, dbname, dbhost):
         # This method exists for testability.
-        main_connection_string = config.database.main_master
-        auth_connection_string = config.database.auth_master
+        main_connection_string = dbconfig.main_master
+        auth_connection_string = dbconfig.auth_master
 
         # Override dbname and dbhost in the connection string if they
         # have been passed in.
@@ -312,7 +312,7 @@ class ZopelessTransactionManager(object):
         # Construct a config fragment:
         overlay = dedent("""\
             [database]
-            main_master: %(main_connection_string)s
+            rw_main_master: %(main_connection_string)s
             auth_master: %(auth_connection_string)s
             isolation_level: %(isolation_level)s
             """ % vars())
@@ -767,7 +767,7 @@ def connect_string(user, dbname=None):
     # We start with the config string from the config file, and overwrite
     # with the passed in dbname or modifications made by db_options()
     # command line arguments. This will do until db_options gets an overhaul.
-    con_str = config.database.main_master
+    con_str = dbconfig.main_master
     con_str_overrides = []
     assert 'user=' not in con_str, (
             'Connection string already contains username')

@@ -18,8 +18,11 @@ class TestReadOnlyMode(TestCase):
         # When a file named 'read-only.txt' exists under the root of the tree,
         # we run in read-only mode.
         touch_read_only_file()
-        self.assertTrue(is_read_only())
-        remove_read_only_file()
+        try:
+            self.assertTrue(is_read_only())
+        finally:
+            remove_read_only_file()
 
         # Once the file is removed, we're back into read-write mode.
         self.assertFalse(is_read_only())
+

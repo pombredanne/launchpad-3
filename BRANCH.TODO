@@ -4,3 +4,24 @@
 # be converted to bugs so they can be scheduled.
 
 Need to fix read-only tests in c-i-p as well.
+
+Need to add ro_* configs to all production configs; basically collapsing the
+*-db-update configs into the regular ones.
+
+Pushing and popping config overlays on top of main_master/main_slave doesn't
+work because when popping we might inadvertently pop overlays pushed by others
+(e.g. initZopeless), as config.pop(name) will pop the overlay with the given
+name and everything pushed after it.
+
+We could have invalid values for main_master/main_slave, with the correct
+values in ro_main_*/rw_main_* configs and push changes to main_master/slave
+from the values of r[ow]_main_*, but others can still inadvertently pop our
+changes, 
+
+Using just read-only.txt to find out whether or not we're in read-only mode
+simplifies things for us and for LOSAs, but it also means we can't easily log
+mode switches. We can workaround that, though; we just need to stop using the
+is_read_only() helper and make the signal handler push a config.read_only
+overlay depending on whether or not the file exists.  That still doesn't sound
+like a good idea because others might inadvertently pop our config overlay.
+

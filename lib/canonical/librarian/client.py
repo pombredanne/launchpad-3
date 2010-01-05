@@ -25,7 +25,7 @@ from urlparse import urljoin
 from storm.store import Store
 from zope.interface import implements
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.database.sqlbase import cursor
 from canonical.librarian.interfaces import (
     DownloadFailed, ILibrarianClient, IRestrictedLibrarianClient,
@@ -188,7 +188,7 @@ class FileUploadClient:
         try:
             # Send command
             database_name = re.search(
-                    r"dbname=(\S*)", config.database.main_master).group(1)
+                    r"dbname=(\S*)", dbconfig.main_master).group(1)
             self._sendLine('STORE %d %s' % (size, name))
             self._sendHeader('Database-Name', database_name)
             self._sendHeader('Content-Type', str(contentType))
