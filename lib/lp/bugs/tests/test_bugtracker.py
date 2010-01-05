@@ -8,10 +8,13 @@ import unittest
 from zope.testing.doctest import NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctestunit import DocTestSuite
 
+from lazr.lifecycle.snapshot import Snapshot
+
 from canonical.launchpad.ftests import login, ANONYMOUS
-from lp.bugs.interfaces.bugtracker import BugTrackerType
-from lp.testing import TestCaseWithFactory
 from canonical.testing import LaunchpadFunctionalLayer
+
+from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTracker
+from lp.testing import TestCaseWithFactory
 
 
 class TestBugTracker(TestCaseWithFactory):
@@ -61,6 +64,15 @@ class TestBugTracker(TestCaseWithFactory):
                     "bug_search_url of None for BugTrackers of type %s when "
                     "no remote product is passed." %
                     type.title)
+
+    def test_watches_not_in_snapshot(self):
+        # A snapshot of an IBugTracker will not contain a copy of the
+        # 'watches' property.
+        marker = object()
+        original = self.factory.makeBugTracker()
+        self.failUnless(getattr(original, 'watches', marker) is not marker)
+        snapshot = Snapshot(original, providing=IBugTracker)
+        self.failUnless(getattr(snapshot, 'watches', marker) is marker)
 
 
 def test_suite():

@@ -108,7 +108,7 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
-    IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
+    IPerson, IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
 from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
 from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
@@ -905,6 +905,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         """Create a single `Revision`."""
         if author is None:
             author = self.getUniqueString('author')
+        elif IPerson.providedBy(author):
+            author = author.preferredemail.email
         if revision_date is None:
             revision_date = datetime.now(pytz.UTC)
         if parent_ids is None:

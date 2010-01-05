@@ -35,10 +35,9 @@ from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.interfaces import NotFoundError
 
-from lp.bugs.interfaces.bug import IBugWatch
 from lp.bugs.interfaces.bugtracker import BugTrackerType, IBugTrackerSet
 from lp.bugs.interfaces.bugwatch import (
-    BugWatchErrorType, IBugWatchSet, NoBugTrackerFound,
+    BugWatchErrorType, IBugWatch, IBugWatchSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL)
 from lp.bugs.model.bugmessage import BugMessage
 from lp.bugs.model.bugset import BugSetBase

@@ -76,5 +76,18 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
         # even though it is no longer published.
         self.assertContentEqual(self.builds[1:3], unpublished_builds)
 
+    def test_getChangesFileLFA(self):
+        # The getChangesFileLFA() method finds the right LFAs.
+        lfas = (
+            self.publishing_set.getChangesFileLFA(hist.sourcepackagerelease)
+            for hist in self.sources)
+        urls = [lfa.http_url for lfa in lfas]
+        self.assertEqual(urls, [
+            'http://localhost:58000/94/gedit_666_source.changes', 
+            'http://localhost:58000/96/firefox_666_source.changes', 
+            'http://localhost:58000/98/getting-things-gnome_666_source.changes'
+            ])
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
