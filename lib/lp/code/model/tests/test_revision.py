@@ -140,8 +140,7 @@ class TestRevisionKarma(TestCaseWithFactory):
     def test_junkBranchMovedToProductNeedsKarma(self):
         # A junk branch that moves to a product needs karma allocated.
         author = self.factory.makePerson()
-        rev = self.factory.makeRevision(
-            author=author.preferredemail.email)
+        rev = self.factory.makeRevision(author=author)
         branch = self.factory.makePersonalBranch()
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
@@ -152,12 +151,17 @@ class TestRevisionKarma(TestCaseWithFactory):
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
 
-    def test_getRevisionsNeedingKarmaAllocated_package_branch(self):
-        # A revision only in a package branch needs karma allocated.
+    def test_junkBranchMovedToPackageNeedsKarma(self):
+        # A junk branch that moves to a package needs karma allocated.
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(author=author)
-        branch = self.factory.makePackageBranch()
+        branch = self.factory.makePersonalBranch()
         branch.createBranchRevision(1, rev)
+        # Once the branch is connected to the revision, we now specify
+        # a product for the branch.
+        source_package = self.factory.makeSourcePackage()
+        branch.setTarget(user=branch.owner, source_package=source_package)
+        # The revision is now identified as needing karma allocated.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
 
