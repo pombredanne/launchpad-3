@@ -1652,7 +1652,7 @@ class IPersonSet(Interface):
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
 
-    def isNameBlacklisted(self, name):
+    def isNameBlacklisted(name):
         """Is the given name blacklisted by Launchpad Administrators?"""
 
     def createPersonAndEmail(
@@ -1800,11 +1800,18 @@ class IPersonSet(Interface):
         """
 
     @operation_parameters(
-        text=TextLine(title=_("Search text"), default=u""))
+        text=TextLine(
+            title=_("Search text"), default=u""),
+        created_after=Datetime(
+            title=_("Created after"), required=False),
+        created_before=Datetime(
+            title=_("Created before"), required=False),
+        )
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def findPerson(text="", exclude_inactive_accounts=True,
-                   must_have_email=False):
+                   must_have_email=False,
+                   created_after=None, created_before=None):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1824,6 +1831,9 @@ class IPersonSet(Interface):
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
         address.
+        
+        If created_before or created_after are not None, they are used to
+        restrict the search to the dates provided.
         """
 
     @operation_parameters(
@@ -1845,7 +1855,7 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def merge(from_person, to_person, deactivate_members=False, user=None):
+    def merge(from_person, to_person):
         """Merge a person/team into another.
 
         The old person/team (from_person) will be left as an atavism.
@@ -1864,7 +1874,7 @@ class IPersonSet(Interface):
         develops. -- StuartBishop 20050812
         """
 
-    def getValidPersons(self, persons):
+    def getValidPersons(persons):
         """Get all the Persons that are valid.
 
         This method is more effective than looking at

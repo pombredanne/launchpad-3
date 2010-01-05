@@ -2611,7 +2611,7 @@ class PersonSet:
             )
         return team_name_query
 
-    def find(self, text):
+    def find(self, text=""):
         """See `IPersonSet`."""
         if not text:
             # Return an empty result set.
@@ -2665,7 +2665,7 @@ class PersonSet:
 
     def findPerson(
             self, text="", exclude_inactive_accounts=True,
-            must_have_email=False):
+            must_have_email=False, created_after=None, created_before=None):
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
@@ -2693,12 +2693,21 @@ class PersonSet:
                 base_query,
                 EmailAddress.person == Person.id
                 )
+        if created_after is not None:
+            base_query = And(
+                base_query,
+                Person.datecreated > created_after
+                )
+        if created_before is not None:
+            base_query = And(
+                base_query,
+                Person.datecreated < created_before
+                )
 
         # Short circuit for returning all users in order
         if not text:
-            #query = SQL(' AND '.join(base_query), tables=clause_tables)
-            results = store.find(Person, base_query).order_by(orderBy)
-            return results
+            results = store.find(Person, base_query)
+            return results.order_by(Person._storm_sortingColumns)
 
         # We use a UNION here because this makes things *a lot* faster
         # than if we did a single SELECT with the two following clauses
