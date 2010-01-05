@@ -76,7 +76,7 @@ class ValidateTranslationsFile:
         self.logger.info("Validating %d file(s)." % files)
 
         for filename in self.args:
-            if not self._validate(filename):
+            if not self._readAndValidate(filename):
                 failures += 1
 
         if failures == 0:
@@ -100,16 +100,15 @@ class ValidateTranslationsFile:
             ext = ext[1:]
         return self.validators.get(ext, validate_unknown_file_type)
 
-    def _validate(self, filename):
-        """Read given file and (attempt to) validate it.
+    def _validateContent(self, filename, content):
+        """Validate in-memory file contents.
 
-        :param filename: Name of a file to read.
+        :param filename: Name of this file.
+        :param content: Contents of this file, as raw bytes.
         :return: Whether the file was parsed successfully.
         """
-        validator = self._pickValidator(filename)
-        content = file(filename).read()
         try:
-            validator(filename, content)
+            self._pickValidator(filename)(filename, content)
         except (SystemError, AssertionError):
             raise
         except Exception, e:
@@ -117,3 +116,12 @@ class ValidateTranslationsFile:
             return False
 
         return True
+
+    def _readAndValidate(self, filename):
+        """Read given file and validate it.
+
+        :param filename: Name of a file to read.
+        :return: Whether the file was parsed successfully.
+        """
+        content = file(filename).read()
+        return self._validateContent(filename, content)
