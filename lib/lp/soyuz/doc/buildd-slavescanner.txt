@@ -311,11 +311,10 @@ builder, but right state stored in Build entry:
     >>> build.buildstate.title
     'Chroot problem'
 
-WAITING - BUILDERFAIL -> builder has failed by internal error, job is
-available for next build round:
+WAITING - BUILDERFAIL -> builder has failed by internal error, job is available for next build round:
 
     >>> bqItem6 = a_build.createBuildQueueEntry()
-    >>> setupBuildQueue(bqItem6, a_builder)
+    >>> bqItem6.markAsBuilding(a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
 Create a mock slave so the builder can operate - one with a builder error.
@@ -336,8 +335,11 @@ Create a mock slave so the builder can operate - one with a builder error.
     >>> check_mail_sent(last_stub_mail_count)
     False
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem6)
-    >>> build.buildstate.title
-    'Needs building'
+    >>> print build.buildstate.title
+    Needs building
+    >>> job = bqItem6.specific_job.job
+    >>> print job.status.title
+    Waiting
 
 Cleanup in preparation for the next test:
 
