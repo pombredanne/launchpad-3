@@ -139,8 +139,8 @@ The bug data is stored as a list of dicts:
     >>> def print_bugs(bugs):
     ...     for bug in sorted(bugs):
     ...         print "Bug %s:" % bug
-    ...         for key in sorted(bugzilla._bugs[bug]):
-    ...             print "    %s: %s" % (key, bugzilla._bugs[bug][key])
+    ...         for key in sorted(bugs[bug]):
+    ...             print "    %s: %s" % (key, bugs[bug][key])
     ...         print "\n"
 
     >>> print_bugs(bugzilla._bugs)
@@ -148,11 +148,11 @@ The bug data is stored as a list of dicts:
         alias:
         assigned_to: test@canonical.com
         component: GPPSystems
-        creation_time: 20080610T16:19:53
+        creation_time: 2008-06-10 16:19:53
         id: 1
         internals:...
         is_open: True
-        last_change_time: 20080610T16:19:53
+        last_change_time: 2008-06-10 16:19:53
         priority: P1
         product: Marvin
         resolution: FIXED
@@ -165,11 +165,11 @@ The bug data is stored as a list of dicts:
         alias: bug-two
         assigned_to: marvin@heartofgold.ship
         component: Crew
-        creation_time: 20080611T09:23:12
+        creation_time: 2008-06-11 09:23:12
         id: 2
         internals:...
         is_open: True
-        last_change_time: 20080611T09:24:29
+        last_change_time: 2008-06-11 09:24:29
         priority: P1
         product: HeartOfGold
         resolution:
@@ -194,20 +194,16 @@ dicts to demonstrate this.
     >>> bugzilla.initializeRemoteBugDB([2, 'bug-two'])
     CALLED Bug.get({'ids': [2, 'bug-two'], 'permissive': True})
 
-    >>> for bug in sorted(bugzilla._bugs):
-    ...     print "Bug %r:" % bug
-    ...     for key in sorted(bugzilla._bugs[bug]):
-    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
-    ...     print "\n"
+    >>> print_bugs(bugzilla._bugs)
     Bug 2:
         alias: bug-two
         assigned_to: marvin@heartofgold.ship
         component: Crew
-        creation_time: 20080611T09:23:12
+        creation_time: 2008-06-11 09:23:12
         id: 2
         internals:...
         is_open: True
-        last_change_time: 20080611T09:24:29
+        last_change_time: 2008-06-11 09:24:29
         priority: P1
         product: HeartOfGold
         resolution:
@@ -450,14 +446,14 @@ comment dict mappings under the key 'comments'.
         id: 1
         is_private: False
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
     Comment 3:
         author: marvin
         bug_id: 1
         id: 3
         is_private: False
         text: Life? Don't talk to me about life.
-        time: 20080616T13:22:29
+        time: 2008-06-16 13:22:29
 
 If we try to fetch comments that don't belong to the current bug
 fetchComments() will silently ignore them.
@@ -477,7 +473,7 @@ fetchComments() will silently ignore them.
         id: 1
         is_private: False
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
 
 
 getPosterForComment()
@@ -521,7 +517,7 @@ The datecreated attribute of the Message will be the same as the 'time'
 field on the imported comment.
 
     >>> print bugzilla._bugs[2]['comments'][2]['time']
-    20080616T13:08:08
+    2008-06-16 13:08:08
 
     >>> print message.datecreated
     2008-06-16 13:08:08+00:00
