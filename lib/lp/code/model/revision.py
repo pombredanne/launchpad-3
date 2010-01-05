@@ -99,6 +99,9 @@ class Revision(SQLBase):
                 removeSecurityProxy(karma).datecreated = min(
                     self.revision_date, self.date_created)
                 self.karma_allocated = True
+            return karma
+        else:
+            return None
 
     def getBranch(self, allow_private=False, allow_junk=True):
         """See `IRevision`."""

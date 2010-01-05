@@ -178,15 +178,10 @@ class TestRevisionKarma(TestCaseWithFactory):
         # is set to be the time that the revision was created.
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
-            author=author.preferredemail.email,
+            author=author,
             revision_date=datetime.now(pytz.UTC) + timedelta(days=5))
         branch = self.factory.makeProductBranch()
-        branch.createBranchRevision(1, rev)
-        # Get the karma event.
-        [karma] = list(Store.of(author).find(
-            Karma,
-            Karma.person == author,
-            Karma.product == branch.product))
+        karma = rev.allocateKarma(branch)
         self.assertEqual(karma.datecreated, rev.date_created)
 
 
