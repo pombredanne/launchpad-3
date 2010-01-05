@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = []
 
 from datetime import datetime, timedelta
+import tempfile
 import time
 import unittest
 
@@ -544,6 +545,45 @@ class TestGarbo(TestCaseWithFactory):
                 BranchJob.branch == db_branch.id).count(),
                 0)
 
+
+    def test_BranchJobPruner_doesnt_prune_recent_jobs(self):
+
+        self.useBzrBranches()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(Job)
+
+        db_branch, tree = self.create_branch_and_tree(
+            hosted=True, format='knit')
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+
+        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job.job.date_finished = THIRTY_DAYS_AGO
+        job_id = branch_job.job.id
+
+        tree_location = tempfile.mkdtemp()
+        db_branch_newer, tree_newer = self.create_branch_and_tree(
+            tree_location=tree_location, hosted=True, format='knit')
+        db_branch_newer.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch_newer.repository_format = RepositoryFormat.BZR_KNIT_1
+
+        branch_job_newer = BranchUpgradeJob.create(db_branch_newer)
+        job_id_newer = branch_job_newer.job.id
+
+        self.assertEqual(
+            store.find(
+                BranchJob,
+                BranchJob.branch == db_branch.id).count(),
+                1)
+        transaction.commit()
+
+        collector = self.runDaily()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(
+            store.find(
+                BranchJob).count(),
+            1)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
