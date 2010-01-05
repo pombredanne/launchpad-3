@@ -574,7 +574,11 @@ class ModerateTeam(ReviewByRegistryExpertsOrAdmins):
     usedfor = ITeam
 
     def checkAuthenticated(self, user):
-        """Launchpad admin, registry experts, team admins and owners."""
+        """Is the user a privileged team member or Launchpad staff?
+        
+        Return true when the user is a member of Launchpad admins,
+        registry experts, team admins, or the team owners.
+        """
         return (
             super(ModerateTeam, self).checkAuthenticated(user)
             or can_edit_team(self.obj, user))
