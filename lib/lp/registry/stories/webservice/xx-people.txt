@@ -34,7 +34,7 @@ There are also operations to search only for people or only for teams.
 
     >>> results = webservice.get(
     ...     "/people?ws.op=findPerson&text="
-    ...     "&create_after=2008-06-27&create_before=2008-07-01").jsonBody()
+    ...     "&created_after=2008-06-27&created_before=2008-07-01").jsonBody()
     >>> sorted(person['name'] for person in results['entries'])
     [u'bac']
 
