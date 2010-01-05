@@ -152,6 +152,15 @@ class TestRevisionKarma(TestCaseWithFactory):
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
 
+    def test_getRevisionsNeedingKarmaAllocated_package_branch(self):
+        # A revision only in a package branch needs karma allocated.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makePackageBranch()
+        branch.createBranchRevision(1, rev)
+        self.assertEqual(
+            [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
     def test_newRevisionAuthorLinkNeedsKarma(self):
         # If Launchpad knows of revisions by a particular author, and later
         # that authoer registers with launchpad, the revisions need karma
