@@ -4,6 +4,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'UnknownFileType',
     'ValidateTranslationsFile',
     ]
 
@@ -107,9 +108,12 @@ class ValidateTranslationsFile:
         :param content: Contents of this file, as raw bytes.
         :return: Whether the file was parsed successfully.
         """
+        validator = self._pickValidator(filename)
         try:
-            self._pickValidator(filename)(filename, content)
+            validator(filename, content)
         except (SystemError, AssertionError):
+            raise
+        except UnknownFileType:
             raise
         except Exception, e:
             self.logger.warn("Failure in '%s': %s" % (filename, e))
