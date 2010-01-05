@@ -105,8 +105,8 @@ class PullerWorkerProtocol:
         # success or failure.
         self.sendEvent('mirrorDeferred')
 
-    def mirrorSucceeded(self, last_revision):
-        self.sendEvent('mirrorSucceeded', last_revision)
+    def mirrorSucceeded(self, revid_before, revid_after):
+        self.sendEvent('mirrorSucceeded', revid_before, revid_after)
 
     def mirrorFailed(self, message, oops_id):
         self.sendEvent('mirrorFailed', message, oops_id)
@@ -322,10 +322,11 @@ class BranchMirrorer(object):
         # over from previous puller worker runs. We will block on other
         # locks and fail if they are not broken before the timeout expires
         # (currently 5 minutes).
+        revid_before = branch.last_revision()
         if branch.get_physical_lock_status():
             branch.break_lock()
         self.updateBranch(source_branch, branch)
-        return branch
+        return branch, revid_before
 
 
 class PullerWorker:
@@ -411,6 +412,10 @@ class PullerWorker:
         reporting protocol -- a "naked mirror", if you will. This is
         particularly useful for tests that want to mirror a branch and be
         informed immediately of any errors.
+
+        :return: ``(branch, revid_before)``, where ``branch`` is the
+            destination branch and ``revid_before`` was the tip revision
+            *before* the mirroring process ran.
         """
         # Avoid circular import
         from lp.codehosting.vfs import get_puller_server
@@ -429,7 +434,7 @@ class PullerWorker:
         """
         self.protocol.startMirroring()
         try:
-            dest_branch = self.mirrorWithoutChecks()
+            dest_branch, revid_before = self.mirrorWithoutChecks()
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
@@ -500,8 +505,8 @@ class PullerWorker:
             raise
 
         else:
-            last_rev = dest_branch.last_revision()
-            self.protocol.mirrorSucceeded(last_rev)
+            revid_after = dest_branch.last_revision()
+            self.protocol.mirrorSucceeded(revid_before, revid_after)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest
