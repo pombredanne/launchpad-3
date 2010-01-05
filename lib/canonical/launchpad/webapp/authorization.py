@@ -21,11 +21,11 @@ from zope.security.permission import (
     checkPermission as check_permission_is_registered)
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
-from canonical.config import config
 from canonical.lazr.canonicalurl import nearest_adapter
 from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.database.sqlbase import block_implicit_flushes
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.interfaces import (
     AccessLevel, IAuthorization, ILaunchpadContainer, ILaunchpadPrincipal)
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
@@ -123,7 +123,7 @@ class LaunchpadSecurityPolicy(ParanoidSecurityPolicy):
         # accidentally using cached results. This will be important when
         # Launchpad automatically fails over to read-only mode when the
         # master database is unavailable.
-        if config.launchpad.read_only:
+        if is_read_only():
             lp_permission = getUtility(ILaunchpadPermission, permission)
             if lp_permission.access_level != "read":
                 return False

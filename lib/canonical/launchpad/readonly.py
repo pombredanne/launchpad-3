@@ -8,14 +8,6 @@ named read-only.txt under the root of the Launchpad tree and emit a SIGUSR2
 signal.
 """
 
-# XXX: Having two switches (the read-only.txt and the SIGUSR2) to turn on
-# read-only doesn't sound like a very good idea to me, so we may want to use
-# just SIGUSR2 to create a read-only.txt file and trigger the code that sets
-# the configs with the appropriate values.  Similarly, when starting up we'd
-# check for the presence of read-only.txt and set the config variables
-# with the appropriate values.  That means we can't use SIGUSR2 to switch back
-# to read-write mode, though.
-
 import os
 
 
