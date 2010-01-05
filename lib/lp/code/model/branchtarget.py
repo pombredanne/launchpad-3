@@ -117,7 +117,7 @@ class PackageBranchTarget(_BaseBranchTarget):
 
     def assignKarma(self, person, action_name):
         """See `IBranchTarget`."""
-        person.assignKarma(
+        return person.assignKarma(
             action_name,
             distribution=self.context.distribution,
             sourcepackagename=self.context.sourcepackagename)
@@ -188,6 +188,7 @@ class PersonBranchTarget(_BaseBranchTarget):
     def assignKarma(self, person, action_name):
         """See `IBranchTarget`."""
         # Does nothing. No karma for +junk.
+        return None
 
     def getBugTask(self, bug):
         """See `IBranchTarget`."""
@@ -276,7 +277,7 @@ class ProductBranchTarget(_BaseBranchTarget):
 
     def assignKarma(self, person, action_name):
         """See `IBranchTarget`."""
-        person.assignKarma(action_name, product=self.product)
+        return person.assignKarma(action_name, product=self.product)
 
     def getBugTask(self, bug):
         """See `IBranchTarget`."""
