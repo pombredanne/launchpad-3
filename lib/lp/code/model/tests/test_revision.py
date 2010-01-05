@@ -187,9 +187,7 @@ class TestRevisionKarma(TestCaseWithFactory):
     def test_allocateKarma_personal_branch(self):
         # A personal branch gets no karma event.
         author = self.factory.makePerson()
-        rev = self.factory.makeRevision(
-            author=author,
-            revision_date=datetime.now(pytz.UTC) + timedelta(days=5))
+        rev = self.factory.makeRevision(author=author)
         branch = self.factory.makePersonalBranch()
         karma = rev.allocateKarma(branch)
         self.assertIs(None, karma)
@@ -197,9 +195,7 @@ class TestRevisionKarma(TestCaseWithFactory):
     def test_allocateKarma_package_branch(self):
         # A revision on a package branch gets karma.
         author = self.factory.makePerson()
-        rev = self.factory.makeRevision(
-            author=author,
-            revision_date=datetime.now(pytz.UTC) + timedelta(days=5))
+        rev = self.factory.makeRevision(author=author)
         branch = self.factory.makePackageBranch()
         karma = rev.allocateKarma(branch)
         self.assertEqual(author, karma.person)
@@ -209,9 +205,7 @@ class TestRevisionKarma(TestCaseWithFactory):
     def test_allocateKarma_product_branch(self):
         # A revision on a product branch gets karma.
         author = self.factory.makePerson()
-        rev = self.factory.makeRevision(
-            author=author,
-            revision_date=datetime.now(pytz.UTC) + timedelta(days=5))
+        rev = self.factory.makeRevision(author=author)
         branch = self.factory.makeProductBranch()
         karma = rev.allocateKarma(branch)
         self.assertEqual(author, karma.person)
