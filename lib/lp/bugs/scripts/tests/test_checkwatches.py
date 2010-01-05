@@ -15,12 +15,60 @@ from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.externalbugtracker.bugzilla import BugzillaAPI
 from lp.bugs.scripts import checkwatches
+from lp.bugs.scripts.checkwatches import CheckWatchesErrorUtility
+from lp.bugs.tests.externalbugtracker import TestBugzillaAPIXMLRPCTransport
 from lp.testing import TestCaseWithFactory
 
 
 def always_BugzillaAPI_get_external_bugtracker(bugtracker):
     """A version of get_external_bugtracker that returns BugzillaAPI."""
     return BugzillaAPI(bugtracker.baseurl)
+
+
+class NonConnectingBugzillaAPI(BugzillaAPI):
+    """A non-connected version of the BugzillaAPI ExternalBugTracker."""
+
+    bugs = {
+        1: {'product': 'test-product'},
+        }
+
+    def getCurrentDBTime(self):
+        return None
+
+    def getExternalBugTrackerToUse(self):
+        return self
+
+    def getProductsForRemoteBugs(self, remote_bugs):
+        """Return the products for some remote bugs.
+
+        This method is basically the same as that of the superclass but
+        without the call to initializeRemoteBugDB().
+        """
+        bug_products = {}
+        for bug_id in bug_ids:
+            # If one of the bugs we're trying to get the product for
+            # doesn't exist, just skip it.
+            try:
+                actual_bug_id = self._getActualBugId(bug_id)
+            except BugNotFound:
+                continue
+
+            bug_dict = self._bugs[actual_bug_id]
+            bug_products[bug_id] = bug_dict['product']
+
+        return bug_products
+
+
+class NoBugWatchesByRemoteBugUpdater(checkwatches.BugWatchUpdater):
+    """A subclass of BugWatchUpdater with methods overridden for testing."""
+
+    def _getBugWatchesByRemoteBug(self, bug_watch_ids):
+        """Return an empty dict.
+
+        This method overrides _getBugWatchesByRemoteBug() so that bug
+        497141 can be regression-tested.
+        """
+        return {}
 
 
 class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
@@ -61,6 +109,41 @@ class TestCheckwatchesWithSyncableGnomeProducts(TestCaseWithFactory):
         # there's no bug 2 on the bug tracker that we pass to it.
         self.updater._getExternalBugTrackersAndWatches(
             gnome_bugzilla, [bug_watch_1, bug_watch_2])
+
+
+class TestBugWatchUpdater(TestCaseWithFactory):
+
+    layer = LaunchpadZopelessLayer
+
+    def test_bug_497141(self):
+        # Regression test for bug 497141. KeyErrors raised in
+        # BugWatchUpdater.updateBugWatches() shouldn't cause
+        # checkwatches to abort.
+        updater = NoBugWatchesByRemoteBugUpdater(
+            transaction, QuietFakeLogger())
+
+        # Create a couple of bug watches for testing purposes.
+        bug_tracker = self.factory.makeBugTracker()
+        bug_watches = [
+            self.factory.makeBugWatch(bugtracker=bug_tracker)
+            for i in range(2)]
+
+        # Use a test XML-RPC transport to ensure no connections happen.
+        test_transport = TestBugzillaAPIXMLRPCTransport(bug_tracker.baseurl)
+        remote_system = NonConnectingBugzillaAPI(
+            bug_tracker.baseurl, xmlrpc_transport=test_transport)
+
+        # Calling updateBugWatches() shouldn't raise a KeyError, even
+        # though with our broken updater _getExternalBugTrackersAndWatches()
+        # will return an empty dict.
+        updater.updateBugWatches(remote_system, bug_watches)
+
+        # An error will have been logged instead of the KeyError being
+        # raised.
+        error_utility = CheckWatchesErrorUtility()
+        last_oops = error_utility.getLastOopsReport()
+        self.assertTrue(
+            last_oops.value.startswith('Spurious remote bug ID'))
 
 
 def test_suite():
