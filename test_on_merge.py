@@ -137,7 +137,11 @@ def main():
 
     print 'Running tests.'
     os.chdir(here)
-    cmd = [os.path.join(here, 'bin', 'test')] + sys.argv[1:]
+    cmd = [
+        'xvfb-run',
+        '-s',
+        "'-screen 0 1024x768x24'",
+        os.path.join(here, 'bin', 'test')] + sys.argv[1:]
     print ' '.join(cmd)
 
     # Run the test suite and return the error code
