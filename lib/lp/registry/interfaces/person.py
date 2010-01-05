@@ -1800,12 +1800,14 @@ class IPersonSet(Interface):
         """
 
     @operation_parameters(
-        text=TextLine(title=_("Search text"), default=u""))
+        text=TextLine(title=_("Search text"), default=u""),
+        created_after=Datetime(title=_("Created after"), required=False),
+        created_before=Datetime(title=_("Created before"), required=False))
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def findPerson(text="", exclude_inactive_accounts=True,
                    must_have_email=False,
-                   created_before=None, created_after=None):
+                   created_after=None, created_before=None):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 

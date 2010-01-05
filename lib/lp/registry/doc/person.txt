@@ -896,7 +896,7 @@ matches by the IPerson.datecreated value.
     >>> from datetime import datetime
     >>> import pytz
 
-    >>> created_after = datetime(2008, 6, 1, tzinfo=pytz.UTC)
+    >>> created_after = datetime(2008, 6, 27, tzinfo=pytz.UTC)
     >>> created_before = datetime(2008, 7, 1, tzinfo=pytz.UTC)
     >>> print_people(personset.findPerson(text='',
     ...     created_after=created_after, created_before=created_before))

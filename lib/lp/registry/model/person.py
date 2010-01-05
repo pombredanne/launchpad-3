@@ -2665,7 +2665,7 @@ class PersonSet:
 
     def findPerson(
             self, text="", exclude_inactive_accounts=True,
-            must_have_email=False, created_before=None, created_after=None):
+            must_have_email=False, created_after=None, created_before=None):
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
@@ -2693,15 +2693,15 @@ class PersonSet:
                 base_query,
                 EmailAddress.person == Person.id
                 )
-        if created_before is not None:
-            base_query = And(
-                base_query,
-                Person.datecreated < created_before
-                )
         if created_after is not None:
             base_query = And(
                 base_query,
                 Person.datecreated > created_after
+                )
+        if created_before is not None:
+            base_query = And(
+                base_query,
+                Person.datecreated < created_before
                 )
 
         # Short circuit for returning all users in order
