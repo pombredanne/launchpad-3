@@ -5,8 +5,6 @@
 
 """Test the validate-translations-file script."""
 
-__metaclass__ = type
-
 import logging
 import os.path
 from textwrap import dedent
