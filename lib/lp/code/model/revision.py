@@ -387,9 +387,6 @@ class RevisionSet:
         from lp.registry.model.person import ValidPersonCache
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        # XXX: Tim Penhey 2008-08-12, bug 244768
-        # Using Not(column == None) rather than column != None.
         return store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
@@ -399,7 +396,8 @@ class RevisionSet:
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
                            BranchRevision.branch == Branch.id,
-                           Not(Branch.product == None)),
+                           Or(Branch.product != None,
+                              Branch.distroseries != None)),
                        (Branch, BranchRevision))))
 
     @staticmethod
