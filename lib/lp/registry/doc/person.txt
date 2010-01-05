@@ -890,7 +890,7 @@ Searching only for People based on their names or email addresses:
     Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
                              u'justdave@bugzilla.org']
 
-The created_before and created_after arguments can use used to restrict the
+The created_before and created_after arguments can be used to restrict the
 matches by the IPerson.datecreated value.
 
     >>> from datetime import datetime
