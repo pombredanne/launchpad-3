@@ -245,14 +245,13 @@ delete them.
     >>> print deletable
     False
 
-    >>> response = webservice.named_post('/~eric/fooix/feature-branch',
-    ...                                  'delete', break_references=True)
+    >>> response = webservice.delete('/~eric/fooix/feature-branch',
+    ...                              break_references=True)
     >>> print response
     HTTP/1.1 200 Ok
     ...
 
-    >>> response = webservice.named_post('/~mary/blob/bar',
-    ...                                  'delete')
+    >>> response = webservice.delete('/~mary/blob/bar')
     >>> print response
     HTTP/1.1 200 Ok
     ...
