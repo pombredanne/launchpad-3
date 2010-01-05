@@ -482,7 +482,7 @@ The team owner is also added as an administrator of its team.
 And we can even add other members to our new team!
 
     >>> login('foo.bar@canonical.com')
-    >>> not_a_person.addMember(lifeless, reviewer=ddaa)
+    >>> ignored = not_a_person.addMember(lifeless, reviewer=ddaa)
     >>> login(ANONYMOUS)
     >>> [member.name for member in not_a_person.activemembers]
     [u'ddaa', u'lifeless']
@@ -1125,7 +1125,7 @@ The method does not return inactive projects.
     >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
-    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
     >>> login_person(registry_member)

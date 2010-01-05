@@ -103,7 +103,8 @@ be able to suspend spam accounts.
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> from zope.component import getUtility
     >>> registry_team = getUtility(ILaunchpadCelebrities).registry_experts
-    >>> registry_team.addMember(registry_expert, registry_team.teamowner)
+    >>> ignored = registry_team.addMember(
+    ...     registry_expert, registry_team.teamowner)
     >>> print registry_expert.inTeam(registry_team)
     True
     >>> logout()
