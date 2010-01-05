@@ -76,7 +76,11 @@ class TestUpdatePreviewDiffs(TestCaseWithFactory):
         source_tree.bzrdir.root_transport.delete_tree('.bzr')
         error_utility = errorlog.ErrorReportingUtility()
         error_utility.configure('update_preview_diffs')
-        old_id = error_utility.getLastOopsReport().id
+        old_report = error_utility.getLastOopsReport()
+        if old_report is not None:
+            old_id = old_report.id
+        else:
+            old_id = None
         retcode, stdout, stderr = run_script(
             'cronscripts/update_preview_diffs.py', ['--twisted'])
         self.assertEqual(0, retcode)
