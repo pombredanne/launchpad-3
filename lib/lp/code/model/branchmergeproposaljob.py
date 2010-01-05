@@ -205,41 +205,14 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
     def run(self, _create_preview=True):
         """See `IMergeProposalCreatedJob`."""
         # _create_preview can be set False for testing purposes.
-        diff_created = False
-        if self.branch_merge_proposal.review_diff is None:
-            self.branch_merge_proposal.review_diff = self._makeReviewDiff()
-            diff_created = True
         if _create_preview:
             preview_diff = PreviewDiff.fromBranchMergeProposal(
                 self.branch_merge_proposal)
             self.branch_merge_proposal.preview_diff = preview_diff
-            diff_created = True
-        if diff_created:
             transaction.commit()
         mailer = BMPMailer.forCreation(
             self.branch_merge_proposal, self.branch_merge_proposal.registrant)
         mailer.sendAll()
-        return self.branch_merge_proposal.review_diff
-
-    def _makeReviewDiff(self):
-        """Return a StaticDiff to be used as a review diff."""
-        cleanups = []
-        def get_branch(branch):
-            bzr_branch = branch.getBzrBranch()
-            bzr_branch.lock_read()
-            cleanups.append(bzr_branch.unlock)
-            return bzr_branch
-        try:
-            bzr_source = get_branch(self.branch_merge_proposal.source_branch)
-            bzr_target = get_branch(self.branch_merge_proposal.target_branch)
-            lca, source_revision = self._findRevisions(
-                bzr_source, bzr_target)
-            diff = StaticDiff.acquire(
-                lca, source_revision, bzr_source.repository)
-        finally:
-            for cleanup in reversed(cleanups):
-                cleanup()
-        return diff
 
     @staticmethod
     def _findRevisions(bzr_source, bzr_target):
