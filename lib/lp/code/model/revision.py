@@ -96,7 +96,8 @@ class Revision(SQLBase):
             # is lying), and a problem with the way the Launchpad code
             # currently does its karma degradation over time.
             if karma is not None:
-                karma.datecreated = min(self.revision_date, self.date_created)
+                removeSecurityProxy(karma).datecreated = min(
+                    self.revision_date, self.date_created)
                 self.karma_allocated = True
 
     def getBranch(self, allow_private=False, allow_junk=True):
