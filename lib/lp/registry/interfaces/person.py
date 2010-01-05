@@ -966,13 +966,16 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         """
 
     def assignKarma(action_name, product=None, distribution=None,
-                    sourcepackagename=None):
+                    sourcepackagename=None, datecreated=None):
         """Assign karma for the action named <action_name> to this person.
 
         This karma will be associated with the given product or distribution.
         If a distribution is given, then product must be None and an optional
         sourcepackagename may also be given. If a product is given, then
         distribution and sourcepackagename must be None.
+
+        If a datecreated is specified, the karma will be created with that
+        date.  This is how historic karma events can be created.
         """
 
     def latestKarma(quantity=25):

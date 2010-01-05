@@ -1050,7 +1050,7 @@ class Person(
             return False
 
     def assignKarma(self, action_name, product=None, distribution=None,
-                    sourcepackagename=None):
+                    sourcepackagename=None, datecreated=None):
         """See `IPerson`."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
         # The system user and janitor, does not get karma.
@@ -1074,9 +1074,12 @@ class Person(
             raise AssertionError(
                 "No KarmaAction found with name '%s'." % action_name)
 
+        if datecreated is None:
+            datecreated = UTC_NOW
         karma = Karma(
             person=self, action=action, product=product,
-            distribution=distribution, sourcepackagename=sourcepackagename)
+            distribution=distribution, sourcepackagename=sourcepackagename,
+            datecreated=datecreated)
         notify(KarmaAssignedEvent(self, karma))
         return karma
 
