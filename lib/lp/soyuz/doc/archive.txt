@@ -1653,7 +1653,8 @@ and user and give the team access to cprov's PPA:
 
 But if we make him part of the uploader_team he'll gain access:
 
-    >>> uploader_team.addMember(indirect_uploader, indirect_uploader)
+    >>> ignored = uploader_team.addMember(
+    ...     indirect_uploader, indirect_uploader)
     >>> for ppa in archive_set.getPPAsForUser(indirect_uploader):
     ...     print ppa.displayname
     PPA for Celso Providelo
@@ -2249,7 +2250,7 @@ Carlos can now *copy* packages directly to ubuntu.
     >>> login('foo.bar@canonical.com')
     >>> ubuntu_security = getUtility(IPersonSet).getByName(
     ...     'ubuntu-security')
-    >>> ubuntu_security.addMember(carlos, cprov)
+    >>> ignored = ubuntu_security.addMember(carlos, cprov)
 
     >>> login('carlos@canonical.com')
     >>> check_permission('launchpad.Append', primary)
