@@ -142,12 +142,14 @@ def main():
         '-s',
         "'-screen 0 1024x768x24'",
         os.path.join(here, 'bin', 'test')] + sys.argv[1:]
-    print ' '.join(cmd)
+    command_line = ' '.join(cmd)
+    print command_line
 
     # Run the test suite and return the error code
     #return call(cmd)
 
-    proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
+    proc = Popen(
+        command_line, stdin=PIPE, stdout=PIPE, stderr=STDOUT, shell=True)
     proc.stdin.close()
 
     # Do proc.communicate(), but timeout if there's no activity on stdout or
