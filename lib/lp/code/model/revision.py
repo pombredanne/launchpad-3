@@ -87,7 +87,6 @@ class Revision(SQLBase):
         # If we know who the revision author is, give them karma.
         author = self.revision_author.person
         if author is not None:
-            karma = branch.target.assignKarma(author, 'revisionadded')
             # Backdate the karma to the time the revision was created.  If the
             # revision_date on the revision is in future (for whatever weird
             # reason) we will use the date_created from the revision (which
@@ -95,9 +94,10 @@ class Revision(SQLBase):
             # events is both wrong, as the revision has been created (and it
             # is lying), and a problem with the way the Launchpad code
             # currently does its karma degradation over time.
+            karma_date = min(self.revision_date, self.date_created)
+            karma = branch.target.assignKarma(
+                author, 'revisionadded', karma_date)
             if karma is not None:
-                removeSecurityProxy(karma).datecreated = min(
-                    self.revision_date, self.date_created)
                 self.karma_allocated = True
             return karma
         else:
