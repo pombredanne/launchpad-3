@@ -561,9 +561,8 @@ class TestGarbo(TestCaseWithFactory):
         branch_job.job.date_finished = THIRTY_DAYS_AGO
         job_id = branch_job.job.id
 
-        tree_location = tempfile.mkdtemp()
         db_branch_newer, tree_newer = self.create_branch_and_tree(
-            tree_location=tree_location, hosted=True, format='knit')
+            hosted=True, format='knit')
         db_branch_newer.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch_newer.repository_format = RepositoryFormat.BZR_KNIT_1
 
