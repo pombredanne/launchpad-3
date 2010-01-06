@@ -156,6 +156,62 @@ class BuildQueue(SQLBase):
         """See `IBuildQueue`."""
         self.job.date_started = timestamp
 
+    def _getBuilderData(self):
+        """How many working builders are there, how are they configured?"""
+        # Please note: this method will send only one request to the database.
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        my_processor = self.specific_job.processor
+        my_virtualized = self.specific_job.virtualized
+
+        # We need to know the total number of builders as well as the
+        # number of builders that can run the job of interest (JOI).
+        # If the JOI is processor independent these builder counts will
+        # have the same value.
+        builder_data = """
+            SELECT processor, virtualized, COUNT(id) FROM builder
+            WHERE builderok = TRUE AND manual = FALSE
+            GROUP BY processor, virtualized;
+        """
+        results = store.execute(builder_data).get_all()
+
+        builder_stats = dict()
+        builders_in_total = builders_for_job = 0
+        for processor, virtualized, count in results:
+            if my_processor is not None:
+                if (my_processor.id == processor and
+                    my_virtualized == virtualized):
+                    # The job on hand can only run on builders with a
+                    # particular processor/virtualization combination and
+                    # this is how many of these we have.
+                    builders_for_job = count
+            builders_in_total += count
+            builder_stats[(processor, virtualized)] = count
+        if my_processor is None:
+            # The job of interest (JOI) is processor independent.
+            builders_for_job = builders_in_total
+
+        return (builders_in_total, builders_for_job, builder_stats)
+
+    def _freeBuildersCount(self, processor, virtualized):
+        """How many builders capable of running jobs for the given processor
+        and virtualization combination are idle/free at present?"""
+        query = """
+            SELECT COUNT(id) FROM builder
+            WHERE
+                builderok = TRUE AND manual = FALSE
+                AND id NOT IN (
+                    SELECT builder FROM BuildQueue WHERE builder IS NOT NULL)
+            """
+        if processor is not None:
+            query += """
+                AND processor = %s AND virtualized = %s
+            """ % sqlvalues(processor, virtualized)
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.execute(query)
+        free_builders = result_set.get_one()[0]
+        return free_builders
+
 
 class BuildQueueSet(object):
     """Utility to deal with BuildQueue content class."""

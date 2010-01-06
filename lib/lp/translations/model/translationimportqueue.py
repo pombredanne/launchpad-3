@@ -43,6 +43,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.permission_helpers import is_admin_or_rosetta_expert
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -62,8 +63,6 @@ from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
-from lp.translations.utilities.permission_helpers import (
-    is_admin_or_rosetta_expert)
 from canonical.librarian.interfaces import ILibrarianClient
 
 

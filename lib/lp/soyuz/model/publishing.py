@@ -53,7 +53,7 @@ from lp.soyuz.interfaces.queue import PackageUploadStatus
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, IArchiveSafePublisher,
     IBinaryPackageFilePublishing, IBinaryPackagePublishingHistory,
-    IPublishingSet, ISecureBinaryPackagePublishingHistory,
+    IPublishingEdit, IPublishingSet, ISecureBinaryPackagePublishingHistory,
     ISecureSourcePackagePublishingHistory, ISourcePackageFilePublishing,
     ISourcePackagePublishingHistory, PackagePublishingPriority,
     PackagePublishingStatus, PoolFileOverwriteError)
@@ -471,7 +471,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
        Excluding embargoed stuff
     """
-    implements(ISourcePackagePublishingHistory)
+    implements(ISourcePackagePublishingHistory, IPublishingEdit)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
@@ -593,29 +593,28 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         return DecoratedResultSet(result_set, result_to_build)
 
-    @property
-    def changes_file_url(self):
+    def changesFileUrl(self):
         """See `ISourcePackagePublishingHistory`."""
-        results = getUtility(IPublishingSet).getChangesFilesForSources(
-            self)
+        # We use getChangesFileLFA() as opposed to getChangesFilesForSources()
+        # because the latter is more geared towards the web UI and taxes the
+        # db much more in terms of the join width and the pre-joined data.
+        #
+        # This method is accessed overwhelmingly via the LP API and calling
+        # getChangesFileLFA() which is much lighter on the db has the
+        # potential of performing significantly better.
+        changes_lfa = getUtility(IPublishingSet).getChangesFileLFA(
+            self.sourcepackagerelease)
 
-        result = results.one()
-        if result is None:
+        if changes_lfa is None:
             # This should not happen in practice, but the code should
             # not blow up because of bad data.
             return None
-        source, packageupload, spr, changesfile, lfc = result
 
         # Return a webapp-proxied LibraryFileAlias so that restricted
         # librarian files are accessible.  Non-restricted files will get
         # a 302 so that webapp threads are not tied up.
-
-        # Avoid circular imports.
-        from canonical.launchpad.browser.librarian import (
-            ProxiedLibraryFileAlias)
-
-        proxied_file = ProxiedLibraryFileAlias(changesfile, self.archive)
-        return proxied_file.http_url
+        the_url = self._proxied_urls((changes_lfa,), self.archive)[0]
+        return the_url
 
     def createMissingBuilds(self, architectures_available=None,
                             pas_verify=None, logger=None):
@@ -890,7 +889,7 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record. (excluding embargoed packages)"""
 
-    implements(IBinaryPackagePublishingHistory)
+    implements(IBinaryPackagePublishingHistory, IPublishingEdit)
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
@@ -1569,6 +1568,23 @@ class PublishingSet:
 
         result_set.order_by(SourcePackagePublishingHistory.id)
         return result_set
+
+    def getChangesFileLFA(self, spr):
+        """See `IPublishingSet`."""
+        # Import PackageUpload and PackageUploadSource locally to avoid
+        # circular imports.
+        from lp.soyuz.model.queue import PackageUpload, PackageUploadSource
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result_set = store.find(
+            LibraryFileAlias,
+            LibraryFileAlias.id == PackageUpload.changesfileID,
+            PackageUpload.status == PackageUploadStatus.DONE,
+            PackageUpload.distroseriesID == spr.upload_distroseriesID,
+            PackageUpload.archiveID == spr.upload_archiveID,
+            PackageUpload.id == PackageUploadSource.packageuploadID,
+            PackageUploadSource.sourcepackagereleaseID == spr.id)
+        return result_set.one()
 
     def getBuildStatusSummariesForSourceIdsAndArchive(self,
                                                       source_ids,

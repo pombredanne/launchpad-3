@@ -966,13 +966,16 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         """
 
     def assignKarma(action_name, product=None, distribution=None,
-                    sourcepackagename=None):
+                    sourcepackagename=None, datecreated=None):
         """Assign karma for the action named <action_name> to this person.
 
         This karma will be associated with the given product or distribution.
         If a distribution is given, then product must be None and an optional
         sourcepackagename may also be given. If a product is given, then
         distribution and sourcepackagename must be None.
+
+        If a datecreated is specified, the karma will be created with that
+        date.  This is how historic karma events can be created.
         """
 
     def latestKarma(quantity=25):
@@ -1406,23 +1409,33 @@ class IPersonEditRestricted(Interface):
                   may_subscribe_to_list=True):
         """Add the given person as a member of this team.
 
-        If the given person is already a member of this team we'll simply
-        change its membership status. Otherwise a new TeamMembership is
-        created with the given status.
+        :param person: If the given person is already a member of this
+            team we'll simply change its membership status. Otherwise a new
+            TeamMembership is created with the given status.
 
-        If the person is actually a team and force_team_add is False, the
-        team will actually be invited to join this one. Otherwise the team
-        is added as if it were a person.
+        :param reviewer: The user who made the given person a member of this
+            team.
 
-        If the person is not a team, and may_subscribe_to_list
-        is True, then the person may be subscribed to the team's
-        mailing list, depending on the list status and the person's
-        auto-subscribe settings.
+        :param comment: String that will be assigned to the
+            proponent_comment, reviwer_comment, or acknowledger comment.
 
-        The given status must be either Approved, Proposed or Admin.
+        :param status: `TeamMembershipStatus` value must be either
+            Approved, Proposed or Admin.
 
-        The reviewer is the user who made the given person a member of this
-        team.
+        :param force_team_add: If the person is actually a team and
+            force_team_add is False, the team will actually be invited to
+            join this one. Otherwise the team is added as if it were a
+            person.
+
+        :param may_subscribe_to_list: If the person is not a team, and
+            may_subscribe_to_list is True, then the person may be subscribed
+            to the team's mailing list, depending on the list status and the
+            person's auto-subscribe settings.
+
+        :return: A tuple containing a boolean indicating when the
+            membership status changed and the current `TeamMembershipStatus`.
+            This depends on the desired status passed as an argument, the
+            subscription policy and the user's priveleges.
         """
 
     @operation_parameters(

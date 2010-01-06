@@ -751,6 +751,9 @@
             for="lp.registry.interfaces.person.IPerson"
             layer="canonical.launchpad.layers.BugsLayer"
             name="+bugs"/>
+        <adapter
+          factory="lp.registry.browser.person.PersonXHTMLRepresentation"
+          name="lazr.restful.EntryResource" />
         <browser:page
             name="+review"
             for="lp.registry.interfaces.person.IPerson"
@@ -761,7 +764,7 @@
             name="+reviewaccount"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonAccountAdministerView"
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             template="../templates/person-review.pt"/>
         <browser:page
             name="+claimteam"

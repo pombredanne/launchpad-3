@@ -27,6 +27,10 @@ class NotFoundError(KeyError):
     """Launchpad object not found."""
 
 
+class GoneError(KeyError):
+    """Launchpad object is gone."""
+
+
 class NameLookupFailed(NotFoundError):
     """Raised when a lookup by name fails.
 

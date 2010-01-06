@@ -37,6 +37,15 @@
       class="canonical.launchpad.webapp.error.NotFoundView"
       />
 
+  <!-- Gone -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.GoneError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-gone.pt"
+      class="canonical.launchpad.webapp.error.GoneView"
+      />
+
   <!-- RequestExpired -->
   <browser:page
       for="canonical.database.interfaces.IRequestExpired"

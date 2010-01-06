@@ -39,7 +39,7 @@ restriction was added as a fix to https://bugs.launchpad.net/bugs/290681.
     >>> parent_team = factory.makeTeam()
     >>> child_team = factory.makeTeam(name='child-team')
     >>> random_team = factory.makeTeam()
-    >>> parent_team.addMember(
+    >>> ignored = parent_team.addMember(
     ...     child_team, reviewer=parent_team.teamowner, force_team_add=True)
     >>> form = {'field.dupe_person': child_team.name,
     ...         'field.target_person': random_team.name,

@@ -38,3 +38,13 @@ class BuildFarmJob:
         """See `IBuildFarmJob`."""
         pass
 
+    @property
+    def processor(self):
+        """See `IBuildFarmJob`."""
+        return None
+
+    @property
+    def virtualized(self):
+        """See `IBuildFarmJob`."""
+        return None
+

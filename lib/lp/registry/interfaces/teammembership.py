@@ -14,6 +14,7 @@ __all__ = [
     'ITeamMembershipSet',
     'ITeamParticipation',
     'TeamMembershipStatus',
+    'UserCannotChangeMembershipSilently',
     ]
 
 from zope.schema import Bool, Choice, Datetime, Int, Text
@@ -237,6 +238,8 @@ class ITeamMembership(Interface):
         transition.
 
         The given status must be different than the current status.
+
+        Return True if the status got changed, otherwise False.
         """
 
 
