@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = []
 
 from datetime import datetime, timedelta
-import tempfile
 import time
 import unittest
 
@@ -515,13 +514,12 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(log_output.find(error_message_2), -1)
 
     def test_BranchJobPruner(self):
-
+        # Garbo should remove jobs completed over 30 days ago.
         self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 
-        db_branch, tree = self.create_branch_and_tree(
-            hosted=True, format='knit')
+        db_branch = self.factory.makeAnyBranch()
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
 
@@ -545,15 +543,14 @@ class TestGarbo(TestCaseWithFactory):
                 BranchJob.branch == db_branch.id).count(),
                 0)
 
-
     def test_BranchJobPruner_doesnt_prune_recent_jobs(self):
-
+        # Check to make sure the garbo doesn't remove jobs that aren't more
+        # than thirty days old.
         self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 
-        db_branch, tree = self.create_branch_and_tree(
-            hosted=True, format='knit')
+        db_branch = self.factory.makeAnyBranch()
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
 
@@ -561,19 +558,8 @@ class TestGarbo(TestCaseWithFactory):
         branch_job.job.date_finished = THIRTY_DAYS_AGO
         job_id = branch_job.job.id
 
-        db_branch_newer, tree_newer = self.create_branch_and_tree(
-            hosted=True, format='knit')
-        db_branch_newer.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch_newer.repository_format = RepositoryFormat.BZR_KNIT_1
-
-        branch_job_newer = BranchUpgradeJob.create(db_branch_newer)
+        branch_job_newer = BranchUpgradeJob.create(db_branch)
         job_id_newer = branch_job_newer.job.id
-
-        self.assertEqual(
-            store.find(
-                BranchJob,
-                BranchJob.branch == db_branch.id).count(),
-                1)
         transaction.commit()
 
         collector = self.runDaily()
@@ -583,6 +569,7 @@ class TestGarbo(TestCaseWithFactory):
             store.find(
                 BranchJob).count(),
             1)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
