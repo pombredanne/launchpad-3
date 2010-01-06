@@ -38,7 +38,7 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         self.assertIs(self.person, roles.person)
 
-    def _test_is_on_team(self, attribute):
+    def _test_in_team(self, attribute):
         roles_attribute = "in_"+attribute
         roles = IPersonRoles(self.person)
         self.assertFalse(
@@ -53,7 +53,7 @@ class TestPersonRoles(TestCaseWithFactory):
             "%s should be True" % roles_attribute)
         self.person.leave(team)
 
-    def test_is_on_teams(self):
+    def test_in_teams(self):
         # Test all celebrity teams are available.
         team_attributes = [
             'admin',
@@ -73,9 +73,9 @@ class TestPersonRoles(TestCaseWithFactory):
             'vcs_imports',
             ]
         for attribute in team_attributes:
-            self._test_is_on_team(attribute)
+            self._test_in_team(attribute)
 
-    def _test_is_person(self, attribute):
+    def _test_in_person(self, attribute):
         roles_attribute = "in_"+attribute
         celeb = getattr(self.celebs, attribute)
         roles = IPersonRoles(celeb)
@@ -93,7 +93,16 @@ class TestPersonRoles(TestCaseWithFactory):
             'ppa_key_guard',
             ]
         for attribute in person_attributes:
-            self._test_is_person(attribute)
+            self._test_in_person(attribute)
+
+    def test_in_AttributeError(self):
+        # Do not check for non-existent attributes, even if it has the
+        # right prefix.
+        roles = IPersonRoles(self.person)
+        fake_attr = self.factory.getUniqueString()
+        self.assertRaises(AttributeError, getattr, roles, fake_attr)
+        fake_attr = self.factory.getUniqueString('in_')
+        self.assertRaises(AttributeError, getattr, roles, fake_attr)
 
     def test_inTeam(self):
         # The method person.inTeam is available as the inTeam attribute.
