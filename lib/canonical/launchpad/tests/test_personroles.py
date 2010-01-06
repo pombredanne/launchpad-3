@@ -102,3 +102,16 @@ class TestPersonRoles(TestCaseWithFactory):
         team = self.factory.makeTeam(self.person)
         roles = IPersonRoles(self.person)
         self.assertTrue(roles.inTeam(team))
+
+    def test_isOwner(self):
+        # The person can be the owner of something, e.g. a product.
+        product = self.factory.makeProduct(owner=self.person)
+        roles = IPersonRoles(self.person)
+        self.assertTrue(roles.isOwner(product))
+
+    def test_isDriver(self):
+        # The person can be the driver of something, e.g. a productseries.
+        productseries = self.factory.makeProductSeries()
+        productseries.driver = self.person
+        roles = IPersonRoles(self.person)
+        self.assertTrue(roles.isDriver(productseries))
