@@ -149,10 +149,7 @@ class IPersonRoles(Interface):
     or view code.
     """
 
-    person = Object(
-        title=_("The IPerson object that these checks refer to."),
-        schema=IPerson, required=True, readonly=True
-        )
+    person = Attribute("The IPerson object that these checks refer to.")
 
     is_admin = Bool(
         title=_("True if this person is a Launchpad admin."),
