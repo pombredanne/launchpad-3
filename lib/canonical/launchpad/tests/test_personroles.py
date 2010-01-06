@@ -41,6 +41,10 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         self.assertTrue(getattr(roles, roles_attr))
 
-    def test_is_admin(self):
+    def test_is_on_teams(self):
         # An LP admin is recognized as such.
-        self._test_is_on_team('admin', 'is_admin')
+        team_attributes = [
+            ('admin', 'is_admin'),
+            ]
+        for attributes in team_attributes:
+            self._test_is_on_team(*attributes)
