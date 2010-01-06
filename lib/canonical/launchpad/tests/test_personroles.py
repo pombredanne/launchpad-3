@@ -32,6 +32,11 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         verifyObject(IPersonRoles, roles)
 
+    def test_person(self):
+        # The person is available through the person attribute.
+        roles = IPersonRoles(self.person)
+        self.assertIs(self.person, roles.person)
+
     def _test_is_on_team(self, celebs_attr, roles_attr):
         roles = IPersonRoles(self.person)
         self.assertFalse(
@@ -76,7 +81,7 @@ class TestPersonRoles(TestCaseWithFactory):
             "%s should be True" % roles_attr)
 
     def test_is_person(self):
-        # Test all celebrity persons are available.
+        # All celebrity persons are available.
         person_attributes = [
             ('bug_importer', 'is_bug_importer'),
             ('bug_watch_updater', 'is_bug_watch_updater'),
@@ -87,3 +92,7 @@ class TestPersonRoles(TestCaseWithFactory):
         for attributes in person_attributes:
             self._test_is_person(*attributes)
 
+    def test_inTeam(self):
+        # The method person.inTeam is available as the inTeam attribute.
+        roles = IPersonRoles(self.person)
+        self.assertEquals(self.person.inTeam, roles.inTeam)

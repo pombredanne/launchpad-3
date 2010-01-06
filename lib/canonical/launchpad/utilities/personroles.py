@@ -21,6 +21,7 @@ class PersonRoles:
     def __init__(self, person):
         self.person = person
         self._celebrities = getUtility(ILaunchpadCelebrities)
+        self.inTeam = self.person.inTeam
 
     @property
     def is_admin(self):
@@ -101,9 +102,6 @@ class PersonRoles:
     @property
     def is_in_vcs_imports(self):
         return self.person.inTeam(self._celebrities.vcs_imports)
-
-    def inTeam(self, team):
-        """See IPersonRoles."""
 
     def isOwner(self, obj):
         """See IPersonRoles."""
