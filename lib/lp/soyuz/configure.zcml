@@ -29,6 +29,9 @@
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
+            <require
+                permission="launchpad.Edit"
+                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
         </class>
 
         <!-- BinaryPackageFilePublishing -->
@@ -119,6 +122,9 @@
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
+            <require
+                permission="launchpad.Edit"
+                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
         </class>
 
         <!-- SourcePackageFilePublishing -->

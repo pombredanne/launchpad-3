@@ -27,7 +27,6 @@ from lp.codehosting.vfs.branchfs import (
     AsyncLaunchpadTransport, BranchTransportDispatch,
     DirectDatabaseLaunchpadServer, LaunchpadInternalServer, LaunchpadServer,
     TransportDispatch, UnknownTransportType, branch_id_to_path)
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.inmemory import InMemoryFrontend, XMLRPCWrapper
 from lp.codehosting.sftp import FatLocalTransport
 from lp.codehosting.vfs.transport import AsyncVirtualTransport
@@ -547,7 +546,7 @@ class LaunchpadTransportTests:
         """
         backing_transport = self.backing_transport.clone(
             '%s/.bzr/' % branch_to_path(branch, add_slash=False))
-        ensure_base(backing_transport)
+        backing_transport.create_prefix()
         return backing_transport
 
     def test_get_mapped_file(self):
