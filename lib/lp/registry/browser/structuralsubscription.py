@@ -30,6 +30,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import Link
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
+
 class StructuralSubscriptionView(LaunchpadFormView):
     """View class for structural subscriptions."""
 
@@ -137,7 +138,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
                                if self.isSubscribed(team))
         return {
             'subscribe_me': self.currentUserIsSubscribed(),
-            'subscriptions_team': subscribed_teams
+            'subscriptions_team': subscribed_teams,
             }
 
     def isSubscribed(self, person):
@@ -175,7 +176,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         is_subscribed = self.isSubscribed(self.user)
         subscribe = data['subscribe_me']
         if (not is_subscribed) and subscribe:
-            sub = target.addBugSubscription(self.user, self.user)
+            target.addBugSubscription(self.user, self.user)
             self.request.response.addNotification(
                 'You have subscribed to "%s". You will now receive an '
                 'e-mail each time someone reports or changes one of '
@@ -204,7 +205,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
             team for team in teams if self.isSubscribed(team))
 
         for team in form_selected_teams - subscriptions:
-            sub = target.addBugSubscription(team, self.user)
+            target.addBugSubscription(team, self.user)
             self.request.response.addNotification(
                 'The %s team will now receive an e-mail each time '
                 'someone reports or changes a public bug in "%s".' % (
@@ -225,7 +226,7 @@ class StructuralSubscriptionView(LaunchpadFormView):
         target = self.context
         new_subscription = data['new_subscription']
         if new_subscription is not None:
-            sub = target.addBugSubscription(new_subscription, self.user)
+            target.addBugSubscription(new_subscription, self.user)
             self.request.response.addNotification(
                 '%s will now receive an e-mail each time someone '
                 'reports or changes a public bug in "%s".' % (
@@ -288,7 +289,7 @@ class StructuralSubscriptionMenuMixin:
 
     def subscribe(self):
         """The subscribe menu link.
-        
+
         If the user, or any of the teams he's a member of, already has a
         subscription to the context, the link offer to edit the subscriptions
         and displays the edit icon. Otherwise, the link offers to subscribe
