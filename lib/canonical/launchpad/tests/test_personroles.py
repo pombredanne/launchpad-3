@@ -7,6 +7,7 @@ import unittest
 
 from zope.interface.verify import verifyObject
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPersonRoles)
@@ -124,3 +125,16 @@ class TestPersonRoles(TestCaseWithFactory):
         productseries.driver = self.factory.makePerson()
         roles = IPersonRoles(self.person)
         self.assertTrue(roles.isDriver(productseries))
+
+    def test_isOneOf(self):
+        # Objects may have multiple roles that a person can fulfill.
+        # Specifications are such a case.
+        spec = removeSecurityProxy(self.factory.makeSpecification())
+        spec.owner = self.factory.makePerson()
+        spec.drafter = self.factory.makePerson()
+        spec.assignee = self.factory.makePerson()
+        spec.approver = self.person
+
+        roles = IPersonRoles(self.person)
+        self.assertTrue(roles.isOneOf(
+            spec, ['owner', 'drafter', 'assignee', 'approver']))
