@@ -513,7 +513,8 @@ class MultiArchBuildsBase(TestBuildQueueBase):
                 architecturehintlist='any').createMissingBuilds())
         self.builds.extend(
             self.publisher.getPubSource(
-                sourcename="firefox", status=PackagePublishingStatus.PUBLISHED,
+                sourcename="firefox",
+                status=PackagePublishingStatus.PUBLISHED,
                 archive=self.non_ppa,
                 architecturehintlist='any').createMissingBuilds())
         self.builds.extend(
