@@ -16,6 +16,7 @@ __all__ = [
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
+    'notify_modified',
     ]
 
 
@@ -126,8 +127,8 @@ class IBranchMergeProposal(IPrivacy):
 
     reviewed_revision_id = exported(
         Text(
-            title=_("The revision id that has been approved by the reviewer.")
-            ),
+            title=_(
+                "The revision id that has been approved by the reviewer.")),
         exported_as='reviewed_revno')
 
     commit_message = exported(
@@ -256,7 +257,7 @@ class IBranchMergeProposal(IPrivacy):
         CollectionField(
             title=_('The votes cast or expected for this proposal'),
             value_type=Reference(schema=Interface), #ICodeReviewVoteReference
-            readonly=True
+            readonly=True,
             )
         )
 
@@ -591,6 +592,8 @@ class IUpdatePreviewDiffJobSource(Interface):
         """Iterate through jobs ready to update preview diffs."""
 
 
+# XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
+# should be moved there.
 def notify_modified(proposal, func, *args, **kwargs):
     """Call func, then notify about the changes it made.
 
