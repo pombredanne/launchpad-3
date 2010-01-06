@@ -132,7 +132,7 @@ class XpiManifest:
         """Initialize: parse `content` as a manifest file."""
         if content.startswith('\n'):
             raise TranslationFormatSyntaxError(
-                "Manifest begins with newline.")
+                message="Manifest begins with newline.")
 
         locales = []
         for line in content.splitlines():
