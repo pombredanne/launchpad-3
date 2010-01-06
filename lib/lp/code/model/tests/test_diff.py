@@ -143,7 +143,7 @@ class TestDiffInScripts(DiffTestCase):
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
         source_branch = Branch.open(bmp.source_branch.warehouse_url)
         target_branch = Branch.open(bmp.target_branch.warehouse_url)
-        diff = Diff.mergePreviewFromBranches(
+        diff, conflicts = Diff.mergePreviewFromBranches(
             source_branch, source_rev_id, target_branch)
         transaction.commit()
         self.checkExampleMerge(diff.text)
@@ -195,7 +195,7 @@ class TestDiffInScripts(DiffTestCase):
         # Changes introduced in the prerequisite branch are ignored.
         (source_bzr, source_rev_id, target_bzr, prerequisite_bzr,
          prerequisite) = self.preparePrerequisiteMerge()
-        diff = Diff.mergePreviewFromBranches(
+        diff, conflicts = Diff.mergePreviewFromBranches(
             source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
         transaction.commit()
         self.assertIn('+source text\n', diff.text)
@@ -208,7 +208,7 @@ class TestDiffInScripts(DiffTestCase):
          prerequisite) = self.preparePrerequisiteMerge()
         self.commitFile(
             prerequisite, 'file', 'prerequisite text2\n')
-        diff = Diff.mergePreviewFromBranches(
+        diff, conflicts = Diff.mergePreviewFromBranches(
             source_bzr, source_rev_id, target_bzr, prerequisite_bzr)
         transaction.commit()
         self.assertNotIn('-prerequisite text2\n', diff.text)
@@ -427,6 +427,12 @@ class TestPreviewDiff(DiffTestCase):
         transaction.commit()
         self.assertIn('+source text\n', preview.text)
         self.assertNotIn('+prerequisite text\n', preview.text)
+
+    def test_fromBranchMergeProposal_sets_conflicts(self):
+        """Conflicts are set on the PreviewDiff."""
+        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        preview = PreviewDiff.fromBranchMergeProposal(bmp)
+        self.assertEqual('Text conflict in foo\n', preview.conflicts)
 
 
 def test_suite():
