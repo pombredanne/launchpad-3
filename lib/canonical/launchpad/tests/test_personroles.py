@@ -26,17 +26,21 @@ class TestPersonRoles(TestCaseWithFactory):
     def setUp(self):
         super(TestPersonRoles, self).setUp()
         self.person = self.factory.makePerson()
+        self.celebs = getUtility(ILaunchpadCelebrities)
 
     def test_interface(self):
         roles = IPersonRoles(self.person)
         verifyObject(IPersonRoles, roles)
 
+    def _test_is_on_team(self, celebs_attr, roles_attr):
+        roles = IPersonRoles(self.person)
+        self.assertFalse(getattr(roles, roles_attr))
+        
+        team = getattr(self.celebs, celebs_attr)
+        team.addMember(self.person, team.teamowner)
+        roles = IPersonRoles(self.person)
+        self.assertTrue(getattr(roles, roles_attr))
+
     def test_is_admin(self):
         # An LP admin is recognized as such.
-        roles = IPersonRoles(self.person)
-        self.assertFalse(roles.is_admin)
-        
-        admins = getUtility(ILaunchpadCelebrities).admin
-        admins.addMember(self.person, admins.teamowner)
-        roles = IPersonRoles(self.person)
-        self.assertTrue(roles.is_admin)
+        self._test_is_on_team('admin', 'is_admin')
