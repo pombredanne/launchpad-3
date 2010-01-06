@@ -120,7 +120,7 @@ can delete teams.
     >>> team_member = factory.makePerson()
     >>> deletable_team = factory.makeTeam(owner=team_owner, name='deletable')
     >>> login_person(team_owner)
-    >>> deletable_team.addMember(team_member, reviewer=team_owner)
+    >>> ignore = deletable_team.addMember(team_member, reviewer=team_owner)
     >>> view = create_initialized_view(deletable_team, '+delete')
 
     >>> login_person(team_member)
@@ -211,7 +211,7 @@ the team that the merge operation is performed with.
     >>> view = create_initialized_view(deletable_team, '+delete', form=form)
     >>> for error in view.errors:
     ...     print error
-    The dupe_person and target_person data cannot be submitted.
+    Unable to process submitted data.
 
     >>> view.request.response.notifications
     []
