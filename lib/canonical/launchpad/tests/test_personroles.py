@@ -66,3 +66,21 @@ class TestPersonRoles(TestCaseWithFactory):
             ]
         for attributes in team_attributes:
             self._test_is_on_team(*attributes)
+
+    def _test_is_person(self, celebs_attr, roles_attr):
+        celeb = getattr(self.celebs, celebs_attr)
+        roles = IPersonRoles(celeb)
+        self.assertTrue(
+            getattr(roles, roles_attr),
+            "%s should be True" % roles_attr)
+
+    def test_is_person(self):
+        # Test all celebrity persons are available.
+        person_attributes = [
+            ('katie', 'is_katie'),
+            ('janitor', 'is_janitor'),
+            ('ppa_key_guard', 'is_ppa_key_guard'),
+            ]
+        for attributes in person_attributes:
+            self._test_is_person(*attributes)
+
