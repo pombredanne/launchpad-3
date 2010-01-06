@@ -57,6 +57,7 @@ __all__ = [
     'IPasswordChangeApp',
     'IPasswordEncryptor',
     'IPasswordResets',
+    'IPersonRoles',
     'IPrivateApplication',
     'IPrivateMaloneApplication',
     'IPrivacy',
@@ -133,8 +134,107 @@ class ILaunchpadCelebrities(Interface):
     ubuntu_techboard = Attribute("The Ubuntu technical board.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
 
+    person_names = Attribute("A list of the names of all celebrity persons.")
+
     def isCelebrityPerson(name):
         """Return true if there is an IPerson celebrity with the given name.
+        """
+
+
+class IPersonRoles(Interface):
+    """What celebrity teams a person is member of and similar helpers.
+
+    Convenience methods that remove frequent calls to ILaunchpadCelebrities
+    and IPerson.inTeam from permission checkers. May also be used in model
+    or view code.
+    """
+
+    person = Object(
+        title=_("The IPerson object that these checks refer to."),
+        schema=IPerson, required=True, readonly=True
+        )
+
+    is_admin = Bool(
+        title=_("True if this person is a Launchpad admin."),
+        required=True, readonly=True)
+    is_bazaar_expert = Bool(
+        title=_("True if this person is a Bazaar expert."),
+        required=True, readonly=True)
+    is_bug_importer = Bool(
+        title=_("True if this person is a bug importer."),
+        required=True, readonly=True)
+    is_bug_watch_updater = Bool(
+        title=_("True if this person is a bug watch updater."),
+        required=True, readonly=True)
+    is_buildd_admin = Bool(
+        title=_("True if this person is a buildd admin."),
+        required=True, readonly=True)
+    is_commercial_admin = Bool(
+        title=_("True if this person is a commercial admin."),
+        required=True, readonly=True)
+    is_in_hwdb_team = Bool(
+        title=_("True if this person is on the hwdb team."),
+        required=True, readonly=True)
+    is_janitor = Bool(
+        title=_("True if this person is the janitor."),
+        required=True, readonly=True)
+    is_katie = Bool(
+        title=_("True if this person is Katie."),
+        required=True, readonly=True)
+    is_lp_beta_tester = Bool(
+        title=_("True if this person is a Launchpad beta tester."),
+        required=True, readonly=True)
+    is_lp_developer = Bool(
+        title=_("True if this person is a Launchpad developer."),
+        required=True, readonly=True)
+    is_mailing_list_expert = Bool(
+        title=_("True if this person is a mailing list expert."),
+        required=True, readonly=True)
+    is_ppa_key_guard = Bool(
+        title=_("True if this person is the ppa key guard."),
+        required=True, readonly=True)
+    is_registry_expert = Bool(
+        title=_("True if this person is a registry expert."),
+        required=True, readonly=True)
+    is_rosetta_expert = Bool(
+        title=_("True if this person is a rosetta expert."),
+        required=True, readonly=True)
+    is_shipit_admin = Bool(
+        title=_("True if this person is a ShipIt admin."),
+        required=True, readonly=True)
+    is_in_ubuntu_branches = Bool(
+        title=_("True if this person is on the Ubuntu branches team."),
+        required=True, readonly=True)
+    is_in_ubuntu_security = Bool(
+        title=_("True if this person is on the Ubuntu security team."),
+        required=True, readonly=True)
+    is_in_ubuntu_techboard = Bool(
+        title=_("True if this person is on the Ubuntu tech board."),
+        required=True, readonly=True)
+    is_in_vcs_imports = Bool(
+        title=_("True if this person is on the vcs-imports team."),
+        required=True, readonly=True)
+
+    def inTeam(team):
+        """Is this person a member or the owner of `team`?
+
+        Passed through to the same method in 'IPersonPublic'.
+        """
+
+    def isOwner(obj):
+        """Is this person the owner of the object?"""
+
+    def isDriver(obj):
+        """Is this person the driver of the object?"""
+
+    def isOneOf(obj, attr):
+        """Is this person on of the roles in relation to the object?
+
+        Check if the person is (inTeam) one of the given IPerson attributes
+        of the object.
+
+        :param obj: The object to check the relation to.
+        :param attr: A list of attribute names to check with inTeam.
         """
 
 

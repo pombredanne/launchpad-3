@@ -225,6 +225,15 @@ used for determining who is allowed to create new package sets.
     True
 
 
+== Person celebrities ==
+
+A list of all IPerson celebrities is provided.
+
+    >>> for name in celebs.person_names:
+    ...     print name
+    admins
+
+
 == Detecting if a person is a celebrity ==
 
 We can ask if a person has celebrity status.
