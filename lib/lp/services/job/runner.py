@@ -8,7 +8,10 @@ from __future__ import with_statement
 __metaclass__ = type
 
 
-__all__ = ['JobRunner']
+__all__ = [
+    'BaseRunnableJob',
+    'JobRunner',
+    ]
 
 
 import sys
