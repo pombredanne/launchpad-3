@@ -269,6 +269,10 @@ class BuildQueue(SQLBase):
                 -- Assume that jobs that have overdrawn their estimated
                 -- duration time budget will complete within 2 minutes.
                 -- This is a wild guess but has worked well so far.
+                --
+                -- Please note that this is entirely innocuous i.e. if our
+                -- guess is off nothing bad will happen but our estimate will
+                -- not be as good as it could be.
                 120
               END)
             FROM

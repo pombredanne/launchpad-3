@@ -154,21 +154,21 @@ class TestBuildQueueBase(TestCaseWithFactory):
         processor_fam = ProcessorFamilySet().getByName('x86')
         x86_proc = processor_fam.processors[0]
         # x86 native
-        self.builders[(x86_proc.id,False)] = [
+        self.builders[(x86_proc.id, False)] = [
             self.i6, self.i7, self.i8, self.i9]
         # x86 virtual
-        self.builders[(x86_proc.id,True)] = [
+        self.builders[(x86_proc.id, True)] = [
             self.i1, self.i2, self.i3, self.i4, self.i5]
 
         # amd64 native
-        self.builders[(amd_proc.id,False)] = [self.a4, self.a5]
+        self.builders[(amd_proc.id, False)] = [self.a4, self.a5]
         # amd64 virtual
-        self.builders[(amd_proc.id,True)] = [self.a1, self.a2, self.a3]
+        self.builders[(amd_proc.id, True)] = [self.a1, self.a2, self.a3]
 
         # hppa native
-        self.builders[(hppa_proc.id,False)] = [self.h5, self.h6, self.h7]
+        self.builders[(hppa_proc.id, False)] = [self.h5, self.h6, self.h7]
         # hppa virtual
-        self.builders[(hppa_proc.id,True)] = [
+        self.builders[(hppa_proc.id, True)] = [
             self.h1, self.h2, self.h3, self.h4]
 
         # Ensure all builders are operational.
@@ -183,9 +183,8 @@ class TestBuildQueueBase(TestCaseWithFactory):
 
 
 class SingleArchBuildsBase(TestBuildQueueBase):
-    """Test the retrieval of builder related data. The latter is required
-    for job dispatch time estimations irrespective of job processor
-    architecture and virtualization setting."""
+    """Set up a test environment with builds that target a single
+    processor."""
     def setUp(self):
         """Set up some native x86 builds for the test archive."""
         super(SingleArchBuildsBase, self).setUp()
@@ -280,29 +279,29 @@ class TestBuilderData(SingleArchBuildsBase):
         processor_fam = ProcessorFamilySet().getByName('x86')
         x86_proc = processor_fam.processors[0]
         self.assertEqual(
-            builder_stats[(x86_proc.id,False)], 4,
+            builder_stats[(x86_proc.id, False)], 4,
             "The number of native x86 builders is wrong")
         self.assertEqual(
-            builder_stats[(x86_proc.id,True)], 5,
+            builder_stats[(x86_proc.id, True)], 5,
             "The number of virtual x86 builders is wrong")
         processor_fam = ProcessorFamilySet().getByName('amd64')
         amd_proc = processor_fam.processors[0]
         self.assertEqual(
-            builder_stats[(amd_proc.id,False)], 2,
+            builder_stats[(amd_proc.id, False)], 2,
             "The number of native amd64 builders is wrong")
         self.assertEqual(
-            builder_stats[(amd_proc.id,True)], 3,
+            builder_stats[(amd_proc.id, True)], 3,
             "The number of virtual amd64 builders is wrong")
         processor_fam = ProcessorFamilySet().getByName('hppa')
         hppa_proc = processor_fam.processors[0]
         self.assertEqual(
-            builder_stats[(hppa_proc.id,False)], 3,
+            builder_stats[(hppa_proc.id, False)], 3,
             "The number of native hppa builders is wrong")
         self.assertEqual(
-            builder_stats[(hppa_proc.id,True)], 4,
+            builder_stats[(hppa_proc.id, True)], 4,
             "The number of virtual hppa builders is wrong")
         # Disable the native x86 builders.
-        for builder in self.builders[(x86_proc.id,False)]:
+        for builder in self.builders[(x86_proc.id, False)]:
             builder.builderok = False
         # Get the builder statistics again.
         builder_data = bq._getBuilderData()
@@ -314,7 +313,7 @@ class TestBuilderData(SingleArchBuildsBase):
             "[2] The total number of builders that can build the job in "
             "question is wrong.")
         # Re-enable one of them.
-        for builder in self.builders[(x86_proc.id,False)]:
+        for builder in self.builders[(x86_proc.id, False)]:
             builder.builderok = True
             break
         # Get the builder statistics again.
@@ -327,7 +326,7 @@ class TestBuilderData(SingleArchBuildsBase):
             "question is wrong.")
         # Disable the *virtual* x86 builders -- should not make any
         # difference.
-        for builder in self.builders[(x86_proc.id,True)]:
+        for builder in self.builders[(x86_proc.id, True)]:
             builder.builderok = False
         # Get the builder statistics again.
         builder_data = bq._getBuilderData()
@@ -352,7 +351,7 @@ class TestBuilderData(SingleArchBuildsBase):
         builders_in_total, builders_for_job, builder_stats = builder_data
         # We have 4 x86 native builders.
         self.assertEqual(
-            builder_stats[(proc_386.id,False)], 4,
+            builder_stats[(proc_386.id, False)], 4,
             "The number of native x86 builders is wrong")
         # Initially all 4 builders are free.
         free_count = bq._freeBuildersCount(
@@ -390,9 +389,11 @@ class TestBuilderData(SingleArchBuildsBase):
 
 
 class TestMinTimeToNextBuilder(SingleArchBuildsBase):
-    """When is the next builder capable of running a given job becoming
-    available?"""
+    """Test estimated time-to-builder with builds targetting a single
+    processor."""
     def test_min_time_to_next_builder(self):
+        """When is the next builder capable of running the job at the head of
+        the queue becoming available?"""
         # Test the estimation of the minimum time until a builder becomes
         # available.
 
@@ -457,7 +458,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         check_mintime_to_builder(self, apg_job, x86_proc, False, 30)
 
         # Disable the native x86 builders.
-        for builder in self.builders[(1,False)]:
+        for builder in self.builders[(x86_proc.id, False)]:
             builder.builderok = False
 
         # No builders capable of running the job at hand are available now,
@@ -466,10 +467,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
 
 
 class MultiArchBuildsBase(TestBuildQueueBase):
-    """Test dispatch time estimates for binary builds (i.e. single build
-    farm job type) targetting a single processor architecture and the primary
-    archive.
-    """
+    """Set up a test environment with builds and multiple processors."""
     def setUp(self):
         """Set up some native x86 builds for the test archive."""
         super(MultiArchBuildsBase, self).setUp()
@@ -562,9 +560,10 @@ class MultiArchBuildsBase(TestBuildQueueBase):
 
 
 class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
-    """When is the next builder capable of running a given job becoming
-    available?"""
+    """Test estimated time-to-builder with builds and multiple processors."""
     def test_min_time_to_next_builder(self):
+        """When is the next builder capable of running the job at the head of
+        the queue becoming available?"""
         processor_fam = ProcessorFamilySet().getByName('hppa')
         hppa_proc = processor_fam.processors[0]
 
@@ -610,7 +609,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         check_mintime_to_builder(self, apg_job, hppa_proc, False, 30)
 
         # Disable the native hppa builders.
-        for builder in self.builders[(hppa_proc.id,False)]:
+        for builder in self.builders[(hppa_proc.id, False)]:
             builder.builderok = False
 
         # No builders capable of running the job at hand are available now,
@@ -636,7 +635,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         check_mintime_to_builder(self, apg_job, None, None, None)
 
         # Re-enable the native hppa builders.
-        for builder in self.builders[(hppa_proc.id,False)]:
+        for builder in self.builders[(hppa_proc.id, False)]:
             builder.builderok = True
 
         # The builder that's becoming available next is the one that's
@@ -646,7 +645,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         # Make sure we'll find an x86 builder as well.
         processor_fam = ProcessorFamilySet().getByName('x86')
         x86_proc = processor_fam.processors[0]
-        builder = self.builders[(x86_proc.id,False)][0]
+        builder = self.builders[(x86_proc.id, False)][0]
         builder.builderok = True
 
         # Now this builder is the one that becomes available next (29 minutes
@@ -658,7 +657,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         check_mintime_to_builder(self, apg_job, None, None, 29)
 
         # Make a second, idle x86 builder available.
-        builder = self.builders[(x86_proc.id,False)][1]
+        builder = self.builders[(x86_proc.id, False)][1]
         builder.builderok = True
 
         # That builder should be available immediately since it's idle.
