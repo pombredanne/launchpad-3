@@ -115,3 +115,12 @@ class TestPersonRoles(TestCaseWithFactory):
         productseries.driver = self.person
         roles = IPersonRoles(self.person)
         self.assertTrue(roles.isDriver(productseries))
+
+    def test_isDriver_multiple_drivers(self):
+        # The person can be one of multiple drivers of if a product and its
+        # series each has a driver.
+        productseries = self.factory.makeProductSeries()
+        productseries.product.driver = self.person
+        productseries.driver = self.factory.makePerson()
+        roles = IPersonRoles(self.person)
+        self.assertTrue(roles.isDriver(productseries))
