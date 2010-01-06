@@ -559,18 +559,8 @@ class TestGarbo(TestCaseWithFactory):
         branch_job.job.date_finished = THIRTY_DAYS_AGO
         job_id = branch_job.job.id
 
-        db_branch_newer = self.factory.makeAnyBranch()
-        db_branch_newer.branch_format = BranchFormat.BZR_BRANCH_5
-        db_branch_newer.repository_format = RepositoryFormat.BZR_KNIT_1
-
-        branch_job_newer = BranchUpgradeJob.create(db_branch_newer)
+        branch_job_newer = BranchUpgradeJob.create(db_branch)
         job_id_newer = branch_job_newer.job.id
-
-        self.assertEqual(
-            store.find(
-                BranchJob,
-                BranchJob.branch == db_branch.id).count(),
-                1)
         transaction.commit()
 
         collector = self.runDaily()
