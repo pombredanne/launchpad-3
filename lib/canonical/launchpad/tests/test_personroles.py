@@ -110,11 +110,11 @@ class TestPersonRoles(TestCaseWithFactory):
         self.assertTrue(roles.isOwner(product))
 
     def test_isDriver(self):
-        # The person can be the driver of something, e.g. a productseries.
-        productseries = self.factory.makeProductSeries()
-        productseries.driver = self.person
+        # The person can be the driver of something, e.g. a sprint.
+        sprint = self.factory.makeSprint()
+        sprint.driver = self.person
         roles = IPersonRoles(self.person)
-        self.assertTrue(roles.isDriver(productseries))
+        self.assertTrue(roles.isDriver(sprint))
 
     def test_isDriver_multiple_drivers(self):
         # The person can be one of multiple drivers of if a product and its

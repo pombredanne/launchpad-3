@@ -109,7 +109,13 @@ class PersonRoles:
 
     def isDriver(self, obj):
         """See IPersonRoles."""
-        return self.person.inTeam(obj.driver)
+        drivers = getattr(obj, 'drivers', None)
+        if drivers is None:
+            return self.person.inTeam(obj.driver)
+        for driver in drivers:
+            if self.person.inTeam(driver):
+                return True
+        return False
 
     def isOneOf(self, obj, attr):
         """See IPersonRoles."""
