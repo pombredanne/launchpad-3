@@ -520,8 +520,7 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 
-        db_branch, tree = self.create_branch_and_tree(
-            hosted=True, format='knit')
+        db_branch = self.factory.makeAnyBranch()
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
 
@@ -552,8 +551,7 @@ class TestGarbo(TestCaseWithFactory):
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
 
-        db_branch, tree = self.create_branch_and_tree(
-            hosted=True, format='knit')
+        db_branch = self.factory.makeAnyBranch()
         db_branch.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
 
@@ -561,9 +559,7 @@ class TestGarbo(TestCaseWithFactory):
         branch_job.job.date_finished = THIRTY_DAYS_AGO
         job_id = branch_job.job.id
 
-        tree_location = tempfile.mkdtemp()
-        db_branch_newer, tree_newer = self.create_branch_and_tree(
-            tree_location=tree_location, hosted=True, format='knit')
+        db_branch_newer = self.factory.makeAnyBranch()
         db_branch_newer.branch_format = BranchFormat.BZR_BRANCH_5
         db_branch_newer.repository_format = RepositoryFormat.BZR_KNIT_1
 
