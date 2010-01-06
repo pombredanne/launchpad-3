@@ -72,6 +72,22 @@ class IBranchDiffJobSource(Interface):
         """
 
 
+class IBranchScanJob(Interface):
+    """ A job to scan branches."""
+
+
+class IBranchScanJobSource(Interface):
+
+    def create(branch):
+        """Scan a branch for new revisions.
+
+        :param branch: The database branch to upgrade.
+        """
+
+    def iterReady():
+        """Iterate through a// IBranchScanJobs."""
+
+
 class IBranchUpgradeJob(IRunnableJob):
     """A job to upgrade branches with out-of-date formats."""
 
