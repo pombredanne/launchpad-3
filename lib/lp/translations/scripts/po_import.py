@@ -135,11 +135,14 @@ class TranslationsImport(LaunchpadCronScript):
                 text = MailWrapper().format(mail_body)
                 simple_sendmail(from_email, to_email, mail_subject, text)
 
+    def run(self, *args, **kwargs):
+        errorlog.globalErrorUtility.configure('poimport')
+        LaunchpadCronScript.run(self, *args, **kwargs)
+
     def main(self):
         """Import entries from the queue."""
         self.logger.debug("Starting the import process.")
 
-        errorlog.globalErrorUtility.configure('poimport')
         self.deadline = datetime.now(UTC) + self.time_to_run
         translation_import_queue = getUtility(ITranslationImportQueue)
 

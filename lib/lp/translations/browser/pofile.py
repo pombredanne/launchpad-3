@@ -503,8 +503,6 @@ class POFileFilteredView(LaunchpadView):
 
     DEFAULT_BATCH_SIZE = 50
 
-    page_title = "Contributions"
-
     @property
     def _person_name(self):
         """Person's display name.  Graceful about unknown persons."""
@@ -929,6 +927,28 @@ class POFileTranslateView(BaseTranslationView):
     @property
     def completeness(self):
         return '%.0f%%' % self.context.translatedPercentage()
+
+    @property
+    def autofocus_html_id(self):
+        try:
+            first_message = self.translationmessage_views[0]
+            first_field = first_message.translation_dictionaries[0]
+            return first_field['html_id_translation']
+        except IndexError:
+            return ""
+
+    @property
+    def translations_order(self):
+        try:
+            order = []
+            for message in self.translationmessage_views:
+                for dictionary in message.translation_dictionaries:
+                    order.append(
+                        dictionary['html_id_translation'] + '_new')
+            return ' '.join(order)
+
+        except IndexError:
+            return ""
 
 
 class POExportView(BaseExportView):

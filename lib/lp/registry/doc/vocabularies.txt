@@ -255,8 +255,7 @@ membership is public.
 
     >>> from canonical.launchpad.interfaces import PersonVisibility
     >>> otherteam = person_set.getByName('otherteam')
-    >>> otherteam.addMember(foo_bar, foo_bar)
-
+    >>> ignored = otherteam.addMember(foo_bar, foo_bar)
     >>> otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
@@ -1398,7 +1397,7 @@ projects are returned.
     >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
-    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
     >>> login_person(registry_member)
