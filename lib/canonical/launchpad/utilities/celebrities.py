@@ -172,5 +172,9 @@ class LaunchpadCelebrities:
         assert mirror.isOfficial(), "Main mirror must be an official one."
         return mirror
 
+    @property
+    def person_names(self):
+        return sorted(list(PersonCelebrityDescriptor.names))
+
     def isCelebrityPerson(self, name):
         return str(name) in PersonCelebrityDescriptor.names

@@ -232,6 +232,25 @@ A list of all IPerson celebrities is provided.
     >>> for name in celebs.person_names:
     ...     print name
     admins
+    bazaar-experts
+    bug-importer
+    bug-watch-updater
+    commercial-admins
+    hwdb-team
+    janitor
+    katie
+    launchpad
+    launchpad-beta-testers
+    launchpad-buildd-admins
+    mailing-list-experts
+    ppa-key-guard
+    registry
+    rosetta-admins
+    shipit-admins
+    techboard
+    ubuntu-branches
+    ubuntu-security
+    vcs-imports
 
 
 == Detecting if a person is a celebrity ==
