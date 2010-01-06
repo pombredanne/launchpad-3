@@ -138,3 +138,23 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         self.assertTrue(roles.isOneOf(
             spec, ['owner', 'drafter', 'assignee', 'approver']))
+
+    def test_isOneOf_None(self):
+        # Objects may have multiple roles that a person can fulfill.
+        # Specifications are such a case. Some roles may be None.
+        spec = removeSecurityProxy(self.factory.makeSpecification())
+        spec.owner = self.factory.makePerson()
+        spec.drafter = None
+        spec.assignee = None
+        spec.approver = self.person
+
+        roles = IPersonRoles(self.person)
+        self.assertTrue(roles.isOneOf(
+            spec, ['owner', 'drafter', 'assignee', 'approver']))
+
+    def test_isOneOf_AttributeError(self):
+        # Do not try to check for none-existent attributes.
+        obj = self.factory.makeProduct()
+        fake_attr = self.factory.getUniqueString()
+        roles = IPersonRoles(self.person)
+        self.assertRaises(AttributeError, roles.isOneOf, obj, [fake_attr])
