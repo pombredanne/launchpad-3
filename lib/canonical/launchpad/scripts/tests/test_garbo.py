@@ -7,7 +7,6 @@ __metaclass__ = type
 __all__ = []
 
 from datetime import datetime, timedelta
-import tempfile
 import time
 import unittest
 
@@ -515,7 +514,7 @@ class TestGarbo(TestCaseWithFactory):
         self.assertNotEqual(log_output.find(error_message_2), -1)
 
     def test_BranchJobPruner(self):
-
+        # Garbo should remove jobs completed over 30 days ago.
         self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
@@ -544,9 +543,9 @@ class TestGarbo(TestCaseWithFactory):
                 BranchJob.branch == db_branch.id).count(),
                 0)
 
-
     def test_BranchJobPruner_doesnt_prune_recent_jobs(self):
-
+        # Check to make sure the garbo doesn't remove jobs that aren't more
+        # than thirty days old.
         self.useBzrBranches()
         LaunchpadZopelessLayer.switchDbUser('testadmin')
         store = IMasterStore(Job)
@@ -570,6 +569,7 @@ class TestGarbo(TestCaseWithFactory):
             store.find(
                 BranchJob).count(),
             1)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
