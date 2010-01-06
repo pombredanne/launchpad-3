@@ -100,7 +100,7 @@ stagingsetup:
 	# up when roles don't exist in this cluster, and we rebuild it later
 	# with security.py anyway.
 	pg_restore --dbname=lpmain_staging_new \
-	    --no-acl --no-owner --exit-on-error ${STAGING_DUMP}
+	    --no-owner --exit-on-error ${STAGING_DUMP}
 	psql -q -d lpmain_staging_new -f authdb_drop.sql
 	psql -q -d lpmain_staging_new -f authdb_create.sql \
 	    2>&1 | grep -v _sl || true
