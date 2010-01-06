@@ -38,60 +38,62 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         self.assertIs(self.person, roles.person)
 
-    def _test_is_on_team(self, celebs_attr, roles_attr):
+    def _test_is_on_team(self, attribute):
+        roles_attribute = "in_"+attribute
         roles = IPersonRoles(self.person)
         self.assertFalse(
-            getattr(roles, roles_attr),
-            "%s should be False" % roles_attr)
+            getattr(roles, roles_attribute),
+            "%s should be False" % roles_attribute)
 
-        team = getattr(self.celebs, celebs_attr)
+        team = getattr(self.celebs, attribute)
         team.addMember(self.person, team.teamowner)
         roles = IPersonRoles(self.person)
         self.assertTrue(
-            getattr(roles, roles_attr),
-            "%s should be True" % roles_attr)
+            getattr(roles, roles_attribute),
+            "%s should be True" % roles_attribute)
         self.person.leave(team)
 
     def test_is_on_teams(self):
         # Test all celebrity teams are available.
         team_attributes = [
-            ('admin', 'is_admin'),
-            ('bazaar_experts', 'is_bazaar_expert'),
-            ('buildd_admin', 'is_buildd_admin'),
-            ('commercial_admin', 'is_commercial_admin'),
-            ('hwdb_team', 'is_in_hwdb_team'),
-            ('launchpad_beta_testers', 'is_lp_beta_tester'),
-            ('launchpad_developers', 'is_lp_developer'),
-            ('mailing_list_experts', 'is_mailing_list_expert'),
-            ('registry_experts', 'is_registry_expert'),
-            ('rosetta_experts', 'is_rosetta_expert'),
-            ('shipit_admin', 'is_shipit_admin'),
-            ('ubuntu_branches', 'is_in_ubuntu_branches'),
-            ('ubuntu_security', 'is_in_ubuntu_security'),
-            ('ubuntu_techboard', 'is_in_ubuntu_techboard'),
-            ('vcs_imports', 'is_in_vcs_imports'),
+            'admin',
+            'bazaar_experts',
+            'buildd_admin',
+            'commercial_admin',
+            'hwdb_team',
+            'launchpad_beta_testers',
+            'launchpad_developers',
+            'mailing_list_experts',
+            'registry_experts',
+            'rosetta_experts',
+            'shipit_admin',
+            'ubuntu_branches',
+            'ubuntu_security',
+            'ubuntu_techboard',
+            'vcs_imports',
             ]
-        for attributes in team_attributes:
-            self._test_is_on_team(*attributes)
+        for attribute in team_attributes:
+            self._test_is_on_team(attribute)
 
-    def _test_is_person(self, celebs_attr, roles_attr):
-        celeb = getattr(self.celebs, celebs_attr)
+    def _test_is_person(self, attribute):
+        roles_attribute = "in_"+attribute
+        celeb = getattr(self.celebs, attribute)
         roles = IPersonRoles(celeb)
         self.assertTrue(
-            getattr(roles, roles_attr),
-            "%s should be True" % roles_attr)
+            getattr(roles, roles_attribute),
+            "%s should be True" % roles_attribute)
 
     def test_is_person(self):
         # All celebrity persons are available.
         person_attributes = [
-            ('bug_importer', 'is_bug_importer'),
-            ('bug_watch_updater', 'is_bug_watch_updater'),
-            ('katie', 'is_katie'),
-            ('janitor', 'is_janitor'),
-            ('ppa_key_guard', 'is_ppa_key_guard'),
+            'bug_importer',
+            'bug_watch_updater',
+            'katie',
+            'janitor',
+            'ppa_key_guard',
             ]
-        for attributes in person_attributes:
-            self._test_is_person(*attributes)
+        for attribute in person_attributes:
+            self._test_is_person(attribute)
 
     def test_inTeam(self):
         # The method person.inTeam is available as the inTeam attribute.
@@ -158,3 +160,4 @@ class TestPersonRoles(TestCaseWithFactory):
         fake_attr = self.factory.getUniqueString()
         roles = IPersonRoles(self.person)
         self.assertRaises(AttributeError, roles.isOneOf, obj, [fake_attr])
+

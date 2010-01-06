@@ -23,6 +23,13 @@ class PersonRoles:
         self._celebrities = getUtility(ILaunchpadCelebrities)
         self.inTeam = self.person.inTeam
 
+
+#    def __getattr__(self, name):
+#        """Handle all in_* attributes."""
+#        if not name.startswith('in_'):
+#            raise AttributeError
+#        return False
+
     @property
     def is_admin(self):
         return self.person.inTeam(self._celebrities.admin)

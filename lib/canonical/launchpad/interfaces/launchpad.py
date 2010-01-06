@@ -151,64 +151,64 @@ class IPersonRoles(Interface):
 
     person = Attribute("The IPerson object that these checks refer to.")
 
-    is_admin = Bool(
+    in_admin = Bool(
         title=_("True if this person is a Launchpad admin."),
         required=True, readonly=True)
-    is_bazaar_expert = Bool(
+    in_bazaar_experts = Bool(
         title=_("True if this person is a Bazaar expert."),
         required=True, readonly=True)
-    is_bug_importer = Bool(
+    in_bug_importer = Bool(
         title=_("True if this person is a bug importer."),
         required=True, readonly=True)
-    is_bug_watch_updater = Bool(
+    in_bug_watch_updater = Bool(
         title=_("True if this person is a bug watch updater."),
         required=True, readonly=True)
-    is_buildd_admin = Bool(
+    in_buildd_admin = Bool(
         title=_("True if this person is a buildd admin."),
         required=True, readonly=True)
-    is_commercial_admin = Bool(
+    in_commercial_admin = Bool(
         title=_("True if this person is a commercial admin."),
         required=True, readonly=True)
-    is_in_hwdb_team = Bool(
+    in_hwdb_team = Bool(
         title=_("True if this person is on the hwdb team."),
         required=True, readonly=True)
-    is_janitor = Bool(
+    in_janitor = Bool(
         title=_("True if this person is the janitor."),
         required=True, readonly=True)
-    is_katie = Bool(
+    in_katie = Bool(
         title=_("True if this person is Katie."),
         required=True, readonly=True)
-    is_lp_beta_tester = Bool(
+    in_launchpad_beta_testers = Bool(
         title=_("True if this person is a Launchpad beta tester."),
         required=True, readonly=True)
-    is_lp_developer = Bool(
+    in_launchpad_developers = Bool(
         title=_("True if this person is a Launchpad developer."),
         required=True, readonly=True)
-    is_mailing_list_expert = Bool(
+    in_mailing_list_experts = Bool(
         title=_("True if this person is a mailing list expert."),
         required=True, readonly=True)
-    is_ppa_key_guard = Bool(
+    in_ppa_key_guard = Bool(
         title=_("True if this person is the ppa key guard."),
         required=True, readonly=True)
-    is_registry_expert = Bool(
+    in_registry_experts = Bool(
         title=_("True if this person is a registry expert."),
         required=True, readonly=True)
-    is_rosetta_expert = Bool(
+    in_rosetta_experts = Bool(
         title=_("True if this person is a rosetta expert."),
         required=True, readonly=True)
-    is_shipit_admin = Bool(
+    in_shipit_admin = Bool(
         title=_("True if this person is a ShipIt admin."),
         required=True, readonly=True)
-    is_in_ubuntu_branches = Bool(
+    in_ubuntu_branches = Bool(
         title=_("True if this person is on the Ubuntu branches team."),
         required=True, readonly=True)
-    is_in_ubuntu_security = Bool(
+    in_ubuntu_security = Bool(
         title=_("True if this person is on the Ubuntu security team."),
         required=True, readonly=True)
-    is_in_ubuntu_techboard = Bool(
+    in_ubuntu_techboard = Bool(
         title=_("True if this person is on the Ubuntu tech board."),
         required=True, readonly=True)
-    is_in_vcs_imports = Bool(
+    in_vcs_imports = Bool(
         title=_("True if this person is on the vcs-imports team."),
         required=True, readonly=True)
 
