@@ -43,7 +43,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
-from lp.code.model.diff import PreviewDiff, StaticDiff
+from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import get_multi_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob

@@ -488,7 +488,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                           {'review_id': review.id})
 
     def test_preview_diff_text_with_no_diff(self):
-        """review_diff should be None when there is no context.preview_diff."""
+        """review_diff should be None when context has no preview_diff."""
         view = create_initialized_view(self.bmp, '+index')
         self.assertIs(None, view.preview_diff_text)
 
