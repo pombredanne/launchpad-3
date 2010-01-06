@@ -12,7 +12,15 @@ the sources and binarypackages.
 __metaclass__ = type
 
 
-__all__ = ['AbstractPackageData', 'SourcePackageData', 'BinaryPackageData']
+__all__ = [
+    'AbstractPackageData',
+    'BinaryPackageData',
+    'get_dsc_path',
+    'PoolFileNotFound',
+    'prioritymap',
+    'SourcePackageData',
+    'urgencymap',
+    ]
 
 import re
 import os
