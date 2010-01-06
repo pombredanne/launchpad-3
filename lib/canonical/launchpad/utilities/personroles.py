@@ -105,9 +105,11 @@ class PersonRoles:
 
     def isOwner(self, obj):
         """See IPersonRoles."""
+        return self.person.inTeam(obj.owner)
 
     def isDriver(self, obj):
         """See IPersonRoles."""
+        return self.person.inTeam(obj.driver)
 
     def isOneOf(self, obj, attr):
         """See IPersonRoles."""
