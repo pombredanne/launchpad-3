@@ -212,6 +212,79 @@ class BuildQueue(SQLBase):
         free_builders = result_set.get_one()[0]
         return free_builders
 
+    def _minTimeToNextBuilderAvailable(self, mixed_mode):
+        """Get estimated time until a builder becomes available."""
+        # Which builders should be considered? If the job of interest (JOI)
+        # is processor independent then we should look at all builders since
+        # any one of them can run the job.
+        # In the opposite case (JOI is tied to a processor TP) we should only
+        # look at builders that target TP.
+        # However, if there are processor independent jobs ahead of the JOI
+        # in the queue we should again expand our selection to all builders.
+        #
+        # Please note: this information is encoded in `mixed_mode`. If it
+        # is set we look at all builders.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        my_processor = self.specific_job.processor
+        my_virtualized = self.specific_job.virtualized
+
+        # First check whether we have free builders.
+        if my_processor is not None and not mixed_mode:
+            free_builders = self._freeBuildersCount(
+                my_processor, my_virtualized)
+        else:
+            # We don't care about processor or virtualization.
+            free_builders = self._freeBuildersCount(None, None)
+
+        if free_builders > 0:
+            # We have free builders for the given processor/virtualization
+            # combination -> zero delay
+            return 0
+
+        extra_clauses = ''
+        if my_processor is not None and not mixed_mode:
+            # Only look at builders with specific processor types.
+            extra_clauses += """
+                AND Builder.processor = %s
+                AND Builder.virtualized = %s
+                """ % sqlvalues(my_processor, my_virtualized)
+
+        params = sqlvalues(JobStatus.RUNNING) + (extra_clauses,)
+
+        delay_query = """
+            SELECT MIN(
+              CASE WHEN 
+                EXTRACT(EPOCH FROM
+                  (BuildQueue.estimated_duration -
+                   (((now() AT TIME ZONE 'UTC') - Job.date_started))))  >= 0
+              THEN
+                EXTRACT(EPOCH FROM
+                  (BuildQueue.estimated_duration -
+                   (((now() AT TIME ZONE 'UTC') - Job.date_started))))
+              ELSE
+                -- Assume that jobs that have overdrawn their estimated
+                -- duration time budget will complete within 2 minutes.
+                -- This is a wild guess but has worked well so far.
+                120
+              END)
+            FROM
+                BuildQueue, Job, Builder
+            WHERE
+                BuildQueue.job = Job.id
+                AND BuildQueue.builder = Builder.id
+                AND Builder.manual = False
+                AND Builder.builderok = True
+                AND Job.status = %s
+                %s
+            """ % params
+
+        result_set = store.execute(delay_query)
+        headjob_delay = result_set.get_one()[0]
+        if headjob_delay is None:
+            return None
+        else:
+            return int(headjob_delay)
+
 
 class BuildQueueSet(object):
     """Utility to deal with BuildQueue content class."""
