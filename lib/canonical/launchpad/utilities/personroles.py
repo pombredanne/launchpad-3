@@ -117,6 +117,11 @@ class PersonRoles:
                 return True
         return False
 
-    def isOneOf(self, obj, attr):
+    def isOneOf(self, obj, attributes):
         """See IPersonRoles."""
+        for attr in attributes:
+            role = getattr(obj, attr)
+            if self.person.inTeam(role):
+                return True
+        return False
 
