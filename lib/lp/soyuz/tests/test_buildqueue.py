@@ -66,12 +66,10 @@ def builder_key(job):
 
 
 def check_mintime_to_builder(
-    test, build, bq, free_builders, min_time, mixed_mode=False):
-    """Test the number of free builders and the minimum time until a builder
-    becomes available."""
-    builders = bq._freeBuildersCount(*builder_key(build))
-    delay = bq._minTimeToNextBuilderAvailable(mixed_mode)
-    test.assertEqual(builders, free_builders, "Wrong number of free builders")
+    test, bq, head_job_processor, head_job_virtualized, min_time):
+    """Test the estimated time until a builder becomes available."""
+    delay = bq._estimateTimeToNextBuilder(
+        head_job_processor, head_job_virtualized)
     if min_time is not None:
         test.assertTrue(
             almost_equal(delay, min_time),
@@ -411,35 +409,38 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         #
         # p=processor, v=virtualized, e=estimated_duration, s=score
 
-        # One of four builders for the 'apg' build is immediately available.
+        processor_fam = ProcessorFamilySet().getByName('x86')
+        x86_proc = processor_fam.processors[0]
+        # This will be the job of interest.
         apg_build, apg_job = find_job(self, 'apg')
-        check_mintime_to_builder(self, apg_build, apg_job, 4, 0)
+        # One of four builders for the 'apg' build is immediately available.
+        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
 
         # Assign the postgres job to a builder.
         assign_to_builder(self, 'postgres', 1)
         # Now one builder is gone. But there should still be a builder
         # immediately available.
-        check_mintime_to_builder(self, apg_build, apg_job, 3, 0)
+        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
 
         assign_to_builder(self, 'flex', 2)
-        check_mintime_to_builder(self, apg_build, apg_job, 2, 0)
+        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
 
         assign_to_builder(self, 'bison', 3)
-        check_mintime_to_builder(self, apg_build, apg_job, 1, 0)
+        check_mintime_to_builder(self, apg_job, x86_proc, False, 0)
 
         assign_to_builder(self, 'gcc', 4)
         # Now that no builder is immediately available, the shortest
         # remaing build time (based on the estimated duration) is returned:
         #   300 seconds 
         # This is equivalent to the 'gcc' job's estimated duration.
-        check_mintime_to_builder(self, apg_build, apg_job, 0, 300)
+        check_mintime_to_builder(self, apg_job, x86_proc, False, 300)
 
         # Now we pretend that the 'postgres' started 6 minutes ago. Its
         # remaining execution time should be 2 minutes = 120 seconds and
         # it now becomes the job whose builder becomes available next.
         build, bq = find_job(self, 'postgres')
         set_remaining_time_for_running_job(bq, 120)
-        check_mintime_to_builder(self, apg_build, apg_job, 0, 120)
+        check_mintime_to_builder(self, apg_job, x86_proc, False, 120)
 
         # What happens when jobs overdraw the estimated duration? Let's
         # pretend the 'flex' job started 8 minutes ago.
@@ -447,13 +448,13 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
         set_remaining_time_for_running_job(bq, -60)
         # In such a case we assume that the job will complete within 2
         # minutes, this is a guess that has worked well so far.
-        check_mintime_to_builder(self, apg_build, apg_job, 0, 120)
+        check_mintime_to_builder(self, apg_job, x86_proc, False, 120)
 
         # If there's a job that will complete within a shorter time then
         # we expect to be given that time frame.
         build, bq = find_job(self, 'postgres')
         set_remaining_time_for_running_job(bq, 30)
-        check_mintime_to_builder(self, apg_build, apg_job, 0, 30)
+        check_mintime_to_builder(self, apg_job, x86_proc, False, 30)
 
         # Disable the native x86 builders.
         for builder in self.builders[(1,False)]:
@@ -461,7 +462,7 @@ class TestMinTimeToNextBuilder(SingleArchBuildsBase):
 
         # No builders capable of running the job at hand are available now,
         # this is indicated by a None value.
-        check_mintime_to_builder(self, apg_build, apg_job, 0, None)
+        check_mintime_to_builder(self, apg_job, x86_proc, False, None)
 
 
 class MultiArchBuildsBase(TestBuildQueueBase):
@@ -564,32 +565,35 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
     """When is the next builder capable of running a given job becoming
     available?"""
     def test_min_time_to_next_builder(self):
+        processor_fam = ProcessorFamilySet().getByName('hppa')
+        hppa_proc = processor_fam.processors[0]
+
         # One of four builders for the 'apg' build is immediately available.
         apg_build, apg_job = find_job(self, 'apg', 'hppa')
-        check_mintime_to_builder(self, apg_build, apg_job, 3, 0)
+        check_mintime_to_builder(self, apg_job, hppa_proc, False, 0)
 
         # Assign the postgres job to a builder.
         assign_to_builder(self, 'postgres', 1, 'hppa')
         # Now one builder is gone. But there should still be a builder
         # immediately available.
-        check_mintime_to_builder(self, apg_build, apg_job, 2, 0)
+        check_mintime_to_builder(self, apg_job, hppa_proc, False, 0)
 
         assign_to_builder(self, 'flex', 2, 'hppa')
-        check_mintime_to_builder(self, apg_build, apg_job, 1, 0)
+        check_mintime_to_builder(self, apg_job, hppa_proc, False, 0)
 
         assign_to_builder(self, 'bison', 3, 'hppa')
         # Now that no builder is immediately available, the shortest
         # remaing build time (based on the estimated duration) is returned:
         #   660 seconds 
         # This is equivalent to the 'bison' job's estimated duration.
-        check_mintime_to_builder(self, apg_build, apg_job, 0, 660)
+        check_mintime_to_builder(self, apg_job, hppa_proc, False, 660)
 
         # Now we pretend that the 'postgres' started 13 minutes ago. Its
         # remaining execution time should be 2 minutes = 120 seconds and
         # it now becomes the job whose builder becomes available next.
         build, bq = find_job(self, 'postgres', 'hppa')
         set_remaining_time_for_running_job(bq, 120)
-        check_mintime_to_builder(self, apg_build, apg_job, 0, 120)
+        check_mintime_to_builder(self, apg_job, hppa_proc, False, 120)
 
         # What happens when jobs overdraw the estimated duration? Let's
         # pretend the 'flex' job started 14 minutes ago.
@@ -597,35 +601,30 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         set_remaining_time_for_running_job(bq, -60)
         # In such a case we assume that the job will complete within 2
         # minutes, this is a guess that has worked well so far.
-        check_mintime_to_builder(self, apg_build, apg_job, 0, 120)
+        check_mintime_to_builder(self, apg_job, hppa_proc, False, 120)
 
         # If there's a job that will complete within a shorter time then
         # we expect to be given that time frame.
         build, bq = find_job(self, 'postgres', 'hppa')
         set_remaining_time_for_running_job(bq, 30)
-        check_mintime_to_builder(self, apg_build, apg_job, 0, 30)
+        check_mintime_to_builder(self, apg_job, hppa_proc, False, 30)
 
-        processor_fam = ProcessorFamilySet().getByName('hppa')
-        hppa_proc = processor_fam.processors[0]
         # Disable the native hppa builders.
         for builder in self.builders[(hppa_proc.id,False)]:
             builder.builderok = False
 
-        #import pdb
-        #pdb.set_trace()
         # No builders capable of running the job at hand are available now,
         # this is indicated by a None value.
-        check_mintime_to_builder(self, apg_build, apg_job, 0, None)
+        check_mintime_to_builder(self, apg_job, hppa_proc, False, None)
 
-        # Let's assume for the moment that our 'apg' build is processor
-        # independent. In that case we'd ask for *any* next available builder
-        # by enabling the "mixed mode".
+        # Let's assume for the moment that the job at the head of the 'apg'
+        # build queue is processor independent. In that case we'd ask for
+        # *any* next available builder.
         self.assertTrue(
             bq._freeBuildersCount(None, None) > 0,
             "Builders are immediately available for jobs that don't care "
             "about processor architectures or virtualization")
-        check_mintime_to_builder(
-            self, apg_build, apg_job, 0, 0, mixed_mode=True)
+        check_mintime_to_builder(self, apg_job, None, None, 0)
 
         # Let's disable all builders.
         for builders in self.builders.itervalues():
@@ -634,8 +633,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
 
         # There are no builders capable of running even the processor
         # independent jobs now and that this is indicated by a None value.
-        check_mintime_to_builder(
-            self, apg_build, apg_job, 0, None, mixed_mode=True)
+        check_mintime_to_builder(self, apg_job, None, None, None)
 
         # Re-enable the native hppa builders.
         for builder in self.builders[(hppa_proc.id,False)]:
@@ -643,8 +641,7 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
 
         # The builder that's becoming available next is the one that's
         # running the 'postgres' build.
-        check_mintime_to_builder(
-            self, apg_build, apg_job, 0, 30, mixed_mode=True)
+        check_mintime_to_builder(self, apg_job, None, None, 30)
 
         # Make sure we'll find an x86 builder as well.
         processor_fam = ProcessorFamilySet().getByName('x86')
@@ -658,14 +655,11 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
         build, bq = find_job(self, 'gcc', '386')
         set_remaining_time_for_running_job(bq, 29)
 
-        check_mintime_to_builder(
-            self, apg_build, apg_job, 0, 29, mixed_mode=True)
+        check_mintime_to_builder(self, apg_job, None, None, 29)
 
         # Make a second, idle x86 builder available.
         builder = self.builders[(x86_proc.id,False)][1]
         builder.builderok = True
 
         # That builder should be available immediately since it's idle.
-        check_mintime_to_builder(
-            self, apg_build, apg_job, 0, 0, mixed_mode=True)
-
+        check_mintime_to_builder(self, apg_job, None, None, 0)

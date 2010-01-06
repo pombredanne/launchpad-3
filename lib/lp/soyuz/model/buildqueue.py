@@ -212,29 +212,33 @@ class BuildQueue(SQLBase):
         free_builders = result_set.get_one()[0]
         return free_builders
 
-    def _minTimeToNextBuilderAvailable(self, mixed_mode):
-        """Get estimated time until a builder becomes available."""
-        # Which builders should be considered? If the job of interest (JOI)
-        # is processor independent then we should look at all builders since
-        # any one of them can run the job.
-        # In the opposite case (JOI is tied to a processor TP) we should only
-        # look at builders that target TP.
-        # However, if there are processor independent jobs ahead of the JOI
-        # in the queue we should again expand our selection to all builders.
-        #
-        # Please note: this information is encoded in `mixed_mode`. If it
-        # is set we look at all builders.
+    def _estimateTimeToNextBuilder(
+        self, head_job_processor, head_job_virtualized):
+        """Estimate time until next builder becomes available.
+        
+        For the purpose of estimating the dispatch time of the job of interest
+        (JOI) we need to know how long it will take until the job at the head
+        of JOI's queue is dispatched.
+
+        There are two cases to consider here: the head job is
+
+            - processor dependent: only builders with the matching
+              processor/virtualization combination should be considered.
+            - *not* processor dependent: all builders should be considered.
+
+        :param head_job_processor: The processor required by the job at the
+            head of the queue.
+        :param head_job_virtualized: The virtualization setting required by
+            the job at the head of the queue.
+        :return: The estimated number of seconds untils a builder capable of
+            running the head job becomes available or None if no such builder
+            exists.
+        """
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        my_processor = self.specific_job.processor
-        my_virtualized = self.specific_job.virtualized
 
         # First check whether we have free builders.
-        if my_processor is not None and not mixed_mode:
-            free_builders = self._freeBuildersCount(
-                my_processor, my_virtualized)
-        else:
-            # We don't care about processor or virtualization.
-            free_builders = self._freeBuildersCount(None, None)
+        free_builders = self._freeBuildersCount(
+            head_job_processor, head_job_virtualized)
 
         if free_builders > 0:
             # We have free builders for the given processor/virtualization
@@ -242,12 +246,12 @@ class BuildQueue(SQLBase):
             return 0
 
         extra_clauses = ''
-        if my_processor is not None and not mixed_mode:
+        if head_job_processor is not None:
             # Only look at builders with specific processor types.
             extra_clauses += """
                 AND Builder.processor = %s
                 AND Builder.virtualized = %s
-                """ % sqlvalues(my_processor, my_virtualized)
+                """ % sqlvalues(head_job_processor, head_job_virtualized)
 
         params = sqlvalues(JobStatus.RUNNING) + (extra_clauses,)
 
@@ -279,11 +283,11 @@ class BuildQueue(SQLBase):
             """ % params
 
         result_set = store.execute(delay_query)
-        headjob_delay = result_set.get_one()[0]
-        if headjob_delay is None:
+        head_job_delay = result_set.get_one()[0]
+        if head_job_delay is None:
             return None
         else:
-            return int(headjob_delay)
+            return int(head_job_delay)
 
 
 class BuildQueueSet(object):
