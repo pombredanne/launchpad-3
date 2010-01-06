@@ -13,6 +13,10 @@
     use-macro="context/@@+base-layout-macros/load-javascript" />
   <metal:lp-client-cache
     use-macro="context/@@+base-layout-macros/lp-client-cache" />
+
+    <metal:launchpad-stylesheet
+      use-macro="context/@@+base-layout-macros/launchpad-stylesheet-3-0" />
+
 </head>
 
 <body style="margin: 0; padding: 0">
