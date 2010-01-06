@@ -26,4 +26,4 @@ class TestPersonRoles(TestCaseWithFactory):
     def test_interface(self):
         person = self.factory.makePerson()
         roles = IPersonRoles(person)
-        verifyObject(IPersonRoles, person)
+        verifyObject(IPersonRoles, roles)
