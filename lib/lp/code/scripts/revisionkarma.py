@@ -44,7 +44,6 @@ class RevisionKarmaAllocator(LaunchpadCronScript):
                 revision_set.getRevisionsNeedingKarmaAllocated()[:100])
             if len(revisions) == 0:
                 break
-            added, skipped = 0, 0
             for revision in revisions:
                 # Find the appropriate branch, and allocate karma to it.
                 # Make sure we don't grab a junk branch though, as we don't
@@ -53,10 +52,13 @@ class RevisionKarmaAllocator(LaunchpadCronScript):
                     allow_private=True, allow_junk=False)
                 karma = revision.allocateKarma(branch)
                 if karma is None:
-                    skipped += 1
-                else:
-                    added += 1
+                    error_msg = (
+                        'No karma generated for revid: %s (%s)' %
+                        (revision.revision_id, revision.id))
+                    self.logger.error(error_msg)
+                    # Stop now to avoid infinite loop.
+                    raise AssertionError(error_msg)
                 count += 1
-            self.logger.debug("%s processed (%d added, %d skipped)", count, added, skipped)
+            self.logger.debug("%s processed", count)
             transaction.commit()
         self.logger.info("Finished updating revision karma")
