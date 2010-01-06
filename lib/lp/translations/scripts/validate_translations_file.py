@@ -49,7 +49,6 @@ def validate_xpi_manifest(filename, content):
     XpiManifest(content)
 
 
-
 class ValidateTranslationsFile:
     """Parse translations files to see if they are well-formed."""
 

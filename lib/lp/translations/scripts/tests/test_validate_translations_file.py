@@ -22,11 +22,9 @@ from lp.translations.utilities.tests.xpi_helpers import (
 
 class TestValidateTranslationsFile(TestCase):
 
-    def _makeValidator(self, test_args=None):
+    def _makeValidator(self):
         """Produce a ValidateTranslationsFile."""
-        if test_args is None:
-            test_args = []
-        validator = ValidateTranslationsFile(test_args=test_args)
+        validator = ValidateTranslationsFile(test_args=[])
         validator.logger.setLevel(logging.CRITICAL)
         return validator
 
@@ -42,7 +40,7 @@ class TestValidateTranslationsFile(TestCase):
 
     def test_validate_unknown(self):
         # Unknown filename extensions result in UnknownFileType.
-        validator = self._makeValidator(['foo.bar'])
+        validator = self._makeValidator()
         self.assertRaises(
             UnknownFileType, validator._validateContent, 'foo.bar', 'content')
 
