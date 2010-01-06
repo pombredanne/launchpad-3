@@ -23,7 +23,20 @@ class TestPersonRoles(TestCaseWithFactory):
 
     layer = ZopelessDatabaseLayer
 
+    def setUp(self):
+        super(TestPersonRoles, self).setUp()
+        self.person = self.factory.makePerson()
+
     def test_interface(self):
-        person = self.factory.makePerson()
-        roles = IPersonRoles(person)
+        roles = IPersonRoles(self.person)
         verifyObject(IPersonRoles, roles)
+
+    def test_is_admin(self):
+        # An LP admin is recognized as such.
+        roles = IPersonRoles(self.person)
+        self.assertFalse(roles.is_admin)
+        
+        admins = getUtility(ILaunchpadCelebrities).admin
+        admins.addMember(self.person, admins.teamowner)
+        roles = IPersonRoles(self.person)
+        self.assertTrue(roles.is_admin)
