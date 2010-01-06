@@ -488,12 +488,12 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                           {'review_id': review.id})
 
     def test_preview_diff_text_with_no_diff(self):
-        """review_diff should be None when context has no preview_diff."""
+        """preview_diff_text should be None if context has no preview_diff."""
         view = create_initialized_view(self.bmp, '+index')
         self.assertIs(None, view.preview_diff_text)
 
     def test_preview_diff_utf8(self):
-        """A preview_diff in utf-8 should be converted to utf-8."""
+        """A preview_diff in utf-8 should decoded as utf-8."""
         text = ''.join(unichr(x) for x in range(255))
         diff_bytes = ''.join(unified_diff('', text)).encode('utf-8')
         self.setPreviewDiff(diff_bytes)
