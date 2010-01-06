@@ -34,22 +34,23 @@ class TestPersonRoles(TestCaseWithFactory):
 
     def _test_is_on_team(self, celebs_attr, roles_attr):
         roles = IPersonRoles(self.person)
-        self.assertFalse(getattr(roles, roles_attr))
-        
+        self.assertFalse(
+            getattr(roles, roles_attr),
+            "%s should be False" % roles_attr)
+
         team = getattr(self.celebs, celebs_attr)
         team.addMember(self.person, team.teamowner)
         roles = IPersonRoles(self.person)
         self.assertTrue(
             getattr(roles, roles_attr),
             "%s should be True" % roles_attr)
+        self.person.leave(team)
 
     def test_is_on_teams(self):
         # Test all celebrity teams are available.
         team_attributes = [
             ('admin', 'is_admin'),
             ('bazaar_experts', 'is_bazaar_expert'),
-            ('bug_importer', 'is_bug_importer'),
-            ('bug_watch_updater', 'is_bug_watch_updater'),
             ('buildd_admin', 'is_buildd_admin'),
             ('commercial_admin', 'is_commercial_admin'),
             ('hwdb_team', 'is_in_hwdb_team'),
@@ -77,6 +78,8 @@ class TestPersonRoles(TestCaseWithFactory):
     def test_is_person(self):
         # Test all celebrity persons are available.
         person_attributes = [
+            ('bug_importer', 'is_bug_importer'),
+            ('bug_watch_updater', 'is_bug_watch_updater'),
             ('katie', 'is_katie'),
             ('janitor', 'is_janitor'),
             ('ppa_key_guard', 'is_ppa_key_guard'),
