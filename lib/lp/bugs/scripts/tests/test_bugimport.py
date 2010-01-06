@@ -892,15 +892,18 @@ class TestBugWatchUpdater(BugWatchUpdater):
         """See `BugWatchUpdater`."""
         return [(TestExternalBugTracker(bug_tracker.baseurl), bug_watches)]
 
-    def _getBugWatch(self, bug_watch_id):
-        """Returns a mock bug watch object.
+    def _getBugWatchesForRemoteBug(self, remote_bug_id, bug_watch_ids):
+        """Returns a list of fake bug watch objects.
 
-        We override this method to force one of our two bug watches
-        to be returned. The first is guaranteed to trigger a db error,
-        the second should update successfuly.
+        We override this method so that we always return bug watches
+        from our list of fake bug watches.
         """
-        return self.bugtracker.getBugWatchesNeedingUpdate(0)[bug_watch_id - 1]
-
+        return [
+            bug_watch for bug_watch in (
+                self.bugtracker.getBugWatchesNeedingUpdate(0))
+            if (bug_watch.remotebug == remote_bug_id and
+                bug_watch.id in bug_watch_ids)
+            ]
 
 
 class CheckBugWatchesErrorRecoveryTestCase(unittest.TestCase):

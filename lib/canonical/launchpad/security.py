@@ -698,6 +698,11 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(admins) or user.inTeam(self.obj):
             return True
+        # We also grant visibility of the private team to administrators of
+        # other teams that have been invited to join the private team.
+        for invitee in self.obj.invited_members:
+            if invitee.is_team and invitee in user.getAdministratedTeams():
+                return True
         return False
 
 
@@ -852,17 +857,20 @@ class EditProductSeries(EditByOwnersOrAdmins):
     usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
-        """Allow product owner, Rosetta Experts, or admins."""
+        """Allow product owner, some experts, or admins."""
         if (user.inTeam(self.obj.product.owner) or
             user.inTeam(self.obj.driver)):
             # The user is the owner of the product, or the release manager.
             return True
         # Rosetta experts need to be able to upload translations.
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-        if user.inTeam(rosetta_experts):
+        # Bazaar experts need to be able to change the linked branches.
+        # Registry admins are just special.
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (user.inTeam(celebrities.registry_experts) or
+            user.inTeam(celebrities.bazaar_experts) or
+            user.inTeam(celebrities.rosetta_experts)):
             return True
-        return EditByOwnersOrAdmins.checkAuthenticated(
-            self, user)
+        return EditByOwnersOrAdmins.checkAuthenticated(self, user)
 
 
 class EditBugTask(AuthorizationBase):

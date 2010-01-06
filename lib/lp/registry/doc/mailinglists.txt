@@ -82,7 +82,8 @@ However, if we make Anne a team owner, she can create the mailing list.
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> login('foo.bar@canonical.com')
     >>> bart = factory.makePersonByName('Bart')
-    >>> team_two.addMember(anne, bart, status=TeamMembershipStatus.ADMIN)
+    >>> ignored = team_two.addMember(
+    ...     anne, bart, status=TeamMembershipStatus.ADMIN)
     >>> login(ANONYMOUS)
     >>> list_two = list_set.new(team_two, anne)
     >>> list_two

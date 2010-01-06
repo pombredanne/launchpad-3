@@ -957,7 +957,7 @@ still denied since Celso's PPA still public and thus the dependencies
 buildd_secret would leak through the public buildlogs.
 
     >>> login('foo.bar@canonical.com')
-    >>> a_team.addMember(cprov, mark)
+    >>> ignored = a_team.addMember(cprov, mark)
     >>> login('celso.providelo@canonical.com')
 
     >>> view = create_initialized_view(
@@ -1186,7 +1186,7 @@ Even when Celso is an owner of the non-PPA archive, copies to it will
 continue to be denied in the UI.
 
     >>> login('foo.bar@canonical.com')
-    >>> ubuntu.main_archive.owner.addMember(cprov, cprov)
+    >>> ignored = ubuntu.main_archive.owner.addMember(cprov, cprov)
     >>> login('celso.providelo@canonical.com')
 
     >>> view = create_initialized_view(
