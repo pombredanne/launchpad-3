@@ -58,6 +58,11 @@ meaningless because teams cannot post to mailing lists.
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> verifyObject(IPersonSet, personset)
+    True
+
 You can create a new person using the createPersonAndEmail method of
 IPersonSet. All you need for that is a valid email address. You can also
 hide the user email addresses.
@@ -884,6 +889,18 @@ Searching only for People based on their names or email addresses:
     >>> print_people(personset.findPerson('dave'))
     Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
                              u'justdave@bugzilla.org']
+
+The created_before and created_after arguments can be used to restrict the
+matches by the IPerson.datecreated value.
+
+    >>> from datetime import datetime
+    >>> import pytz
+
+    >>> created_after = datetime(2008, 6, 27, tzinfo=pytz.UTC)
+    >>> created_before = datetime(2008, 7, 1, tzinfo=pytz.UTC)
+    >>> print_people(personset.findPerson(text='',
+    ...     created_after=created_after, created_before=created_before))
+    Brad Crittenden (bac): [u'bac@canonical.com']
 
 By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to

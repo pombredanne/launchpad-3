@@ -41,10 +41,11 @@ from lp.code.interfaces.branchmergeproposal import (
     BRANCH_MERGE_PROPOSAL_FINAL_STATES as FINAL_STATES,
     IBranchMergeProposal, IBranchMergeProposalGetter, IBranchMergeProposalJob,
     ICreateMergeProposalJob, ICreateMergeProposalJobSource,
-    IMergeProposalCreatedJob, notify_modified)
+    IMergeProposalCreatedJob, IUpdatePreviewDiffJobSource, notify_modified)
 from lp.code.model.branchmergeproposaljob import (
-    BranchMergeProposalJob, BranchMergeProposalJobType,
-    CreateMergeProposalJob, MergeProposalCreatedJob, UpdatePreviewDiffJob)
+    BranchMergeProposalJob, BranchMergeProposalJobDerived,
+    BranchMergeProposalJobType, CreateMergeProposalJob,
+    MergeProposalCreatedJob, UpdatePreviewDiffJob)
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal, BranchMergeProposalGetter, is_valid_transition)
 from lp.code.model.diff import StaticDiff
@@ -1235,6 +1236,30 @@ class TestBranchMergeProposalJob(TestCaseWithFactory):
         verifyObject(IBranchMergeProposalJob, job)
 
 
+class TestBranchMergeProposalJobDerived(TestCaseWithFactory):
+    """Test the behaviour of the BranchMergeProposalJobDerived base class."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_get(self):
+        """Ensure get returns or raises appropriately.
+
+        It's an error to call get on BranchMergeProposalJobDerived-- it must
+        be called on a subclass.  An object is returned only if the job id
+        and job type match the request.  If no suitable object can be found,
+        SQLObjectNotFound is raised.
+        """
+        bmp = self.factory.makeBranchMergeProposal()
+        job = MergeProposalCreatedJob.create(bmp)
+        transaction.commit()
+        self.assertRaises(
+            AttributeError, BranchMergeProposalJobDerived.get, job.id)
+        self.assertRaises(SQLObjectNotFound, UpdatePreviewDiffJob.get, job.id)
+        self.assertRaises(
+            SQLObjectNotFound, MergeProposalCreatedJob.get, job.id + 1)
+        self.assertEqual(job, MergeProposalCreatedJob.get(job.id))
+
+
 class TestMergeProposalCreatedJob(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
@@ -1848,6 +1873,10 @@ class TestUpdatePreviewDiff(TestCaseWithFactory):
 class TestUpdatePreviewDiffJob(DiffTestCase):
 
     layer = LaunchpadZopelessLayer
+
+    def test_implement_interface(self):
+        """UpdatePreviewDiffJob implements IUpdatePreviewDiffJobSource."""
+        verifyObject(IUpdatePreviewDiffJobSource, UpdatePreviewDiffJob)
 
     def test_run(self):
         self.useBzrBranches()
