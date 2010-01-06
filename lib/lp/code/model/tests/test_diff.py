@@ -8,9 +8,11 @@ __metaclass__ = type
 
 from cStringIO import StringIO
 from difflib import unified_diff
+import logging
 from unittest import TestLoader
 
 from bzrlib.branch import Branch
+from bzrlib import trace
 import transaction
 
 from canonical.launchpad.webapp import canonical_url, errorlog
@@ -21,6 +23,16 @@ from lp.code.model.directbranchcommit import DirectBranchCommit
 from lp.code.interfaces.diff import (
     IDiff, IPreviewDiff, IStaticDiff, IStaticDiffSource)
 from lp.testing import login, login_person, TestCaseWithFactory
+
+
+class RecordLister(logging.Handler):
+
+    def __init__(self):
+        logging.Handler.__init__(self)
+        self.records = []
+
+    def emit(self, record):
+        self.records.append(record)
 
 
 class DiffTestCase(TestCaseWithFactory):
@@ -433,6 +445,21 @@ class TestPreviewDiff(DiffTestCase):
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
         preview = PreviewDiff.fromBranchMergeProposal(bmp)
         self.assertEqual('Text conflict in foo\n', preview.conflicts)
+
+    def test_fromBranchMergeProposal_does_not_warn_on_conflicts(self):
+        """PreviewDiff generation emits no conflict warnings."""
+        bmp, source_rev_id, target_rev_id = self.createExampleMerge()
+        handler = RecordLister()
+        logger = logging.getLogger('bzr')
+        logger.addHandler(handler)
+        try:
+            preview = PreviewDiff.fromBranchMergeProposal(bmp)
+            self.assertEqual(handler.records, [])
+            # check that our handler would normally intercept warnings.
+            trace.warning('foo!')
+            self.assertNotEqual(handler.records, [])
+        finally:
+            logger.removeHandler(handler)
 
 
 def test_suite():

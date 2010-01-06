@@ -14,6 +14,7 @@ from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
 from bzrlib.patches import parse_patches, Patch
 from bzrlib.merge import Merge3Merger
+from bzrlib import trace
 from lazr.delegates import delegates
 import simplejson
 from sqlobject import ForeignKey, IntCol, StringCol
@@ -139,7 +140,14 @@ class Diff(SQLBase):
         merger = Merge3Merger(
             merge_target, merge_target, merge_base, merge_source,
             do_merge=False)
-        transform = merger.make_preview_transform()
+        def dummy_warning(self, *args, **kwargs):
+            pass
+        real_warning = trace.warning
+        trace.warning = dummy_warning
+        try:
+            transform = merger.make_preview_transform()
+        finally:
+            trace.warning = real_warning
         cleanups.append(transform.finalize)
         return transform.get_preview_tree(), merger.cooked_conflicts
 
