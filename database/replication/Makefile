@@ -187,7 +187,9 @@ _replicate:
 	@echo Running fti.py `date`
 	${SHHH} ../schema/fti.py
 	@echo Running security.py `date`
+	./slon_ctl.py stop # security.py can deadlock with slony
 	${SHHH} ../schema/security.py --cluster -U slony
+	./slon_ctl.py --lag="0 seconds" start
 	# Migrate tables to the authdb replication set, creating the set
 	# and subscribing nodes to it as necessary.
 	./populate_auth_replication_set.py -U slony
