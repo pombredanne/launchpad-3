@@ -20,8 +20,12 @@ class PersonRoles:
 
     def __init__(self, person):
         self.person = person
+        self._celebrities = getUtility(ILaunchpadCelebrities)
 
-    is_admin = False
+    @property
+    def is_admin(self):
+        return self.person.inTeam(self._celebrities.admin)
+
     is_bazaar_expert = False
     is_bug_importer = False
     is_bug_watch_updater = False
