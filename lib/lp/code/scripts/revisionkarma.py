@@ -55,7 +55,7 @@ class RevisionKarmaAllocator(LaunchpadCronScript):
                     error_msg = (
                         'No karma generated for revid: %s (%s)' %
                         (revision.revision_id, revision.id))
-                    self.logger.error(error_msg)
+                    self.logger.critical(error_msg)
                     # Stop now to avoid infinite loop.
                     raise AssertionError(error_msg)
                 count += 1
