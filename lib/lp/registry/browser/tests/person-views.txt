@@ -4,7 +4,97 @@ There are many views that wrap the Person object to display the
 person's information.
 
 
-== Email address disclosure ==
+Probationary and invalid users
+------------------------------
+
+The person +index view provides the is_probationary_or_invalid_user so that
+page features can be disabled because the user may abuse them. Active
+users with karma are not on probation; the user's homepage_content is
+formatted as HTML.
+
+    >>> from lp.registry.interfaces.person import IPersonSet
+
+    >>> homepage_content = "line one <script>\n\nhttp://aa.aa/"
+    >>> person_set = getUtility(IPersonSet)
+    >>> active_user = person_set.getByName('name12')
+    >>> login_person(active_user)
+    >>> active_user.homepage_content = homepage_content
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(active_user, '+index')
+    >>> view.is_probationary_or_invalid_user
+    False
+
+    >>> print view.homepage_content
+    <p>line one &lt;script&gt;</p>
+    <BLANKLINE>
+    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr></wbr>aa.aa/</a></p>
+
+Teams are always valid and do not have probation rules; the homepage content
+is formatted HTML.
+
+    >>> team = factory.makeTeam()
+    >>> login_person(team.teamowner)
+    >>> team.homepage_content = homepage_content
+    >>> login(ANONYMOUS)
+    >>> view = create_initialized_view(team, '+index')
+    >>> view.is_probationary_or_invalid_user
+    False
+
+    >>> print view.homepage_content
+    <p>line one &lt;script&gt;</p>
+    <BLANKLINE>
+    <p><a rel="nofollow" href="http://aa.aa/">http://<wbr></wbr>aa.aa/</a></p>
+
+New users (those without karma) are on probation; the homepage content is
+escaped HTML.
+
+    >>> new_user = factory.makePerson()
+    >>> new_user.homepage_content = homepage_content
+    >>> new_user.karma
+    0
+
+    >>> view = create_initialized_view(new_user, '+index')
+    >>> view.is_probationary_or_invalid_user
+    True
+
+    >>> print view.homepage_content
+    line one &lt;script&gt;
+    <BLANKLINE>
+    http://aa.aa/
+
+Inactive and suspended users are invalid; the homepage content is escaped
+HTML.
+
+    >>> from canonical.launchpad.interfaces.account import AccountStatus
+    >>> from canonical.launchpad.interfaces import IMasterObject
+
+    # Only admins can change an account.
+    >>> admin_user = person_set.getByName('name16')
+    >>> login_person(admin_user)
+    >>> invalid_user = factory.makePerson(name="ugh")
+    >>> invalid_user.homepage_content = homepage_content
+    >>> IMasterObject(invalid_user.account).status = AccountStatus.NOACCOUNT
+    >>> view = create_initialized_view(invalid_user, '+index')
+    >>> view.is_probationary_or_invalid_user
+    True
+
+    >>> print view.homepage_content
+    line one &lt;script&gt;
+    <BLANKLINE>
+    http://aa.aa/
+
+    >>> login(ANONYMOUS)
+
+If the user has no homepage content, the view's value is None.
+
+    >>> new_user.homepage_content = None
+    >>> view = create_initialized_view(new_user, '+index')
+    >>> print view.homepage_content
+    None
+
+
+Email address disclosure
+------------------------
 
 PersonView is the base for many views for Person objects, including the
 default view. It provides several properties to help display email
@@ -19,9 +109,6 @@ can see them
 Mark has a registered email address, and he has chosen to disclose it to
 the world.
 
-    >>> from lp.registry.interfaces.person import IPersonSet
-
-    >>> person_set = getUtility(IPersonSet)
     >>> mark = person_set.getByEmail('mark@example.com')
     >>> mark.preferredemail.email
     u'mark@example.com'
@@ -748,7 +835,8 @@ view property `should_show_ppa_section`.
 
 The property checks two things to decide whether to return True or not:
  * Return True if the current user has launchpad.Edit permission
- * Return True if the person has PPAs and at least one of them is public.
+ * Return True if the person has PPAs and at least one of them is viewable
+   by the current user.
 
 Cprov is a user with a PPA:
 
@@ -768,7 +856,8 @@ Cprov himself can see the section:
     >>> view.should_show_ppa_section
     True
 
-If we disable Cprov's PPA, the section is still presented to anyone.
+If we disable Cprov's PPA, the section is not presented to anonymous
+users who cannot view the PPA, but is displayed to Celso.
 
     >>> login("admin@canonical.com")
     >>> cprov.archive.enabled = False
@@ -776,7 +865,7 @@ If we disable Cprov's PPA, the section is still presented to anyone.
     >>> login(ANONYMOUS)
     >>> view = create_initialized_view(cprov, "+index")
     >>> view.should_show_ppa_section
-    True
+    False
 
     >>> login("celso.providelo@canonical.com")
     >>> view = create_initialized_view(cprov, "+index")
@@ -822,7 +911,7 @@ section will still not appear for anyone but people with lp.edit.
 
     >>> login("admin@canonical.com")
     >>> team = factory.makeTeam()
-    >>> team.addMember(sample_person, sample_person)
+    >>> ignored = team.addMember(sample_person, sample_person)
     >>> ppa = factory.makeArchive(distribution=ubuntu, owner=team)
 
     >>> login(ANONYMOUS)

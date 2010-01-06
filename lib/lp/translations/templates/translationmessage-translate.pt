@@ -18,8 +18,12 @@
       tal:define="lp_js string:${icingroot}/build"
       tal:attributes="src string:${lp_js}/translations/pofile.js"></script>
     <script type="text/javascript">
-      YUI().use('node', 'lp.pofile', function(Y) {
+      LPS.use('node', 'lp.pofile', function(Y) {
           Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
+          Y.on('domready', Y.lp.pofile.initializeKeyBindings);
+          Y.on('domready', function(e) {
+            Y.one('#' + autofocus_field).focus();
+          });
       });
     </script>
     </div>
@@ -29,21 +33,8 @@
       <tal:havepluralforms condition="view/has_plural_form_information">
 
       <!--  Navigation -->
-      <ul class="horizontal" style="margin-top: 1em; margin-bottom: 1em;"
-           tal:define="navigation_menu context/menu:navigation">
-        <li
-            tal:define="link navigation_menu/download"
-            tal:condition="link/enabled"
-            tal:content="structure link/render"></li>
-        <li
-            tal:define="link navigation_menu/upload"
-            tal:condition="link/enabled"
-            tal:content="structure link/render"></li>
-        <li
-            tal:define="link navigation_menu/details"
-            tal:condition="link/enabled"
-            tal:content="structure link/render"></li>
-        </ul>
+      <metal:nav-pofile-subpages 
+        use-macro="context/@@+translations-macros/nav-pofile-subpages" />
 
         <!-- Alternative suggestions. -->
         <div metal:define-macro="editform">
@@ -89,12 +80,13 @@
                 <th colspan="5" style="text-align: right;">
                   <input type="submit"
                          name="submit_translations"
+                         accesskey="S"
+                         id="save_and_continue_button"
                          value="Save &amp; Continue" />
                 </th>
               </tr>
             </tfoot>
           </table>
-
         </form>
 
         <!-- Paging doodads. -->
@@ -102,8 +94,9 @@
           replace="structure view/batchnav/@@+navigation-links-lower" />
       <tal:status replace="structure context/pofile/@@+access" />
       </tal:havepluralforms>
+      <metal:pofile-js-footer 
+            use-macro="context/@@+translations-macros/pofile-js-footer" />
     </div>
-
   </body>
 
 </html>

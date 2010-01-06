@@ -16,6 +16,7 @@ __all__ = [
     'IDistributionMirrorMenuMarker',
     'IDistributionPublic',
     'IDistributionSet',
+    'NoPartnerArchive',
     'NoSuchDistribution',
     ]
 
@@ -34,7 +35,7 @@ from lazr.restful.declarations import (
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, PublicPersonChoice, Summary, Title)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.interfaces.headings import IRootContext
 from lp.registry.interfaces.announcement import IMakesAnnouncements
@@ -309,9 +310,9 @@ class IDistributionPublic(
         """
 
     def newMirror(owner, speed, country, content, displayname=None,
-                  description=None, http_base_url=None, ftp_base_url=None,
-                  rsync_base_url=None, enabled=False,
-                  official_candidate=False):
+                  description=None, http_base_url=None,
+                  ftp_base_url=None, rsync_base_url=None, enabled=False,
+                  official_candidate=False, whiteboard=None):
         """Create a new DistributionMirror for this distribution.
 
         At least one of http_base_url or ftp_base_url must be provided in
@@ -578,6 +579,15 @@ class NoSuchDistribution(NameLookupFailed):
     """Raised when we try to find a distribution that doesn't exist."""
 
     _message_prefix = "No such distribution"
+
+
+class NoPartnerArchive(Exception):
+    """Raised when a partner archive is needed, but none exists."""
+
+    def __init__(self, distribution):
+        Exception.__init__(
+            self, "Partner archive for distro '%s' not found"
+            % (distribution.name,))
 
 
 # Monkey patching to fix circular imports done in

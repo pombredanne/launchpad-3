@@ -18,8 +18,8 @@ import shutil
 import StringIO
 import tempfile
 
-from email.MIMEMultipart import MIMEMultipart
-from email.MIMEText import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 from storm.locals import Desc, In, Join
 from storm.store import Store
@@ -61,7 +61,6 @@ from lp.soyuz.interfaces.queue import (
     NonBuildableSourceUploadError, QueueBuildAcceptError,
     QueueInconsistentStateError, QueueSourceAcceptError,
     QueueStateWriteProtectedError)
-from lp.registry.interfaces.sourcepackage import SourcePackageFileType
 from canonical.launchpad.mail import (
     format_address, signed_message_from_string, sendmail)
 from lp.soyuz.scripts.processaccepted import (
@@ -443,13 +442,16 @@ class PackageUpload(SQLBase):
         names = []
         for queue_source in self.sources:
             names.append(queue_source.sourcepackagerelease.name)
-        for queue_build in  self.builds:
+        for queue_build in self.builds:
             names.append(queue_build.build.sourcepackagerelease.name)
         for queue_custom in self.customfiles:
             names.append(queue_custom.libraryfilealias.filename)
         # Make sure the list items have a whitespace separator so
         # that they can be wrapped in table cells in the UI.
-        return ", ".join(names)
+        ret = ", ".join(names)
+        if self.is_delayed_copy:
+            ret += " (delayed)"
+        return ret
 
     @cachedproperty
     def displayarchs(self):
@@ -544,7 +546,8 @@ class PackageUpload(SQLBase):
                 # it's available.
                 changes_file = None
                 if ISourcePackagePublishingHistory.providedBy(pub_record):
-                    changes_file = pub_record.sourcepackagerelease.package_upload.changesfile
+                    release = pub_record.sourcepackagerelease
+                    changes_file = release.package_upload.changesfile
 
                 for new_file in update_files_privacy(pub_record):
                     debug(logger,
@@ -559,7 +562,8 @@ class PackageUpload(SQLBase):
                     debug(
                         logger,
                         "sending email to %s" % self.distroseries.changeslist)
-                    changes_file_object = StringIO.StringIO(changes_file.read())
+                    changes_file_object = StringIO.StringIO(
+                        changes_file.read())
                     self.notify(
                         announce_list=self.distroseries.changeslist,
                         changes_file_object=changes_file_object,
@@ -1301,9 +1305,28 @@ class PackageUploadBuild(SQLBase):
     def checkComponentAndSection(self):
         """See `IPackageUploadBuild`."""
         distroseries = self.packageupload.distroseries
+        is_ppa = self.packageupload.archive.is_ppa
+        is_delayed_copy = self.packageupload.is_delayed_copy
+
         for binary in self.build.binarypackages:
-            if (not self.packageupload.archive.is_ppa and
-                binary.component not in distroseries.upload_components):
+            component = binary.component
+
+            if is_delayed_copy:
+                # For a delayed copy the component will not yet have
+                # had the chance to be overridden, so we'll check the value
+                # that will be overridden by querying the ancestor in
+                # the destination archive - if one is available.
+                binary_name = binary.name
+                ancestry = getUtility(IPublishingSet).getNearestAncestor(
+                    package_name=binary_name,
+                    archive=self.packageupload.archive,
+                    distroseries=self.packageupload.distroseries, binary=True)
+
+                if ancestry is not None:
+                    component = ancestry.component
+
+            if (not is_ppa and component not in
+                distroseries.upload_components):
                 # Only complain about non-PPA uploads.
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
@@ -1468,7 +1491,7 @@ class PackageUploadSource(SQLBase):
             published_sha1 = published_file.content.sha1
 
             # Multiple orig(s) with the same content are fine.
-            if source_file.filetype == SourcePackageFileType.ORIG:
+            if source_file.is_orig:
                 if proposed_sha1 == published_sha1:
                     continue
                 raise QueueInconsistentStateError(
@@ -1488,6 +1511,20 @@ class PackageUploadSource(SQLBase):
         distroseries = self.packageupload.distroseries
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
+
+        if self.packageupload.is_delayed_copy:
+            # For a delayed copy the component will not yet have
+            # had the chance to be overridden, so we'll check the value
+            # that will be overridden by querying the ancestor in
+            # the destination archive - if one is available.
+            source_name = self.sourcepackagerelease.name
+            ancestry = getUtility(IPublishingSet).getNearestAncestor(
+                package_name=source_name,
+                archive=self.packageupload.archive,
+                distroseries=self.packageupload.distroseries)
+
+            if ancestry is not None:
+                component = ancestry.component
 
         if (not self.packageupload.archive.is_ppa and
             component not in distroseries.upload_components):

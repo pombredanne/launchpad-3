@@ -231,7 +231,7 @@ class PackageUploadTestCase(TestCaseWithFactory):
 
         expected_subject = (
             '[ubuntutest/breezy-autotest-security]\n\t'
-            'dist-upgrader_20060302.0120_all.tar.gz, '
+            'dist-upgrader_20060302.0120_all.tar.gz (delayed),\n\t'
             'foocomm 1.0-2 (Accepted)')
         self.assertEquals(msg['Subject'], expected_subject)
 

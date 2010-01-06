@@ -9,17 +9,6 @@
   xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
   i18n_domain="canonical.launchpad">
 
-  <!--  XXX: Steve Alexander 2004-11-24:
-        yuck... registering a main template as a view for everything.
-        This should be a non-published resource.
-    -->
-  <browser:page
-      name="main_template"
-      for="*"
-      permission="zope.Public"
-      template="../templates/main-template.pt"
-      />
-
   <!-- Error pages -->
   <!-- System Errors -->
   <browser:page
@@ -46,6 +35,15 @@
       permission="zope.Public"
       template="../templates/launchpad-notfound.pt"
       class="canonical.launchpad.webapp.error.NotFoundView"
+      />
+
+  <!-- Gone -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.GoneError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-gone.pt"
+      class="canonical.launchpad.webapp.error.GoneView"
       />
 
   <!-- RequestExpired -->
@@ -165,13 +163,6 @@
       name="+maintenancemessage"
       template="../templates/launchpad-maintenance.pt"
       class="canonical.launchpad.browser.MaintenanceMessage"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="*"
-      name="+main-template-macros"
-      template="../templates/main-template-macros.pt"
       permission="zope.Public"
       />
 
@@ -321,23 +312,6 @@
   <browser:menus
       module="canonical.launchpad.browser.launchpad"
       classes="LaunchpadRootFacets"
-      />
-
-  <!-- This is a view on TALES CONTEXTS rather than all dicts. -->
-  <browser:page
-      for="*"
-      name="+menubox"
-      class="canonical.launchpad.browser.launchpad.MenuBox"
-      template="../templates/launchpad-menubox.pt"
-      permission="zope.Public"
-      />
-
-  <browser:page
-      for="*"
-      name="+navigationmenutabs"
-      class="canonical.launchpad.browser.launchpad.NavigationMenuTabs"
-      template="../templates/launchpad-navigation-menutabs.pt"
-      permission="zope.Public"
       />
 
   <browser:defaultView

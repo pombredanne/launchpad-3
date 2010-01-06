@@ -43,6 +43,7 @@ from lp.registry.interfaces.person import (
 from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.services.permission_helpers import is_admin_or_rosetta_expert
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.translations.interfaces.pofile import IPOFileSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -62,8 +63,6 @@ from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
-from lp.translations.utilities.permission_helpers import (
-    is_admin_or_rosetta_expert)
 from canonical.librarian.interfaces import ILibrarianClient
 
 
@@ -296,9 +295,6 @@ class TranslationImportQueueEntry(SQLBase):
 
     def canSetStatus(self, new_status, user):
         """See `ITranslationImportQueueEntry`."""
-        if new_status == self.status:
-            # Leaving status as it is is always allowed.
-            return True
         if user is None:
             # Anonymous user cannot do anything.
             return False
@@ -309,13 +305,14 @@ class TranslationImportQueueEntry(SQLBase):
             # that's only possible if we know where to import it
             # (import_into not None).
             return can_admin and self.import_into is not None
-        if new_status == RosettaImportStatus.BLOCKED:
-            # Only administrators are able to set an entry to BLOCKED.
-            return can_admin
-        if (new_status in (RosettaImportStatus.FAILED,
-                           RosettaImportStatus.IMPORTED)):
-            # Only scripts set these statuses and they report as a rosetta
-            # expert.
+        if new_status == RosettaImportStatus.IMPORTED:
+            # Only rosetta experts are able to set the IMPORTED status, and
+            # that's only possible if we know where to import it
+            # (import_into not None).
+            return (is_admin_or_rosetta_expert(user) and
+                    self.import_into is not None)
+        if new_status == RosettaImportStatus.FAILED:
+            # Only rosetta experts are able to set the FAILED status.
             return is_admin_or_rosetta_expert(user)
         # All other statuses can bset set by all authorized persons.
         return self.isUserUploaderOrOwner(user) or can_admin
@@ -444,8 +441,9 @@ class TranslationImportQueueEntry(SQLBase):
         # Get or create an IPOFile based on the info we guess.
         pofile = potemplate.getPOFileByLang(language.code, variant=variant)
         if pofile is None:
-            pofile = potemplate.newPOFile(
-                language.code, variant=variant, requester=self.importer)
+            pofile = potemplate.newPOFile(language.code, variant=variant)
+            if pofile.canEditTranslations(self.importer):
+                pofile.owner = self.importer
 
         if self.is_published:
             # This entry comes from upstream, which means that the path we got

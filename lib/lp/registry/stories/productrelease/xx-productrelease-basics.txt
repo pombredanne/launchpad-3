@@ -120,7 +120,7 @@ The release owner can edit the release via its +edit form:
     >>> browser.getControl('Changelog').value = 'This is not a joke.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Series trunk : Mozilla Firefox
+    1.0 : Series trunk : Mozilla Firefox
 
 
 == Editing permissions extend to product and series owners ==
@@ -159,7 +159,7 @@ Celso is a member of ubuntu-team, so he can edit this release too:
     >>> browser.getControl('Changelog').value = 'Fixes 3 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Series trunk : Tomcat
+    0.6.6.6 : Series trunk : Tomcat
 
 And if no-priv owns the series...
 
@@ -180,4 +180,4 @@ others:
     >>> browser.getControl('Changelog').value = 'Fixes 4 bugs.'
     >>> browser.getControl('Change').click()
     >>> print browser.title
-    Series trunk : Tomcat
+    0.6.6.6 : Series trunk : Tomcat

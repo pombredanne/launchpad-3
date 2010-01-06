@@ -134,9 +134,24 @@
               <h2>Recent Launchpad blog posts</h2>
               <ul>
                 <li class="news">
-                  <a href="http://blog.launchpad.net/bazaar/accessing-git-subversion-and-mercurial-from-bazaar">
-                  Git and Subversion from Bazaar</a><span class="registered"> &ndash; 29 Oct 2009</span><br />
-                  Read how Bazaar and Launchpad work with Git branches and Subversion repositories.
+                  <a href="http://blog.launchpad.net/?p=1218">
+                  This is a patch</a><span class="registered"> &ndash; 16 Dec 2009</span><br />
+                  Patches are now listed separately from other attachments on bug pages.
+                </li>
+                <li class="news">
+                  <a href="http://blog.launchpad.net/?p=1222">
+                  Hot or not?</a><span class="registered"> &ndash; 16 Dec 2009</span><br />
+                  Bug reports now show how many people have clicked "This bug affects me".
+                </li>
+                <li class="news">
+                  <a href="http://blog.launchpad.net/cool-new-stuff/inline-dupe-finding">
+                  Streamlined duplicate bug finding</a><span class="registered"> &ndash; 10 Dec 2009</span><br />
+                  New in-line duplicate finder makes project bug reporting smoother.
+                </li>
+                <li class="news">
+                  <a href="http://blog.launchpad.net/?p=1178">
+                  Working with bug mail</a><span class="registered"> &ndash; 02 Dec 2009</span><br />
+                  Get the most from Launchpad's bug notifications.
                 </li>
                 <li class="news">
                   <a href="http://blog.launchpad.net/api/new-lpx-project-group-for-launchpad-extensions">

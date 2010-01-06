@@ -91,13 +91,6 @@
             name="+portlet-details"
             facet="overview"
             template="../templates/distroseries-details.pt"/>
-        <browser:page
-            name="+portlet-lifecycle"
-            facet="overview"
-            template="../templates/distroseries-portlet-lifecycle.pt"/>
-        <browser:page
-            name="+portlet-milestones"
-            template="../templates/object-portlet-milestones.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.distroseries.IDistroSeries"
@@ -317,14 +310,6 @@
             name="+details"
             facet="overview"
             template="../templates/project-details.pt"/>
-        <browser:page
-            name="+portlet-lifecycle"
-            facet="overview"
-            template="../templates/project-portlet-lifecycle.pt"/>
-        <browser:page
-            name="+portlet-milestones"
-            facet="overview"
-            template="../templates/object-portlet-milestones.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.project.IProject"
@@ -413,12 +398,6 @@
         for="lp.registry.interfaces.project.IProjectSeries"
         name="+specs"
         layer="canonical.launchpad.layers.BlueprintLayer"/>
-    <browser:page
-        for="lp.registry.interfaces.project.IProjectSeries"
-        permission="zope.Public"
-        name="+portlet-details"
-        facet="overview"
-        template="../templates/project-series-portlet-details.pt"/>
     <browser:menus
         classes="
             ProjectActionMenu
@@ -473,18 +452,6 @@
         name="+edit"
         facet="overview"
         template="../../app/templates/generic-edit.pt"/>
-    <browser:pages
-        for="lp.registry.interfaces.distributionsourcepackage.IDistributionSourcePackage"
-        class="canonical.launchpad.webapp.publisher.LaunchpadView"
-        permission="zope.Public">
-        <browser:page
-            name="+portlet-details"
-            facet="overview"
-            template="../templates/distributionsourcepackage-portlet-details.pt"/>
-        <browser:page
-            name="+portlet-releases"
-            template="../templates/distributionsourcepackage-portlet-releases.pt"/>
-    </browser:pages>
     <browser:menus
         classes="
             DistributionSourcePackageActionMenu
@@ -784,6 +751,9 @@
             for="lp.registry.interfaces.person.IPerson"
             layer="canonical.launchpad.layers.BugsLayer"
             name="+bugs"/>
+        <adapter
+          factory="lp.registry.browser.person.PersonXHTMLRepresentation"
+          name="lazr.restful.EntryResource" />
         <browser:page
             name="+review"
             for="lp.registry.interfaces.person.IPerson"
@@ -794,7 +764,7 @@
             name="+reviewaccount"
             for="lp.registry.interfaces.person.IPerson"
             class="lp.registry.browser.person.PersonAccountAdministerView"
-            permission="launchpad.Admin"
+            permission="launchpad.Moderate"
             template="../templates/person-review.pt"/>
         <browser:page
             name="+claimteam"
@@ -872,9 +842,6 @@
             <browser:page
                 name="+sshkeys"
                 attribute="showSSHKeys"/>
-            <browser:page
-                name="+portlet-emails"
-                template="../templates/person-portlet-emails.pt"/>
             <browser:page
                 name="+portlet-contact-details"
                 template="../templates/person-portlet-contact-details.pt"/>
@@ -1273,6 +1240,11 @@
         classes="
             MilestoneSetNavigation
             MilestoneNavigation"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.milestone.IMilestone"
+        factory="lp.registry.browser.milestone.MilestoneBreadcrumb"
+        permission="zope.Public"/>
     <browser:defaultView
         for="lp.registry.interfaces.milestone.IMilestone"
         name="+index"/>
@@ -1295,9 +1267,6 @@
         <browser:page
             name="+productrelease-data"
             template="../templates/productrelease-portlet-data.pt"/>
-        <browser:page
-            name="+portlet-details"
-            template="../templates/milestone-portlet-details.pt"/>
     </browser:pages>
     <browser:page
         name="+pillar-table-row"
@@ -1344,6 +1313,7 @@
     <browser:menus
         classes="
             MilestoneContextMenu
+            MilestoneInlineNavigationMenu
             MilestoneOverviewMenu
             MilestoneOverviewNavigationMenu"
         module="lp.registry.browser.milestone"/>
@@ -1431,25 +1401,9 @@
             facet="overview"
             template="../templates/product-portlet-license-missing.pt"/>
         <browser:page
-            name="+portlet-series"
-            facet="overview"
-            template="../templates/product-portlet-series.pt"/>
-        <browser:page
-            name="+portlet-milestones"
-            facet="overview"
-            template="../templates/object-portlet-milestones.pt"/>
-        <browser:page
             name="+portlet-packages"
             facet="overview"
             template="../templates/product-portlet-packages.pt"/>
-        <browser:page
-            name="+portlet-releases"
-            facet="overview"
-            template="../templates/product-portlet-releases.pt"/>
-        <browser:page
-            name="+portlet-summary"
-            facet="overview"
-            template="../templates/object-portlet-summary.pt"/>
         <browser:page
             name="+purchase-subscription"
             template="../templates/product-purchase-subscription.pt"/>
@@ -1544,9 +1498,6 @@
             name="+index"
             template="../templates/products-index.pt"/>
         <browser:page
-            name="+portlet-details"
-            template="../templates/products-portlet-details.pt"/>
-        <browser:page
             name="+all"
             template="../templates/products-all.pt"/>
     </browser:pages>
@@ -1621,20 +1572,8 @@
             name="+macros"
             template="../templates/productseries-macros.pt"/>
         <browser:page
-            name="+portlet-details"
-            template="../templates/productseries-portlet-details.pt"/>
-        <browser:page
-            name="+portlet-summary"
-            template="../templates/object-portlet-summary.pt"/>
-        <browser:page
             name="+portlet-packages"
             template="../templates/productseries-portlet-packages.pt"/>
-        <browser:page
-            name="+portlet-releases"
-            template="../templates/productseries-portlet-releases.pt"/>
-        <browser:page
-            name="+portlet-milestones"
-            template="../templates/object-portlet-milestones.pt"/>
     </browser:pages>
     <browser:pages
         for="lp.registry.interfaces.productseries.IProductSeries"
@@ -1862,16 +1801,6 @@
         template="../templates/distribution-details.pt"/>
     <browser:pages
         for="lp.registry.interfaces.distribution.IDistribution"
-        permission="zope.Public">
-        <browser:page
-            name="+portlet-lifecycle"
-            template="../templates/distribution-portlet-lifecycle.pt"/>
-        <browser:page
-            name="+portlet-milestones"
-            template="../templates/object-portlet-milestones.pt"/>
-    </browser:pages>
-    <browser:pages
-        for="lp.registry.interfaces.distribution.IDistribution"
         permission="launchpad.Edit"
         facet="overview"
         class="canonical.launchpad.browser.ObjectReassignmentView">
@@ -2009,13 +1938,6 @@
     <browser:page
         for="lp.registry.interfaces.sourcepackage.ISourcePackage"
         permission="zope.Public"
-        class="lp.registry.browser.sourcepackage.SourcePackagePackaging"
-        name="+packaging"
-        facet="overview"
-        template="../templates/sourcepackage-packaging.pt"/>
-    <browser:page
-        for="lp.registry.interfaces.sourcepackage.ISourcePackage"
-        permission="zope.Public"
         class="lp.registry.browser.sourcepackage.SourcePackageHelpView"
         name="+gethelp"
         facet="answers"
@@ -2030,6 +1952,11 @@
         module="lp.registry.browser.productrelease"
         classes="
             ProductReleaseNavigation"/>
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
+        for="lp.registry.interfaces.productrelease.IProductRelease"
+        factory="lp.registry.browser.milestone.MilestoneBreadcrumb"
+        permission="zope.Public"/>
     <browser:url
         for="lp.registry.interfaces.productrelease.IProductRelease"
         path_expression="version"
@@ -2046,18 +1973,9 @@
         for="lp.registry.interfaces.productrelease.IProductRelease"
         facet="overview"
         permission="zope.Public">
-
-        <!-- ProductReleases Portlets -->
-
-        <browser:page
-            name="+portlet-details"
-            template="../templates/productrelease-portlet-details.pt"/>
         <browser:page
             name="+portlet-downloads"
             template="../templates/productrelease-portlet-downloads.pt"/>
-        <browser:page
-            name="+portlet-summary"
-            template="../templates/object-portlet-summary.pt"/>
     </browser:pages>
     <browser:page
         for="lp.registry.interfaces.productrelease.IProductRelease"
@@ -2193,4 +2111,22 @@
         facet="overview"
         template="../templates/sourcepackage-edit-packaging.pt"
         />
+
+    <browser:page
+        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
+        name="+subscribe"
+        permission="launchpad.AnyPerson"
+        facet="bugs"
+        class="lp.registry.browser.structuralsubscription.StructuralSubscriptionView"
+        template="../templates/structural-subscriptions-manage.pt"/>
+    <browser:page
+        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscriptionTarget"
+        name="+portlet-structural-subscribers"
+        facet="bugs"
+        permission="zope.Public"
+        template="../templates/structural-subscription-target-portlet-subscribers.pt"/>
+    <browser:url
+        for="lp.registry.interfaces.structuralsubscription.IStructuralSubscription"
+        path_expression="string:+subscription/${subscriber/name}"
+        attribute_to_parent="target"/>
 </configure>

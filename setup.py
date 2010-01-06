@@ -24,9 +24,11 @@ setup(
     # this list should only contain direct dependencies--things imported or
     # used in zcml.
     install_requires=[
+        'ampoule',
         'bzr',
         'chameleon.core',
         'chameleon.zpt',
+        'cssutils',
         'feedvalidator',
         'funkload',
         'launchpadlib',
@@ -37,12 +39,15 @@ setup(
         'lazr.lifecycle',
         'lazr.restful',
         'lazr.smtptest',
+        'lazr.testing',
         'lazr.uri',
         'lazr-js',
         'mechanize',
         'mocker',
         'oauth',
         'paramiko',
+        'python-memcached',
+        'pyasn1',
         'python-openid',
         'pytz',
         # This appears to be a broken indirect dependency from zope.security:
@@ -51,6 +56,7 @@ setup(
         'sourcecodegen',
         'storm',
         'transaction',
+        'Twisted', 
         'wadllib',
         'z3c.pt',
         'z3c.ptcompat',

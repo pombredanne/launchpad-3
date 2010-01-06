@@ -95,6 +95,7 @@ from datetime import datetime, timedelta
 from itertools import chain
 from operator import attrgetter, itemgetter
 from textwrap import dedent
+from storm.zope.interfaces import IResultSet
 
 from zope.error.interfaces import IErrorReportingUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
@@ -102,7 +103,7 @@ from zope.formlib.form import FormFields
 from zope.interface import classImplements, implements, Interface
 from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
-from zope.component import getUtility
+from zope.component import adapts, getUtility
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.schema import Bool, Choice, List, Text, TextLine
@@ -117,6 +118,7 @@ from canonical.config import config
 from lazr.delegates import delegates
 from lazr.config import as_timedelta
 from lazr.restful.interface import copy_field, use_template
+from lazr.restful.interfaces import IWebServiceClientRequest
 from canonical.lazr.utils import safe_hasattr
 from canonical.database.sqlbase import flush_database_updates
 
@@ -226,7 +228,8 @@ from canonical.launchpad.webapp.login import (
     logoutPerson, allowUnauthenticatedSession)
 from canonical.launchpad.webapp.menu import get_current_view
 from canonical.launchpad.webapp.publisher import LaunchpadView
-from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
+from canonical.launchpad.webapp.tales import (
+    DateTimeFormatterAPI, FormattersAPI, PersonFormatterAPI)
 from lazr.uri import URI, InvalidURIError
 
 from canonical.launchpad import _
@@ -548,7 +551,10 @@ class TeamMembershipSelfRenewalView(LaunchpadFormView):
     @action(_("Renew"), name="renew")
     def renew_action(self, action, data):
         member = self.context.person
-        member.renewTeamMembership(self.context.team)
+        # This if-statement prevents an exception if the user
+        # double clicks on the submit button.
+        if self.context.canBeRenewedByMember():
+            member.renewTeamMembership(self.context.team)
         self.request.response.addInfoNotification(
             _("Membership renewed until ${date}.", mapping=dict(
                     date=self.context.dateexpires.strftime('%Y-%m-%d'))))
@@ -897,6 +903,12 @@ class PersonMenuMixin(CommonMenuLinks):
         text = 'Administer'
         return Link(target, text, icon='edit')
 
+    @enabled_with_permission('launchpad.Moderate')
+    def administer_account(self):
+        target = '+reviewaccount'
+        text = 'Administer Account'
+        return Link(target, text, icon='edit')
+
 
 class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
 
@@ -906,9 +918,10 @@ class PersonOverviewMenu(ApplicationMenu, PersonMenuMixin):
              'editemailaddresses', 'editlanguages', 'editwikinames',
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys', 'editlocation', 'memberships',
-             'codesofconduct', 'karma', 'administer', 'projects',
-             'activate_ppa', 'maintained', 'view_ppa_subscriptions',
-             'ppa', 'oauth_tokens', 'related_software_summary']
+             'codesofconduct', 'karma', 'administer', 'administer_account',
+             'projects', 'activate_ppa', 'maintained',
+             'view_ppa_subscriptions', 'ppa', 'oauth_tokens',
+             'related_software_summary']
 
     def related_software_summary(self):
         target = '+related-software'
@@ -1683,8 +1696,6 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     """Administer an `IAccount` belonging to an `IPerson`."""
     schema = IAccount
     label = "Review person's account"
-    field_names = [
-        'displayname', 'password', 'status', 'status_comment']
     custom_widget(
         'status_comment', TextAreaWidget, height=5, width=60)
     custom_widget('password', PasswordChangeWidget)
@@ -1693,9 +1704,14 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         """See `LaunchpadEditFormView`."""
         super(PersonAccountAdministerView, self).__init__(context, request)
         # Only the IPerson can be traversed to, so it provides the IAccount.
+        # It also means that permissions are checked on IAccount, not IPerson.
         self.person = self.context
         from canonical.launchpad.interfaces import IMasterObject
         self.context = IMasterObject(self.context.account)
+        # Set fields to be displayed.
+        self.field_names = ['status', 'status_comment']
+        if self.viewed_by_admin:
+            self.field_names = ['displayname', 'password'] + self.field_names
 
     @property
     def is_viewing_person(self):
@@ -1705,6 +1721,11 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
         template. It needs to know what the context is.
         """
         return False
+
+    @property
+    def viewed_by_admin(self):
+        """Is the user a Launchpad admin?"""
+        return check_permission('launchpad.Admin', self.context)
 
     @property
     def email_addresses(self):
@@ -1718,6 +1739,10 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
     @property
     def next_url(self):
         """See `LaunchpadEditFormView`."""
+        is_suspended = self.context.status == AccountStatus.SUSPENDED
+        if is_suspended and not self.viewed_by_admin:
+            # Non-admins cannot see suspended persons.
+            return canonical_url(getUtility(IPersonSet))
         return canonical_url(self.person)
 
     @property
@@ -1735,6 +1760,9 @@ class PersonAccountAdministerView(LaunchpadEditFormView):
             # email is sent to the user.
             data['password'] = 'invalid'
             self.person.setPreferredEmail(None)
+            self.request.response.addNoticeNotification(
+                u'The account "%s" has been suspended.' % (
+                    self.context.displayname))
         if (data['status'] == AccountStatus.ACTIVE
             and self.context.status != AccountStatus.ACTIVE):
             self.request.response.addNoticeNotification(
@@ -2444,7 +2472,8 @@ class PersonLanguagesView(LaunchpadFormView):
     def getRedirectionURL(self):
         request = self.request
         referrer = request.getHeader('referer')
-        if referrer and referrer.startswith(request.getApplicationURL()):
+        if referrer and (referrer.startswith(request.getApplicationURL()) or
+                         referrer.find('+languages') != -1):
             return referrer
         else:
             return ''
@@ -2456,10 +2485,20 @@ class PersonLanguagesView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        """Redirect to this url after successfully processing the form."""
+        """Redirect to the +languages page if request originated there."""
+        redirection_url = self.request.get('redirection_url')
+        if redirection_url:
+            return redirection_url
         return canonical_url(self.context)
 
-    cancel_url = next_url
+    @property
+    def cancel_url(self):
+        """Redirect to the +languages page if request originated there."""
+        redirection_url = self.getRedirectionURL()
+        if redirection_url:
+            return redirection_url
+        return canonical_url(self.context)
+
 
     @action(_("Save"), name="save")
     def submitLanguages(self, action, data):
@@ -2499,9 +2538,6 @@ class PersonLanguagesView(LaunchpadFormView):
         if len(messages) > 0:
             message = structured('<br />'.join(messages))
             self.request.response.addInfoNotification(message)
-        redirection_url = self.request.get('redirection_url')
-        if redirection_url:
-            self.request.response.redirect(redirection_url)
 
     @property
     def answers_url(self):
@@ -2652,6 +2688,38 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
             check_permission('launchpad.Edit', self.context))
 
     @cachedproperty
+    def is_probationary_or_invalid_user(self):
+        """True when the user is not active or does not have karma.
+
+        Some content should not be rendered when the context is not a an
+        established user. For example, probationary and invalid user pages
+        must not be indexed by search engines and their narrative linkified.
+        """
+        user = self.context
+        if user.isTeam():
+            # Teams are always valid and do not have probationary rules.
+            return False
+        else:
+            return user.karma == 0 or not user.is_valid_person
+
+    @cachedproperty
+    def homepage_content(self):
+        """The user's HTML formatted homepage content.
+
+        The markup is simply escaped for probationary or invalid users.
+        The homepage content is reformatted as HTML and linkified if the user
+        is active.
+        """
+        content = self.context.homepage_content
+        if content is None:
+            return None
+        elif self.is_probationary_or_invalid_user:
+            return cgi.escape(content)
+        else:
+            formatter = FormattersAPI
+            return formatter(content).text_to_html()
+
+    @cachedproperty
     def recently_approved_members(self):
         members = self.context.getMembersByStatus(
             TeamMembershipStatus.APPROVED,
@@ -2666,11 +2734,47 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         return members[:5]
 
     @cachedproperty
-    def has_recent_approved_or_proposed_members(self):
-        """Does the team have recently approved or proposed members?"""
-        approved = self.recently_approved_members.count() > 0
-        proposed = self.recently_proposed_members.count() > 0
-        return approved or proposed
+    def recently_invited_members(self):
+        members = self.context.getMembersByStatus(
+            TeamMembershipStatus.INVITED,
+            orderBy='-TeamMembership.date_proposed')
+        return members[:5]
+
+    @property
+    def recently_approved_hidden(self):
+        """Optionally hide the div.
+
+        The AJAX on the page needs the elements to be present
+        but hidden in case it adds a member to the list.
+        """
+        if IResultSet(self.recently_approved_members).is_empty():
+            return 'unseen'
+        else:
+            return ''
+
+    @property
+    def recently_proposed_hidden(self):
+        """Optionally hide the div.
+
+        The AJAX on the page needs the elements to be present
+        but hidden in case it adds a member to the list.
+        """
+        if IResultSet(self.recently_proposed_members).is_empty():
+            return 'unseen'
+        else:
+            return ''
+
+    @property
+    def recently_invited_hidden(self):
+        """Optionally hide the div.
+
+        The AJAX on the page needs the elements to be present
+        but hidden in case it adds a member to the list.
+        """
+        if IResultSet(self.recently_invited_members).is_empty():
+            return 'unseen'
+        else:
+            return ''
 
     @cachedproperty
     def openpolls(self):
@@ -2857,13 +2961,15 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         else:
             raise AssertionError('Unknown group to contact.')
 
+    @property
     def should_show_polls_portlet(self):
         menu = TeamOverviewMenu(self.context)
         return (
-            self.hasCurrentPolls() or self.closedpolls
+            self.has_current_polls or self.closedpolls
             or menu.add_poll().enabled)
 
-    def hasCurrentPolls(self):
+    @property
+    def has_current_polls(self):
         """Return True if this team has any non-closed polls."""
         assert self.context.isTeam()
         return bool(self.openpolls) or bool(self.notyetopenedpolls)
@@ -2998,15 +3104,15 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         """Return True if "Personal package archives" is to be shown.
 
         We display it if:
-        person has any public PPA or current_user has lp.edit
+        current_user may view at least one PPA or current_user has lp.edit
         """
         # If the current user has edit permission, show the section.
         if check_permission('launchpad.Edit', self.context):
             return True
 
-        # If the current user has any public PPA, show the section.
+        # If the current user can view any PPA, show the section.
         for ppa in self.context.ppas:
-            if not ppa.private:
+            if check_permission('launchpad.View', ppa):
                 return True
 
         return False
@@ -4112,9 +4218,13 @@ class TeamAddMyTeamsView(LaunchpadFormView):
         for team in self.user.getAdministratedTeams():
             if team == self.context:
                 continue
+            elif team.visibility != PersonVisibility.PUBLIC:
+                continue
             elif team in self.context.activemembers:
+                # The team is already a member of the context object.
                 continue
             elif self.context.hasParticipationEntryFor(team):
+                # The context object is a member/submember of the team.
                 continue
             candidates.append(team)
         return candidates
@@ -4138,9 +4248,14 @@ class TeamAddMyTeamsView(LaunchpadFormView):
     def continue_action(self, action, data):
         """Make the selected teams join this team."""
         context = self.context
+        is_admin = check_permission('launchpad.Admin', context)
         for team in data['teams']:
-            team.join(context, requester=self.user)
-        if context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED:
+            if is_admin:
+                context.addMember(team, reviewer=self.user)
+            else:
+                team.join(context, requester=self.user)
+        if (context.subscriptionpolicy == TeamSubscriptionPolicy.MODERATED
+            and not is_admin):
             msg = 'proposed to this team.'
         else:
             msg = 'added to this team.'
@@ -5784,7 +5899,8 @@ class PersonIndexMenu(NavigationMenu, PersonMenuMixin):
     usedfor = IPersonIndexMenu
     facet = 'overview'
     title = 'Change person'
-    links = ('edit', 'administer', 'branding', 'editpassword')
+    links = ('edit', 'administer', 'administer_account',
+             'branding', 'editpassword')
 
 
 class ITeamIndexMenu(Interface):
@@ -5809,8 +5925,7 @@ class TeamIndexMenu(TeamNavigationMenuBase):
     usedfor = ITeamIndexMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('edit', 'join', 'add_member', 'add_my_teams',
-             'leave')
+    links = ('edit', 'join', 'add_my_teams', 'leave')
 
 
 class TeamEditMenu(TeamNavigationMenuBase):
@@ -5826,3 +5941,16 @@ class TeamEditMenu(TeamNavigationMenuBase):
 classImplements(TeamIndexView, ITeamIndexMenu)
 classImplements(TeamEditView, ITeamEditMenu)
 classImplements(PersonIndexView, IPersonIndexMenu)
+
+
+class PersonXHTMLRepresentation:
+    adapts(IPerson, IWebServiceClientRequest)
+    implements(Interface)
+
+    def __init__(self, person, request):
+        self.person = person
+        self.request = request
+
+    def __call__(self):
+        """Render `Person` as XHTML using the webservice."""
+        return PersonFormatterAPI(self.person).link(None)

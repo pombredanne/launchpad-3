@@ -486,7 +486,7 @@ class IQuestionLinkFAQForm(Interface):
     message = Text(
         title=_('Answer Message'),
         description=_(
-            'Enter a message that will be added as the question answer. '
+            'Enter a comment that will be added as the question comments. '
             'The title of the FAQ will be automatically appended to this '
             'message.'),
         required=True)

@@ -50,7 +50,7 @@ from zope.interface.exceptions import Invalid
 from zope.interface.interface import invariant
 from zope.component import getUtility
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
-
+from lazr.lifecycle.snapshot import doNotSnapshot
 from lazr.restful.interface import copy_field
 from lazr.restful.declarations import (
     LAZR_WEBSERVICE_EXPORTED, REQUEST_USER, call_with,
@@ -65,10 +65,10 @@ from canonical.launchpad import _
 
 from canonical.database.sqlbase import block_implicit_flushes
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
-    MugshotImageUpload, ParticipatingPersonChoice, PasswordField,
-    PublicPersonChoice, StrippedTextLine, is_private_membership,
-    is_valid_public_person)
+    BlacklistableContentNameField, IconImageUpload,
+    is_private_membership_person, is_public_person, LogoImageUpload,
+    MugshotImageUpload, PasswordField, PersonChoice, PublicPersonChoice,
+    StrippedTextLine)
 from canonical.launchpad.interfaces.account import AccountStatus, IAccount
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.app.interfaces.headings import IRootContext
@@ -126,14 +126,14 @@ def validate_person(obj, attr, value, validate_func):
 def validate_public_person(obj, attr, value):
     """Validate that the person identified by value is public."""
     def validate(person):
-        return not is_valid_public_person(person)
+        return not is_public_person(person)
 
     return validate_person(obj, attr, value, validate)
 
 
 def validate_person_not_private_membership(obj, attr, value):
     """Validate that the person (value) is not a private membership team."""
-    return validate_person(obj, attr, value, is_private_membership)
+    return validate_person(obj, attr, value, is_private_membership_person)
 
 
 class PersonalStanding(DBEnumeratedType):
@@ -333,7 +333,7 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
     MODERATED = DBItem(1, """
         Moderated Team
 
-        All subscriptions for this team are subject to approval by one of
+        All subscriptions for this team are subject to approval by one of 
         the team's administrators.
         """)
 
@@ -366,17 +366,17 @@ class PersonVisibility(DBEnumeratedType):
     PRIVATE_MEMBERSHIP = DBItem(20, """
         Private Membership
 
-        Only Launchpad admins and team members can view the
-        membership list for this team.  The team is severely restricted in the
+        Only Launchpad admins and team members can view the 
+        membership list for this team. The team is severely restricted in the 
         roles it can assume.
         """)
 
     PRIVATE = DBItem(30, """
         Private
 
-        Only Launchpad admins and team members can view the membership list
-        for this team or its name.  The team roles are restricted to
-        subscribing to bugs, being bug supervisor, owning code branches, and
+        Only Launchpad admins and team members can view the membership list 
+        for this team or its name.  The team roles are restricted to 
+        subscribing to bugs, being bug supervisor, owning code branches, and 
         having a PPA.
         """)
 
@@ -966,13 +966,16 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
         """
 
     def assignKarma(action_name, product=None, distribution=None,
-                    sourcepackagename=None):
+                    sourcepackagename=None, datecreated=None):
         """Assign karma for the action named <action_name> to this person.
 
         This karma will be associated with the given product or distribution.
         If a distribution is given, then product must be None and an optional
         sourcepackagename may also be given. If a product is given, then
         distribution and sourcepackagename must be None.
+
+        If a datecreated is specified, the karma will be created with that
+        date.  This is how historic karma events can be created.
         """
 
     def latestKarma(quantity=25):
@@ -1076,7 +1079,7 @@ class IPersonPublic(IHasBranches, IHasSpecifications, IHasMentoringOffers,
 
         This includes teams for which the person is the owner, a direct
         member with admin privilege, or member of a team with such
-        privileges.
+        privileges.  It excludes teams which have been merged.
         """
 
     def getTeamAdminsEmailAddresses():
@@ -1198,75 +1201,92 @@ class IPersonViewRestricted(Interface):
     # activemembers.value_type.schema will be set to IPerson once
     # IPerson is defined.
     activemembers = exported(
-        CollectionField(
-            title=_("List of members with ADMIN or APPROVED status"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("List of members with ADMIN or APPROVED status"),
+                value_type=Reference(schema=Interface))),
         exported_as='members')
     adminmembers = exported(
-        CollectionField(
-            title=_("List of this team's admins."),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("List of this team's admins."),
+                value_type=Reference(schema=Interface))),
         exported_as='admins')
     all_member_count = Attribute(
         "The total number of real people who are members of this team, "
         "including subteams.")
     allmembers = exported(
-        CollectionField(
-            title=_("All participants of this team."),
-            description=_(
-                "List of all direct and indirect people and teams who, one "
-                "way or another, are a part of this team. If you want a "
-                "method to check if a given person is a member of a team, "
-                "you should probably look at IPerson.inTeam()."),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All participants of this team."),
+                description=_(
+                    "List of all direct and indirect people and teams who, "
+                    "one way or another, are a part of this team. If you "
+                    "want a method to check if a given person is a member "
+                    "of a team, you should probably look at "
+                    "IPerson.inTeam()."),
+                value_type=Reference(schema=Interface))),
         exported_as='participants')
-    approvedmembers = Attribute("List of members with APPROVED status")
+    approvedmembers = doNotSnapshot(
+        Attribute("List of members with APPROVED status"))
     deactivated_member_count = Attribute("Number of deactivated members")
-    deactivatedmembers = Attribute("List of members with DEACTIVATED status")
     deactivatedmembers = exported(
-        CollectionField(
-            title=_(
-                "All members whose membership is in the DEACTIVATED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_(
+                    "All members whose membership is in the "
+                    "DEACTIVATED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='deactivated_members')
     expired_member_count = Attribute("Number of EXPIRED members.")
     expiredmembers = exported(
-        CollectionField(
-            title=_("All members whose membership is in the EXPIRED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is in the "
+                        "EXPIRED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='expired_members')
-    inactivemembers = Attribute(
-        "List of members with EXPIRED or DEACTIVATED status")
+    inactivemembers = doNotSnapshot(
+        Attribute(
+            "List of members with EXPIRED or DEACTIVATED status"))
     inactive_member_count = Attribute("Number of inactive members")
     invited_members = exported(
-        CollectionField(
-            title=_("All members whose membership is in the INVITED state"),
-            value_type=Reference(schema=Interface)))
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is "
+                        "in the INVITED state"),
+                value_type=Reference(schema=Interface))))
+
     invited_member_count = Attribute("Number of members with INVITED status")
     member_memberships = exported(
-        CollectionField(
-            title=_("Active TeamMemberships for this object's members."),
-            description=_(
-                "Active TeamMemberships are the ones with the ADMIN or "
-                "APPROVED status.  The results are ordered using "
-                "Person.sortingColumns."),
-            readonly=True, required=False,
-            value_type=Reference(schema=ITeamMembership)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("Active TeamMemberships for this object's members."),
+                description=_(
+                    "Active TeamMemberships are the ones with the ADMIN or "
+                    "APPROVED status.  The results are ordered using "
+                    "Person.sortingColumns."),
+                readonly=True, required=False,
+                value_type=Reference(schema=ITeamMembership))),
         exported_as='members_details')
-    pendingmembers = Attribute(
-        "List of members with INVITED or PROPOSED status")
+    pendingmembers = doNotSnapshot(
+        Attribute(
+            "List of members with INVITED or PROPOSED status"))
     proposedmembers = exported(
-        CollectionField(
-            title=_("All members whose membership is in the PROPOSED state"),
-            value_type=Reference(schema=Interface)),
+        doNotSnapshot(
+            CollectionField(
+                title=_("All members whose membership is in the "
+                        "PROPOSED state"),
+                value_type=Reference(schema=Interface))),
         exported_as='proposed_members')
     proposed_member_count = Attribute("Number of PROPOSED members")
 
     mapped_participants_count = Attribute(
         "The number of mapped participants")
-    unmapped_participants = CollectionField(
-        title=_("List of participants with no coordinates recorded."),
-        value_type=Reference(schema=Interface))
+    unmapped_participants = doNotSnapshot(
+        CollectionField(
+            title=_("List of participants with no coordinates recorded."),
+            value_type=Reference(schema=Interface)))
     unmapped_participants_count = Attribute(
         "The number of unmapped participants")
 
@@ -1389,23 +1409,33 @@ class IPersonEditRestricted(Interface):
                   may_subscribe_to_list=True):
         """Add the given person as a member of this team.
 
-        If the given person is already a member of this team we'll simply
-        change its membership status. Otherwise a new TeamMembership is
-        created with the given status.
+        :param person: If the given person is already a member of this
+            team we'll simply change its membership status. Otherwise a new
+            TeamMembership is created with the given status.
 
-        If the person is actually a team and force_team_add is False, the
-        team will actually be invited to join this one. Otherwise the team
-        is added as if it were a person.
+        :param reviewer: The user who made the given person a member of this
+            team.
 
-        If the person is not a team, and may_subscribe_to_list
-        is True, then the person may be subscribed to the team's
-        mailing list, depending on the list status and the person's
-        auto-subscribe settings.
+        :param comment: String that will be assigned to the
+            proponent_comment, reviwer_comment, or acknowledger comment.
 
-        The given status must be either Approved, Proposed or Admin.
+        :param status: `TeamMembershipStatus` value must be either
+            Approved, Proposed or Admin.
 
-        The reviewer is the user who made the given person a member of this
-        team.
+        :param force_team_add: If the person is actually a team and
+            force_team_add is False, the team will actually be invited to
+            join this one. Otherwise the team is added as if it were a
+            person.
+
+        :param may_subscribe_to_list: If the person is not a team, and
+            may_subscribe_to_list is True, then the person may be subscribed
+            to the team's mailing list, depending on the list status and the
+            person's auto-subscribe settings.
+
+        :return: A tuple containing a boolean indicating when the
+            membership status changed and the current `TeamMembershipStatus`.
+            This depends on the desired status passed as an argument, the
+            subscription policy and the user's priveleges.
         """
 
     def deactivateAllMembers(comment, reviewer):
@@ -1501,8 +1531,7 @@ class IPerson(IPersonPublic, IPersonViewRestricted, IPersonEditRestricted,
 
 # Set the schemas to the newly defined interface for classes that deferred
 # doing so when defined.
-PublicPersonChoice.schema = IPerson
-ParticipatingPersonChoice.schema = IPerson
+PersonChoice.schema = IPerson
 
 
 class INewPersonForm(IPerson):
@@ -1636,7 +1665,7 @@ class IPersonSet(Interface):
     def getTopContributors(limit=50):
         """Return the top contributors in Launchpad, up to the given limit."""
 
-    def isNameBlacklisted(self, name):
+    def isNameBlacklisted(name):
         """Is the given name blacklisted by Launchpad Administrators?"""
 
     def createPersonAndEmail(
@@ -1784,11 +1813,18 @@ class IPersonSet(Interface):
         """
 
     @operation_parameters(
-        text=TextLine(title=_("Search text"), default=u""))
+        text=TextLine(
+            title=_("Search text"), default=u""),
+        created_after=Datetime(
+            title=_("Created after"), required=False),
+        created_before=Datetime(
+            title=_("Created before"), required=False),
+        )
     @operation_returns_collection_of(IPerson)
     @export_read_operation()
     def findPerson(text="", exclude_inactive_accounts=True,
-                   must_have_email=False):
+                   must_have_email=False,
+                   created_after=None, created_before=None):
         """Return all non-merged Persons with at least one email address whose
         name, displayname or email address match <text>.
 
@@ -1808,6 +1844,9 @@ class IPersonSet(Interface):
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
         address.
+        
+        If created_before or created_after are not None, they are used to
+        restrict the search to the dates provided.
         """
 
     @operation_parameters(
@@ -1829,7 +1868,7 @@ class IPersonSet(Interface):
     def latest_teams(limit=5):
         """Return the latest teams registered, up to the limit specified."""
 
-    def merge(from_person, to_person, deactivate_members=False, user=None):
+    def merge(from_person, to_person):
         """Merge a person/team into another.
 
         The old person/team (from_person) will be left as an atavism.
@@ -1848,7 +1887,7 @@ class IPersonSet(Interface):
         develops. -- StuartBishop 20050812
         """
 
-    def getValidPersons(self, persons):
+    def getValidPersons(persons):
         """Get all the Persons that are valid.
 
         This method is more effective than looking at

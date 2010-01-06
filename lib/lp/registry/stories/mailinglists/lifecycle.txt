@@ -1,3 +1,4 @@
+======================
 Mailing list lifecycle
 ======================
 
@@ -6,7 +7,7 @@ associated with exactly one team.
 
 
 Hosted mailing list
--------------------
+===================
 
 The owner of Landscape Developers applies for a mailing list.
 
@@ -17,44 +18,24 @@ The owner of Landscape Developers applies for a mailing list.
     >>> print backslashreplace(browser.title)
     Mailing list configuration...
 
+He thinks for a second whether his mailing list is for Ubuntu or not.
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'ubuntu-notice'))
+    Ubuntu mailing lists should not be created here. Create them
+    at lists.ubuntu.com instead.
+    >>> print browser.getLink('lists.ubuntu.com')
+    <Link text='lists.ubuntu.com' url='https://lists.ubuntu.com'>
+
     >>> browser.getControl('Apply for Mailing List').click()
-    >>> browser.title
-    'Landscape Developers in Launchpad'
+    >>> print browser.title
+    Landscape Developers in Launchpad
     >>> for msg in get_feedback_messages(browser.contents):
     ...     print msg
     Mailing list requested and queued for approval.
 
-Before the mailing list is created, the application must be approved.
-
-    >>> browser.getLink(url='+mailinglist').click()
-    >>> print find_tag_by_id(browser.contents,
-    ...                      'mailing_list_pending_approval').p.string
-    The application for this team's mailing list is pending approval.
-
 Once the mailing list is requested, the button to request its activation is
 not shown anymore.
 
-    >>> browser.getControl('Apply for Mailing List')
-    Traceback (most recent call last):
-    ...
-    LookupError: ...
-
-If the application is declined, the button won't be shown either. Instead,
-we'll ask the user to contact a Launchpad administrator.
-
-    # Approving mailing lists is not yet available through the web.
-    >>> import transaction
-    >>> from canonical.launchpad.ftests import login, logout
-    >>> from lp.registry.tests import mailinglists_helper
-    >>> from canonical.launchpad.interfaces import MailingListStatus
-    >>> login('foo.bar@canonical.com')
-    >>> mailinglists_helper.review_list(
-    ...     'landscape-developers', MailingListStatus.DECLINED)
-    <MailingList for team "landscape-developers"; status=DECLINED at ...>
-    >>> logout()
-    >>> transaction.commit()
-
-    >>> browser.reload()
     >>> browser.getControl('Apply for Mailing List')
     Traceback (most recent call last):
     ...
@@ -68,49 +49,6 @@ we'll ask the user to contact a Launchpad administrator.
     ...     else:
     ...         return ""
 
-    >>> print mailing_list_status_message(browser.contents)
-    The application for this team's mailing list has been declined. Please
-    contact a Launchpad administrator for further assistance.
-
-    # Here we manually change its status back to REGISTERED so that we can
-    # move on testing as if it wasn't declined.  We don't use
-    # getUtility(IMailingListSet) here because we want non-security-proxied
-    # objects so that we can call syncUpdate on them and change their status
-    # at our discretion.
-    >>> from zope.component import getUtility
-    >>> from lp.registry.model.mailinglist import MailingListSet
-    >>> list_set = MailingListSet()
-    >>> mailing_list = list_set.get('landscape-developers')
-    >>> mailing_list.status = MailingListStatus.REGISTERED
-    >>> transaction.commit()
-
-If a team's mailing list is declined, there is no link to its non-existent
-archive.
-
-    >>> browser.open('http://launchpad.dev/~landscape-developers')
-    >>> print find_tag_by_id(browser.contents, 'mailing-list-archive')
-    None
-
-Any time before the mailing list is approved, the application can be
-cancelled (and then re-requested afterwards).
-
-    >>> browser.open(
-    ...     'http://launchpad.dev/~landscape-developers/+mailinglist')
-    >>> browser.getControl('Cancel Application').click()
-    >>> browser.title
-    'Landscape Developers in Launchpad'
-    >>> for msg in get_feedback_messages(browser.contents):
-    ...     print msg
-    Mailing list application cancelled.
-    >>> print list_set.get('landscape-developers')
-    None
-    >>> transaction.commit()
-
-    >>> browser.getLink(url='+mailinglist').click()
-    >>> browser.getControl('Apply for Mailing List').click()
-    >>> browser.title
-    'Landscape Developers in Launchpad'
-
 Just because a mailing list has been applied for does not mean it has an
 archive link yet.
 
@@ -118,14 +56,7 @@ archive link yet.
     >>> print find_tag_by_id(browser.contents, 'mailing-list-archive')
     None
 
-A mailing list expert or Launchpad administrator can approve the application.
-
-    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
-    >>> admin_browser.getControl(name='field.landscape-developers').value = [
-    ...     'approve']
-    >>> admin_browser.getControl('Submit').click()
-
-Even after the list has been approved, it still cannot be used as the contact
+Even after the list has been requested, it still cannot be used as the contact
 address until Mailman has acknowledged successful creation.
 
     >>> browser.reload()
@@ -146,6 +77,7 @@ address until Mailman has acknowledged successful creation.
 
 Mailman eventually wakes up and creates the mailing list.
 
+    >>> from lp.registry.tests import mailinglists_helper
     >>> def act():
     ...     login('foo.bar@canonical.com')
     ...     mailinglists_helper.mailman.act()
@@ -202,8 +134,8 @@ address.
 
 The mailing list's configuration screen is also now available.
 
-    >>> browser.getLink(url='+mailinglist').url
-    'http://launchpad.dev/~landscape-developers/+mailinglist'
+    >>> print browser.getLink(url='+mailinglist').url
+    http://launchpad.dev/~landscape-developers/+mailinglist
 
 Although of course, it's not available to someone with no permission to
 manipulate the list.
@@ -231,8 +163,8 @@ The message contains a link to the contact address screen.
     >>> browser.getLink('set it').click()
     >>> browser.getControl('The Launchpad mailing list').selected = True
     >>> browser.getControl('Change').click()
-    >>> browser.title
-    'Landscape Developers in Launchpad'
+    >>> print browser.title
+    Landscape Developers in Launchpad
 
 When the mailing list is the team's contact address, the message does
 not show up.
@@ -253,7 +185,7 @@ The contact address is now set to the mailing list address.
 
 
 Deactivating and reactivating lists
------------------------------------
+===================================
 
 An active mailing list can be deactivated. If the deactivated mailing
 list was the team contact method, the contact method will be changed
@@ -368,7 +300,7 @@ Admins who are not members of the team can see the link too.
 
 
 Purge permissions
------------------
+=================
 
 A mailing list may be 'purged' when it is in one of several safe states.
 By 'safe' we mean that there are no artifacts of the mailing list on the
@@ -383,6 +315,7 @@ to delete the archives of an INACTIVE list, this must be done manually.
     >>> logout()
 
     >>> from lp.registry.interfaces.mailinglist import IMailingListSet
+    >>> from zope.component import getUtility
     >>> def print_list_state(team_name='aardvarks'):
     ...     login('foo.bar@canonical.com')
     ...     mailing_list = getUtility(IMailingListSet).get(team_name)
@@ -393,10 +326,14 @@ The team owner cannot purge a mailing list.
 
     >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
     >>> user_browser.getControl('Apply for Mailing List').click()
-    >>> user_browser.title
-    'Aardvarks in Launchpad'
+    >>> print user_browser.title
+    Aardvarks in Launchpad
+    >>> act()
+    >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
+    >>> user_browser.getControl('Deactivate this Mailing List').click()
+    >>> act()
     >>> print_list_state()
-    REGISTERED
+    INACTIVE
 
     >>> def purge_text(browser):
     ...     tag = find_tag_by_id(browser.contents, 'mailing_list_purge')
@@ -408,7 +345,7 @@ The team owner cannot purge a mailing list.
     >>> print purge_text(user_browser)
     None
 
-But a Launchpad administrator can purge a registered list.
+But a Launchpad administrator can purge a list.
 
     >>> admin_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
     >>> print purge_text(admin_browser)
@@ -426,26 +363,27 @@ purge mailing lists.
     >>> person_set = getUtility(IPersonSet)
     >>> test = person_set.getByName('name12')
     >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-    >>> experts.addMember(test, reviewer=experts.teamowner)
+    >>> ignored = experts.addMember(test, reviewer=experts.teamowner)
     >>> logout()
     >>> transaction.commit()
 
 Sample Person, who is now a mailing list expert but not a Launchpad
-administrator, can purge a registered list.
+administrator, can purge a list.
 
     >>> expert_browser = setupBrowser('Basic test@canonical.com:test')
     >>> expert_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
     >>> print purge_text(expert_browser)
     You can purge this mailing list...
 
-Nobody can purge an approved or active mailing list.
+Nobody can purge an active mailing list.
 
-    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
-    >>> admin_browser.getControl(name='field.aardvarks').value = ['approve']
-    >>> admin_browser.getControl('Submit').click()
+    >>> user_browser.open('http://launchpad.dev/~aardvarks/+mailinglist')
+    >>> user_browser.getControl('Reactivate this Mailing List').click()
+    >>> act()
     >>> print_list_state()
-    APPROVED
+    ACTIVE
 
+    >>> admin_browser.reload()
     >>> expert_browser.reload()
     >>> print find_tag_by_id(admin_browser.contents, 'mailing_list_purge')
     None
@@ -484,6 +422,7 @@ be purged.
     ...         expert_browser.open(url)
     ...         print purge_text(expert_browser)
 
+    >>> from lp.registry.interfaces.mailinglist import MailingListStatus
     >>> show_states(MailingListStatus.CONSTRUCTING,
     ...             MailingListStatus.MODIFIED,
     ...             MailingListStatus.UPDATING,
@@ -555,7 +494,7 @@ purged.
 
 
 Actions on purged mailing lists
--------------------------------
+===============================
 
 A mailing list expert purges the inactive list.
 
@@ -575,15 +514,8 @@ So now the team owner can re-register the mailing list.
     >>> browser.getControl('Apply for Mailing List').click()
     >>> print browser.title
     Aardvarks in Launchpad
-
-Once the Launchpad administrator approves the new mailing list, a new instance
-of it appears.
-
-    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
-    >>> admin_browser.getControl(name='field.aardvarks').value = ['approve']
-    >>> admin_browser.getControl('Submit').click()
     >>> act()
-    >>> browser.open(browser.url) # A `reload` would resubmit.
+    >>> browser.open('http://launchpad.dev/~aardvarks')
     >>> browser.getLink('View archive')
     <Link text='View archive'
           url='http://lists.launchpad.dev/aardvarks'>
@@ -617,9 +549,6 @@ And of course, a mailing list for the newly renamed team can be created.
     >>> user_browser.getControl('Apply for Mailing List').click()
     >>> print user_browser.title
     Antelopes in Launchpad
-    >>> admin_browser.open('http://launchpad.dev/+mailinglists')
-    >>> admin_browser.getControl(name='field.antelopes').value = ['approve']
-    >>> admin_browser.getControl('Submit').click()
     >>> act()
     >>> user_browser.open(user_browser.url) # A `reload` would resubmit.
     >>> user_browser.getLink('View archive')

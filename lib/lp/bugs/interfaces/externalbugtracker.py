@@ -43,35 +43,56 @@ class IExternalBugTracker(Interface):
         """Return the `ExternalBugTracker` instance to use.
 
         Probe the remote bug tracker and choose the right
-        `ExternalBugTracker` instance to use further on.
+        `ExternalBugTracker` instance to use further on. In most cases
+        this will simply return `self`.
         """
 
     def getCurrentDBTime():
         """Return the current time of the bug tracker's DB server.
 
         The current time will be returned as a timezone-aware datetime.
+
+        :return: `datetime.datetime` with timezone.
         """
 
     def getModifiedRemoteBugs(remote_bug_ids, last_checked):
         """Return the bug ids that have been modified.
 
         Return all ids if the modified bugs can't be determined.
+
+        :param remote_bug_ids: The remote bug IDs to be checked.
+        :type remote_bug_ids: `list` of strings
+
+        :param last_checked: The date and time since when a bug should
+            be considered modified.
+        :param last_checked: `datetime.datetime`
         """
 
     def initializeRemoteBugDB(remote_bug_ids):
-        """Do any initialization before each bug watch is updated."""
+        """Do any initialization before each bug watch is updated.
+
+        :param remote_bug_ids: The remote bug IDs that to be checked.
+        :type remote_bug_ids: `list` of strings
+        """
 
     def convertRemoteStatus(remote_status):
-        """Convert a remote status string to a BugTaskStatus item."""
+        """Convert a remote status string to a BugTaskStatus item.
+
+        :return: a member of `BugTaskStatus`
+        """
 
     def convertRemoteImportance(remote_importance):
-        """Convert a remote importance to a BugTaskImportance item."""
+        """Convert a remote importance to a BugTaskImportance item.
+
+        :return: a member of `BugTaskImportance`
+        """
 
     def getRemoteProduct(remote_bug):
         """Return the remote product for a given remote bug.
 
         :param remote_bug: The ID of the remote bug for which to return
             the remote product.
+        :type remote_bug: string
         :return: The remote product for `remote_bug`. If no remote
             product is recorded for `remote_bug` return None.
         :raise BugNotFound: If `remote_bug` doesn't exist for the bug
@@ -123,16 +144,19 @@ class ISupportsBugImport(IExternalBugTracker):
     def getBugReporter(remote_bug):
         """Return the person who submitted the given bug.
 
-        A tuple of (display name, email) is returned.
+        :return: `tuple` of (display name, email)
         """
 
     def getBugSummaryAndDescription(remote_bug):
-        """Return a tuple of summary and description for the given bug."""
+        """Return the summary and description for the given bug.
+
+        :return: `tuple` of (summary, description)
+        """
 
     def getBugTargetName(remote_bug):
         """Return the specific target name of the bug.
 
-        Return None if no target can be determined.
+        :return: string, or `None` if no target can be determined
         """
 
 

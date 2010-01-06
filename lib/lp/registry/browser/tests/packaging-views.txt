@@ -274,6 +274,40 @@ contains the package and field for form actions.
         <input type="hidden" name="field.packaging" .../>
     trunk
 
+The view provides the distro_packaging property that is a list of
+dictionaries for the distributions and their packaging.  The list is
+sorted by distribution with Ubuntu first and the rest in alphabetic
+order.
+
+    >>> form = {
+    ...     'field.distroseries': 'redhat/7.0',
+    ...     'field.sourcepackagename': 'hot',
+    ...     'field.packaging': 'Primary Project',
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+
+    >>> view = create_initialized_view(
+    ...     productseries, '+addpackage', form=form)
+    >>> view.errors
+    []
+    >>> form = {
+    ...     'field.distroseries': 'debian/sarge',
+    ...     'field.sourcepackagename': 'hot',
+    ...     'field.packaging': 'Primary Project',
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+
+    >>> view = create_initialized_view(
+    ...     productseries, '+addpackage', form=form)
+    >>> view.errors
+    []
+    >>> view = create_initialized_view(product, name='+packages')
+    >>> for distro_dict in view.distro_packaging:
+    ...     print distro_dict['distribution'].name
+    ubuntu
+    debian
+    redhat
+
 The +packages named view descends from PackagingDeleteView to provide remove
 link actions for the product's linked packages.
 
@@ -284,6 +318,14 @@ link actions for the product's linked packages.
 
 A packaging link can be deleted if the owner believes it is an error. The
 package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
+
+    >>> view = create_initialized_view(product, name='+packages')
+    >>> for package in view.all_packaging:
+    ...     print package.distroseries.name, package.productseries.name
+    sarge hotter
+    7.0 hotter
+    grumpy hotter
+    hoary hotter
 
     >>> [hoary_package] = [package for package in view.all_packaging
     ...                     if package.distroseries.name == 'hoary']
@@ -296,4 +338,55 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     []
     >>> for package in view.all_packaging:
     ...     print package.distroseries.name, package.productseries.name
+    sarge hotter
+    7.0 hotter
     grumpy hotter
+
+
+Distro series +packaging view
+-----------------------------
+
+The DistroSeriesPackagesView shows the packages in a distro series that
+are linked to upstream projects.
+
+    >>> view = create_initialized_view(hoary, name='+packaging')
+    >>> print view.label
+    Mapping series packages to upstream project series
+
+    >>> print view.page_title
+    Upstream packaging links
+
+The view provides a property to get the source packages that have
+translations, but are not linked to an upstream project. The view filters
+unpublished versions from full functionality distributions like Ubuntu.
+
+    >>> hoary.getUnlinkedTranslatableSourcePackages()
+    [<SourcePackage .../hoary/pmount>, <SourcePackage .../hoary/mozilla>]
+
+    >>> view.show_unlinked_translatables
+    True
+
+    >>> view.unlinked_translatables
+    [<SourcePackage ubuntu/hoary/pmount>]
+
+A distro series can have thousands of upstream packaging links. The view
+provides a batch navigator to access the packagings. The default batch size
+is 200.
+
+    >>> batch_navigator = view.cached_packagings
+    >>> batch_navigator.default_size
+    200
+
+    >>> for packaging in batch_navigator.batch:
+    ...     print packaging.sourcepackagename.name
+    evolution
+    mozilla-firefox
+    netapplet
+
+The show_unlinked_translatables property is False when the batch is after the
+first batch.
+
+    >>> view = create_initialized_view(
+    ...     hoary, name='+packaging', query_string='start=2')
+    >>> view.show_unlinked_translatables
+    False

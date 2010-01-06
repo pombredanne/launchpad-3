@@ -21,7 +21,6 @@ from bzrlib.revision import NULL_REVISION
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithTransport
 from bzrlib.transport import get_transport
 
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.puller.worker import (
     BranchLoopError, BranchMirrorer, BranchReferenceForbidden,
     PullerWorkerProtocol, StackedOnBranchNotFound,
@@ -134,7 +133,7 @@ class TestPullerWorker(TestCaseWithTransport, PullerWorkerMixin):
         source_tree.commit('commit message')
         # Make the directory.
         dest = get_transport(to_mirror.dest)
-        ensure_base(dest)
+        dest.create_prefix()
         dest.mkdir('.bzr')
         # 'dest' is not a branch.
         self.assertRaises(
@@ -681,11 +680,11 @@ class TestWorkerProtocol(TestCaseInTempDir, PullerWorkerMixin):
         self.assertSentNetstrings(['startMirroring', '0'])
 
     def test_mirrorSucceeded(self):
-        # Calling 'mirrorSucceeded' sends the revno and 'mirrorSucceeded'.
+        # Calling 'mirrorSucceeded' sends the revids and 'mirrorSucceeded'.
         self.protocol.startMirroring()
         self.resetBuffers()
-        self.protocol.mirrorSucceeded(1234)
-        self.assertSentNetstrings(['mirrorSucceeded', '1', '1234'])
+        self.protocol.mirrorSucceeded('rev1', 'rev2')
+        self.assertSentNetstrings(['mirrorSucceeded', '2', 'rev1', 'rev2'])
 
     def test_mirrorFailed(self):
         # Calling 'mirrorFailed' sends the error message.
@@ -732,6 +731,7 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
     def setUp(self):
         TestCaseWithTransport.setUp(self)
         self.saved_factory = bzrlib.ui.ui_factory
+        self.disable_directory_isolation()
 
     def tearDown(self):
         TestCaseWithTransport.tearDown(self)
