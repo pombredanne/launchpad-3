@@ -23,39 +23,6 @@ from lp.code.model.branch import Branch
 from lp.code.interfaces.branch import IBranchSet
 
 
-class _SourcePackageRecipeDataBranch(Storm):
-    """The link between a SourcePackageRecipeData row and a Branch row."""
-
-    __storm_table__ = "SourcePackageRecipeDataBranch"
-
-    id = Int(primary=True)
-
-    branch_id = Int(name='branch', allow_none=False)
-    branch = Reference(branch_id, 'Branch.id')
-
-    sourcepackagerecipedata_id = Int(
-        name='sourcepackagerecipedata', allow_none=False)
-    sourcepackagerecipedata = Reference(
-        sourcepackagerecipedata_id, '_SourcePackageRecipeData.id')
-
-    def __init__(self, sprd, branch):
-        self.sourcepackagerecipedata = sprd
-        self.branch = branch
-
-
-def walk_branch_urls(branch):
-    """Yield every branch url referenced by `branch` and its children.
-
-    :param branch: A `bzrlib.plugins.builder.recipe.RecipeBranch` object.
-    """
-    # Possibly this should/could be in bzr-builder?
-    # Possibly should/could have direct tests?
-    yield branch.url
-    for child_branch in branch.child_branches:
-        for url in walk_branch_urls(child_branch.recipe_branch):
-            yield url
-
-
 class _SourcePackageRecipeData(Storm):
     """Essentially, the text of a bzr-builder recipe but with added data.
     """
@@ -77,23 +44,13 @@ class _SourcePackageRecipeData(Storm):
 
     def _set_recipe(self, recipe):
         """Set the text of the recipe."""
-        IStore(self).find(
-            _SourcePackageRecipeDataBranch,
-            _SourcePackageRecipeDataBranch.sourcepackagerecipedata == self
-            ).remove()
-        base_branch = RecipeParser(recipe).parse()
-        db_branches = []
-        for url in walk_branch_urls(base_branch):
-            db_branches.append(getUtility(IBranchSet).getByUrl(url))
-        for db_branch in db_branches:
-            _SourcePackageRecipeDataBranch(self, db_branch)
-        self._recipe = recipe
+        1/0
 
     recipe = property(_get_recipe, _set_recipe)
 
     def __init__(self, recipe):
         """Initialize the object from the recipe text."""
-        self.recipe = recipe
+        #self.recipe = recipe
 
     def getReferencedBranches(self):
         """Return an iterator of the Branch objects referenced by this recipe.
