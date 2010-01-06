@@ -147,6 +147,9 @@ class IPersonRoles(Interface):
     Convenience methods that remove frequent calls to ILaunchpadCelebrities
     and IPerson.inTeam from permission checkers. May also be used in model
     or view code.
+
+    All person celebrities in ILaunchpadCelbrities must have a matching
+    in_ attribute here and vice versa.
     """
 
     person = Attribute("The IPerson object that these checks refer to.")

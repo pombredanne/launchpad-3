@@ -152,6 +152,8 @@ class LaunchpadCelebrities:
     ubuntu_techboard = PersonCelebrityDescriptor('techboard')
     vcs_imports = PersonCelebrityDescriptor('vcs-imports')
 
+    person_names = sorted(list(PersonCelebrityDescriptor.names))
+
     @property
     def ubuntu_archive_mirror(self):
         """See `ILaunchpadCelebrities`."""
@@ -171,10 +173,6 @@ class LaunchpadCelebrities:
             raise MissingCelebrityError('http://releases.ubuntu.com/')
         assert mirror.isOfficial(), "Main mirror must be an official one."
         return mirror
-
-    @property
-    def person_names(self):
-        return sorted(list(PersonCelebrityDescriptor.names))
 
     def isCelebrityPerson(self, name):
         return str(name) in PersonCelebrityDescriptor.names

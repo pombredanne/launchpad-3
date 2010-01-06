@@ -18,11 +18,11 @@ from canonical.testing import ZopelessDatabaseLayer
 
 class TestPersonRoles(TestCaseWithFactory):
     """Test IPersonRoles adapter.
-
-     Also makes sure it is in sync with ILaunchpadCelebrities.
      """
 
     layer = ZopelessDatabaseLayer
+
+    prefix = 'in_'
 
     def setUp(self):
         super(TestPersonRoles, self).setUp()
@@ -33,13 +33,26 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         verifyObject(IPersonRoles, roles)
 
+    def test_number_of_person_celebrities(self):
+        # The number of person celebrities must match the number of in_*
+        # attributes if IPersonRoles, if the two interfaces are in sync.
+        # If the number is identical but the name of one has changed, the
+        # previous test_interface will fail.
+        num_in_roles = 0
+        for name in IPersonRoles.names():
+            if name.startswith(self.prefix):
+                num_in_roles += 1
+        self.assertEqual(len(self.celebs.person_names), num_in_roles,
+            "Possible reason: ILaunchpadCelebrities and IPersonRoles "
+            "are out of sync.")
+
     def test_person(self):
         # The person is available through the person attribute.
         roles = IPersonRoles(self.person)
         self.assertIs(self.person, roles.person)
 
     def _test_in_team(self, attribute):
-        roles_attribute = "in_"+attribute
+        roles_attribute = self.prefix+attribute
         roles = IPersonRoles(self.person)
         self.assertFalse(
             getattr(roles, roles_attribute),
@@ -76,7 +89,7 @@ class TestPersonRoles(TestCaseWithFactory):
             self._test_in_team(attribute)
 
     def _test_in_person(self, attribute):
-        roles_attribute = "in_"+attribute
+        roles_attribute = self.prefix+attribute
         celeb = getattr(self.celebs, attribute)
         roles = IPersonRoles(celeb)
         self.assertTrue(
@@ -101,7 +114,7 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         fake_attr = self.factory.getUniqueString()
         self.assertRaises(AttributeError, getattr, roles, fake_attr)
-        fake_attr = self.factory.getUniqueString('in_')
+        fake_attr = self.factory.getUniqueString(self.prefix)
         self.assertRaises(AttributeError, getattr, roles, fake_attr)
 
     def test_inTeam(self):
