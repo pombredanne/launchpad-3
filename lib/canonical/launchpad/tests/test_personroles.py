@@ -39,12 +39,30 @@ class TestPersonRoles(TestCaseWithFactory):
         team = getattr(self.celebs, celebs_attr)
         team.addMember(self.person, team.teamowner)
         roles = IPersonRoles(self.person)
-        self.assertTrue(getattr(roles, roles_attr))
+        self.assertTrue(
+            getattr(roles, roles_attr),
+            "%s should be True" % roles_attr)
 
     def test_is_on_teams(self):
-        # An LP admin is recognized as such.
+        # Test all celebrity teams are available.
         team_attributes = [
             ('admin', 'is_admin'),
+            ('bazaar_experts', 'is_bazaar_expert'),
+            ('bug_importer', 'is_bug_importer'),
+            ('bug_watch_updater', 'is_bug_watch_updater'),
+            ('buildd_admin', 'is_buildd_admin'),
+            ('commercial_admin', 'is_commercial_admin'),
+            ('hwdb_team', 'is_in_hwdb_team'),
+            ('launchpad_beta_testers', 'is_lp_beta_tester'),
+            ('launchpad_developers', 'is_lp_developer'),
+            ('mailing_list_experts', 'is_mailing_list_expert'),
+            ('registry_experts', 'is_registry_expert'),
+            ('rosetta_experts', 'is_rosetta_expert'),
+            ('shipit_admin', 'is_shipit_admin'),
+            ('ubuntu_branches', 'is_in_ubuntu_branches'),
+            ('ubuntu_security', 'is_in_ubuntu_security'),
+            ('ubuntu_techboard', 'is_in_ubuntu_techboard'),
+            ('vcs_imports', 'is_in_vcs_imports'),
             ]
         for attributes in team_attributes:
             self._test_is_on_team(*attributes)
