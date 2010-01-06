@@ -13,7 +13,7 @@ __all__ = [
 from datetime import datetime, timedelta
 import sys
 
-from pytz import UTC
+from pytz import timezone
 from zope.component import getUtility
 
 from canonical.config import config
@@ -142,6 +142,8 @@ class TranslationsImport(LaunchpadCronScript):
     def main(self):
         """Import entries from the queue."""
         self.logger.debug("Starting the import process.")
+
+        UTC = timezone('UTC')
 
         self.deadline = datetime.now(UTC) + self.time_to_run
         translation_import_queue = getUtility(ITranslationImportQueue)
