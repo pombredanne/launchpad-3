@@ -993,9 +993,11 @@ class TeamMemberAddView(LaunchpadFormView):
         assert newmember != self.context, (
             "Can't add team to itself: %s" % newmember)
 
-        self.context.addMember(newmember, reviewer=self.user,
-                               status=TeamMembershipStatus.APPROVED)
-        if newmember.isTeam():
+        changed, new_status = self.context.addMember(
+            newmember, reviewer=self.user,
+            status=TeamMembershipStatus.APPROVED)
+
+        if new_status == TeamMembershipStatus.INVITED:
             msg = "%s has been invited to join this team." % (
                   newmember.unique_displayname)
         else:
