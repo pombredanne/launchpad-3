@@ -17,8 +17,9 @@ from lp.bugs.adapters.bugchange import (
     BugWatchAdded, BugWatchRemoved)
 from lp.bugs.interfaces.bug import IBug
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
-from lp.registry.interfaces.milestone import IMilestone, IProductRelease
+from lp.registry.interfaces.milestone import IMilestone
 from lp.registry.interfaces.person import IPerson
+from lp.registry.interfaces.productrelease import IProductRelease
 from lp.soyuz.interfaces.sourcepackagerelease import ISourcePackageRelease
 from lp.bugs.adapters.bugchange import BugTaskAdded
 
