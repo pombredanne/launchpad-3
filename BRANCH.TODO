@@ -7,32 +7,6 @@
 
 Tests with errors:
 
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testBadDistributionDestination
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testBadPPADestination
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testBadSuiteDestination
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopyAcrossPPAs
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopyAcrossPartner
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopyAncestryLookup
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopyArchitectureIndependentBinaries
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopyAvoidsBinaryConflicts
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopyBetweenDistroSeries
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopyBetweenPockets
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopyClosesBugs
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopyCreatesMissingBuilds
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopyFromPrivateToPublicPPAs
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopySourceAndBinariesFromPPA
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCopySourceFromPPA
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testCrossPartnerCopiesFails
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testFailIfSameLocations
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testFailIfValidPackageButNotInSpecifiedSuite
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testPpaPartnerInconsistentLocations
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testPropagatingSecurityToUpdates
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testSourceLookupFailure
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testUnembargoSuite
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testUnembargoing
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testVersionConflictInDifferentPockets
-  lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testWillNotCopyTwice
-
   lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveById
   lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveByLanguage
   lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveByNotLanguage
