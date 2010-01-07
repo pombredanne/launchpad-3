@@ -59,21 +59,23 @@ class BuildQueue(SQLBase):
     @property
     def specific_job_classes(self):
         """See `IBuildQueue`."""
+        # The reason for keeping the imports below local is that they are not
+        # of interest to other methods in this module.
         from zope.component import getSiteManager
         from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 
-        job_classes = []
-        components = getSiteManager()
+        job_classes = dict()
         # Get all components that implement the `IBuildFarmJob` interface.
+        components = getSiteManager()
         implementations = sorted(components.getUtilitiesFor(IBuildFarmJob))
         # The above yields a collection of 2-tuples where the first element
         # is the name of the `BuildFarmJobType` enum and the second element
         # is the implementing class respectively.
         for job_enum_name, job_class in implementations:
             job_enum = getattr(BuildFarmJobType, job_enum_name)
-            job_classes.append((job_enum, job_class))
+            job_classes[job_enum] = job_class
 
-        return dict(job_classes)
+        return job_classes
 
     @property
     def specific_job(self):
