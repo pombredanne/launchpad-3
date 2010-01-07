@@ -448,6 +448,7 @@ class TestPreviewDiff(DiffTestCase):
 
     def test_fromBranchMergeProposal_does_not_warn_on_conflicts(self):
         """PreviewDiff generation emits no conflict warnings."""
+        reload(trace)
         bmp, source_rev_id, target_rev_id = self.createExampleMerge()
         handler = RecordLister()
         logger = logging.getLogger('bzr')
