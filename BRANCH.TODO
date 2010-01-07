@@ -7,37 +7,6 @@
 
 Tests with errors:
 
-  lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_approveCodeReview
-  lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_approvingOwnCodeReview
-  lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_commentOnOwnProposal
-  lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_commentOnProposal
-  lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_mergeProposalCreationAllocatesKarma
-  lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_rejectedCodeReview
-  lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_rejectedOwnCodeReview
-  lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_reviewerCommentingOnProposal
-
-  lp.code.model.tests.test_revisionauthor.TestNewlyValidatedEmailsLinkRevisionAuthors.test_validated_email_updates
-  lp.code.model.tests.test_revisionauthor.TestRevisionAuthor.testGetNameWithoutEmailReturnsNamePart
-  lp.code.model.tests.test_revisionauthor.TestRevisionAuthor.testGetNameWithoutEmailWithBadEmail
-  lp.code.model.tests.test_revisionauthor.TestRevisionAuthor.testGetNameWithoutEmailWithNoEmail
-  lp.code.model.tests.test_revisionauthor.TestRevisionAuthor.testGetNameWithoutEmailWithNoName
-  lp.code.model.tests.test_revisionauthor.TestRevisionAuthor.testGetNameWithoutEmailWithOneWord
-  lp.code.model.tests.test_revisionauthor.TestRevisionEmailExtraction.test_bad_email_not_set
-  lp.code.model.tests.test_revisionauthor.TestRevisionEmailExtraction.test_email_extracted_from_name
-  lp.code.model.tests.test_revisionauthor.TestRevisionEmailExtraction.test_email_extracted_from_name_alternate
-
-  lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.testLocalhost
-  lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.testNoFileURL
-  lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.testNoHTTPSLaunchpadURL
-  lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.testNoLaunchpadURL
-  lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.testNoOtherHostLaunchpadURL
-  lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.testNoSSHURL
-  lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.testNoSftpURL
-  lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.testNoUnknownSchemeURLs
-  lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.test_no_stacked_on_url
-  lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.test_specified_stacked_on_url
-  lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.test_stacked_on_url_for_mirrored_branch
-
   lp.codehosting.tests.test_rewrite.TestBranchRewriter.test_rewriteLine_cache_expires
   lp.codehosting.tests.test_rewrite.TestBranchRewriter.test_rewriteLine_logs_cache_hit
   lp.codehosting.tests.test_rewrite.TestBranchRewriter.test_rewriteLine_logs_cache_miss
