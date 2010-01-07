@@ -57,11 +57,32 @@ class BuildQueue(SQLBase):
         return IBuildFarmJobBehavior(self.specific_job)
 
     @property
+    def specific_job_classes(self):
+        """See `IBuildQueue`."""
+        from zope.component import getSiteManager
+        from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+
+        job_classes = []
+        components = getSiteManager()
+        # Get all components that implement the `IBuildFarmJob` interface.
+        implementations = sorted(components.getUtilitiesFor(IBuildFarmJob))
+        # The above yields a collection of 2-tuples where the first element is
+        # the name of the `BuildFarmJobType` enum and the second element is an
+        # instance of the implementing class respectively.
+        for implementation in implementations:
+            job_enum_name, job_component = implementation
+            job_enum = getattr(BuildFarmJobType, job_enum_name)
+            job_classes.append((job_enum, job_component.__class__))
+
+        return dict(job_classes)
+
+    @property
     def specific_job(self):
         """See `IBuildQueue`."""
+        specific_class = self.specific_job_classes[self.job_type]
         store = Store.of(self)
         result_set = store.find(
-            BuildPackageJob, BuildPackageJob.job == self.job)
+            specific_class, specific_class.job == self.job)
         return result_set.one()
 
     @property

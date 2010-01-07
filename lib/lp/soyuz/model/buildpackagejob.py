@@ -210,3 +210,8 @@ class BuildPackageJob(Storm):
         """See `IBuildFarmJob`."""
         return self.build.is_virtualized
 
+
+# The global instance below is used to discover all build farm job classes
+# that implement the `IBuildFarmJob` interface. Please see bug #503839 for
+# more detail.
+__INSTANCE = BuildPackageJob()
