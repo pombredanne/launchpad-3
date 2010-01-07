@@ -7,38 +7,6 @@
 
 Tests with errors:
 
-  lp.scripts.utilities.tests.test_sanitizedb.SanitizeDbScriptTestCase.test_script
-  lp.scripts.utilities.tests.test_sanitizedb.SanitizeDbScriptTestCase.test_script_dryrun
-
-  lp.services.apachelogparser.tests.test_apachelogparser.TestParsedFilesDetection.test_completely_parsed_file
-  lp.services.apachelogparser.tests.test_apachelogparser.TestParsedFilesDetection.test_different_files_with_same_name
-  lp.services.apachelogparser.tests.test_apachelogparser.TestParsedFilesDetection.test_gzipped_file
-  lp.services.apachelogparser.tests.test_apachelogparser.TestParsedFilesDetection.test_not_parsed_file
-  lp.services.apachelogparser.tests.test_apachelogparser.TestParsedFilesDetection.test_parsed_file_with_new_content
-  lp.services.apachelogparser.tests.test_apachelogparser.Test_create_or_update_parsedlog_entry.test_creation_of_new_entries
-  lp.services.apachelogparser.tests.test_apachelogparser.Test_create_or_update_parsedlog_entry.test_update_of_existing_entries
-
-  lp.services.database.tests.test_prejoin.PrejoinTestCase.test_any
-  lp.services.database.tests.test_prejoin.PrejoinTestCase.test_cache_populated
-  lp.services.database.tests.test_prejoin.PrejoinTestCase.test_config
-  lp.services.database.tests.test_prejoin.PrejoinTestCase.test_config_returnvalue
-  lp.services.database.tests.test_prejoin.PrejoinTestCase.test_copy
-  lp.services.database.tests.test_prejoin.PrejoinTestCase.test_count
-  lp.services.database.tests.test_prejoin.PrejoinTestCase.test_first
-  lp.services.database.tests.test_prejoin.PrejoinTestCase.test_one
-  lp.services.database.tests.test_prejoin.PrejoinTestCase.test_one_empty
-  lp.services.database.tests.test_prejoin.PrejoinTestCase.test_order_by
-  lp.services.database.tests.test_prejoin.PrejoinTestCase.test_slice
-
-  lp.services.mail.tests.test_mailbox.TestDirectoryMailBox.test_delete
-  lp.services.mail.tests.test_mailbox.TestDirectoryMailBox.test_deleting_while_iterating
-  lp.services.mail.tests.test_mailbox.TestDirectoryMailBox.test_initially_empty
-  lp.services.mail.tests.test_mailbox.TestDirectoryMailBox.test_items
-  lp.services.mail.tests.test_mailbox.TestDirectoryMailBox.test_verify_interface
-
-  lp.services.memcache.tests.test_memcache_client.MemcacheClientTestCase.test_basics
-  lp.services.memcache.tests.test_memcache_client.MemcacheClientTestCase.test_bug_452092
-
   lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testBadDistributionDestination
   lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testBadPPADestination
   lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testBadSuiteDestination
