@@ -31,7 +31,6 @@ from lp.code.interfaces.branch import IBranch
 from lp.services.job.interfaces.job import IJob, IRunnableJob
 
 
-
 class IBranchJob(Interface):
     """A job related to a branch."""
 
@@ -164,7 +163,6 @@ class IRosettaUploadJobSource(Interface):
     def iterReady():
         """Iterate through ready IRosettaUploadJobs."""
 
-
     def findUnfinishedJobs(branch, since=None):
         """Find any `IRosettaUploadJob`s for `branch` that haven't run yet.
 
@@ -193,4 +191,3 @@ class IReclaimBranchSpaceJobSource(Interface):
 
     def iterReady():
         """Iterate through ready IReclaimBranchSpaceJobs."""
-
