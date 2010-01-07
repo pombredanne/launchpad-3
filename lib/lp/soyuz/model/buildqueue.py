@@ -69,8 +69,7 @@ class BuildQueue(SQLBase):
         # The above yields a collection of 2-tuples where the first element is
         # the name of the `BuildFarmJobType` enum and the second element is an
         # instance of the implementing class respectively.
-        for implementation in implementations:
-            job_enum_name, job_component = implementation
+        for job_enum_name, job_component in implementations:
             job_enum = getattr(BuildFarmJobType, job_enum_name)
             job_classes.append((job_enum, job_component.__class__))
 
