@@ -99,6 +99,7 @@ class TestHWDBSubmissionParser(TestCase):
 
     def setUp(self):
         """Setup the test environment."""
+        super(TestHWDBSubmissionParser, self).setUp()
         self.log = logging.getLogger('test_hwdb_submission_parser')
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
