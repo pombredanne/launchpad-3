@@ -43,7 +43,7 @@ A team member will be able to see these parts of the team page.
     <...<a href=".../~member" class="sprite person">Gold Member</a>...
 
 
-    >>> find_tag_by_id(browser.contents, 'recently-applied')
+    >>> find_tag_by_id(browser.contents, 'recently-proposed')
     <...<a href=".../~no-priv" class="sprite person">No Privileges Person</a>...
 
     >>> print extract_text(
@@ -257,9 +257,9 @@ When this connection is made and members of the private team view the public
 team's home page, they see the private team show up in the "Subteam of"
 section.
 
-    >>> admin_browser.open('http://launchpad.dev/~myteam/+addmember')
-    >>> admin_browser.getControl('New member').value = 'guadamen'
-    >>> admin_browser.getControl('Add Member').click()
+    >>> owner_browser.open('http://launchpad.dev/~myteam/+addmember')
+    >>> owner_browser.getControl('New member').value = 'guadamen'
+    >>> owner_browser.getControl('Add Member').click()
     >>> admin_browser.open(
     ...     'http://launchpad.dev/~guadamen/+invitation/myteam')
     >>> admin_browser.getControl('Accept').click()

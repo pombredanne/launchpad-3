@@ -215,6 +215,9 @@ strong {
     font-weight: bold;
     }
 
+.unseen {display: none;}
+
+
 /* Common presentations */
 div.see-all {
     font-size: 123.1%; /* Same as a h2 */

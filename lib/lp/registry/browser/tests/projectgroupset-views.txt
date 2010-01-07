@@ -44,7 +44,7 @@ A member of the registry team has permission.
 
     >>> registry_member = factory.makePerson()
     >>> login('foo.bar@canonical.com')
-    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> registry_member.inTeam(registry)
     True
 

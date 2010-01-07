@@ -140,14 +140,27 @@ class TestRevisionKarma(TestCaseWithFactory):
     def test_junkBranchMovedToProductNeedsKarma(self):
         # A junk branch that moves to a product needs karma allocated.
         author = self.factory.makePerson()
-        rev = self.factory.makeRevision(
-            author=author.preferredemail.email)
+        rev = self.factory.makeRevision(author=author)
         branch = self.factory.makePersonalBranch()
         branch.createBranchRevision(1, rev)
         # Once the branch is connected to the revision, we now specify
         # a product for the branch.
         project = self.factory.makeProduct()
         branch.setTarget(user=branch.owner, project=project)
+        # The revision is now identified as needing karma allocated.
+        self.assertEqual(
+            [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
+
+    def test_junkBranchMovedToPackageNeedsKarma(self):
+        # A junk branch that moves to a package needs karma allocated.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makePersonalBranch()
+        branch.createBranchRevision(1, rev)
+        # Once the branch is connected to the revision, we now specify
+        # a product for the branch.
+        source_package = self.factory.makeSourcePackage()
+        branch.setTarget(user=branch.owner, source_package=source_package)
         # The revision is now identified as needing karma allocated.
         self.assertEqual(
             [rev], list(RevisionSet.getRevisionsNeedingKarmaAllocated()))
@@ -178,16 +191,38 @@ class TestRevisionKarma(TestCaseWithFactory):
         # is set to be the time that the revision was created.
         author = self.factory.makePerson()
         rev = self.factory.makeRevision(
-            author=author.preferredemail.email,
+            author=author,
             revision_date=datetime.now(pytz.UTC) + timedelta(days=5))
         branch = self.factory.makeProductBranch()
-        branch.createBranchRevision(1, rev)
-        # Get the karma event.
-        [karma] = list(Store.of(author).find(
-            Karma,
-            Karma.person == author,
-            Karma.product == branch.product))
+        karma = rev.allocateKarma(branch)
         self.assertEqual(karma.datecreated, rev.date_created)
+
+    def test_allocateKarma_personal_branch(self):
+        # A personal branch gets no karma event.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makePersonalBranch()
+        karma = rev.allocateKarma(branch)
+        self.assertIs(None, karma)
+
+    def test_allocateKarma_package_branch(self):
+        # A revision on a package branch gets karma.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makePackageBranch()
+        karma = rev.allocateKarma(branch)
+        self.assertEqual(author, karma.person)
+        self.assertEqual(branch.distribution, karma.distribution)
+        self.assertEqual(branch.sourcepackagename, karma.sourcepackagename)
+
+    def test_allocateKarma_product_branch(self):
+        # A revision on a product branch gets karma.
+        author = self.factory.makePerson()
+        rev = self.factory.makeRevision(author=author)
+        branch = self.factory.makeProductBranch()
+        karma = rev.allocateKarma(branch)
+        self.assertEqual(author, karma.person)
+        self.assertEqual(branch.product, karma.product)
 
 
 class TestRevisionGetBranch(TestCaseWithFactory):
