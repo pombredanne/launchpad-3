@@ -119,12 +119,13 @@ class TestBranchView(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestBranchView, self).tearDown()
         login(ANONYMOUS)
         self.request = LaunchpadTestRequest()
 
     def tearDown(self):
         logout()
+        super(TestBranchView, self).setUp()
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
@@ -238,13 +239,14 @@ class TestBranchAddView(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestBranchAddView, self).setUp()
         self.person = self.factory.makePerson()
         login_person(self.person)
         self.request = LaunchpadTestRequest()
 
     def tearDown(self):
         logout()
+        super(TestBranchAddView, self).tearDown()
 
     def get_view(self, context):
         view = BranchAddView(context, self.request)
