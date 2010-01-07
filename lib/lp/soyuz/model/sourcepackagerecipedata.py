@@ -29,10 +29,23 @@ class _SourcePackageRecipeDataInstruction(Storm):
 
     __storm_table__ = "SourcePackageRecipeDataInstruction"
 
+    def __init__(self, name, type, comment, line_number, branch, revspec,
+                 directory, recipe, parent_instruction):
+        self.name = name
+        self.type = type
+        self.comment = comment
+        self.line_number = line_number
+        self.branch = branch
+        self.revspec = revspec
+        self.directory = directory
+        self.recipe = recipe
+        self.parent_instruction = parent_instruction
+
     id = Int(primary=True)
 
     name = Unicode(allow_none=False)
-    ##type = EnumCol()
+    # Should be an EnumCol
+    type = Int(allow_none=True)
     comment = Unicode(allow_none=True)
     line_number = Int(allow_none=False)
 
@@ -67,13 +80,28 @@ class _SourcePackageRecipeData(Storm):
         """The text of the recipe."""
         return ''
 
+    def _record_instructions(self, branch, parent_insn):
+        for b in branch.child_branches:
+            db_branch = getUtility(IBranchLookup).getByUrl(b.recipe_branch.url)
+            type = 1
+            comment = None
+            line_number = 0
+            insn = _SourcePackageRecipeDataInstruction(
+                b.recipe_branch.name, type, comment, line_number, db_branch,
+                b.recipe_branch.revspec, b.nest_path, self, parent_insn)
+            self._record_instructions(b.recipe_branch, insn)
+
     def setRecipe(self, recipe):
         """Set the text of the recipe."""
+        IStore(self).find(
+            _SourcePackageRecipeDataInstruction,
+            _SourcePackageRecipeDataInstruction.recipe == self).remove()
         base_branch = RecipeParser(recipe).parse()
         branch_lookup = getUtility(IBranchLookup)
         self.base_branch = branch_lookup.getByUrl(base_branch.url)
         self.deb_version_template = base_branch.deb_version
         self.recipe_format = unicode(base_branch.format)
+        self._record_instructions(base_branch, None)
 
     def __init__(self, recipe):
         """Initialize the object from the recipe text."""
@@ -88,4 +116,4 @@ class _SourcePackageRecipeData(Storm):
             _SourcePackageRecipeDataInstruction.recipe == self,
             Branch.id == _SourcePackageRecipeDataInstruction.branch_id)
         for branch in sub_branches:
-            yield sub_branches
+            yield branch
