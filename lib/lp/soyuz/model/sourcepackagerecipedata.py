@@ -20,37 +20,45 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lp.code.model.branch import Branch
-from lp.code.interfaces.branch import IBranchSet
+from lp.code.interfaces.branchlookup import IBranchLookup
+
+
+class _SourcePackageRecipeDataInstruction(Storm):
+    """XXX."""
+
+    __storm_table__ = "SourcePackageRecipeDataInstruction"
+
+    id = Int(primary=True)
 
 
 class _SourcePackageRecipeData(Storm):
-    """Essentially, the text of a bzr-builder recipe but with added data.
-    """
+    """XXX."""
 
     __storm_table__ = "SourcePackageRecipeData"
 
     id = Int(primary=True)
 
-    _recipe = Unicode(name='recipe')
+    base_branch_id = Int(name='base_branch', allow_none=False)
+    base_branch = Reference(base_branch_id, 'Branch.id')
 
-    # For now, we just store the recipe verbatim.  Soon, we'll want to rewrite
-    # the recipe to replace the branch urls with something that references the
-    # _SourcePackageRecipeDataBranch linking table on write and vice versa on
-    # read.
+    recipe_format = Unicode(allow_none=False)
+    deb_version_template = Unicode(allow_none=False)
 
-    def _get_recipe(self):
+    def getRecipe(self):
         """The text of the recipe."""
-        return self._recipe
-
-    def _set_recipe(self, recipe):
-        """Set the text of the recipe."""
         1/0
 
-    recipe = property(_get_recipe, _set_recipe)
+    def setRecipe(self, recipe):
+        """Set the text of the recipe."""
+        base_branch = RecipeParser(recipe).parse()
+        branch_lookup = getUtility(IBranchLookup)
+        self.base_branch = branch_lookup.getByUrl(base_branch.url)
+        self.deb_version_template = base_branch.deb_version
+        self.recipe_format = unicode(base_branch.format)
 
     def __init__(self, recipe):
         """Initialize the object from the recipe text."""
-        #self.recipe = recipe
+        self.setRecipe(recipe)
 
     def getReferencedBranches(self):
         """Return an iterator of the Branch objects referenced by this recipe.
