@@ -461,4 +461,3 @@ def test_suite():
         optionflags=NORMALIZE_WHITESPACE | ELLIPSIS))
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
-

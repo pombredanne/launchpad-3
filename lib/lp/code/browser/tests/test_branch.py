@@ -119,13 +119,13 @@ class TestBranchView(TestCaseWithFactory):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        super(TestBranchView, self).tearDown()
+        super(TestBranchView, self).setUp()
         login(ANONYMOUS)
         self.request = LaunchpadTestRequest()
 
     def tearDown(self):
         logout()
-        super(TestBranchView, self).setUp()
+        super(TestBranchView, self).tearDown()
 
     def testMirrorStatusMessageIsTruncated(self):
         """mirror_status_message is truncated if the text is overly long."""
