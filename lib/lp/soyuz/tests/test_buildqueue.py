@@ -388,9 +388,8 @@ class TestJobClasses(TestCaseWithFactory):
         component.provideUtility(
             FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
 
-        # After pretending that our `FakeBranchBuild` class implements the
-        # `IBuildFarmJob` interface for the 'BRANCHBUILD' build farm job type
-        # we should see it in the 'specific_job_classes' dictionary.
+        # Now we should see the `FakeBranchBuild` class "registered" in the
+        # `specific_job_classes` dictionary under the 'BRANCHBUILD' key.
         self.assertEqual(
             bq.specific_job_classes[BuildFarmJobType.BRANCHBUILD],
             FakeBranchBuild)
