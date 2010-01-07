@@ -5,42 +5,6 @@
 
 \([A-Za-z_]+\) (\([^)]+\))
 
-Tests with errors:
-
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveById
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveByLanguage
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveByNotLanguage
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveByReviewer
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveBySubmitter
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveByTemplate
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveCurrent
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveImported
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveMsgId
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveNone
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveNotCurrent
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveNotImported
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveOrigin
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_remove_by_license_rejection
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_remove_unlicensed_none
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_remove_unlicensed_restriction
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_remove_unlicensed_when_licensed
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsConstraints.test_RecklessRemoval
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsConstraints.test_RemoveById
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsConstraints.test_RemoveByPOFile
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsConstraints.test_RemoveByReviewer
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsConstraints.test_RemoveBySubmitter
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsConstraints.test_remove_by_license_rejection
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsOptionsHandling.test_BadBool
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsOptionsHandling.test_UnknownOrigin
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsOptionsHandling.test_UnknownPerson
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsOptionsHandling.test_WithLookups
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsOptionsHandling.test_WithNativeArgs
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsUnmasking.test_unmask_imported_message
-  lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsUnmasking.test_unmask_right_message
-
-  lp.translations.tests.test_potmsgset.TestPOTMsgSetTranslationCredits.test_creation_credits
-  lp.translations.tests.test_potmsgset.TestPOTMsgSetTranslationCredits.test_creation_pofile
-
 Tests with failures:
   canonical.launchpad.testing.tests.test_testcase.TestAddCleanup.test_addCleanup_called_in_reverse_order
   canonical.launchpad.testing.tests.test_testcase.TestAddCleanup.test_cleanup_run_before_tearDown
