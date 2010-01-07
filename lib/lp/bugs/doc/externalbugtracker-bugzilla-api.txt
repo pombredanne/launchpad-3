@@ -426,7 +426,7 @@ fetchComments()
 
 ISupportsCommentImport.fetchComments() is the method used to fetch a
 given set of comments from the remote bugtracker. It takes a remote
-bug and a list of the comment IDs to retrieve for that bug watch.
+bug ID and a list of the comment IDs to retrieve for that bug watch.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
     >>> bugzilla.fetchComments(bug_watch.remotebug, ['1', '3'])
