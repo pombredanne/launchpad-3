@@ -21,10 +21,11 @@ class DummyConfigurationTestCase(TestCase):
     """A test case that installs a DummyWebServiceConfiguration."""
 
     def setUp(self):
+        super(DummyWebServiceConfiguration, self).setUp()
         self.config = DummyWebServiceConfiguration()
         provideUtility(self.config, IWebServiceConfiguration)
 
     def tearDown(self):
         getGlobalSiteManager().unregisterUtility(
             self.config, IWebServiceConfiguration)
-
+        super(DummyWebServiceConfiguration, self).tearDown()
