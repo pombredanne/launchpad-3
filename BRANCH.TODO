@@ -3,6 +3,9 @@
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
 
+
+Not all of these are shown by './bin/test -vvt blerg'
+
 ** 58 import policy violations **
 
 There were 58 imports of names not appearing in the __all__.
