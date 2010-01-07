@@ -309,6 +309,12 @@ class TestCase(testtools.TestCase):
         self.assertTrue(zope_isinstance(instance, assert_class),
             '%r is not an instance of %r' % (instance, assert_class))
 
+    def assertIsNot(self, expected, observed, msg=None):
+        """Assert that `expected` is not the same object as `observed`."""
+        if msg is None:
+            msg = "%r is %r" % (expected, observed)
+        self.assertTrue(expected is not observed, msg)
+
     def assertContentEqual(self, iter1, iter2):
         """Assert that 'iter1' has the same content as 'iter2'."""
         list1 = sorted(iter1)
