@@ -204,8 +204,8 @@ The bug data is stored as a list of dicts:
     >>> def print_bugs(bugs):
     ...     for bug in sorted(bugs):
     ...         print "Bug %s:" % bug
-    ...         for key in sorted(bugzilla._bugs[bug]):
-    ...             print "    %s: %s" % (key, bugzilla._bugs[bug][key])
+    ...         for key in sorted(bugs[bug]):
+    ...             print "    %s: %s" % (key, bugs[bug][key])
     ...         print "\n"
 
     >>> print_bugs(bugzilla._bugs)
@@ -213,11 +213,11 @@ The bug data is stored as a list of dicts:
         alias:
         assigned_to: test@canonical.com
         component: GPPSystems
-        creation_time: 20080610T16:19:53
+        creation_time: 2008-06-10 16:19:53
         id: 1
         internals:...
         is_open: True
-        last_change_time: 20080610T16:19:53
+        last_change_time: 2008-06-10 16:19:53
         priority: P1
         product: Marvin
         resolution: FIXED
@@ -230,11 +230,11 @@ The bug data is stored as a list of dicts:
         alias: bug-two
         assigned_to: marvin@heartofgold.ship
         component: Crew
-        creation_time: 20080611T09:23:12
+        creation_time: 2008-06-11 09:23:12
         id: 2
         internals:...
         is_open: True
-        last_change_time: 20080611T09:24:29
+        last_change_time: 2008-06-11 09:24:29
         priority: P1
         product: HeartOfGold
         resolution:
@@ -416,13 +416,13 @@ comment dict mappings under the key 'comments'.
         id: 1
         number: 1
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
     Comment 3:
         author: marvin
         id: 3
         number: 2
         text: Life? Don't talk to me about life.
-        time: 20080616T13:22:29
+        time: 2008-06-16 13:22:29
 
 
 Pushing comments to remote systems
@@ -560,11 +560,11 @@ bug IDs if those bugs belong to one of a given set of products.
         alias: bug-two
         assigned_to: marvin@heartofgold.ship
         component: Crew
-        creation_time: 20080611T09:23:12
+        creation_time: 2008-06-11 09:23:12
         id: 2
         internals:...
         is_open: True
-        last_change_time: 20080611T09:24:29
+        last_change_time: 2008-06-11 09:24:29
         priority: P1
         product: HeartOfGold
         resolution:
