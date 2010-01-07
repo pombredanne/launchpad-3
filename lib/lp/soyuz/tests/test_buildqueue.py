@@ -385,8 +385,8 @@ class TestJobClasses(TestCaseWithFactory):
 
         # Pretend that our `FakeBranchBuild` class implements the
         # `IBuildFarmJob` interface.
-        fake_component = FakeBranchBuild()
-        component.provideUtility(fake_component, IBuildFarmJob, 'BRANCHBUILD')
+        component.provideUtility(
+            FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
 
         # After pretending that our `FakeBranchBuild` class implements the
         # `IBuildFarmJob` interface for the 'BRANCHBUILD' build farm job type

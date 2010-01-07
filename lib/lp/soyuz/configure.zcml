@@ -904,7 +904,7 @@
         The 'name' attribute needs to be set to the appropriate
         `BuildFarmJobType` enumeration value.
     -->
-    <utility component="lp.soyuz.model.buildpackagejob.__INSTANCE"
+    <utility component="lp.soyuz.model.buildpackagejob.BuildPackageJob"
         name="PACKAGEBUILD"
         provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
 
