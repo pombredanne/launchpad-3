@@ -365,10 +365,25 @@ class TestJobClasses(TestCaseWithFactory):
         """`BuildPackageJob` is one of the job type classes."""
         from lp.soyuz.model.buildpackagejob import BuildPackageJob
         _build, bq = find_job(self, 'gedit')
+
+        # This is a binary package build.
+        self.assertEqual(
+            bq.job_type, BuildFarmJobType.PACKAGEBUILD,
+            "This is a binary package build")
+
+        # The class registered for 'PACKAGEBUILD' is `BuildPackageJob`.
         self.assertEqual(
             bq.specific_job_classes[BuildFarmJobType.PACKAGEBUILD],
-            BuildPackageJob)
-        self.assertEqual(bq.specific_job.__class__, BuildPackageJob)
+            BuildPackageJob,
+            "The class registered for 'PACKAGEBUILD' is `BuildPackageJob`")
+
+        # The 'specific_job' object associated with this `BuildQueue`
+        # instance is of type `BuildPackageJob`.
+        self.assertTrue(bq.specific_job is not None)
+        self.assertEqual(
+            bq.specific_job.__class__, BuildPackageJob,
+            "The 'specific_job' object associated with this `BuildQueue` "
+            "instance is of type `BuildPackageJob`")
 
     def test_OtherTypeClasses(self):
         """Other job type classes are picked up as well."""
