@@ -25,3 +25,8 @@ is_read_only() helper and make the signal handler push a config.read_only
 overlay depending on whether or not the file exists.  That still doesn't sound
 like a good idea because others might inadvertently pop our config overlay.
 
+
+ask a global utility (which checks for read-only.txt) at the beginning of the
+request and stash a readonly flag in the request.annotations. this utility
+will store the readonly flag in itself and will change it (using a mutex)
+whenever the mode changes, also logging the mode change.

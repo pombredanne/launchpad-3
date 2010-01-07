@@ -4,8 +4,7 @@
 """Helpers for running Launchpad in read-only mode.
 
 To switch an app server to read-only mode, all you need to do is create a file
-named read-only.txt under the root of the Launchpad tree and emit a SIGUSR2
-signal.
+named read-only.txt under the root of the Launchpad tree.
 """
 
 import os
@@ -17,6 +16,11 @@ file_path = os.path.join(root, 'read-only.txt')
 
 
 def is_read_only():
+    """Are we in read-only mode?
+
+    Use with caution as this function will hit the filesystem to check for the
+    presence of a file.
+    """
     return os.path.isfile(file_path)
 
 

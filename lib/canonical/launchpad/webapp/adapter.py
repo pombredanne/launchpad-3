@@ -278,7 +278,7 @@ class ReadOnlyModeConnection(PostgresConnection):
             # is raised when an attempt is made to make changes when
             # the connection has been put in read-only mode.
             if exception.pgcode == '25006':
-                raise ReadOnlyModeViolation, None, sys.exc_info()[2]
+                raise ReadOnlyModeViolation(None, sys.exc_info()[2])
             raise
 
 

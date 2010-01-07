@@ -77,10 +77,6 @@ class BaseDatabasePolicy:
         config_section = self.config_section or dbconfig.getSectionName()
 
         store_name = '%s-%s-%s' % (config_section, name, flavor)
-        # XXX stub 2009-06-25 bug=392011: zstorm.get seems to be broken
-        # and does not return None if no Store is available. We have
-        # no way of knowing if the returned Store existed previously,
-        # which makes it difficult to do any post-instantiation setup.
         store = getUtility(IZStorm).get(
             store_name, 'launchpad:%s' % store_name)
         if not getattr(store, '_lp_store_initialized', False):
