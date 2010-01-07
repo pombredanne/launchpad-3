@@ -6,82 +6,8 @@
 \([A-Za-z_]+\) (\([^)]+\))
 
 Tests with errors:
-  lp.archiveuploader.tests.test_buildduploads.TestBuilddUploads.testDelayedBinaryUpload
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testCustomUploadToPPA
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testCustomUploadToPrivatePPA
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testMixedUpload
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testNamedPPABinaryUploads
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testNamedPPAUploadDefault
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testNamedPPAUploadNonDefault
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testNamedPPAUploadWithSeries
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testNotMemberUploadToTeamPPA
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testPGPSignatureNotPreserved
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testPPABinaryUploads
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testPPACopiedSources
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testPPADistroSeriesOverrides
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testPPAInvalidComponentUpload
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testPPAPartnerUpload
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testPPAPublisherOverrides
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testPPAUploadResultingInNoBuilds
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testUploadDoesNotEmailMaintainerOrChangedBy
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testUploadPathErrorIntendedForHumans
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testUploadSendsEmailToPeopleInArchivePermissions
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testUploadSignedByBetaTesterMember
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testUploadSignedByCodeOfConductNonSigner
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testUploadToPPA
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testUploadToPrivatePPA
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testUploadToSomeoneElsePPA
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessor.testUploadToTeamPPA
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessorFileLookups.test30QuiltMultipleReusedOrigs
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessorFileLookups.testErrorMessagesWithUnicode
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessorFileLookups.testNoPublishingOverrides
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessorFileLookups.testPPAConflictingOrigFiles
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessorFileLookups.testPPAOrigGetsPrecedence
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessorFileLookups.testPPAReusingOrigFromUbuntu
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessorQuotaChecks.testArchiveBinarySize
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessorQuotaChecks.testPPADoNotCheckSizeQuotaForBinary
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessorQuotaChecks.testPPASizeQuotaSourceRejection
-  lp.archiveuploader.tests.test_ppauploadprocessor.TestPPAUploadProcessorQuotaChecks.testPPASizeQuotaSourceWarning
-  lp.archiveuploader.tests.test_securityuploads.TestStagedSecurityUploads.testBuildCreation
-  lp.archiveuploader.tests.test_securityuploads.TestStagedSecurityUploads.testBuildLookup
-  lp.archiveuploader.tests.test_securityuploads.TestStagedSecurityUploads.testCorrectBuildPassedViaCommandLine
-  lp.archiveuploader.tests.test_securityuploads.TestStagedSecurityUploads.testWrongBuildPassedViaCommandLine
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.test10Bzip2UploadIsRejected
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.test30NativeUpload
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.test30QuiltUpload
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.test30QuiltUploadToUnsupportingSeriesIsRejected
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.test30QuiltUploadWithSameComponentOrig
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testBinaryUploadToCopyArchive
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testCopyArchiveUploadToCurrentDistro
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testCopyArchiveUploadToSupportedDistro
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testDuplicatedBinaryUploadGetsRejected
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testInstantiate
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testLZMADebUpload
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testLocateChangesFiles
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testLocateDirectories
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testMixedPartnerUploadFails
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testMoveUpload
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testOopsCreation
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testOrderFilenames
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testPackageUploadPermissions
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testPackagesetUploadPermissions
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testPartnerArchiveMissingForPartnerUploadFails
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testPartnerReusingOrigFromPartner
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testPartnerUpload
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testPartnerUploadToNonReleaseOrProposedPocket
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testPartnerUploadToProposedPocket
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testPartnerUploadToReleasePocketInStableDistroseries
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testRejectionEmailForUnhandledException
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testSourceUploadToBuilddPath
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testUploadAncestry
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testUploadContribComponentOverride
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testUploadDefaultComponentOverride
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testUploadNonfreeComponentOverride
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testUploadPathErrorIntendedForHumans
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testUploadResultingInNoBuilds
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testUploadToFrozenDistro
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testUploadWithUnknownComponentIsRejected
-  lp.archiveuploader.tests.test_uploadprocessor.TestUploadProcessor.testUploadWithUnknownSectionIsRejected
+
+
   lp.code.browser.tests.test_branch.TestBranchAddView.test_target_person
   lp.code.browser.tests.test_branch.TestBranchAddView.test_target_product
   lp.code.browser.tests.test_branch.TestBranchAddView.test_target_productseries
@@ -93,6 +19,7 @@ Tests with errors:
   lp.code.browser.tests.test_branch.TestBranchView.testShowMergeLinksOnJunkBranch
   lp.code.browser.tests.test_branch.TestBranchView.testShowMergeLinksOnManyBranchProject
   lp.code.browser.tests.test_branch.TestBranchView.testShowMergeLinksOnSingleBranchProject
+
   lp.code.mail.tests.test_codehandler.TestAddReviewerEmailCommand.test_add_reviewer
   lp.code.mail.tests.test_codehandler.TestAddReviewerEmailCommand.test_add_reviewer_with_tags
   lp.code.mail.tests.test_codehandler.TestAddReviewerEmailCommand.test_numberOfArguments
@@ -154,6 +81,7 @@ Tests with errors:
   lp.code.mail.tests.test_codehandler.TestVoteEmailCommand.test_getVoteNoArgs
   lp.code.mail.tests.test_codehandler.TestVoteEmailCommand.test_getVoteOneArg
   lp.code.mail.tests.test_codehandler.TestVoteEmailCommand.test_getVoteThreeArg
+
   lp.code.model.tests.test_branch.BranchAddLandingTarget.test__createMergeProposal_with_reviewers
   lp.code.model.tests.test_branch.BranchAddLandingTarget.test_attributeAssignment
   lp.code.model.tests.test_branch.BranchAddLandingTarget.test_existingMergeProposal
@@ -164,6 +92,7 @@ Tests with errors:
   lp.code.model.tests.test_branch.BranchAddLandingTarget.test_prerequisiteMustNotBeTheTarget
   lp.code.model.tests.test_branch.BranchAddLandingTarget.test_targetMustNotBeTheSource
   lp.code.model.tests.test_branch.BranchAddLandingTarget.test_targetProduct
+
   lp.code.model.tests.test_branch.TestBranchDeletionConsequences.test_ClearDependentBranch
   lp.code.model.tests.test_branch.TestBranchDeletionConsequences.test_ClearOfficialPackageBranch
   lp.code.model.tests.test_branch.TestBranchDeletionConsequences.test_ClearSeriesBranch
@@ -189,7 +118,9 @@ Tests with errors:
   lp.code.model.tests.test_branch.TestBranchDeletionConsequences.test_plainBranch
   lp.code.model.tests.test_branch.TestBranchDeletionConsequences.test_sourceBranchWithCodeReviewVoteReference
   lp.code.model.tests.test_branch.TestBranchDeletionConsequences.test_targetBranchWithCodeReviewVoteReference
+
   lp.code.model.tests.test_branch.TestCodeImport.test_branchCodeImport
+
   lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_approveCodeReview
   lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_approvingOwnCodeReview
   lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_commentOnOwnProposal
@@ -198,6 +129,7 @@ Tests with errors:
   lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_rejectedCodeReview
   lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_rejectedOwnCodeReview
   lp.code.model.tests.test_codereviewkarma.TestCodeReviewKarma.test_reviewerCommentingOnProposal
+
   lp.code.model.tests.test_revisionauthor.TestNewlyValidatedEmailsLinkRevisionAuthors.test_validated_email_updates
   lp.code.model.tests.test_revisionauthor.TestRevisionAuthor.testGetNameWithoutEmailReturnsNamePart
   lp.code.model.tests.test_revisionauthor.TestRevisionAuthor.testGetNameWithoutEmailWithBadEmail
@@ -207,6 +139,7 @@ Tests with errors:
   lp.code.model.tests.test_revisionauthor.TestRevisionEmailExtraction.test_bad_email_not_set
   lp.code.model.tests.test_revisionauthor.TestRevisionEmailExtraction.test_email_extracted_from_name
   lp.code.model.tests.test_revisionauthor.TestRevisionEmailExtraction.test_email_extracted_from_name_alternate
+
   lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.testLocalhost
   lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.testNoFileURL
   lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.testNoHTTPSLaunchpadURL
@@ -218,9 +151,11 @@ Tests with errors:
   lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.test_no_stacked_on_url
   lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.test_specified_stacked_on_url
   lp.codehosting.puller.tests.test_worker.TestMirroredBranchPolicy.test_stacked_on_url_for_mirrored_branch
+
   lp.codehosting.tests.test_rewrite.TestBranchRewriter.test_rewriteLine_cache_expires
   lp.codehosting.tests.test_rewrite.TestBranchRewriter.test_rewriteLine_logs_cache_hit
   lp.codehosting.tests.test_rewrite.TestBranchRewriter.test_rewriteLine_logs_cache_miss
+
   lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_active_publishing_status
   lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_distribution_series_cache
   lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_get_multiple
@@ -231,6 +166,7 @@ Tests with errors:
   lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_one_release
   lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_return_value
   lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_which_distroseries_does_not_matter
+
   lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_active_publishing_status
   lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_get_multiple
   lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_ignore_other_package_names
@@ -239,7 +175,9 @@ Tests with errors:
   lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_not_active_publishing_status
   lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_one_release
   lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_return_value
+
   lp.registry.tests.test_personset.TestPersonSetEnsurePerson.test_ensurePerson_returns_existing_person
+
   lp.registry.tests.test_prf_walker.HTTPWalker_IsDirectory.testFtpIsDirectory
   lp.registry.tests.test_prf_walker.HTTPWalker_ListDir.testApacheListing
   lp.registry.tests.test_prf_walker.HTTPWalker_ListDir.testDotPaths
@@ -248,8 +186,10 @@ Tests with errors:
   lp.registry.tests.test_prf_walker.HTTPWalker_ListDir.testNonAsciiListing
   lp.registry.tests.test_prf_walker.HTTPWalker_ListDir.testSquidFtpListing
   lp.registry.tests.test_prf_walker.WalkerBase_walk.test_walk_UnicodeEncodeError
+
   lp.scripts.utilities.tests.test_sanitizedb.SanitizeDbScriptTestCase.test_script
   lp.scripts.utilities.tests.test_sanitizedb.SanitizeDbScriptTestCase.test_script_dryrun
+
   lp.services.apachelogparser.tests.test_apachelogparser.TestParsedFilesDetection.test_completely_parsed_file
   lp.services.apachelogparser.tests.test_apachelogparser.TestParsedFilesDetection.test_different_files_with_same_name
   lp.services.apachelogparser.tests.test_apachelogparser.TestParsedFilesDetection.test_gzipped_file
@@ -257,6 +197,7 @@ Tests with errors:
   lp.services.apachelogparser.tests.test_apachelogparser.TestParsedFilesDetection.test_parsed_file_with_new_content
   lp.services.apachelogparser.tests.test_apachelogparser.Test_create_or_update_parsedlog_entry.test_creation_of_new_entries
   lp.services.apachelogparser.tests.test_apachelogparser.Test_create_or_update_parsedlog_entry.test_update_of_existing_entries
+
   lp.services.database.tests.test_prejoin.PrejoinTestCase.test_any
   lp.services.database.tests.test_prejoin.PrejoinTestCase.test_cache_populated
   lp.services.database.tests.test_prejoin.PrejoinTestCase.test_config
@@ -268,13 +209,16 @@ Tests with errors:
   lp.services.database.tests.test_prejoin.PrejoinTestCase.test_one_empty
   lp.services.database.tests.test_prejoin.PrejoinTestCase.test_order_by
   lp.services.database.tests.test_prejoin.PrejoinTestCase.test_slice
+
   lp.services.mail.tests.test_mailbox.TestDirectoryMailBox.test_delete
   lp.services.mail.tests.test_mailbox.TestDirectoryMailBox.test_deleting_while_iterating
   lp.services.mail.tests.test_mailbox.TestDirectoryMailBox.test_initially_empty
   lp.services.mail.tests.test_mailbox.TestDirectoryMailBox.test_items
   lp.services.mail.tests.test_mailbox.TestDirectoryMailBox.test_verify_interface
+
   lp.services.memcache.tests.test_memcache_client.MemcacheClientTestCase.test_basics
   lp.services.memcache.tests.test_memcache_client.MemcacheClientTestCase.test_bug_452092
+
   lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testBadDistributionDestination
   lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testBadPPADestination
   lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testBadSuiteDestination
@@ -300,6 +244,7 @@ Tests with errors:
   lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testUnembargoing
   lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testVersionConflictInDifferentPockets
   lp.soyuz.scripts.tests.test_copypackage.CopyPackageTestCase.testWillNotCopyTwice
+
   lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveById
   lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveByLanguage
   lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslations.test_RemoveByNotLanguage
@@ -330,6 +275,7 @@ Tests with errors:
   lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsOptionsHandling.test_WithNativeArgs
   lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsUnmasking.test_unmask_imported_message
   lp.translations.scripts.tests.test_remove_translations.TestRemoveTranslationsUnmasking.test_unmask_right_message
+
   lp.translations.tests.test_potmsgset.TestPOTMsgSetTranslationCredits.test_creation_credits
   lp.translations.tests.test_potmsgset.TestPOTMsgSetTranslationCredits.test_creation_pofile
 
