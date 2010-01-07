@@ -475,6 +475,10 @@ class IBranchMergeProposal(IPrivacy):
 class IBranchMergeProposalJob(Interface):
     """A Job related to a Branch Merge Proposal."""
 
+    id = Int(
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The tracking number for this job."))
+
     branch_merge_proposal = Object(
         title=_('The BranchMergeProposal this job is about'),
         schema=IBranchMergeProposal, required=True)
@@ -588,8 +592,14 @@ class IUpdatePreviewDiffJobSource(Interface):
     def create(bmp):
         """Create a job to update the diff for this merge proposal."""
 
+    def get(id):
+        """Return the UpdatePreviewDiffJob with this id."""
+
     def iterReady():
         """Iterate through jobs ready to update preview diffs."""
+
+    def contextManager():
+        """Get a context for running this kind of job in."""
 
 
 # XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it

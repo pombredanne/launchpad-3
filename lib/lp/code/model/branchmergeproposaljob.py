@@ -14,6 +14,7 @@ __all__ = [
     'MergeProposalCreatedJob',
     ]
 
+import contextlib
 from email.Utils import parseaddr
 import transaction
 
@@ -31,6 +32,7 @@ from zope.interface import classProvides, implements
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import MessageJob, MessageJobAction
 from canonical.launchpad.interfaces.message import IMessageJob
+from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interaction import setupInteraction
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IPlacelessAuthUtility, IStoreSelector, MAIN_STORE,
@@ -44,10 +46,10 @@ from lp.code.interfaces.branchmergeproposal import (
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import PreviewDiff, StaticDiff
-from lp.codehosting.vfs import get_multi_server
+from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
-from lp.services.job.runner import BaseRunnableJob
+from lp.services.job.runner import BaseRunnableJob, JobRunnerProcess
 
 
 class BranchMergeProposalJobType(DBEnumeratedType):
@@ -164,6 +166,22 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         return cls(job)
 
     @classmethod
+    def get(cls, job_id):
+        """Get a job by id.
+
+        :return: the BranchMergeProposalJob with the specified id, as the
+            current BranchMergeProposalJobDereived subclass.
+        :raises: SQLObjectNotFound if there is no job with the specified id,
+            or its job_type does not match the desired subclass.
+        """
+        job = BranchMergeProposalJob.get(job_id)
+        if job.job_type != cls.class_job_type:
+            raise SQLObjectNotFound(
+                'No object found with id %d and type %s' % (job_id,
+                cls.class_job_type.title))
+        return cls(job)
+
+    @classmethod
     def iterReady(klass):
         """Iterate through all ready BranchMergeProposalJobs."""
         from lp.code.model.branch import Branch
@@ -271,11 +289,29 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
 
     class_job_type = BranchMergeProposalJobType.UPDATE_PREVIEW_DIFF
 
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        """See `IUpdatePreviewDiffJobSource`."""
+        errorlog.globalErrorUtility.configure('update_preview_diffs')
+        server = get_scanner_server()
+        server.setUp()
+        yield
+        server.tearDown()
+
     def run(self):
         """See `IRunnableJob`"""
         preview = PreviewDiff.fromBranchMergeProposal(
             self.branch_merge_proposal)
         self.branch_merge_proposal.preview_diff = preview
+
+
+class UpdatePreviewDiffProcess(JobRunnerProcess):
+    """A process that runs UpdatePreviewDiffJobs"""
+    job_class = UpdatePreviewDiffJob
+
+
+UpdatePreviewDiffJob.amp = UpdatePreviewDiffProcess
 
 
 class CreateMergeProposalJob(BaseRunnableJob):

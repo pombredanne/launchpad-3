@@ -27,6 +27,8 @@ from bzrlib import urlutils
 
 from lazr.uri import URI
 
+import transaction
+
 from lp.codehosting import iter_list_chunks
 from lp.codehosting.puller.worker import BranchMirrorer
 from lp.codehosting.scanner import events
@@ -70,8 +72,7 @@ class BzrSync:
     """Import version control metadata from a Bazaar branch into the database.
     """
 
-    def __init__(self, trans_manager, branch, logger=None):
-        self.trans_manager = trans_manager
+    def __init__(self, branch, logger=None):
         self.db_branch = branch
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
@@ -138,10 +139,10 @@ class BzrSync:
                     bzr_branch, revision, revids_to_insert)
         self.deleteBranchRevisions(branchrevisions_to_delete)
         self.insertBranchRevisions(bzr_branch, revids_to_insert)
-        self.trans_manager.commit()
+        transaction.commit()
         # Synchronize the RevisionCache for this branch.
         getUtility(IRevisionSet).updateRevisionCacheForBranch(self.db_branch)
-        self.trans_manager.commit()
+        transaction.commit()
 
         # Notify any listeners that the tip of the branch has changed, but
         # before we've actually updated the database branch.
@@ -159,7 +160,7 @@ class BzrSync:
         notify(
             events.ScanCompleted(
                 self.db_branch, bzr_branch, bzr_ancestry, self.logger))
-        self.trans_manager.commit()
+        transaction.commit()
 
     def retrieveDatabaseAncestry(self):
         """Efficiently retrieve ancestry from the database."""

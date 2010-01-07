@@ -90,6 +90,9 @@ class IBranchUpgradeJobSource(Interface):
     def iterReady():
         """Iterate through all IBranchUpgradeJobs."""
 
+    def contextManager():
+        """Get a context for running this kind of job in."""
+
 
 class IRevisionMailJob(IRunnableJob):
     """A Job to send email a revision change in a branch."""

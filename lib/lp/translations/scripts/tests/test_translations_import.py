@@ -7,6 +7,7 @@ import re
 from unittest import TestLoader
 
 from lp.testing import TestCaseWithFactory
+from canonical.launchpad.webapp import errorlog
 from canonical.testing.layers import LaunchpadScriptLayer
 
 from lp.translations.interfaces.translationimportqueue import (
@@ -157,6 +158,14 @@ class TestTranslationsImport(TestCaseWithFactory):
 
         self.assertEqual(RosettaImportStatus.FAILED, entry.status)
         self.assertEqual(message, entry.error_output)
+
+    def test_main_leaves_oops_handling_alone(self):
+        """Ensure that script.main is not altering oops reporting."""
+        self.script.main()
+        default_reporting = errorlog.ErrorReportingUtility()
+        default_reporting.configure('error_reports')
+        self.assertEqual(default_reporting.oops_prefix,
+                         errorlog.globalErrorUtility.oops_prefix)
 
 
 def test_suite():

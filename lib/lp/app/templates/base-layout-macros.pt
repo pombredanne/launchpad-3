@@ -80,6 +80,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event/event.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${yui}/event/event-key.js"></script>            
+    <script type="text/javascript"
             tal:attributes="src string:${yui}/event-custom/event-custom.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event-simulate/event-simulate.js"></script>
@@ -181,6 +183,8 @@
             tal:attributes="src string:${lp_js}/lp/comment.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/errors.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/team.js"></script>
 
   </tal:devmode>
   <tal:production condition="not:devmode">

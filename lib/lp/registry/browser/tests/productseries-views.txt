@@ -184,6 +184,15 @@ There is a cancel_url property too.
     >>> print view.cancel_url
     http://launchpad.dev/app/simple
 
+Bazaar experts can change the branch links.
+
+    >>> from canonical.launchpad.interfaces.launchpad import (
+    ...     ILaunchpadCelebrities)
+    >>> celebrities = getUtility(ILaunchpadCelebrities)
+    >>> login_person(celebrities.bazaar_experts.teamowner)
+    >>> check_permission('launchpad.Edit', view)
+    True
+
 
 Delete ProductSeries
 --------------------
@@ -216,6 +225,12 @@ The project owner can access the view.
 
     >>> login_person(product.owner)
     >>> view = create_view(productseries, name='+delete')
+    >>> check_permission('launchpad.Edit', view)
+    True
+
+Registry experts can also access the view.
+
+    >>> login_person(celebrities.registry_experts.teamowner)
     >>> check_permission('launchpad.Edit', view)
     True
 
@@ -394,10 +409,8 @@ The series name is changed to 'product_name-series_name-date_created' to
 avoid conflicts. The linked branch is removed.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces.launchpad import (
-    ...     ILaunchpadCelebrities)
 
-    >>> obsolete_junk = getUtility(ILaunchpadCelebrities).obsolete_junk
+    >>> obsolete_junk = celebrities.obsolete_junk
     >>> productseries.product == obsolete_junk
     True
     >>> print productseries.name
