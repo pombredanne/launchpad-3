@@ -11,6 +11,7 @@ __metaclass__ = type
 __all__ = [
     'BaseRunnableJob',
     'JobRunner',
+    'JobRunnerProcess',
     ]
 
 

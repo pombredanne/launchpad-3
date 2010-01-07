@@ -16,6 +16,7 @@ __all__ = [
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
+    'IUpdatePreviewDiffJobSource',
     'notify_modified',
     ]
 
