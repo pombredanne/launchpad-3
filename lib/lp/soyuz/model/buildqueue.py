@@ -66,9 +66,9 @@ class BuildQueue(SQLBase):
         components = getSiteManager()
         # Get all components that implement the `IBuildFarmJob` interface.
         implementations = sorted(components.getUtilitiesFor(IBuildFarmJob))
-        # The above yields a collection of 2-tuples where the first element is
-        # the name of the `BuildFarmJobType` enum and the second element is an
-        # instance of the implementing class respectively.
+        # The above yields a collection of 2-tuples where the first element
+        # is the name of the `BuildFarmJobType` enum and the second element
+        # is the implementing class respectively.
         for job_enum_name, job_class in implementations:
             job_enum = getattr(BuildFarmJobType, job_enum_name)
             job_classes.append((job_enum, job_class))
