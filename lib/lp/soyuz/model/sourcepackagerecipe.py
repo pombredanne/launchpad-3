@@ -50,7 +50,7 @@ class SourcePackageRecipe(Storm):
 
     def _get_recipe_text(self):
         """Accesses of the recipe text go to the _SourcePackageRecipeData."""
-        return self._recipe_data.recipe
+        return self._recipe_data.getRecipe()
 
     def _set_recipe_text(self, value):
         """Setting of the recipe text goes to the _SourcePackageRecipeData."""

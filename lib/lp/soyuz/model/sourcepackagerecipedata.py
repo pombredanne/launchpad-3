@@ -17,6 +17,7 @@ from storm.locals import Int, Reference, Storm, Unicode
 
 from zope.component import getUtility
 
+from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lp.code.model.branch import Branch
@@ -29,6 +30,24 @@ class _SourcePackageRecipeDataInstruction(Storm):
     __storm_table__ = "SourcePackageRecipeDataInstruction"
 
     id = Int(primary=True)
+
+    name = Unicode(allow_none=False)
+    ##type = EnumCol()
+    comment = Unicode(allow_none=True)
+    line_number = Int(allow_none=False)
+
+    branch_id = Int(name='branch', allow_none=False)
+    branch = Reference(branch_id, 'Branch.id')
+
+    revspec = Unicode(allow_none=True)
+    directory = Unicode(allow_none=True)
+
+    recipe_id = Int(name='recipe', allow_none=False)
+    recipe = Reference(recipe_id, '_SourcePackageRecipeData.id')
+
+    parent_instruction_id = Int(name='parent_instruction', allow_none=True)
+    parent_instruction = Reference(
+        parent_instruction_id, '_SourcePackageRecipeDataInstruction.id')
 
 
 class _SourcePackageRecipeData(Storm):
@@ -46,7 +65,7 @@ class _SourcePackageRecipeData(Storm):
 
     def getRecipe(self):
         """The text of the recipe."""
-        1/0
+        return ''
 
     def setRecipe(self, recipe):
         """Set the text of the recipe."""
@@ -63,7 +82,10 @@ class _SourcePackageRecipeData(Storm):
     def getReferencedBranches(self):
         """Return an iterator of the Branch objects referenced by this recipe.
         """
-        return IStore(self).find(
+        yield self.base_branch
+        sub_branches = IStore(self).find(
             Branch,
-            _SourcePackageRecipeDataBranch.sourcepackagerecipedata == self,
-            Branch.id == _SourcePackageRecipeDataBranch.branch_id)
+            _SourcePackageRecipeDataInstruction.recipe == self,
+            Branch.id == _SourcePackageRecipeDataInstruction.branch_id)
+        for branch in sub_branches:
+            yield sub_branches
