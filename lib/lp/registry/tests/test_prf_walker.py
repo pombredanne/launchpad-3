@@ -177,6 +177,7 @@ class WalkerBase_walk(TestCase):
 
     def tearDown(self):
         reset_logging()
+        super(WalkerBase_walk, self).setUp()
 
     def test_walk_UnicodeEncodeError(self):
         """Verify that a UnicodeEncodeError is logged."""

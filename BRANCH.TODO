@@ -7,41 +7,6 @@
 
 Tests with errors:
 
-  lp.codehosting.tests.test_rewrite.TestBranchRewriter.test_rewriteLine_cache_expires
-  lp.codehosting.tests.test_rewrite.TestBranchRewriter.test_rewriteLine_logs_cache_hit
-  lp.codehosting.tests.test_rewrite.TestBranchRewriter.test_rewriteLine_logs_cache_miss
-
-  lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_active_publishing_status
-  lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_distribution_series_cache
-  lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_get_multiple
-  lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_ignore_other_package_names
-  lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_ignore_ppa
-  lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_latest_version
-  lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_not_active_publishing_status
-  lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_one_release
-  lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_return_value
-  lp.registry.tests.test_distribution.TestDistributionCurrentSourceReleases.test_which_distroseries_does_not_matter
-
-  lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_active_publishing_status
-  lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_get_multiple
-  lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_ignore_other_package_names
-  lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_ignore_ppa
-  lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_latest_version
-  lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_not_active_publishing_status
-  lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_one_release
-  lp.registry.tests.test_distroseries.TestDistroSeriesCurrentSourceReleases.test_return_value
-
-  lp.registry.tests.test_personset.TestPersonSetEnsurePerson.test_ensurePerson_returns_existing_person
-
-  lp.registry.tests.test_prf_walker.HTTPWalker_IsDirectory.testFtpIsDirectory
-  lp.registry.tests.test_prf_walker.HTTPWalker_ListDir.testApacheListing
-  lp.registry.tests.test_prf_walker.HTTPWalker_ListDir.testDotPaths
-  lp.registry.tests.test_prf_walker.HTTPWalker_ListDir.testGarbageListing
-  lp.registry.tests.test_prf_walker.HTTPWalker_ListDir.testNamedAnchors
-  lp.registry.tests.test_prf_walker.HTTPWalker_ListDir.testNonAsciiListing
-  lp.registry.tests.test_prf_walker.HTTPWalker_ListDir.testSquidFtpListing
-  lp.registry.tests.test_prf_walker.WalkerBase_walk.test_walk_UnicodeEncodeError
-
   lp.scripts.utilities.tests.test_sanitizedb.SanitizeDbScriptTestCase.test_script
   lp.scripts.utilities.tests.test_sanitizedb.SanitizeDbScriptTestCase.test_script_dryrun
 
