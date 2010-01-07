@@ -95,7 +95,7 @@ class Diff(SQLBase):
         :param target_branch: The branch that the source will merge into.
         :param prerequisite_branch: The branch that should be merged before
             merging the source.
-        :return: A `Diff`, `ConflictList` for a merge preview.
+        :return: A tuple of (`Diff`, `ConflictList`) for a merge preview.
         """
         cleanups = []
         try:
@@ -131,7 +131,7 @@ class Diff(SQLBase):
         :param merge_target: The tree to merge into.
         :param cleanups: A list of cleanup operations to run when all
             operations are complete.  This will be appended to.
-        :return: a tree and the resulting conflicts.
+        :return: a tuple of a tree and the resulting conflicts.
         """
         lca = cls._getLCA(source_branch, source_revision, target_branch)
         merge_base = source_branch.repository.revision_tree(lca)
