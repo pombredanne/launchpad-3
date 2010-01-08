@@ -26,9 +26,9 @@ process. Matsubara's account was created during a code import.
     None
 
 The account can only be activated by the user who is claiming
-the profile. Mark cannot claim it.
+the profile. Sample Person cannot claim it.
 
-    >>> login('mark@example.com')
+    >>> login('test@canonical.com')
     >>> matsubara.account.activate(
     ...     comment="test", password='ok', preferred_email=emailaddress)
     Traceback (most recent call last):

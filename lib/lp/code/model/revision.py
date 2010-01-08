@@ -86,10 +86,7 @@ class Revision(SQLBase):
         """See `IRevision`."""
         # If we know who the revision author is, give them karma.
         author = self.revision_author.person
-        if (author is not None and branch.product is not None):
-            # No karma for junk branches as we need a product to link
-            # against.
-            karma = author.assignKarma('revisionadded', branch.product)
+        if author is not None:
             # Backdate the karma to the time the revision was created.  If the
             # revision_date on the revision is in future (for whatever weird
             # reason) we will use the date_created from the revision (which
@@ -97,9 +94,14 @@ class Revision(SQLBase):
             # events is both wrong, as the revision has been created (and it
             # is lying), and a problem with the way the Launchpad code
             # currently does its karma degradation over time.
+            karma_date = min(self.revision_date, self.date_created)
+            karma = branch.target.assignKarma(
+                author, 'revisionadded', karma_date)
             if karma is not None:
-                karma.datecreated = min(self.revision_date, self.date_created)
                 self.karma_allocated = True
+            return karma
+        else:
+            return None
 
     def getBranch(self, allow_private=False, allow_junk=True):
         """See `IRevision`."""
@@ -385,9 +387,6 @@ class RevisionSet:
         from lp.registry.model.person import ValidPersonCache
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-
-        # XXX: Tim Penhey 2008-08-12, bug 244768
-        # Using Not(column == None) rather than column != None.
         return store.find(
             Revision,
             Revision.revision_author == RevisionAuthor.id,
@@ -397,7 +396,8 @@ class RevisionSet:
                 Select(True,
                        And(BranchRevision.revision == Revision.id,
                            BranchRevision.branch == Branch.id,
-                           Not(Branch.product == None)),
+                           Or(Branch.product != None,
+                              Branch.distroseries != None)),
                        (Branch, BranchRevision))))
 
     @staticmethod

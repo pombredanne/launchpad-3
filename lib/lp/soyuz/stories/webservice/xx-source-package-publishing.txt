@@ -112,7 +112,6 @@ publication to play with first.
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
     binary_file_urls: []
-    changes_file_url: u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
     component_name: u'main'
     date_created: ...
     date_made_pending: None
@@ -135,6 +134,10 @@ publication to play with first.
     source_package_name: u'testwebservice'
     source_package_version: u'666'
     status: u'Pending'
+
+    >>> webservice.named_get(
+    ...     pubs['entries'][0]['self_link'], 'changesFileUrl').jsonBody()
+    u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
 
 
 Unsigned sources
@@ -168,6 +171,7 @@ Package deletion
 A user can request a package to be deleted:
 
     >>> cprov = webservice.get("/~cprov").jsonBody()
+    >>> cprov_link = cprov['self_link']
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources',
     ...     source_name="testwebservice", version="666",
@@ -175,8 +179,27 @@ A user can request a package to be deleted:
     >>> print pubs['total_size']
     1
     >>> package = pubs['entries'][0]['self_link']
+
+Anonymous users can't remove packages.
+
     >>> response = webservice.named_post(
-    ...     package, 'requestDeletion', removed_by=cprov['self_link'],
+    ...     package, 'requestDeletion', 
+    ...     removal_comment="No longer needed")
+    >>> print response 
+    HTTP/1.1 401 Unauthorized
+    ...
+
+The owner of a PPA can delete packages.
+
+    >>> login("foo.bar@canonical.com")
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> logout()
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> cprov_webservice = webservice_for_person(cprov, 
+    ...     permission=OAuthPermission.WRITE_PUBLIC)
+    >>> response = cprov_webservice.named_post(
+    ...     package, 'requestDeletion', 
     ...     removal_comment="No longer needed")
     >>> print response 
     HTTP/1.1 200 Ok
