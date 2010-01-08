@@ -8,6 +8,7 @@ __metaclass__ = type
 __all__ = [
     'AdminPeopleMergeView',
     'AdminTeamMergeView',
+    'DeleteTeamView',
     'FinishedPeopleMergeRequestView',
     'RequestPeopleMergeMultipleEmailsView',
     'RequestPeopleMergeView']
@@ -16,11 +17,11 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.authtoken import LoginTokenType
 from canonical.launchpad.interfaces.emailaddress import (
     EmailAddressStatus, IEmailAddressSet)
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from canonical.launchpad.interfaces.lpstorm import IMasterObject
 from canonical.launchpad.webapp.interfaces import ILaunchBag
@@ -92,6 +93,7 @@ class AdminMergeBaseView(LaunchpadFormView):
     # subclasses.
     should_confirm_email_reassignment = False
     should_confirm_member_deactivation = False
+    merge_message = _('Merge completed successfully.')
 
     dupe_person_emails = ()
     dupe_person = None
@@ -100,6 +102,10 @@ class AdminMergeBaseView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(getUtility(IPersonSet))
+
+    @property
+    def success_url(self):
+        return canonical_url(self.target_person)
 
     def validate(self, data):
         """Check that user is not attempting to merge a person into itself."""
@@ -143,9 +149,8 @@ class AdminMergeBaseView(LaunchpadFormView):
             naked_email.accountID = self.target_person.accountID
         flush_database_updates()
         getUtility(IPersonSet).merge(self.dupe_person, self.target_person)
-        self.request.response.addInfoNotification(_(
-            'Merge completed successfully.'))
-        self.next_url = canonical_url(self.target_person)
+        self.request.response.addInfoNotification(self.merge_message)
+        self.next_url = self.success_url
 
 
 class AdminPeopleMergeView(AdminMergeBaseView):
@@ -196,6 +201,11 @@ class AdminTeamMergeView(AdminMergeBaseView):
     label = "Merge Launchpad teams"
     schema = IAdminTeamMergeSchema
 
+    def hasMailingList(self, team):
+        return (
+            team.mailing_list is not None
+            and team.mailing_list.status != MailingListStatus.PURGED)
+
     def validate(self, data):
         """Check there are no mailing lists associated with the dupe team."""
         # If errors have already been discovered there is no need to continue,
@@ -214,8 +224,7 @@ class AdminTeamMergeView(AdminMergeBaseView):
                 mapping=dict(name=dupe_team.name)))
         # We cannot merge the teams if there is a mailing list on the
         # duplicate person, unless that mailing list is purged.
-        if (dupe_team.mailing_list is not None and
-            dupe_team.mailing_list.status != MailingListStatus.PURGED):
+        if self.hasMailingList(dupe_team):
             self.addError(_(
                 "${name} is associated with a Launchpad mailing list; we "
                 "can't merge it.", mapping=dict(name=dupe_team.name)))
@@ -253,12 +262,72 @@ class AdminTeamMergeView(AdminMergeBaseView):
         self.doMerge(data)
 
 
+class DeleteTeamView(AdminTeamMergeView):
+    """A view that deletes a team by merging it with Registry experts."""
+
+    page_title = 'Delete'
+    field_names = ['dupe_person', 'target_person']
+    merge_message = _('Team deleted.')
+
+    @property
+    def label(self):
+        return 'Delete %s' % self.context.displayname
+
+    def __init__(self, context, request):
+        super(DeleteTeamView, self).__init__(context, request)
+        if ('field.dupe_person' in self.request.form
+            or 'field.target_person' in self.request.form):
+            # These fields have fixed values and are managed by this method.
+            # The user has crafted a request to gain ownership of the dupe
+            # team's assets.
+            self.addError('Unable to process submitted data.')
+        elif 'field.actions.delete' in self.request.form:
+            # In the case of deleting a team, the form values are always
+            # the context team, and the registry experts team. These values
+            # are injected during __init__ because the base classes assume the
+            # values are submitted. The validations performed by the base
+            # classes are still required to ensure the team can be deleted.
+            self.request.form.update(self.default_values)
+        else:
+            # Show the page explaining the action.
+            pass
+
+    @property
+    def default_values(self):
+        return {
+            'field.dupe_person': self.context.name,
+            'field.target_person': getUtility(
+                ILaunchpadCelebrities).registry_experts.name,
+            }
+
+    @property
+    def cancel_url(self):
+        return canonical_url(self.context)
+
+    @property
+    def success_url(self):
+        return canonical_url(getUtility(IPersonSet))
+
+    @property
+    def has_mailing_list(self):
+        return self.hasMailingList(self.context)
+
+    def canDelete(self, data):
+        return not self.has_mailing_list
+
+    @action('Delete', name='delete', condition=canDelete)
+    def merge_action(self, action, data):
+        base = super(DeleteTeamView, self)
+        base.deactivate_members_and_merge_action.success(data)
+
+
 class FinishedPeopleMergeRequestView(LaunchpadView):
     """A simple view for a page where we only tell the user that we sent the
     email with further instructions to complete the merge.
 
     This view is used only when the dupe account has a single email address.
     """
+
     def initialize(self):
         user = getUtility(ILaunchBag).user
         try:

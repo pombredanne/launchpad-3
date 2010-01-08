@@ -15,7 +15,7 @@ __all__ = [
     ]
 
 import contextlib
-from email.Utils import parseaddr
+from email.utils import parseaddr
 import transaction
 
 from lazr.delegates import delegates
@@ -28,6 +28,7 @@ from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.database.message import MessageJob, MessageJobAction
@@ -45,7 +46,7 @@ from lp.code.interfaces.branchmergeproposal import (
     )
 from lp.code.mail.branchmergeproposal import BMPMailer
 from lp.code.model.branchmergeproposal import BranchMergeProposal
-from lp.code.model.diff import PreviewDiff, StaticDiff
+from lp.code.model.diff import PreviewDiff
 from lp.codehosting.vfs import get_multi_server, get_scanner_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import IRunnableJob
@@ -153,7 +154,9 @@ class BranchMergeProposalJobDerived(BaseRunnableJob):
         self.context = job
 
     def __eq__(self, job):
-        return (self.__class__ is job.__class__ and self.job == job.job)
+        return (
+            self.__class__ is removeSecurityProxy(job.__class__)
+            and self.job == job.job)
 
     def __ne__(self, job):
         return not (self == job)
@@ -223,41 +226,14 @@ class MergeProposalCreatedJob(BranchMergeProposalJobDerived):
     def run(self, _create_preview=True):
         """See `IMergeProposalCreatedJob`."""
         # _create_preview can be set False for testing purposes.
-        diff_created = False
-        if self.branch_merge_proposal.review_diff is None:
-            self.branch_merge_proposal.review_diff = self._makeReviewDiff()
-            diff_created = True
         if _create_preview:
             preview_diff = PreviewDiff.fromBranchMergeProposal(
                 self.branch_merge_proposal)
             self.branch_merge_proposal.preview_diff = preview_diff
-            diff_created = True
-        if diff_created:
             transaction.commit()
         mailer = BMPMailer.forCreation(
             self.branch_merge_proposal, self.branch_merge_proposal.registrant)
         mailer.sendAll()
-        return self.branch_merge_proposal.review_diff
-
-    def _makeReviewDiff(self):
-        """Return a StaticDiff to be used as a review diff."""
-        cleanups = []
-        def get_branch(branch):
-            bzr_branch = branch.getBzrBranch()
-            bzr_branch.lock_read()
-            cleanups.append(bzr_branch.unlock)
-            return bzr_branch
-        try:
-            bzr_source = get_branch(self.branch_merge_proposal.source_branch)
-            bzr_target = get_branch(self.branch_merge_proposal.target_branch)
-            lca, source_revision = self._findRevisions(
-                bzr_source, bzr_target)
-            diff = StaticDiff.acquire(
-                lca, source_revision, bzr_source.repository)
-        finally:
-            for cleanup in reversed(cleanups):
-                cleanup()
-        return diff
 
     @staticmethod
     def _findRevisions(bzr_source, bzr_target):
