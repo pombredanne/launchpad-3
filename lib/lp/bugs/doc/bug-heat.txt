@@ -15,6 +15,16 @@ A new bug will have a hotness of zero.
     >>> bug.hotness
     0
 
+The bug's hotness can be set by calling its setHotness() method.
+
+    >>> bug.setHotness(42)
+    >>> bug.hotness
+    42
+
+We'll reset it to zero for the purposes of testing.
+
+    >>> bug.setHotness(0)
+
 
 The BugHeatCalculator class
 ---------------------------
