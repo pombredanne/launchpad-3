@@ -572,6 +572,18 @@
             interface="lp.translations.interfaces.poexportrequest.IPOExportRequestSet"/>
     </securedutility>
 
+    <!-- TranslationTemplateBuildJob -->
+    <class
+        class="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob">
+        <allow
+            interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJob"/>
+    </class>
+    <securedutility
+        component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
+        provides="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJob">
+        <allow interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource"/>
+    </securedutility>
+
   <webservice:register module="lp.translations.interfaces.webservice" />
 
 </configure>
