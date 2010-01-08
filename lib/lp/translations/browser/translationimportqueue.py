@@ -233,11 +233,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                             self.context.sourcepackagename))
                 else:
                     pofile_set = getUtility(IPOFileSet)
-                    existing_file = pofile_set.getPOFileByPathAndOrigin(
+                    existing_files = pofile_set.getPOFilesByPathAndOrigin(
                         path, self.context.productseries,
                         self.context.distroseries,
                         self.context.sourcepackagename)
-                if existing_file is None:
+                if existing_files.any() is None:
                     # There is no other pofile in the given path for this
                     # context, let's change it as requested by admins.
                     path_changed = True

@@ -684,11 +684,10 @@ class POTemplate(SQLBase, RosettaStats):
         release series and source package (whichever applies).
         """
         pofileset = getUtility(IPOFileSet)
-        existing_pofiles = pofileset.getPOFileByPathAndOrigin(
+        existing_pofiles = pofileset.getPOFilesByPathAndOrigin(
             path, self.productseries, self.distroseries,
             self.sourcepackagename)
-        # Convert query to Boolean to turn it into an existence check.
-        return not bool(existing_pofiles)
+        return existing_pofiles.any() is None
 
     def _composePOFilePath(self, language, variant=None):
         """Make up a good name for a new `POFile` for given language.
