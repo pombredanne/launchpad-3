@@ -2,21 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-\([A-Za-z_]+\) (\([^)]+\))
-
-Tests with failures:
-  canonical.launchpad.testing.tests.test_testcase.TestAddCleanup.test_addCleanup_called_in_reverse_order
-  canonical.launchpad.testing.tests.test_testcase.TestAddCleanup.test_cleanup_run_before_tearDown
-  canonical.launchpad.testing.tests.test_testcase.TestAddCleanup.test_cleanups_continue_running_after_error
-  canonical.launchpad.testing.tests.test_testcase.TestAddCleanup.test_error_in_cleanups_are_captured
-  canonical.launchpad.testing.tests.test_testcase.TestAddCleanup.test_fixture
-  canonical.launchpad.testing.tests.test_testcase.TestAddCleanup.test_multipleErrorsReported
-  canonical.launchpad.testing.tests.test_testcase.TestAddCleanup.test_tearDown_runs_after_cleanup_failure
-  lp.codehosting.puller.tests.test_scheduler.TestPullerMasterIntegration.test_lock_with_magic_id
-  lp.codehosting.puller.tests.test_scheduler.TestPullerMasterIntegration.test_mirror
-  lp.codehosting.puller.tests.test_scheduler.TestPullerMasterIntegration.test_mirror_with_destination_locked_by_another
-  lp.codehosting.puller.tests.test_scheduler.TestPullerMasterIntegration.test_mirror_with_destination_self_locked
-  lp.codehosting.puller.tests.test_scheduler.TestPullerMasterIntegration.test_stderrLoggedToOOPS
-Total: 25281 tests, 12 failures, 632 errors in 186 minutes 42.448 seconds.
-
