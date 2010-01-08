@@ -134,8 +134,6 @@ class ILaunchpadCelebrities(Interface):
     ubuntu_techboard = Attribute("The Ubuntu technical board.")
     vcs_imports = Attribute("The 'vcs-imports' team.")
 
-    person_names = Attribute("A list of the names of all celebrity persons.")
-
     def isCelebrityPerson(name):
         """Return true if there is an IPerson celebrity with the given name.
         """
