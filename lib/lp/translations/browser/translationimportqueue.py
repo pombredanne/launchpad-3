@@ -241,14 +241,15 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                     already_exists = (existing_files.any() is not None)
 
                 if already_exists:
-                    # There is no other pofile in the given path for this
-                    # context, let's change it as requested by admins.
-                    path_changed = True
-                else:
                     # We already have an IPOFile in this path, let's notify
                     # the user about that so they choose another path.
                     self.setFieldError('path',
                         'There is already a file in the given path.')
+                else:
+                    # There is no other pofile in the given path for this
+                    # context, let's change it as requested by admins.
+                    path_changed = True
+
         return path_changed
 
     def _validatePOT(self, data):
