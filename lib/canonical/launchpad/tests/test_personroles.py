@@ -183,3 +183,7 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         self.assertRaises(AttributeError, roles.isOneOf, obj, [fake_attr])
 
+
+def test_suite():
+    return unittest.TestLoader().loadTestsFromName(__name__)
+
