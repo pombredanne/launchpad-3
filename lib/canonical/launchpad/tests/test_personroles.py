@@ -11,6 +11,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, IPersonRoles)
+from lp.registry.interfaces.person import IPerson
 
 from lp.testing import TestCaseWithFactory
 from canonical.testing import ZopelessDatabaseLayer
@@ -38,62 +39,36 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         self.assertIs(self.person, roles.person)
 
-    def _test_in_team(self, attribute):
-        roles_attribute = self.prefix+attribute
-        roles = IPersonRoles(self.person)
-        self.assertFalse(
-            getattr(roles, roles_attribute),
-            "%s should be False" % roles_attribute)
-
-        team = getattr(self.celebs, attribute)
-        team.addMember(self.person, team.teamowner)
-        roles = IPersonRoles(self.person)
-        self.assertTrue(
-            getattr(roles, roles_attribute),
-            "%s should be True" % roles_attribute)
-        self.person.leave(team)
+    def _get_person_celebrities(self, is_team):
+        for name in ILaunchpadCelebrities.names():
+            attr = getattr(self.celebs, name)
+            if IPerson.providedBy(attr) and attr.isTeam() == is_team:
+                yield (name, attr)
 
     def test_in_teams(self):
         # Test all celebrity teams are available.
-        team_attributes = [
-            'admin',
-            'bazaar_experts',
-            'buildd_admin',
-            'commercial_admin',
-            'hwdb_team',
-            'launchpad_beta_testers',
-            'launchpad_developers',
-            'mailing_list_experts',
-            'registry_experts',
-            'rosetta_experts',
-            'shipit_admin',
-            'ubuntu_branches',
-            'ubuntu_security',
-            'ubuntu_techboard',
-            'vcs_imports',
-            ]
-        for attribute in team_attributes:
-            self._test_in_team(attribute)
+        for name, team in self._get_person_celebrities(is_team=True):
+            roles_attribute = self.prefix + name
+            roles = IPersonRoles(self.person)
+            self.assertFalse(
+                getattr(roles, roles_attribute),
+                "%s should be False" % roles_attribute)
 
-    def _test_in_person(self, attribute):
-        roles_attribute = self.prefix+attribute
-        celeb = getattr(self.celebs, attribute)
-        roles = IPersonRoles(celeb)
-        self.assertTrue(
-            getattr(roles, roles_attribute),
-            "%s should be True" % roles_attribute)
+            team.addMember(self.person, team.teamowner)
+            roles = IPersonRoles(self.person)
+            self.assertTrue(
+                getattr(roles, roles_attribute),
+                "%s should be True" % roles_attribute)
+            self.person.leave(team)
 
     def test_is_person(self):
         # All celebrity persons are available.
-        person_attributes = [
-            'bug_importer',
-            'bug_watch_updater',
-            'katie',
-            'janitor',
-            'ppa_key_guard',
-            ]
-        for attribute in person_attributes:
-            self._test_in_person(attribute)
+        for name, celeb in self._get_person_celebrities(is_team=False):
+            roles_attribute = self.prefix + name
+            roles = IPersonRoles(celeb)
+            self.assertTrue(
+                getattr(roles, roles_attribute),
+                "%s should be True" % roles_attribute)
 
     def test_in_AttributeError(self):
         # Do not check for non-existent attributes, even if it has the
