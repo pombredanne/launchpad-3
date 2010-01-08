@@ -33,19 +33,6 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         verifyObject(IPersonRoles, roles)
 
-    def test_number_of_person_celebrities(self):
-        # The number of person celebrities must match the number of in_*
-        # attributes if IPersonRoles, if the two interfaces are in sync.
-        # If the number is identical but the name of one has changed, the
-        # previous test_interface will fail.
-        num_in_roles = 0
-        for name in IPersonRoles.names():
-            if name.startswith(self.prefix):
-                num_in_roles += 1
-        self.assertEqual(len(self.celebs.person_names), num_in_roles,
-            "Possible reason: ILaunchpadCelebrities and IPersonRoles "
-            "are out of sync.")
-
     def test_person(self):
         # The person is available through the person attribute.
         roles = IPersonRoles(self.person)

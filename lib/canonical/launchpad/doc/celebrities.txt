@@ -252,6 +252,21 @@ A list of all IPerson celebrities is provided.
     ubuntu-security
     vcs-imports
 
+The number of Person celebrities is identical to the number of "in_"
+attributes of the IPersonRoles interface. If they differ, IPersonRoles needs
+to be synced to ILaunchpadCelebrities by adding/removing the appropriate
+"in_" attribute(s).
+
+    >>> from canonical.launchpad.interfaces.launchpad import IPersonRoles
+    >>> def number_of_in_attributes():
+    ...     num = 0
+    ...     for name in IPersonRoles.names():
+    ...         if name.startswith("in_"):
+    ...             num += 1
+    ...     return num
+    >>> print number_of_in_attributes() == len(celebs.person_names)
+    True
+
 
 == Detecting if a person is a celebrity ==
 
