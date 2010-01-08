@@ -12,7 +12,8 @@ __all__ = [
 
 import logging
 
-from zope.component import getUtility
+from zope.component import getSiteManager, getUtility
+
 from zope.interface import implements
 
 from sqlobject import (
@@ -24,7 +25,8 @@ from canonical import encoding
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmjob import (
+    BuildFarmJobType, IBuildFarmJob)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.services.job.interfaces.job import JobStatus
@@ -59,11 +61,6 @@ class BuildQueue(SQLBase):
     @property
     def specific_job_classes(self):
         """See `IBuildQueue`."""
-        # The reason for keeping the imports below local is that they are not
-        # of interest to other methods in this module.
-        from zope.component import getSiteManager
-        from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-
         job_classes = dict()
         # Get all components that implement the `IBuildFarmJob` interface.
         components = getSiteManager()
