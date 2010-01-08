@@ -115,7 +115,7 @@
         <tbody>
           <tr tal:repeat="bugtask view/hot_bugtasks">
             <td class="icon left">
-              <img alt="" src="/@@/bug" />
+              <span tal:attributes="class bugtask/image:sprite_css" />
             </td>
             <td style="text-align: right">
               #<span tal:replace="bugtask/bug/id" />
