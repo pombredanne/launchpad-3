@@ -83,12 +83,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
             self.featured_projects_top = self.featured_projects.pop(
                 top_project)
 
-    def canRedirect(self):
-        """Return True if the beta server is available to the user."""
-        return bool(
-            config.launchpad.beta_testers_redirection_host is not None and
-            self.isBetaUser)
-
     @cachedproperty
     def apphomes(self):
         return {
