@@ -45,11 +45,9 @@
     <tal:reviewer condition="view/person_is_reviewer">
       <div id="translations-to-review-section" class="portlet">
         <h2>Translations you need to review</h2>
-        <div class="see-all">
-          <a href="http://help.launchpad.net/Translations/Reviewing">
-            Why is this important?
-          </a>
-        </div>
+        <p>
+          By reviewing the following translations, you can help ensure other translators' work is published to software users. (<a href="/+help/reviewing.html" target="help">More about reviewing</a>)
+        </p>
         <metal:translations-to-review
           tal:replace="structure context/@@+translations-to-review-table" />
         <div class="see-all"
