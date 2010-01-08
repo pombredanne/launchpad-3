@@ -18,7 +18,7 @@ def notify_bug_modified(bug, event):
     """
     if (event.object.security_related and
         not event.object_before_modification.security_related):
-        # The bug turned to be security-related, subscribe the security
+        # The bug turned out to be security-related, subscribe the security
         # contact.
         for pillar in bug.affected_pillars:
             if pillar.security_contact is not None:
