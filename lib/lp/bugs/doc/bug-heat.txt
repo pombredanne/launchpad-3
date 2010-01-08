@@ -57,7 +57,7 @@ trigger when a new duplicate is added.
     >>> bug_heat_calculator._getHeatFromDuplicates()
     6
 
-With 5 duplicate, _getHeatFromDuplicates() will return 30.
+With 5 duplicates, _getHeatFromDuplicates() will return 30.
 
     >>> for i in range(4):
     ...     dupe = factory.makeBug()
