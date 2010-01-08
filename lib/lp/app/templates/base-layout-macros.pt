@@ -319,7 +319,7 @@
 
 <metal:footer define-macro="footer">
   <div id="footer" class="footer">
-    <div class="lp-arcana">
+    <div class="lp-arcana" tal:condition="not:view/is_root_page|nothing">
         <div class="lp-branding">
           <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
           &nbsp;&bull;&nbsp;

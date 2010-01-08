@@ -57,6 +57,10 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     featured_projects = []
     featured_projects_top = None
 
+
+    # Used by the footer to display the lp-arcana section.
+    is_root_page = True
+
     @staticmethod
     def _get_day_of_year():
         """Calculate the number of the current day.
