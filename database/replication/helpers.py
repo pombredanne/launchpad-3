@@ -71,12 +71,21 @@ IGNORED_TABLES = set([
     'public.lp_person',
     'public.lp_personlocation',
     'public.lp_teamparticipation',
-    # authservice database
-    'public.auth_permission', 'public.auth_group', 'public.auth_user',
-    'public.auth_message', 'public.django_content_type',
-    'public.auth_permission', 'public.django_session', 'public.django_site',
-    'public.django_admin_log', 'public.ssoopenidrpconfig',
-    'public.auth_group_permissions', 'public.auth_user_groups',
+    # Ubuntu SSO database. These tables where created manually by ISD
+    # and the Launchpad scripts should not mess with them. Eventually
+    # these tables will be in a totally seperate database.
+    'public.auth_permission',
+    'public.auth_group',
+    'public.auth_user',
+    'public.auth_message',
+    'public.django_content_type',
+    'public.auth_permission',
+    'public.django_session',
+    'public.django_site',
+    'public.django_admin_log',
+    'public.ssoopenidrpconfig',
+    'public.auth_group_permissions',
+    'public.auth_user_groups',
     'public.auth_user_user_permissions',
     ])
 
