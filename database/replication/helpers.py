@@ -73,7 +73,7 @@ IGNORED_TABLES = set([
     'public.lp_teamparticipation',
     # Ubuntu SSO database. These tables where created manually by ISD
     # and the Launchpad scripts should not mess with them. Eventually
-    # these tables will be in a totally seperate database.
+    # these tables will be in a totally separate database.
     'public.auth_permission',
     'public.auth_group',
     'public.auth_user',
