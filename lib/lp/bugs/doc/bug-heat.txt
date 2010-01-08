@@ -4,3 +4,11 @@ Calculating bug heat
 Launchpad bugs each have a 'hotness' rating. This is an indicator of how
 problematic a given bug is to the community and can be used to determine
 which bugs should be tackled first.
+
+A new bug will have a hotness of zero.
+
+    >>> from lp.testing.factory import LaunchpadObjectFactory
+    >>> factory = LaunchpadObjectFactory()
+    >>> bug = factory.makeBug()
+    >>> bug.hotness
+    0

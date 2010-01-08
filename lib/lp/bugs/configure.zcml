@@ -572,7 +572,8 @@
                     userCanView
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
-                    personIsSubscribedToDuplicate"/>
+                    personIsSubscribedToDuplicate
+                    hotness"/>
             <require
                 permission="launchpad.View"
                 attributes="
