@@ -22,5 +22,9 @@ CREATE INDEX translationimportqueueentry__potemplate__idx
 ON TranslationImportQueueEntry(potemplate)
 WHERE potemplate IS NOT NULL;
 
+CREATE INDEX pofile__from_sourcepackagename__idx
+ON POFile(from_sourcepackagename)
+WHERE from_sourcepackagename IS NOT NULL;
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 19, 1);
