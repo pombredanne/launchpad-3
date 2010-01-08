@@ -230,6 +230,9 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
     translationpermission = EnumCol(
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
+    translation_focus = ForeignKey(
+        dbName='translation_focus', foreignKey='ProductSeries',
+        notNull=False, default=None)
     bugtracker = ForeignKey(
         foreignKey="BugTracker", dbName="bugtracker", notNull=False,
         default=None)
@@ -744,11 +747,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         targetseries = ubuntu.currentseries
         product_series = self.translatable_series
 
-        # First, go with development focus branch
-        if product_series and self.development_focus in product_series:
-            return self.development_focus
-        # Next, go with the latest product series that has templates:
         if product_series:
+            # First, go with translation focus
+            if self.translation_focus in product_series:
+                return self.translation_focus
+            # Next, go with development focus
+            if self.development_focus in product_series:
+                return self.development_focus
+            # Next, go with the latest product series that has templates:
             return product_series[-1]
         # Otherwise, look for an Ubuntu package in the current distroseries:
         for package in packages:

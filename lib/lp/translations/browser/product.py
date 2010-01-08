@@ -65,7 +65,8 @@ class ProductTranslationsMenu(NavigationMenu):
 class ProductChangeTranslatorsView(TranslationsMixin, ProductEditView):
     label = "Set permissions and policies"
     page_title = "Permissions and policies"
-    field_names = ["translationgroup", "translationpermission"]
+    field_names = ["translationgroup", "translationpermission",
+        "translation_focus"]
 
     @property
     def cancel_url(self):
