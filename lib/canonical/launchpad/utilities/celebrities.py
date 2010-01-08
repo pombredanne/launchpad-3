@@ -152,8 +152,6 @@ class LaunchpadCelebrities:
     ubuntu_techboard = PersonCelebrityDescriptor('techboard')
     vcs_imports = PersonCelebrityDescriptor('vcs-imports')
 
-    person_names = sorted(list(PersonCelebrityDescriptor.names))
-
     @property
     def ubuntu_archive_mirror(self):
         """See `ILaunchpadCelebrities`."""
