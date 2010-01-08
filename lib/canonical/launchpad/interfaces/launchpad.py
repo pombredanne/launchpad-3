@@ -225,7 +225,7 @@ class IPersonRoles(Interface):
         """Is this person the owner of the object?"""
 
     def isDriver(obj):
-        """Is this person the driver of the object?"""
+        """Is this person on of the drivers of the object?"""
 
     def isOneOf(obj, attributes):
         """Is this person on of the roles in relation to the object?
