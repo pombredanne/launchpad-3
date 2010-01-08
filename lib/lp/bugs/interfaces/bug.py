@@ -736,6 +736,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         if the user is the owner or an admin.
         """
 
+    def setBugHotness(hotness):
+        """Set the hotness for the bug."""
+
 class InvalidDuplicateValue(Exception):
     """A bug cannot be set as the duplicate of another."""
     webservice_error(417)
@@ -973,6 +976,19 @@ class IBugSet(Interface):
 
         Otherwise, return False.
         """
+
+    def dangerousGetAllBugs():
+        """DO NOT CALL THIS METHOD.
+
+        This method exists solely to allow the bug heat script to grab
+        all the bugs in the database - including private ones - and
+        iterate over them. DO NOT USE IT UNLESS YOU KNOW WHAT YOU'RE
+        DOING. AND IF YOU KNOW WHAT YOU'RE DOING YOU KNOW BETTER THAN TO
+        USE THIS ANYWAY.
+        """
+        # XXX 2010-01-08 gmb:
+        #     Note, this method should go away when we have a proper
+        #     permissions system for scripts.
 
 
 class InvalidBugTargetType(Exception):

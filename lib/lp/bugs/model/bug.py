@@ -1426,6 +1426,10 @@ class Bug(SQLBase):
 
         return not subscriptions_from_dupes.is_empty()
 
+    def setHotness(self, hotness):
+        """See `IBug`."""
+        self.hotness = hotness
+
 
 class BugSet:
     """See BugSet."""
@@ -1666,11 +1670,17 @@ class BugSet:
         return bugs
 
     def getByNumbers(self, bug_numbers):
-        """see `IBugSet`."""
+        """See `IBugSet`."""
         if bug_numbers is None or len(bug_numbers) < 1:
             return EmptyResultSet()
         store = IStore(Bug)
         result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        return result_set.order_by('id')
+
+    def dangerousGetAllBugs(self):
+        """See `IBugSet`."""
+        store = IStore(Bug)
+        result_set = store.find(Bug)
         return result_set.order_by('id')
 
 

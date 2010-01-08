@@ -7,6 +7,10 @@ __metaclass__ = type
 __all__ = []
 
 
+from zope.component import getUtility
+
+from lp.bugs.interfaces.bug import IBugSet
+
 class BugHeatCalculator:
     """A class to calculate the heat for a bug."""
 
@@ -66,3 +70,25 @@ class BugHeatUpdater:
     def __init__(self, transaction, logger):
         self.transaction = transaction
         self.logger = logger
+
+    def updateBugHeat(self):
+        """Update the heat scores for all bugs."""
+        self.logger.info("Updating heat scores for all bugs")
+
+        # XXX 2010-01-08 gmb:
+        #     This method call should be taken out and shot as soon as
+        #     we have a proper permissions system for scripts.
+        all_bugs = getUtility(IBugSet).dangerousGetAllBugs()
+
+        total_bugs_updated = 0
+        self.transaction.begin()
+        for bug in all_bugs:
+            self.logger.debug("Updating heat for bug %s" % bug.id)
+            bug_heat_calculator = BugHeatCalculator(bug)
+            heat = bug_heat_calculator.getBugHeat()
+            bug.setHotness(heat)
+            total_bugs_updated += 1
+        self.transaction.commit()
+
+        self.logger.info(
+            "Done updating heat for %s bugs" % total_bugs_updated)

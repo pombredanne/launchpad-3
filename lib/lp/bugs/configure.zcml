@@ -669,7 +669,8 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
-                    setCommentVisibility"/>
+                    setCommentVisibility
+                    setHotness"/>
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
