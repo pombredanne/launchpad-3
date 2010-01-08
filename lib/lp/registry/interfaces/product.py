@@ -586,6 +586,14 @@ class IProductPublic(
             readonly=True,
             value_type=Reference(schema=IProductRelease)))
 
+    translation_focus = exported(
+        Choice(
+            title=_("Translation Focus"),
+            description=_(
+                "The ProductSeries that should get the translation effort focus."),
+            required=False,
+            vocabulary='FilteredProductSeries'))
+
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
         "translated sorted by distroseries.name and sourcepackage.name.")
