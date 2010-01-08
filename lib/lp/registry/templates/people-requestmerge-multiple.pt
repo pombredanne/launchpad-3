@@ -19,6 +19,7 @@
         <tal:block tal:condition="not: view/form_processed">
           <h1>Merge accounts</h1>
 
+      <tal:email_visible condition="not: view/email_hidden">
       <p>
         The account <code tal:content="view/dupe/name">foo</code>,
         which you&#8217;re trying to merge,
@@ -34,7 +35,7 @@
       <form name="mergerequest" action="" method="POST">
       <input type="hidden" name="dupe" tal:attributes="value request/dupe" />
       <table>
-        <tr tal:repeat="email view/naked_dupeemails">
+        <tr tal:repeat="email view/dupeemails">
           <td>
             <input type="checkbox" name="selected" checked="checked"
                    tal:attributes="value email/email" />
@@ -49,23 +50,60 @@
         </tr>
       </table>
       </form>
+      </tal:email_visible>
+
+      <tal:email_hidden condition="view/email_hidden">
+      <p>
+        The account <code tal:content="view/dupe/name">foo</code>,
+        which you&#8217;re trying to merge,
+        has <span tal:replace="view/dupeemails/count" /> registered
+        e-mail addresses but they are not publicly visible.
+        To complete the merge, you need to prove that you have access to
+        all e-mail addresses registered for this account.
+      </p>
+      <p>
+        To do so, click <samp>Submit</samp>.  An email will be sent to each
+        address on file for the duplicate account.  You must follow the
+        instructions for each email.
+        If you don&#8217;t have access to one or more of these addresses,
+        Launchpad will not be able to merge the account into your existing one,
+        but the addresses you verify will be transferred to your account.
+      </p>
+
+      <form name="mergerequest" action="" method="POST">
+        <input type="hidden" name="dupe" tal:attributes="value request/dupe" />
+        <input type="submit" value="Submit" />
+      </form>
+      </tal:email_hidden>
+
     </tal:block>
 
     <tal:block tal:condition="view/form_processed">
       <h1>Confirmation mail sent</h1>
 
-      <p>Individual email messages were sent to
+      <tal:email_visible condition="not: view/email_hidden">
+      <p>Individual email messages were sent to:</p>
         <tal:block repeat="email view/notified_addresses">
-          <strong tal:content="email"
-            /><span tal:condition="not: repeat/email/end">, </span>
-        </tal:block>.
+          <p><strong tal:content="email"/></p>
+        </tal:block>
+      </tal:email_visible>
+
+      <tal:email_hidden condition="view/email_hidden">
+      <p>Individual email messages were sent to the
+        <span tal:content="view/dupeemails/count" /> registered
+        e-mail addresses for
+        <code tal:content="view/dupe/name">foo</code>.
+      </p>
+      </tal:email_hidden>
+
+      <p>
         Please follow the instructions on each of those messages to complete
         the merge.
       </p>
     </tal:block>
 
   </tal:duplicate>
-</div> 
+</div>
 
 </body>
 </html>

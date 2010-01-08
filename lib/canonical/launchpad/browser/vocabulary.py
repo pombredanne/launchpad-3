@@ -82,7 +82,7 @@ def default_pickerentry_adapter(obj):
 def person_to_pickerentry(person):
     """Adapts IPerson to IPickerEntry."""
     extra = default_pickerentry_adapter(person)
-    if person.preferredemail is not None:
+    if person.preferredemail is not None and not person.hide_email_addresses:
         extra.description = person.preferredemail.email
     return extra
 

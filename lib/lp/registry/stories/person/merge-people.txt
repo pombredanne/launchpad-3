@@ -172,3 +172,56 @@ Revisiting the mergerequest-sent page now safely redirects the user:
     #>>> browser.open('http://launchpad.dev/people/+mergerequest-sent?dupe=55')
     #>>> browser.url
     #'http://launchpad.dev/~no-priv'
+
+If the duplicate account has multiple email addresses and has chosen
+to hide them the process is slightly different.  We cannot display the
+hidden addresses so instead we just inform the user to check all of
+them (and hope they know which ones) and we send merge request
+messages to them all.
+
+    >>> login('foo.bar@canonical.com')
+    >>> dupe = factory.makePerson(name="duplicate-person", email="dupe1@example.com",
+    ...                           hide_email_addresses=True)
+    >>> email = factory.makeEmail(address="dupe2@example.com", person=dupe)
+    >>> logout()
+
+Ensure there are no leftover emails.
+
+    >>> len(stub.test_emails)
+    0
+
+Open the merge page and merge our duplicate account with hidden email
+addresses.
+
+    >>> browser.open('http://launchpad.dev/people/+requestmerge')
+    >>> browser.getControl(
+    ...     'Duplicated Account').value = 'duplicate-person'
+    >>> browser.getControl('Continue').click()
+
+    >>> maincontent = extract_text(find_main_content(browser.contents))
+    >>> maincontent = ' '.join(maincontent.split())
+    >>> 'has 2 registered e-mail addresses' in maincontent
+    True
+
+Since the addresses are hidden we cannot display them therefore there
+are no controls to select.
+
+    >>> email_select_control = browser.getControl(name='selected')
+    Traceback (most recent call last):
+    ...
+    LookupError: name 'selected'
+
+    >>> browser.getControl('Submit').click()
+
+    >>> len(stub.test_emails)
+    2
+
+    >>> maincontent = extract_text(find_main_content(browser.contents))
+    >>> maincontent = ' '.join(maincontent.split())
+
+    >>> 'messages were sent to the 2 registered e-mail' in maincontent
+    True
+    >>> 'dupe1@example.com' in maincontent
+    False
+    >>> 'dupe2@example.com' in maincontent
+    False

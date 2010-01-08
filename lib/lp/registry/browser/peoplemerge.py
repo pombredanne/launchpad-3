@@ -290,8 +290,7 @@ class FinishedPeopleMergeRequestView(LaunchpadView):
 
 
 class RequestPeopleMergeMultipleEmailsView:
-    """A view for the page where the user asks a merge and the dupe account
-    have more than one email address."""
+    """Merge request view when dupe account has multiple email addresses."""
 
     def __init__(self, context, request):
         self.context = context
@@ -321,29 +320,38 @@ class RequestPeopleMergeMultipleEmailsView:
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
 
-        emails = self.request.form.get("selected")
-        if emails is not None:
-            # We can have multiple email adressess selected, and in this case
-            # emails will be a list. Otherwise it will be a string and we need
-            # to make a list with that value to use in the for loop.
-            if not isinstance(emails, list):
-                emails = [emails]
+        email_addresses = []
+        if self.email_hidden:
+            # If the email addresses are hidden we must send a merge request
+            # to each of them.  But first we've got to remove the security
+            # proxy so we can get to them.
+            from zope.security.proxy import removeSecurityProxy
+            email_addresses = [removeSecurityProxy(email).email
+                               for email in self.dupeemails]
+        else:
+            # Otherwise we send a merge request only to the ones the user
+            # selected.
+            emails = self.request.form.get("selected")
+            if emails is not None:
+                # We can have multiple email adressess selected, and in this
+                # case emails will be a list. Otherwise it will be a string
+                # and we need to make a list with that value to use in the for
+                # loop.
+                if not isinstance(emails, list):
+                    emails = [emails]
 
-            for email in emails:
-                emailaddress = emailaddrset.getByEmail(email)
-                assert emailaddress in self.dupeemails
-                token = logintokenset.new(
-                    user, login, email, LoginTokenType.ACCOUNTMERGE)
-                token.sendMergeRequestEmail()
-                self.notified_addresses.append(email)
+                for emailaddress in emails:
+                    email = emailaddrset.getByEmail(emailaddress)
+                    assert email in self.dupeemails
+                    email_addresses.append(emailaddress)
 
-    # XXX: salgado, 2008-07-02: We need to somehow disclose the dupe person's
-    # email addresses so that the logged in user knows where to look for the
-    # message with instructions to finish the merge. Since people can choose
-    # to have their email addresses hidden, we need to remove the security
-    # proxy here to ensure they can be shown in this page.
+        for emailaddress in email_addresses:
+            token = logintokenset.new(
+                user, login, emailaddress, LoginTokenType.ACCOUNTMERGE)
+            token.sendMergeRequestEmail()
+            self.notified_addresses.append(emailaddress)
+
     @property
-    def naked_dupeemails(self):
-        """Non-security-proxied email addresses of the dupe person."""
-        from zope.security.proxy import removeSecurityProxy
-        return [removeSecurityProxy(email) for email in self.dupeemails]
+    def email_hidden(self):
+        """Does the duplicate account hide email addresses?"""
+        return self.dupe.hide_email_addresses
