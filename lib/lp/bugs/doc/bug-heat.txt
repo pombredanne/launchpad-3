@@ -140,6 +140,14 @@ However, if the bug is private, _getHeatFromPrivacy() will return 150.
     >>> bug_heat_calculator._getHeatFromPrivacy()
     150
 
+Note that since the bug is now private its heat from subscribers has
+changed from 18 to 20. This is because the project owner, who previously
+had an indirect subscription to the bug, now as a direct subscription as
+a result of the behaviour of Bug.setPrivate()
+
+    >>> bug_heat_calculator._getHeatFromSubscribers()
+    20
+
 
 BugHeatCalculator._getHeatFromSecurity()
 ----------------------------------------
@@ -157,6 +165,24 @@ _getHeatFromSecurity() will return 250.
     >>> bug.security_related = True
     >>> bug_heat_calculator._getHeatFromSecurity()
     250
+
+
+BugHeatCalculator.getBugHeat()
+------------------------------
+
+BugHeatCalculator.getBugHeat() returns the total heat for a given bug as
+the sum of the results of all _getHeatFrom*() methods.
+
+For our bug, the total heat will be 470:
+
+ * From duplicates 30
+ * From subscribers 20
+ * From privacy 150
+ * From security 250
+ * From affected users 20
+
+    >>> bug_heat_calculator.getBugHeat()
+    470
 
 
 The BugHeatUpdater class

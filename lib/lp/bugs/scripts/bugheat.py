@@ -43,6 +43,22 @@ class BugHeatCalculator:
         return (
             (len(direct_subscribers) + len(subscribers_from_dupes)) * 2)
 
+    def getBugHeat(self):
+        """Return the total heat for the current bug."""
+        heat_counts = [
+            self._getHeatFromAffectedUsers(),
+            self._getHeatFromDuplicates(),
+            self._getHeatFromPrivacy(),
+            self._getHeatFromSecurity(),
+            self._getHeatFromSubscribers(),
+            ]
+
+        total_heat = 0
+        for count in heat_counts:
+            total_heat += count
+
+        return total_heat
+
 
 class BugHeatUpdater:
     """Takes responsibility for updating bug heat."""
