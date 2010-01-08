@@ -28,4 +28,4 @@ class DummyConfigurationTestCase(TestCase):
     def tearDown(self):
         getGlobalSiteManager().unregisterUtility(
             self.config, IWebServiceConfiguration)
-        super(DummyWebServiceConfiguration, self).tearDown()
+        super(DummyConfigurationTestCase, self).tearDown()
