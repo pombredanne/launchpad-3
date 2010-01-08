@@ -31,6 +31,7 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     NoCanonicalUrl, UnexpectedFormData)
@@ -83,7 +84,10 @@ def person_to_pickerentry(person):
     """Adapts IPerson to IPickerEntry."""
     extra = default_pickerentry_adapter(person)
     if person.preferredemail is not None:
-        extra.description = person.preferredemail.email
+        if check_permission('launchpad.View', person.preferredemail):
+            extra.description = person.preferredemail.email
+        else:
+            extra.description = '<email address hidden>'
     return extra
 
 @implementer(IPickerEntry)

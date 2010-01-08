@@ -15,7 +15,7 @@
         <allow interface="canonical.launchpad.interfaces.IBinaryAndSourcePackageName" />
     </class>
 
-    <utility
+    <securedutility
       name="BinaryAndSourcePackageName"
       component="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary"
       provides="zope.schema.interfaces.IVocabularyFactory"

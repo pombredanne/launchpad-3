@@ -4,175 +4,179 @@
 
 <configure xmlns="http://namespaces.zope.org/zope">
 
-  <utility
+  <class class="zope.schema.vocabulary.SimpleTerm">
+    <allow interface="zope.schema.interfaces.ITitledTokenizedTerm"/>
+  </class>
+
+  <securedutility
     name="Branch"
     component="canonical.launchpad.vocabularies.BranchVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="HostedBranchRestrictedOnOwner"
     component="canonical.launchpad.vocabularies.HostedBranchRestrictedOnOwnerVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="BranchRestrictedOnProduct"
     component="canonical.launchpad.vocabularies.BranchRestrictedOnProductVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="Bug"
     component="canonical.launchpad.vocabularies.BugVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="BugNominatableSeries"
     component="canonical.launchpad.vocabularies.BugNominatableSeriesVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="BugTracker"
     component="canonical.launchpad.vocabularies.BugTrackerVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="BugWatch"
     component="canonical.launchpad.vocabularies.BugWatchVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
       name="Component"
       component="canonical.launchpad.vocabularies.ComponentVocabulary"
       provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
       name="CountryName"
       component="canonical.launchpad.vocabularies.CountryNameVocabulary"
       provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="DistributionUsingMalone"
     component="canonical.launchpad.vocabularies.DistributionUsingMaloneVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="FilteredDeltaLanguagePack"
     component="canonical.launchpad.vocabularies.FilteredDeltaLanguagePackVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-   <utility
+   <securedutility
     name="FilteredDistroArchSeries"
     component="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="FilteredFullLanguagePack"
     component="canonical.launchpad.vocabularies.FilteredFullLanguagePackVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="FilteredLanguagePack"
     component="canonical.launchpad.vocabularies.FilteredLanguagePackVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="FutureSprint"
     component="canonical.launchpad.vocabularies.FutureSprintVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="Language"
     component="canonical.launchpad.vocabularies.LanguageVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="TranslatableLanguage"
     component="canonical.launchpad.vocabularies.TranslatableLanguageVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="PackageRelease"
     component="canonical.launchpad.vocabularies.PackageReleaseVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="PPA"
     component="canonical.launchpad.vocabularies.PPAVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ProjectProductsUsingMalone"
     component="canonical.launchpad.vocabularies.project_products_using_malone_vocabulary_factory"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="Specification"
     component="canonical.launchpad.vocabularies.SpecificationVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="SpecificationDependencies"
     component="canonical.launchpad.vocabularies.SpecificationDependenciesVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="SpecificationDepCandidates"
     component="canonical.launchpad.vocabularies.SpecificationDepCandidatesVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="Sprint"
     component="canonical.launchpad.vocabularies.SprintVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="TranslationGroup"
     component="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="TranslationMessage"
     component="canonical.launchpad.vocabularies.TranslationMessageVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="TranslationTemplate"
     component="canonical.launchpad.vocabularies.TranslationTemplateVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="Processor"
     component="canonical.launchpad.vocabularies.ProcessorVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ProcessorFamily"
     component="canonical.launchpad.vocabularies.ProcessorFamilyVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"

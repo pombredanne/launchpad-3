@@ -3,193 +3,193 @@
 -->
 
 <configure xmlns="http://namespaces.zope.org/zope">
-  <utility
+  <securedutility
     name="Distribution"
     component="lp.registry.vocabularies.DistributionVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="DistroSeries"
     component="lp.registry.vocabularies.DistroSeriesVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="FeaturedProject"
     component="lp.registry.vocabularies.FeaturedProjectVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="FilteredDistroSeries"
     component="lp.registry.vocabularies.FilteredDistroSeriesVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="FilteredProductSeries"
     component="lp.registry.vocabularies.FilteredProductSeriesVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="KarmaCategory"
     component="lp.registry.vocabularies.KarmaCategoryVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="Milestone"
     component="lp.registry.vocabularies.MilestoneVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="NonMergedPeopleAndTeams"
     component="lp.registry.vocabularies.NonMergedPeopleAndTeamsVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="AdminMergeablePerson"
     component="lp.registry.vocabularies.AdminMergeablePersonVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="PersonAccountToMerge"
     component="lp.registry.vocabularies.PersonAccountToMergeVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="PersonActiveMembership"
     component="lp.registry.vocabularies.PersonActiveMembershipVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="PersonTeamParticipations"
     component="lp.registry.vocabularies.person_team_participations_vocabulary_factory"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="Product"
     component="lp.registry.vocabularies.ProductVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ProductRelease"
     component="lp.registry.vocabularies.ProductReleaseVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ProductSeries"
     component="lp.registry.vocabularies.ProductSeriesVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="Project"
     component="lp.registry.vocabularies.ProjectVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ProjectProducts"
     component="lp.registry.vocabularies.project_products_vocabulary_factory"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="CommercialProjects"
     component="lp.registry.vocabularies.CommercialProjectsVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="UserTeamsParticipation"
     component="lp.registry.vocabularies.UserTeamsParticipationVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="UserTeamsParticipationPlusSelf"
     component="lp.registry.vocabularies.UserTeamsParticipationPlusSelfVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ActiveMailingList"
     component="lp.registry.vocabularies.ActiveMailingListVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ValidPersonOrTeam"
     component="lp.registry.vocabularies.ValidPersonOrTeamVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ValidAssignee"
     component="lp.registry.vocabularies.ValidPersonOrTeamVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ValidMaintainer"
     component="lp.registry.vocabularies.ValidPersonOrTeamVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ValidOwner"
     component="lp.registry.vocabularies.ValidPersonOrTeamVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ValidTeam"
     component="lp.registry.vocabularies.ValidTeamVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ValidPerson"
     component="lp.registry.vocabularies.ValidPersonVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ValidTeamMember"
     component="lp.registry.vocabularies.ValidTeamMemberVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="ValidTeamOwner"
     component="lp.registry.vocabularies.ValidTeamOwnerVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="DistributionOrProduct"
     component="lp.registry.vocabularies.DistributionOrProductVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="DistributionOrProductOrProject"
     component="lp.registry.vocabularies.DistributionOrProductOrProjectVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
     />
 
-  <utility
+  <securedutility
     name="SourcePackageName"
     component="lp.registry.vocabularies.SourcePackageNameVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"

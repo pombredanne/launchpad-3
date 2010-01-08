@@ -260,7 +260,7 @@
             <allow
                 interface="lp.soyuz.interfaces.binarypackagename.IBinaryPackageName"/>
         </class>
-        <utility
+        <securedutility
             name="BinaryPackageName"
             component="lp.soyuz.model.binarypackagename.BinaryPackageNameVocabulary"
             provides="zope.schema.interfaces.IVocabularyFactory"/>

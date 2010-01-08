@@ -75,6 +75,8 @@ class ISecuredUtilityDirective(Interface):
 
     component = GlobalObject(title=u'component', required=False)
 
+    name = TextLine(title=u"Name", required=False)
+
 
 class PermissionCollectingContext:
 
@@ -97,7 +99,8 @@ class PermissionCollectingContext:
 
 class SecuredUtilityDirective:
 
-    def __init__(self, _context, provides, class_=None, component=None):
+    def __init__(self, _context, provides, class_=None, component=None,
+                 name=''):
         if class_ is not None:
             assert component is None, "Both class and component specified"
             self.component = class_()
@@ -107,6 +110,7 @@ class SecuredUtilityDirective:
             self.component = component
         self._context = _context
         self.provides = provides
+        self.name = name
         self.permission_collector = PermissionCollectingContext()
         self.contentdirective = ClassDirective(
             self.permission_collector, class_)

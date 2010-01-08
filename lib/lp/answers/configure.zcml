@@ -221,7 +221,7 @@
     <allow interface=".interfaces.faq.IFAQSet" />
   </securedutility>
 
-  <utility
+  <securedutility
     name="FAQ"
     component=".vocabulary.FAQVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
