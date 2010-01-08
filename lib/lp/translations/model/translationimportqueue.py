@@ -285,13 +285,13 @@ class TranslationImportQueueEntry(SQLBase):
 
     def isUserUploaderOrOwner(self, user):
         """See `ITranslationImportQueueEntry`."""
-        user = IPersonRoles(user)
-        if user.inTeam(self.importer):
+        roles = IPersonRoles(user)
+        if roles.inTeam(self.importer):
             return True
         if self.productseries is not None:
-            return user.isOwner(self.productseries.product)
+            return roles.isOwner(self.productseries.product)
         if self.distroseries is not None:
-            return user.isOwner(self.distroseries.distribution)
+            return roles.isOwner(self.distroseries.distribution)
         return False
 
     def canSetStatus(self, new_status, user):
