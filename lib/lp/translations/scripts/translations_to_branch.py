@@ -9,7 +9,7 @@ __all__ = ['ExportTranslationsToBranch']
 
 import os.path
 from datetime import datetime, timedelta
-from pytz import UTC
+from pytz import timezone
 
 from zope.component import getUtility
 
@@ -25,6 +25,9 @@ from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.model.directbranchcommit import (
     ConcurrentUpdateError, DirectBranchCommit)
 from lp.services.scripts.base import LaunchpadCronScript
+
+
+UTC = timezone('UTC')
 
 
 class ExportTranslationsToBranch(LaunchpadCronScript):
