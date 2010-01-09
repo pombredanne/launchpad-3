@@ -26,5 +26,10 @@ CREATE INDEX pofile__from_sourcepackagename__idx
 ON POFile(from_sourcepackagename)
 WHERE from_sourcepackagename IS NOT NULL;
 
+CREATE INDEX bugwatch__lastchecked__idx ON BugWatch(lastchecked);
+CREATE INDEX bugwatch__remotebug__idx ON BugWatch(remotebug);
+CREATE INDEX bugwatch__remote_lp_bug_id__idx ON BUgWatch(remote_lp_bug_id)
+WHERE remote_lp_bug_id IS NOT NULL;
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 19, 1);
