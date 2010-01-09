@@ -681,8 +681,6 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
             required=True,
             readonly=False))
 
-    @operation_parameters(
-        break_references=Bool(title=_("Break references to this branch")))
     @export_destructor_operation()
     def destroySelf(break_references=False):
         """Delete the specified branch.

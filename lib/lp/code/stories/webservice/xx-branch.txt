@@ -245,10 +245,12 @@ delete them.
     >>> print deletable
     False
 
-    >>> response = webservice.delete('/~eric/fooix/feature-branch',
-    ...                              break_references=True)
+    Deleting only works on branches that do not have anything else 
+    depending on them.
+
+    >>> response = webservice.delete('/~eric/fooix/feature-branch')
     >>> print response
-    HTTP/1.1 200 Ok
+    HTTP/1.1 500 Internal Server Error
     ...
 
     >>> response = webservice.delete('/~mary/blob/bar')
@@ -258,4 +260,5 @@ delete them.
 
     >>> print_branches(webservice, '/widgets')
     ~eric/fooix/trunk - Development
+    ~eric/fooix/feature-branch - Experimental
 
