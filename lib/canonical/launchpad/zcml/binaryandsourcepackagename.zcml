@@ -19,7 +19,14 @@
       name="BinaryAndSourcePackageName"
       component="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary"
       provides="zope.schema.interfaces.IVocabularyFactory"
-      />
+      >
+      <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+    </securedutility>
+
+    <class class="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary">
+      <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+    </class>
+
 
   </facet>
 </configure>

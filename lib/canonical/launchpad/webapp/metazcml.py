@@ -131,7 +131,8 @@ class SecuredUtilityDirective:
             self.permission_collector.set_permissions
             )
         component = ProxyFactory(self.component, checker=checker)
-        utility(self._context, self.provides, component=component)
+        utility(self._context, self.provides, component=component,
+                name=self.name)
         return ()
 
 

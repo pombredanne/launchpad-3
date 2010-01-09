@@ -225,7 +225,14 @@
     name="FAQ"
     component=".vocabulary.FAQVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
-    />
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
+
+  <class class=".vocabulary.FAQVocabulary">
+    <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+  </class>
+
 
   <lp:help-folder
       folder="help" type="canonical.launchpad.layers.AnswersLayer" />

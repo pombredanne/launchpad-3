@@ -263,7 +263,14 @@
         <securedutility
             name="BinaryPackageName"
             component="lp.soyuz.model.binarypackagename.BinaryPackageNameVocabulary"
-            provides="zope.schema.interfaces.IVocabularyFactory"/>
+            provides="zope.schema.interfaces.IVocabularyFactory">
+          <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+        </securedutility>
+
+        <class class="lp.soyuz.model.binarypackagename.BinaryPackageNameVocabulary">
+          <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
+        </class>
+
 
         <!-- BinaryPackageNameSet -->
 
