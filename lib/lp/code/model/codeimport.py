@@ -88,9 +88,9 @@ class CodeImport(SQLBase):
 
     cvs_module = StringCol(default=None)
 
-    svn_branch_url = StringCol(default=None)
+    svn_branch_url = StringCol(dbName='branch_url', default=None)
 
-    git_repo_url = StringCol(default=None)
+    git_repo_url = StringCol(dbName='branch_url', default=None)
 
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)
