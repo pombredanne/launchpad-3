@@ -512,7 +512,8 @@ class POTemplateEditView(LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
     schema = IPOTemplate
-    field_names = ['description', 'priority', 'owner']
+    field_names = ['name', 'translation_domain', 'description', 'priority',
+        'path', 'owner', 'iscurrent']
     label = 'Edit translation template details'
     page_title = 'Edit details'
 
@@ -712,7 +713,7 @@ class POTemplateSubsetNavigation(Navigation):
             raise AssertionError('Unknown context for %s' % potemplate.title)
 
         if ((official_rosetta and potemplate.iscurrent) or
-            check_permission('launchpad.TranslationsAdmin', self.context)):
+            check_permission('launchpad.Edit', self.context)):
             # The target is using officially Launchpad Translations and the
             # template is available to be translated, or the user is a is a
             # Launchpad administrator in which case we show everything.

@@ -17,7 +17,7 @@ from zope.component import getUtility
 # SQL imports
 from sqlobject import ForeignKey, SQLObjectNotFound, StringCol
 
-from storm.expr import Desc, Not
+from storm.expr import Desc, In, Not
 from storm.store import Store
 
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -31,6 +31,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.message import Message
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.lpstorm import IStore
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import urlappend, urlsplit
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -603,3 +604,10 @@ class BugWatchSet(BugSetBase):
 
         raise UnrecognizedBugTrackerURL(url)
 
+    def getBugWatchesForRemoteBug(self, remote_bug, bug_watch_ids=None):
+        """See `IBugWatchSet`."""
+        query = IStore(BugWatch).find(
+            BugWatch, BugWatch.remotebug == remote_bug)
+        if bug_watch_ids is not None:
+            query = query.find(In(BugWatch.id, bug_watch_ids))
+        return query

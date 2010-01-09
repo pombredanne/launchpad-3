@@ -132,6 +132,8 @@ class CodeImport(SQLBase):
             return self.git_repo_url
         elif self.rcs_type == RevisionControlSystems.HG:
             return self.hg_repo_url
+        elif self.rcs_type == RevisionControlSystems.BZR_SVN:
+            return self.svn_branch_url
         else:
             raise AssertionError(
                 'Unknown rcs type: %s'% self.rcs_type.title)
