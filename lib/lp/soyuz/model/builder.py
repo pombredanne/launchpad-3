@@ -79,7 +79,11 @@ class TimeoutTransport(xmlrpclib.Transport):
         return TimeoutHTTP(host)
 
 
-class BuilderSlave(xmlrpclib.Server):
+# XXX: Add methods to this that wrap common operations, move them off IBuilder.
+# - cacheFileOnSlave
+# - slave.build
+
+class BuilderSlave(xmlrpclib.ServerProxy):
     """Add in a few useful methods for the XMLRPC slave."""
 
     def __init__(self, urlbase, vm_host):

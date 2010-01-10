@@ -27,6 +27,11 @@ class IBuildFarmJobBehavior(Interface):
     status = Attribute(
         "Generated status information for this particular job.")
 
+    # XXX: Maybe change this to pass the slave & some other stuff, rather than
+    # the whole builder.
+    #
+    # XXX: I also don't like objects that require setFoo calls in order to be
+    # valid.
     def setBuilder(builder):
         """Sets the associated builder reference for this instance."""
 
