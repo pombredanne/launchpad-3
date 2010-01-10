@@ -155,11 +155,11 @@ class TestRecipeBranchRoundTripping(RecipeParserTests, TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
 
     def get_recipe(self, recipe_text):
+        builder_recipe = super(
+            TestRecipeBranchRoundTripping, self).get_recipe(recipe_text)
         for url in 'http://foo.org/', 'http://bar.org/':
             self.factory.makeAnyBranch(
                 branch_type=BranchType.MIRRORED, url=url)
-        builder_recipe = super(
-            TestRecipeBranchRoundTripping, self).get_recipe(recipe_text)
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)
         distroseries = self.factory.makeDistroSeries()
