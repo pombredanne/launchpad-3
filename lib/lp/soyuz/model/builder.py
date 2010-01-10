@@ -283,10 +283,10 @@ class Builder(SQLBase):
         """See IBuilder."""
         # Set the build behavior depending on the provided build queue item.
         self.current_build_behavior = build_queue_item.required_build_behavior
-        self.logStartBuild(build_queue_item, logger)
+        self.current_build_behavior.logStartBuild(logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
-        self.verifyBuildRequest(build_queue_item, logger)
+        self.current_build_behavior.verifyBuildRequest(logger)
 
         # If we are building a virtual build, resume the virtual machine.
         if self.virtualized:
@@ -294,7 +294,8 @@ class Builder(SQLBase):
 
         # Do it.
         build_queue_item.markAsBuilding(self)
-        self.dispatchBuildToSlave(build_queue_item, logger)
+        self.current_build_behavior.dispatchBuildToSlave(
+            build_queue_item, logger)
 
     # XXX cprov 2009-06-24: This code does not belong to the content
     # class domain. Here we cannot make sensible decisions about what

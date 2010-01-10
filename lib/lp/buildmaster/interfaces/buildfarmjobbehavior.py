@@ -35,7 +35,7 @@ class IBuildFarmJobBehavior(Interface):
     def setBuilder(builder):
         """Sets the associated builder reference for this instance."""
 
-    def logStartBuild(build_queue_item, logger):
+    def logStartBuild(logger):
         """Log the start of a specific build queue item.
 
         The form of the log message will vary depending on the type of build.
@@ -50,7 +50,7 @@ class IBuildFarmJobBehavior(Interface):
         :logger: A logger to be used to log diagnostic information.
         """
 
-    def verifyBuildRequest(build_queue_item, logger):
+    def verifyBuildRequest(logger):
         """Carry out any pre-build checks.
 
         :param build_queue_item: The `BuildQueueItem` that is to be built.

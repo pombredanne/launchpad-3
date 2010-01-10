@@ -38,7 +38,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
     def build(self):
         return self.buildfarmjob.build
 
-    def logStartBuild(self, build_queue_item, logger):
+    def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""
         spr = self.build.sourcepackagerelease
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
@@ -119,7 +119,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             self._builder.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
-    def verifyBuildRequest(self, build_queue_item, logger):
+    def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.
 
         The build request is checked:

@@ -33,7 +33,7 @@ class BuildFarmJobBehaviorBase:
         """The builder should be set once and not changed."""
         self._builder = builder
 
-    def verifyBuildRequest(self, build_queue_item, logger):
+    def verifyBuildRequest(self, logger):
         """The default behavior is a no-op."""
         pass
 
