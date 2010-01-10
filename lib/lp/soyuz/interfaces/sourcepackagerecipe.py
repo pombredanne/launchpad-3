@@ -61,5 +61,5 @@ class ISourcePackageRecipeSource(Interface):
     """A utility of this interface can be used to create and access recipes.
     """
 
-    def new(registrant, owner, distroseries, sourcepackagename, name, recipe):
+    def new(registrant, owner, distroseries, sourcepackagename, name, builder_recipe):
         """Create an `ISourcePackageRecipe`."""

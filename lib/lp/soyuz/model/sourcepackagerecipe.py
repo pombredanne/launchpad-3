@@ -48,15 +48,15 @@ class SourcePackageRecipe(Storm):
     _recipe_data_id = Int(name='recipe_data', allow_none=True)
     _recipe_data = Reference(_recipe_data_id, '_SourcePackageRecipeData.id')
 
-    def _get_recipe_text(self):
-        """Accesses of the recipe text go to the _SourcePackageRecipeData."""
+    def _get_builder_recipe(self):
+        """Accesses of the recipe go to the _SourcePackageRecipeData."""
         return self._recipe_data.getRecipe()
 
-    def _set_recipe_text(self, value):
-        """Setting of the recipe text goes to the _SourcePackageRecipeData."""
+    def _set_builder_recipe(self, value):
+        """Setting of the recipe goes to the _SourcePackageRecipeData."""
         self._recipe_data.setRecipe(value)
 
-    recipe_text = property(_get_recipe_text, _set_recipe_text)
+    builder_recipe = property(_get_builder_recipe, _set_builder_recipe)
 
     def getReferencedBranches(self):
         """See `ISourcePackageRecipe.getReferencedBranches`."""
@@ -64,11 +64,11 @@ class SourcePackageRecipe(Storm):
 
     @classmethod
     def new(self, registrant, owner, distroseries, sourcepackagename, name,
-            recipe):
+            builder_recipe):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        sprecipe._recipe_data = _SourcePackageRecipeData(recipe)
+        sprecipe._recipe_data = _SourcePackageRecipeData(builder_recipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
         sprecipe.distroseries = distroseries

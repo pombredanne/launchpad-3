@@ -91,13 +91,13 @@ class _SourcePackageRecipeData(Storm):
                 b.recipe_branch.revspec, b.nest_path, self, parent_insn)
             self._record_instructions(b.recipe_branch, insn)
 
-    def setRecipe(self, recipe):
+    def setRecipe(self, builder_recipe):
         """Set the text of the recipe."""
         IStore(self).find(
             _SourcePackageRecipeDataInstruction,
             _SourcePackageRecipeDataInstruction.recipe == self).remove()
-        base_branch = RecipeParser(recipe).parse()
         branch_lookup = getUtility(IBranchLookup)
+        base_branch = builder_recipe
         self.base_branch = branch_lookup.getByUrl(base_branch.url)
         self.deb_version_template = base_branch.deb_version
         self.recipe_format = unicode(base_branch.format)
