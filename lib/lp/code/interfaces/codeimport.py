@@ -106,22 +106,9 @@ class ICodeImport(Interface):
             "The version control system to import from. "
             "Can be CVS or Subversion."))
 
-    svn_branch_url = URIField(title=_("Branch URL"), required=False,
-        description=_(
-            "The URL of a Subversion branch, starting with svn:// or"
-            " http(s)://. Only trunk branches are imported."),
-        allowed_schemes=["http", "https", "svn"],
-        allow_userinfo=False, # Only anonymous access is supported.
-        allow_port=True,
-        allow_query=False,    # Query makes no sense in Subversion.
-        allow_fragment=False, # Fragment makes no sense in Subversion.
-        trailing_slash=False) # See http://launchpad.net/bugs/56357.
-
-    git_repo_url = URIField(title=_("Repo URL"), required=False,
-        description=_(
-            "The URL of the git repository.  The MASTER branch will be "
-            "imported."),
-        allowed_schemes=["git"],
+    url = URIField(title=_("URL"), required=False,
+        description=_("The URL of the VCS branch."),
+        allowed_schemes=["http", "https", "svn", "git"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
         allow_query=False,    # Query makes no sense in Subversion.
