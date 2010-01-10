@@ -340,17 +340,9 @@ class BuilddManager(service.Service):
                     transaction.commit()
                 continue
 
-            candidate = builder.findBuildCandidate()
-            if candidate is None:
-                self.logger.debug(
-                    "No build candidates available for builder.")
-                continue
-
             slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
-            builder.setSlaveForTesting(slave)
-
-            builder.dispatchBuildCandidate(candidate)
-            if builder.currentjob is not None:
+            candidate = builder.findAndStartJob(buildd_slave=slave)
+            if candidate is not None:
                 recording_slaves.append(slave)
             transaction.commit()
 

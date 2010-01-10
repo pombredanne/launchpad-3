@@ -256,9 +256,11 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
         :param error_message: The error message to be used for logging.
         """
 
-    def findAndStartJob():
+    def findAndStartJob(buildd_slave=None):
         """Find a job to run and send it to the buildd slave.
 
+        :param buildd_slave: An optional buildd slave that this builder should
+            talk to.
         :return: the `IBuildQueue` instance found or None if no job was found.
         """
 

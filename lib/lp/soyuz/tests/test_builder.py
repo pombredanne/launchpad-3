@@ -6,6 +6,7 @@
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing import LaunchpadZopelessLayer
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
@@ -34,13 +35,15 @@ class TestFindBuildCandidateBase(TestCaseWithFactory):
         # Create some i386 builders ready to build PPA builds.  Two
         # already exist in sampledata so we'll use those first.
         self.builder1 = getUtility(IBuilderSet)['bob']
-        self.builder2 = getUtility(IBuilderSet)['frog']
+        self.frog_builder = removeSecurityProxy(
+            getUtility(IBuilderSet)['frog'])
         self.builder3 = self.factory.makeBuilder(name='builder3')
-        self.builder4 = self.factory.makeBuilder(name='builder4')
+        self.builder4 = removeSecurityProxy(
+            self.factory.makeBuilder(name='builder4'))
         self.builder5 = self.factory.makeBuilder(name='builder5')
         self.builders = [
             self.builder1,
-            self.builder2,
+            self.frog_builder,
             self.builder3,
             self.builder4,
             self.builder5,
@@ -62,7 +65,8 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
         self.publisher.prepareBreezyAutotest()
 
         self.bob_builder = getUtility(IBuilderSet)['bob']
-        self.frog_builder = getUtility(IBuilderSet)['frog']
+        self.frog_builder = removeSecurityProxy(
+            getUtility(IBuilderSet)['frog'])
 
         # Disable bob so only frog is available.
         self.bob_builder.manual = True
@@ -81,7 +85,7 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
         # there's only one builder available.
 
         # Asking frog to find a candidate should give us the joesppa build.
-        next_job = self.frog_builder.findBuildCandidate()
+        next_job = self.frog_builder._findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.assertEqual('joesppa', build.archive.name)
 
@@ -89,7 +93,7 @@ class TestFindBuildCandidatePPAWithSingleBuilder(TestCaseWithFactory):
         # returned.
         self.bob_builder.builderok = False
         self.bob_builder.manual = False
-        next_job = self.frog_builder.findBuildCandidate()
+        next_job = self.frog_builder._findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.assertEqual('joesppa', build.archive.name)
 
@@ -162,7 +166,7 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
     def test_findBuildCandidate_first_build_started(self):
         # A PPA cannot start a build if it would use 80% or more of the
         # builders.
-        next_job = self.builder4.findBuildCandidate()
+        next_job = self.builder4._findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failIfEqual('joesppa', build.archive.name)
 
@@ -170,7 +174,7 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         # When joe's first ppa build finishes, his fourth i386 build
         # will be the next build candidate.
         self.joe_builds[0].buildstate = BuildStatus.FAILEDTOBUILD
-        next_job = self.builder4.findBuildCandidate()
+        next_job = self.builder4._findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
 
@@ -179,7 +183,7 @@ class TestFindBuildCandidatePPA(TestFindBuildCandidateBase):
         # for the one architecture.
         self.ppa_joe.private = True
         self.ppa_joe.buildd_secret = 'sekrit'
-        next_job = self.builder4.findBuildCandidate()
+        next_job = self.builder4._findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('joesppa', build.archive.name)
 
@@ -205,7 +209,7 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         # Normal archives are not restricted to serial builds per
         # arch.
 
-        next_job = self.builder2.findBuildCandidate()
+        next_job = self.frog_builder._findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('primary', build.archive.name)
         self.failUnlessEqual('gedit', build.sourcepackagerelease.name)
@@ -213,8 +217,8 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         # Now even if we set the build building, we'll still get the
         # second non-ppa build for the same archive as the next candidate.
         build.buildstate = BuildStatus.BUILDING
-        build.builder = self.builder2
-        next_job = self.builder2.findBuildCandidate()
+        build.builder = self.frog_builder
+        next_job = self.frog_builder._findBuildCandidate()
         build = getUtility(IBuildSet).getByQueueEntry(next_job)
         self.failUnlessEqual('primary', build.archive.name)
         self.failUnlessEqual('firefox', build.sourcepackagerelease.name)

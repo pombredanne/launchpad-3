@@ -580,7 +580,7 @@ class Builder(SQLBase):
                 exc_info=True)
             self.failbuilder(error_message)
 
-    def findAndStartJob(self):
+    def findAndStartJob(self, buildd_slave=None):
         """See IBuilder."""
         logger = self._getSlaveScannerLogger()
         candidate = self._findBuildCandidate()
@@ -588,6 +588,9 @@ class Builder(SQLBase):
         if candidate is None:
             logger.debug("No build candidates available for builder.")
             return None
+
+        if buildd_slave is not None:
+            self.setSlaveForTesting(slave)
 
         self._dispatchBuildCandidate(candidate)
         return candidate
