@@ -38,7 +38,7 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (
@@ -272,8 +272,18 @@ class License(DBEnumeratedType):
 class IProductDriverRestricted(Interface):
     """`IProduct` properties which require launchpad.Driver permission."""
 
-    def newSeries(owner, name, summary, branch=None):
-        """Creates a new ProductSeries for this product."""
+    def newSeries(owner, name, summary, branch=None, releasefileglob=None):
+        """Creates a new `IProductSeries` for this `IProduct`.
+
+        :param owner: The registrant of this series.
+        :param name: The unique name of this series.
+        :param summary: The summary of the purpose and focus of development
+            of this series.
+        :param branch: The bazaar branch that contains the code for
+            this series.
+        :param releasefileglob: The public URL pattern where release files can
+            be automatically downloaded from and linked to this series.
+        """
 
 
 class IProductEditRestricted(IOfficialBugTagTargetRestricted,):
@@ -638,7 +648,8 @@ class IProductPublic(
         :param subscription_months: integer indicating the number of months
             the voucher is for.
         :param whiteboard: Notes for this activity.
-        :param current_datetime: Current time.  Will be datetime.now() if not specified.
+        :param current_datetime: Current time.  Will be datetime.now() if not
+            specified.
         :return: None
         """
 
@@ -667,13 +678,6 @@ class IProductPublic(
 
     def packagedInDistros():
         """Returns the distributions this product has been packaged in."""
-
-    def getCustomLanguageCode(language_code):
-        """Look up `ICustomLanguageCode` for `language_code`, if any.
-
-        Products may override language code definitions for translation
-        import purposes.
-        """
 
     def userCanEdit(user):
         """Can the user edit this product?"""

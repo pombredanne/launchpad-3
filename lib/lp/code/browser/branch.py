@@ -76,12 +76,15 @@ from canonical.widgets.lazrjs import vocabulary_to_choice_edit_items
 
 from lp.bugs.interfaces.bug import IBug
 from lp.code.browser.branchref import BranchRef
+from lp.code.browser.branchmergeproposal import (
+    latest_proposals_for_each_branch)
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType, UICreatableBranchType)
+    BranchLifecycleStatus, BranchType, RevisionControlSystems,
+    UICreatableBranchType)
+from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
-    BranchCreationForbidden, BranchExists, IBranch)
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, InvalidBranchMergeProposal)
+    BranchCreationForbidden, BranchExists, IBranch,
+    user_has_special_branch_access)
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimport import CodeImportReviewStatus
 from lp.code.interfaces.codeimportjob import (
@@ -266,8 +269,7 @@ class BranchContextMenu(ContextMenu):
         enabled = (
             self.context.target.supports_merge_proposals and
             not self.context.branch_type == BranchType.IMPORTED)
-        return Link('+register-merge', text, icon='merge-proposal',
-                    enabled=enabled)
+        return Link('+register-merge', text, icon='add', enabled=enabled)
 
     def link_bug(self):
         if self.context.linked_bugs:
@@ -351,7 +353,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
-        return self.context.revisions_since(timestamp).count()
+        return self.context.getRevisionsSince(timestamp).count()
 
     def owner_is_registrant(self):
         """Is the branch owner the registrant?"""
@@ -426,20 +428,8 @@ class BranchView(LaunchpadView, FeedsMixin):
 
     @cachedproperty
     def landing_targets(self):
-        """Return a decorated filtered list of landing targets."""
-        targets = []
-        targets_added = set()
-        for proposal in self.context.landing_targets:
-            # Don't show the proposal if the user can't see it.
-            if not check_permission('launchpad.View', proposal):
-                continue
-            # Only show the must recent proposal for any given target.
-            target_id = proposal.target_branch.id
-            if target_id in targets_added:
-                continue
-            targets.append(DecoratedMergeProposal(proposal))
-            targets_added.add(target_id)
-        return targets
+        """Return a filtered list of landing targets."""
+        return latest_proposals_for_each_branch(self.context.landing_targets)
 
     @property
     def latest_landing_candidates(self):
@@ -451,7 +441,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     def landing_candidates(self):
         """Return a decorated list of landing candidates."""
         candidates = self.context.landing_candidates
-        return [DecoratedMergeProposal(proposal) for proposal in candidates
+        return [proposal for proposal in candidates
                 if check_permission('launchpad.View', proposal)]
 
     @property
@@ -509,6 +499,14 @@ class BranchView(LaunchpadView, FeedsMixin):
     def latest_code_import_results(self):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
+
+    @property
+    def is_svn_import(self):
+        """True if an imported branch is a SVN import."""
+        # You should only be calling this if it's a code import
+        assert self.context.code_import
+        return self.context.code_import.rcs_type in \
+               (RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN)
 
     @property
     def svn_url_is_web(self):
@@ -577,19 +575,6 @@ class BranchView(LaunchpadView, FeedsMixin):
                 'launchpad.Edit', self.context),
             'branch_path': '/' + self.context.unique_name,
             })
-
-
-class DecoratedMergeProposal:
-    """Provide some additional attributes to a normal branch merge proposal.
-    """
-    delegates(IBranchMergeProposal)
-
-    def __init__(self, context):
-        self.context = context
-
-    def show_registrant(self):
-        """Show the registrant if it was not the branch owner."""
-        return self.context.registrant != self.source_branch.owner
 
 
 class BranchInProductView(BranchView):
@@ -675,7 +660,7 @@ class BranchEditFormView(LaunchpadEditFormView):
             private = data.pop('private')
             if private != self.context.private:
                 # We only want to show notifications if it actually changed.
-                self.context.setPrivate(private)
+                self.context.setPrivate(private, self.user)
                 changed = True
                 if private:
                     self.request.response.addNotification(
@@ -872,7 +857,6 @@ class BranchDeletionView(LaunchpadFormView):
         The keys are 'delete' and 'alter'; the values are dicts of
         'item', 'reason' and 'allowed'.
         """
-        branch = self.context
         row_dict = {'delete': [], 'alter': [], 'break_link': []}
         for item, action, reason, allowed in (
             self.display_deletion_requirements):
@@ -916,8 +900,11 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             show_private_field = policy.canBranchesBePublic()
         else:
             # If the branch is public, and can be made private, show the
-            # field.
-            show_private_field = policy.canBranchesBePrivate()
+            # field.  Users with special access rights to branches can set
+            # public branches as private.
+            show_private_field = (
+                policy.canBranchesBePrivate() or
+                user_has_special_branch_access(self.user))
 
         if not show_private_field:
             self.form_fields = self.form_fields.omit('private')

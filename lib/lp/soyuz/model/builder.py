@@ -20,6 +20,8 @@ import tempfile
 import urllib2
 import xmlrpclib
 
+from lazr.delegates import delegates
+
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -31,16 +33,16 @@ from storm.store import Store
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
+from lp.buildmaster.interfaces.buildfarmjobbehavior import (
+    BuildBehaviorMismatch, IBuildFarmJobBehavior)
 from lp.buildmaster.master import BuilddMaster
+from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from lp.soyuz.adapters.archivedependencies import (
-    get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.helpers import filenameToContentType
-from canonical.launchpad.interfaces._schema_circular_imports import (
-    IHasBuildRecords)
+from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -52,7 +54,9 @@ from lp.soyuz.interfaces.builder import (
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus)
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp import urlappend
+from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
 
 
@@ -110,9 +114,11 @@ class BuilderSlave(xmlrpclib.Server):
 
         return (stdout, stderr, resume_process.returncode)
 
+
 class Builder(SQLBase):
 
     implements(IBuilder, IHasBuildRecords)
+    delegates(IBuildFarmJobBehavior, context="current_build_behavior")
     _table = 'Builder'
 
     _defaultOrder = ['id']
@@ -134,6 +140,44 @@ class Builder(SQLBase):
     vm_host = StringCol(dbName='vm_host')
     active = BoolCol(dbName='active', notNull=True, default=True)
 
+    def _getCurrentBuildBehavior(self):
+        """Return the current build behavior."""
+        if not safe_hasattr(self, '_current_build_behavior'):
+            self._current_build_behavior = None
+
+        if (self._current_build_behavior is None or
+            isinstance(self._current_build_behavior, IdleBuildBehavior)):
+            # If we don't currently have a current build behavior set,
+            # or we are currently idle, then...
+            currentjob = self.currentjob
+            if currentjob is not None:
+                # ...we'll set it based on our current job.
+                self._current_build_behavior = (
+                    currentjob.required_build_behavior)
+                self._current_build_behavior.setBuilder(self)
+                return self._current_build_behavior
+            elif self._current_build_behavior is None:
+                # If we don't have a current job or an idle behavior
+                # already set, then we just set the idle behavior
+                # before returning.
+                self._current_build_behavior = IdleBuildBehavior()
+            return self._current_build_behavior
+
+        else:
+            # We did have a current non-idle build behavior set, so
+            # we just return it.
+            return self._current_build_behavior
+
+
+    def _setCurrentBuildBehavior(self, new_behavior):
+        """Set the current build behavior."""
+        self._current_build_behavior = new_behavior
+        if self._current_build_behavior is not None:
+            self._current_build_behavior.setBuilder(self)
+
+    current_build_behavior = property(
+        _getCurrentBuildBehavior, _setCurrentBuildBehavior)
+
     def cacheFileOnSlave(self, logger, libraryfilealias):
         """See `IBuilder`."""
         url = libraryfilealias.http_url
@@ -141,30 +185,6 @@ class Builder(SQLBase):
                      "(%s, %s)" % (self.url, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
         self._sendFileToSlave(url, libraryfilealias.content.sha1)
-
-    def cachePrivateSourceOnSlave(self, logger, build_queue_item):
-        """See `IBuilder`."""
-        # The URL to the file in the archive consists of these parts:
-        # archive_url / makePoolPath() / filename
-        # Once this is constructed we add the http basic auth info.
-
-        # Avoid circular imports.
-        from lp.soyuz.model.publishing import makePoolPath
-
-        build = build_queue_item.build
-        archive = build.archive
-        archive_url = archive.archive_url
-        component_name = build.current_component.name
-        for source_file in build_queue_item.files:
-            file_name = source_file.libraryfile.filename
-            sha1 = source_file.libraryfile.content.sha1
-            source_name = build.sourcepackagerelease.sourcepackagename.name
-            poolpath = makePoolPath(source_name, component_name)
-            url = urlappend(archive_url, poolpath)
-            url = urlappend(url, file_name)
-            logger.debug("Asking builder on %s to ensure it has file %s "
-                         "(%s, %s)" % (self.url, file_name, url, sha1))
-            self._sendFileToSlave(url, sha1, "buildd", archive.buildd_secret)
 
     def _sendFileToSlave(self, url, sha1, username="", password=""):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
@@ -255,154 +275,22 @@ class Builder(SQLBase):
         """See IBuilder."""
         self.slave = proxy
 
-    def _verifyBuildRequest(self, build_queue_item, logger):
-        """Assert some pre-build checks.
-
-        The build request is checked:
-         * Virtualized builds can't build on a non-virtual builder
-         * Ensure that we have a chroot
-         * Ensure that the build pocket allows builds for the current
-           distroseries state.
-        """
-        assert not (not self.virtualized and
-                    build_queue_item.is_virtualized), (
-            "Attempt to build non-virtual item on a virtual builder.")
-
-        # Assert that we are not silently building SECURITY jobs.
-        # See findBuildCandidates. Once we start building SECURITY
-        # correctly from EMBARGOED archive this assertion can be removed.
-        # XXX Julian 2007-12-18 spec=security-in-soyuz: This is being
-        # addressed in the work on the blueprint:
-        # https://blueprints.launchpad.net/soyuz/+spec/security-in-soyuz
-        target_pocket = build_queue_item.build.pocket
-        assert target_pocket != PackagePublishingPocket.SECURITY, (
-            "Soyuz is not yet capable of building SECURITY uploads.")
-
-        # Ensure build has the needed chroot
-        chroot = build_queue_item.archseries.getChroot()
-        if chroot is None:
-            raise CannotBuild(
-                "Missing CHROOT for %s/%s/%s" % (
-                    build_queue_item.build.distroseries.distribution.name,
-                    build_queue_item.build.distroseries.name,
-                    build_queue_item.build.distroarchseries.architecturetag)
-                )
-
-        # The main distribution has policies to prevent uploads to some
-        # pockets (e.g. security) during different parts of the distribution
-        # series lifecycle. These do not apply to PPA builds nor any archive
-        # that allows release pocket updates.
-        if (build_queue_item.build.archive.purpose != ArchivePurpose.PPA and
-            not build_queue_item.build.archive.allowUpdatesToReleasePocket()):
-            build = build_queue_item.build
-            # XXX Robert Collins 2007-05-26: not an explicit CannotBuild
-            # exception yet because the callers have not been audited
-            assert build.distroseries.canUploadToPocket(build.pocket), (
-                "%s (%s) can not be built for pocket %s: invalid pocket due "
-                "to the series status of %s."
-                % (build.title, build.id, build.pocket.name,
-                   build.distroseries.name))
-
-    def _dispatchBuildToSlave(self, build_queue_item, args, buildid, logger):
-        """Start the build on the slave builder."""
-        # Send chroot.
-        chroot = build_queue_item.archseries.getChroot()
-        self.cacheFileOnSlave(logger, chroot)
-
-        # Build filemap structure with the files required in this build
-        # and send them to the slave.
-        # If the build is private we tell the slave to get the files from the
-        # archive instead of the librarian because the slaves cannot
-        # access the restricted librarian.
-        private = build_queue_item.build.archive.private
-        if private:
-            self.cachePrivateSourceOnSlave(logger, build_queue_item)
-        filemap = {}
-        for source_file in build_queue_item.files:
-            lfa = source_file.libraryfile
-            filemap[lfa.filename] = lfa.content.sha1
-            if not private:
-                self.cacheFileOnSlave(logger, source_file.libraryfile)
-
-        chroot_sha1 = chroot.content.sha1
-        try:
-            status, info = self.slave.build(
-                buildid, "debian", chroot_sha1, filemap, args)
-            message = """%s (%s):
-            ***** RESULT *****
-            %s
-            %s
-            %s: %s
-            ******************
-            """ % (self.name, self.url, filemap, args, status, info)
-            logger.info(message)
-        except xmlrpclib.Fault, info:
-            # Mark builder as 'failed'.
-            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
-            self.failbuilder(
-                "Exception (%s) when setting up to new job" % info)
-            raise BuildSlaveFailure
-        except socket.error, info:
-            error_message = "Exception (%s) when setting up new job" % info
-            self.handleTimeout(logger, error_message)
-            raise BuildSlaveFailure
-
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
-        logger.info("startBuild(%s, %s, %s, %s)", self.url,
-                    build_queue_item.name, build_queue_item.version,
-                    build_queue_item.build.pocket.title)
+        # Set the build behavior depending on the provided build queue item.
+        self.current_build_behavior = build_queue_item.required_build_behavior
+        self.logStartBuild(build_queue_item, logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
-        self._verifyBuildRequest(build_queue_item, logger)
+        self.verifyBuildRequest(build_queue_item, logger)
 
         # If we are building a virtual build, resume the virtual machine.
         if self.virtualized:
             self.resumeSlaveHost()
 
-        # Build extra arguments.
-        args = {}
-        # turn 'arch_indep' ON only if build is archindep or if
-        # the specific architecture is the nominatedarchindep for
-        # this distroseries (in case it requires any archindep source)
-        args['arch_indep'] = build_queue_item.archseries.isNominatedArchIndep
-
-        suite = build_queue_item.build.distroarchseries.distroseries.name
-        if build_queue_item.build.pocket != PackagePublishingPocket.RELEASE:
-            suite += "-%s" % (build_queue_item.build.pocket.name.lower())
-        args['suite'] = suite
-
-        archive_purpose = build_queue_item.build.archive.purpose
-        if (archive_purpose == ArchivePurpose.PPA and
-            not build_queue_item.build.archive.require_virtualized):
-            # If we're building a non-virtual PPA, override the purpose
-            # to PRIMARY and use the primary component override.
-            # This ensures that the package mangling tools will run over
-            # the built packages.
-            args['archive_purpose'] = ArchivePurpose.PRIMARY.name
-            args["ogrecomponent"] = (
-                get_primary_current_component(build_queue_item.build))
-        else:
-            args['archive_purpose'] = archive_purpose.name
-            args["ogrecomponent"] = (
-                build_queue_item.build.current_component.name)
-
-        args['archives'] = get_sources_list_for_building(
-            build_queue_item.build)
-
-        # Let the build slave know whether this is a build in a private
-        # archive.
-        args['archive_private'] = build_queue_item.build.archive.private
-
-        # Generate a string which can be used to cross-check when obtaining
-        # results so we know we are referring to the right database object in
-        # subsequent runs.
-        buildid = "%s-%s" % (build_queue_item.build.id, build_queue_item.id)
-        logger.debug("Initiating build %s on %s" % (buildid, self.url))
-
         # Do it.
         build_queue_item.markAsBuilding(self)
-        self._dispatchBuildToSlave(build_queue_item, args, buildid, logger)
+        self.dispatchBuildToSlave(build_queue_item, logger)
 
     # XXX cprov 2009-06-24: This code does not belong to the content
     # class domain. Here we cannot make sensible decisions about what
@@ -415,24 +303,20 @@ class Builder(SQLBase):
             if self.failnotes is not None:
                 return self.failnotes
             return 'Disabled'
-        # Cache the 'currentjob', so we don't have to hit the database
-        # more than once.
-        currentjob = self.currentjob
-        if currentjob is None:
-            return 'Idle'
 
-        msg = 'Building %s' % currentjob.build.title
-        archive = currentjob.build.archive
-        if not archive.owner.private and (archive.is_ppa or archive.is_copy):
-            return '%s [%s/%s]' % (msg, archive.owner.name, archive.name)
-        else:
-            return msg
+        # If the builder is OK then we delegate the status
+        # to our current behavior.
+        return self.current_build_behavior.status
 
     def failbuilder(self, reason):
         """See IBuilder"""
         self.builderok = False
         self.failnotes = reason
 
+    # XXX Michael Nelson 20091202 bug=491330. The current UI assumes
+    # that the builder history will display binary build records, as
+    # returned by getBuildRecords() below. See the bug for a discussion
+    # of the options.
     def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
                         user=None):
         """See IHasBuildRecords."""
@@ -443,29 +327,11 @@ class Builder(SQLBase):
         """See IBuilder."""
         builder_version, builder_arch, mechanisms = self.slave.info()
         status_sentence = self.slave.status()
-        builder_status = status_sentence[0]
 
-        if builder_status == 'BuilderStatus.WAITING':
-            (build_status, build_id) = status_sentence[1:3]
-            build_status_with_files = [
-                'BuildStatus.OK',
-                'BuildStatus.PACKAGEFAIL',
-                'BuildStatus.DEPFAIL',
-                ]
-            if build_status in build_status_with_files:
-                (filemap, dependencies) = status_sentence[3:]
-            else:
-                filemap = dependencies = None
-            logtail = None
-        elif builder_status == 'BuilderStatus.BUILDING':
-            (build_id, logtail) = status_sentence[1:]
-            build_status = filemap = dependencies = None
-        else:
-            build_id = status_sentence[1]
-            build_status = logtail = filemap = dependencies = None
-
-        return (builder_status, build_id, build_status, logtail, filemap,
-                dependencies)
+        status = {'builder_status': status_sentence[0]}
+        status.update(
+            self.current_build_behavior.slaveStatus(status_sentence))
+        return status
 
     def slaveStatusSentence(self):
         """See IBuilder."""
@@ -513,7 +379,7 @@ class Builder(SQLBase):
             return False
         try:
             slavestatus = self.slaveStatusSentence()
-        except (xmlrpclib.Fault, socket.error), info:
+        except (xmlrpclib.Fault, socket.error):
             return False
         if slavestatus[0] != BuilderStatus.IDLE:
             return False
@@ -553,7 +419,8 @@ class Builder(SQLBase):
                       SourcePackagePublishingHistory.status IN %s))
               OR
               archive.private IS FALSE) AND
-            buildqueue.build = build.id AND
+            buildqueue.job = buildpackagejob.job AND
+            buildpackagejob.build = build.id AND
             build.distroarchseries = distroarchseries.id AND
             build.archive = archive.id AND
             archive.enabled = TRUE AND
@@ -563,7 +430,8 @@ class Builder(SQLBase):
         """ % sqlvalues(
             private_statuses, BuildStatus.NEEDSBUILD, self.processor.family)]
 
-        clauseTables = ['Build', 'DistroArchSeries', 'Archive']
+        clauseTables = [
+            'Build', 'BuildPackageJob', 'DistroArchSeries', 'Archive']
 
         clauses.append("""
             archive.require_virtualized = %s
@@ -605,7 +473,7 @@ class Builder(SQLBase):
 
         query = " AND ".join(clauses)
         candidate = BuildQueue.selectFirst(
-            query, clauseTables=clauseTables, prejoins=['build'],
+            query, clauseTables=clauseTables,
             orderBy=['-buildqueue.lastscore', 'build.id'])
 
         return candidate
@@ -629,26 +497,28 @@ class Builder(SQLBase):
         # Builds in those situation should not be built because they will
         # be wasting build-time, the former case already has a newer source
         # and the latter could not be built in DAK.
+        build_set = getUtility(IBuildSet)
         while candidate is not None:
-            if candidate.build.pocket == PackagePublishingPocket.SECURITY:
+            build = build_set.getByQueueEntry(candidate)
+            if build.pocket == PackagePublishingPocket.SECURITY:
                 # We never build anything in the security pocket.
                 logger.debug(
                     "Build %s FAILEDTOBUILD, queue item %s REMOVED"
-                    % (candidate.build.id, candidate.id))
-                candidate.build.buildstate = BuildStatus.FAILEDTOBUILD
+                    % (build.id, candidate.id))
+                build.buildstate = BuildStatus.FAILEDTOBUILD
                 candidate.destroySelf()
                 candidate = self._findBuildCandidate()
                 continue
 
-            publication = candidate.build.current_source_publication
+            publication = build.current_source_publication
 
             if publication is None:
                 # The build should be superseded if it no longer has a
                 # current publishing record.
                 logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"
-                    % (candidate.build.id, candidate.id))
-                candidate.build.buildstate = BuildStatus.SUPERSEDED
+                    % (build.id, candidate.id))
+                build.buildstate = BuildStatus.SUPERSEDED
                 candidate.destroySelf()
                 candidate = self._findBuildCandidate()
                 continue
@@ -663,7 +533,7 @@ class Builder(SQLBase):
         logger = self._getSlaveScannerLogger()
         try:
             self.startBuild(candidate, logger)
-        except (BuildSlaveFailure, CannotBuild), err:
+        except (BuildSlaveFailure, CannotBuild, BuildBehaviorMismatch), err:
             logger.warn('Could not build: %s' % err)
 
     def handleTimeout(self, logger, error_message):
@@ -751,13 +621,15 @@ class BuilderSet(object):
         origin = (
             Archive,
             Build,
+            BuildPackageJob,
             BuildQueue,
             DistroArchSeries,
             Processor,
             )
         queue = store.using(*origin).find(
             BuildQueue,
-            BuildQueue.build == Build.id,
+            BuildPackageJob.job == BuildQueue.jobID,
+            BuildPackageJob.build == Build.id,
             Build.distroarchseries == DistroArchSeries.id,
             Build.archive == Archive.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,
@@ -767,7 +639,7 @@ class BuilderSet(object):
             Archive.require_virtualized == virtualized,
             )
 
-        return (queue.count(), queue.sum(Build.estimated_build_duration))
+        return (queue.count(), queue.sum(BuildQueue.estimated_duration))
 
     def pollBuilders(self, logger, txn):
         """See IBuilderSet."""

@@ -104,16 +104,16 @@ He sees that the question's status was changed to 'Answered':
 
     >>> def print_question_status(browser):
     ...     print extract_text(
-    ...         find_tag_by_id(browser.contents, 'registration'))
+    ...         find_tag_by_id(browser.contents, 'question-status'))
 
     >>> print_question_status(user_browser)
-    Answered ...
+    Status: Answered
 
 A link to the FAQ appears under the question's description:
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'related-faq'))
-    Related FAQ: How do I install plugins (Shockwave, QuickTime, etc.)?
+    Related FAQ: How do I install plugins (Shockwave, QuickTime, etc.)? ...
     >>> print user_browser.getLink('How do I install plugins').url
     http://answers.launchpad.dev/firefox/+faq/10
 
@@ -176,8 +176,9 @@ The new message was added to the question:
 
 The link was also removed from the details portlet:
 
-    >>> print find_tag_by_id(user_browser.contents, 'related-faq')
-    None
+    >>> print extract_text(
+    ...     find_tag_by_id(user_browser.contents, 'related-faq'))
+    Related FAQ: None ...
 
 
 == Creating a new FAQ ==
@@ -243,9 +244,13 @@ He can also enter keywords describing the FAQ:
 There is a 'Message' field that will be used to answer the question.
 It is pre-filled, but he can change its value:
 
-    >>> print owner_browser.getControl('Message').value
+    >>> print owner_browser.getControl(
+    ...     'Additional comment for question #2').value
     Sample Person suggests this article as an answer to your question:
-    >>> owner_browser.getControl('Message').value = 'Read the Fine Answer:'
+
+    >>> owner_browser.getControl(
+    ...     'Additional comment for question #2').value = (
+    ...     'Read the Fine Answer:')
 
 After clicking the 'Create' button, the FAQ is created and the user is
 returned to the question page.
@@ -267,7 +272,7 @@ description:
 
     >>> print extract_text(
     ...     find_tag_by_id(owner_browser.contents, 'related-faq'))
-    Related FAQ: Displaying SVG in Firefox
+    Related FAQ: Displaying SVG in Firefox ...
 
 
 == Viewing a FAQ ==
@@ -291,13 +296,11 @@ The FAQ keywords and content appears just below:
     ...     owner_browser.contents, 'faq-content'))
     Upgrade your browser to Firefox 2.0.
 
-The FAQ's original author and creation date appears in the the
-'Lifecycle' portlet:
+The FAQ's original author and creation date appears in the header:
 
-    >>> print extract_text(find_portlet(owner_browser.contents, 'Lifecycle'))
-    Lifecycle
-    Created by: Sample Person
-    When: ...
+    >>> print extract_text(
+    ...     find_tag_by_id(owner_browser.contents, 'registration'))
+    Created by Sample Person on ...
 
 A 'Related questions' portlet contains links to the question answered by
 the FAQ:
@@ -350,7 +353,7 @@ information.
     >>> details_portlet = find_portlet(
     ...     user_browser.contents, 'mozilla-firefox in ubuntu question #9')
     >>> print_question_status(user_browser)
-    Solved...
+    Status: Solved
     >>> user_browser.getLink('Link to a FAQ').click()
 
     >>> print user_browser.title
@@ -368,7 +371,7 @@ discussion.
     >>> print user_browser.title
     Question #9 : ...
     >>> print_question_status(user_browser)
-    Solved...
+    Status: Solved
 
     >>> print extract_text(
     ...     find_tag_by_id(user_browser.contents, 'related-faq'))

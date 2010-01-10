@@ -220,11 +220,9 @@ class TestInlineSubscribing(TestCaseWithFactory):
         # Now back to bug 5. Confirm there are 2 subscriptions.
         client.open(url=BUG_URL % 5)
         client.asserts.assertNode(
-            xpath=(u'//div[@id="subscribers-links"]'
-                   '/div/a[@name="Sample Person"]'))
+            id='direct-subscriber-12', timeout=FOR_ELEMENT)
         client.asserts.assertNode(
-            xpath=(u'//div[@id="subscribers-from-duplicates"]'
-                   '/div/a[@name="Sample Person"]'))
+            id='dupe-subscriber-12', timeout=FOR_ELEMENT)
         # The first click unsubscribes the direct subscription, leaving
         # the duplicate subscription.
         client.click(xpath=SUBSCRIPTION_LINK)

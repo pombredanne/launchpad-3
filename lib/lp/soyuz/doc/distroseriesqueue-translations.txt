@@ -413,8 +413,8 @@ package.
   ...     ])
   >>> for filename in translation_files:
   ...     print filename
-  source/po/ca.po
-  source/po/cs.po
-  source/po/de.po
+  ./source/po/ca.po
+  ./source/po/cs.po
+  ./source/po/de.po
   ...
-  source/po/pmount.pot
+  ./source/po/pmount.pot

@@ -53,12 +53,12 @@
                   tal:condition="view/milestone/series_target" /></dd>
               </dl>
 
-              <dl>
+              <dl id="version">
                 <dt>Version:</dt>
                 <dd><tal:version replace="context/name" /></dd>
               </dl>
 
-              <dl>
+              <dl id="code-name">
                 <dt>Code name:</dt>
                 <dd>
                   <tal:code-name replace="view/milestone/code_name" />
@@ -286,7 +286,7 @@
                 <td tal:content="string:#${bugtask/bug/id}" class="amount">12345</td>
                 <td>
                   <a tal:attributes="href bugtask/bug/fmt:url"
-                     tal:content="bugtask/bug/title/fmt:shorten/65">
+                     tal:content="bugtask/bug/title">
                      Bug Title Here
                   </a>
                 </td>

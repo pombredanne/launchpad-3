@@ -377,8 +377,27 @@ the SPR returns all build records for it.
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
    4
 
+The new series also has the same packaging links as its parent series.
 
-== Hiding translations ==
+    >>> for packaging in warty.packagings:
+    ...     print packaging.sourcepackagename.name
+    a52dec
+    alsa-utils
+    evolution
+    mozilla-firefox
+    netapplet
+
+    >>> for packaging in bumpy.packagings:
+    ...     print packaging.sourcepackagename.name
+    a52dec
+    alsa-utils
+    evolution
+    mozilla-firefox
+    netapplet
+
+
+Hiding translations
+-------------------
 
 The hide_all_translations flag, if set, hides a distroseries'
 translations in the user interface.  The check for visibility happens in

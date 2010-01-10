@@ -7,7 +7,7 @@ the code from one branch into another.
 In order to test notifications, we need a subscriber for the branch.
 
     >>> from canonical.launchpad.ftests import login, logout
-    >>> login('foo.bar@canonical.com')
+    >>> login('admin@canonical.com')
     >>> from zope.component import getUtility
     >>> from lp.code.enums import (
     ...     BranchSubscriptionNotificationLevel, CodeReviewNotificationLevel)
@@ -29,6 +29,8 @@ Gnome Terminal tests.
     >>> _unused = branch.subscribe(subscriber,
     ...     BranchSubscriptionNotificationLevel.NOEMAIL, None,
     ...     CodeReviewNotificationLevel.FULL)
+    >>> from lp.code.tests.helpers import make_erics_fooix_project
+    >>> locals().update(make_erics_fooix_project(factory))
     >>> logout()
 
 Any logged in user can register a merge proposal.  Registering
@@ -68,7 +70,8 @@ There is a cancel link shown with the buttons.
 
 Registering the merge proposal takes the user to the new merge proposal.
 
-    >>> print nopriv_browser.url
+    >>> klingon_proposal = nopriv_browser.url
+    >>> print klingon_proposal
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/...
 
 The summary reflects the selected target and prerequisite.
@@ -97,12 +100,20 @@ commit message can be set.
     ...     'Add more <b>mojo</b>')
     >>> nopriv_browser.getControl('Update').click()
 
-    >>> print nopriv_browser.url
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
-
-    >>> print_tag_with_id(nopriv_browser.contents, 'edit-description')
+    >>> print_tag_with_id(nopriv_browser.contents, 'edit-commit-message')
     Commit Message
     Add more &lt;b&gt;mojo&lt;/b&gt;
+
+A commit message can be removed deleting the text when editing.
+
+    >>> nopriv_browser.getLink(url='edit-commit-message').click()
+    >>> nopriv_browser.getControl(name='field.commit_message').value = (
+    ...     '')
+    >>> nopriv_browser.getControl('Update').click()
+
+    >>> print_tag_with_id(nopriv_browser.contents, 'commit-message')
+    Set commit message
+    ...
 
 
 Deleting merge proposals
@@ -113,7 +124,6 @@ When a merge proposal is deleted, the user is taken back to the main page
 for the source_branch.
 
     >>> login('foo.bar@canonical.com')
-    >>> eric = factory.makePerson(email="eric@example.com", password="test")
     >>> bmp = factory.makeBranchMergeProposal(registrant=eric)
     >>> bmp_url = canonical_url(bmp)
     >>> branch_url = canonical_url(bmp.source_branch)
@@ -128,14 +138,13 @@ for the source_branch.
 
     >>> sample_browser = setupBrowser(auth="Basic test@canonical.com:test")
 
+
 Requesting reviews
 ------------------
 
 You can request a review of a merge proposal.
 
-    >>> sample_browser.open(
-    ...    'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1'
-    ...    )
+    >>> sample_browser.open(klingon_proposal)
     >>> sample_browser.getLink('Request a review').click()
     >>> sample_browser.getControl('Reviewer').value = 'mark'
     >>> sample_browser.getControl('Review type').value = 'first'
@@ -169,7 +178,7 @@ Only the last request is listed, showing the last review type.
     Reviewer          Review Type    Date Requested    Status
     Sample Person                                      Pending [Review]
     Mark Shuttleworth second         ... ago           Pending
-    Review via email: mp+1@code.launchpad.dev
+    Review via email: mp+...@code.launchpad.dev
                                                  Request another review
 
 
@@ -178,16 +187,14 @@ Reviewing
 
 People not logged in cannot perform reviews.
 
-    >>> anon_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> anon_browser.open(klingon_proposal)
     >>> link = anon_browser.getLink('[Review]')
     Traceback (most recent call last):
     LinkNotFoundError
 
 People who are logged in can perform reviews.
 
-    >>> nopriv_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> nopriv_browser.open(klingon_proposal)
     >>> nopriv_browser.getLink('Add a review or comment').click()
     >>> nopriv_browser.getControl(name='field.comment').value = "Don't like it"
     >>> nopriv_browser.getControl(name='field.vote').getControl(
@@ -201,8 +208,7 @@ People who are logged in can perform reviews.
 
 People can claim reviews for teams of which they are a member.
 
-    >>> sample_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> sample_browser.open(klingon_proposal)
     >>> sample_browser.getLink('Request another review').click()
     >>> sample_browser.getControl('Reviewer').value = 'hwdb-team'
     >>> sample_browser.getControl('Review type').value = 'claimable'
@@ -213,8 +219,7 @@ People can claim reviews for teams of which they are a member.
     Reviewer                         Review Type  Date Requested Status...
     HWDB Team                        claimable    ... ago        Pending ...
     >>> foobar_browser = setupBrowser(auth="Basic foo.bar@canonical.com:test")
-    >>> foobar_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> foobar_browser.open(klingon_proposal)
     >>> foobar_browser.getControl('Claim review').click()
     >>> pending = find_tag_by_id(
     ...     foobar_browser.contents, 'code-review-votes')
@@ -230,8 +235,7 @@ The claimant can reassign the review to someone else.
     >>> foobar_browser.getLink('Reassign').click()
     >>> foobar_browser.getControl('Reviewer').value = 'hwdb-team'
     >>> foobar_browser.getControl('Reassign').click()
-    >>> foobar_browser.open('http://code.launchpad.dev/~name12/gnome-terminal'
-    ...     '/klingon/+merge/1')
+    >>> foobar_browser.open(klingon_proposal)
     >>> pending = find_tag_by_id(
     ...     foobar_browser.contents, 'code-review-votes')
 
@@ -248,8 +252,7 @@ Marking as merged
 When a branch has been merged into the target branch, the proposal should
 be marked as merged.
 
-    >>> nopriv_browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1')
+    >>> nopriv_browser.open(klingon_proposal)
 
 The edit icon at the end of the status allows the user to edit the status.
 
@@ -264,8 +267,6 @@ find one, then the current time is used as the date merged.
     >>> nopriv_browser.getControl(name='field.queue_status').displayValue = (
     ...     ['Merged'])
     >>> nopriv_browser.getControl('Change Status').click()
-    >>> print nopriv_browser.url
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/1
 
 The proposal is now shown as have being merged.
 
@@ -282,6 +283,7 @@ next to the heading "Merged at revision".
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'landing-targets'))
     Merged into lp://dev/~name12/gnome-terminal/main
+    ...
     >>> sample_browser.getLink('Merged').click()
     >>> print_summary(sample_browser)
     Status: Merged
@@ -303,6 +305,7 @@ next to the heading "Merged at revision".
     >>> print extract_text(find_tag_by_id(
     ...     sample_browser.contents, 'landing-targets'))
     Merged into lp://dev/~name12/gnome-terminal/main at revision 42
+    ...
 
 
 Resubmitting proposals
@@ -315,9 +318,7 @@ resubmitted, a new proposal is registered with the same source and target
 branches but with the state set to work-in-progress.
 
     >>> login('foo.bar@canonical.com')
-    >>> fooix = factory.makeProduct(name='fooix')
-    >>> target = factory.makeProductBranch(product=fooix, owner=eric)
-    >>> bmp = factory.makeBranchMergeProposal(target_branch=target)
+    >>> bmp = factory.makeBranchMergeProposal(target_branch=trunk)
     >>> bmp_url = canonical_url(bmp)
     >>> logout()
     >>> eric_browser.open(bmp_url)
@@ -538,7 +539,6 @@ The section is shown if there are links.
     Bug #...: Bug for linking (Undecided &ndash; New)
 
 
-
 Target branch edge cases
 ------------------------
 
@@ -587,20 +587,21 @@ they'll get a 404.
     NotFound: ...
 
 
-Displaying a review diff
-------------------------
+Displaying a preview diff
+-------------------------
 
-Create merge proposal with a review diff, and go to its index page.
+Create merge proposal with a preview diff, and go to its index page.
 
     >>> login('admin@canonical.com')
-    >>> from lp.code.model.diff import StaticDiff
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.code.model.diff import PreviewDiff
     >>> from difflib import unified_diff
     >>> diff_text = ''.join(
     ...     unified_diff('', ['Fake Diff' + u'\u1010'.encode('utf-8')]))
-    >>> review_diff = StaticDiff.acquireFromText(
-    ...     'a', 'b', diff_text)
+    >>> preview_diff = PreviewDiff.create(diff_text, u'a', u'b', None, u'')
     >>> transaction.commit()
-    >>> bmp = factory.makeBranchMergeProposal(review_diff=review_diff)
+    >>> bmp = factory.makeBranchMergeProposal()
+    >>> removeSecurityProxy(bmp).preview_diff = preview_diff
     >>> url = canonical_url(bmp)
     >>> logout()
     >>> def get_review_diff():
@@ -613,7 +614,7 @@ The text of the review diff is in the page.
 
 If no diff is present, nothing is shown.
     >>> login('admin@canonical.com')
-    >>> bmp.review_diff = None
+    >>> removeSecurityProxy(bmp).preview_diff = None
     >>> logout()
     >>> print get_review_diff()
     None
@@ -621,8 +622,73 @@ If no diff is present, nothing is shown.
 If the review diff is empty, then we say it is empty.
 
     >>> login('admin@canonical.com')
-    >>> bmp.review_diff = StaticDiff.acquireFromText('c', 'd', '')
+    >>> removeSecurityProxy(bmp).preview_diff = PreviewDiff.create(
+    ...     '', u'c', u'd', None, u'')
     >>> logout()
     >>> print extract_text(get_review_diff())
     Preview Diff
     Empty
+
+
+Preview diff generation status
+------------------------------
+
+    >>> update = find_tag_by_id(nopriv_browser.contents, 'diff-pending-update')
+    >>> print extract_text(update)
+    Updating diff...
+    An updated diff will be available in a few minutes.  Reload to see the
+    changes.
+    >>> bmp.next_preview_diff_job.start()
+    >>> bmp.next_preview_diff_job.complete()
+    >>> transaction.commit()
+    >>> nopriv_browser.open(url)
+    >>> print find_tag_by_id(nopriv_browser.contents, 'diff-pending-update')
+    None
+
+
+Merge proposal details shown on the branch page
+-----------------------------------------------
+
+A branch that has a merge proposal, but no requested reviews shows this on the
+branch page.
+
+    >>> nopriv_browser.open('http://code.launchpad.dev/~fred/fooix/feature')
+    >>> nopriv_browser.getLink('Propose for merging').click()
+    >>> nopriv_browser.getControl('Reviewer').value = ''
+    >>> nopriv_browser.getControl('Propose Merge').click()
+    >>> nopriv_browser.getLink('lp://dev/~fred/fooix/feature').click()
+    >>> print_tag_with_id(nopriv_browser.contents, 'landing-targets')
+    Ready for review for merging into lp://dev/fooix
+      No reviews requested
+
+If there are reviews either pending or completed these are also shown.
+
+The api tag is a hidden anchor that holds the URL for the merge proposal api
+access.
+
+    >>> nopriv_browser.open('http://code.launchpad.dev/~fred/fooix/proposed')
+    >>> print_tag_with_id(nopriv_browser.contents, 'landing-targets')
+    Ready for review for merging into lp://dev/fooix
+      Eric the Viking: Pending (code) requested ... ago
+      Diff: 47 lines (+7/-0) 2 files modified                api
+
+
+Merge proposal details shown on the bug page
+--------------------------------------------
+
+If a branch with a merge proposal is linked to a bug, the merge proposal
+details are shown on the bug page under the branch link.
+
+    >>> login('admin@canonical.com')
+    >>> bug = factory.makeBug(product=fooix)
+    >>> ignored = bug.linkBranch(proposed, fred)
+    >>> bug_url = canonical_url(bug)
+    >>> logout()
+
+    >>> nopriv_browser.open(bug_url)
+    >>> print_tag_with_id(nopriv_browser.contents, 'bug-branches')
+    Related branches
+    lp://dev/~fred/fooix/proposed
+      Ready for review for merging into lp://dev/fooix
+        Eric the Viking: Pending (code) requested ... ago
+        Diff: 47 lines (+7/-0) 2 files modified              api

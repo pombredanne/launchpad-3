@@ -10,6 +10,7 @@ from zope.interface.verify import verifyObject
 
 from canonical.database.sqlbase import commit
 from canonical.launchpad.ftests import sync
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.product import IProductSet
 from lp.translations.interfaces.potemplate import IPOTemplateSet
@@ -78,7 +79,8 @@ class XPIPOExporterTestCase(unittest.TestCase):
             potemplate=self.firefox_template)
 
         # We must approve the entry to be able to import it.
-        entry.setStatus(RosettaImportStatus.APPROVED)
+        entry.setStatus(RosettaImportStatus.APPROVED,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
         commit()

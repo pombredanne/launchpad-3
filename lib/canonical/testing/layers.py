@@ -73,21 +73,26 @@ from storm.zope.interfaces import IZStorm
 import transaction
 import wsgi_intercept
 
+from lazr.restful.utils import safe_hasattr
+
 from windmill.bin.admin_lib import (
     start_windmill, teardown as windmill_teardown)
 
-from zope.app.publication.httpfactory import chooseClasses
 import zope.app.testing.functional
+import zope.publisher.publish
+from zope.app.publication.httpfactory import chooseClasses
 from zope.app.testing.functional import FunctionalTestSetup, ZopePublication
 from zope.component import getUtility, provideUtility
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
+from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
-from canonical.database.revision import confirm_dbrevision
+from canonical.database.revision import (
+    confirm_dbrevision, confirm_dbrevision_on_startup)
 from canonical.database.sqlbase import cursor, ZopelessTransactionManager
 from canonical.launchpad.interfaces import IMailBox, IOpenLaunchBag
 from canonical.launchpad.ftests import ANONYMOUS, login, logout, is_logged_in
@@ -108,6 +113,8 @@ from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
+from lp.services.memcache.client import memcache_client_factory
+from lp.services.osutils import kill_by_pidfile
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
@@ -237,7 +244,10 @@ class BaseLayer:
     @profiled
     def setUp(cls):
         BaseLayer.isSetUp = True
-        # Kill any Librarian left running from a previous test run.
+        # Kill any Memcached or Librarian left running from a previous
+        # test run, or from the parent test process if the current
+        # layer is being run in a subprocess.
+        kill_by_pidfile(MemcachedLayer.getPidFile())
         LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
         try:
@@ -428,6 +438,90 @@ class BaseLayer:
             del frame # As per no-leak stack inspection in Python reference.
 
 
+class MemcachedLayer(BaseLayer):
+    """Provides tests access to a memcached.
+
+    Most tests needing memcache access will actually need to use
+    ZopelessLayer, FunctionalLayer or sublayer as they will be accessing
+    memcached using a utility.
+    """
+    _reset_between_tests = True
+
+    # A memcache.Client instance.
+    client = None
+
+    # A subprocess.Popen instance if this process spawned the test
+    # memcached.
+    _memcached_process = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        # Create a client
+        MemcachedLayer.client = memcache_client_factory()
+
+        # First, check to see if there is a memcached already running.
+        # This happens when new layers are run as a subprocess.
+        test_key = "MemcachedLayer__live_test"
+        if MemcachedLayer.client.set(test_key, "live"):
+            return
+
+        cmd = [
+            'memcached',
+            '-m', str(config.memcached.memory_size),
+            '-l', str(config.memcached.address),
+            '-p', str(config.memcached.port),
+            '-U', str(config.memcached.port),
+            ]
+        if config.memcached.verbose:
+            cmd.append('-vv')
+        MemcachedLayer._memcached_process = subprocess.Popen(
+            cmd, stdin=subprocess.PIPE)
+        MemcachedLayer._memcached_process.stdin.close()
+
+        # Wait for the memcached to become operational.
+        while not MemcachedLayer.client.set(test_key, "live"):
+            if MemcachedLayer._memcached_process.returncode is not None:
+                raise LayerInvariantError(
+                    "memcached never started or has died.",
+                    MemcachedLayer._memcached_process.stdout.read())
+            MemcachedLayer.client.forget_dead_hosts()
+            time.sleep(0.1)
+
+        # Store the pidfile for other processes to kill.
+        pidfile = MemcachedLayer.getPidFile()
+        open(pidfile, 'w').write(str(MemcachedLayer._memcached_process.pid))
+
+        # Register an atexit hook just in case tearDown doesn't get
+        # invoked for some perculiar reason.
+        atexit.register(kill_by_pidfile, pidfile)
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        MemcachedLayer.client.disconnect_all()
+        MemcachedLayer.client = None
+        # Kill our memcached, and there is no reason to be nice about it.
+        kill_by_pidfile(MemcachedLayer.getPidFile())
+        MemcachedLayer._memcached_process = None
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        if MemcachedLayer._reset_between_tests:
+            MemcachedLayer.client.forget_dead_hosts()
+            MemcachedLayer.client.flush_all()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+    @classmethod
+    def getPidFile(cls):
+        return os.path.join(config.root, '.memcache.pid')
+
+
 class LibrarianLayer(BaseLayer):
     """Provides tests access to a Librarian instance.
 
@@ -474,7 +568,7 @@ class LibrarianLayer(BaseLayer):
                     "Librarian has been killed or has hung."
                     "Tests should use LibrarianLayer.hide() and "
                     "LibrarianLayer.reveal() where possible, and ensure "
-                    "the Librarian is restarted if it absolutetly must be "
+                    "the Librarian is restarted if it absolutely must be "
                     "shutdown: " + str(e)
                     )
         if LibrarianLayer._reset_between_tests:
@@ -699,7 +793,7 @@ def test_default_timeout():
     return None
 
 
-class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
+class LaunchpadLayer(DatabaseLayer, LibrarianLayer, MemcachedLayer):
     """Provides access to the Launchpad database and daemons.
 
     We need to ensure that the database setup runs before the daemon
@@ -707,6 +801,8 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     already connected to the database.
 
     This layer is mainly used by tests that call initZopeless() themselves.
+    Most tests will use a sublayer such as LaunchpadFunctionalLayer that
+    provides access to the Component Architecture.
     """
     @classmethod
     @profiled
@@ -865,7 +961,7 @@ class FunctionalLayer(BaseLayer):
 
 class ZopelessLayer(BaseLayer):
     """Layer for tests that need the Zopeless component architecture
-    loaded using execute_zcml_for_scrips()
+    loaded using execute_zcml_for_scripts().
     """
 
     # Set to True if tests in the Zopeless layer are currently being run.
@@ -1300,6 +1396,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     def resetBetweenTests(cls, flag):
         LibrarianLayer._reset_between_tests = flag
         DatabaseLayer._reset_between_tests = flag
+        MemcachedLayer._reset_between_tests = flag
 
     @classmethod
     @profiled
@@ -1328,12 +1425,6 @@ class PageTestLayer(LaunchpadFunctionalLayer):
             access_logger.log(MockHTTPTask(response._response, first_line))
             return response
 
-        # Setting STAGGER_RETRIES to False makes tests like
-        # notfound-traversals.txt go much, much faster by avoiding calls to
-        # time.sleep()
-        cls._original_stagger_retries = zope.publisher.http.STAGGER_RETRIES
-        zope.publisher.http.STAGGER_RETRIES = False
-
         PageTestLayer.orig__call__ = (
                 zope.app.testing.functional.HTTPCaller.__call__)
         zope.app.testing.functional.HTTPCaller.__call__ = my__call__
@@ -1345,7 +1436,6 @@ class PageTestLayer(LaunchpadFunctionalLayer):
         PageTestLayer.resetBetweenTests(True)
         zope.app.testing.functional.HTTPCaller.__call__ = (
                 PageTestLayer.orig__call__)
-        zope.publisher.http.STAGGER_RETRIES = cls._original_stagger_retries
         if PageTestLayer.profiler:
             PageTestLayer.profiler.dump_stats(
                 os.environ.get('PROFILE_PAGETESTS_REQUESTS'))
@@ -1570,6 +1660,10 @@ class LayerProcessController:
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         # The database must be available for the app server to start.
         LaunchpadTestSetup().setUp()
+        # The app server will not start at all if the database hasn't been
+        # correctly patched. The app server will make exactly this check,
+        # doing it here makes the error more obvious.
+        confirm_dbrevision_on_startup()
         _config = cls.appserver_config
         cmd = [
             os.path.join(_config.root, 'bin', 'run'),
@@ -1716,6 +1810,16 @@ class BaseWindmillLayer(AppServerLayer):
             # base_url. With no base_url, we can't create the config
             # file windmill needs.
             return
+        # If we're running in a bin/test sub-process, sys.stdin is
+        # replaced by FakeInputContinueGenerator, which doesn't have a
+        # fileno method. When Windmill starts Firefox,
+        # sys.stdin.fileno() is called, so we add such a method here, to
+        # prevent it from breaking. By returning None, we should ensure
+        # that it doesn't try to use the return value for anything.
+        if not safe_hasattr(sys.stdin, 'fileno'):
+            assert isinstance(sys.stdin, FakeInputContinueGenerator), (
+                "sys.stdin (%r) doesn't have a fileno method." % sys.stdin)
+            sys.stdin.fileno = lambda: None
         # Windmill needs a config file on disk.
         config_text = dedent("""\
             START_FIREFOX = True

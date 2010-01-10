@@ -13,7 +13,7 @@ __all__ = [
 from datetime import datetime, timedelta
 import sys
 
-from pytz import UTC
+from pytz import timezone
 from zope.component import getUtility
 
 from canonical.config import config
@@ -73,7 +73,8 @@ class TranslationsImport(LaunchpadCronScript):
     def _registerFailure(self, entry, reason, traceback=False, abort=False):
         """Note that a queue entry is unusable in some way."""
         reason_text = unicode(reason)
-        entry.setStatus(RosettaImportStatus.FAILED)
+        entry.setStatus(RosettaImportStatus.FAILED,
+                        getUtility(ILaunchpadCelebrities).rosetta_experts)
         entry.setErrorOutput(reason_text)
 
         if abort:
@@ -134,11 +135,16 @@ class TranslationsImport(LaunchpadCronScript):
                 text = MailWrapper().format(mail_body)
                 simple_sendmail(from_email, to_email, mail_subject, text)
 
+    def run(self, *args, **kwargs):
+        errorlog.globalErrorUtility.configure('poimport')
+        LaunchpadCronScript.run(self, *args, **kwargs)
+
     def main(self):
         """Import entries from the queue."""
         self.logger.debug("Starting the import process.")
 
-        errorlog.globalErrorUtility.configure('poimport')
+        UTC = timezone('UTC')
+
         self.deadline = datetime.now(UTC) + self.time_to_run
         translation_import_queue = getUtility(ITranslationImportQueue)
 

@@ -11,7 +11,7 @@ import unittest
 import xmlrpclib
 
 import bzrlib.branch
-from bzrlib.tests import TestCaseWithTransport
+from bzrlib.tests import multiply_tests, TestCaseWithTransport
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
@@ -86,6 +86,7 @@ class SSHTestCase(TestCaseWithTransport, LoomTestMixin):
 
     def setUp(self):
         super(SSHTestCase, self).setUp()
+        self.disable_directory_isolation()
         tac_handler = SSHServerLayer.getTacHandler()
         self.server = SSHCodeHostingServer(self.scheme, tac_handler)
         self.server.setUp()
@@ -264,11 +265,7 @@ class SmokeTest(SSHTestCase):
         # Push up a new branch.
         remote_url = self.getTransportURL('~testuser/+junk/new-branch')
         self.push(self.first_tree, remote_url)
-        # XXX MichaelHudson, 2008-12-11: The way that getLastRevision is
-        # currently implemented doesn't work with empty branches.  When it can
-        # be rewritten to use revision-info, the next line can be re-enabled.
-        # See comment in getLastRevision for more.
-        #self.assertBranchesMatch(self.first_tree, remote_url)
+        self.assertBranchesMatch(self.first_tree, remote_url)
 
         # Commit to it.
         tree.commit('new revision', allow_pointless=True)
@@ -628,16 +625,7 @@ def make_smoke_tests(base_suite):
         if scenario[0] not in excluded_scenarios
         and not scenario[0].startswith('RemoteRepositoryFormat')]
     new_suite = unittest.TestSuite()
-    try:
-        from bzrlib.tests import multiply_tests
-        multiply_tests(base_suite, scenarios, new_suite)
-    except ImportError:
-        # XXX: MichaelHudson, 2009-03-11: This except clause can be deleted
-        # once sourcecode/bzr has bzr.dev r4102.
-        from bzrlib.tests import adapt_tests, TestScenarioApplier
-        adapter = TestScenarioApplier()
-        adapter.scenarios = scenarios
-        adapt_tests(base_suite, adapter, new_suite)
+    multiply_tests(base_suite, scenarios, new_suite)
     return new_suite
 
 

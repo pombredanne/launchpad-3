@@ -69,10 +69,11 @@
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="*"
-        name="+translationmessage-macros"
+        name="+translations-macros"
         facet="translations"
         permission="zope.Public"
-        template="../templates/translationmessage-macros.pt"/>
+        template="../templates/translations-macros.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
     <browser:page
         for="lp.translations.interfaces.translationgroup.IHasTranslationGroup"
         facet="translations"
@@ -160,9 +161,8 @@
         attribute_to_parent="distroseries"
         rootsite="translations"/>
     <browser:navigation
-        module="lp.translations.browser.distroserieslanguage"
-        classes="
-            DistroSeriesLanguageNavigation"/>
+        module="lp.translations.browser.serieslanguage"
+        classes="DistroSeriesLanguageNavigation"/>
     <browser:defaultView
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         name="+index"
@@ -181,7 +181,7 @@
         permission="zope.Public"
         for="lp.translations.interfaces.distroserieslanguage.IDistroSeriesLanguage"
         template="../templates/serieslanguage-index.pt"
-        class="lp.translations.browser.distroserieslanguage.DistroSeriesLanguageView"
+        class="lp.translations.browser.serieslanguage.DistroSeriesLanguageView"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <facet
@@ -271,7 +271,7 @@
         attribute_to_parent="productseries"
         rootsite="translations"/>
     <browser:navigation
-        module="lp.translations.browser.productserieslanguage"
+        module="lp.translations.browser.serieslanguage"
         classes="
             ProductSeriesLanguageNavigation"/>
     <browser:defaultView
@@ -291,7 +291,7 @@
         permission="zope.Public"
         for="lp.translations.interfaces.productserieslanguage.IProductSeriesLanguage"
         template="../templates/serieslanguage-index.pt"
-        class="lp.translations.browser.productserieslanguage.ProductSeriesLanguageView"
+        class="lp.translations.browser.serieslanguage.ProductSeriesLanguageView"
         facet="translations"
         layer="canonical.launchpad.layers.TranslationsLayer"/>
     <facet
@@ -419,7 +419,7 @@
             name="+admin"
             for="lp.translations.interfaces.potemplate.IPOTemplate"
             class="lp.translations.browser.potemplate.POTemplateAdminView"
-            permission="launchpad.Admin"
+            permission="launchpad.TranslationsAdmin"
             template="../../app/templates/generic-edit.pt"
             layer="canonical.launchpad.layers.TranslationsLayer"/>
         <browser:page
@@ -976,6 +976,51 @@
         layer="canonical.launchpad.layers.TranslationsLayer"
         name="+language-packs"
         template="../templates/distroseries-language-packs.pt"/>
+
+
+<!-- CustomLanguageCode -->
+
+    <browser:defaultView
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        name="+index"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+    <browser:url
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        path_expression="string:+customcode/${language_code}"
+        attribute_to_parent="translation_target"
+        />
+    <browser:page
+        name="+index"
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        permission="zope.Public"
+        class="lp.translations.browser.customlanguagecode.CustomLanguageCodeView"
+        template="../templates/customlanguagecode-index.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+
+    <browser:page
+        name="+remove"
+        for="lp.translations.interfaces.customlanguagecode.ICustomLanguageCode"
+        permission="launchpad.Admin"
+        class="lp.translations.browser.customlanguagecode.CustomLanguageCodeRemoveView"
+        template="../../app/templates/generic-edit.pt"
+        layer="canonical.launchpad.layers.TranslationsLayer"/>
+
+<!-- IHasCustomLanguageCodes -->
+
+    <browser:page
+        name="+custom-language-codes"
+        for="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        class="lp.translations.browser.customlanguagecode.CustomLanguageCodesIndexView"
+        template="../templates/customlanguagecodes-index.pt"
+        permission="zope.Public"/>
+    <browser:page
+        name="+add-custom-language-code"
+        for="lp.translations.interfaces.customlanguagecode.IHasCustomLanguageCodes"
+        layer="canonical.launchpad.layers.TranslationsLayer"
+        class="lp.translations.browser.customlanguagecode.CustomLanguageCodeAddView"
+        template="../templates/customlanguagecode-add.pt"
+        permission="launchpad.Admin"/>
 
     </facet>
 </configure>

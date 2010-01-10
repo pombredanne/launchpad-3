@@ -336,9 +336,9 @@ julian 2007-09-17 This is duplicating the page test. Instead it should
 be more like the bug number linkification just below.
 
     >>> from zope.component import queryMultiAdapter
-    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> mock_form = {}
-    >>> request = TestRequest(form=mock_form)
+    >>> request = LaunchpadTestRequest(form=mock_form)
     >>> sp = SourcePackage(sourcepackagename=pmount, distroseries=hoary)
     >>> spr = sp['0.1-2']
     >>> spr_view = queryMultiAdapter((spr, request), name="+changelog")

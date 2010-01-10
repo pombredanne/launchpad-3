@@ -8,6 +8,7 @@ __metaclass__ = type
 from datetime import datetime
 import logging
 import os
+import sys
 import textwrap
 import unittest
 
@@ -16,7 +17,7 @@ import pytz
 from bzrlib.branch import Branch
 from bzrlib.bzrdir import BzrDir
 
-from twisted.internet import defer, error
+from twisted.internet import defer, error, reactor, task
 from twisted.protocols.basic import NetstringParseError
 from twisted.python import failure
 from twisted.trial.unittest import TestCase as TrialTestCase
@@ -223,8 +224,8 @@ class TestPullerMonitorProtocol(
         def startMirroring(self):
             self.calls.append('startMirroring')
 
-        def mirrorSucceeded(self, last_revision):
-            self.calls.append(('mirrorSucceeded', last_revision))
+        def mirrorSucceeded(self, revid_before, revid_after):
+            self.calls.append(('mirrorSucceeded', revid_before, revid_after))
 
         def mirrorFailed(self, message, oops):
             self.calls.append(('mirrorFailed', message, oops))
@@ -261,8 +262,9 @@ class TestPullerMonitorProtocol(
         """Receiving a mirrorSucceeded message notifies the listener."""
         self.protocol.do_startMirroring()
         self.listener.calls = []
-        self.protocol.do_mirrorSucceeded('1234')
-        self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
+        self.protocol.do_mirrorSucceeded('rev1', 'rev2')
+        self.assertEqual(
+            [('mirrorSucceeded', 'rev1', 'rev2')], self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorDeferred(self):
@@ -319,7 +321,7 @@ class TestPullerMonitorProtocol(
         """
         self.protocol.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.protocol.do_mirrorSucceeded('rev1')
+        self.protocol.do_mirrorSucceeded('rev1', 'rev2')
         self.clock.advance(2)
         return self.assertFailure(
             self.termination_deferred, error.TimeoutError)
@@ -475,18 +477,18 @@ class TestPullerMaster(TrialTestCase):
         return deferred.addCallback(checkSetStackedOn)
 
     def test_mirrorComplete(self):
-        arbitrary_revision_id = 'rev1'
+        arbitrary_revision_ids = ('rev1', 'rev2')
         deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
-        def mirrorSucceeded(ignored):
+        def mirrorSucceeded(*ignored):
             self.status_client.calls = []
-            return self.eventHandler.mirrorSucceeded(arbitrary_revision_id)
+            return self.eventHandler.mirrorSucceeded(*arbitrary_revision_ids)
         deferred.addCallback(mirrorSucceeded)
 
         def checkMirrorCompleted(ignored):
             self.assertEqual(
                 [('mirrorComplete', self.arbitrary_branch_id,
-                  arbitrary_revision_id)],
+                  arbitrary_revision_ids[1])],
                 self.status_client.calls)
         return deferred.addCallback(checkMirrorCompleted)
 
@@ -651,6 +653,11 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
         self.bzr_tree.commit('rev1')
         self.pushToBranch(self.db_branch, self.bzr_tree)
         self.client = FakePullerEndpointProxy()
+        # XXX 2009-11-23, MichaelHudson,
+        # bug=http://twistedmatrix.com/trac/ticket/2078: This is a hack to
+        # make sure the reactor is running when the test method is executed to
+        # work around the linked Twisted bug.
+        return task.deferLater(reactor, 0, lambda: None)
 
     def run(self, result):
         # We want to use Trial's run() method so we can return Deferreds.
@@ -783,7 +790,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         check_lock_id_script = """
         branch.lock_write()
-        protocol.mirrorSucceeded('b')
+        protocol.mirrorSucceeded('a', 'b')
         protocol.sendEvent(
             'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()

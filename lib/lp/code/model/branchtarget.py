@@ -9,6 +9,7 @@ __all__ = [
     'PackageBranchTarget',
     'PersonBranchTarget',
     'ProductBranchTarget',
+    'ProductSeriesBranchTarget',
     ]
 
 from zope.component import getUtility
@@ -114,12 +115,13 @@ class PackageBranchTarget(_BaseBranchTarget):
         else:
             return False
 
-    def assignKarma(self, person, action_name):
+    def assignKarma(self, person, action_name, date_created=None):
         """See `IBranchTarget`."""
-        person.assignKarma(
+        return person.assignKarma(
             action_name,
             distribution=self.context.distribution,
-            sourcepackagename=self.context.sourcepackagename)
+            sourcepackagename=self.context.sourcepackagename,
+            datecreated=date_created)
 
     def getBugTask(self, bug):
         """See `IBranchTarget`."""
@@ -184,9 +186,10 @@ class PersonBranchTarget(_BaseBranchTarget):
         """See `IBranchTarget`."""
         return False
 
-    def assignKarma(self, person, action_name):
+    def assignKarma(self, person, action_name, date_created=None):
         """See `IBranchTarget`."""
         # Does nothing. No karma for +junk.
+        return None
 
     def getBugTask(self, bug):
         """See `IBranchTarget`."""
@@ -273,13 +276,14 @@ class ProductBranchTarget(_BaseBranchTarget):
         else:
             return False
 
-    def assignKarma(self, person, action_name):
+    def assignKarma(self, person, action_name, date_created=None):
         """See `IBranchTarget`."""
-        person.assignKarma(action_name, product=self.product)
+        return person.assignKarma(
+            action_name, product=self.product, datecreated=date_created)
 
     def getBugTask(self, bug):
         """See `IBranchTarget`."""
-        task = bug.getBugTask(self.context)
+        task = bug.getBugTask(self.product)
         if task is None:
             # Just choose the first task for the bug.
             task = bug.bugtasks[0]
@@ -294,6 +298,18 @@ class ProductBranchTarget(_BaseBranchTarget):
         branch.product = self.product
         branch.distroseries = None
         branch.sourcepackagename = None
+
+
+class ProductSeriesBranchTarget(ProductBranchTarget):
+
+    def __init__(self, productseries):
+        self.productseries = productseries
+        self.product = productseries.product
+
+    @property
+    def context(self):
+        """See `IBranchTarget`."""
+        return self.productseries
 
 
 def get_canonical_url_data_for_target(branch_target):

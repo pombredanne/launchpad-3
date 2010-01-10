@@ -13,6 +13,7 @@ __all__ = [
     'IBinaryPackagePublishingHistory',
     'ICanPublishPackages',
     'IFilePublishing',
+    'IPublishingEdit',
     'IPublishingSet',
     'ISourcePackageFilePublishing',
     'ISourcePackagePublishingHistory',
@@ -26,7 +27,7 @@ __all__ = [
     'name_priority_map',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
+from zope.schema import Bool, Choice, Datetime, Int, List, TextLine, Text
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -37,9 +38,9 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation, exported,
-    operation_returns_collection_of)
-
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_collection_of)
 
 #
 # Exceptions
@@ -229,8 +230,8 @@ class IArchiveSafePublisher(Interface):
         """
 
 
-class IPublishing(Interface):
-    """Base interface for all *Publishing classes"""
+class IPublishingView(Interface):
+    """Base interface for all Publishing classes"""
 
     files = Attribute("Files included in this publication.")
     displayname = exported(
@@ -280,17 +281,6 @@ class IPublishing(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
-    def requestDeletion(removed_by, removal_comment=None):
-        """Delete this publication.
-
-        :param removed_by: `IPerson` responsible for the removal.
-        :param removal_comment: optional text describing the removal reason.
-
-        :return: The deleted publishing record, either:
-            `ISourcePackagePublishingHistory` or
-            `IBinaryPackagePublishingHistory`.
-        """
-
     def requestObsolescence():
         """Make this publication obsolete.
 
@@ -325,6 +315,22 @@ class IPublishing(Interface):
 
         :raise: AssertionError if the context publishing record is not in
             PENDING status.
+        """
+
+
+class IPublishingEdit(Interface):
+    """Base interface for writeable Publishing classes."""
+    export_as_webservice_entry()
+
+    @call_with(removed_by=REQUEST_USER)
+    @operation_parameters(
+        removal_comment=TextLine(title=_("Removal comment"), required=False))
+    @export_write_operation()
+    def requestDeletion(removed_by, removal_comment=None):
+        """Delete this publication.
+
+        :param removed_by: `IPerson` responsible for the removal.
+        :param removal_comment: optional text describing the removal reason.
         """
 
 
@@ -390,7 +396,7 @@ class ISourcePackageFilePublishing(IFilePublishing):
             )
 
 
-class ISourcePackagePublishingHistory(IPublishing):
+class ISourcePackagePublishingHistory(IPublishingView):
     """A source package publishing history record."""
     export_as_webservice_entry()
 
@@ -497,7 +503,7 @@ class ISourcePackagePublishingHistory(IPublishing):
         "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the sourcepackagerelease attribute")
     meta_supersededby = Attribute(
-        "Return an IDistribuitionSourcePackageRelease meta object "
+        "Return an IDistributionSourcePackageRelease meta object "
         "correspondent to the supersededby attribute. if supersededby "
         "is None return None.")
     meta_distroseriessourcepackagerelease = Attribute(
@@ -514,11 +520,19 @@ class ISourcePackagePublishingHistory(IPublishing):
             title=_("Source Package Version"),
             required=False, readonly=True))
 
-    changes_file_url = exported(
-        Text(
-            title=_("Changes File URL"),
-            description=_("A URL for this source publication's changes file "
-                          "for the source upload.")))
+    source_file_urls = exported(
+        List(
+            value_type=Text(),
+            title=_("Source File URLs"),
+            description=_("URL list for this source publication's "
+                          "files from the source upload.")))
+
+    binary_file_urls = exported(
+        List(
+            value_type=Text(),
+            title=_("Binary File URLs"),
+            description=_("URL list for this source publication's "
+                          "files resulting from the build.")))
 
     package_creator = exported(
         Reference(
@@ -541,6 +555,11 @@ class ISourcePackagePublishingHistory(IPublishing):
             description=_('The IPerson who signed the source package.'),
             required=False, readonly=True,
         ))
+
+    newer_distroseries_version = Attribute(
+        "An `IDistroSeriosSourcePackageRelease` with a newer version of this "
+        "package that has been published in the main distribution series, "
+        "if one exists, or None.")
 
     # Really IBinaryPackagePublishingHistory, see below.
     @operation_returns_collection_of(Interface)
@@ -578,6 +597,13 @@ class ISourcePackagePublishingHistory(IPublishing):
         The builds are ordered by `DistroArchSeries.architecturetag`.
 
         :return: a list of `IBuilds`.
+        """
+
+    @export_read_operation()
+    def changesFileUrl():
+        """The .changes file URL for this source publication.
+
+        :return: the .changes file URL for this source (a string).
         """
 
     def getUnpublishedBuilds(build_states=None):
@@ -673,7 +699,7 @@ class IBinaryPackageFilePublishing(IFilePublishing):
             )
 
 
-class IBinaryPackagePublishingHistory(IPublishing):
+class IBinaryPackagePublishingHistory(IPublishingView):
     """A binary package publishing record."""
     export_as_webservice_entry()
 
@@ -937,8 +963,25 @@ class IPublishingSet(Interface):
             (`SourcePackagePublishingHistory`, `Build`)
         """
 
+    def getBinaryFilesForSources(one_or_more_source_publication):
+        """Return binary files related to each given source publication.
+
+        The returned ResultSet contains entries with the wanted
+        `LibraryFileAlias`s (binaries only) associated with the
+        corresponding source publication and its `LibraryFileContent`
+        in a 3-element tuple. This way the extra information will be
+        cached and the callsites can group files in any convenient form.
+
+        :param one_or_more_source_publication: list of or a single
+            `SourcePackagePublishingHistory` object.
+
+        :return: a storm ResultSet containing triples as follows:
+            (`SourcePackagePublishingHistory`, `LibraryFileAlias`,
+             `LibraryFileContent`)
+        """
+
     def getFilesForSources(one_or_more_source_publication):
-        """Return all files related with each given source publication.
+        """Return all files related to each given source publication.
 
         The returned ResultSet contains entries with the wanted
         `LibraryFileAlias`s (source and binaries) associated with the
@@ -1028,6 +1071,15 @@ class IPublishingSet(Interface):
              `SourcePackageRelease`, `LibraryFileAlias`, `LibraryFileContent`)
         """
 
+    def getChangesFileLFA(spr):
+        """The changes file for the given `SourcePackageRelease`.
+
+        :param spr: the `SourcePackageRelease` for which to return the
+            changes file `LibraryFileAlias`.
+
+        :return: a `LibraryFileAlias` instance or None
+        """
+
     def requestDeletion(sources, removed_by, removal_comment=None):
         """Delete the source and binary publications specified.
 
@@ -1076,6 +1128,34 @@ class IPublishingSet(Interface):
         for details. The call is just proxied here so that it can also be
         used with an ArchiveSourcePublication passed in as
         the source_package_pub, allowing the use of the cached results.
+        """
+
+    def getNearestAncestor(
+        package_name, archive, distroseries, pocket=None, status=None,
+        binary=False):
+        """Return the ancestor of the given parkage in a particular archive.
+
+        :param package_name: The package name for which we are checking for
+            an ancestor.
+        :type package_name: ``string``
+        :param archive: The archive in which we are looking for an ancestor.
+        :type archive: `IArchive`
+        :param distroseries: The particular series in which we are looking for
+            an ancestor.
+        :type distroseries: `IDistroSeries`
+        :param pocket: An optional pocket to restrict the search.
+        :type pocket: `PackagePublishingPocket`.
+        :param status: An optional status defaulting to PUBLISHED if not
+            provided.
+        :type status: `PackagePublishingStatus`
+        :param binary: An optional argument to look for a binary ancestor
+            instead of the default source.
+        :type binary: ``Boolean``
+
+        :return: The most recent publishing history for the given
+            arguments.
+        :rtype: `ISourcePackagePublishingHistory` or
+            `IBinaryPackagePublishingHistory` or None.
         """
 
 active_publishing_status = (

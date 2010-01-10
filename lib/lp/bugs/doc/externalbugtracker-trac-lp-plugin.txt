@@ -362,7 +362,7 @@ We also need an example Bug, BugTracker and BugWatch.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.checkwatches.dbuser)
 
-getCommentIds() returns all the comment IDs for a given bug watch.
+getCommentIds() returns all the comment IDs for a given remote bug.
 bug_watch is against remote bug 1, which has one comment.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
@@ -371,23 +371,23 @@ bug_watch is against remote bug 1, which has one comment.
     Using XML-RPC to generate token.
     Successfully validated the token.
 
-    >>> trac.getCommentIds(bug_watch)
+    >>> trac.getCommentIds(bug_watch.remotebug)
     ['1-1']
 
 bug_watch_two is against remote bug 2, which has two comments.
 
-    >>> trac.getCommentIds(bug_watch_two)
+    >>> trac.getCommentIds(bug_watch_two.remotebug)
     ['2-1', '2-2']
 
 bug_watch_three is against bug 3, which has no comments.
 
-    >>> trac.getCommentIds(bug_watch_three)
+    >>> trac.getCommentIds(bug_watch_three.remotebug)
     []
 
 Trying to call getCommentIds() on a bug that doesn't exist will raise a
 BugNotFound error.
 
-    >>> trac.getCommentIds(bug_watch_broken)
+    >>> trac.getCommentIds(bug_watch_broken.remotebug)
     Traceback (most recent call last):
       ...
     BugNotFound: 123
@@ -406,7 +406,7 @@ a dict in the form {<comment_id>: <comment_dict>}, which can then be
 parsed.
 
     >>> test_transport.expireCookie(test_transport.auth_cookie)
-    >>> trac.fetchComments(bug_watch, ['1-1'])
+    >>> trac.fetchComments(bug_watch.remotebug, ['1-1'])
     Using XML-RPC to generate token.
     Successfully validated the token.
 
@@ -422,7 +422,7 @@ parsed.
 getPosterForComment() returns a tuple of (displayname, emailaddress) for
 the poster of a given comment.
 
-    >>> trac.getPosterForComment(bug_watch, '1-1')
+    >>> trac.getPosterForComment(bug_watch.remotebug, '1-1')
     ('Test', 'test@canonical.com')
 
 getPosterForComment() handles situations in which only an email address
@@ -430,8 +430,8 @@ is supplied for the 'user' field by returning None as the user's
 displayname. When this is passed to IPersonSet.ensurePerson() a display
 name will be generated for the user from their email address.
 
-    >>> trac.fetchComments(bug_watch_two, ['2-1', '2-2'])
-    >>> trac.getPosterForComment(bug_watch_two, '2-1')
+    >>> trac.fetchComments(bug_watch_two.remotebug, ['2-1', '2-2'])
+    >>> trac.getPosterForComment(bug_watch_two.remotebug, '2-1')
     (None, 'test@canonical.com')
 
 getPosterForComment() will also return displayname, email tuples in
@@ -439,7 +439,7 @@ cases where the 'user' field is set to a plain username (e.g. 'foo').
 However, in these cases it is the email address that will be set to
 None.
 
-    >>> trac.getPosterForComment(bug_watch_two, '2-2')
+    >>> trac.getPosterForComment(bug_watch_two.remotebug, '2-2')
     ('foo.bar', None)
 
 Finally, getMessageForComment() will return a Message instance for a
@@ -448,7 +448,8 @@ the comment's poster.
 
     >>> from zope.component import getUtility
     >>> poster = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> message_one = trac.getMessageForComment(bug_watch, '1-1', poster)
+    >>> message_one = trac.getMessageForComment(
+    ...     bug_watch.remotebug, '1-1', poster)
 
 The Message returned by getMessageForComment() contains the full text of
 the original comment.

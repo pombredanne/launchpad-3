@@ -12,14 +12,35 @@
 
 <metal:block fill-slot="head_epilogue">
   <style type="text/css">
-    #code-review-votes {
-      margin: 2em 0;
+    .menu-link-set_commit_message {
+    margin-top: 1em;
     }
-    #edit-description {
+    #code-review-votes {
+      margin: 1em 0;
+    }
+    #commit-message, #edit-commit-message {
       margin: 1em 0 0 0;
     }
+    #add-comment-form {
+      max-width: 60em;
+      padding-bottom: 3em;
+    }
+    #add-comment-form textarea{
+      width: 100%;
+      max-width: inherit;
+    }
+    #add-comment-form .actions {
+      float: right;
+      margin: 0 -0.5em;
+    }
+    #add-comment-review-fields {
+      margin-top: 1em;
+    }
+    #add-comment-review-fields div {
+      display: inline;
+    }
     /* A page-specific fix for inline text are editing to line up box. */
-    #edit-description .yui-ieditor-input { top: 0; }
+    #edit-commit-message .yui-ieditor-input { top: 0; }
   </style>
 </metal:block>
 
@@ -38,10 +59,32 @@
 </metal:side>
 
 
-<div metal:fill-slot="main">
+<div metal:fill-slot="main"
+     tal:define="menu context/menu:context">
 
   <div class="yui-g first">
     <tal:summary replace="structure context/@@+pagelet-summary" />
+  </div>
+
+  <div id="commit-message" class="yui-g">
+  <tal:no-commit-message condition="not: context/commit_message">
+    <div tal:define="link menu/set_commit_message"
+         tal:condition="link/enabled"
+         tal:content="structure link/render">
+      Set commit message
+    </div>
+    <div id="edit-commit-message" class="lazr-multiline-edit unseen"
+         tal:content="structure view/commit_message_html"/>
+  </tal:no-commit-message>
+  <tal:has-commit-message condition="context/commit_message">
+    <div tal:define="link menu/set_commit_message"
+         tal:condition="link/enabled"
+         tal:content="structure link/render" class="unseen">
+      Set commit message
+    </div>
+    <div id="edit-commit-message" class="lazr-multiline-edit"
+         tal:content="structure view/commit_message_html"/>
+  </tal:has-commit-message>
   </div>
 
   <div class="yui-g">
@@ -67,32 +110,42 @@
   </div>
 
   <div class="yui-g">
-    <div tal:define="link context/menu:context/add_comment"
+    <tal:not-logged-in condition="not: view/user">
+      <div align="center" id="add-comment-login-first">
+        To post a comment you must <a href="+login">log in</a>.
+      </div>
+    </tal:not-logged-in>
+
+    <div tal:define="link menu/add_comment"
          tal:condition="link/enabled"
          tal:content="structure link/render">
          Add comment
     </div>
 
-    <div id="edit-description" class="lazr-multiline-edit"
-         tal:content="structure view/commit_message_html"/>
-
     <div id="conversation"
          tal:content="structure view/conversation/@@+render"/>
   </div>
-  <!-- Hide inline commenting if YUI isn't used. -->
-  <div id="inline-add-comment" style="display: none">
-  <tal:comment replace="structure context/@@+comment/++form++" />
-      <div class="actions" id="launchpad-form-actions">
-        <input type="submit" id="field.actions.add" name="field.actions.add" value="Save Comment" class="button" />
-      </div>
-  </div>
 
-  <script type="text/javascript">
-    YUI().use('lp.comment', function(Y) {
-    var comment = new Y.lp.CodeReviewComment();
-    comment.render();
-    })
-  </script>
+  <tal:logged-in condition="view/user">
+    <div tal:define="comment_form nocall:context/@@+comment;
+                     dummy comment_form/initialize">
+      <h2 id="add-comment">Add comment</h2>
+      <form action="+comment"
+            method="post"
+            enctype="multipart/form-data"
+            accept-charset="UTF-8"
+            id="add-comment-form">
+        <tal:comment-input replace="structure comment_form/widgets/comment"/>
+        <div id="add-comment-review-fields">
+            Review: <tal:review replace="structure comment_form/widgets/vote"/>
+            Review type: <tal:review replace="structure comment_form/widgets/review_type"/>
+            <div class="actions"
+                 tal:content="structure comment_form/actions/field.actions.add/render" />
+        </div>
+      </form>
+    </div>
+  </tal:logged-in>
+
   <div class="yui-g">
     <div class="yui-u first">
       <div id="source-revisions"
@@ -127,35 +180,18 @@
     </div>
   </div>
 
-  <div id="review-diff" tal:condition="view/preview_diff">
-  <h2>Preview Diff</h2>
-  <div class="boardComment attachment"
-       tal:define="attachment view/preview_diff/diff_text">
-    <tal:real-diff condition="attachment">
-      <div class="boardCommentDetails filename">
-        <ul class="horizontal">
-          <li>
-            <a tal:attributes="href attachment/getURL">
-              <img src="/@@/download"/>
-              Download diff
-            </a>
-          </li>
-        </ul>
-      </div>
-      <div class="boardCommentBody attachmentBody">
-        <tal:diff replace="structure view/preview_diff_text/fmt:diff" />
-      </div>
-      <div class="boardCommentFooter"
-           tal:condition="view/review_diff_oversized">
-        The diff has been truncated for viewing.
-      </div>
-    </tal:real-diff>
-    <tal:empty-diff condition="not: attachment">
-      <div class="boardCommentBody attachmentBody">
-        <em>Empty</em>
-      </div>
-    </tal:empty-diff>
+  <div class="yui-g" tal:condition="view/pending_diff">
+    <div class="portlet pending-update" id="diff-pending-update">
+      <h3>Updating diff...</h3>
+      <p>
+        An updated diff will be available in a few minutes.  Reload to see the
+        changes.
+      </p>
+    </div>
   </div>
+  <div id="review-diff" tal:condition="view/preview_diff">
+    <h2>Preview Diff</h2>
+    <div tal:replace="structure context/@@++diff"/>
   </div>
 
 <tal:script
@@ -163,21 +199,25 @@
   string:&lt;script id='codereview-script' type='text/javascript'&gt;" />
   conf = <tal:status-config replace="view/status_config" />
   <!--
-  YUI().use('io-base', 'code.codereview', 'code.branchmergeproposal',
+  LPS.use('io-base', 'code.codereview', 'code.branchmergeproposal', 'lp.comment',
             function(Y) {
 
+    Y.on('load', function() {
+        var logged_in = LP.client.links['me'] !== undefined;
 
-  if(Y.UA.ie) {
-      return;
-  }
+        if (logged_in) {
+            var comment = new Y.lp.CodeReviewComment();
+            comment.render();
 
-  Y.on('domready', function() {
-      Y.code.codereview.connect_links();
-      Y.code.branchmergeproposal.connect_status(conf);
-  });
+            if(Y.UA.ie) {
+                return;
+            }
 
-  (new Y.codereview.NumberToggle()).render();
-
+            Y.code.codereview.connect_links();
+            Y.code.branchmergeproposal.connect_status(conf);
+        }
+        (new Y.codereview.NumberToggle()).render();
+      }, window);
   });
   -->
 <tal:script replace="structure string:&lt;/script&gt;" />

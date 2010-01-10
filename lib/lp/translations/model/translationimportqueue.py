@@ -32,7 +32,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, IPersonRoles)
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
@@ -56,7 +57,8 @@ from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueueEntry,
     RosettaImportStatus,
     SpecialTranslationImportTargetFilter,
-    TranslationImportQueueConflictError)
+    TranslationImportQueueConflictError,
+    UserCannotSetTranslationImportStatus)
 from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import (
@@ -271,9 +273,57 @@ class TranslationImportQueueEntry(SQLBase):
             distroseries=self.distroseries,
             sourcepackagename=self.sourcepackagename)
 
-    def setStatus(self, status):
+    def isUbuntuAndIsUserTranslationGroupOwner(self, user):
         """See `ITranslationImportQueueEntry`."""
-        self.status = status
+        # As a special case, the Ubuntu translation group owners can
+        # manage Ubuntu uploads.
+        if self.is_targeted_to_ubuntu:
+            group = self.distroseries.distribution.translationgroup
+            if group is not None and user.inTeam(group.owner):
+                return True
+        return False
+
+    def isUserUploaderOrOwner(self, user):
+        """See `ITranslationImportQueueEntry`."""
+        roles = IPersonRoles(user)
+        if roles.inTeam(self.importer):
+            return True
+        if self.productseries is not None:
+            return roles.isOwner(self.productseries.product)
+        if self.distroseries is not None:
+            return roles.isOwner(self.distroseries.distribution)
+        return False
+
+    def canSetStatus(self, new_status, user):
+        """See `ITranslationImportQueueEntry`."""
+        if user is None:
+            # Anonymous user cannot do anything.
+            return False
+        roles = IPersonRoles(user)
+        can_admin = (roles.in_admin or roles.in_rosetta_experts or
+                     self.isUbuntuAndIsUserTranslationGroupOwner(user))
+        if new_status == RosettaImportStatus.APPROVED:
+            # Only administrators are able to set the APPROVED status, and
+            # that's only possible if we know where to import it
+            # (import_into not None).
+            return can_admin and self.import_into is not None
+        if new_status == RosettaImportStatus.IMPORTED:
+            # Only rosetta experts are able to set the IMPORTED status, and
+            # that's only possible if we know where to import it
+            # (import_into not None).
+            return ((roles.in_admin or roles.in_rosetta_experts) and
+                    self.import_into is not None)
+        if new_status == RosettaImportStatus.FAILED:
+            # Only rosetta experts are able to set the FAILED status.
+            return roles.in_admin or roles.in_rosetta_experts
+        # All other statuses can bset set by all authorized persons.
+        return self.isUserUploaderOrOwner(user) or can_admin
+
+    def setStatus(self, new_status, user):
+        """See `ITranslationImportQueueEntry`."""
+        if not self.canSetStatus(new_status, user):
+            raise UserCannotSetTranslationImportStatus()
+        self.status = new_status
         self.date_status_changed = UTC_NOW
 
     def setErrorOutput(self, output):
@@ -291,11 +341,12 @@ class TranslationImportQueueEntry(SQLBase):
     def _findCustomLanguageCode(self, language_code):
         """Find applicable custom language code, if any."""
         if self.distroseries is not None:
-            return self.distroseries.distribution.getCustomLanguageCode(
-                self.sourcepackagename, language_code)
+            target = self.distroseries.distribution.getSourcePackage(
+                self.sourcepackagename)
         else:
-            return self.productseries.product.getCustomLanguageCode(
-                language_code)
+            target = self.productseries.product
+        
+        return target.getCustomLanguageCode(language_code)
 
     def _guessLanguage(self):
         """See ITranslationImportQueueEntry."""
@@ -392,8 +443,9 @@ class TranslationImportQueueEntry(SQLBase):
         # Get or create an IPOFile based on the info we guess.
         pofile = potemplate.getPOFileByLang(language.code, variant=variant)
         if pofile is None:
-            pofile = potemplate.newPOFile(
-                language.code, variant=variant, requester=self.importer)
+            pofile = potemplate.newPOFile(language.code, variant=variant)
+            if pofile.canEditTranslations(self.importer):
+                pofile.owner = self.importer
 
         if self.is_published:
             # This entry comes from upstream, which means that the path we got
@@ -473,7 +525,8 @@ class TranslationImportQueueEntry(SQLBase):
         if guessed_language is None:
             # Custom language code says to ignore imports with this language
             # code.
-            self.setStatus(RosettaImportStatus.DELETED)
+            self.setStatus(RosettaImportStatus.DELETED,
+                           getUtility(ILaunchpadCelebrities).rosetta_experts)
             return None
         elif guessed_language == '':
             # We don't recognize this as a translation file with a name
@@ -877,7 +930,7 @@ class TranslationImportQueue:
                 # We got an update for this entry. If the previous import is
                 # deleted or failed or was already imported we should retry
                 # the import now, just in case it can be imported now.
-                entry.setStatus(RosettaImportStatus.NEEDS_REVIEW)
+                entry.setStatus(RosettaImportStatus.NEEDS_REVIEW, importer)
 
             entry.date_status_changed = UTC_NOW
             entry.format = format
@@ -1130,7 +1183,8 @@ class TranslationImportQueue:
 
             # Already know where it should be imported. The entry is approved
             # automatically.
-            entry.setStatus(RosettaImportStatus.APPROVED)
+            entry.setStatus(RosettaImportStatus.APPROVED,
+                            getUtility(ILaunchpadCelebrities).rosetta_experts)
 
             if txn is not None:
                 txn.commit()
@@ -1165,7 +1219,9 @@ class TranslationImportQueue:
             if has_templates and not has_templates_unblocked:
                 # All templates on the same directory as this entry are
                 # blocked, so we can block it too.
-                entry.setStatus(RosettaImportStatus.BLOCKED)
+                entry.setStatus(
+                    RosettaImportStatus.BLOCKED,
+                    getUtility(ILaunchpadCelebrities).rosetta_experts)
                 num_blocked += 1
                 if txn is not None:
                     txn.commit()

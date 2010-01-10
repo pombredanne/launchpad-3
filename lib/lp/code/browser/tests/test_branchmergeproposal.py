@@ -7,10 +7,12 @@
 
 __metaclass__ = type
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from difflib import unified_diff
+import operator
 import unittest
 
+import pytz
 import transaction
 from zope.component import getMultiAdapter
 from zope.security.interfaces import Unauthorized
@@ -20,9 +22,10 @@ from lp.code.browser.branch import RegisterBranchMergeProposalView
 from lp.code.browser.branchmergeproposal import (
     BranchMergeProposalAddVoteView, BranchMergeProposalChangeStatusView,
     BranchMergeProposalContextMenu, BranchMergeProposalMergedView,
-    BranchMergeProposalView, BranchMergeProposalVoteView,
-    DecoratedCodeReviewVoteReference)
+    BranchMergeProposalVoteView, DecoratedCodeReviewVoteReference,
+    latest_proposals_for_each_branch)
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
+from lp.code.tests.helpers import add_revision_to_branch
 from lp.testing import (
     login_person, TestCaseWithFactory, time_counter)
 from lp.testing.views import create_initialized_view
@@ -65,6 +68,7 @@ class TestBranchMergeProposalContextMenu(TestCaseWithFactory):
         menu = BranchMergeProposalContextMenu(bmp)
         link = menu.add_comment()
         self.assertTrue(menu.add_comment().enabled)
+
 
 class TestDecoratedCodeReviewVoteReference(TestCaseWithFactory):
 
@@ -459,13 +463,6 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         self.bmp = self.factory.makeBranchMergeProposal(registrant=self.user)
         login_person(self.user)
 
-    def _createView(self):
-        # Construct the view and initialize it.
-        view = BranchMergeProposalView(
-            self.bmp, LaunchpadTestRequest())
-        view.initialize()
-        return view
-
     def makeTeamReview(self):
         owner = self.bmp.source_branch.owner
         review_team = self.factory.makeTeam()
@@ -477,7 +474,7 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         albert = self.factory.makePerson()
         albert.join(review.reviewer)
         login_person(albert)
-        view = self._createView()
+        view = create_initialized_view(self.bmp, '+index')
         view.claim_action.success({'review_id': review.id})
         self.assertEqual(albert, review.reviewer)
 
@@ -486,34 +483,34 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
         review = self.makeTeamReview()
         albert = self.factory.makePerson()
         login_person(albert)
-        view = self._createView()
+        view = create_initialized_view(self.bmp, '+index')
         self.assertRaises(Unauthorized, view.claim_action.success,
                           {'review_id': review.id})
 
     def test_preview_diff_text_with_no_diff(self):
-        """review_diff should be None when there is no context.review_diff."""
-        view = self._createView()
+        """preview_diff_text should be None if context has no preview_diff."""
+        view = create_initialized_view(self.bmp, '+index')
         self.assertIs(None, view.preview_diff_text)
 
-    def test_review_diff_utf8(self):
-        """A review_diff in utf-8 should be converted to utf-8."""
+    def test_preview_diff_utf8(self):
+        """A preview_diff in utf-8 should decoded as utf-8."""
         text = ''.join(unichr(x) for x in range(255))
         diff_bytes = ''.join(unified_diff('', text)).encode('utf-8')
-        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
+        self.setPreviewDiff(diff_bytes)
         transaction.commit()
-        self.bmp.review_diff = diff
+        view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(diff_bytes.decode('utf-8'),
-                         self._createView().preview_diff_text)
+                         view.preview_diff_text)
 
-    def test_review_diff_all_chars(self):
-        """review_diff should work on diffs containing all possible bytes."""
+    def test_preview_diff_all_chars(self):
+        """preview_diff should work on diffs containing all possible bytes."""
         text = ''.join(chr(x) for x in range(255))
         diff_bytes = ''.join(unified_diff('', text))
-        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
+        self.setPreviewDiff(diff_bytes)
         transaction.commit()
-        self.bmp.review_diff = diff
+        view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
-                         self._createView().preview_diff_text)
+                         view.preview_diff_text)
 
     def addReviewDiff(self):
         review_diff_bytes = ''.join(unified_diff('', 'review'))
@@ -524,6 +521,9 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def addBothDiffs(self):
         self.addReviewDiff()
         preview_diff_bytes = ''.join(unified_diff('', 'preview'))
+        return self.setPreviewDiff(preview_diff_bytes)
+
+    def setPreviewDiff(self, preview_diff_bytes):
         preview_diff = PreviewDiff.create(
             preview_diff_bytes, u'a', u'b', None, u'')
         removeSecurityProxy(self.bmp).preview_diff = preview_diff
@@ -532,27 +532,88 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def test_preview_diff_prefers_preview_diff(self):
         """The preview will be used for BMP with both a review and preview."""
         preview_diff = self.addBothDiffs()
-        self.assertEqual(preview_diff, self._createView().preview_diff)
+        view = create_initialized_view(self.bmp, '+index')
+        self.assertEqual(preview_diff, view.preview_diff)
 
     def test_preview_diff_uses_review_diff(self):
         """The review diff will be used if there is no preview."""
         review_diff = self.addReviewDiff()
+        view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(review_diff.diff,
-                         self._createView().preview_diff)
+                         view.preview_diff)
 
     def test_review_diff_text_prefers_preview_diff(self):
         """The preview will be used for BMP with both a review and preview."""
         preview_diff = self.addBothDiffs()
         transaction.commit()
+        view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(
-            preview_diff.text, self._createView().preview_diff_text)
+            preview_diff.text, view.preview_diff_text)
 
     def test_linked_bugs_excludes_mutual_bugs(self):
         """List bugs that are linked to the source only."""
         bug = self.factory.makeBug()
         self.bmp.source_branch.linkBug(bug, self.bmp.registrant)
         self.bmp.target_branch.linkBug(bug, self.bmp.registrant)
-        self.assertEqual([], self._createView().linked_bugs)
+        view = create_initialized_view(self.bmp, '+index')
+        self.assertEqual([], view.linked_bugs)
+
+    def test_revision_end_date_active(self):
+        # An active merge proposal will have None as an end date.
+        bmp = self.factory.makeBranchMergeProposal()
+        view = create_initialized_view(bmp, '+index')
+        self.assertIs(None, view.revision_end_date)
+
+    def test_revision_end_date_merged(self):
+        # An merged proposal will have the date merged as an end date.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.MERGED)
+        view = create_initialized_view(bmp, '+index')
+        self.assertEqual(bmp.date_merged, view.revision_end_date)
+
+    def test_revision_end_date_rejected(self):
+        # An rejected proposal will have the date reviewed as an end date.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.REJECTED)
+        view = create_initialized_view(bmp, '+index')
+        self.assertEqual(bmp.date_reviewed, view.revision_end_date)
+
+    def assertRevisionGroups(self, bmp, expected_groups):
+        """Get the groups for the merge proposal and check them."""
+        view = create_initialized_view(bmp, '+index')
+        groups = view._getRevisionsSinceReviewStart()
+        view_groups = [
+            obj.revisions for obj in sorted(
+                groups, key=operator.attrgetter('date'))]
+        self.assertEqual(expected_groups, view_groups)
+
+    def test_getRevisionsSinceReviewStart_no_revisions(self):
+        # If there have been no revisions pushed since the start of the
+        # review, the method returns an empty list.
+        self.assertRevisionGroups(self.bmp, [])
+
+    def test_getRevisionsSinceReviewStart_groups(self):
+        # Revisions that were scanned at the same time have the same
+        # date_created.  These revisions are grouped together.
+        review_date = datetime(2009, 9, 10, tzinfo=pytz.UTC)
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=review_date)
+        login_person(bmp.registrant)
+        bmp.requestReview(review_date)
+        revision_date = review_date + timedelta(days=1)
+        revisions = []
+        for date in range(2):
+            revisions.append(
+                add_revision_to_branch(
+                    self.factory, bmp.source_branch, revision_date))
+            revisions.append(
+                add_revision_to_branch(
+                    self.factory, bmp.source_branch, revision_date))
+            revision_date += timedelta(days=1)
+        expected_groups = [
+            [revisions[0], revisions[1]],
+            [revisions[2], revisions[3]]]
+        self.assertRevisionGroups(bmp, expected_groups)
 
 
 class TestBranchMergeProposalChangeStatusOptions(TestCaseWithFactory):
@@ -690,6 +751,85 @@ class TestCommentAttachmentRendering(TestCaseWithFactory):
         view = create_initialized_view(comment, '+comment-body')
         [diff_attachment] = view.display_attachments
         self.assertEqual(u'\u2615', diff_attachment.diff_text)
+
+
+class TestBranchMergeCandidateView(TestCaseWithFactory):
+    """Test the status title for the view."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_needs_review_title(self):
+        # No title is set for a proposal needing review.
+        bmp = self.factory.makeBranchMergeProposal(
+            set_state=BranchMergeProposalStatus.NEEDS_REVIEW)
+        view = create_initialized_view(bmp, '+link-summary')
+        self.assertEqual('', view.status_title)
+
+    def test_approved_shows_reviewer(self):
+        # If the proposal is approved, the approver is shown in the title
+        # along with when they approved it.
+        bmp = self.factory.makeBranchMergeProposal()
+        owner = bmp.target_branch.owner
+        login_person(bmp.target_branch.owner)
+        owner.displayname = 'Eric'
+        bmp.approveBranch(owner, 'some-rev', datetime(
+                year=2008, month=9, day=10, tzinfo=pytz.UTC))
+        view = create_initialized_view(bmp, '+link-summary')
+        self.assertEqual('Eric on 2008-09-10', view.status_title)
+
+    def test_rejected_shows_reviewer(self):
+        # If the proposal is rejected, the approver is shown in the title
+        # along with when they approved it.
+        bmp = self.factory.makeBranchMergeProposal()
+        owner = bmp.target_branch.owner
+        login_person(bmp.target_branch.owner)
+        owner.displayname = 'Eric'
+        bmp.rejectBranch(owner, 'some-rev', datetime(
+                year=2008, month=9, day=10, tzinfo=pytz.UTC))
+        view = create_initialized_view(bmp, '+link-summary')
+        self.assertEqual('Eric on 2008-09-10', view.status_title)
+
+
+class TestLatestProposalsForEachBranch(TestCaseWithFactory):
+    """Confirm that the latest branch is returned."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_newest_first(self):
+        # If each proposal targets a different branch, each will be returned.
+        bmp1 = self.factory.makeBranchMergeProposal(
+            date_created=(
+                datetime(year=2008, month=9, day=10, tzinfo=pytz.UTC)))
+        bmp2 = self.factory.makeBranchMergeProposal(
+            date_created=(
+                datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
+        self.assertEqual(
+            [bmp2, bmp1], latest_proposals_for_each_branch([bmp1, bmp2]))
+
+    def test_visible_filtered_out(self):
+        # If the proposal is not visible to the user, they are not returned.
+        bmp1 = self.factory.makeBranchMergeProposal(
+            date_created=(
+                datetime(year=2008, month=9, day=10, tzinfo=pytz.UTC)))
+        bmp2 = self.factory.makeBranchMergeProposal(
+            date_created=(
+                datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
+        removeSecurityProxy(bmp2.source_branch).private = True
+        self.assertEqual(
+            [bmp1], latest_proposals_for_each_branch([bmp1, bmp2]))
+
+    def test_same_target(self):
+        # If the proposals target the same branch, then the most recent is
+        # returned.
+        bmp1 = self.factory.makeBranchMergeProposal(
+            date_created=(
+                datetime(year=2008, month=9, day=10, tzinfo=pytz.UTC)))
+        bmp2 = self.factory.makeBranchMergeProposal(
+            target_branch = bmp1.target_branch,
+            date_created=(
+                datetime(year=2008, month=10, day=10, tzinfo=pytz.UTC)))
+        self.assertEqual(
+            [bmp2], latest_proposals_for_each_branch([bmp1, bmp2]))
 
 
 def test_suite():

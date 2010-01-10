@@ -1,11 +1,13 @@
-= Administrating code imports =
+Administrating code imports
+===========================
 
 The code import details are displayed on the main branch page for
 imported branches.  If the logged in user is an import operator
 (member of VCS imports or Launchpad admin) then they can see a link
 to edit the details.
 
-    >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
+    >>> from lp.code.enums import RevisionControlSystems
+    >>> from lp.testing import ANONYMOUS, login, logout
     >>> login('test@canonical.com')
 
     >>> svn_import = factory.makeCodeImport(
@@ -13,6 +15,12 @@ to edit the details.
     >>> from canonical.launchpad.webapp import canonical_url
     >>> svn_import_location = str(canonical_url(svn_import.branch))
     >>> svn_import_branch_unique_name = svn_import.branch.unique_name
+
+    >>> bzr_svn_import = factory.makeCodeImport(
+    ...     svn_branch_url='svn://svn.example.com/bzr-svn/trunk',
+    ...     rcs_type=RevisionControlSystems.BZR_SVN)
+    >>> bzr_svn_import_location = str(canonical_url(bzr_svn_import.branch))
+    >>> bzr_svn_import_branch_unique_name = bzr_svn_import.branch.unique_name
 
     >>> cvs_import = factory.makeCodeImport(
     ...     cvs_root=":pserver:anonymous@cvs.example.com:/fooix",
@@ -30,7 +38,8 @@ to edit the details.
     ...     auth='Basic david.allouche@canonical.com:test')
 
 
-== Editing the import ==
+Editing the import
+------------------
 
 Both VCS Imports members and Launchpad administrators can edit the
 import:
@@ -46,7 +55,8 @@ import:
     from svn://svn.example.com/fooix/trunk.
 
 
-== Editing details ==
+Editing details
+---------------
 
 There are a number of buttons shown on the editing page for
 import operators.
@@ -87,7 +97,8 @@ in the form.
     >>> print_form_fields(import_browser)
     field.git_repo_url: git://git.example.org/fooix
 
-=== Editing the import location ===
+Editing the import location
++++++++++++++++++++++++++++
 
 The +edit-import page allows the import operator to edit the location
 an import is from.
@@ -97,6 +108,16 @@ This is true for Subversion imports,
     >>> import_browser.open(svn_import_location + '/+edit-import')
     >>> import_browser.getControl('Branch URL').value = \
     ...     'svn://svn-new.example.com/fooix/trunk'
+    >>> import_browser.getControl('Update').click()
+    >>> for message in get_feedback_messages(import_browser.contents):
+    ...     print extract_text(message)
+    The code import has been updated.
+
+bzr-svn imports,
+
+    >>> import_browser.open(bzr_svn_import_location + '/+edit-import')
+    >>> import_browser.getControl('Branch URL').value = \
+    ...     'svn://svn-new.example.com/bzr-svn/trunk'
     >>> import_browser.getControl('Update').click()
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)
@@ -125,7 +146,8 @@ and Git imports.
     The code import has been updated.
 
 
-=== Approving an import ===
+Approving an import
++++++++++++++++++++
 
 When a code import is approved, a pending job is created for it.
 
@@ -141,7 +163,8 @@ When a code import is approved, a pending job is created for it.
     The code import has been approved.
 
 
-=== Invalidating an import ===
+Invalidating an import
+++++++++++++++++++++++
 
     >>> import_browser.getLink('Edit import source or review import').click()
     >>> import_browser.getControl('Mark Invalid').click()
@@ -153,7 +176,8 @@ When a code import is approved, a pending job is created for it.
     The code import has been set as invalid.
 
 
-=== Suspending an import ===
+Suspending an import
+++++++++++++++++++++
 
     >>> import_browser.getLink('Edit import source or review import').click()
     >>> import_browser.getControl('Suspend').click()
@@ -165,7 +189,8 @@ When a code import is approved, a pending job is created for it.
     The code import has been suspended.
 
 
-=== Marking an import as failing ===
+Marking an import as failing
+++++++++++++++++++++++++++++
 
     >>> import_browser.getLink('Edit import source or review import').click()
     >>> import_browser.getControl('Mark Failing').click()
@@ -177,7 +202,8 @@ When a code import is approved, a pending job is created for it.
     The code import has been marked as failing.
 
 
-== Import details for a running job ==
+Import details for a running job
+--------------------------------
 
 If the job for an approved import is running, then the import details
 says how long ago since it started.
@@ -218,7 +244,8 @@ should show this as 2 hours.
         Changeset 2
 
 
-== Import details for a import that has been imported successfully ==
+Import details for a import that has been imported successfully
+---------------------------------------------------------------
 
 If a branch has been successfully imported in the past, then the date
 that it was last successful is shown, as well as when the next import
@@ -245,7 +272,8 @@ last import completed, and so in this case in about three hours.
     ...
 
 
-== Requesting an import ==
+Requesting an import
+--------------------
 
 If an import is waiting for its next update, any logged in user can
 click a button to request an immediate import.

@@ -56,7 +56,7 @@ from lp.registry.browser.product import (
     ProductAddView, ProjectAddStepOne, ProjectAddStepTwo)
 from lp.registry.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.feeds import FeedsMixin
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionTargetTraversalMixin)
 from lp.answers.browser.question import QuestionAddView
 from lp.answers.browser.questiontarget import (
@@ -273,7 +273,7 @@ class ProjectSpecificationsMenu(NavigationMenu,
                                 HasSpecificationsMenuMixin):
     usedfor = IProject
     facet = 'specifications'
-    links = ['listall', 'doc', 'assignments', 'new']
+    links = ['listall', 'doc', 'assignments', 'new', 'register_sprint']
 
 
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
@@ -292,11 +292,15 @@ class ProjectBugsMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'bugs'
-    links = ['new']
+    links = ['new', 'subscribe']
 
     def new(self):
         text = 'Report a Bug'
         return Link('+filebug', text, icon='add')
+
+    def subscribe(self):
+        text = 'Subscribe to bug mail'
+        return Link('+subscribe', text, icon='edit')
 
 
 class ProjectView(HasAnnouncementsView, FeedsMixin):
