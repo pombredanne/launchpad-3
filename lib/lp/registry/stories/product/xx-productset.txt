@@ -23,7 +23,7 @@ A member of the Launchpad registry experts team may successfully access the
     ...     name='reggie', email='reggie@example.com', password='test')
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
-    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
     >>> registry_browser = setupBrowser(

@@ -549,7 +549,7 @@ def make_active_import(factory, project_name=None, product_name=None,
     code_import = factory.makeCodeImport(
         product=product, branch_name=branch_name,
         svn_branch_url=svn_branch_url, cvs_root=cvs_root,
-        cvs_module=cvs_module, git_repo_url=git_repo_url, rcs_type=None)
+        cvs_module=cvs_module, git_repo_url=git_repo_url, rcs_type=rcs_type)
     make_import_active(factory, code_import, last_update)
     return code_import
 

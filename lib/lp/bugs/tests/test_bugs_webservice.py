@@ -120,16 +120,6 @@ class TestBugCommentRepresentation(TestCaseWithFactory):
         self.assertEqual(response.status, 200)
 
         rendered_comment = response.body
-        # XXX Bjorn Tillenius 2009-05-15 bug=377003
-        # The current request is a web service request when rendering
-        # the HTML, causing canonical_url to produce links pointing to the
-        # web service. Adjust the test to compensate for this, and accept
-        # that the links will be incorrect for now. We should fix this
-        # before using it for anything useful.
-        rendered_comment = rendered_comment.replace(
-            'http://api.launchpad.dev/beta/',
-            'http://launchpad.dev/')
-
         self.assertRenderedCommentsEqual(
             rendered_comment, self.expected_comment_html)
 
