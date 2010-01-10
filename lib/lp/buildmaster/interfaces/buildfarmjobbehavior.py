@@ -43,10 +43,10 @@ class IBuildFarmJobBehavior(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
-    def dispatchBuildToSlave(build_queue_item, logger):
+    def dispatchBuildToSlave(build_queue_item_id, logger):
         """Dispatch a specific build to the slave.
 
-        :param build_queue_item: The `BuildQueueItem` that will be built.
+        :param build_queue_item_id: An identifier for the build queue item.
         :logger: A logger to be used to log diagnostic information.
         """
 

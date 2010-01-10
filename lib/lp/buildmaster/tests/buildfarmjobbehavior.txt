@@ -31,7 +31,7 @@ methods as well.
     ...     """A custom build behavior for building blah."""
     ...     implements(IBuildFarmJobBehavior)
     ...
-    ...     def dispatchBuildToSlave(self, build_queue_item, logger):
+    ...     def dispatchBuildToSlave(self, build_queue_item_id, logger):
     ...         print "Did something special to dispatch MySpecialBuild."
     ...
     ...     @property

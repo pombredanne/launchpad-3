@@ -296,7 +296,7 @@ class Builder(SQLBase):
         # Do it.
         build_queue_item.markAsBuilding(self)
         self.current_build_behavior.dispatchBuildToSlave(
-            build_queue_item, logger)
+            build_queue_item.id, logger)
 
     # XXX cprov 2009-06-24: This code does not belong to the content
     # class domain. Here we cannot make sensible decisions about what

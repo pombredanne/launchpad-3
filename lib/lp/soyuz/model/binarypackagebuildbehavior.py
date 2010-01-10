@@ -54,7 +54,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         else:
             return msg
 
-    def dispatchBuildToSlave(self, build_queue_item, logger):
+    def dispatchBuildToSlave(self, build_queue_id, logger):
         """See `IBuildFarmJobBehavior`."""
 
         # Start the binary package build on the slave builder. First
@@ -81,7 +81,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in
         # subsequent runs.
-        buildid = "%s-%s" % (self.build.id, build_queue_item.id)
+        buildid = "%s-%s" % (self.build.id, build_queue_id)
         chroot_sha1 = chroot.content.sha1
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
