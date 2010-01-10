@@ -122,6 +122,7 @@ class BuilderSlave(xmlrpclib.ServerProxy):
 class Builder(SQLBase):
 
     implements(IBuilder, IHasBuildRecords)
+    # XXX: _Why_ does this delegate?
     delegates(IBuildFarmJobBehavior, context="current_build_behavior")
     _table = 'Builder'
 
