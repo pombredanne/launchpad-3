@@ -268,7 +268,7 @@ class DeathRow:
         def check_source(pub_record):
             # Avoid circular imports.
             from lp.soyuz.model.publishing import (
-                SecureSourcePackagePublishingHistory)
+                SourcePackagePublishingHistory)
             checkPubRecord(pub_record, SourcePackagePublishingHistory)
 
         process_in_batches(
@@ -279,7 +279,7 @@ class DeathRow:
             # Avoid circular imports.
             from lp.soyuz.model.publishing import (
                 BinaryPackagePublishingHistory)
-            checkPubRecord(pub_record, SecureBinaryPackagePublishingHistory)
+            checkPubRecord(pub_record, BinaryPackagePublishingHistory)
 
         process_in_batches(
             condemned_binary_files, check_binary, self.logger,

@@ -44,10 +44,7 @@ from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
 from lp.soyuz.model.processor import ProcessorFamilySet
-from lp.soyuz.model.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SourcePackagePublishingHistory,
-    )
+from lp.soyuz.model.publishing import SourcePackagePublishingHistory
 from canonical.launchpad.interfaces import IMasterStore
 from canonical.launchpad.interfaces.account import (
     AccountCreationRationale, AccountStatus, IAccountSet)
@@ -1858,7 +1855,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             dsc_binaries=dsc_binaries,
             archive=archive, dateuploaded=date_uploaded)
 
-        sspph = SecureSourcePackagePublishingHistory(
+        sspph = SourcePackagePublishingHistory(
             distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
@@ -1868,7 +1865,6 @@ class LaunchpadObjectFactory(ObjectFactory):
             dateremoved=dateremoved,
             scheduleddeletiondate=scheduleddeletiondate,
             pocket=pocket,
-            embargo=False,
             archive=archive)
 
         # SPPH and SSPPH IDs are the same, since they are SPPH is a SQLVIEW

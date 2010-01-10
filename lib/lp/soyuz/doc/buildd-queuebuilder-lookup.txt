@@ -48,7 +48,7 @@ Creating a single source publishing record:
     >>> def create_publication(distroseries, pocket, archive, status):
     ...     pub = SourcePackagePublishingHistory(
     ...         sourcepackagerelease=the_spr, component=the_spr.component,
-    ...         section=the_spr.section, datecreated=UTC_NOW, embargo=False,
+    ...         section=the_spr.section, datecreated=UTC_NOW,
     ...         distroseries=distroseries, status=status,
     ...         pocket=pocket, archive=archive)
     ...     syncUpdate(pub)

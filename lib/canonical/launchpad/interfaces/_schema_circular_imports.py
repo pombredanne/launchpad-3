@@ -60,8 +60,7 @@ from lp.soyuz.interfaces.archivedependency import (
     IArchiveDependency)
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeries
 from lp.soyuz.interfaces.publishing import (
-    IBinaryPackagePublishingHistory, ISecureBinaryPackagePublishingHistory,
-    ISecureSourcePackagePublishingHistory, ISourcePackagePublishingHistory,
+    IBinaryPackagePublishingHistory, ISourcePackagePublishingHistory,
     PackagePublishingStatus)
 from lp.soyuz.interfaces.packageset import IPackageset
 from lp.soyuz.interfaces.queue import (
@@ -179,12 +178,12 @@ ISourcePackagePublishingHistory['getPublishedBinaries'].queryTaggedValue(
     LAZR_WEBSERVICE_EXPORTED)[
     'return_type'].value_type.schema = IBinaryPackagePublishingHistory
 patch_reference_property(
-    ISecureBinaryPackagePublishingHistory, 'distroarchseries',
+    IBinaryPackagePublishingHistory, 'distroarchseries',
     IDistroArchSeries)
 patch_reference_property(
-    ISecureBinaryPackagePublishingHistory, 'archive', IArchive)
+    IBinaryPackagePublishingHistory, 'archive', IArchive)
 patch_reference_property(
-    ISecureSourcePackagePublishingHistory, 'archive', IArchive)
+    ISourcePackagePublishingHistory, 'archive', IArchive)
 
 # IArchive apocalypse.
 patch_reference_property(IArchive, 'distribution', IDistribution)

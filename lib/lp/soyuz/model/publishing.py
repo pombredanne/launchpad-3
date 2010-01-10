@@ -1049,8 +1049,7 @@ class PublishingSet:
                         priority=binary.priority,
                         status=PackagePublishingStatus.PENDING,
                         datecreated=UTC_NOW,
-                        pocket=pocket,
-                        embargo=False)
+                        pocket=pocket)
                     secure_copies.append(pub)
 
         return secure_copies
@@ -1072,8 +1071,7 @@ class PublishingSet:
             priority=priority,
             status=PackagePublishingStatus.PENDING,
             datecreated=UTC_NOW,
-            pocket=pocket,
-            embargo=False)
+            pocket=pocket)
 
         return pub
 
@@ -1092,8 +1090,7 @@ class PublishingSet:
             component=component,
             section=section,
             status=PackagePublishingStatus.PENDING,
-            datecreated=UTC_NOW,
-            embargo=False)
+            datecreated=UTC_NOW)
 
         return pub
 
