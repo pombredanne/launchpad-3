@@ -83,6 +83,12 @@ class _SourcePackageRecipeData(Storm):
     def _record_instructions(self, branch, parent_insn):
         for b in branch.child_branches:
             db_branch = getUtility(IBranchLookup).getByUrl(b.recipe_branch.url)
+            if db_branch is None:
+                branch_lookup = getUtility(IBranchLookup)
+                url = b.recipe_branch.url
+                getByUrl = branch_lookup.getByUrl
+                import pdb; pdb.set_trace()
+                getByUrl(url)
             type = 1
             comment = None
             line_number = 0

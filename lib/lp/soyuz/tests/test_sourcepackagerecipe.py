@@ -144,22 +144,22 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertEquals([branch2], list(recipe.getReferencedBranches()))
 
 
-class TestRecipeBranchRoundTripping(RecipeParserTests, TestCaseWithFactory):
+class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
+    deb_version = "0.1-{revno}"
+    basic_header = ("# bzr-builder format 0.2 deb-version "
+            + deb_version +"\n")
+
     def setUp(self):
-        # This is terrible!  But it seems to work, and calling super()
-        # doesn't.
-        RecipeParserTests.setUp(self)
-        TestCaseWithFactory.setUp(self)
+        super(TestRecipeBranchRoundTripping, self).setUp()
+        self.base_branch = self.factory.makeAnyBranch()
+        self.basic_header_and_branch = self.basic_header \
+                                       + self.base_branch.bzr_identity
 
     def get_recipe(self, recipe_text):
-        builder_recipe = super(
-            TestRecipeBranchRoundTripping, self).get_recipe(recipe_text)
-        for url in 'http://foo.org/', 'http://bar.org/':
-            self.factory.makeAnyBranch(
-                branch_type=BranchType.MIRRORED, url=url)
+        builder_recipe = RecipeParser(recipe_text).parse()
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)
         distroseries = self.factory.makeDistroSeries()
@@ -170,6 +170,25 @@ class TestRecipeBranchRoundTripping(RecipeParserTests, TestCaseWithFactory):
             sourcepackagename=sourcepackagename, name=name,
             builder_recipe=builder_recipe)
         return recipe.builder_recipe
+
+    def check_base_recipe_branch(self, branch, url, revspec=None,
+            num_child_branches=0, revid=None, deb_version=deb_version):
+        self.check_recipe_branch(branch, None, url, revspec=revspec,
+                num_child_branches=num_child_branches, revid=revid)
+        self.assertEqual(deb_version, branch.deb_version)
+
+    def check_recipe_branch(self, branch, name, url, revspec=None,
+            num_child_branches=0, revid=None):
+        self.assertEqual(name, branch.name)
+        self.assertEqual(url, branch.url)
+        self.assertEqual(revspec, branch.revspec)
+        self.assertEqual(revid, branch.revid)
+        self.assertEqual(num_child_branches, len(branch.child_branches))
+
+    def test_builds_simplest_recipe(self):
+        base_branch = self.get_recipe(self.basic_header_and_branch)
+        self.check_base_recipe_branch(
+            base_branch, self.base_branch.bzr_identity)
 
 
 def test_suite():

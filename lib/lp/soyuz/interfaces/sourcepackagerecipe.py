@@ -50,8 +50,8 @@ class ISourcePackageRecipe(IHasOwner):
             constraint=name_validator,
             description=_("The name of this recipe."))
 
-    recipe_text = Text(
-        title=_("The text of the recipe."), required=True, readonly=False)
+    builder_recipe = Text(
+        title=_("The XXX of the recipe."), required=True, readonly=False)
 
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
