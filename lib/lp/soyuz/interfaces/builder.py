@@ -242,24 +242,6 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
         :return: A librarian file alias.
         """
 
-    def findBuildCandidate():
-        """Return the candidate for building.
-
-        The pending BuildQueue item with the highest score for this builder
-        ProcessorFamily or None if no candidate is available.
-
-        For public PPA builds, subsequent builds for a given ppa and
-        architecture will not be returned until the current build for
-        the ppa and architecture is finished.
-        """
-
-    def dispatchBuildCandidate(candidate):
-        """Dispatch the given job to this builder.
-
-        This method can only be executed in the builddmaster machine, since
-        it will actually issues the XMLRPC call to the buildd-slave.
-        """
-
     def handleTimeout(logger, error_message):
         """Handle buildd slave communication timeout situations.
 
@@ -272,6 +254,12 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
 
         :param logger: The logger object to be used for logging.
         :param error_message: The error message to be used for logging.
+        """
+
+    def findAndStartJob():
+        """Find a job to run and send it to the buildd slave.
+
+        :return: the `IBuildQueue` instance found or None if no job was found.
         """
 
 

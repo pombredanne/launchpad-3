@@ -386,9 +386,9 @@ class Builder(SQLBase):
         return True
 
     # XXX cprov 20071116: It should become part of the public
-    # findBuildCandidate once we start to detect superseded builds
+    # _findBuildCandidate once we start to detect superseded builds
     # at build creation time.
-    def _findBuildCandidate(self):
+    def _findBinaryBuildCandidate(self):
         """Return the highest priority build candidate for this builder.
 
         Returns a pending IBuildQueue record queued for this builder
@@ -487,10 +487,21 @@ class Builder(SQLBase):
         logger = logging.getLogger('slave-scanner')
         return logger
 
-    def findBuildCandidate(self):
-        """See `IBuilder`."""
+    def _findBuildCandidate(self):
+        """Find a candidate job for dispatch to an idle buildd slave.
+
+        The pending BuildQueue item with the highest score for this builder
+        ProcessorFamily or None if no candidate is available.
+
+        For public PPA builds, subsequent builds for a given ppa and
+        architecture will not be returned until the current build for
+        the ppa and architecture is finished.
+
+        :return: A binary build candidate job.
+        """
+
         logger = self._getSlaveScannerLogger()
-        candidate = self._findBuildCandidate()
+        candidate = self._findBinaryBuildCandidate()
 
         # Mark build records targeted to old source versions as SUPERSEDED
         # and build records target to SECURITY pocket as FAILEDTOBUILD.
@@ -507,7 +518,7 @@ class Builder(SQLBase):
                     % (build.id, candidate.id))
                 build.buildstate = BuildStatus.FAILEDTOBUILD
                 candidate.destroySelf()
-                candidate = self._findBuildCandidate()
+                candidate = self._findBinaryBuildCandidate()
                 continue
 
             publication = build.current_source_publication
@@ -520,7 +531,7 @@ class Builder(SQLBase):
                     % (build.id, candidate.id))
                 build.buildstate = BuildStatus.SUPERSEDED
                 candidate.destroySelf()
-                candidate = self._findBuildCandidate()
+                candidate = self._findBinaryBuildCandidate()
                 continue
 
             return candidate
@@ -528,8 +539,14 @@ class Builder(SQLBase):
         # No candidate was found.
         return None
 
-    def dispatchBuildCandidate(self, candidate):
-        """See `IBuilder`."""
+    def _dispatchBuildCandidate(self, candidate):
+        """Dispatch the pending job to the associated buildd slave.
+
+        This method can only be executed in the builddmaster machine, since
+        it will actually issues the XMLRPC call to the buildd-slave.
+
+        :param candidate: The job to dispatch.
+        """
         logger = self._getSlaveScannerLogger()
         try:
             self.startBuild(candidate, logger)
@@ -562,6 +579,18 @@ class Builder(SQLBase):
                 "Disabling builder: %s -- %s" % (self.url, error_message),
                 exc_info=True)
             self.failbuilder(error_message)
+
+    def findAndStartJob(self):
+        """See IBuilder."""
+        logger = self._getSlaveScannerLogger()
+        candidate = self._findBuildCandidate()
+
+        if candidate is None:
+            self.logger.debug("No build candidates available for builder.")
+            return None
+
+        self._dispatchBuildCandidate(candidate)
+        return candidate
 
 
 class BuilderSet(object):
