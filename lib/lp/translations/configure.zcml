@@ -585,9 +585,15 @@
     </securedutility>
 
     <!-- TranslationTemplateBuildBehavior -->
+    <class
+        class="lp.translations.model.translationtemplatesbuildbehavior.TranslationTemplatesBuildBehavior">
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"/>
+    </class>
+
     <adapter
         provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
-        for="lp.translations.model.translationtemplatesbuildbehavior.TranslationTemplatesBuildBehavior"
+        for="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
         factory="lp.translations.model.translationtemplatesbuildbehavior.TranslationTemplatesBuildBehavior"
         />
 
