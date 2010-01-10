@@ -8,6 +8,7 @@ __metaclass__ = type
 import unittest
 
 from bzrlib.plugins.builder.recipe import RecipeParser
+from bzrlib.plugins.builder.tests.test_recipe import RecipeParserTests
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
@@ -140,6 +141,29 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         login_person(recipe.owner.teamowner)
         recipe.builder_recipe = builder_recipe2
         self.assertEquals([branch2], list(recipe.getReferencedBranches()))
+
+
+class TestRecipeBranchRoundTripping(RecipeParserTests, TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        import pdb; pdb.set_trace()
+        super(TestRecipeBranchRoundTripping, self).setUp()
+
+    def get_recipe(self, recipe_text):
+        builder_recipe = super(
+            TestRecipeBranchRoundTripping, self).get_recipe(recipe_text)
+        registrant = self.factory.makePerson()
+        owner = self.factory.makeTeam(owner=registrant)
+        distroseries = self.factory.makeDistroSeries()
+        sourcepackagename = self.factory.makeSourcePackageName()
+        name = self.factory.getUniqueString(u'recipe-name')
+        recipe = getUtility(ISourcePackageRecipeSource).new(
+            registrant=registrant, owner=owner, distroseries=distroseries,
+            sourcepackagename=sourcepackagename, name=name,
+            builder_recipe=builder_recipe)
+        return recipe.builder_recipe
 
 
 def test_suite():

@@ -78,7 +78,7 @@ class _SourcePackageRecipeData(Storm):
 
     def getRecipe(self):
         """The text of the recipe."""
-        return ''
+        1/0
 
     def _record_instructions(self, branch, parent_insn):
         for b in branch.child_branches:
