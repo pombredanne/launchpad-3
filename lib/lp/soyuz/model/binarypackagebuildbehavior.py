@@ -88,6 +88,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
+        # XXX: Maybe we can move a lot of this try/except logic into
+        # IBuilder.build -- but that's a crappy name.
         try:
             args = self._extraBuildArgs(build)
             status, info = self._builder.slave.build(

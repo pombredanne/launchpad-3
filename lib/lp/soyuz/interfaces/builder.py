@@ -59,6 +59,9 @@ class BuildSlaveFailure(BuildDaemonError):
     """The build slave has suffered an error and cannot be used."""
 
 
+# XXX: Really, this isn't specific to soyuz any more. This should probably be
+# moved somewhere else, lp.services perhaps?
+
 class IBuilder(IHasOwner, IBuildFarmJobBehavior):
     """Build-slave information and state.
 
