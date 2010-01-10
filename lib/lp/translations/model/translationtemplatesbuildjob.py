@@ -33,6 +33,16 @@ class TranslationTemplatesBuildJob(BuildFarmJob, BranchJobDerived):
 
     duration_estimate = timedelta(seconds=10)
 
+    unsafe_chars = '[^a-zA-Z0-9_+-]'
+
+    def __init__(self, branch):
+        # We don't have any JSON metadata for this BranchJob type.
+        metadata = {}
+
+        branch_job = BranchJob(
+            branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
+        BranchJobDerived.__init__(self, branch_job)
+
     def score(self):
         """See `IBuildFarmJob`."""
         # Arbitrary score that sorta-kinda seems to match the sort of
@@ -55,11 +65,7 @@ class TranslationTemplatesBuildJob(BuildFarmJob, BranchJobDerived):
         """See `ITranslationTemplatesBuildJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
-        # We don't have any JSON metadata for this BranchJob type.
-        metadata = {}
-
-        specific_job = BranchJob(
-            branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
+        specific_job = cls(branch)
 
         duration_estimate = cls.duration_estimate
         build_queue_entry = BuildQueue(
