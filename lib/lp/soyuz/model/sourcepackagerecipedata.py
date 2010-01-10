@@ -31,13 +31,13 @@ class _SourcePackageRecipeDataInstruction(Storm):
 
     def __init__(self, name, type, comment, line_number, branch, revspec,
                  directory, recipe, parent_instruction):
-        self.name = name
+        self.name = unicode(name)
         self.type = type
         self.comment = comment
         self.line_number = line_number
         self.branch = branch
-        self.revspec = revspec
-        self.directory = directory
+        self.revspec = unicode(revspec)
+        self.directory = unicode(directory)
         self.recipe = recipe
         self.parent_instruction = parent_instruction
 
@@ -99,7 +99,7 @@ class _SourcePackageRecipeData(Storm):
         branch_lookup = getUtility(IBranchLookup)
         base_branch = builder_recipe
         self.base_branch = branch_lookup.getByUrl(base_branch.url)
-        self.deb_version_template = base_branch.deb_version
+        self.deb_version_template = unicode(base_branch.deb_version)
         self.recipe_format = unicode(base_branch.format)
         self._record_instructions(base_branch, None)
 

@@ -15,6 +15,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.code.enums import BranchType
 from lp.soyuz.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource)
 from lp.testing import login_person, TestCaseWithFactory
@@ -148,10 +149,15 @@ class TestRecipeBranchRoundTripping(RecipeParserTests, TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        import pdb; pdb.set_trace()
-        super(TestRecipeBranchRoundTripping, self).setUp()
+        # This is terrible!  But it seems to work, and calling super()
+        # doesn't.
+        RecipeParserTests.setUp(self)
+        TestCaseWithFactory.setUp(self)
 
     def get_recipe(self, recipe_text):
+        for url in 'http://foo.org/', 'http://bar.org/':
+            self.factory.makeAnyBranch(
+                branch_type=BranchType.MIRRORED, url=url)
         builder_recipe = super(
             TestRecipeBranchRoundTripping, self).get_recipe(recipe_text)
         registrant = self.factory.makePerson()
