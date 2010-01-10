@@ -468,6 +468,7 @@ class TeamNavigation(PersonNavigation):
 
 class TeamBreadcrumb(Breadcrumb):
     """Builds a breadcrumb for an `ITeam`."""
+
     @property
     def text(self):
         return smartquote('"%s" team') % self.context.displayname
@@ -1127,8 +1128,14 @@ class TeamMenuMixin(PPANavigationMenuMixIn, CommonMenuLinks):
         target = '+reassign'
         text = 'Change owner'
         summary = 'Change the owner of the team'
-        # alt="(Change owner)"
         return Link(target, text, summary, icon='edit')
+
+    @enabled_with_permission('launchpad.Moderate')
+    def delete(self):
+        target = '+delete'
+        text = 'Delete'
+        summary = 'Delete this team'
+        return Link(target, text, summary, icon='trash-icon')
 
     @enabled_with_permission('launchpad.View')
     def members(self):
@@ -1893,7 +1900,8 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
             'open_bugs_count': 0,
             'critical_bugs_count': 0,
             'unassigned_bugs_count': 0,
-            'inprogress_bugs_count': 0,}
+            'inprogress_bugs_count': 0,
+            }
 
         for package_counts in self.package_bug_counts:
             for key in totals.keys():
@@ -1920,7 +1928,7 @@ class BugSubscriberPackageBugsSearchListingView(BugTaskSearchListingView):
                 'unassigned_bugs_count': package_counts['open_unassigned'],
                 'unassigned_bugs_url': self.getUnassignedBugsURL(package),
                 'inprogress_bugs_count': package_counts['open_inprogress'],
-                'inprogress_bugs_url': self.getInProgressBugsURL(package)
+                'inprogress_bugs_url': self.getInProgressBugsURL(package),
             })
 
         return sorted(L, key=itemgetter('package_name'))
@@ -2499,7 +2507,6 @@ class PersonLanguagesView(LaunchpadFormView):
             return redirection_url
         return canonical_url(self.context)
 
-
     @action(_("Save"), name="save")
     def submitLanguages(self, action, data):
         '''Process a POST request to the language preference form.
@@ -2527,14 +2534,14 @@ class PersonLanguagesView(LaunchpadFormView):
             self.context.addLanguage(language)
             messages.append(
                 "Added %(language)s to %(subject)s preferred languages." %
-                {'language' : language.englishname, 'subject' : subject})
+                {'language': language.englishname, 'subject': subject})
 
         # Remove languages from the user's preferences.
         for language in set(old_languages) - set(new_languages):
             self.context.removeLanguage(language)
             messages.append(
                 "Removed %(language)s from %(subject)s preferred languages." %
-                {'language' : language.englishname, 'subject' : subject})
+                {'language': language.englishname, 'subject': subject})
         if len(messages) > 0:
             message = structured('<br />'.join(messages))
             self.request.response.addInfoNotification(message)
@@ -2875,7 +2882,6 @@ class PersonView(LaunchpadView, FeedsMixin, TeamJoinMixin):
         return ("%(url)s?search=Search&%(query_string)s"
                 % {'url': url, 'query_string': query_string})
 
-
     @cachedproperty
     def assigned_bugs_in_progress(self):
         """Return up to 5 assigned bugs that are In Progress."""
@@ -3181,7 +3187,7 @@ class EmailAddressVisibleState:
             self.state = EmailAddressVisibleState.NONE_AVAILABLE
         elif not view.context.hide_email_addresses:
             self.state = EmailAddressVisibleState.PUBLIC
-        elif check_permission('launchpad.View',  view.context.preferredemail):
+        elif check_permission('launchpad.View', view.context.preferredemail):
             self.state = EmailAddressVisibleState.ALLOWED
         else:
             self.state = EmailAddressVisibleState.HIDDEN
@@ -3465,7 +3471,7 @@ class PersonEditWikiNamesView(LaunchpadView):
                     merge_url = (
                         '%s/+requestmerge?field.dupe_person=%s'
                         % (canonical_url(getUtility(IPersonSet)), owner_name))
-                    self.error_message =  structured(
+                    self.error_message = structured(
                         'The WikiName %s%s is already registered by '
                         '<a href="%s">%s</a>. If you think this is a '
                         'duplicated account, you can <a href="%s">merge it'
@@ -4540,8 +4546,6 @@ class PersonEditEmailsView(LaunchpadFormView):
              if not guessed.email in emailset])
         return emailset
 
-    # Actions to do with validated email addresses.
-
     def validate_action_remove_validated(self, action, data):
         """Make sure the user selected an email address to remove."""
         emailaddress = self._validate_selected_address(data,
@@ -4590,8 +4594,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "Your contact address has been changed to: %s" % (
                     emailaddress.email))
         self.next_url = self.action_url
-
-    # Actions to do with unvalidated email addresses.
 
     def validate_action_confirm(self, action, data):
         """Make sure the user selected an email address to confirm."""
@@ -4645,8 +4647,6 @@ class PersonEditEmailsView(LaunchpadFormView):
         self.request.response.addInfoNotification(
             "The email address '%s' has been removed." % email)
         self.next_url = self.action_url
-
-    # Actions to do with new email addresses
 
     def validate_action_add_email(self, action, data):
         """Make sure the user entered a valid email address.
@@ -4710,8 +4710,6 @@ class PersonEditEmailsView(LaunchpadFormView):
                 "provider might use 'greylisting', which could delay the "
                 "message for up to an hour or two.)" % newemail)
         self.next_url = self.action_url
-
-    # Actions to do with subscription management.
 
     def validate_action_update_subscriptions(self, action, data):
         """Make sure the user is subscribing using a valid address.
@@ -5625,12 +5623,12 @@ class ContactViaWebNotificationRecipientSet:
         elif self._primary_reason is self.TO_OWNER:
             reason = (
                 'the "Contact this team" owner link on the '
-                '%s team page' %  person_or_team.displayname)
+                '%s team page' % person_or_team.displayname)
             header = 'ContactViaWeb owner (%s team)' % person_or_team.name
         elif self._primary_reason is self.TO_TEAM:
             reason = (
                 'the "Contact this team" link on the '
-                '%s team page' %  person_or_team.displayname)
+                '%s team page' % person_or_team.displayname)
             header = 'ContactViaWeb member (%s team)' % person_or_team.name
         else:
             # self._primary_reason is self.TO_MEMBERS.
@@ -5802,7 +5800,7 @@ class EmailToPersonView(LaunchpadFormView):
                        default=terms[0].value)
         # Get the order right; the From field should be first, followed by the
         # Subject and then Message fields.
-        self.form_fields = FormFields(*chain((field,), self.form_fields))
+        self.form_fields = FormFields(*chain((field, ), self.form_fields))
 
     @property
     def label(self):
@@ -5925,7 +5923,7 @@ class TeamIndexMenu(TeamNavigationMenuBase):
     usedfor = ITeamIndexMenu
     facet = 'overview'
     title = 'Change team'
-    links = ('edit', 'join', 'add_my_teams', 'leave')
+    links = ('edit', 'delete', 'join', 'add_my_teams', 'leave')
 
 
 class TeamEditMenu(TeamNavigationMenuBase):
