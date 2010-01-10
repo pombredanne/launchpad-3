@@ -879,7 +879,8 @@ to demonstrate this, and also make the archive private:
 
 Let's try to find a new build candidate:
 
-    >>> another_candidate = removeSecurityProxy(a_builder)._findBuildCandidate()
+    >>> another_candidate = removeSecurityProxy(
+    ...     a_builder)._findBuildCandidate()
 
 Since there are no more candidates at all, _findBuildCandidate()
 returned None:
@@ -894,7 +895,8 @@ If we publish the source, the build candidate will be found again:
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
-    >>> another_candidate = removeSecurityProxy(a_builder)._findBuildCandidate()
+    >>> another_candidate = removeSecurityProxy(
+    ...     a_builder)._findBuildCandidate()
     >>> another_candidate.id == new_candidate.id
     True
 
@@ -918,7 +920,8 @@ making the build be superseded and no candidate is returned.
     >>> print build.buildstate.name
     NEEDSBUILD
 
-    >>> another_candidate = removeSecurityProxy(a_builder)._findBuildCandidate()
+    >>> another_candidate = removeSecurityProxy(
+    ...     a_builder)._findBuildCandidate()
     >>> print another_candidate
     None
 
@@ -1081,7 +1084,8 @@ Now when we dispatch the partner build, since it has one published
 binary in hoary/i386, the partner archive gets included in the builder
 sources_list.
 
-    >>> removeSecurityProxy(a_builder)._dispatchBuildCandidate(partner_candidate)
+    >>> removeSecurityProxy(
+    ...     a_builder)._dispatchBuildCandidate(partner_candidate)
     ensurepresent called, url=...
     ensurepresent called, url=http://localhost:58000/.../foo_666.dsc
     OkSlave BUILDING
