@@ -69,7 +69,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # access the restricted librarian.
         private = self.build.archive.private
         if private:
-            self._cachePrivateSourceOnSlave(build_queue_item, logger)
+            self._cachePrivateSourceOnSlave(logger)
         filemap = {}
         for source_file in self.build.sourcepackagerelease.files:
             lfa = source_file.libraryfile
@@ -195,16 +195,9 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         return extra_info
 
-    def _cachePrivateSourceOnSlave(self, build_queue_item, logger):
+    def _cachePrivateSourceOnSlave(self, logger):
         """Ask the slave to download source files for a private build.
 
-        The slave will cache the files for the source in build_queue_item
-        to its local disk in preparation for a private build.  Private builds
-        will always take the source files from the archive rather than the
-        librarian since the archive has more granular access to each
-        archive's files.
-
-        :param build_queue_item: The `IBuildQueue` being built.
         :param logger: A logger used for providing debug information.
         """
         # The URL to the file in the archive consists of these parts:
