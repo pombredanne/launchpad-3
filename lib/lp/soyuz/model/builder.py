@@ -586,7 +586,7 @@ class Builder(SQLBase):
         candidate = self._findBuildCandidate()
 
         if candidate is None:
-            self.logger.debug("No build candidates available for builder.")
+            logger.debug("No build candidates available for builder.")
             return None
 
         self._dispatchBuildCandidate(candidate)
