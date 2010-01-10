@@ -67,7 +67,7 @@ about members of the ubuntu-branches celebrity team.
     >>> login('admin@canonical.com')
     >>> person = factory.makePerson()
     >>> ubuntu_branches = getUtility(ILaunchpadCelebrities).ubuntu_branches
-    >>> ubuntu_branches.addMember(person, ubuntu_branches.teamowner)
+    >>> ignored = ubuntu_branches.addMember(person, ubuntu_branches.teamowner)
     >>> logout()
 
 Then we set the branch on the evolution hoary package:

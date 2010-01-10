@@ -488,28 +488,26 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
                           {'review_id': review.id})
 
     def test_preview_diff_text_with_no_diff(self):
-        """review_diff should be None when there is no context.review_diff."""
+        """preview_diff_text should be None if context has no preview_diff."""
         view = create_initialized_view(self.bmp, '+index')
         self.assertIs(None, view.preview_diff_text)
 
-    def test_review_diff_utf8(self):
-        """A review_diff in utf-8 should be converted to utf-8."""
+    def test_preview_diff_utf8(self):
+        """A preview_diff in utf-8 should decoded as utf-8."""
         text = ''.join(unichr(x) for x in range(255))
         diff_bytes = ''.join(unified_diff('', text)).encode('utf-8')
-        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
+        self.setPreviewDiff(diff_bytes)
         transaction.commit()
-        self.bmp.review_diff = diff
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(diff_bytes.decode('utf-8'),
                          view.preview_diff_text)
 
-    def test_review_diff_all_chars(self):
-        """review_diff should work on diffs containing all possible bytes."""
+    def test_preview_diff_all_chars(self):
+        """preview_diff should work on diffs containing all possible bytes."""
         text = ''.join(chr(x) for x in range(255))
         diff_bytes = ''.join(unified_diff('', text))
-        diff = StaticDiff.acquireFromText('x', 'y', diff_bytes)
+        self.setPreviewDiff(diff_bytes)
         transaction.commit()
-        self.bmp.review_diff = diff
         view = create_initialized_view(self.bmp, '+index')
         self.assertEqual(diff_bytes.decode('windows-1252', 'replace'),
                          view.preview_diff_text)
@@ -523,6 +521,9 @@ class TestBranchMergeProposalView(TestCaseWithFactory):
     def addBothDiffs(self):
         self.addReviewDiff()
         preview_diff_bytes = ''.join(unified_diff('', 'preview'))
+        return self.setPreviewDiff(preview_diff_bytes)
+
+    def setPreviewDiff(self, preview_diff_bytes):
         preview_diff = PreviewDiff.create(
             preview_diff_bytes, u'a', u'b', None, u'')
         removeSecurityProxy(self.bmp).preview_diff = preview_diff

@@ -9,7 +9,7 @@ CREATE TABLE SourcePackageRecipeData (
 
 CREATE TABLE SourcePackageRecipeDataInstruction (
     id serial PRIMARY KEY,
-    name text, -- NOT NULL?
+    name text NOT NULL, -- NOT NULL?
     type integer NOT NULL, -- MERGE == 1, NEST == 2
     comment text,
     line_number integer NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE SourcePackageBuild (
     builder integer REFERENCES builder,
     date_first_dispatched timestamp without time zone,
     requester integer REFERENCES Person,
-    recipe integer REFERENCES SourcePackageRecipe,
+    recipe integer REFERENCES SourcePackageRecipe NOT NULL,
     manifest integer REFERENCES SourcePackageRecipeData
 );
 

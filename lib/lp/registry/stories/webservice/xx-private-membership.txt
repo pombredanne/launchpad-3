@@ -35,9 +35,10 @@ Salgado can, though, because he's a Launchpad admin.
 Similarly, when a public team is a sub-team of a private team, non-members
 cannot see the private team in the public team's super_team's attribute.
 
-    >>> admin_browser.open('http://launchpad.dev/~myteam/+addmember')
-    >>> admin_browser.getControl('New member').value = 'guadamen'
-    >>> admin_browser.getControl('Add Member').click()
+    >>> owner_browser = setupBrowser(auth="Basic owner@canonical.com:test")
+    >>> owner_browser.open('http://launchpad.dev/~myteam/+addmember')
+    >>> owner_browser.getControl('New member').value = 'guadamen'
+    >>> owner_browser.getControl('Add Member').click()
     >>> admin_browser.open(
     ...     'http://launchpad.dev/~guadamen/+invitation/myteam')
     >>> admin_browser.getControl('Accept').click()
