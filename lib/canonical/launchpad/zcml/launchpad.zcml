@@ -356,6 +356,16 @@
 
 </facet>
 
+<class
+    class="canonical.launchpad.utilities.personroles.PersonRoles">
+    <allow
+        interface="canonical.launchpad.interfaces.IPersonRoles"/>
+</class>
+<adapter
+    for="lp.registry.interfaces.person.IPerson"
+    provides="canonical.launchpad.interfaces.IPersonRoles"
+    factory="canonical.launchpad.utilities.personroles.PersonRoles" />
+
 
 <adapter
   provides="canonical.lazr.interfaces.IObjectPrivacy"
