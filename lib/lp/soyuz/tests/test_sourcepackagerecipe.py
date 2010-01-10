@@ -46,7 +46,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         return parser.parse()
 
     def makeSourcePackageRecipeFromBuilderRecipe(self, builder_recipe):
-        """Make a SourcePackageRecipe with `text` and arbitrary other fields.
+        """Make a SourcePackageRecipe from `builder_recipe` and arbitrary other fields.
         """
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)
