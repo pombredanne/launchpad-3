@@ -11,7 +11,7 @@ interfaces.
 __metaclass__ = type
 __all__ = ['_SourcePackageRecipeData']
 
-from bzrlib.plugins.builder.recipe import RecipeParser
+from bzrlib.plugins.builder.recipe import BaseRecipeBranch
 
 from storm.locals import Int, Reference, Storm, Unicode
 
@@ -22,6 +22,9 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lp.code.model.branch import Branch
 from lp.code.interfaces.branchlookup import IBranchLookup
+
+
+
 
 
 class _SourcePackageRecipeDataInstruction(Storm):
@@ -55,8 +58,8 @@ class _SourcePackageRecipeDataInstruction(Storm):
     revspec = Unicode(allow_none=True)
     directory = Unicode(allow_none=True)
 
-    recipe_id = Int(name='recipe', allow_none=False)
-    recipe = Reference(recipe_id, '_SourcePackageRecipeData.id')
+    recipe_data_id = Int(name='recipe_data', allow_none=False)
+    recipe_data = Reference(recipe_data_id, '_SourcePackageRecipeData.id')
 
     parent_instruction_id = Int(name='parent_instruction', allow_none=True)
     parent_instruction = Reference(
@@ -75,10 +78,13 @@ class _SourcePackageRecipeData(Storm):
 
     recipe_format = Unicode(allow_none=False)
     deb_version_template = Unicode(allow_none=False)
+    revspec = Unicode(allow_none=True)
 
     def getRecipe(self):
         """The text of the recipe."""
-        1/0
+        return BaseRecipeBranch(
+            self.base_branch.bzr_identity, self.deb_version_template,
+            self.recipe_format, self.revspec)
 
     def _record_instructions(self, branch, parent_insn):
         for b in branch.child_branches:
@@ -101,12 +107,14 @@ class _SourcePackageRecipeData(Storm):
         """Set the text of the recipe."""
         IStore(self).find(
             _SourcePackageRecipeDataInstruction,
-            _SourcePackageRecipeDataInstruction.recipe == self).remove()
+            _SourcePackageRecipeDataInstruction.recipe_data == self).remove()
         branch_lookup = getUtility(IBranchLookup)
         base_branch = builder_recipe
         self.base_branch = branch_lookup.getByUrl(base_branch.url)
         self.deb_version_template = unicode(base_branch.deb_version)
         self.recipe_format = unicode(base_branch.format)
+        if builder_recipe.revspec is not None:
+            self.revspec = unicode(self.revspec)
         self._record_instructions(base_branch, None)
 
     def __init__(self, recipe):

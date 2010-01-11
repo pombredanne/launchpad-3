@@ -913,6 +913,10 @@
          permission="launchpad.Edit"
          set_attributes="recipe_text"/>
     </class>
+    <class
+       class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">
+      <allow attributes="name url revspec revid child_branches deb_version" />
+    </class>
     <securedutility
        component="lp.soyuz.model.sourcepackagerecipe.SourcePackageRecipe"
        provides="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource">
