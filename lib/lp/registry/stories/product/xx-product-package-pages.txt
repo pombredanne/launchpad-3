@@ -35,8 +35,6 @@ Evolution.
 
     >>> evo_owner.getLink(url='/ubuntu/hoary/+source/evolution') is not None
     True
-    >>> evo_owner.getLink(url='/evolution/trunk/+addpackage') is not None
-    True
 
 If you're not the owner or an admin, you still see the packages, but without
 the link to add packages yourself.
