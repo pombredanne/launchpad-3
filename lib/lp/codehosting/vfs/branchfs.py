@@ -50,6 +50,7 @@ __all__ = [
     'AsyncLaunchpadTransport',
     'BadUrl',
     'BadUrlLaunchpad',
+    'BadUrlScheme',
     'BadUrlSsh',
     'branch_id_to_path',
     'BranchPolicy',
@@ -83,7 +84,6 @@ from zope.interface import implements, Interface
 
 from lp.codehosting.vfs.branchfsclient import (
     BlockingProxy, BranchFileSystemClient, trap_fault)
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.vfs.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
     get_chrooted_transport, get_readonly_transport, TranslationError)
@@ -109,6 +109,7 @@ class BadUrlLaunchpad(BadUrl):
 
 class BadUrlScheme(BadUrl):
     """Found a URL with an untrusted scheme."""
+
     def __init__(self, scheme, url):
         BadUrl.__init__(self, scheme, url)
         self.scheme = scheme
@@ -281,7 +282,7 @@ class BranchTransportDispatch:
         self._checkPath(trailing_path)
         transport = self.base_transport.clone(branch_id_to_path(data['id']))
         try:
-            ensure_base(transport)
+            transport.create_prefix()
         except TransportNotPossible:
             # Silently ignore TransportNotPossible. This is raised when the
             # base transport is read-only.
@@ -442,6 +443,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
 
 class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
+
     def __init__(self, scheme, branch_transport):
         AsyncVirtualServer.__init__(self, scheme)
         self._transport_dispatch = BranchTransportDispatch(branch_transport)

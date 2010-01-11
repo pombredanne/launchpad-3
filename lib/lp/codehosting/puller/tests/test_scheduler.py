@@ -224,8 +224,8 @@ class TestPullerMonitorProtocol(
         def startMirroring(self):
             self.calls.append('startMirroring')
 
-        def mirrorSucceeded(self, last_revision):
-            self.calls.append(('mirrorSucceeded', last_revision))
+        def mirrorSucceeded(self, revid_before, revid_after):
+            self.calls.append(('mirrorSucceeded', revid_before, revid_after))
 
         def mirrorFailed(self, message, oops):
             self.calls.append(('mirrorFailed', message, oops))
@@ -262,8 +262,9 @@ class TestPullerMonitorProtocol(
         """Receiving a mirrorSucceeded message notifies the listener."""
         self.protocol.do_startMirroring()
         self.listener.calls = []
-        self.protocol.do_mirrorSucceeded('1234')
-        self.assertEqual([('mirrorSucceeded', '1234')], self.listener.calls)
+        self.protocol.do_mirrorSucceeded('rev1', 'rev2')
+        self.assertEqual(
+            [('mirrorSucceeded', 'rev1', 'rev2')], self.listener.calls)
         self.assertProtocolSuccess()
 
     def test_mirrorDeferred(self):
@@ -320,7 +321,7 @@ class TestPullerMonitorProtocol(
         """
         self.protocol.do_startMirroring()
         self.clock.advance(config.supermirror.worker_timeout - 1)
-        self.protocol.do_mirrorSucceeded('rev1')
+        self.protocol.do_mirrorSucceeded('rev1', 'rev2')
         self.clock.advance(2)
         return self.assertFailure(
             self.termination_deferred, error.TimeoutError)
@@ -476,18 +477,18 @@ class TestPullerMaster(TrialTestCase):
         return deferred.addCallback(checkSetStackedOn)
 
     def test_mirrorComplete(self):
-        arbitrary_revision_id = 'rev1'
+        arbitrary_revision_ids = ('rev1', 'rev2')
         deferred = defer.maybeDeferred(self.eventHandler.startMirroring)
 
-        def mirrorSucceeded(ignored):
+        def mirrorSucceeded(*ignored):
             self.status_client.calls = []
-            return self.eventHandler.mirrorSucceeded(arbitrary_revision_id)
+            return self.eventHandler.mirrorSucceeded(*arbitrary_revision_ids)
         deferred.addCallback(mirrorSucceeded)
 
         def checkMirrorCompleted(ignored):
             self.assertEqual(
                 [('mirrorComplete', self.arbitrary_branch_id,
-                  arbitrary_revision_id)],
+                  arbitrary_revision_ids[1])],
                 self.status_client.calls)
         return deferred.addCallback(checkMirrorCompleted)
 
@@ -642,14 +643,6 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
     def setUp(self):
         TrialTestCase.setUp(self)
         PullerBranchTestCase.setUp(self)
-        # XXX MichaelHudson, 2009-11-21, bug=464174:
-        # TestCaseWithMemoryTransport likes to set these environment variables
-        # to unicode strings and Twisted's spawnProcess doesn't like that
-        # (reasonably enough).
-        os.environ['BZR_HOME'] = os.environ['BZR_HOME'].encode(
-            sys.getfilesystemencoding())
-        os.environ['HOME'] = os.environ['HOME'].encode(
-            sys.getfilesystemencoding())
         self.makeCleanDirectory(config.codehosting.hosted_branches_root)
         self.makeCleanDirectory(config.codehosting.mirrored_branches_root)
         branch_id = self.factory.makeAnyBranch(
@@ -797,7 +790,7 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
         check_lock_id_script = """
         branch.lock_write()
-        protocol.mirrorSucceeded('b')
+        protocol.mirrorSucceeded('a', 'b')
         protocol.sendEvent(
             'lock_id', branch.control_files._lock.peek()['user'])
         sys.stdout.flush()
