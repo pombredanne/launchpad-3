@@ -405,6 +405,12 @@ class RevisionControlSystems(DBEnumeratedType):
         Imports from Git using bzr-git.
         """)
 
+    HG = DBItem(5, """
+        Mercurial
+
+        Imports from Mercurial using bzr-hg.
+        """)
+
 
 class CodeImportReviewStatus(DBEnumeratedType):
     """CodeImport review status.
