@@ -130,7 +130,8 @@ class Archive(SQLBase):
     purpose = EnumCol(
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
-    enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+    _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+    enabled = property(lambda x: x._enabled)
 
     publish = BoolCol(dbName='publish', notNull=True, default=True)
 
@@ -1237,6 +1238,21 @@ class Archive(SQLBase):
 
         result_set.config(distinct=True).order_by(SourcePackageRelease.id)
         return result_set
+
+    def enable(self):
+        """See `IArchive`."""
+        assert self._enabled == False, "This archive is already enabled."
+        self._enabled = True
+        # XXX al-maisan: Resume all `Build` records in state NEEDSBUILD that
+        # target this archive.
+
+    def disable(self):
+        """See `IArchive`."""
+        assert self._enabled == True, "This archive is already disabled."
+        self._enabled = True
+        # XXX al-maisan: Suspend all `Build` records in state NEEDSBUILD that
+        # target this archive.
+
 
 class ArchiveSet:
     implements(IArchiveSet)
