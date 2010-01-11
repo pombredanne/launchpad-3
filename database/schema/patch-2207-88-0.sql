@@ -26,7 +26,7 @@ ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecip
 ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__line_number__recipe_data
      UNIQUE (line_number, recipe_data);
 ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__directory_not_null
-     CHECK ((type = 1 AND directory IS NULL) OR (type != 2 AND directory IS NOT NULL));
+     CHECK ((type = 1 AND directory IS NULL) OR (type = 2 AND directory IS NOT NULL));
 
 CREATE TABLE SourcePackageRecipe (
     id serial PRIMARY KEY,
