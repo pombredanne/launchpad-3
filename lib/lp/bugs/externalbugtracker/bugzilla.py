@@ -88,10 +88,12 @@ class Bugzilla(ExternalBugTracker):
             # The server returned an unparsable response.
             return False
         else:
-            if remote_version_dict['version'] >= '3.4':
-                return True
-            else:
-                return False
+            # Older versions of the Bugzilla API return tuples. We
+            # consider anything other than a mapping to be unsupported.
+            if isinstance(remote_version_dict, dict):
+                if remote_version_dict['version'] >= '3.4':
+                    return True
+            return False
 
     def _remoteSystemHasPluginAPI(self):
         """Return True if the remote host has the Launchpad plugin installed.

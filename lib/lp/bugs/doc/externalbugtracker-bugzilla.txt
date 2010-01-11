@@ -201,6 +201,31 @@ getExternalBugTrackerToUse() will return a BugzillaLPPlugin instance.
     >>> isinstance(bugzilla_to_use, BugzillaLPPlugin)
     True
 
+Older versions of the Bugzilla API return tuples rather than mappings
+in response to XML-RPC calls. When something other than a mapping is
+returned, the standard non-API non-plugin external bug tracker is
+selected.
+
+    >>> class OldXMLRPCTransport(xmlrpclib.Transport):
+    ...     def request(self, host, handler, request, verbose=None):
+    ...         args, method_name = xmlrpclib.loads(request)
+    ...
+    ...         if method_name == 'Bugzilla.version':
+    ...             return ('versionResponse', {'version': '3.2.5+'})
+    ...         else:
+    ...             raise xmlrpclib.Fault('Client', 'No such method')
+    ...
+    >>> test_transport = OldXMLRPCTransport()
+
+    >>> bugzilla._test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...     'http://example.com/xmlrpc.cgi',
+    ...     transport=test_transport)
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+    >>> (isinstance(bugzilla_to_use, BugzillaAPI) or
+    ...  isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    False
+
 
 == Status Conversion ==
 
