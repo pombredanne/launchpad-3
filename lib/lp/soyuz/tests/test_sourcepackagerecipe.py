@@ -90,13 +90,6 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             self.makeBuilderRecipe())
         self.assertProvides(recipe, ISourcePackageRecipe)
 
-    def DONTtest_recipe_access(self):
-        # For now, the exact text passed when a recipe is created is available
-        # as the 'recipe_text' attribute on the recipe object.
-        text = self.makeRecipeText()
-        recipe = self.makeRecipeWithText(text)
-        self.assertEquals(text, recipe.recipe_text)
-
     def test_branch_links_created(self):
         # When a recipe is created, we can query it for links to the branch
         # it references.
