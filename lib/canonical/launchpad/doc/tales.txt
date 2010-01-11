@@ -1111,7 +1111,7 @@ Unknown email addresses are not altered in any way:
     >>> test_tales('foo/fmt:linkify-email', foo='nobody@example.com')
     'nobody@example.com'
 
-Users who specifiy that their email adresses must be hidden also do not
+Users who specify that their email addresses must be hidden also do not
 get linkified.  test@canonical.com is hidden:
 
     >>> person_set = getUtility(IPersonSet)
@@ -1583,4 +1583,3 @@ The anonymous user is not allowed to see private team details.
 
     >>> test_tales("team/fmt:unique_displayname", team=myteam)
     u'<hidden>'
-

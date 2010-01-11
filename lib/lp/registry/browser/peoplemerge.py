@@ -402,7 +402,7 @@ class RequestPeopleMergeMultipleEmailsView:
             # selected.
             emails = self.request.form.get("selected")
             if emails is not None:
-                # We can have multiple email adressess selected, and in this
+                # We can have multiple email addresses selected, and in this
                 # case emails will be a list. Otherwise it will be a string
                 # and we need to make a list with that value to use in the for
                 # loop.

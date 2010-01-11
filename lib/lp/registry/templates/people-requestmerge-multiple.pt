@@ -53,7 +53,7 @@
       </tal:email_visible>
 
       <tal:email_hidden condition="view/email_hidden">
-      <p>
+      <p id="explanation">
         The account <code tal:content="view/dupe/name">foo</code>,
         which you&#8217;re trying to merge,
         has <span tal:replace="view/dupeemails/count" /> registered
@@ -82,7 +82,7 @@
       <h1>Confirmation mail sent</h1>
 
       <tal:email_visible condition="not: view/email_hidden">
-      <p>Individual email messages were sent to:</p>
+      <p id="confirmation">Individual email messages were sent to:</p>
         <tal:block repeat="email view/notified_addresses">
           <p><strong tal:content="email"/></p>
         </tal:block>

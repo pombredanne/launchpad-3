@@ -107,7 +107,7 @@ claimed email address.
     True
 
 User confirms the merge request submitting the form, but the merge wasn't
-finished because the duplicate account still have a registered email adresses.
+finished because the duplicate account still have a registered email addresses.
 
     >>> browser.getControl('Confirm').click()
     >>> 'has other registered e-mail addresses too' in browser.contents
@@ -198,10 +198,10 @@ addresses.
     ...     'Duplicated Account').value = 'duplicate-person'
     >>> browser.getControl('Continue').click()
 
-    >>> maincontent = extract_text(find_main_content(browser.contents))
-    >>> maincontent = ' '.join(maincontent.split())
-    >>> 'has 2 registered e-mail addresses' in maincontent
-    True
+    >>> explanation = find_tag_by_id(browser.contents, 'explanation')
+    >>> print extract_text(explanation)
+    The account...trying to merge, has 2 registered e-mail addresses...
+
 
 Since the addresses are hidden we cannot display them therefore there
 are no controls to select.
@@ -216,11 +216,12 @@ are no controls to select.
     >>> len(stub.test_emails)
     2
 
-    >>> maincontent = extract_text(find_main_content(browser.contents))
-    >>> maincontent = ' '.join(maincontent.split())
+    >>> confirmation = find_tag_by_id(browser.contents, 'confirmation')
+    >>> print extract_text(confirmation)
+    Individual email messages were sent to the 2 registered e-mail addresses...
 
-    >>> 'messages were sent to the 2 registered e-mail' in maincontent
-    True
+    >>> maincontent = extract_text(find_main_content(browser.contents))
+
     >>> 'dupe1@example.com' in maincontent
     False
     >>> 'dupe2@example.com' in maincontent
