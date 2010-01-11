@@ -165,7 +165,7 @@ class _SourcePackageRecipeData(Storm):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
         if builder_recipe.format > 0.2:
             raise TooNewRecipeFormat(builder_recipe.format, 0.2)
-        self._scan_instructions(
+        self._scanInstructions(
             builder_recipe, parent_insn=None)
         # XXX Why doesn't self.instructions.clear() work?
         IStore(self).find(
@@ -177,7 +177,7 @@ class _SourcePackageRecipeData(Storm):
         self.recipe_format = unicode(builder_recipe.format)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
-        self._scan_instructions(
+        self._scanInstructions(
             builder_recipe, parent_insn=None, record=True)
 
     def __init__(self, recipe):
