@@ -55,7 +55,9 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
         # From a Job, the TranslationTemplatesBuildJobSource can find the
         # TranslationTemplatesBuildJob back for us.
-        self.assertEqual(self.specific_job, self.jobset.getForJob(base_job))
+        specific_job_for_base_job = removeSecurityProxy(
+            self.jobset.getForJob(base_job))
+        self.assertEqual(self.specific_job, specific_job_for_base_job)
 
     def test_has_BuildQueue(self):
         # There's also a BuildQueue item associated with the job.
@@ -95,11 +97,12 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         self.assertNotEqual(None, chroot)
 
     def test_findTranslationTemplatesBuildJob(self):
-        buildqueue = self.jobset.getForJob(self.specific_job.job)
-        
-        self.assertEqual(
-            self.specific_job,
+        job = self.specific_job.job
+        job_id = removeSecurityProxy(job).id
+        buildqueue = getUtility(IBuildQueueSet).get(job_id)
+        specific_job_for_buildqueue = removeSecurityProxy(
             self.behavior._findTranslationTemplatesBuildJob(buildqueue))
+        self.assertEqual(self.specific_job, specific_job_for_buildqueue)
 
 
 def test_suite():

@@ -23,7 +23,7 @@ from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJob, ITranslationTemplatesBuildJobSource)
 
 
-class TranslationTemplatesBuildJob(BuildFarmJob, BranchJobDerived):
+class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
     """An `IBuildFarmJob` implementation that generates templates.
 
     Implementation-wise, this is actually a `BranchJob`.
@@ -35,13 +35,8 @@ class TranslationTemplatesBuildJob(BuildFarmJob, BranchJobDerived):
 
     unsafe_chars = '[^a-zA-Z0-9_+-]'
 
-    def __init__(self, branch):
-        # We don't have any JSON metadata for this BranchJob type.
-        metadata = {}
-
-        branch_job = BranchJob(
-            branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
-        BranchJobDerived.__init__(self, branch_job)
+    def __init__(self, branch_job):
+        super(TranslationTemplatesBuildJob, self).__init__(branch_job)
 
     def score(self):
         """See `IBuildFarmJob`."""
@@ -58,14 +53,19 @@ class TranslationTemplatesBuildJob(BuildFarmJob, BranchJobDerived):
 
     def getName(self):
         """See `IBuildFarmJob`."""
-        return '%s-%d' % (self.branch.name, self.id)
+        return '%s-%d' % (self.branch.name, self.job.id)
 
     @classmethod
     def create(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
 
-        specific_job = cls(branch)
+        # We don't have any JSON metadata for this BranchJob type.
+        metadata = {}
+        branch_job = BranchJob(
+            branch, BranchJobType.TRANSLATION_TEMPLATES_BUILD, metadata)
+        store.add(branch_job)
+        specific_job = TranslationTemplatesBuildJob(branch_job)
 
         duration_estimate = cls.duration_estimate
         build_queue_entry = BuildQueue(
@@ -80,4 +80,8 @@ class TranslationTemplatesBuildJob(BuildFarmJob, BranchJobDerived):
     def getForJob(cls, job):
         """See `ITranslationTemplatesBuildJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(cls, cls.job == job).one()
+        branch_job = store.find(BranchJob, BranchJob.job == job).one()
+        if branch_job is None:
+            return None
+        else:
+            return cls(branch_job)
