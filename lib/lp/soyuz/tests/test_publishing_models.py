@@ -66,7 +66,7 @@ class TestPublishingSet(BaseTestCaseWithThreeBuilds):
             bpr, self.sources[0].archive,
             status=PackagePublishingStatus.SUPERSEDED)
         for bpph in bpphs:
-            bpph.secure_record.datepublished = UTC_NOW
+            bpph.datepublished = UTC_NOW
 
         results = self.publishing_set.getUnpublishedBuildsForSources(
             self.sources)

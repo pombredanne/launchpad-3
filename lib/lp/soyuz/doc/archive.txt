@@ -957,7 +957,7 @@ it continues to be considered 'available for deletion'.
 
     >>> login("celso.providelo@canonical.com")
     >>> removal_candidate.requestDeletion(cprov, 'go away !')
-    >>> syncUpdate(removal_candidate.secure_record)
+    >>> syncUpdate(removal_candidate)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     1
@@ -997,7 +997,7 @@ binary is also DELETED.
 
     >>> for bin in removal_candidate.getPublishedBinaries():
     ...     bin.requestDeletion(cprov, 'go away !')
-    ...     syncUpdate(bin.secure_record)
+    ...     syncUpdate(bin)
 
     >>> cprov_archive.getSourcesForDeletion(name='ice').count()
     0
@@ -1813,6 +1813,8 @@ We will create a new PPA and some activity.
     >>> create_activity(name12.archive, 4)
     >>> create_activity(no_priv.archive, 4)
     >>> create_activity(lp_buildd_team.archive, 8)
+    >>> import transaction
+    >>> transaction.commit()
 
 Celso's PPA is still private, so despite having the highest number of
 uploads it's not listed.

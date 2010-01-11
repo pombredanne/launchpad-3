@@ -361,7 +361,9 @@ class IndexStanzaFields:
 
 class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A source package release publishing record."""
-    implements(ISourcePackagePublishingHistory, IPublishingEdit)
+    implements(
+        ISourcePackagePublishingHistory, IArchiveSafePublisher,
+        IPublishingEdit)
 
     sourcepackagerelease = ForeignKey(foreignKey='SourcePackageRelease',
         dbName='sourcepackagerelease')
@@ -372,13 +374,15 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
     status = EnumCol(schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
-    datecreated = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(default=UTC_NOW)
     datesuperseded = UtcDateTimeCol(default=None)
     supersededby = ForeignKey(foreignKey='SourcePackageRelease',
                               dbName='supersededby', default=None)
     datemadepending = UtcDateTimeCol(default=None)
     dateremoved = UtcDateTimeCol(default=None)
-    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket)
+    pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
+                     default=PackagePublishingPocket.RELEASE,
+                     notNull=True)
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
     removed_by = ForeignKey(
         dbName="removed_by", foreignKey="Person",
@@ -737,7 +741,6 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component = self.sourcepackagerelease.component
 
         self.component = component
-        Store.of(self).invalidate(self) # XXX Needed any more?
 
     def _proxied_urls(self, files, parent):
         """Run the files passed through `ProxiedLibraryFileAlias`."""
@@ -770,7 +773,9 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
 class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     """A binary package publishing record."""
 
-    implements(IBinaryPackagePublishingHistory, IPublishingEdit)
+    implements(
+        IBinaryPackagePublishingHistory, IArchiveSafePublisher,
+        IPublishingEdit)
 
     binarypackagerelease = ForeignKey(foreignKey='BinaryPackageRelease',
                                       dbName='binarypackagerelease')
@@ -782,7 +787,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
     status = EnumCol(dbName='status', schema=PackagePublishingStatus)
     scheduleddeletiondate = UtcDateTimeCol(default=None)
     datepublished = UtcDateTimeCol(default=None)
-    datecreated = UtcDateTimeCol(default=None)
+    datecreated = UtcDateTimeCol(default=UTC_NOW)
     datesuperseded = UtcDateTimeCol(default=None)
     supersededby = ForeignKey(foreignKey='Build', dbName='supersededby',
                               default=None)
@@ -987,7 +992,6 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
             component = self.binarypackagerelease.component
 
         self.component = component
-        Store.of(self).invalidate(self) # XXX needed any more?
 
 
 class PublishingSet:

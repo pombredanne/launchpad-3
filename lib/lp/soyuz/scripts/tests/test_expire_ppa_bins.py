@@ -127,7 +127,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             archive=self.ppa)
         [other_binary] = pub.copyTo(
             pub.distroarchseries.distroseries, pub.pocket, self.ppa2)
-        other_binary.secure_record.dateremoved = None
+        other_binary.dateremoved = None
 
         self.runScript()
         self.assertNotExpired(pub)
@@ -145,7 +145,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             archive=self.ppa)
         [other_binary] = pub.copyTo(
             pub.distroarchseries.distroseries, pub.pocket, self.ppa2)
-        other_binary.secure_record.dateremoved = self.under_threshold_date
+        other_binary.dateremoved = self.under_threshold_date
 
         self.runScript()
         self.assertNotExpired(pub)
@@ -161,7 +161,7 @@ class TestPPABinaryExpiry(unittest.TestCase):
             archive=archive)
         [other_binary] = pub.copyTo(
             pub.distroarchseries.distroseries, pub.pocket, self.ppa2)
-        other_binary.secure_record.dateremoved = self.over_threshold_date
+        other_binary.dateremoved = self.over_threshold_date
         return pub
 
     def testNoExpirationWithDateOverThresholdAndOtherPubOverThreshold(self):

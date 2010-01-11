@@ -312,7 +312,7 @@ class PackageCloner:
             SELECT spph.sourcepackagerelease, %s as distroseries,
                    spph.status, spph.component, spph.section, %s as archive,
                    %s as datecreated, %s as datepublished,
-                   %s as pocket)
+                   %s as pocket
             FROM SourcePackagePublishingHistory AS spph
             WHERE spph.distroseries = %s AND spph.status in (%s, %s) AND
                   spph.pocket = %s and spph.archive = %s

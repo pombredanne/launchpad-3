@@ -13,7 +13,7 @@ in one or more series of a `Distribution`.
     >>> login('foo.bar@canonical.com')
     >>> stp.prepareBreezyAutotest()
     >>> source = stp.getPubSource('testing-dspr', version='1.0')
-    >>> source.secure_record.setPublished()
+    >>> source.setPublished()
     >>> binaries = stp.getPubBinaries(pub_source=source)
     >>> maintainer = factory.makePerson(name='maintainer')
     >>> source.sourcepackagerelease.maintainer = maintainer

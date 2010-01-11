@@ -311,7 +311,7 @@ Now we'll publish it in the primary archive.
     ...     ArchivePurpose.PRIMARY)
     >>> source1_ubuntu = source1.copyTo(
     ...     source1.distroseries, source1.pocket, primary)
-    >>> source1_ubuntu.secure_record.setPublished()
+    >>> source1_ubuntu.setPublished()
     >>> flush_database_updates()
     >>> logout()
 

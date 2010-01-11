@@ -514,7 +514,7 @@ changes:
     ...     PackagePublishingStatus)
     >>> login('foo.bar@canonical.com')
     >>> for binary in pmount_binaries:
-    ...     binary.secure_record.setPublished()
+    ...     binary.setPublished()
     >>> flush_database_updates()
     >>> logout()
     >>> jblack_browser.reload()

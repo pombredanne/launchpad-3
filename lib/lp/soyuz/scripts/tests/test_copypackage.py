@@ -1479,7 +1479,7 @@ class CopyPackageTestCase(TestCase):
         # If we ensure that the copied binaries are published, the
         # copy won't fail but will simply not copy anything.
         for bin_pub in copied[1:3]:
-            bin_pub.secure_record.setPublished()
+            bin_pub.setPublished()
 
         nothing_copied = copy_helper.mainTask()
         self.assertEqual(len(nothing_copied), 0)

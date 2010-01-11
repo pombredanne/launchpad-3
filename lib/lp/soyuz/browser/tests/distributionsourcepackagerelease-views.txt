@@ -71,7 +71,7 @@ copies.
 
     # Publish the pending testing publication.
     >>> login('foo.bar@canonical.com')
-    >>> source.secure_record.setPublished()
+    >>> source.setPublished()
     >>> transaction.commit()
     >>> login(ANONYMOUS)
 
@@ -87,7 +87,7 @@ copies.
     >>> hoary = stp.ubuntutest.getSeries('hoary-test')
     >>> copied_source = source.copyTo(
     ...     hoary, release_pocket, stp.ubuntutest.main_archive)
-    >>> copied_source.secure_record.setPublished()
+    >>> copied_source.setPublished()
     >>> transaction.commit()
     >>> login(ANONYMOUS)
 
