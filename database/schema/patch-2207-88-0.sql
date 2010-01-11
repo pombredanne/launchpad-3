@@ -42,6 +42,9 @@ CREATE TABLE SourcePackageRecipe (
 ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipe__owner__distroseries__sourcepackagename__name
      UNIQUE (owner, distroseries, sourcepackagename, name);
 
+ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipedata__recipe_data
+     UNIQUE (recipe_data);
+
 CREATE TABLE SourcePackageBuild (
     id serial PRIMARY KEY,
     -- most of this is just copied from Build
@@ -63,6 +66,9 @@ CREATE TABLE SourcePackageBuild (
     manifest integer REFERENCES SourcePackageRecipeData
 );
 
+ALTER TABLE SourcePackageBuild ADD CONSTRAINT sourcepackagebuild__manifest
+    UNIQUE (manifest);
+
 CREATE TABLE SourcePackageBuildUpload (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
@@ -83,5 +89,8 @@ CREATE TABLE BuildSourcePackageFromRecipeJob (
     job integer NOT NULL REFERENCES Job,
     source_package_build integer REFERENCES SourcePackageBuild
 );
+
+ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipejob
+    UNIQUE (source_package_build);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 88, 0);
