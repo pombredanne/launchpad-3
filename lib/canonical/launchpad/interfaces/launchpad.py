@@ -223,12 +223,12 @@ class IPersonRoles(Interface):
         """Is this person the owner of the object?"""
 
     def isDriver(obj):
-        """Is this person on of the drivers of the object?"""
+        """Is this person one of the drivers of the object?"""
 
     def isOneOf(obj, attributes):
-        """Is this person on of the roles in relation to the object?
+        """Is this person one of the roles in relation to the object?
 
-        Check if the person is (inTeam) one of the given IPerson attributes
+        Check if the person is inTeam of one of the given IPerson attributes
         of the object.
 
         :param obj: The object to check the relation to.

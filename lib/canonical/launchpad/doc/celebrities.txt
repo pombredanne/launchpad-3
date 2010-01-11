@@ -234,16 +234,26 @@ to be synced to ILaunchpadCelebrities by adding/removing the appropriate
 "in_" attribute(s).
 
     >>> from canonical.launchpad.interfaces.launchpad import IPersonRoles
-    >>> def person_celebrity_names():
+    >>> def get_person_celebrity_names():
     ...     for name in ILaunchpadCelebrities.names():
     ...         if IPerson.providedBy(getattr(celebs, name)):
-    ...             yield name
-    >>> def person_roles_names():
+    ...             yield "in_" + name
+    >>> def get_person_roles_names():
     ...     for name in IPersonRoles.names():
     ...         if name.startswith("in_"):
-    ...             yield name[3:]
-    >>> print sorted(person_celebrity_names()) == sorted(person_roles_names())
-    True
+    ...             yield name
+
+Treating the lists as sets and determining their difference gives us a clear
+picture of what is missing where.
+
+    >>> person_celebrity_names = set(get_person_celebrity_names())
+    >>> person_roles_names = set(get_person_roles_names())
+    >>> print "Please add to IPersonRoles: " + (
+    ...       ", ".join(list(person_celebrity_names - person_roles_names)))
+    Please add to IPersonRoles:
+    >>> print "Please remove from IPersonRoles: " + (
+    ...       ", ".join(list(person_roles_names - person_celebrity_names)))
+    Please remove from IPersonRoles:
 
 
 == Detecting if a person is a celebrity ==
