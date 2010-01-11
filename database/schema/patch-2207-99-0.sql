@@ -3,7 +3,7 @@
 
 SET client_min_messages=ERROR;
 
--- The schema patch required for the Soyuz buildd generalisation, see
+-- Another schema patch required for the Soyuz buildd generalisation, see
 -- https://dev.launchpad.net/Soyuz/Specs/BuilddGeneralisation for details.
 -- Bug #505725.
 
