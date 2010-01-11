@@ -17,15 +17,16 @@ exec 2>&1
 
 SBUILD=/usr/bin/sbuild
 BUILDID=$1
+SUITE=$2
 
-shift
+shift; shift
 
 export NR_PROCESSORS=$(grep ^processor /proc/cpuinfo | wc -l)
 
 echo "Initiating build $BUILDID with $NR_PROCESSORS processor cores."
 
 if [ $NR_PROCESSORS -lt 2 ]; then
-	unset NR_PROCESSORS
+        unset NR_PROCESSORS
 fi
 
 cd "$HOME/build-$BUILDID"
@@ -48,8 +49,15 @@ case $hostarch in
     ;;
 esac
 
-LANG=C LC_ALL=C $SBUILD "$@" | /usr/bin/check-implicit-pointer-functions --inline
-RET=$?
+case $SUITE in)
+    warty*|hoary*|breezy*|dapper*|edgy*|feisty*|gutsy*|hardy*|karmic*)
+        LANG=C LC_ALL=C $SBUILD "$@" 
+        RET=$?
+        ;;
+     *) LANG=C LC_ALL=C $SBUILD "$@" | /usr/bin/check-implicit-pointer-functions --inline
+        RET=$?
+        ;;
+esac
 
 # really successful returns
 [ $RET = 0 ] || exit $RET
