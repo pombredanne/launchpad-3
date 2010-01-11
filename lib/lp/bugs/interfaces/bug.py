@@ -986,7 +986,7 @@ class IBugSet(Interface):
         DOING. AND IF YOU KNOW WHAT YOU'RE DOING YOU KNOW BETTER THAN TO
         USE THIS ANYWAY.
         """
-        # XXX 2010-01-08 gmb:
+        # XXX 2010-01-08 gmb bug=505850:
         #     Note, this method should go away when we have a proper
         #     permissions system for scripts.
 
