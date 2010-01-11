@@ -897,6 +897,16 @@
         <allow
             interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
     </class>
+    <!-- 
+        The registration below is used to discover all build farm job classes
+        that implement the `IBuildFarmJob` interface. Please see bug #503839
+        for more detail.
+        The 'name' attribute needs to be set to the appropriate
+        `BuildFarmJobType` enumeration value.
+    -->
+    <utility component="lp.soyuz.model.buildpackagejob.BuildPackageJob"
+        name="PACKAGEBUILD"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
 
     <!-- BinaryPackageBuildBehavior -->
     <adapter

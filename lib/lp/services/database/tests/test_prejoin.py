@@ -20,6 +20,7 @@ class PrejoinTestCase(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(PrejoinTestCase, self).setUp()
         self.store = IMasterStore(Product)
 
         # All products
