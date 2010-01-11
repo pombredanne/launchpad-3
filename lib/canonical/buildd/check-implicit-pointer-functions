@@ -2,7 +2,7 @@
 
 #
 # Copyright (c) 2004 Hewlett-Packard Development Company, L.P.
-#	David Mosberger <davidm@hpl.hp.com>
+#       David Mosberger <davidm@hpl.hp.com>
 #
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
@@ -54,15 +54,20 @@ last_implicit_func = ""
 errlist = ""
 
 in_line = False
-if len(sys.argv) > 1 and sys.argv[1] == '--inline':
-    in_line = True
+warn_only = False
+
+for arg in sys.argv[1:]:
+    if arg == '--inline':
+        in_line = True
+    elif arg == '--warnonly':
+        warn_only = True
 
 rv = 0
 while True:
     line = sys.stdin.readline()
     if in_line:
-	sys.stdout.write(line)
-	sys.stdout.flush()
+        sys.stdout.write(line)
+        sys.stdout.flush()
     if line == '':
         break
     m = implicit_pattern.match(line)
@@ -71,7 +76,7 @@ while True:
         last_implicit_linenum = int(m.group(2))
         last_implicit_func = m.group(3)
     else:
-    	m = pointer_pattern.match(line)
+        m = pointer_pattern.match(line)
         if m:
             pointer_filename = m.group(1)
             pointer_linenum = int(m.group(2))
@@ -80,13 +85,14 @@ while True:
                 err = "Function `%s' implicitly converted to pointer at " \
                       "%s:%d" % (last_implicit_func, last_implicit_filename,
                                  last_implicit_linenum)
-		errlist += err+"\n"
-		print err
-		rv = 3
+                errlist += err+"\n"
+                print err
+                if not warn_only:
+                    rv = 3
 
 if rv:
     if in_line:
-	print errlist
+        print errlist
     print """
 
 Our automated build log filter detected the problem(s) above that will

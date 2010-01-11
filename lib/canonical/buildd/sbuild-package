@@ -15,6 +15,8 @@
 
 exec 2>&1
 
+export LANG=C LC_ALL=C 
+
 SBUILD=/usr/bin/sbuild
 BUILDID=$1
 SUITE=$2
@@ -38,20 +40,20 @@ if [ -f /etc/launchpad-buildd/default ]; then
   eval `grep architecturetag /etc/launchpad-buildd/default | sed 's/ //g'`
 fi
 
-IMPL="/usr/bin/check-implicit-pointer-functions --inline"
+WARN=""
 case $hostarch in
   hppa|powerpc|sparc)
     SBUILD="linux32 $SBUILD"
-    IMPL=""
+    WARN="--warnonly"
     ;;
   i386|lpia|armel)
     # SBUILD is already correct
-    IMPL=""
+    WARN="--warnonly"
     ;;
   amd64)
     if [ "$hostarch" != "$architecturetag" ]; then
       SBUILD="linux32 $SBUILD"
-      IMPL=""
+      WARN="--warnonly"
     fi
     ;;
   ia64)
@@ -60,17 +62,12 @@ esac
 
 case $SUITE in)
     warty*|hoary*|breezy*|dapper*|edgy*|feisty*|gutsy*|hardy*|karmic*)
-        LANG=C LC_ALL=C $SBUILD "$@" 
-        RET=$?
-        ;;
-     *) if [ -n "$IMPL" ]; then
-            LANG=C LC_ALL=C $SBUILD "$@" | $IMPL
-        else
-            LANG=C LC_ALL=C $SBUILD "$@" 
-        fi
-        RET=$?
+        WARN="--warnonly"
         ;;
 esac
+
+$SBUILD "$@" | /usr/bin/check-implicit-pointer-functions --inline $WARN
+RET=$?
 
 # really successful returns
 [ $RET = 0 ] || exit $RET
