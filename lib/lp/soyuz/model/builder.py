@@ -211,9 +211,6 @@ class Builder(SQLBase):
 
     def _sendFileToSlave(self, url, sha1, username="", password=""):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
-        if not self.builderok:
-            raise BuildDaemonError("Attempted to give a file to a known-bad"
-                                   " builder")
         present, info = self.slave.ensurepresent(
             sha1, url, username, password)
         if not present:
@@ -301,6 +298,10 @@ class Builder(SQLBase):
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
         # Set the build behavior depending on the provided build queue item.
+        if not self.builderok:
+            raise BuildDaemonError(
+                "Attempted to start a build on a known-bad builder.")
+
         self.current_build_behavior = build_queue_item.required_build_behavior
         self.current_build_behavior.logStartBuild(logger)
 
