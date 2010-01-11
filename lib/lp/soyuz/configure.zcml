@@ -933,11 +933,11 @@
     </class>
     <class
        class="bzrlib.plugins.builder.recipe.MergeInstruction">
-      <allow attributes="as_tuple" />
+      <allow attributes="as_tuple recipe_branch nest_path" />
     </class>
     <class
        class="bzrlib.plugins.builder.recipe.NestInstruction">
-      <allow attributes="as_tuple" />
+      <allow attributes="as_tuple recipe_branch nest_path" />
     </class>
     <securedutility
        component="lp.soyuz.model.sourcepackagerecipe.SourcePackageRecipe"

@@ -311,6 +311,30 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.check_recipe_branch(child_branch, "zam", nested2.bzr_identity)
 
 
+    def tests_builds_recipe_with_revspecs(self):
+        recipe_text = '''\
+        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        %(base)s revid:a
+        nest bar %(nested)s baz tag:b
+        merge zam %(merged)s 2
+        ''' % self.branch_identities
+        base_branch = self.get_recipe(recipe_text)
+        self.check_base_recipe_branch(
+            base_branch, self.base_branch.bzr_identity, num_child_branches=2,
+            revspec="revid:a", deb_version='0.1-{revno}')
+        instruction = base_branch.child_branches[0]
+        child_branch = instruction.recipe_branch
+        location = instruction.nest_path
+        self.assertEqual("baz", location)
+        self.check_recipe_branch(
+            child_branch, "bar", self.nested_branch.bzr_identity,
+            revspec="tag:b")
+        child_branch, location = base_branch.child_branches[1].as_tuple()
+        self.assertEqual(None, location)
+        self.check_recipe_branch(
+            child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
 

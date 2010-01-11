@@ -162,7 +162,7 @@ class _SourcePackageRecipeData(Storm):
         self.deb_version_template = unicode(base_branch.deb_version)
         self.recipe_format = unicode(base_branch.format)
         if builder_recipe.revspec is not None:
-            self.revspec = unicode(self.revspec)
+            self.revspec = unicode(builder_recipe.revspec)
         self._record_instructions(base_branch, None)
 
     def __init__(self, recipe):
