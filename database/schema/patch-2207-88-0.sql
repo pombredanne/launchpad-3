@@ -16,14 +16,14 @@ CREATE TABLE SourcePackageRecipeDataInstruction (
     branch integer NOT NULL REFERENCES Branch,
     revspec text,
     directory text,
-    recipe integer REFERENCES SourcePackageRecipeData,
+    recipe_data integer REFERENCES SourcePackageRecipeData,
     parent_instruction integer REFERENCES SourcePackageRecipeDataInstruction
 );
 
-ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__name__recipe
-     UNIQUE (name, recipe);
-ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__line_number__recipe
-     UNIQUE (line_number, recipe);
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__name__recipe_data
+     UNIQUE (name, recipe_data);
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__line_number__recipe_data
+     UNIQUE (line_number, recipe_data);
 ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__directory_not_null
      CHECK ((type = 1 AND directory IS NULL) OR (type != 2 AND directory IS NOT NULL));
 
@@ -41,6 +41,9 @@ CREATE TABLE SourcePackageRecipe (
 
 ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipe__owner__distroseries__sourcepackagename__name
      UNIQUE (owner, distroseries, sourcepackagename, name);
+
+ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipedata__recipe_data
+     UNIQUE (recipe_data);
 
 CREATE TABLE SourcePackageBuild (
     id serial PRIMARY KEY,
@@ -63,6 +66,9 @@ CREATE TABLE SourcePackageBuild (
     manifest integer REFERENCES SourcePackageRecipeData
 );
 
+ALTER TABLE SourcePackageBuild ADD CONSTRAINT sourcepackagebuild__manifest
+    UNIQUE (manifest);
+
 CREATE TABLE SourcePackageBuildUpload (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
@@ -83,5 +89,8 @@ CREATE TABLE BuildSourcePackageFromRecipeJob (
     job integer NOT NULL REFERENCES Job,
     source_package_build integer REFERENCES SourcePackageBuild
 );
+
+ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipejob__source_package_build
+    UNIQUE (source_package_build);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 88, 0);
