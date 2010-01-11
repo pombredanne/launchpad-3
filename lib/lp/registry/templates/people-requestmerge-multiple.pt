@@ -82,14 +82,14 @@
       <h1>Confirmation mail sent</h1>
 
       <tal:email_visible condition="not: view/email_hidden">
-      <p id="confirmation">Individual email messages were sent to:</p>
+      <p>Individual email messages were sent to:</p>
         <tal:block repeat="email view/notified_addresses">
           <p><strong tal:content="email"/></p>
         </tal:block>
       </tal:email_visible>
 
       <tal:email_hidden condition="view/email_hidden">
-      <p>Individual email messages were sent to the
+      <p id="confirmation">Individual email messages were sent to the
         <span tal:content="view/dupeemails/count" /> registered
         e-mail addresses for
         <code tal:content="view/dupe/name">foo</code>.
