@@ -61,6 +61,7 @@ from canonical.librarian.utils import copy_and_close
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):
+
     def connect(self):
         """Override the standard connect() methods to set a timeout"""
         ret = httplib.HTTPConnection.connect(self)
@@ -74,6 +75,7 @@ class TimeoutHTTP(httplib.HTTP):
 
 class TimeoutTransport(xmlrpclib.Transport):
     """XMLRPC Transport to setup a socket with defined timeout"""
+
     def make_connection(self, host):
         host, extra_headers, x509 = self.get_host_info(host)
         return TimeoutHTTP(host)
@@ -81,7 +83,7 @@ class TimeoutTransport(xmlrpclib.Transport):
 
 # XXX: Add methods to this that wrap common operations, move them off IBuilder.
 # - cacheFileOnSlave
-# - slave.build
+
 
 class BuilderSlave(xmlrpclib.ServerProxy):
     """Add in a few useful methods for the XMLRPC slave."""
@@ -189,7 +191,6 @@ class Builder(SQLBase):
             # We did have a current non-idle build behavior set, so
             # we just return it.
             return self._current_build_behavior
-
 
     def _setCurrentBuildBehavior(self, new_behavior):
         """Set the current build behavior."""
@@ -330,6 +331,7 @@ class Builder(SQLBase):
     # class domain. Here we cannot make sensible decisions about what
     # we are allowed to present according to the request user. Then
     # bad things happens, see bug #391721.
+
     @property
     def status(self):
         """See IBuilder"""
@@ -351,6 +353,7 @@ class Builder(SQLBase):
     # that the builder history will display binary build records, as
     # returned by getBuildRecords() below. See the bug for a discussion
     # of the options.
+
     def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
                         user=None):
         """See IHasBuildRecords."""
@@ -422,6 +425,7 @@ class Builder(SQLBase):
     # XXX cprov 20071116: It should become part of the public
     # findBuildCandidate once we start to detect superseded builds
     # at build creation time.
+
     def _findBuildCandidate(self):
         """Return the highest priority build candidate for this builder.
 
