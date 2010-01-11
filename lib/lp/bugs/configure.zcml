@@ -573,7 +573,7 @@
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
                     personIsSubscribedToDuplicate
-                    hotness"/>
+                    heat"/>
             <require
                 permission="launchpad.View"
                 attributes="
@@ -670,7 +670,7 @@
                 permission="launchpad.Admin"
                 attributes="
                     setCommentVisibility
-                    setHotness"/>
+                    setHeat"/>
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"

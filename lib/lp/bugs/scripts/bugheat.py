@@ -124,7 +124,7 @@ class BugHeatTunableLoop:
             self.logger.debug("Updating heat for bug %s" % bug.id)
             bug_heat_calculator = BugHeatCalculator(bug)
             heat = bug_heat_calculator.getBugHeat()
-            bug.setHotness(heat)
+            bug.setHeat(heat)
             self.total_updated += 1
 
         self.transaction.commit()

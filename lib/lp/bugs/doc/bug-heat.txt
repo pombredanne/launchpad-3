@@ -1,29 +1,29 @@
 Calculating bug heat
 ====================
 
-Launchpad bugs each have a 'hotness' rating. This is an indicator of how
+Launchpad bugs each have a 'heat' rating. This is an indicator of how
 problematic a given bug is to the community and can be used to determine
 which bugs should be tackled first.
 
-A new bug will have a hotness of zero.
+A new bug will have a heat of zero.
 
     >>> from lp.testing.factory import LaunchpadObjectFactory
 
     >>> factory = LaunchpadObjectFactory()
     >>> bug_owner = factory.makePerson()
     >>> bug = factory.makeBug(owner=bug_owner)
-    >>> bug.hotness
+    >>> bug.heat
     0
 
-The bug's hotness can be set by calling its setHotness() method.
+The bug's heat can be set by calling its setHeat() method.
 
-    >>> bug.setHotness(42)
-    >>> bug.hotness
+    >>> bug.setHeat(42)
+    >>> bug.heat
     42
 
 We'll reset it to zero for the purposes of testing.
 
-    >>> bug.setHotness(0)
+    >>> bug.setHeat(0)
 
 
 The BugHeatCalculator class
@@ -210,8 +210,8 @@ that all the updates we've made are in the database.
     ...
     INFO Done updating heat for ... bugs
 
-The hotness of the bug that we created at the start of this document
+The heat of the bug that we created at the start of this document
 should now be 470.
 
-    >>> bug.hotness
+    >>> bug.heat
     470

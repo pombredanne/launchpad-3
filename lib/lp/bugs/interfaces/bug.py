@@ -296,8 +296,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             value_type=Reference(schema=IPerson),
             readonly=True))
 
-    hotness = Int(
-        title=_("The 'hotness' of the bug"),
+    heat = Int(
+        title=_("The 'heat' of the bug"),
         required=False, readonly=True)
 
     # Adding related BugMessages provides a hook for getting at

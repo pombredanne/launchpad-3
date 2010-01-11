@@ -254,7 +254,10 @@ class Bug(SQLBase):
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
-    hotness = IntCol(notNull=True, default=0)
+
+    # This is called 'hotness' in the database but the canonical name in
+    # the code is 'heat', so we use that name here.
+    heat = IntCol(dbName='hotness', notNull=True, default=0)
 
     @property
     def comment_count(self):
@@ -1426,9 +1429,9 @@ class Bug(SQLBase):
 
         return not subscriptions_from_dupes.is_empty()
 
-    def setHotness(self, hotness):
+    def setHeat(self, heat):
         """See `IBug`."""
-        self.hotness = hotness
+        self.heat = heat
 
 
 class BugSet:
