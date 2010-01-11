@@ -16,9 +16,8 @@ from zope.security.interfaces import Unauthorized
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.soyuz.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, ISourcePackageBuild, ISourcePackageRecipe,
-    ISourcePackageRecipeSource, TooNewRecipeFormat)
-from lp.soyuz.model.sourcepackagerecipe import SourcePackageBuild
+    ForbiddenInstruction, ISourcePackageBuild, ISourcePackageBuildSource,
+    ISourcePackageRecipe, ISourcePackageRecipeSource, TooNewRecipeFormat)
 from lp.testing import login_person, TestCaseWithFactory
 
 
@@ -373,7 +372,7 @@ class TestSourcePackageBuild(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def makeSourcePackageBuild(self):
-        return SourcePackageBuild()
+        return getUtility(ISourcePackageBuildSource).new()
 
     def test_providesInterface(self):
         # SourcePackageBuild provides ISourcePackageBuild.

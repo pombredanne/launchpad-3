@@ -17,7 +17,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.soyuz.interfaces.sourcepackagerecipe import (
-    ISourcePackageBuild, ISourcePackageRecipe, ISourcePackageRecipeSource)
+    ISourcePackageBuild, ISourcePackageBuildSource, ISourcePackageRecipe,
+    ISourcePackageRecipeSource)
 from lp.soyuz.model.sourcepackagerecipedata import _SourcePackageRecipeData
 
 
@@ -84,6 +85,7 @@ class SourcePackageRecipe(Storm):
 class SourcePackageBuild:
 
     implements(ISourcePackageBuild)
+    classProvides(ISourcePackageBuildSource)
 
     def __init__(self):
         self.build_log = None
@@ -98,3 +100,7 @@ class SourcePackageBuild:
         self.recipe = None
         self.requester = None
         self.sourcepackagename = None
+
+    @classmethod
+    def new(cls):
+        return cls()

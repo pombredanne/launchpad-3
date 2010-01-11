@@ -145,3 +145,10 @@ class ISourcePackageBuild(Interface):
         title=_("The recipe being built."))
 
     manifest = Attribute(_("The manifest of the built package."))
+
+
+class ISourcePackageBuildSource(Interface):
+    """A utility of this interface be used to create source package builds."""
+
+    def new():
+        """Create an `ISourcePackageBuild`."""

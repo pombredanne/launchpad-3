@@ -945,4 +945,15 @@
       <allow interface="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource"/>
     </securedutility>
 
+    <class
+       class="lp.soyuz.model.sourcepackagerecipe.SourcePackageBuild">
+      <allow interface="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageBuild"/>
+    </class>
+
+    <securedutility
+       component="lp.soyuz.model.sourcepackagerecipe.SourcePackageBuild"
+       provides="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageBuildSource">
+      <allow interface="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageBuildSource"/>
+    </securedutility>
+
 </configure>
