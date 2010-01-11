@@ -38,14 +38,23 @@ if [ -f /etc/launchpad-buildd/default ]; then
   eval `grep architecturetag /etc/launchpad-buildd/default | sed 's/ //g'`
 fi
 
+IMPL="/usr/bin/check-implicit-pointer-functions --inline"
 case $hostarch in
   hppa|powerpc|sparc)
     SBUILD="linux32 $SBUILD"
+    IMPL=""
+    ;;
+  i386|lpia|armel)
+    # SBUILD is already correct
+    IMPL=""
     ;;
   amd64)
     if [ "$hostarch" != "$architecturetag" ]; then
       SBUILD="linux32 $SBUILD"
+      IMPL=""
     fi
+    ;;
+  ia64)
     ;;
 esac
 
@@ -54,7 +63,11 @@ case $SUITE in)
         LANG=C LC_ALL=C $SBUILD "$@" 
         RET=$?
         ;;
-     *) LANG=C LC_ALL=C $SBUILD "$@" | /usr/bin/check-implicit-pointer-functions --inline
+     *) if [ -n "$IMPL" ]; then
+            LANG=C LC_ALL=C $SBUILD "$@" | $IMPL
+        else
+            LANG=C LC_ALL=C $SBUILD "$@" 
+        fi
         RET=$?
         ;;
 esac
