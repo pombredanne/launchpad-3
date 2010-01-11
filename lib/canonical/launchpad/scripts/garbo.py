@@ -30,7 +30,9 @@ from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import DBLoopTuner
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, AUTH_STORE, MAIN_STORE, MASTER_FLAVOR)
+from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.model.bugnotification import BugNotification
+from lp.bugs.scripts.bugheat import BugHeatCalculator
 from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchjob import BranchJob
 from lp.code.model.codeimportresult import CodeImportResult
@@ -691,6 +693,64 @@ class BranchJobPruner(TunableLoop):
         transaction.commit()
 
 
+class BugHeatUpdater(TunableLoop):
+    """A `TunableLoop` for bug heat calculations."""
+
+    maximum_chunk_size = 1000
+
+    def __init__(self, log, abort_time=None):
+        super(BugHeatUpdater, self).__init__(log, abort_time)
+        self.transaction = transaction
+        self.offset = 0
+        self.total_updated = 0
+
+    def isDone(self):
+        """See `ITunableLoop`."""
+        # When the main loop has no more Bugs to process it sets
+        # offset to None. Until then, it always has a numerical
+        # value.
+        return self.offset is None
+
+    def __call__(self, chunk_size):
+        """Retrieve a batch of Bugs and update their heat.
+
+        See `ITunableLoop`.
+        """
+        # XXX 2010-01-08 gmb bug=198767:
+        #     We cast chunk_size to an integer to ensure that we're not
+        #     trying to slice using floats or anything similarly
+        #     foolish. We shouldn't have to do this.
+        chunk_size = int(chunk_size)
+
+        start = self.offset
+        end = self.offset + chunk_size
+
+        # XXX 2010-01-08 gmb bug=505850:
+        #     This method call should be taken out and shot as soon as
+        #     we have a proper permissions system for scripts.
+        bugs = getUtility(IBugSet).dangerousGetAllBugs()[start:end]
+
+        self.offset = None
+        bug_count = bugs.count()
+        if bug_count > 0:
+            starting_id = bugs.first().id
+            self.log.debug("Updating %i Bugs (starting id: %i)" %
+                (bug_count, starting_id))
+
+        for bug in bugs:
+            # We set the starting point of the next batch to the Bug
+            # id after the one we're looking at now. If there aren't any
+            # bugs this loop will run for 0 iterations and start_id
+            # will remain set to None.
+            start += 1
+            self.offset = start
+            self.log.debug("Updating heat for bug %s" % bug.id)
+            bug_heat_calculator = BugHeatCalculator(bug)
+            heat = bug_heat_calculator.getBugHeat()
+            bug.setHeat(heat)
+            self.total_updated += 1
+
+
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
     """Abstract base class to run a collection of TunableLoops."""
     script_name = None # Script name for locking and database user. Override.
@@ -795,6 +855,7 @@ class DailyDatabaseGarbageCollector(BaseDatabaseGarbageCollector):
         PersonEmailAddressLinkChecker,
         BugNotificationPruner,
         BranchJobPruner,
+        BugHeatUpdater,
         ]
     experimental_tunable_loops = [
         PersonPruner,

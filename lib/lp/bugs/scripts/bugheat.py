@@ -11,9 +11,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
-from canonical.launchpad.utilities.looptuner import LoopTuner
+from canonical.launchpad.utilities.looptuner import DBLoopTuner
 
-from lp.bugs.interfaces.bug import IBugSet
 
 class BugHeatCalculator:
     """A class to calculate the heat for a bug."""
@@ -67,88 +66,3 @@ class BugHeatCalculator:
 
         return total_heat
 
-
-class BugHeatTunableLoop:
-    """An `ITunableLoop` implementation for bug heat calculations."""
-
-    implements(ITunableLoop)
-
-    total_updated = 0
-
-    def __init__(self, transaction, logger, offset=0):
-        self.transaction = transaction
-        self.logger = logger
-        self.offset = offset
-        self.total_updated = 0
-
-    def isDone(self):
-        """See `ITunableLoop`."""
-        # When the main loop has no more Bugs to process it sets
-        # offset to None. Until then, it always has a numerical
-        # value.
-        return self.offset is None
-
-    def __call__(self, chunk_size):
-        """Retrieve a batch of Bugs and update their heat.
-
-        See `ITunableLoop`.
-        """
-        # XXX 2010-01-08 gmb bug=198767:
-        #     We cast chunk_size to an integer to ensure that we're not
-        #     trying to slice using floats or anything similarly
-        #     foolish. We shouldn't have to do this.
-        chunk_size = int(chunk_size)
-
-        start = self.offset
-        end = self.offset + chunk_size
-
-        self.transaction.begin()
-        # XXX 2010-01-08 gmb bug=505850:
-        #     This method call should be taken out and shot as soon as
-        #     we have a proper permissions system for scripts.
-        bugs = getUtility(IBugSet).dangerousGetAllBugs()[start:end]
-
-        self.offset = None
-        bug_count = bugs.count()
-        if bug_count > 0:
-            starting_id = bugs.first().id
-            self.logger.info("Updating %i Bugs (starting id: %i)" %
-                (bug_count, starting_id))
-
-        for bug in bugs:
-            # We set the starting point of the next batch to the Bug
-            # id after the one we're looking at now. If there aren't any
-            # bugs this loop will run for 0 iterations and start_id
-            # will remain set to None.
-            start += 1
-            self.offset = start
-            self.logger.debug("Updating heat for bug %s" % bug.id)
-            bug_heat_calculator = BugHeatCalculator(bug)
-            heat = bug_heat_calculator.getBugHeat()
-            bug.setHeat(heat)
-            self.total_updated += 1
-
-        self.transaction.commit()
-
-
-class BugHeatUpdater:
-    """Takes responsibility for updating bug heat."""
-
-    def __init__(self, transaction, logger):
-        self.transaction = transaction
-        self.logger = logger
-
-    def updateBugHeat(self):
-        """Update the heat scores for all bugs."""
-        self.logger.info("Updating heat scores for all bugs")
-
-        loop = BugHeatTunableLoop(self.transaction, self.logger)
-
-        # We use the LoopTuner class to try and get an ideal number of
-        # bugs updated for each iteration of the loop (see the LoopTuner
-        # documentation for more details).
-        loop_tuner = LoopTuner(loop, 2)
-        loop_tuner.run()
-
-        self.logger.info(
-            "Done updating heat for %s bugs" % loop.total_updated)
