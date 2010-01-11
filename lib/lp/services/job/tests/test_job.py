@@ -177,7 +177,7 @@ class TestJob(TestCase):
         self.assertRaises(InvalidTransition, job.suspend)
 
     def test_resume(self):
-        """A job that is in the SUSPENDED state can be resumed."""
+        """A job that is suspended can be resumed."""
         job = Job(_status=JobStatus.SUSPENDED)
         job.resume()
         self.assertEqual(
