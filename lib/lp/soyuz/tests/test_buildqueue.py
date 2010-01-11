@@ -740,3 +740,48 @@ class TestJobClasses(TestCaseWithFactory):
         self.assertEqual(
             bq.specific_job_classes[BuildFarmJobType.BRANCHBUILD],
             FakeBranchBuild)
+
+
+class TestPlatformData(TestCaseWithFactory):
+    """Tests covering the processor/virtualized properties."""
+    layer = LaunchpadZopelessLayer
+    def setUp(self):
+        """Set up a native x86 build for the test archive."""
+        super(TestPlatformData, self).setUp()
+
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # First mark all builds in the sample data as already built.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        sample_data = store.find(Build)
+        for build in sample_data:
+            build.buildstate = BuildStatus.FULLYBUILT
+        store.flush()
+
+        # We test builds that target a primary archive.
+        self.non_ppa = self.factory.makeArchive(
+            name="primary", purpose=ArchivePurpose.PRIMARY)
+        self.non_ppa.require_virtualized = False
+
+        self.builds = []
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.non_ppa).createMissingBuilds())
+
+    def test_JobPlatformSettings(self):
+        """The `BuildQueue` instance shares the processor/virtualized
+        properties with the associated `Build`."""
+        build, bq = find_job(self, 'gedit')
+
+        # Make sure the 'processor' properties are the same.
+        self.assertEqual(
+            bq.processor, build.processor,
+            "The 'processor' property deviates.")
+
+        # Make sure the 'virtualized' properties are the same.
+        self.assertEqual(
+            bq.virtualized, build.is_virtualized,
+            "The 'virtualized' property deviates.")
+
