@@ -107,6 +107,16 @@ class IJob(Interface):
     def queue():
         """Mark the job as queued for processing."""
 
+    def suspend():
+        """Mark the job as suspended.
+
+        Only waiting jobs can be suspended."""
+
+    def resume():
+        """Mark the job as waiting.
+
+        Only suspended jobs can be resumed."""
+
 
 class IRunnableJob(IJob):
     """Interface for jobs that can be run via the JobRunner."""

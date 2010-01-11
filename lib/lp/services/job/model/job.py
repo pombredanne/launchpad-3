@@ -60,13 +60,16 @@ class Job(SQLBase):
     # List of the valid target states from a given state.
     _valid_transitions = {
         JobStatus.WAITING:
-            (JobStatus.RUNNING,),
+            (JobStatus.RUNNING,
+             JobStatus.SUSPENDED),
         JobStatus.RUNNING:
             (JobStatus.COMPLETED,
              JobStatus.FAILED,
              JobStatus.WAITING),
         JobStatus.FAILED: (),
         JobStatus.COMPLETED: (),
+        JobStatus.SUSPENDED:
+            (JobStatus.WAITING,),
     }
 
     def _set_status(self, status):
@@ -115,6 +118,14 @@ class Job(SQLBase):
         """See `IJob`."""
         self._set_status(JobStatus.WAITING)
         self.date_finished = datetime.datetime.now(UTC)
+
+    def suspend(self):
+        """See `IJob`."""
+        self._set_status(JobStatus.SUSPENDED)
+
+    def resume(self):
+        """See `IJob`."""
+        self._set_status(JobStatus.WAITING)
 
 
 Job.ready_jobs = Select(
