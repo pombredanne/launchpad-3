@@ -8,6 +8,9 @@ __metaclass__ = type
 
 __all__ = ['TacTestSetup', 'ReadyService', 'TacException']
 
+
+# This file is used by launchpad-buildd, so it cannot import any
+# Launchpad code!
 import errno
 import sys
 import os
