@@ -25,6 +25,7 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lp.code.model.branch import Branch
 from lp.code.interfaces.branchlookup import IBranchLookup
+from lp.soyuz.interfaces.sourcepackagerecipe import ForbiddenInstruction
 
 
 class InstructionType(DBEnumeratedType):
@@ -129,41 +130,51 @@ class _SourcePackageRecipeData(Storm):
                 dict(insn=insn, recipe_branch=recipe_branch))
         return base_branch
 
-    def _record_instructions(self, branch, parent_insn, line_number=0):
+    def _scan_instructions(self, branch, parent_insn, record=False,
+                             line_number=0):
+        """XXX."""
         for instruction in branch.child_branches:
-            db_branch = getUtility(IBranchLookup).getByUrl(
-                instruction.recipe_branch.url)
             if isinstance(instruction, MergeInstruction):
                 type = InstructionType.MERGE
             elif isinstance(instruction, NestInstruction):
                 type = InstructionType.NEST
+            elif not record:
+                raise ForbiddenInstruction(str(instruction))
             else:
                 raise AssertionError(
                     "Unsupported instruction %r" % instruction)
-            comment = None
             line_number += 1
-            insn = _SourcePackageRecipeDataInstruction(
-                instruction.recipe_branch.name, type, comment, line_number,
-                db_branch, instruction.recipe_branch.revspec,
-                instruction.nest_path, self, parent_insn)
-            line_number = self._record_instructions(
-                instruction.recipe_branch, insn, line_number)
+            if record:
+                comment = None
+                db_branch = getUtility(IBranchLookup).getByUrl(
+                    instruction.recipe_branch.url)
+                insn = _SourcePackageRecipeDataInstruction(
+                    instruction.recipe_branch.name, type, comment,
+                    line_number, db_branch, instruction.recipe_branch.revspec,
+                    instruction.nest_path, self, parent_insn)
+            else:
+                insn = None
+            line_number = self._scan_instructions(
+                instruction.recipe_branch, insn, record, line_number)
         return line_number
 
     def setRecipe(self, builder_recipe):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
+        # XXX don't destroy everything until we know there's no run command?
         # XXX Why doesn't self.instructions.clear() work?
+        self._scan_instructions(
+            builder_recipe, parent_insn=None)
         IStore(self).find(
             _SourcePackageRecipeDataInstruction,
             _SourcePackageRecipeDataInstruction.recipe_data == self).remove()
         branch_lookup = getUtility(IBranchLookup)
-        base_branch = builder_recipe
-        self.base_branch = branch_lookup.getByUrl(base_branch.url)
-        self.deb_version_template = unicode(base_branch.deb_version)
-        self.recipe_format = unicode(base_branch.format)
+        self.base_branch = branch_lookup.getByUrl(builder_recipe.url)
+        self.deb_version_template = unicode(builder_recipe.deb_version)
+        self.recipe_format = unicode(builder_recipe.format)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
-        self._record_instructions(base_branch, None)
+        self._scan_instructions(
+            builder_recipe, parent_insn=None, record=True)
 
     def __init__(self, recipe):
         """Initialize the object from the BaseRecipeBranch."""

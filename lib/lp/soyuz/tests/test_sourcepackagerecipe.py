@@ -16,7 +16,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.soyuz.interfaces.sourcepackagerecipe import (
-    ISourcePackageRecipe, ISourcePackageRecipeSource)
+    ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource)
 from lp.testing import login_person, TestCaseWithFactory
 
 
@@ -143,6 +143,36 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         #import pdb; pdb.set_trace()
         sp_recipe.builder_recipe = builder_recipe2
         self.assertEquals([branch2], list(sp_recipe.getReferencedBranches()))
+
+    def test_rejects_run_command(self):
+        recipe_text = '''\
+        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        %(base)s
+        run touch test
+        ''' % dict(base=self.factory.makeAnyBranch().bzr_identity)
+        parser = RecipeParser(textwrap.dedent(recipe_text))
+        builder_recipe = parser.parse()
+        self.assertRaises(
+            ForbiddenInstruction,
+            self.makeSourcePackageRecipeFromBuilderRecipe, builder_recipe)
+
+    def test_run_rejected_without_mangling_recipe(self):
+        branch1 = self.factory.makeAnyBranch()
+        builder_recipe1 = self.makeBuilderRecipe(branch1)
+        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
+            builder_recipe1)
+        recipe_text = '''\
+        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        %(base)s
+        run touch test
+        ''' % dict(base=self.factory.makeAnyBranch().bzr_identity)
+        parser = RecipeParser(textwrap.dedent(recipe_text))
+        builder_recipe2 = parser.parse()
+        login_person(sp_recipe.owner.teamowner)
+        self.assertRaises(
+            ForbiddenInstruction, setattr, sp_recipe, 'builder_recipe',
+            builder_recipe2)
+        self.assertEquals([branch1], list(sp_recipe.getReferencedBranches()))
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
@@ -310,7 +340,6 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.assertEqual("zoo", location)
         self.check_recipe_branch(child_branch, "zam", nested2.bzr_identity)
 
-
     def tests_builds_recipe_with_revspecs(self):
         recipe_text = '''\
         # bzr-builder format 0.2 deb-version 0.1-{revno}
@@ -333,6 +362,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.assertEqual(None, location)
         self.check_recipe_branch(
             child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
+
 
 
 def test_suite():
