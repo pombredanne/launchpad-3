@@ -15,7 +15,7 @@ from lazr.restful.fields import Reference
 
 from zope.interface import Interface
 
-from zope.schema import Datetime, Text, TextLine
+from zope.schema import Attribute, Datetime, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
@@ -70,8 +70,9 @@ class ISourcePackageRecipe(IHasOwner):
             constraint=name_validator,
             description=_("The name of this recipe."))
 
-    builder_recipe = Text(
-        title=_("The XXX of the recipe."), required=True, readonly=False)
+    builder_recipe = Attribute(
+        title=_("The bzr-builder data structure for the recipe."),
+        required=True, readonly=False)
 
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
@@ -81,5 +82,6 @@ class ISourcePackageRecipeSource(Interface):
     """A utility of this interface can be used to create and access recipes.
     """
 
-    def new(registrant, owner, distroseries, sourcepackagename, name, builder_recipe):
+    def new(registrant, owner, distroseries, sourcepackagename, name,
+            builder_recipe):
         """Create an `ISourcePackageRecipe`."""

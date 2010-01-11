@@ -62,8 +62,8 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipe.getReferencedBranches`."""
         return self._recipe_data.getReferencedBranches()
 
-    @classmethod
-    def new(self, registrant, owner, distroseries, sourcepackagename, name,
+    @staticmethod
+    def new(registrant, owner, distroseries, sourcepackagename, name,
             builder_recipe):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)

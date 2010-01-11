@@ -30,6 +30,7 @@ from lp.soyuz.interfaces.sourcepackagerecipe import (
 
 
 class InstructionType(DBEnumeratedType):
+    """The instruction type, for _SourcePackageRecipeDataInstruction.type."""
 
     MERGE = DBItem(1, """
         Merge instruction
@@ -43,7 +44,7 @@ class InstructionType(DBEnumeratedType):
 
 
 class _SourcePackageRecipeDataInstruction(Storm):
-    """XXX."""
+    """A single line from a recipe."""
 
     __storm_table__ = "SourcePackageRecipeDataInstruction"
 
@@ -83,7 +84,8 @@ class _SourcePackageRecipeDataInstruction(Storm):
     parent_instruction = Reference(
         parent_instruction_id, '_SourcePackageRecipeDataInstruction.id')
 
-    def append_to_recipe(self, recipe_branch):
+    def appendToRecipe(self, recipe_branch):
+        """Append a bzr-builder instruction to the recipe_branch object."""
         branch = RecipeBranch(
             self.name, self.branch.bzr_identity, self.revspec)
         if self.type == InstructionType.MERGE:
@@ -126,12 +128,12 @@ class _SourcePackageRecipeData(Storm):
                 target_branch = insn_stack[-1]['recipe_branch']
             else:
                 target_branch = base_branch
-            recipe_branch = insn.append_to_recipe(target_branch)
+            recipe_branch = insn.appendToRecipe(target_branch)
             insn_stack.append(
                 dict(insn=insn, recipe_branch=recipe_branch))
         return base_branch
 
-    def _scan_instructions(self, branch, parent_insn, record=False,
+    def _scanInstructions(self, branch, parent_insn, record=False,
                              line_number=0):
         """XXX."""
         for instruction in branch.child_branches:
@@ -155,7 +157,7 @@ class _SourcePackageRecipeData(Storm):
                     instruction.nest_path, self, parent_insn)
             else:
                 insn = None
-            line_number = self._scan_instructions(
+            line_number = self._scanInstructions(
                 instruction.recipe_branch, insn, record, line_number)
         return line_number
 
