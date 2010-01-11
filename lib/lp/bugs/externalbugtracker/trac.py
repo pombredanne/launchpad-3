@@ -19,7 +19,6 @@ from email.Utils import parseaddr
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.bugs.externalbugtracker.base import (
     BugNotFound, BugTrackerAuthenticationError, ExternalBugTracker,
@@ -48,6 +47,7 @@ LP_PLUGIN_FULL = 3
 
 # Fault code constants for the LP Plugin
 FAULT_TICKET_NOT_FOUND = 1001
+
 
 class Trac(ExternalBugTracker):
     """An ExternalBugTracker instance for handling Trac bugtrackers."""
@@ -99,11 +99,11 @@ class Trac(ExternalBugTracker):
                 # We try to retrive the ticket in HTML form, since that will
                 # tell us whether or not it is actually a valid ticket
                 ticket_id = int(bug_ids.pop())
-                html_data = self.urlopen(html_ticket_url % ticket_id)
+                self.urlopen(html_ticket_url % ticket_id)
             except (ValueError, urllib2.HTTPError):
                 # If we get an HTTP error we can consider the ticket to be
                 # invalid. If we get a ValueError then the ticket_id couldn't
-                # be intified and it's of no use to us anyway.
+                # be identified and it's of no use to us anyway.
                 pass
             else:
                 # If we didn't get an error we can try to get the ticket in
@@ -361,7 +361,7 @@ class TracLPPlugin(Trac):
         auth_url = urlappend(base_auth_url, token_text)
 
         try:
-            response = self.urlopen(auth_url)
+            self.urlopen(auth_url)
         except urllib2.HTTPError, error:
             raise BugTrackerAuthenticationError(
                 self.baseurl, '%s "%s"' % (error.code, error.msg))
@@ -497,7 +497,7 @@ class TracLPPlugin(Trac):
             launchpad_bug_id = 0
 
         try:
-            timestamp = self._server.launchpad.set_launchpad_bug(
+            self._server.launchpad.set_launchpad_bug(
                 remote_bug, launchpad_bug_id)
         except xmlrpclib.Fault, fault:
             # Deal with "Ticket does not exist" faults. We re-raise
@@ -506,4 +506,3 @@ class TracLPPlugin(Trac):
                 raise BugNotFound(remote_bug)
             else:
                 raise
-
