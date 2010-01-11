@@ -744,7 +744,9 @@ class TestJobClasses(TestCaseWithFactory):
 
 class TestPlatformData(TestCaseWithFactory):
     """Tests covering the processor/virtualized properties."""
+
     layer = LaunchpadZopelessLayer
+
     def setUp(self):
         """Set up a native x86 build for the test archive."""
         super(TestPlatformData, self).setUp()
