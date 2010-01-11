@@ -131,15 +131,26 @@ allows the user to update the current linked Ubuntu package.
     Ubuntu source packaging
 
     >>> print view.field_names
-    ['sourcepackagename']
+    ['sourcepackagename', 'distroseries']
 
     >>> print view.cancel_url
     http://launchpad.dev/hot/hotter
 
-The view restricts the packaging to the current Ubuntu series.
+The view restricts the packaging to Ubuntu series, and default is the current
+Ubuntu series.
 
     >>> print view.default_distroseries.name
     hoary
+
+    >>> print view.widgets['distroseries']._getDefault().name
+    hoary
+
+    >>> for term in view.widgets['distroseries'].vocabulary:
+    ...     print term.title
+    Breezy Badger Autotest (6.6.6)
+    Grumpy (5.10)
+    Hoary (5.04)
+    Warty (4.10)
 
 The sourcepackagename is None if the package link was never set. The view's
 packaging history is empty, and the sourcepackagename widget is empty.
@@ -173,6 +184,10 @@ a history.
     hoary hot
 
 The package in the current Ubuntu series can be updated.
+
+    >>> thunderbird_spn = factory.getOrMakeSourcePackageName('thunderbird')
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=thunderbird_spn, distroseries=hoary)
 
     >>> form = {
     ...     'field.sourcepackagename': 'thunderbird',
@@ -213,6 +228,8 @@ and a new entry can be added to the packaging history.
     >>> login('admin@canonical.com')
     >>> hoary.status = DistroSeriesStatus.CURRENT
     >>> grumpy_series = ubuntu.getSeries('grumpy')
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=sourcepackagename, distroseries=grumpy_series)
     >>> grumpy_series.status = DistroSeriesStatus.FROZEN
 
     >>> a_user = factory.makePerson(name="hedgehog")
