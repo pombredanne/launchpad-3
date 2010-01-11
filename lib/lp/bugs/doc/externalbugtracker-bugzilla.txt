@@ -24,11 +24,11 @@ UnparseableBugTrackerVersion is raised:
 
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B4')
+    >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B')
     Traceback (most recent call last):
       ...
     UnparseableBugTrackerVersion:
-    Failed to parse version 'A.B4' for http://...
+    Failed to parse version 'A.B' for http://...
 
 The version parsing is carried out by the Bugzilla._parseVersion()
 method, which takes a version string and returns a tuple of
@@ -51,7 +51,7 @@ And will also handle versions which contain the string 'rc'.
 + characters in the version string will be removed.
 
     >>> print external_bugzilla._parseVersion('3.2+1')
-    (3, 21)
+    (3, 2, 1)
 
 Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
