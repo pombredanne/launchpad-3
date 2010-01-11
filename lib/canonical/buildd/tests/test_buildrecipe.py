@@ -2,6 +2,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 
+from __future__ import with_statement
+
+
 __metaclass__ = type
 
 
@@ -17,17 +20,26 @@ EXAMPLE_RECIPE = STD_HEADER + "foo\n"
 
 class TestBuildRecipe(TestCaseWithTransport):
 
-    def test_build_recipe(self):
+    def test_buildTree(self):
         tree = self.make_branch_and_tree('foo')
         self.build_tree_contents([('foo/README', 'example')])
         tree.add('README')
         tree.commit('add readme')
 
         os.mkdir('work')
-        BuildRecipe('work').buildTree(EXAMPLE_RECIPE, 'suite')
-        self.failUnlessExists('work/tree')
-        self.assertFileEqual('example', 'work/tree/README')
-
+        recipe = BuildRecipe(EXAMPLE_RECIPE, 'Author Name',
+                             'author@example.com', 'work', 'foo-la', 'suite')
+        recipe.buildTree()
+        self.failUnlessExists(recipe.tree_path)
+        self.assertFileEqual('example',
+                             os.path.join(recipe.tree_path, 'README'))
+        # Ensure first line of the changelog includes the information we
+        # passed in.
+        with open(os.path.join(recipe.tree_path, 'debian/changelog')) as cl:
+            lines = cl.readlines()
+        self.assertContainsRe(lines[0], '^foo-la \(farblesnitch\) suite;')
+        self.assertContainsRe(lines[-2],
+                              '^ -- Author Name <author@example.com>  ')
 
 
 def test_suite():
