@@ -530,7 +530,7 @@ he will be notified.
   >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
   >>> team = factory.makeTeam(owner=cprov, email="team@example.com")
   >>> mark = failed_candidate.sourcepackagerelease.creator
-  >>> team.addMember(mark, mark)
+  >>> ignored = team.addMember(mark, mark)
   >>> discard = pop_notifications() # Discard team join email.
   >>> team_ppa = factory.makeArchive(owner=team)
   >>> naked_candidate = removeSecurityProxy(failed_candidate)

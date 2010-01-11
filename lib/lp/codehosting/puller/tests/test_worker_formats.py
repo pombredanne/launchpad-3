@@ -12,12 +12,7 @@ from bzrlib.bzrdir import BzrDirFormat6, BzrDirMetaFormat1
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack5
 from bzrlib.repofmt.weaverepo import RepositoryFormat6, RepositoryFormat7
-try:
-    from bzrlib.tests.repository_implementations.test_repository import (
-                TestCaseWithRepository)
-except ImportError:
-    from bzrlib.tests.per_repository import TestCaseWithRepository
-
+from bzrlib.tests.per_repository import TestCaseWithRepository
 
 from lp.codehosting.puller.tests import PullerWorkerMixin
 from lp.codehosting.tests.helpers import LoomTestMixin

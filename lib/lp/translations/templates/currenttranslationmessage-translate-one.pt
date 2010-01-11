@@ -42,6 +42,7 @@
       <a href=""
          tal:condition="not:context/potmsgset/is_translation_credit"
          tal:attributes="
+           id string:${view/html_id}_singular_copy_text;
            onClick string:
              javascript:copyInnerHTMLById(
                '${view/html_id}_singular',
@@ -504,8 +505,6 @@
               lang context/pofile/language/dashedcode;
               dir context/pofile/language/abbreviated_text_dir;
               value translation_dictionary/submitted_translation;
-              onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
-              onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
             "
             class="translate expandable"
           />
@@ -528,8 +527,6 @@
                   name string:${translation_dictionary/html_id_translation}_new;
                   lang context/pofile/language/dashedcode;
                   dir context/pofile/language/abbreviated_text_dir;
-                  onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
-                  onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
                 ">
 <tal:content replace="translation_dictionary/submitted_translation" /></textarea>
             </tal:with-content>
@@ -548,8 +545,6 @@
                   name string:${translation_dictionary/html_id_translation}_new;
                   lang context/pofile/language/dashedcode;
                   dir context/pofile/language/abbreviated_text_dir;
-                  onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
-                  onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
                 "></textarea>
             </tal:without-content>
           </tal:multi-line>

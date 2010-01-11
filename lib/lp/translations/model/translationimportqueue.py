@@ -32,7 +32,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
 from canonical.launchpad.helpers import shortlist
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import (
+    ILaunchpadCelebrities, IPersonRoles)
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.registry.interfaces.distribution import IDistribution
@@ -62,8 +63,6 @@ from lp.translations.interfaces.potemplate import IPOTemplate
 from lp.translations.interfaces.translations import TranslationConstants
 from lp.translations.utilities.gettext_po_importer import (
     GettextPOImporter)
-from lp.translations.utilities.permission_helpers import (
-    is_admin_or_rosetta_expert)
 from canonical.librarian.interfaces import ILibrarianClient
 
 
@@ -286,12 +285,13 @@ class TranslationImportQueueEntry(SQLBase):
 
     def isUserUploaderOrOwner(self, user):
         """See `ITranslationImportQueueEntry`."""
-        if user.inTeam(self.importer):
+        roles = IPersonRoles(user)
+        if roles.inTeam(self.importer):
             return True
         if self.productseries is not None:
-            return user.inTeam(self.productseries.product.owner)
+            return roles.isOwner(self.productseries.product)
         if self.distroseries is not None:
-            return user.inTeam(self.distroseries.distribution.owner)
+            return roles.isOwner(self.distroseries.distribution)
         return False
 
     def canSetStatus(self, new_status, user):
@@ -299,21 +299,23 @@ class TranslationImportQueueEntry(SQLBase):
         if user is None:
             # Anonymous user cannot do anything.
             return False
-        can_admin = (is_admin_or_rosetta_expert(user) or
+        roles = IPersonRoles(user)
+        can_admin = (roles.in_admin or roles.in_rosetta_experts or
                      self.isUbuntuAndIsUserTranslationGroupOwner(user))
         if new_status == RosettaImportStatus.APPROVED:
             # Only administrators are able to set the APPROVED status, and
             # that's only possible if we know where to import it
             # (import_into not None).
             return can_admin and self.import_into is not None
-        if new_status == RosettaImportStatus.BLOCKED:
-            # Only administrators are able to set an entry to BLOCKED.
-            return can_admin
-        if (new_status in (RosettaImportStatus.FAILED,
-                           RosettaImportStatus.IMPORTED)):
-            # Only scripts set these statuses and they report as a rosetta
-            # expert.
-            return is_admin_or_rosetta_expert(user)
+        if new_status == RosettaImportStatus.IMPORTED:
+            # Only rosetta experts are able to set the IMPORTED status, and
+            # that's only possible if we know where to import it
+            # (import_into not None).
+            return ((roles.in_admin or roles.in_rosetta_experts) and
+                    self.import_into is not None)
+        if new_status == RosettaImportStatus.FAILED:
+            # Only rosetta experts are able to set the FAILED status.
+            return roles.in_admin or roles.in_rosetta_experts
         # All other statuses can bset set by all authorized persons.
         return self.isUserUploaderOrOwner(user) or can_admin
 

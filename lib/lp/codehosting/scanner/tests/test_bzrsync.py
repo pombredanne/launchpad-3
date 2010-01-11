@@ -32,7 +32,6 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchmergeproposaljob import IUpdatePreviewDiffJobSource
 from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.scanner.bzrsync import (
     BzrSync, InvalidStackedBranchURL, schedule_diff_updates,
     schedule_translation_upload)
@@ -128,7 +127,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def makeBzrBranchAndTree(self, db_branch, format=None):
         """Make a Bazaar branch at the warehouse location of `db_branch`."""
-        ensure_base(self.get_transport(db_branch.unique_name))
+        self.get_transport(db_branch.unique_name).create_prefix()
         return self.make_branch_and_tree(db_branch.unique_name, format=format)
 
     def makeDatabaseBranch(self, *args, **kwargs):

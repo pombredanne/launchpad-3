@@ -266,7 +266,10 @@
                   tal:condition="context/bug/duplicateof"
                   class="warning message"
                   id="warning-comment-on-duplicate">
-                  Remember, this bug report is a duplicate.
+                  Remember, this bug report is a duplicate of
+                    <a href="#" tal:attributes="href
+                      context/bug/duplicateof/fmt:url">bug #<span
+                      tal:replace="context/bug/duplicateof/id">42</span></a>.
                   Comment here only if you think the duplicate status is wrong.
               </div>
               <h2>Add comment</h2>
