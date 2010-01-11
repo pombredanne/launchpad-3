@@ -117,7 +117,11 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         return (stdout, stderr, resume_process.returncode)
 
     def cacheFile(self, logger, libraryfilealias):
-        """See `IBuilder`."""
+        """Make sure that the file at 'libraryfilealias' is on the slave.
+
+        :param logger: A python `Logger` object.
+        :param libraryfilealias: An `ILibraryFileAlias`.
+        """
         url = libraryfilealias.http_url
         logger.debug("Asking builder on %s to ensure it has file %s "
                      "(%s, %s)" % (self.url, libraryfilealias.filename,
