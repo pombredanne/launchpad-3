@@ -55,12 +55,12 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
         """
         super(IdleBuildBehavior, self).__init__(None)
 
-    def logStartBuild(self, build_queue_item, logger):
+    def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""
         raise BuildBehaviorMismatch(
             "Builder was idle when asked to log the start of a build.")
 
-    def dispatchBuildToSlave(self, build_queue_item, logger):
+    def dispatchBuildToSlave(self, build_queue_item_id, logger):
         """See `IBuildFarmJobBehavior`."""
         raise BuildBehaviorMismatch(
             "Builder was idle when asked to dispatch a build to the slave.")
