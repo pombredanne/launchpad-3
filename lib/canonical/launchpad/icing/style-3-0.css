@@ -5,9 +5,14 @@
 .yui-t4 .yui-b {
     width: 21%;
     }
+.yui-t4 .yui-main {
+    clear: both;
+    float: left;
+    margin-right: -25%;
+    }
 .yui-t4 .yui-main .yui-b {
     width: auto;
-    margin-right: 24%;
+    margin-right: 25%;
     }
 .footer {
     clear: both;
@@ -29,6 +34,10 @@
 .footer .lp-arcana .search-icon {
     background: url(icon-sprites) 100% -191px no-repeat;
     }
+.footer .sitemessage {
+    text-align: right;
+}
+
 .footer .colophon {
     margin: 3em 3em 1em 3em;
     text-align: center;
@@ -206,6 +215,9 @@ strong {
     font-weight: bold;
     }
 
+.unseen {display: none;}
+
+
 /* Common presentations */
 div.see-all {
     font-size: 123.1%; /* Same as a h2 */
@@ -289,13 +301,33 @@ ol.subordinate {
     display: inline;
     margin: 0 0.25em 0.75em 0;
     }
+.three-column-list dl {
+    width: 31%;
+    float: left;
+    display: inline;
+    margin: 0 0.25em 0.75em 0;
+    }
 .two-column-list li {
     width: 48%;
     float: left;
     display: inline;
     margin: 0 0.25em 0 0;
     }
-.two-column-list:after {
+.three-column-list li {
+    width: 31%;
+    float: left;
+    display: inline;
+    margin: 0 0.25em 0 0;
+    }
+/* Keep the abilty to hide list entries. */
+.two-column-list dl.unseen,
+.two-column-list li.unseen,
+.three-column-list dl.unseen,
+.three-column-list li.unseen {
+    display: none;
+    }
+.two-column-list:after,
+.three-column-list:after {
     content: ".";
     display: block;
     height: 0;
@@ -546,6 +578,9 @@ ul.latest-ppa-updates li {
     background-repeat: no-repeat;
     background-position:right center;
 }
+table#packages_list tr.superseded {
+    background-color: #eee;
+}
 /* The following could be generalised for use to the following selector:
  * .side .portlet li.nth-child(odd)
  * if needed. */
@@ -674,6 +709,19 @@ form.translations div.alignment .secondary label {
     padding: 2px 1em 2px 2px;
 }
 
+/* Templates listing.
+ *
+ * Examples:
+ *   https://translations.launchpad.dev/ubuntu/hoary/+templates
+ *   https://translations.launchpad.dev/evolution/trunk/+templates
+ */
+
+.inactive-template td {
+    background-color: #fee;
+    color: #855;
+}
+
+
 /* Translations statistics and legend.
  *
  * Examples:
@@ -744,6 +792,15 @@ div.translation-help-links div {
     text-align: center;
     vertical-align: middle;
     padding: 1em 1em 1em 0;
+}
+
+/* Timeline Graph */
+div.yui-timelinegraph-content .yui-timelinegraph-zoom-box {
+  visibility: hidden;
+}
+
+div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
+  visibility: visible;
 }
 
 /* == Sprites == */
@@ -890,6 +947,7 @@ body.tab-bugs #portlet-subscribers .sprite {
 .greenbar {background:url(icon-sprites-3) 0 -446px repeat-x;}
 .purplebar {background:url(icon-sprites-3) 0 -476px repeat-x;}
 .favorite-yes {background:url(icon-sprites-3) 0 -530px no-repeat;}
+.haspatch-icon {background:url(icon-sprites-3) 0 -562px no-repeat;}
 
 /*large*/
 .large-branch {background:url(icon-sprites-large) 0 0 no-repeat;}
@@ -947,3 +1005,13 @@ body.tab-bugs #portlet-subscribers .sprite {
 .codeimportREVIEWED  {color: green;}
 .codeimportSUSPENDED {color: red;}
 .codeimportFAILING   {color: red;}
+
+.distromirrorstatusUP {color: green;}
+.distromirrorstatusONEHOURBEHIND {color: green;}
+.distromirrorstatusTWOHOURSBEHIND {color: green;}
+.distromirrorstatusFOURHOURSBEHIND {color: green;}
+.distromirrorstatusSIXHOURSBEHIND {color: #f60;}
+.distromirrorstatusONEDAYBEHIND {color: #f60;}
+.distromirrorstatusTWODAYSBEHIND {color: red;}
+.distromirrorstatusONEWEEKBEHIND {color: red;}
+.distromirrorstatusUNKNOWN {color: grey;}

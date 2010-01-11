@@ -55,7 +55,7 @@ comments.
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
     >>> launchpad_beta_testers = getUtility(
     ...     ILaunchpadCelebrities).launchpad_beta_testers
-    >>> launchpad_beta_testers.addMember(mark, reviewer=foo_bar)
+    >>> ignored = launchpad_beta_testers.addMember(mark, reviewer=foo_bar)
     >>> mark.inTeam(launchpad_beta_testers)
     True
 

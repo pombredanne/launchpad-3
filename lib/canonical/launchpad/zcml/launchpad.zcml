@@ -37,6 +37,15 @@
       class="canonical.launchpad.webapp.error.NotFoundView"
       />
 
+  <!-- Gone -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.GoneError"
+      name="index.html"
+      permission="zope.Public"
+      template="../templates/launchpad-gone.pt"
+      class="canonical.launchpad.webapp.error.GoneView"
+      />
+
   <!-- RequestExpired -->
   <browser:page
       for="canonical.database.interfaces.IRequestExpired"
@@ -346,6 +355,16 @@
       />
 
 </facet>
+
+<class
+    class="canonical.launchpad.utilities.personroles.PersonRoles">
+    <allow
+        interface="canonical.launchpad.interfaces.IPersonRoles"/>
+</class>
+<adapter
+    for="lp.registry.interfaces.person.IPerson"
+    provides="canonical.launchpad.interfaces.IPersonRoles"
+    factory="canonical.launchpad.utilities.personroles.PersonRoles" />
 
 
 <adapter

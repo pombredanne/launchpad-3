@@ -13,8 +13,7 @@
         tal:condition="link/enabled"
         id="selfsubscriptioncontainer"
         >
-        <a id="selfsubscription"
-           class="sprite add"
+        <a class="sprite add subscribe-self"
            tal:attributes="href link/url"
            tal:content="link/text" />
       </div>
@@ -36,26 +35,5 @@
       </div>
     </div>
   </div>
-  <tal:script
-    replace="structure
-    string:&lt;script id='milestone-script' type='text/javascript'&gt;" />
-    <!--
-
-    YUI().use('io-base', 'node', 'code.branchsubscription', function(Y) {
-
-    if(Y.UA.ie) {
-        Y.one('#subscriber-list').set('innerHTML',
-            'Could not load subscribers, javascript is disabled.');
-        return;
-    }
-
-    Y.on('domready', function() {
-        Y.code.branchsubscription.update_subscriber_list();
-    });
-
-    });
-    -->
-  <tal:script replace="structure string:&lt;/script&gt;" />
-
 
 </div>

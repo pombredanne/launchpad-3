@@ -409,10 +409,16 @@
                 interface="lp.translations.interfaces.potemplate.IPOTemplate"/>
             <require
                 permission="launchpad.Edit"
-                set_attributes="owner priority description"/>
+                set_attributes="
+                    owner priority description translation_domain path
+                    iscurrent name"/>
             <require
-                permission="launchpad.Admin"
-                set_attributes="name translation_domain productseries distroseries                                                                                                 sourcepackagename sourcepackageversion                                                                                                 binarypackagename languagepack path header                                                                                                 iscurrent from_sourcepackagename date_last_updated                                                                                                 source_file source_file_format"/>
+                permission="launchpad.TranslationsAdmin"
+                set_attributes="
+                    productseries distroseries sourcepackagename 
+                    sourcepackageversion binarypackagename languagepack
+                    source_file_format source_file date_last_updated
+                    from_sourcepackagename header"/>
         </class>
         <adapter
            provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"

@@ -35,12 +35,11 @@ from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.enums import (
-    BranchType, CodeImportResultStatus, CodeImportReviewStatus,
-    RevisionControlSystems)
+    BranchType, CodeImportJobState, CodeImportResultStatus,
+    CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
-from lp.code.interfaces.codeimportjob import (
-    CodeImportJobState, ICodeImportJobWorkflow)
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
 from lp.code.model.codeimportresult import CodeImportResult
@@ -105,6 +104,8 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_cvs,
             RevisionControlSystems.SVN:
                 config.codeimport.default_interval_subversion,
+            RevisionControlSystems.BZR_SVN:
+                config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
                 config.codeimport.default_interval_git,
             }
@@ -124,6 +125,8 @@ class CodeImport(SQLBase):
             return self.svn_branch_url
         elif self.rcs_type == RevisionControlSystems.GIT:
             return self.git_repo_url
+        elif self.rcs_type == RevisionControlSystems.BZR_SVN:
+            return self.svn_branch_url
         else:
             raise AssertionError(
                 'Unknown rcs type: %s'% self.rcs_type.title)
@@ -218,7 +221,8 @@ class CodeImportSet:
             assert cvs_root is not None and cvs_module is not None
             assert svn_branch_url is None
             assert git_repo_url is None
-        elif rcs_type == RevisionControlSystems.SVN:
+        elif rcs_type in (RevisionControlSystems.SVN,
+                          RevisionControlSystems.BZR_SVN):
             assert cvs_root is None and cvs_module is None
             assert svn_branch_url is not None
             assert git_repo_url is None

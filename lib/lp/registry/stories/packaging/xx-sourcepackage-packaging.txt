@@ -7,7 +7,7 @@ and sees that pmount is not linked.
     >>> print extract_text(find_tag_by_id(
     ...     user_browser.contents, 'unlinked-translatables'))
     Unlinked translatable packages
-    pmount  mozilla
+    pmount
 
 He looks at the pmount source package page in Hoary and reads that the
 upstream project is not set.

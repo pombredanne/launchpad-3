@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Timedelta
+from zope.schema import Choice, Datetime, Field, Timedelta
 
 from lazr.restful.fields import Reference
 
@@ -50,6 +50,14 @@ class IBuildQueue(Interface):
     job_type = Choice(
         title=_('Job type'), required=True, vocabulary=BuildFarmJobType,
         description=_("The type of this job."))
+
+    required_build_behavior = Field(
+        title=_('The builder behavior required to run this job.'),
+        required=False, readonly=True)
+
+    specific_job_classes = Field(
+        title=_('Job classes that may run on the build farm.'),
+        required=True, readonly=True)
 
     estimated_duration = Timedelta(
         title=_("Estimated Job Duration"), required=True,

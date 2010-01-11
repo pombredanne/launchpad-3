@@ -79,15 +79,14 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType, UICreatableBranchType)
+    BranchLifecycleStatus, BranchType, CodeImportJobState,
+    CodeImportReviewStatus, RevisionControlSystems, UICreatableBranchType)
+from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch,
     user_has_special_branch_access)
-from lp.code.interfaces.branchmergeproposal import InvalidBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codeimport import CodeImportReviewStatus
-from lp.code.interfaces.codeimportjob import (
-    CodeImportJobState, ICodeImportJobWorkflow)
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet
@@ -268,8 +267,7 @@ class BranchContextMenu(ContextMenu):
         enabled = (
             self.context.target.supports_merge_proposals and
             not self.context.branch_type == BranchType.IMPORTED)
-        return Link('+register-merge', text, icon='merge-proposal',
-                    enabled=enabled)
+        return Link('+register-merge', text, icon='add', enabled=enabled)
 
     def link_bug(self):
         if self.context.linked_bugs:
@@ -353,7 +351,7 @@ class BranchView(LaunchpadView, FeedsMixin):
     def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
         timestamp = datetime.now(pytz.UTC) - timedelta(days=days)
-        return self.context.revisions_since(timestamp).count()
+        return self.context.getRevisionsSince(timestamp).count()
 
     def owner_is_registrant(self):
         """Is the branch owner the registrant?"""
@@ -499,6 +497,14 @@ class BranchView(LaunchpadView, FeedsMixin):
     def latest_code_import_results(self):
         """Return the last 10 CodeImportResults."""
         return list(self.context.code_import.results[:10])
+
+    @property
+    def is_svn_import(self):
+        """True if an imported branch is a SVN import."""
+        # You should only be calling this if it's a code import
+        assert self.context.code_import
+        return self.context.code_import.rcs_type in \
+               (RevisionControlSystems.SVN, RevisionControlSystems.BZR_SVN)
 
     @property
     def svn_url_is_web(self):
@@ -849,7 +855,6 @@ class BranchDeletionView(LaunchpadFormView):
         The keys are 'delete' and 'alter'; the values are dicts of
         'item', 'reason' and 'allowed'.
         """
-        branch = self.context
         row_dict = {'delete': [], 'alter': [], 'break_link': []}
         for item, action, reason, allowed in (
             self.display_deletion_requirements):

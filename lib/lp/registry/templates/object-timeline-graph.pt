@@ -9,12 +9,14 @@
   i18n:domain="launchpad"
 >
 <head>
-  <metal:launchpad-stylesheet
-    use-macro="context/@@+base-layout-macros/launchpad-stylesheet" />
   <metal:load-javascript
     use-macro="context/@@+base-layout-macros/load-javascript" />
   <metal:lp-client-cache
     use-macro="context/@@+base-layout-macros/lp-client-cache" />
+
+    <metal:launchpad-stylesheet
+      use-macro="context/@@+base-layout-macros/launchpad-stylesheet-3-0" />
+
 </head>
 
 <body style="margin: 0; padding: 0">
@@ -32,7 +34,7 @@
           include_inactive = false;
       }
 
-      YUI().use('registry.timeline', 'node', function(Y) {
+      LPS.use('registry.timeline', 'node', function(Y) {
           Y.on('domready', function(e) {
               if (Y.UA.ie) {
                   return;

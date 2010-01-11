@@ -68,18 +68,6 @@ Mailing lists are not active when they are first registered.
     >>> list(list_vocabulary.search())
     []
 
-Even when the mailing lists are approved, they are not yet active.
-
-    >>> list_one.review(carlos, MailingListStatus.APPROVED)
-    >>> list_two.review(carlos, MailingListStatus.APPROVED)
-    >>> list_three.review(carlos, MailingListStatus.APPROVED)
-    >>> list(list_vocabulary)
-    []
-    >>> len(list_vocabulary)
-    0
-    >>> list(list_vocabulary.search())
-    []
-
 Mailing lists become active once they have been constructed by Mailman (which
 indicates so by transitioning the state to ACTIVE).
 
@@ -267,8 +255,7 @@ membership is public.
 
     >>> from canonical.launchpad.interfaces import PersonVisibility
     >>> otherteam = person_set.getByName('otherteam')
-    >>> otherteam.addMember(foo_bar, foo_bar)
-
+    >>> ignored = otherteam.addMember(foo_bar, foo_bar)
     >>> otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
@@ -1410,7 +1397,7 @@ projects are returned.
     >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
-    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
     >>> login_person(registry_member)

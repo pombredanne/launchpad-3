@@ -901,7 +901,6 @@ class TeamAddView(TeamFormMixin, HasRenewalPolicyMixin, LaunchpadFormView):
         return None
 
 
-
 class ProposedTeamMembersEditView(LaunchpadFormView):
     schema = Interface
     label = 'Proposed team members'
@@ -915,7 +914,10 @@ class ProposedTeamMembersEditView(LaunchpadFormView):
                 status = TeamMembershipStatus.APPROVED
             elif action == "decline":
                 status = TeamMembershipStatus.DECLINED
-            elif action == "hold":
+            else:
+                # The action is "hold" or no action was specified for this
+                # person, which could happen if the set of proposed members
+                # changed while the form was being processed.
                 continue
 
             self.context.setMembershipData(
@@ -991,9 +993,11 @@ class TeamMemberAddView(LaunchpadFormView):
         assert newmember != self.context, (
             "Can't add team to itself: %s" % newmember)
 
-        self.context.addMember(newmember, reviewer=self.user,
-                               status=TeamMembershipStatus.APPROVED)
-        if newmember.isTeam():
+        changed, new_status = self.context.addMember(
+            newmember, reviewer=self.user,
+            status=TeamMembershipStatus.APPROVED)
+
+        if new_status == TeamMembershipStatus.INVITED:
             msg = "%s has been invited to join this team." % (
                   newmember.unique_displayname)
         else:

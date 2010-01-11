@@ -32,7 +32,6 @@ from lp.code.interfaces.revision import IRevisionSet
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.branchmergeproposaljob import IUpdatePreviewDiffJobSource
 from lp.code.model.revision import Revision, RevisionAuthor, RevisionParent
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.scanner.bzrsync import (
     BzrSync, InvalidStackedBranchURL, schedule_diff_updates,
     schedule_translation_upload)
@@ -128,7 +127,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
 
     def makeBzrBranchAndTree(self, db_branch, format=None):
         """Make a Bazaar branch at the warehouse location of `db_branch`."""
-        ensure_base(self.get_transport(db_branch.unique_name))
+        self.get_transport(db_branch.unique_name).create_prefix()
         return self.make_branch_and_tree(db_branch.unique_name, format=format)
 
     def makeDatabaseBranch(self, *args, **kwargs):
@@ -184,7 +183,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         This method allow subclasses to instrument the BzrSync instance used
         in syncBranch.
         """
-        return BzrSync(LaunchpadZopelessLayer.txn, db_branch)
+        return BzrSync(db_branch)
 
     def syncAndCount(self, db_branch=None, new_revisions=0, new_numbers=0,
                      new_parents=0, new_authors=0):
@@ -364,7 +363,7 @@ class TestBzrSync(BzrSyncTestCase):
         # Importing a revision passing the url parameter works.
         self.commitRevision()
         counts = self.getCounts()
-        bzrsync = BzrSync(LaunchpadZopelessLayer.txn, self.db_branch)
+        bzrsync = BzrSync(self.db_branch)
         bzrsync.syncBranchAndClose()
         self.assertCounts(
             counts, new_revisions=1, new_numbers=1, new_authors=1)

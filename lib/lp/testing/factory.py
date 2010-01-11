@@ -76,6 +76,7 @@ from lp.blueprints.interfaces.specification import (
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translator import ITranslatorSet
+from lp.translations.interfaces.translationsperson import ITranslationsPerson 
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -107,7 +108,7 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
-    IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
+    IPerson, IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
 from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
 from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
@@ -225,10 +226,10 @@ class LaunchpadObjectFactory(ObjectFactory):
     """
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
-        name=None):
+        name=None, enabled=True):
         """Create and return a new arbitrary location for copy packages."""
         copy_archive = self.makeArchive(distribution, owner, name,
-                                        ArchivePurpose.COPY)
+                                        ArchivePurpose.COPY, enabled)
 
         distribution = copy_archive.distribution
         distroseries = distribution.currentseries
@@ -502,13 +503,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, url, owner)
 
-    def makeTranslator(self, language_code, group=None, person=None):
+    def makeTranslator(
+        self, language_code, group=None, person=None, license=True):
         """Create a new, arbitrary `Translator`."""
         language = getUtility(ILanguageSet).getLanguageByCode(language_code)
         if group is None:
             group = self.makeTranslationGroup()
         if person is None:
             person = self.makePerson()
+        ITranslationsPerson(person).translations_relicensing_agreement = license
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(
@@ -897,10 +900,12 @@ class LaunchpadObjectFactory(ObjectFactory):
             CodeReviewNotificationLevel.NOEMAIL)
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
-                     rev_id=None, log_body=None):
+                     rev_id=None, log_body=None, date_created=None):
         """Create a single `Revision`."""
         if author is None:
             author = self.getUniqueString('author')
+        elif IPerson.providedBy(author):
+            author = author.preferredemail.email
         if revision_date is None:
             revision_date = datetime.now(pytz.UTC)
         if parent_ids is None:
@@ -912,7 +917,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IRevisionSet).new(
             revision_id=rev_id, log_body=log_body,
             revision_date=revision_date, revision_author=author,
-            parent_ids=parent_ids, properties={})
+            parent_ids=parent_ids, properties={},
+            _date_created=date_created)
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
@@ -1210,7 +1216,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, product=None, branch_name=None,
-                       git_repo_url=None, registrant=None):
+                       git_repo_url=None, registrant=None, rcs_type=None):
         """Create and return a new, arbitrary code import.
 
         The type of code import will be inferred from the source details
@@ -1229,16 +1235,22 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         code_import_set = getUtility(ICodeImportSet)
         if svn_branch_url is not None:
+            if rcs_type is None:
+                rcs_type = RevisionControlSystems.SVN
+            else:
+                assert rcs_type in (RevisionControlSystems.SVN,
+                                    RevisionControlSystems.BZR_SVN)
             return code_import_set.new(
-                registrant, product, branch_name,
-                rcs_type=RevisionControlSystems.SVN,
+                registrant, product, branch_name, rcs_type=rcs_type,
                 svn_branch_url=svn_branch_url)
         elif git_repo_url is not None:
+            assert rcs_type in (None, RevisionControlSystems.GIT)
             return code_import_set.new(
                 registrant, product, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
                 git_repo_url=git_repo_url)
         else:
+            assert rcs_type in (None, RevisionControlSystems.CVS)
             return code_import_set.new(
                 registrant, product, branch_name,
                 rcs_type=RevisionControlSystems.CVS,
@@ -1480,7 +1492,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IComponentSet).ensure(name)
 
     def makeArchive(self, distribution=None, owner=None, name=None,
-                    purpose=None):
+                    purpose=None, enabled=True):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1489,6 +1501,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             makePerson().
         :param name: Name of the archive, defaults to a random string.
         :param purpose: Supply ArchivePurpose, defaults to PPA.
+        :param enabled: Whether the archive should be enabled.
         """
         if distribution is None:
             distribution = self.makeDistribution()
@@ -1509,7 +1522,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
-            distribution=distribution, name=name)
+            distribution=distribution, name=name, enabled=enabled)
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
@@ -1694,12 +1707,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
                 subscription_policy=subscription_policy)
-        # Any member of the mailing-list-experts team can review a list
-        # registration.  It doesn't matter which one.
-        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-        reviewer = list(experts.allmembers)[0]
         team_list = getUtility(IMailingListSet).new(team, owner)
-        team_list.review(reviewer, MailingListStatus.APPROVED)
         team_list.startConstructing()
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list

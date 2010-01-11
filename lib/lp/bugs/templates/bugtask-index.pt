@@ -37,7 +37,7 @@
         </script>
       </tal:devmode>
       <script type="text/javascript">
-        YUI().use('base', 'node', 'oop', 'event', 'bugs.bugtask_index',
+        LPS.use('base', 'node', 'oop', 'event', 'bugs.bugtask_index',
                   'code.branchmergeproposal.popupdiff', function(Y) {
             Y.bugs.setup_bugtask_index();
             Y.on('load', function(e) {
@@ -155,7 +155,7 @@
                 <img src="/@@/spinner" id="tags-edit-spinner" style="display: none" />
                 <a href="+edit" title="Edit tags" id="edit-tags-trigger" class="sprite edit"></a>
               <script type="text/javascript">
-                  YUI().use('event', 'node', 'bugs.bug_tags_entry', function(Y) {
+                  LPS.use('event', 'node', 'bugs.bug_tags_entry', function(Y) {
                       // XXX intellectronica 2009-04-16 bug #362309:
                       // The load event fires very late on bug pages that take a
                       // long time to render, but we prefer to use it since the
@@ -266,7 +266,10 @@
                   tal:condition="context/bug/duplicateof"
                   class="warning message"
                   id="warning-comment-on-duplicate">
-                  Remember, this bug report is a duplicate.
+                  Remember, this bug report is a duplicate of
+                    <a href="#" tal:attributes="href
+                      context/bug/duplicateof/fmt:url">bug #<span
+                      tal:replace="context/bug/duplicateof/id">42</span></a>.
                   Comment here only if you think the duplicate status is wrong.
               </div>
               <h2>Add comment</h2>
@@ -295,7 +298,7 @@
                 button.style.display = 'none';
               </script>
               <script type="text/javascript">
-                YUI().use('lp.comment', function(Y) {
+                LPS.use('lp.comment', function(Y) {
                     var comment = new Y.lp.Comment();
                     comment.render();
                 });

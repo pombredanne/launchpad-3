@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IJob',
+    'IRunnableJob',
     'JobStatus',
     'LeaseHeld',
     ]
@@ -81,6 +82,9 @@ class IJob(Interface):
 
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""
+
+    def getTimeout():
+        """Determine how long this job can run before timing out."""
 
     def start():
         """Mark the job as started."""

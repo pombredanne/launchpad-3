@@ -64,6 +64,16 @@
       </li>
     </ul>
 
+    <ul tal:condition="comment/patches" style="margin-bottom: 1em">
+      <li tal:repeat="attachment comment/patches" class="download-attachment">
+        <a tal:attributes="href attachment/libraryfile/http_url"
+           tal:content="attachment/title" class="sprite haspatch-icon">foo.txt</a>
+        (<span
+           tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,
+        <span tal:replace="attachment/libraryfile/mimetype" />)
+      </li>
+    </ul>
+
     <div class="bug-comment"
       tal:content="structure
         comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">

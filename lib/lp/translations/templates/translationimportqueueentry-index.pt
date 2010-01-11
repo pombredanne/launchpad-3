@@ -14,7 +14,7 @@
     }
     </style>
     <script type="text/javascript">
-    YUI().use('node', 'lazr.anim', function(Y) {
+    LPS.use('node', 'lazr.anim', function(Y) {
         var fields = {'POT':
                             ['field.name', 'field.translation_domain',
                              'field.languagepack'],
