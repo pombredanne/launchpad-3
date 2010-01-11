@@ -51,12 +51,15 @@ to validate the token.
 In the unlikely case where the token would be valid, a 200 would be
 returned. This also causes a TracLPPlugin to be used.
 
+    >>> from httplib import HTTPMessage
+    >>> from urllib import addinfourl
     >>> from StringIO import StringIO
     >>> class TracHavingLPPlugin200(Trac):
     ...     def urlopen(self, url):
     ...         print url
-    ...         return StringIO('')
-    >>> trac = TracHavingLPPlugin401('http://example.com/')
+    ...         return addinfourl(
+    ...             StringIO(''), HTTPMessage(StringIO('')), url)
+    >>> trac = TracHavingLPPlugin200('http://example.com/')
     >>> chosen_trac = trac.getExternalBugTrackerToUse()
     http://example.com/launchpad-auth/check
 
