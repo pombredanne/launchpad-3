@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import textwrap
 import unittest
 
 from bzrlib.plugins.builder.recipe import RecipeParser
@@ -156,9 +157,16 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.base_branch = self.factory.makeAnyBranch()
         self.basic_header_and_branch = self.basic_header \
                                        + self.base_branch.bzr_identity + '\n'
+        self.nested_branch = self.factory.makeAnyBranch()
+        self.merged_branch = self.factory.makeAnyBranch()
+        self.branch_identities = {
+            'base': self.base_branch.bzr_identity,
+            'nested': self.nested_branch.bzr_identity,
+            'merged': self.merged_branch.bzr_identity,
+            }
 
     def get_recipe(self, recipe_text):
-        builder_recipe = RecipeParser(recipe_text).parse()
+        builder_recipe = RecipeParser(textwrap.dedent(recipe_text)).parse()
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)
         distroseries = self.factory.makeDistroSeries()
@@ -246,6 +254,26 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.assertEqual("baz", location)
         self.check_recipe_branch(
             child_branch, "bar", nested_branch.bzr_identity)
+
+    def test_builds_a_merge_in_to_a_nest(self):
+        recipe_text = '''\
+        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        %(base)s
+        nest bar %(nested)s baz
+          merge zam %(merged)s
+        ''' % self.branch_identities
+        base_branch = self.get_recipe(recipe_text)
+        self.check_base_recipe_branch(
+            base_branch, self.base_branch.bzr_identity, num_child_branches=1)
+        child_branch, location = base_branch.child_branches[0].as_tuple()
+        self.assertEqual("baz", location)
+        self.check_recipe_branch(
+            child_branch, "bar", self.nested_branch.bzr_identity,
+            num_child_branches=1)
+        child_branch, location = child_branch.child_branches[0].as_tuple()
+        self.assertEqual(None, location)
+        self.check_recipe_branch(
+            child_branch, "zam", self.merged_branch.bzr_identity)
 
 
 def test_suite():

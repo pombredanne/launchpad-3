@@ -90,6 +90,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
             recipe_branch.nest_branch(self.directory, branch)
         else:
             raise AssertionError("Unknown type %r" % self.type)
+        return branch
 
 
 class _SourcePackageRecipeData(Storm):
@@ -115,12 +116,19 @@ class _SourcePackageRecipeData(Storm):
         base_branch = BaseRecipeBranch(
             self.base_branch.bzr_identity, self.deb_version_template,
             self.recipe_format, self.revspec)
+        instruction_stack = []
         for instruction in self.instructions:
-            instruction.append_to_recipe(base_branch)
+            while instruction_stack and instruction_stack[-1][0] != instruction.parent_instruction:
+                instruction_stack.pop()
+            if instruction_stack:
+                target_branch = instruction_stack[-1][1]
+            else:
+                target_branch = base_branch
+            recipe_branch = instruction.append_to_recipe(target_branch)
+            instruction_stack.append((instruction, recipe_branch))
         return base_branch
 
-    def _record_instructions(self, branch, parent_insn):
-        line_number = 0
+    def _record_instructions(self, branch, parent_insn, line_number=0):
         for instruction in branch.child_branches:
             db_branch = getUtility(IBranchLookup).getByUrl(
                 instruction.recipe_branch.url)
@@ -137,7 +145,9 @@ class _SourcePackageRecipeData(Storm):
                 instruction.recipe_branch.name, type, comment, line_number,
                 db_branch, instruction.recipe_branch.revspec,
                 instruction.nest_path, self, parent_insn)
-            self._record_instructions(instruction.recipe_branch, insn)
+            line_number = self._record_instructions(
+                instruction.recipe_branch, insn, line_number)
+        return line_number
 
     def setRecipe(self, builder_recipe):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
