@@ -90,14 +90,6 @@ class CodeImport(SQLBase):
 
     url = StringCol(default=None)
 
-    @property
-    def svn_branch_url(self):
-        return self.url
-
-    @property
-    def git_repo_url(self):
-        return self.url
-
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)
 

@@ -107,80 +107,62 @@ class CodeImportSourceDetails:
     :ivar branch_id: The id of the branch associated to this code import, used
         for locating the existing import and the foreign tree.
     :ivar rcstype: 'svn' or 'cvs' as appropriate.
-    :ivar svn_branch_url: The branch URL if rcstype in ['svn', 'bzr-svn'],
-        None otherwise.
+    :ivar url: The branch URL if rcstype in ['svn', 'bzr-svn',
+        'git'], None otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
-    :ivar git_repo_url: The URL of the git repo, if rcstype == 'git', None,
-        otherwise.
     """
 
-    def __init__(self, branch_id, rcstype, svn_branch_url=None, cvs_root=None,
-                 cvs_module=None, git_repo_url=None):
+    def __init__(self, branch_id, rcstype, url=None, cvs_root=None,
+                 cvs_module=None):
         self.branch_id = branch_id
         self.rcstype = rcstype
-        self.svn_branch_url = svn_branch_url
+        self.url = url
         self.cvs_root = cvs_root
         self.cvs_module = cvs_module
-        self.git_repo_url = git_repo_url
 
     @classmethod
     def fromArguments(cls, arguments):
         """Convert command line-style arguments to an instance."""
         branch_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
-        if rcstype in ['svn', 'bzr-svn']:
-            [svn_branch_url] = arguments
-            cvs_root = cvs_module = git_repo_url = None
+        if rcstype in ['svn', 'bzr-svn', 'git']:
+            [url] = arguments
+            cvs_root = cvs_module = None
         elif rcstype == 'cvs':
-            svn_branch_url = git_repo_url = None
+            url = None
             [cvs_root, cvs_module] = arguments
-        elif rcstype == 'git':
-            cvs_root = cvs_module = svn_branch_url = None
-            [git_repo_url] = arguments
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
-        return cls(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
-            git_repo_url)
+        return cls(branch_id, rcstype, url, cvs_root, cvs_module)
 
     @classmethod
     def fromCodeImport(cls, code_import):
         """Convert a `CodeImport` to an instance."""
+        branch_id = code_import.branch.id
         if code_import.rcs_type == RevisionControlSystems.SVN:
-            rcstype = 'svn'
-            svn_branch_url = str(code_import.svn_branch_url)
-            cvs_root = cvs_module = git_repo_url = None
+            return cls(branch_id, 'svn', str(code_import.url))
         elif code_import.rcs_type == RevisionControlSystems.BZR_SVN:
-            rcstype = 'bzr-svn'
-            svn_branch_url = str(code_import.svn_branch_url)
-            cvs_root = cvs_module = git_repo_url = None
+            return cls(branch_id, 'bzr-svn', str(code_import.url))
         elif code_import.rcs_type == RevisionControlSystems.CVS:
-            rcstype = 'cvs'
-            svn_branch_url = git_repo_url = None
-            cvs_root = str(code_import.cvs_root)
-            cvs_module = str(code_import.cvs_module)
+            return cls(
+                branch_id, 'cvs',
+                cvs_root=str(code_import.cvs_root),
+                cvs_module=str(code_import.cvs_module))
         elif code_import.rcs_type == RevisionControlSystems.GIT:
-            rcstype = 'git'
-            svn_branch_url = cvs_root = cvs_module = None
-            git_repo_url = str(code_import.git_repo_url)
+            return cls(branch_id, 'git', str(code_import.url))
         else:
             raise AssertionError("Unknown rcstype %r." % code_import.rcs_type)
-        return cls(
-            code_import.branch.id, rcstype, svn_branch_url,
-            cvs_root, cvs_module, git_repo_url)
 
     def asArguments(self):
         """Return a list of arguments suitable for passing to a child process.
         """
         result = [str(self.branch_id), self.rcstype]
-        if self.rcstype in ['svn', 'bzr-svn']:
-            result.append(self.svn_branch_url)
+        if self.rcstype in ['svn', 'bzr-svn', 'git']:
+            result.append(self.url)
         elif self.rcstype == 'cvs':
             result.append(self.cvs_root)
             result.append(self.cvs_module)
-        elif self.rcstype == 'git':
-            result.append(self.git_repo_url)
         else:
             raise AssertionError("Unknown rcstype %r." % self.rcstype)
         return result
@@ -294,7 +276,7 @@ class ForeignTreeStore:
         source_details = self.import_data_store.source_details
         if source_details.rcstype == 'svn':
             return SubversionWorkingTree(
-                source_details.svn_branch_url, str(target_path))
+                source_details.url, str(target_path))
         elif source_details.rcstype == 'cvs':
             return CVSWorkingTree(
                 source_details.cvs_root, source_details.cvs_module,
@@ -497,7 +479,7 @@ class PullingImportWorker(ImportWorker):
     @property
     def pull_url(self):
         """Return the URL that should be pulled from."""
-        raise NotImplementedError
+        return self.source_details.url
 
     @property
     def format_classes(self):
@@ -535,11 +517,6 @@ class GitImportWorker(PullingImportWorker):
     """
 
     @property
-    def pull_url(self):
-        """See `PullingImportWorker.pull_url`."""
-        return self.source_details.git_repo_url
-
-    @property
     def format_classes(self):
         """See `PullingImportWorker.opening_format`."""
         # We only return LocalGitBzrDirFormat for tests.
@@ -573,11 +550,6 @@ class GitImportWorker(PullingImportWorker):
 
 class BzrSvnImportWorker(PullingImportWorker):
     """An import worker for importing Subversion via bzr-svn."""
-
-    @property
-    def pull_url(self):
-        """See `PullingImportWorker.pull_url`."""
-        return self.source_details.svn_branch_url
 
     @property
     def format_classes(self):
