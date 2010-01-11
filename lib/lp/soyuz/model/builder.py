@@ -118,6 +118,23 @@ class BuilderSlave(xmlrpclib.ServerProxy):
 
         return (stdout, stderr, resume_process.returncode)
 
+    def build(self, buildid, builder_type, chroot_sha1, filemap, args):
+        """Build a thing on this build slave.
+
+        :param buildid: A string identifying this build.
+        :param builder_type: The type of builder needed.
+        :param chroot_sha1: XXX
+        :param filemap: A dictionary mapping from paths to SHA-1 hashes of
+            the file contents.
+        :param args: A dictionary of extra arguments. The contents depend on
+            the build job type.
+        """
+        try:
+            return super(BuilderSlave, self).build(
+                buildid, builder_type, chroot_sha1, filemap, args)
+        except xmlrpclib.Fault, info:
+            raise BuildSlaveFailure(info)
+
 
 class Builder(SQLBase):
 
@@ -295,8 +312,19 @@ class Builder(SQLBase):
 
         # Do it.
         build_queue_item.markAsBuilding(self)
-        self.current_build_behavior.dispatchBuildToSlave(
-            build_queue_item.id, logger)
+        try:
+            self.current_build_behavior.dispatchBuildToSlave(
+                build_queue_item.id, logger)
+        except BuildSlaveFailure, e:
+            logger.debug(
+                "Disabling builder: %s" % self._builder.url, exc_info=1)
+            self.failbuilder(
+                "Exception (%s) when setting up to new job" % (e,))
+        except socket.error, e:
+            error_message = "Exception (%s) when setting up new job" % (e,)
+            self.handleTimeout(logger, error_message)
+            raise BuildSlaveFailure
+
 
     # XXX cprov 2009-06-24: This code does not belong to the content
     # class domain. Here we cannot make sensible decisions about what

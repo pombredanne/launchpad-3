@@ -87,22 +87,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
         args = self._extraBuildArgs(self.build)
-        # XXX: Maybe we can move a lot of this try/except logic into
-        # IBuilder.build -- but that's a crappy name.
-        try:
-            status, info = self._builder.slave.build(
-                buildid, "debian", chroot_sha1, filemap, args)
-        except xmlrpclib.Fault, info:
-            # Mark builder as 'failed'.
-            logger.debug(
-                "Disabling builder: %s" % self._builder.url, exc_info=1)
-            self._builder.failbuilder(
-                "Exception (%s) when setting up to new job" % info)
-            raise BuildSlaveFailure
-        except socket.error, info:
-            error_message = "Exception (%s) when setting up new job" % info
-            self._builder.handleTimeout(logger, error_message)
-            raise BuildSlaveFailure
+        status, info = self._builder.slave.build(
+            buildid, "debian", chroot_sha1, filemap, args)
         message = """%s (%s):
         ***** RESULT *****
         %s
