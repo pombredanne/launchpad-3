@@ -149,15 +149,9 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
 
-    deb_version = "0.1-{revno}"
-    basic_header = ("# bzr-builder format 0.2 deb-version "
-            + deb_version +"\n")
-
     def setUp(self):
         super(TestRecipeBranchRoundTripping, self).setUp()
         self.base_branch = self.factory.makeAnyBranch()
-        self.basic_header_and_branch = self.basic_header \
-                                       + self.base_branch.bzr_identity + '\n'
         self.nested_branch = self.factory.makeAnyBranch()
         self.merged_branch = self.factory.makeAnyBranch()
         self.branch_identities = {
@@ -180,7 +174,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         return recipe.builder_recipe
 
     def check_base_recipe_branch(self, branch, url, revspec=None,
-            num_child_branches=0, revid=None, deb_version=deb_version):
+            num_child_branches=0, revid=None, deb_version=None):
         self.check_recipe_branch(branch, None, url, revspec=revspec,
                 num_child_branches=num_child_branches, revid=revid)
         self.assertEqual(deb_version, branch.deb_version)
@@ -200,7 +194,8 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         ''' % self.branch_identities
         base_branch = self.get_recipe(recipe_text)
         self.check_base_recipe_branch(
-            base_branch, self.base_branch.bzr_identity)
+            base_branch, self.base_branch.bzr_identity,
+            deb_version='0.1-{revno}')
 
     def test_builds_recipe_with_merge(self):
         recipe_text = '''\
@@ -210,7 +205,8 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         ''' % self.branch_identities
         base_branch = self.get_recipe(recipe_text)
         self.check_base_recipe_branch(
-            base_branch, self.base_branch.bzr_identity, num_child_branches=1)
+            base_branch, self.base_branch.bzr_identity, num_child_branches=1,
+            deb_version='0.1-{revno}')
         child_branch, location = base_branch.child_branches[0].as_tuple()
         self.assertEqual(None, location)
         self.check_recipe_branch(
@@ -224,7 +220,8 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         ''' % self.branch_identities
         base_branch = self.get_recipe(recipe_text)
         self.check_base_recipe_branch(
-            base_branch, self.base_branch.bzr_identity, num_child_branches=1)
+            base_branch, self.base_branch.bzr_identity, num_child_branches=1,
+            deb_version='0.1-{revno}')
         child_branch, location = base_branch.child_branches[0].as_tuple()
         self.assertEqual("baz", location)
         self.check_recipe_branch(
@@ -239,7 +236,8 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         ''' % self.branch_identities
         base_branch = self.get_recipe(recipe_text)
         self.check_base_recipe_branch(
-            base_branch, self.base_branch.bzr_identity, num_child_branches=2)
+            base_branch, self.base_branch.bzr_identity, num_child_branches=2,
+            deb_version='0.1-{revno}')
         child_branch, location = base_branch.child_branches[0].as_tuple()
         self.assertEqual("baz", location)
         self.check_recipe_branch(
@@ -258,7 +256,8 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         ''' % self.branch_identities
         base_branch = self.get_recipe(recipe_text)
         self.check_base_recipe_branch(
-            base_branch, self.base_branch.bzr_identity, num_child_branches=2)
+            base_branch, self.base_branch.bzr_identity, num_child_branches=2,
+            deb_version='0.1-{revno}')
         child_branch, location = base_branch.child_branches[0].as_tuple()
         self.assertEqual(None, location)
         self.check_recipe_branch(
@@ -277,7 +276,8 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         ''' % self.branch_identities
         base_branch = self.get_recipe(recipe_text)
         self.check_base_recipe_branch(
-            base_branch, self.base_branch.bzr_identity, num_child_branches=1)
+            base_branch, self.base_branch.bzr_identity, num_child_branches=1,
+            deb_version='0.1-{revno}')
         child_branch, location = base_branch.child_branches[0].as_tuple()
         self.assertEqual("baz", location)
         self.check_recipe_branch(
