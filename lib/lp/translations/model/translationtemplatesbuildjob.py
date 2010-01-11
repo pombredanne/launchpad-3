@@ -40,11 +40,9 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
 
     def score(self):
         """See `IBuildFarmJob`."""
-        # Arbitrary score that sorta-kinda seems to match the sort of
-        # number that BuildPackageJob might give a job like this,
-        # perhaps. It may not matter that much since these jobs are
-        # fast.
-        return 4010
+        # Hard-code score for now; anything other than 1000 is probably
+        # inappropriate.
+        return 1000
 
     def getLogFileName(self):
         """See `IBuildFarmJob`."""
