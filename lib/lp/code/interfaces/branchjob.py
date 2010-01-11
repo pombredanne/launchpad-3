@@ -75,6 +75,9 @@ class IBranchDiffJobSource(Interface):
 class IBranchScanJob(Interface):
     """ A job to scan branches."""
 
+    def run():
+        """Scan a branch for new revisions."""
+
 
 class IBranchScanJobSource(Interface):
 
