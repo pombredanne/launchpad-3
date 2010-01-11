@@ -130,7 +130,8 @@ class Archive(SQLBase):
     purpose = EnumCol(
         dbName='purpose', unique=False, notNull=True, schema=ArchivePurpose)
 
-    enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+    _enabled = BoolCol(dbName='enabled', notNull=True, default=True)
+    enabled = property(lambda x: x._enabled)
 
     publish = BoolCol(dbName='publish', notNull=True, default=True)
 
@@ -1237,6 +1238,15 @@ class Archive(SQLBase):
 
         result_set.config(distinct=True).order_by(SourcePackageRelease.id)
         return result_set
+
+    def enable(self):
+        """See `IArchive`."""
+        pass
+
+    def disable(self):
+        """See `IArchive`."""
+        pass
+
 
 class ArchiveSet:
     implements(IArchiveSet)
