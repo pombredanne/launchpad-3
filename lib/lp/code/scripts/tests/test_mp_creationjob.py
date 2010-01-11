@@ -38,7 +38,7 @@ class TestDiffBMPs(TestCaseWithFactory):
             source_branch=source, target_branch=target,
             registrant=source.owner)
         job = MergeProposalCreatedJob.create(bmp)
-        self.assertIs(None, bmp.review_diff)
+        self.assertIs(None, bmp.preview_diff)
         transaction.commit()
         retcode, stdout, stderr = run_script(
             'cronscripts/mpcreationjobs.py', [])
@@ -47,7 +47,8 @@ class TestDiffBMPs(TestCaseWithFactory):
         self.assertEqual(
             'INFO    creating lockfile\n'
             'INFO    Ran 1 MergeProposalCreatedJobs.\n', stderr)
-        self.assertIsNot(None, bmp.review_diff)
+        self.assertIs(None, bmp.review_diff)
+        self.assertIsNot(None, bmp.preview_diff)
 
     def test_mpcreationjobs_records_oops(self):
         """Ensure mpcreationjobs logs an oops if the job fails."""

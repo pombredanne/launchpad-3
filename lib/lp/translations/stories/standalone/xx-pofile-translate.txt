@@ -158,7 +158,7 @@ suffix 'singular' appended. We'll see other suffixes later.
     ...     print id
     msgset_130
     ...
-    msgset_130_singular
+    msgset_130_singular...
 
 HTML element identifiers for suggestions and translations on this form are
 constructed as an underscore-separated sequence of:
@@ -181,6 +181,7 @@ constructed as an underscore-separated sequence of:
     msgset_130_es_suggestion_562_0_origin
     msgset_130_es_suggestion_562_0_radiobutton
     msgset_130_singular
+    msgset_130_singular_copy_text
 
 Radio buttons are grouped by their name attribute. The translate page shows
 each translatable message with one radiobutton to select the existing
