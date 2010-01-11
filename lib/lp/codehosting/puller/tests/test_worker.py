@@ -566,6 +566,7 @@ class TestMirroredBranchPolicy(TestCase):
     """Tests specific to `MirroredBranchPolicy`."""
 
     def setUp(self):
+        super(TestMirroredBranchPolicy, self).setUp()
         self.factory = LaunchpadObjectFactory()
 
     def testNoFileURL(self):

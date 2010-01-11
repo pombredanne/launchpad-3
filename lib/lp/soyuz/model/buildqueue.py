@@ -12,7 +12,8 @@ __all__ = [
 
 import logging
 
-from zope.component import getUtility
+from zope.component import getSiteManager, getUtility
+
 from zope.interface import implements
 
 from sqlobject import (
@@ -24,7 +25,8 @@ from canonical import encoding
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmjob import (
+    BuildFarmJobType, IBuildFarmJob)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.services.job.interfaces.job import JobStatus
@@ -57,11 +59,28 @@ class BuildQueue(SQLBase):
         return IBuildFarmJobBehavior(self.specific_job)
 
     @property
+    def specific_job_classes(self):
+        """See `IBuildQueue`."""
+        job_classes = dict()
+        # Get all components that implement the `IBuildFarmJob` interface.
+        components = getSiteManager()
+        implementations = sorted(components.getUtilitiesFor(IBuildFarmJob))
+        # The above yields a collection of 2-tuples where the first element
+        # is the name of the `BuildFarmJobType` enum and the second element
+        # is the implementing class respectively.
+        for job_enum_name, job_class in implementations:
+            job_enum = getattr(BuildFarmJobType, job_enum_name)
+            job_classes[job_enum] = job_class
+
+        return job_classes
+
+    @property
     def specific_job(self):
         """See `IBuildQueue`."""
+        specific_class = self.specific_job_classes[self.job_type]
         store = Store.of(self)
         result_set = store.find(
-            BuildPackageJob, BuildPackageJob.job == self.job)
+            specific_class, specific_class.job == self.job)
         return result_set.one()
 
     @property
@@ -211,6 +230,87 @@ class BuildQueue(SQLBase):
         result_set = store.execute(query)
         free_builders = result_set.get_one()[0]
         return free_builders
+
+    def _estimateTimeToNextBuilder(
+        self, head_job_processor, head_job_virtualized):
+        """Estimate time until next builder becomes available.
+        
+        For the purpose of estimating the dispatch time of the job of interest
+        (JOI) we need to know how long it will take until the job at the head
+        of JOI's queue is dispatched.
+
+        There are two cases to consider here: the head job is
+
+            - processor dependent: only builders with the matching
+              processor/virtualization combination should be considered.
+            - *not* processor dependent: all builders should be considered.
+
+        :param head_job_processor: The processor required by the job at the
+            head of the queue.
+        :param head_job_virtualized: The virtualization setting required by
+            the job at the head of the queue.
+        :return: The estimated number of seconds untils a builder capable of
+            running the head job becomes available or None if no such builder
+            exists.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        # First check whether we have free builders.
+        free_builders = self._freeBuildersCount(
+            head_job_processor, head_job_virtualized)
+
+        if free_builders > 0:
+            # We have free builders for the given processor/virtualization
+            # combination -> zero delay
+            return 0
+
+        extra_clauses = ''
+        if head_job_processor is not None:
+            # Only look at builders with specific processor types.
+            extra_clauses += """
+                AND Builder.processor = %s
+                AND Builder.virtualized = %s
+                """ % sqlvalues(head_job_processor, head_job_virtualized)
+
+        params = sqlvalues(JobStatus.RUNNING) + (extra_clauses,)
+
+        delay_query = """
+            SELECT MIN(
+              CASE WHEN 
+                EXTRACT(EPOCH FROM
+                  (BuildQueue.estimated_duration -
+                   (((now() AT TIME ZONE 'UTC') - Job.date_started))))  >= 0
+              THEN
+                EXTRACT(EPOCH FROM
+                  (BuildQueue.estimated_duration -
+                   (((now() AT TIME ZONE 'UTC') - Job.date_started))))
+              ELSE
+                -- Assume that jobs that have overdrawn their estimated
+                -- duration time budget will complete within 2 minutes.
+                -- This is a wild guess but has worked well so far.
+                --
+                -- Please note that this is entirely innocuous i.e. if our
+                -- guess is off nothing bad will happen but our estimate will
+                -- not be as good as it could be.
+                120
+              END)
+            FROM
+                BuildQueue, Job, Builder
+            WHERE
+                BuildQueue.job = Job.id
+                AND BuildQueue.builder = Builder.id
+                AND Builder.manual = False
+                AND Builder.builderok = True
+                AND Job.status = %s
+                %s
+            """ % params
+
+        result_set = store.execute(delay_query)
+        head_job_delay = result_set.get_one()[0]
+        if head_job_delay is None:
+            return None
+        else:
+            return int(head_job_delay)
 
 
 class BuildQueueSet(object):

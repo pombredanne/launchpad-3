@@ -226,6 +226,7 @@
                     date_review_requested
                     date_reviewed
                     review_diff
+                    next_preview_diff_job
                     preview_diff
                     votes
                     root_comment

@@ -9,6 +9,8 @@ __metaclass__ = type
 
 __all__ = [
     "BzrSync",
+    'schedule_diff_updates',
+    'schedule_translation_upload',
     ]
 
 import logging
@@ -31,8 +33,7 @@ from lp.codehosting import iter_list_chunks
 from lp.codehosting.puller.worker import BranchMirrorer
 from lp.codehosting.scanner import events
 from lp.codehosting.vfs.branchfs import BranchPolicy
-from lp.code.interfaces.branch import (
-    BranchFormat, ControlFormat, RepositoryFormat)
+from lp.code.bzr import BranchFormat, ControlFormat, RepositoryFormat
 from lp.code.interfaces.branchjob import IRosettaUploadJobSource
 from lp.code.interfaces.branchrevision import IBranchRevisionSet
 from lp.code.interfaces.revision import IRevisionSet
