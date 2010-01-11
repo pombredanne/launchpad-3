@@ -34,6 +34,7 @@ class TestDistroSeriesCurrentSourceReleases(TestCase):
 
     def setUp(self):
         # Log in as an admin, so that we can create distributions.
+        super(TestDistroSeriesCurrentSourceReleases, self).setUp()
         login('foo.bar@canonical.com')
         self.publisher = SoyuzTestPublisher()
         self.factory = self.publisher.factory

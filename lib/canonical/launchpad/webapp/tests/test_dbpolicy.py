@@ -61,12 +61,14 @@ class BaseDatabasePolicyTestCase(ImplicitDatabasePolicyTestCase):
     policy = None
 
     def setUp(self):
+        super(BaseDatabasePolicyTestCase, self).setUp()
         if self.policy is None:
             self.policy = BaseDatabasePolicy()
         getUtility(IStoreSelector).push(self.policy)
 
     def tearDown(self):
         getUtility(IStoreSelector).pop()
+        super(BaseDatabasePolicyTestCase, self).tearDown()
 
     def test_correctly_implements_IDatabasePolicy(self):
         self.assertProvides(self.policy, IDatabasePolicy)
@@ -78,7 +80,7 @@ class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
     def setUp(self):
         if self.policy is None:
             self.policy = SlaveDatabasePolicy()
-        BaseDatabasePolicyTestCase.setUp(self)
+        super(SlaveDatabasePolicyTestCase, self).setUp()
 
     def test_defaults(self):
         for store in ALL_STORES:
@@ -98,7 +100,7 @@ class SlaveOnlyDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
 
     def setUp(self):
         self.policy = SlaveOnlyDatabasePolicy()
-        BaseDatabasePolicyTestCase.setUp(self)
+        super(SlaveOnlyDatabasePolicyTestCase, self).setUp()
 
     def test_master_allowed(self):
         for store in ALL_STORES:
@@ -112,7 +114,7 @@ class MasterDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
     def setUp(self):
         self.policy = MasterDatabasePolicy()
-        BaseDatabasePolicyTestCase.setUp(self)
+        super(MasterDatabasePolicyTestCase, self).setUp()
 
     def test_XMLRPCRequest_uses_MasterPolicy(self):
         """XMLRPC should always use the master flavor, since they always
@@ -140,10 +142,11 @@ class LaunchpadDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
     This test just checks the defaults, which is the same as the
     slave policy for unauthenticated requests.
     """
+
     def setUp(self):
         request = LaunchpadTestRequest(SERVER_URL='http://launchpad.dev')
         self.policy = LaunchpadDatabasePolicy(request)
-        SlaveDatabasePolicyTestCase.setUp(self)
+        super(LaunchpadDatabasePolicyTestCase, self).setUp()
 
 
 class LayerDatabasePolicyTestCase(TestCase):
@@ -240,7 +243,7 @@ class ReadOnlyLaunchpadDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
     def setUp(self):
         self.policy = ReadOnlyLaunchpadDatabasePolicy()
-        BaseDatabasePolicyTestCase.setUp(self)
+        super(ReadOnlyLaunchpadDatabasePolicyTestCase, self).setUp()
 
     def test_defaults(self):
         # default Store is the slave.

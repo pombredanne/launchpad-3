@@ -49,7 +49,7 @@ successfully added.
     >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS) # login() because we need a zope interaction.
-    >>> cprov_landscape_membership.setStatus(
+    >>> ignored = cprov_landscape_membership.setStatus(
     ...     TeamMembershipStatus.DEACTIVATED, landscape_team.teamowner)
     >>> logout()
     >>> cprov_landscape_membership.syncUpdate()
@@ -171,44 +171,47 @@ one admin is browsing the invitation page, another admin might be doing the
 same. When an admin accepts or declines an invitation, the other admin can't
 take action on that invitation anymore.
 
-First invite ubuntu-team to be member of the name21 team.
+First invite name20 to be a member of ubuntu-team.
 
-    >>> browser.open('http://launchpad.dev/~name21/+addmember')
-    >>> browser.getControl('New member:').value = 'ubuntu-team'
+    >>> browser = setupBrowser(
+    ...     auth='Basic colin.watson@ubuntulinux.com:test')
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+addmember')
+    >>> browser.getControl('New member:').value = 'name20'
     >>> browser.getControl('Add Member').click()
 
     >>> for tag in find_tags_by_class(browser.contents,
     ...                               'informational message'):
     ...     print tag.renderContents()
-    Ubuntu Team (ubuntu-team) has been invited to join this team.
+    Warty Security Team (name20) has been invited to join this team.
 
 Open the invitations page with one admin browser.
 
-    >>> browser.open('http://launchpad.dev/~ubuntu-team/+invitation/name21')
+    >>> browser = setupBrowser(auth='Basic mark@example.com:test')
+    >>> browser.open('http://launchpad.dev/~name20/+invitation/ubuntu-team')
 
 Open the same page with another admin browser.
 
-    >>> second_browser = setupBrowser(auth='Basic foo.bar@canonical.com:test')
+    >>> second_browser = setupBrowser(auth='Basic mark@example.com:test')
     >>> second_browser.open(
-    ...     'http://launchpad.dev/~ubuntu-team/+invitation/name21')
+    ...     'http://launchpad.dev/~name20/+invitation/ubuntu-team')
 
 Accept the invitation in the first browser.
 
     >>> browser.getControl('Accept').click()
     >>> browser.url
-    'http://launchpad.dev/~ubuntu-team'
+    'http://launchpad.dev/~name20'
 
     >>> for tag in find_tags_by_class(browser.contents,
     ...                               'informational message'):
     ...     print tag.renderContents()
-    This team is now a member of Hoary Gnome Team
+    This team is now a member of Ubuntu Team
 
 Accepting the invitation in the second browser, redirects to the team page
 and a message is displayed.
 
     >>> second_browser.getControl('Accept').click()
     >>> second_browser.url
-    'http://launchpad.dev/~ubuntu-team'
+    'http://launchpad.dev/~name20'
 
     >>> for tag in find_tags_by_class(second_browser.contents,
     ...                               'informational message'):
@@ -233,7 +236,7 @@ the bug sice we could skip the notification sent to the team in this case.
     >>> login(ANONYMOUS) # login() because we need a zope interaction.
     >>> carlos_translators_membership = TeamMembership.selectOneBy(
     ...     personID=carlos.id, teamID=ubuntu_translators.id)
-    >>> carlos_translators_membership.setStatus(
+    >>> ignored = carlos_translators_membership.setStatus(
     ...     TeamMembershipStatus.DEACTIVATED, ubuntu_translators.teamowner)
     >>> logout()
     >>> carlos_translators_membership.syncUpdate()
