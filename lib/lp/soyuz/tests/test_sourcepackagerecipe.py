@@ -16,7 +16,8 @@ from zope.security.interfaces import Unauthorized
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.soyuz.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource)
+    ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
+    TooNewRecipeFormat)
 from lp.testing import login_person, TestCaseWithFactory
 
 
@@ -174,6 +175,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
             builder_recipe2)
         self.assertEquals([branch1], list(sp_recipe.getReferencedBranches()))
 
+    def test_reject_newer_formats(self):
+        builder_recipe = self.makeBuilderRecipe()
+        builder_recipe.format = 0.3
+        self.assertRaises(
+            TooNewRecipeFormat,
+            self.makeSourcePackageRecipeFromBuilderRecipe, builder_recipe)
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 

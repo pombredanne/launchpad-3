@@ -25,7 +25,8 @@ from canonical.launchpad.interfaces.lpstorm import IStore
 
 from lp.code.model.branch import Branch
 from lp.code.interfaces.branchlookup import IBranchLookup
-from lp.soyuz.interfaces.sourcepackagerecipe import ForbiddenInstruction
+from lp.soyuz.interfaces.sourcepackagerecipe import (
+    ForbiddenInstruction, TooNewRecipeFormat)
 
 
 class InstructionType(DBEnumeratedType):
@@ -160,10 +161,11 @@ class _SourcePackageRecipeData(Storm):
 
     def setRecipe(self, builder_recipe):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
-        # XXX don't destroy everything until we know there's no run command?
-        # XXX Why doesn't self.instructions.clear() work?
+        if builder_recipe.format > 0.2:
+            raise TooNewRecipeFormat(builder_recipe.format, 0.2)
         self._scan_instructions(
             builder_recipe, parent_insn=None)
+        # XXX Why doesn't self.instructions.clear() work?
         IStore(self).find(
             _SourcePackageRecipeDataInstruction,
             _SourcePackageRecipeDataInstruction.recipe_data == self).remove()

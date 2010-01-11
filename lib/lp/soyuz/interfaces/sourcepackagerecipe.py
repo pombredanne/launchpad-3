@@ -4,7 +4,12 @@
 """Interface of the `SourcePackageRecipe` content type."""
 
 __metaclass__ = type
-__all__ = ['ISourcePackageRecipe']
+__all__ = [
+    'ForbiddenInstruction',
+    'ISourcePackageRecipe',
+    'ISourcePackageRecipeSource',
+    'TooNewRecipeFormat',
+    ]
 
 from lazr.restful.fields import Reference
 
@@ -26,6 +31,14 @@ class ForbiddenInstruction(Exception):
 
     def __init__(self, instruction_name):
         self.instruction_name = instruction_name
+
+
+class TooNewRecipeFormat(Exception):
+    """The format of the recipe supplied was too new."""
+
+    def __init__(self, supplied_format, newest_supported):
+        self.supplied_format = supplied_format
+        self.newest_supported = newest_supported
 
 
 class ISourcePackageRecipe(IHasOwner):
