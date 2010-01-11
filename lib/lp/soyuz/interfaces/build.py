@@ -201,6 +201,7 @@ class IBuildView(Interface):
         description=_("Build duration interval, calculated when the "
                       "build result gets collected."))
 
+    # XXX: Rename to build_log
     buildlog = Object(
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the entire buildlog."))

@@ -16,8 +16,9 @@ from zope.security.interfaces import Unauthorized
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.soyuz.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
-    TooNewRecipeFormat)
+    ForbiddenInstruction, ISourcePackageBuild, ISourcePackageRecipe,
+    ISourcePackageRecipeSource, TooNewRecipeFormat)
+from lp.soyuz.model.sourcepackagerecipe import SourcePackageBuild
 from lp.testing import login_person, TestCaseWithFactory
 
 
@@ -25,6 +26,7 @@ MINIMAL_RECIPE_TEXT = u'''\
 # bzr-builder format 0.2 deb-version 1.0
 %s
 '''
+
 
 class TestSourcePackageRecipe(TestCaseWithFactory):
     """Tests for `SourcePackageRecipe` objects."""
@@ -174,6 +176,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertRaises(
             TooNewRecipeFormat,
             self.makeSourcePackageRecipeFromBuilderRecipe, builder_recipe)
+
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
 
@@ -364,7 +367,19 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
             child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
 
 
+class TestSourcePackageBuild(TestCaseWithFactory):
+    """Test the source package build object."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeSourcePackageBuild(self):
+        return SourcePackageBuild()
+
+    def test_providesInterface(self):
+        # SourcePackageBuild provides ISourcePackageBuild.
+        spb = self.makeSourcePackageBuild()
+        self.assertProvides(spb, ISourcePackageBuild)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-
