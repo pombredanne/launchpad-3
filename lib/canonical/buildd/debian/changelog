@@ -1,7 +1,7 @@
-launchpad-buildd (55) hardy-cat; urgency=low
+launchpad-buildd (56) hardy-cat; urgency=low
 
-  * only do implicit-function-pointers check on lucid or later, non-32-bit
-    architectures.  LP#504078
+  * only error out on implicit-function-pointers check on lucid or later,
+    non-32-bit architectures.  Warnings elsewhere.  LP#504078
   * drop use of ccache and /var/cache/apt/archives, since we don't use one,
     and the other is just plain silly.
 
