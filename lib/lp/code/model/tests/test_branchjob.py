@@ -17,6 +17,9 @@ from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
+from bzrlib.tests import TestCaseWithTransport
+from bzrlib.transport import get_transport
+from bzrlib.urlutils import local_path_from_url
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
 import transaction
@@ -27,6 +30,8 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
+from lp.codehosting.bzrutils import ensure_base
+from lp.codehosting.tests.helpers import create_branch_with_one_revision
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.translations.interfaces.translationimportqueue import (
@@ -45,11 +50,12 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
-    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
+    IBranchDiffJob, IBranchJob, IBranchScanJob, IBranchUpgradeJob,
+    IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionMailJob,
+    IRosettaUploadJob)
 from lp.code.model.branchjob import (
     BranchDiffJob, BranchJob, BranchJobDerived, BranchJobType,
-    BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
+    BranchScanJob, BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
     RevisionsAddedJob, RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
@@ -176,6 +182,35 @@ class TestBranchDiffJob(TestCaseWithFactory):
         """
         diff = self.create_rev1_diff()
         self.assertIsInstance(diff.diff.text, str)
+
+
+class TestBranchScanJob(TestCaseWithFactory):
+    """Tests for `BranchScanJob`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchScanJob implements IBranchScanJob."""
+        branch = self.factory.makeAnyBranch()
+        job = BranchScanJob.create(branch)
+        verifyObject(IBranchScanJob, job)
+
+    def test_run(self):
+        """Ensure the job scans the branch."""
+        self.useBzrBranches()
+
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        bzr_tree.commit('First commit', rev_id='rev1')
+        bzr_tree.commit('Second commit', rev_id='rev2')
+        bzr_tree.commit('Third commit', rev_id='rev3')
+        LaunchpadZopelessLayer.commit()
+
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        job = BranchScanJob.create(db_branch)
+        job.run()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+
+        self.assertEqual(db_branch.revision_count, 3)
 
 
 class TestBranchUpgradeJob(TestCaseWithFactory):
