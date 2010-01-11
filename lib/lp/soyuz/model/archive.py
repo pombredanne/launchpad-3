@@ -1241,11 +1241,17 @@ class Archive(SQLBase):
 
     def enable(self):
         """See `IArchive`."""
-        pass
+        assert self._enabled == False, "This archive is already enabled."
+        self._enabled = True
+        # XXX al-maisan: Resume all `Build` records in state NEEDSBUILD that
+        # target this archive.
 
     def disable(self):
         """See `IArchive`."""
-        pass
+        assert self._enabled == True, "This archive is already disabled."
+        self._enabled = True
+        # XXX al-maisan: Suspend all `Build` records in state NEEDSBUILD that
+        # target this archive.
 
 
 class ArchiveSet:
