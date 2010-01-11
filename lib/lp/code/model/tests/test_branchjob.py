@@ -18,9 +18,6 @@ from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
-from bzrlib.tests import TestCaseWithTransport
-from bzrlib.transport import get_transport
-from bzrlib.urlutils import local_path_from_url
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer
 from sqlobject import SQLObjectNotFound
 import transaction
@@ -31,8 +28,6 @@ from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.testing import verifyObject
-from lp.codehosting.bzrutils import ensure_base
-from lp.codehosting.tests.helpers import create_branch_with_one_revision
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.translations.interfaces.translationimportqueue import (
@@ -122,7 +117,8 @@ class TestBranchDiffJob(TestCaseWithFactory):
         tree_location = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(tree_location)) 
 
-        branch, tree = self.create_branch_and_tree(tree_location=tree_location)
+        branch, tree = self.create_branch_and_tree(
+            tree_location=tree_location)
         tree_file = os.path.join(tree_location, 'file')
         open(tree_file, 'wb').write('foo\n')
         tree.add('file')
