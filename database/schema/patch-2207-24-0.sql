@@ -17,4 +17,4 @@ ALTER TABLE ONLY buildqueue ADD COLUMN virtualized boolean;
 
 CREATE INDEX buildqueue__processor__virtualized__idx ON buildqueue USING btree (processor, virtualized) WHERE (processor IS NOT NULL);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 24, 0);
