@@ -24,6 +24,7 @@ setup(
     # this list should only contain direct dependencies--things imported or
     # used in zcml.
     install_requires=[
+        'ampoule',
         'bzr',
         'chameleon.core',
         'chameleon.zpt',
@@ -45,6 +46,7 @@ setup(
         'mocker',
         'oauth',
         'paramiko',
+        'python-memcached',
         'pyasn1',
         'python-openid',
         'pytz',

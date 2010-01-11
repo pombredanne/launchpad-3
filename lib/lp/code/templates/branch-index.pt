@@ -29,20 +29,16 @@
   </style>
   <tal:devmode condition="devmode">
     <script type="text/javascript"
-            tal:define="lp_js string:${icingroot}/build"
-            tal:attributes="src string:${lp_js}/code/branchsubscription.js">
-    </script>
-    <script type="text/javascript"
-            tal:define="lp_js string:${icingroot}/build"
             tal:attributes="src string:${lp_js}/code/branchlinks.js">
     </script>
     <script type="text/javascript"
-            tal:define="lp_js string:${icingroot}/build"
             tal:attributes="src string:${lp_js}/code/branchstatus.js">
     </script>
     <script type="text/javascript"
-            tal:define="lp_js string:${icingroot}/build"
             tal:attributes="src string:${lp_js}/code/popupdiff.js">
+      </script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/code/subscription.js">
     </script>
   </tal:devmode>
   <script type="text/javascript"
@@ -50,13 +46,18 @@
     LPS.use('node', 'event', 'widget', 'plugin', 'overlay',
               'lazr.choiceedit', 'code.branchstatus',
               'code.branchmergeproposal.popupdiff',
-              function(Y) {
-        Y.on('load',
-             function(e) {
-                 Y.branchstatus.connect_status(${view/status_config});
-                 Y.code.branchmergeproposal.popupdiff.connect_diff_links();
-             },
-             window);
+              'code.branch.subscription', function(Y) {
+
+        Y.on('load', function(e) {
+            var subscription_portlet = new Y.code.branch.subscription.SubscriptionWidget({
+                contentBox: '#portlet-subscribers'
+            });
+            subscription_portlet.render();
+
+            Y.branchstatus.connect_status(${view/status_config});
+            Y.code.branchmergeproposal.popupdiff.connect_diff_links();
+            },
+            window);
     });
   "/>
 </metal:block>
@@ -162,7 +163,7 @@
 
   <div class="yui-g" tal:condition="view/pending_writes">
     <div class="portlet">
-      <div id="branch-pending-writes">
+      <div id="branch-pending-writes" class="pending-update">
         <h3>Updating branch...</h3>
         <p>
           Launchpad is processing new changes to this branch and will be

@@ -13,6 +13,7 @@ __all__ = [
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
+    'ISeriesMixin',
     'NoSuchDistroSeries',
     ]
 
