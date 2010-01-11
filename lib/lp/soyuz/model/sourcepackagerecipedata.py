@@ -98,7 +98,7 @@ class _SourcePackageRecipeDataInstruction(Storm):
 
 
 class _SourcePackageRecipeData(Storm):
-    """XXX."""
+    """The database representation of a BaseRecipeBranch from bzr-builder."""
 
     __storm_table__ = "SourcePackageRecipeData"
 
@@ -135,7 +135,12 @@ class _SourcePackageRecipeData(Storm):
 
     def _scanInstructions(self, branch, parent_insn, record=False,
                              line_number=0):
-        """XXX."""
+        """Walk over the instructions in the recipe branch.
+
+        If `record` is True, the instructions will be recorded in the
+        database.  Otherwise, we just check that no unexpected instructions
+        are present.
+        """
         for instruction in branch.child_branches:
             if isinstance(instruction, MergeInstruction):
                 type = InstructionType.MERGE
