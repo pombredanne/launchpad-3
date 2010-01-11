@@ -16,8 +16,8 @@ from zope.security.interfaces import Unauthorized
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.soyuz.interfaces.sourcepackagerecipe import (
-    ForbiddenInstruction, ISourcePackageBuild, ISourcePackageBuildSource,
-    ISourcePackageRecipe, ISourcePackageRecipeSource, TooNewRecipeFormat)
+    ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
+    TooNewRecipeFormat)
 from lp.testing import login_person, TestCaseWithFactory
 
 
@@ -364,20 +364,6 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.assertEqual(None, location)
         self.check_recipe_branch(
             child_branch, "zam", self.merged_branch.bzr_identity, revspec="2")
-
-
-class TestSourcePackageBuild(TestCaseWithFactory):
-    """Test the source package build object."""
-
-    layer = DatabaseFunctionalLayer
-
-    def makeSourcePackageBuild(self):
-        return getUtility(ISourcePackageBuildSource).new()
-
-    def test_providesInterface(self):
-        # SourcePackageBuild provides ISourcePackageBuild.
-        spb = self.makeSourcePackageBuild()
-        self.assertProvides(spb, ISourcePackageBuild)
 
 
 def test_suite():

@@ -946,14 +946,14 @@
     </securedutility>
 
     <class
-       class="lp.soyuz.model.sourcepackagerecipe.SourcePackageBuild">
-      <allow interface="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageBuild"/>
+       class="lp.soyuz.model.sourcepackagebuild.SourcePackageBuild">
+      <allow interface="lp.soyuz.interfaces.sourcepackagebuild.ISourcePackageBuild"/>
     </class>
 
     <securedutility
-       component="lp.soyuz.model.sourcepackagerecipe.SourcePackageBuild"
-       provides="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageBuildSource">
-      <allow interface="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageBuildSource"/>
+       component="lp.soyuz.model.sourcepackagebuild.SourcePackageBuild"
+       provides="lp.soyuz.interfaces.sourcepackagebuild.ISourcePackageBuildSource">
+      <allow interface="lp.soyuz.interfaces.sourcepackagebuild.ISourcePackageBuildSource"/>
     </securedutility>
 
 </configure>

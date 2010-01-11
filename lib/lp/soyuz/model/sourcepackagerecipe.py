@@ -5,7 +5,6 @@
 
 __metaclass__ = type
 __all__ = [
-    'SourcePackageBuild',
     'SourcePackageRecipe',
     ]
 
@@ -17,8 +16,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.soyuz.interfaces.sourcepackagerecipe import (
-    ISourcePackageBuild, ISourcePackageBuildSource, ISourcePackageRecipe,
-    ISourcePackageRecipeSource)
+    ISourcePackageRecipe, ISourcePackageRecipeSource)
 from lp.soyuz.model.sourcepackagerecipedata import _SourcePackageRecipeData
 
 
@@ -80,27 +78,3 @@ class SourcePackageRecipe(Storm):
         sprecipe.name = name
         store.add(sprecipe)
         return sprecipe
-
-
-class SourcePackageBuild:
-
-    implements(ISourcePackageBuild)
-    classProvides(ISourcePackageBuildSource)
-
-    def __init__(self):
-        self.build_log = None
-        self.build_state = None
-        self.build_duration = None
-        self.builder = None
-        self.date_built = None
-        self.date_created = None
-        self.date_first_dispatched = None
-        self.distroseries = None
-        self.manifest = None
-        self.recipe = None
-        self.requester = None
-        self.sourcepackagename = None
-
-    @classmethod
-    def new(cls):
-        return cls()
