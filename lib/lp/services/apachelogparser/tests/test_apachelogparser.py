@@ -230,6 +230,7 @@ class TestParsedFilesDetection(TestCase):
     root = os.path.join(here, 'apache-log-files')
 
     def setUp(self):
+        super(TestParsedFilesDetection, self).setUp()
         self.layer.switchDbUser(DBUSER)
 
     def test_not_parsed_file(self):
@@ -301,6 +302,7 @@ class Test_create_or_update_parsedlog_entry(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(Test_create_or_update_parsedlog_entry, self).setUp()
         self.layer.switchDbUser(DBUSER)
 
     def test_creation_of_new_entries(self):
