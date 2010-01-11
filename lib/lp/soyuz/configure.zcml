@@ -911,11 +911,23 @@
       <allow interface="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
       <require
          permission="launchpad.Edit"
-         set_attributes="recipe_text"/>
+         set_attributes="builder_recipe"/>
     </class>
     <class
        class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">
       <allow attributes="name url revspec revid child_branches deb_version" />
+    </class>
+    <class
+       class="bzrlib.plugins.builder.recipe.RecipeBranch">
+      <allow attributes="name url revspec revid child_branches" />
+    </class>
+    <class
+       class="bzrlib.plugins.builder.recipe.MergeInstruction">
+      <allow attributes="as_tuple" />
+    </class>
+    <class
+       class="bzrlib.plugins.builder.recipe.NestInstruction">
+      <allow attributes="as_tuple" />
     </class>
     <securedutility
        component="lp.soyuz.model.sourcepackagerecipe.SourcePackageRecipe"

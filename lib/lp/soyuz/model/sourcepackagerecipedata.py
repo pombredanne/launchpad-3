@@ -3,7 +3,7 @@
 
 """Implementation of the recipe storage.
 
-This is purely an implementation detail of SourcePackageRecipe.recipe_text and
+This is purely an implementation detail of SourcePackageRecipe.recipe_data and
 SourcePackageRecipeBuild.manifest, the classes in this file have no public
 interfaces.
 """
@@ -11,9 +11,11 @@ interfaces.
 __metaclass__ = type
 __all__ = ['_SourcePackageRecipeData']
 
-from bzrlib.plugins.builder.recipe import BaseRecipeBranch
+from bzrlib.plugins.builder.recipe import BaseRecipeBranch, RecipeBranch
 
-from storm.locals import Int, Reference, Storm, Unicode
+from lazr.enum import DBEnumeratedType, DBItem
+
+from storm.locals import Int, Reference, ReferenceSet, Storm, Unicode
 
 from zope.component import getUtility
 
@@ -24,7 +26,17 @@ from lp.code.model.branch import Branch
 from lp.code.interfaces.branchlookup import IBranchLookup
 
 
+class InstructionType(DBEnumeratedType):
 
+    MERGE = DBItem(1, """
+        Merge instruction
+
+        A merge instruction.""")
+
+    NEST = DBItem(2, """
+        Nest instruction
+
+        A nest instruction.""")
 
 
 class _SourcePackageRecipeDataInstruction(Storm):
@@ -33,22 +45,25 @@ class _SourcePackageRecipeDataInstruction(Storm):
     __storm_table__ = "SourcePackageRecipeDataInstruction"
 
     def __init__(self, name, type, comment, line_number, branch, revspec,
-                 directory, recipe, parent_instruction):
+                 directory, recipe_data, parent_instruction):
         self.name = unicode(name)
         self.type = type
         self.comment = comment
         self.line_number = line_number
         self.branch = branch
-        self.revspec = unicode(revspec)
-        self.directory = unicode(directory)
-        self.recipe = recipe
+        if revspec is not None:
+            revspec = unicode(revspec)
+        self.revspec = revspec
+        if directory is not None:
+            directory = unicode(directory)
+        self.directory = directory
+        self.recipe_data = recipe_data
         self.parent_instruction = parent_instruction
 
     id = Int(primary=True)
 
     name = Unicode(allow_none=False)
-    # Should be an EnumCol
-    type = Int(allow_none=True)
+    type = EnumCol(notNull=True, schema=InstructionType)
     comment = Unicode(allow_none=True)
     line_number = Int(allow_none=False)
 
@@ -65,6 +80,16 @@ class _SourcePackageRecipeDataInstruction(Storm):
     parent_instruction = Reference(
         parent_instruction_id, '_SourcePackageRecipeDataInstruction.id')
 
+    def append_to_recipe(self, recipe_branch):
+        branch = RecipeBranch(
+            self.name, self.branch.bzr_identity, self.revspec)
+        if self.type == InstructionType.MERGE:
+            recipe_branch.merge_branch(branch)
+        elif self.type == InstructionType.NEST:
+            recipe_branch.nest_branch(self.directory, branch)
+        else:
+            raise AssertionError("Unknown type %r" % self.type)
+
 
 class _SourcePackageRecipeData(Storm):
     """XXX."""
@@ -80,22 +105,23 @@ class _SourcePackageRecipeData(Storm):
     deb_version_template = Unicode(allow_none=False)
     revspec = Unicode(allow_none=True)
 
+    instructions = ReferenceSet(
+        id, _SourcePackageRecipeDataInstruction.recipe_data_id,
+        order_by=_SourcePackageRecipeDataInstruction.line_number)
+
     def getRecipe(self):
-        """The text of the recipe."""
-        return BaseRecipeBranch(
+        """The BaseRecipeBranch version of the recipe."""
+        base_branch = BaseRecipeBranch(
             self.base_branch.bzr_identity, self.deb_version_template,
             self.recipe_format, self.revspec)
+        for instruction in self.instructions:
+            instruction.append_to_recipe(base_branch)
+        return base_branch
 
     def _record_instructions(self, branch, parent_insn):
         for b in branch.child_branches:
             db_branch = getUtility(IBranchLookup).getByUrl(b.recipe_branch.url)
-            if db_branch is None:
-                branch_lookup = getUtility(IBranchLookup)
-                url = b.recipe_branch.url
-                getByUrl = branch_lookup.getByUrl
-                import pdb; pdb.set_trace()
-                getByUrl(url)
-            type = 1
+            type = InstructionType.MERGE
             comment = None
             line_number = 0
             insn = _SourcePackageRecipeDataInstruction(
@@ -104,7 +130,8 @@ class _SourcePackageRecipeData(Storm):
             self._record_instructions(b.recipe_branch, insn)
 
     def setRecipe(self, builder_recipe):
-        """Set the text of the recipe."""
+        """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
+        # XXX Why doesn't self.instructions.clear() work?
         IStore(self).find(
             _SourcePackageRecipeDataInstruction,
             _SourcePackageRecipeDataInstruction.recipe_data == self).remove()
@@ -118,7 +145,7 @@ class _SourcePackageRecipeData(Storm):
         self._record_instructions(base_branch, None)
 
     def __init__(self, recipe):
-        """Initialize the object from the recipe text."""
+        """Initialize the object from the BaseRecipeBranch."""
         self.setRecipe(recipe)
 
     def getReferencedBranches(self):
@@ -127,7 +154,7 @@ class _SourcePackageRecipeData(Storm):
         yield self.base_branch
         sub_branches = IStore(self).find(
             Branch,
-            _SourcePackageRecipeDataInstruction.recipe == self,
+            _SourcePackageRecipeDataInstruction.recipe_data == self,
             Branch.id == _SourcePackageRecipeDataInstruction.branch_id)
         for branch in sub_branches:
             yield branch

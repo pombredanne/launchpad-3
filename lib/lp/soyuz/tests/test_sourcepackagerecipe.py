@@ -8,14 +8,12 @@ __metaclass__ = type
 import unittest
 
 from bzrlib.plugins.builder.recipe import RecipeParser
-from bzrlib.plugins.builder.tests.test_recipe import RecipeParserTests
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.code.enums import BranchType
 from lp.soyuz.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource)
 from lp.testing import login_person, TestCaseWithFactory
@@ -135,13 +133,14 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         # (only) the branches referenced by the new recipe.
         branch1 = self.factory.makeAnyBranch()
         builder_recipe1 = self.makeBuilderRecipe(branch1)
-        recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
+        sp_recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
             builder_recipe1)
         branch2 = self.factory.makeAnyBranch()
         builder_recipe2 = self.makeBuilderRecipe(branch2)
-        login_person(recipe.owner.teamowner)
-        recipe.builder_recipe = builder_recipe2
-        self.assertEquals([branch2], list(recipe.getReferencedBranches()))
+        login_person(sp_recipe.owner.teamowner)
+        #import pdb; pdb.set_trace()
+        sp_recipe.builder_recipe = builder_recipe2
+        self.assertEquals([branch2], list(sp_recipe.getReferencedBranches()))
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
