@@ -522,18 +522,18 @@
 
     <securedutility
         class="canonical.launchpad.database.BuilderSet"
-        provides="lp.soyuz.interfaces.builder.IBuilderSet">
+        provides="lp.buildmaster.interfaces.builder.IBuilderSet">
         <allow
-            interface="lp.soyuz.interfaces.builder.IBuilderSet"/>
+            interface="lp.buildmaster.interfaces.builder.IBuilderSet"/>
     </securedutility>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.soyuz.interfaces.builder.IBuilder"
+        for="lp.buildmaster.interfaces.builder.IBuilder"
         factory="canonical.launchpad.webapp.breadcrumb.TitleBreadcrumb"
         permission="zope.Public"/>
     <adapter
         provides="canonical.launchpad.webapp.interfaces.IBreadcrumb"
-        for="lp.soyuz.interfaces.builder.IBuilderSet"
+        for="lp.buildmaster.interfaces.builder.IBuilderSet"
         factory="lp.soyuz.browser.builder.BuilderSetBreadcrumb"
         permission="zope.Public"/>
 
@@ -542,12 +542,12 @@
     <class
         class="canonical.launchpad.database.Builder">
         <allow
-            interface="lp.soyuz.interfaces.builder.IBuilder"/>
+            interface="lp.buildmaster.interfaces.builder.IBuilder"/>
         <allow
             interface="canonical.launchpad.interfaces.IHasBuildRecords"/>
         <require
             permission="launchpad.Edit"
-            set_schema="lp.soyuz.interfaces.builder.IBuilder"/>
+            set_schema="lp.buildmaster.interfaces.builder.IBuilder"/>
     </class>
 
     <!-- BuildQueue -->

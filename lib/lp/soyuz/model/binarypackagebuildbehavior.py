@@ -24,7 +24,7 @@ from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.builder import BuildSlaveFailure, CannotBuild
+from lp.buildmaster.interfaces.builder import BuildSlaveFailure, CannotBuild
 
 from zope.component import getUtility
 from zope.interface import implements

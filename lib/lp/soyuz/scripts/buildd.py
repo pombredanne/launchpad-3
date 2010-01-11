@@ -16,7 +16,7 @@ from zope.component import getUtility
 from lp.archivepublisher.debversion import Version
 from lp.buildmaster.master import BuilddMaster
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
