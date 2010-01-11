@@ -85,7 +85,7 @@ class IBranchScanJobSource(Interface):
         """
 
     def iterReady():
-        """Iterate through a// IBranchScanJobs."""
+        """Iterate through all IBranchScanJobs."""
 
 
 class IBranchUpgradeJob(IRunnableJob):

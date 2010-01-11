@@ -260,12 +260,12 @@ class BranchScanJob(BranchJobDerived):
 
     @classmethod
     def create(cls, branch):
-        """SEee 'IBranchUpgradeJobSource'."""
+        """See `IBranchUpgradeJobSource`."""
         branch_job = BranchJob(branch, BranchJobType.SCAN_BRANCH, {})
         return cls(branch_job)
 
     def run(self):
-        """See 'IBranchScanJob'."""
+        """See `IBranchScanJob`."""
         bzrsync = BzrSync(self.branch)
         bzrsync.syncBranchAndClose()
 

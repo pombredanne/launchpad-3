@@ -211,12 +211,21 @@ class TestBranchScanJob(TestCaseWithFactory):
         bzr_tree.commit('Third commit', rev_id='rev3')
         LaunchpadZopelessLayer.commit()
 
-        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         job = BranchScanJob.create(db_branch)
-        job.run()
         LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        job.run()
+        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
 
         self.assertEqual(db_branch.revision_count, 3)
+
+        bzr_tree.commit('Fourth commit', rev_id='rev4')
+        bzr_tree.commit('Fifth commit', rev_id='rev5')
+
+        job = BranchScanJob.create(db_branch)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        job.run()
+
+        self.assertEqual(db_branch.revision_count, 5)
 
 
 class TestBranchUpgradeJob(TestCaseWithFactory):
