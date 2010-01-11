@@ -55,7 +55,7 @@ from lp.soyuz.interfaces.build import (
 from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import active_publishing_status
 from lp.soyuz.model.binarypackagerelease import BinaryPackageRelease
-from lp.soyuz.model.builder import Builder
+from lp.buildmaster.model.builder import Builder
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.files import BinaryPackageFile

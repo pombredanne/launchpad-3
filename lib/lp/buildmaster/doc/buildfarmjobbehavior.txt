@@ -68,7 +68,7 @@ the current job. Bob the builder currently has a binary package job and so
 finds itself with a binary package build behavior which defines the status
 attribute with some binary-build specific information.
 
-    >>> from lp.soyuz.model.builder import Builder
+    >>> from lp.buildmaster.model.builder import Builder
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
