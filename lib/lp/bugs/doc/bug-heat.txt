@@ -213,11 +213,8 @@ that all the updates we've made are in the database.
     >>> transaction.commit()
 
     >>> bug_heat_updater.updateBugHeat()
-    INFO  Updating heat scores for all bugs
-    DEBUG Updating heat for bug 1
-    DEBUG Updating heat for bug 2
-    DEBUG Updating heat for bug 3
-    DEBUG Updating heat for bug 4
+    INFO Updating heat scores for all bugs
+    INFO Updating 1 Bugs (starting id: ...)
     ...
     INFO Done updating heat for ... bugs
 
