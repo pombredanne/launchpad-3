@@ -185,33 +185,3 @@ For our bug, the total heat will be 470:
 
     >>> bug_heat_calculator.getBugHeat()
     470
-
-
-The BugHeatUpdater class
----------------------------
-
-In order to calculate bug heat we need to use the BugHeatUpdater
-class, which is designed precisely for that task.
-
-    >>> from lp.bugs.scripts.bugheat import BugHeatUpdater
-    >>> from canonical.launchpad.scripts import FakeLogger
-
-    >>> bug_heat_updater = BugHeatUpdater(transaction, logger=FakeLogger())
-
-BugHeatUpdater's updateBugHeat() method will update the heat for all the
-bugs currently held in Launchpad. We'll commit our transaction now so
-that all the updates we've made are in the database.
-
-    >>> transaction.commit()
-
-    >>> bug_heat_updater.updateBugHeat()
-    INFO Updating heat scores for all bugs
-    INFO Updating 1 Bugs (starting id: ...)
-    ...
-    INFO Done updating heat for ... bugs
-
-The heat of the bug that we created at the start of this document
-should now be 470.
-
-    >>> bug.heat
-    470
