@@ -49,8 +49,8 @@ from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.builder import (
-    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotResumeHost,
-    IBuilder, IBuilderSet, ProtocolVersionMismatch)
+    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
+    CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus)
@@ -119,6 +119,20 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         stdout, stderr = resume_process.communicate()
 
         return (stdout, stderr, resume_process.returncode)
+
+    def cacheFileOnSlave(self, logger, libraryfilealias):
+        """See `IBuilder`."""
+        url = libraryfilealias.http_url
+        logger.debug("Asking builder on %s to ensure it has file %s "
+                     "(%s, %s)" % (self.url, libraryfilealias.filename,
+                                   url, libraryfilealias.content.sha1))
+        self._sendFileToSlave(url, libraryfilealias.content.sha1)
+
+    def _sendFileToSlave(self, url, sha1, username="", password=""):
+        """Helper to send the file at 'url' with 'sha1' to this builder."""
+        present, info = self.ensurepresent(sha1, url, username, password)
+        if not present:
+            raise CannotFetchFile(url, info)
 
     def build(self, buildid, builder_type, chroot_sha1, filemap, args):
         """Build a thing on this build slave.
@@ -200,28 +214,6 @@ class Builder(SQLBase):
 
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
-
-    def cacheFileOnSlave(self, logger, libraryfilealias):
-        """See `IBuilder`."""
-        url = libraryfilealias.http_url
-        logger.debug("Asking builder on %s to ensure it has file %s "
-                     "(%s, %s)" % (self.url, libraryfilealias.filename,
-                                   url, libraryfilealias.content.sha1))
-        self._sendFileToSlave(url, libraryfilealias.content.sha1)
-
-    def _sendFileToSlave(self, url, sha1, username="", password=""):
-        """Helper to send the file at 'url' with 'sha1' to this builder."""
-        present, info = self.slave.ensurepresent(
-            sha1, url, username, password)
-        if not present:
-            message = """Slave '%s' (%s) was unable to fetch file.
-            ****** URL ********
-            %s
-            ****** INFO *******
-            %s
-            *******************
-            """ % (self.name, self.url, url, info)
-            raise BuildDaemonError(message)
 
     def checkCanBuildForDistroArchSeries(self, distro_arch_series):
         """See IBuilder."""
@@ -322,6 +314,15 @@ class Builder(SQLBase):
                 "Disabling builder: %s" % self._builder.url, exc_info=1)
             self.failbuilder(
                 "Exception (%s) when setting up to new job" % (e,))
+        except CannotFetchFile, e:
+            message = """Slave '%s' (%s) was unable to fetch file.
+            ****** URL ********
+            %s
+            ****** INFO *******
+            %s
+            *******************
+            """ % (self.name, self.url, e.file_url, e.error_information)
+            raise BuildDaemonError(message)
         except socket.error, e:
             error_message = "Exception (%s) when setting up new job" % (e,)
             self.handleTimeout(logger, error_message)

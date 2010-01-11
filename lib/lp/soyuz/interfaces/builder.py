@@ -12,6 +12,7 @@ __all__ = [
     'BuildJobMismatch',
     'BuildSlaveFailure',
     'CannotBuild',
+    'CannotFetchFile',
     'CannotResumeHost',
     'IBuilder',
     'IBuilderSet',
@@ -32,6 +33,15 @@ from canonical.launchpad.validators.url import builder_url_validator
 
 class BuildDaemonError(Exception):
     """The class of errors raised by the buildd classes"""
+
+
+class CannotFetchFile(BuildDaemonError):
+    """The slave was unable to fetch the file."""
+
+    def __init__(self, file_url, error_information):
+        super(CannotFetchFile, self).__init__()
+        self.file_url = file_url
+        self.error_information = error_information
 
 
 class ProtocolVersionMismatch(BuildDaemonError):
