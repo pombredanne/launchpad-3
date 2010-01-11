@@ -56,3 +56,4 @@ lazr-js
 .bazaar
 .cache
 .subversion
+lib/canonical/buildd/launchpad-files
