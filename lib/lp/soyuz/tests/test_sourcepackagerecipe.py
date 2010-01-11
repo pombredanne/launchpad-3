@@ -229,6 +229,24 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.check_recipe_branch(
             child_branch, "zam", merged_branch.bzr_identity)
 
+    def test_builds_recipe_with_merge_then_nest(self):
+        nested_branch = self.factory.makeAnyBranch()
+        merged_branch = self.factory.makeAnyBranch()
+        base_branch = self.get_recipe(
+            self.basic_header_and_branch
+            + "merge zam %s\nnest bar %s baz"
+            % (merged_branch.bzr_identity, nested_branch.bzr_identity))
+        self.check_base_recipe_branch(
+            base_branch, self.base_branch.bzr_identity, num_child_branches=2)
+        child_branch, location = base_branch.child_branches[0].as_tuple()
+        self.assertEqual(None, location)
+        self.check_recipe_branch(
+            child_branch, "zam", merged_branch.bzr_identity)
+        child_branch, location = base_branch.child_branches[1].as_tuple()
+        self.assertEqual("baz", location)
+        self.check_recipe_branch(
+            child_branch, "bar", nested_branch.bzr_identity)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
