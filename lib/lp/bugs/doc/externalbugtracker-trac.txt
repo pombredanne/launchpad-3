@@ -48,17 +48,45 @@ to validate the token.
     >>> chosen_trac.baseurl
     'http://example.com'
 
-In the unlikely case where the token would be valid, a 200 would be
-returned. This also causes a TracLPPlugin to be used.
+Some Trac instances in the wild return HTTP 200 when the resource is
+not found (HTTP 404 would be more appropriate). A distinguishing
+difference between a 200 response from a broken Trac and a response
+from a Trac with the plugin installed (when we've accidentally passed
+a valid token, which is very unlikely), is that the broken Trac will
+not include a "trac_auth" cookie.
 
     >>> from httplib import HTTPMessage
     >>> from urllib import addinfourl
     >>> from StringIO import StringIO
-    >>> class TracHavingLPPlugin200(Trac):
+
+    >>> class TracReturning200ForPageNotFound(Trac):
     ...     def urlopen(self, url):
     ...         print url
     ...         return addinfourl(
     ...             StringIO(''), HTTPMessage(StringIO('')), url)
+
+    >>> class TracHavingLPPlugin200(Trac):
+    ...     def urlopen(self, url):
+    ...         print url
+    ...         return addinfourl(
+    ...             StringIO(''), HTTPMessage(
+    ...                 StringIO('Set-Cookie: trac_auth=1234')), url)
+
+The plain, non-plugin, external bug tracker is selected for broken
+Trac installations:
+
+    >>> trac = TracReturning200ForPageNotFound('http://example.com/')
+    >>> chosen_trac = trac.getExternalBugTrackerToUse()
+    http://example.com/launchpad-auth/check
+
+    >>> isinstance(chosen_trac, TracLPPlugin)
+    False
+    >>> chosen_trac.baseurl
+    'http://example.com'
+
+In the event that our deliberately bogus token is considered valid,
+the external bug tracker that groks the plugin is selected:
+
     >>> trac = TracHavingLPPlugin200('http://example.com/')
     >>> chosen_trac = trac.getExternalBugTrackerToUse()
     http://example.com/launchpad-auth/check

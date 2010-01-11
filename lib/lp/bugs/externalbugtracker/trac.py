@@ -12,6 +12,7 @@ import time
 import urllib2
 import xmlrpclib
 
+from Cookie import SimpleCookie
 from cookielib import CookieJar
 from datetime import datetime
 from email.Utils import parseaddr
@@ -61,11 +62,26 @@ class Trac(ExternalBugTracker):
         # Any token will do.
         auth_url = urlappend(base_auth_url, 'check')
         try:
-            self.urlopen(auth_url)
+            response = self.urlopen(auth_url)
         except urllib2.HTTPError, error:
-            if error.code != 401:
+            # If the error is HTTP 401 Unauthorized then we're
+            # probably talking to the LP plugin.
+            if error.code == 401:
+                return TracLPPlugin(self.baseurl)
+            else:
                 return self
-        return TracLPPlugin(self.baseurl)
+        else:
+            # If the response contains a trac_auth cookie then we're
+            # talking to the LP plugin. However, it's unlikely that
+            # the remote system will authorize the bogus auth token we
+            # sent, so this check is really intended to detect broken
+            # Trac instances that return HTTP 200 for a missing page.
+            for set_cookie in response.headers.getheaders('Set-Cookie'):
+                cookie = SimpleCookie(set_cookie)
+                if 'trac_auth' in cookie:
+                    return TracLPPlugin(self.baseurl)
+            else:
+                return self
 
     def supportsSingleExports(self, bug_ids):
         """Return True if the Trac instance provides CSV exports for single
