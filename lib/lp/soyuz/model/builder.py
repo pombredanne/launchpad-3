@@ -590,7 +590,7 @@ class Builder(SQLBase):
             return None
 
         if buildd_slave is not None:
-            self.setSlaveForTesting(slave)
+            self.setSlaveForTesting(buildd_slave)
 
         self._dispatchBuildCandidate(candidate)
         return candidate
