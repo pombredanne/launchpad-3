@@ -103,7 +103,7 @@ class BugHeatTunableLoop:
         end = self.offset + chunk_size
 
         self.transaction.begin()
-        # XXX 2010-01-08 gmb:
+        # XXX 2010-01-08 gmb bug=505850:
         #     This method call should be taken out and shot as soon as
         #     we have a proper permissions system for scripts.
         bugs = list(getUtility(IBugSet).dangerousGetAllBugs()[start:end])
