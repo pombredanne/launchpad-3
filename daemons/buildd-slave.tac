@@ -23,7 +23,9 @@ conf = SafeConfigParser()
 conf.read(conffile)
 slave = XMLRPCBuildDSlave(conf)
 
-slave.registerBuilder(BinaryPackageBuildManager,"debian")
+# 'debian' is the old name. It remains here for compatibility.
+slave.registerBuilder(BinaryPackageBuildManager, "debian")
+slave.registerBuilder(BinaryPackageBuildManager, "binarypackage")
 
 application = service.Application('BuildDSlave')
 builddslaveService = service.IServiceCollection(application)
