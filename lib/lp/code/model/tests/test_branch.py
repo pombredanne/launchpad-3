@@ -75,6 +75,7 @@ class TestCodeImport(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestCodeImport, self).setUp()
         login('test@canonical.com')
         self.factory = LaunchpadObjectFactory()
 
@@ -650,6 +651,7 @@ class TestBranchDeletionConsequences(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(TestBranchDeletionConsequences, self).setUp()
         login('test@canonical.com')
         self.factory = LaunchpadObjectFactory()
         # Has to be a product branch because of merge proposals.
@@ -1035,7 +1037,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, 'admin@canonical.com')
+        super(BranchAddLandingTarget, self).setUp('admin@canonical.com')
         self.product = self.factory.makeProduct()
 
         self.user = self.factory.makePerson()
@@ -1048,6 +1050,7 @@ class BranchAddLandingTarget(TestCaseWithFactory):
 
     def tearDown(self):
         logout()
+        super(BranchAddLandingTarget, self).tearDown()
 
     def test_junkSource(self):
         """Junk branches cannot be used as a source for merge proposals."""
