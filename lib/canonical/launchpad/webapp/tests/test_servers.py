@@ -418,7 +418,7 @@ class TestLaunchpadBrowserRequest(TestCase):
             {'QUERY_STRING': "a=1&b=2&c=3", 'REQUEST_METHOD': 'POST'})
         self.assertEqual(request.method, 'POST')
         self.assertEqual(
-            {'a':['1'], 'b': ['2'], 'c': ['3']},
+            {'a': ['1'], 'b': ['2'], 'c': ['3']},
             request.query_string_params,
             "The query_string_params dict is populated from the "
             "QUERY_STRING during POST requests.")
@@ -461,4 +461,3 @@ def test_suite():
         optionflags=NORMALIZE_WHITESPACE | ELLIPSIS))
     suite.addTest(unittest.TestLoader().loadTestsFromName(__name__))
     return suite
-
