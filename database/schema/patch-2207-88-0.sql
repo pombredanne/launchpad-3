@@ -4,7 +4,8 @@ CREATE TABLE SourcePackageRecipeData (
     id serial PRIMARY KEY,
     base_branch integer NOT NULL REFERENCES Branch,
     recipe_format text NOT NULL,
-    deb_version_template text NOT NULL
+    deb_version_template text NOT NULL,
+    revspec text
 );
 
 CREATE TABLE SourcePackageRecipeDataInstruction (
