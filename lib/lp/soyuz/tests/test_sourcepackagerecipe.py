@@ -156,7 +156,7 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         super(TestRecipeBranchRoundTripping, self).setUp()
         self.base_branch = self.factory.makeAnyBranch()
         self.basic_header_and_branch = self.basic_header \
-                                       + self.base_branch.bzr_identity
+                                       + self.base_branch.bzr_identity + '\n'
 
     def get_recipe(self, recipe_text):
         builder_recipe = RecipeParser(recipe_text).parse()
@@ -189,6 +189,17 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         base_branch = self.get_recipe(self.basic_header_and_branch)
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity)
+
+    def test_builds_recipe_with_merge(self):
+        merged_branch = self.factory.makeAnyBranch()
+        base_branch = self.get_recipe(self.basic_header_and_branch
+                + "merge bar " + merged_branch.bzr_identity)
+        self.check_base_recipe_branch(
+            base_branch, self.base_branch.bzr_identity, num_child_branches=1)
+        child_branch, location = base_branch.child_branches[0].as_tuple()
+        self.assertEqual(None, location)
+        self.check_recipe_branch(
+            child_branch, "bar", merged_branch.bzr_identity)
 
 
 def test_suite():
