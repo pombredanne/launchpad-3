@@ -342,7 +342,7 @@ class BuilddManager(service.Service):
 
             slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
             candidate = builder.findAndStartJob(buildd_slave=slave)
-            if candidate is not None:
+            if builder.currentjob is not None:
                 recording_slaves.append(slave)
                 transaction.commit()
 
