@@ -7,8 +7,7 @@ then returned each time it is asked for.
 
 __metaclass__ = type
 
-# XXX: Move this to lp.services or lazr.something
-
+# XXX: JonathanLange 2010-01-11 bug=505731: Move this to lp.services.
 
 def cachedproperty(attrname_or_fn):
     """A decorator for methods that makes them properties with their return
