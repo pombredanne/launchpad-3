@@ -42,17 +42,16 @@ class IBuildFarmJobBehavior(Interface):
         """Dispatch a specific build to the slave.
 
         :param build_queue_item_id: An identifier for the build queue item.
-        :logger: A logger to be used to log diagnostic information.
+        :param logger: A logger to be used to log diagnostic information.
         """
 
     def verifyBuildRequest(logger):
         """Carry out any pre-build checks.
 
-        :param build_queue_item: The `BuildQueueItem` that is to be built.
-        :logger: A logger to be used to log diagnostic information.
+        :param logger: A logger to be used to log diagnostic information.
         """
 
-    def slaveStatus(self, raw_slave_status):
+    def slaveStatus(raw_slave_status):
         """Return a dict of custom slave status values for this behavior.
 
         :param raw_slave_status: The value returned by the build slave's
