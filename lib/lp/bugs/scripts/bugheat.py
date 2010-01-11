@@ -106,13 +106,14 @@ class BugHeatTunableLoop:
         # XXX 2010-01-08 gmb bug=505850:
         #     This method call should be taken out and shot as soon as
         #     we have a proper permissions system for scripts.
-        bugs = list(getUtility(IBugSet).dangerousGetAllBugs()[start:end])
+        bugs = getUtility(IBugSet).dangerousGetAllBugs()[start:end]
 
         self.offset = None
-        if bugs:
-            starting_id = bugs[0].id
+        bug_count = bugs.count()
+        if bug_count > 0:
+            starting_id = bugs.first().id
             self.logger.info("Updating %i Bugs (starting id: %i)" %
-                (len(bugs), starting_id))
+                (bug_count, starting_id))
 
         for bug in bugs:
             # We set the starting point of the next batch to the Bug
