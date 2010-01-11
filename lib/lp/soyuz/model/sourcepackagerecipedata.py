@@ -116,16 +116,17 @@ class _SourcePackageRecipeData(Storm):
         base_branch = BaseRecipeBranch(
             self.base_branch.bzr_identity, self.deb_version_template,
             self.recipe_format, self.revspec)
-        instruction_stack = []
-        for instruction in self.instructions:
-            while instruction_stack and instruction_stack[-1][0] != instruction.parent_instruction:
-                instruction_stack.pop()
-            if instruction_stack:
-                target_branch = instruction_stack[-1][1]
+        insn_stack = []
+        for insn in self.instructions:
+            while insn_stack and insn_stack[-1]['insn'] != insn.parent_instruction:
+                insn_stack.pop()
+            if insn_stack:
+                target_branch = insn_stack[-1]['recipe_branch']
             else:
                 target_branch = base_branch
-            recipe_branch = instruction.append_to_recipe(target_branch)
-            instruction_stack.append((instruction, recipe_branch))
+            recipe_branch = insn.append_to_recipe(target_branch)
+            insn_stack.append(
+                dict(insn=insn, recipe_branch=recipe_branch))
         return base_branch
 
     def _record_instructions(self, branch, parent_insn, line_number=0):

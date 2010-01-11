@@ -85,7 +85,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
 
     def test_recipe_implements_interface(self):
         # SourcePackageRecipe objects implement ISourcePackageRecipe.
-        recipe = self.makeRecipeWithText(self.makeRecipeText())
+        recipe = self.makeSourcePackageRecipeFromBuilderRecipe(
+            self.makeBuilderRecipe())
         self.assertProvides(recipe, ISourcePackageRecipe)
 
     def DONTtest_recipe_access(self):
@@ -193,67 +194,79 @@ class TestRecipeBranchRoundTripping(TestCaseWithFactory):
         self.assertEqual(num_child_branches, len(branch.child_branches))
 
     def test_builds_simplest_recipe(self):
-        base_branch = self.get_recipe(self.basic_header_and_branch)
+        recipe_text = '''\
+        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        %(base)s
+        ''' % self.branch_identities
+        base_branch = self.get_recipe(recipe_text)
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity)
 
     def test_builds_recipe_with_merge(self):
-        merged_branch = self.factory.makeAnyBranch()
-        base_branch = self.get_recipe(self.basic_header_and_branch
-                + "merge bar " + merged_branch.bzr_identity)
+        recipe_text = '''\
+        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        %(base)s
+        merge bar %(merged)s
+        ''' % self.branch_identities
+        base_branch = self.get_recipe(recipe_text)
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1)
         child_branch, location = base_branch.child_branches[0].as_tuple()
         self.assertEqual(None, location)
         self.check_recipe_branch(
-            child_branch, "bar", merged_branch.bzr_identity)
+            child_branch, "bar", self.merged_branch.bzr_identity)
 
     def test_builds_recipe_with_nest(self):
-        nested_branch = self.factory.makeAnyBranch()
-        base_branch = self.get_recipe(self.basic_header_and_branch
-                + "nest bar %s baz" % nested_branch.bzr_identity)
+        recipe_text = '''\
+        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        %(base)s
+        nest bar %(nested)s baz
+        ''' % self.branch_identities
+        base_branch = self.get_recipe(recipe_text)
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=1)
         child_branch, location = base_branch.child_branches[0].as_tuple()
         self.assertEqual("baz", location)
         self.check_recipe_branch(
-            child_branch, "bar", nested_branch.bzr_identity)
+            child_branch, "bar", self.nested_branch.bzr_identity)
 
     def test_builds_recipe_with_nest_then_merge(self):
-        nested_branch = self.factory.makeAnyBranch()
-        merged_branch = self.factory.makeAnyBranch()
-        base_branch = self.get_recipe(
-            self.basic_header_and_branch
-            + "nest bar %s baz\nmerge zam %s"
-            % (nested_branch.bzr_identity, merged_branch.bzr_identity))
+        recipe_text = '''\
+        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        %(base)s
+        nest bar %(nested)s baz
+        merge zam %(merged)s
+        ''' % self.branch_identities
+        base_branch = self.get_recipe(recipe_text)
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=2)
         child_branch, location = base_branch.child_branches[0].as_tuple()
         self.assertEqual("baz", location)
         self.check_recipe_branch(
-            child_branch, "bar", nested_branch.bzr_identity)
+            child_branch, "bar", self.nested_branch.bzr_identity)
         child_branch, location = base_branch.child_branches[1].as_tuple()
         self.assertEqual(None, location)
         self.check_recipe_branch(
-            child_branch, "zam", merged_branch.bzr_identity)
+            child_branch, "zam", self.merged_branch.bzr_identity)
 
     def test_builds_recipe_with_merge_then_nest(self):
-        nested_branch = self.factory.makeAnyBranch()
-        merged_branch = self.factory.makeAnyBranch()
-        base_branch = self.get_recipe(
-            self.basic_header_and_branch
-            + "merge zam %s\nnest bar %s baz"
-            % (merged_branch.bzr_identity, nested_branch.bzr_identity))
+        recipe_text = '''\
+        # bzr-builder format 0.2 deb-version 0.1-{revno}
+        %(base)s
+        merge zam %(merged)s
+        nest bar %(nested)s baz
+        ''' % self.branch_identities
+        base_branch = self.get_recipe(recipe_text)
         self.check_base_recipe_branch(
             base_branch, self.base_branch.bzr_identity, num_child_branches=2)
         child_branch, location = base_branch.child_branches[0].as_tuple()
         self.assertEqual(None, location)
         self.check_recipe_branch(
-            child_branch, "zam", merged_branch.bzr_identity)
+            child_branch, "zam", self.merged_branch.bzr_identity)
         child_branch, location = base_branch.child_branches[1].as_tuple()
         self.assertEqual("baz", location)
         self.check_recipe_branch(
-            child_branch, "bar", nested_branch.bzr_identity)
+            child_branch, "bar", self.nested_branch.bzr_identity)
 
     def test_builds_a_merge_in_to_a_nest(self):
         recipe_text = '''\
