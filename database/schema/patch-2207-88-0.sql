@@ -20,10 +20,10 @@ CREATE TABLE SourcePackageRecipeDataInstruction (
     parent_instruction integer REFERENCES SourcePackageRecipeDataInstruction
 );
 
-ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__name__recipe
-     UNIQUE (name, recipe);
-ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__line_number__recipe
-     UNIQUE (line_number, recipe);
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__name__recipe_data
+     UNIQUE (name, recipe_data);
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__line_number__recipe_data
+     UNIQUE (line_number, recipe_data);
 ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__directory_not_null
      CHECK ((type = 1 AND directory IS NULL) OR (type != 2 AND directory IS NOT NULL));
 
@@ -90,7 +90,7 @@ CREATE TABLE BuildSourcePackageFromRecipeJob (
     source_package_build integer REFERENCES SourcePackageBuild
 );
 
-ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipejob
+ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipejob__source_package_build
     UNIQUE (source_package_build);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 88, 0);
