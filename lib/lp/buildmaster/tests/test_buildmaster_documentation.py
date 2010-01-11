@@ -43,10 +43,11 @@ def test_suite():
     """
     suite = unittest.TestSuite()
     tests_dir = os.path.dirname(os.path.realpath(__file__))
+    docs_dir = tests_dir + "/../doc"
 
     filenames = [
         filename
-        for filename in os.listdir(tests_dir)
+        for filename in os.listdir(docs_dir)
         if filename.lower().endswith('.txt')
         ]
 
