@@ -18,6 +18,8 @@ Distro series sourcepackages can be linked to product series using the
     >>> sourcepackagename = factory.makeSourcePackageName('hot')
     >>> sourcepackage = factory.makeSourcePackage(
     ...     sourcepackagename=sourcepackagename, distroseries=hoary)
+    >>> spph = factory.makeSourcePackagePublishingHistory(
+    ...     sourcepackagename=sourcepackagename, distroseries=hoary)
     >>> product = factory.makeProduct(name="hot", displayname='Hot')
     >>> productseries = factory.makeProductSeries(
     ...     product=product, name='hotter')
