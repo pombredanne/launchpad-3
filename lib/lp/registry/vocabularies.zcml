@@ -285,21 +285,27 @@
     name="ValidAssignee"
     component="lp.registry.vocabularies.ValidPersonOrTeamVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
-    />
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
 
   <securedutility
     name="ValidMaintainer"
     component="lp.registry.vocabularies.ValidPersonOrTeamVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
-    />
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
 
   <securedutility
     name="ValidOwner"
     component="lp.registry.vocabularies.ValidPersonOrTeamVocabulary"
     provides="zope.schema.interfaces.IVocabularyFactory"
-    />
+    >
+    <allow interface="zope.schema.interfaces.IVocabularyFactory"/>
+  </securedutility>
 
 
   <securedutility

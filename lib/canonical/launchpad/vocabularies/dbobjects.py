@@ -10,9 +10,10 @@ docstring in __init__.py for details.
 __metaclass__ = type
 
 __all__ = [
-    'HostedBranchRestrictedOnOwnerVocabulary',
     'BranchRestrictedOnProductVocabulary',
     'BranchVocabulary',
+    'BugNominatableDistroSeriesVocabulary',
+    'BugNominatableProductSeriesVocabulary',
     'BugNominatableSeriesVocabulary',
     'BugTrackerVocabulary',
     'BugVocabulary',
@@ -25,11 +26,13 @@ __all__ = [
     'FilteredFullLanguagePackVocabulary',
     'FilteredLanguagePackVocabulary',
     'FutureSprintVocabulary',
+    'HostedBranchRestrictedOnOwnerVocabulary',
     'LanguageVocabulary',
-    'PPAVocabulary',
     'PackageReleaseVocabulary',
+    'PPAVocabulary',
     'ProcessorFamilyVocabulary',
     'ProcessorVocabulary',
+    'project_products_using_malone_vocabulary_factory',
     'SpecificationDepCandidatesVocabulary',
     'SpecificationDependenciesVocabulary',
     'SpecificationVocabulary',
@@ -39,7 +42,6 @@ __all__ = [
     'TranslationMessageVocabulary',
     'TranslationTemplateVocabulary',
     'WebBugTrackerVocabulary',
-    'project_products_using_malone_vocabulary_factory',
     ]
 
 import cgi
