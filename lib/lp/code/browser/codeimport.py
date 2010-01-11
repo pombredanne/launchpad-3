@@ -171,18 +171,18 @@ class CodeImportBaseView(LaunchpadFormView):
                     canonical_url(code_import.branch),
                     code_import.branch.unique_name))
 
-    def _validateURL(self, url, existing_import=None):
+    def _validateURL(self, url, existing_import=None, field_name='url'):
         """If the user has specified a url, we need to make sure that there
         isn't already an import with that url."""
         if url is None:
             self.setSecondaryFieldError(
-                'url', 'Enter the URL of a foreign VCS branch.')
+                field_name, 'Enter the URL of a foreign VCS branch.')
         else:
             code_import = getUtility(ICodeImportSet).getByURL(url)
             if (code_import is not None and
                 code_import != existing_import):
                 self.setFieldError(
-                    'url',
+                    field_name,
                     structured("""
                     This foreign branch URL is already specified for
                     the imported branch <a href="%s">%s</a>.""",
@@ -224,6 +224,7 @@ class NewCodeImportForm(Interface):
 
     branch_name = copy_field(
         IBranch['name'],
+        __name__='branch_name',
         title=_('Branch Name'),
         description=_(
             "This will be used in the branch URL to identify the "
@@ -373,9 +374,11 @@ class CodeImportNewView(CodeImportBaseView):
         if rcs_type == RevisionControlSystems.CVS:
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
         elif rcs_type == RevisionControlSystems.BZR_SVN:
-            self._validateURL(data.get('svn_branch_url'))
+            self._validateURL(
+                data.get('svn_branch_url'), field_name='svn_branch_url')
         elif rcs_type == RevisionControlSystems.GIT:
-            self._validateURL(data.get('git_repo_url'))
+            self._validateURL(
+                data.get('git_repo_url'), field_name='git_repo_url')
         else:
             raise AssertionError(
                 'Unexpected revision control type %r.' % rcs_type)

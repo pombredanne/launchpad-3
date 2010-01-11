@@ -120,12 +120,11 @@ class CodeImport(SQLBase):
             "Only makes sense for series with import details set.")
         if self.rcs_type == RevisionControlSystems.CVS:
             return '%s %s' % (self.cvs_root, self.cvs_module)
-        elif self.rcs_type == RevisionControlSystems.SVN:
-            return self.svn_branch_url
-        elif self.rcs_type == RevisionControlSystems.GIT:
-            return self.git_repo_url
-        elif self.rcs_type == RevisionControlSystems.BZR_SVN:
-            return self.svn_branch_url
+        elif self.rcs_type in (
+            RevisionControlSystems.SVN,
+            RevisionControlSystems.GIT,
+            RevisionControlSystems.BZR_SVN):
+            return self.url
         else:
             raise AssertionError(
                 'Unknown rcs type: %s'% self.rcs_type.title)

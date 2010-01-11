@@ -513,8 +513,8 @@ class BranchView(LaunchpadView, FeedsMixin):
         """True if an imported branch's SVN URL is HTTP or HTTPS."""
         # You should only be calling this if it's an SVN code import
         assert self.context.code_import
-        assert self.context.code_import.svn_branch_url
-        url = self.context.code_import.svn_branch_url
+        url = self.context.code_import.url
+        assert url
         # https starts with http too!
         return url.startswith("http")
 

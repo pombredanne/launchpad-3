@@ -167,7 +167,7 @@ The error is shown even if the project is different.
     >>> for message in get_feedback_messages(browser.contents):
     ...     print extract_text(message)
     There is 1 error.
-    This Subversion branch URL is already specified for
+    This foreign branch URL is already specified for
     the imported branch ~no-priv/firefox/imported.
 
 
