@@ -951,19 +951,21 @@ class BugWatchUpdater(object):
         """
         # Construct a list of the comment IDs we want to import; i.e.
         # those which we haven't already imported.
-        all_comment_ids = external_bugtracker.getCommentIds(bug_watch)
+        all_comment_ids = external_bugtracker.getCommentIds(
+            bug_watch.remotebug)
         comment_ids_to_import = [
             comment_id for comment_id in all_comment_ids
             if not bug_watch.hasComment(comment_id)]
 
-        external_bugtracker.fetchComments(bug_watch, comment_ids_to_import)
+        external_bugtracker.fetchComments(
+            bug_watch.remotebug, comment_ids_to_import)
 
         previous_imported_comments = bug_watch.getImportedBugMessages()
         is_initial_import = previous_imported_comments.count() == 0
         imported_comments = []
         for comment_id in comment_ids_to_import:
             displayname, email = external_bugtracker.getPosterForComment(
-                bug_watch, comment_id)
+                bug_watch.remotebug, comment_id)
 
             if displayname is None and email is None:
                 # If we don't have a displayname or an email address
@@ -981,7 +983,7 @@ class BugWatchUpdater(object):
                 "when importing comments for %s." % bug_watch.title)
 
             comment_message = external_bugtracker.getMessageForComment(
-                bug_watch, comment_id, poster)
+                bug_watch.remotebug, comment_id, poster)
 
             bug_message = bug_watch.addComment(comment_id, comment_message)
             imported_comments.append(bug_message)

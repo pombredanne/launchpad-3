@@ -50,7 +50,7 @@ class TestPPAUploadProcessorBase(TestUploadProcessorBase):
         Additionally to the TestUploadProcessorBase.setUp, set 'breezy'
         distroseries and an new uploadprocessor instance.
         """
-        TestUploadProcessorBase.setUp(self)
+        super(TestPPAUploadProcessorBase, self).setUp()
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         # Let's make 'name16' person member of 'launchpad-beta-tester'
         # team only in the context of this test.

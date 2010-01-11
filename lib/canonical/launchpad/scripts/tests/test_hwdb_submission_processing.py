@@ -34,6 +34,7 @@ from canonical.testing import BaseLayer, LaunchpadZopelessLayer
 
 from lp.testing import TestCase, validate_mock_class
 
+
 class TestCaseHWDB(TestCase):
     """Common base class for HWDB processing tests."""
 
@@ -91,6 +92,7 @@ class TestCaseHWDB(TestCase):
 
     def setUp(self):
         """Setup the test environment."""
+        super(TestCaseHWDB, self).setUp()
         self.log = logging.getLogger('test_hwdb_submission_parser')
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
@@ -4534,6 +4536,7 @@ class TestHWDBSubmissionTablePopulation(TestCaseHWDB):
 
     def setUp(self):
         """Setup the test environment."""
+        super(TestHWDBSubmissionTablePopulation, self).setUp()
         self.log = logging.getLogger('test_hwdb_submission_parser')
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
