@@ -11,9 +11,6 @@ __all__ = [
     'BinaryPackageBuildBehavior',
     ]
 
-import socket
-import xmlrpclib
-
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import urlappend
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
@@ -24,7 +21,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.builder import BuildSlaveFailure, CannotBuild
+from lp.soyuz.interfaces.builder import CannotBuild
 
 from zope.interface import implements
 
