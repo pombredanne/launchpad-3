@@ -90,9 +90,9 @@ while True:
                 if not warn_only:
                     rv = 3
 
-if rv:
+if len(errlist):
     if in_line:
-        print errlist
+	print errlist
     print """
 
 Our automated build log filter detected the problem(s) above that will

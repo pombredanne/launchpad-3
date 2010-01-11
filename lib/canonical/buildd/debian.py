@@ -134,11 +134,11 @@ class DebianBuildManager(BuildManager):
         """Run the sbuild process to build the package."""
         args = ["sbuild-package", self._buildid ]
         if self.suite:
-            args.extend(self.suite)
+            args.extend([self.suite])
             args.extend(self._sbuildargs)
             args.extend(["--dist=" + self.suite])
         else:
-            args.extend('autobuild')
+            args.extend(['autobuild'])
             args.extend(self._sbuildargs)
             args.extend(["--dist=autobuild"])
         if self.arch_indep:

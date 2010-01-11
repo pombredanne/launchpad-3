@@ -60,7 +60,7 @@ case $hostarch in
     ;;
 esac
 
-case $SUITE in)
+case $SUITE in
     warty*|hoary*|breezy*|dapper*|edgy*|feisty*|gutsy*|hardy*|karmic*)
         WARN="--warnonly"
         ;;
