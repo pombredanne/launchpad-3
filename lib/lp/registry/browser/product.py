@@ -1679,8 +1679,8 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
     def create_product(self, data):
         """Create the product from the user data."""
         # Get optional data.
-        project = data.get('project', None)
-        description = data.get('description', None)
+        project = data.get('project')
+        description = data.get('description')
         return getUtility(IProductSet).createProduct(
             owner=self.user,
             name=data['name'],
