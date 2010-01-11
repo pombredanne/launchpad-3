@@ -12,7 +12,8 @@ __all__ = [
 
 import logging
 
-from zope.component import getUtility
+from zope.component import getSiteManager, getUtility
+
 from zope.interface import implements
 
 from sqlobject import (
@@ -24,7 +25,8 @@ from canonical import encoding
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmjob import (
+    BuildFarmJobType, IBuildFarmJob)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.services.job.interfaces.job import JobStatus
@@ -57,11 +59,28 @@ class BuildQueue(SQLBase):
         return IBuildFarmJobBehavior(self.specific_job)
 
     @property
+    def specific_job_classes(self):
+        """See `IBuildQueue`."""
+        job_classes = dict()
+        # Get all components that implement the `IBuildFarmJob` interface.
+        components = getSiteManager()
+        implementations = sorted(components.getUtilitiesFor(IBuildFarmJob))
+        # The above yields a collection of 2-tuples where the first element
+        # is the name of the `BuildFarmJobType` enum and the second element
+        # is the implementing class respectively.
+        for job_enum_name, job_class in implementations:
+            job_enum = getattr(BuildFarmJobType, job_enum_name)
+            job_classes[job_enum] = job_class
+
+        return job_classes
+
+    @property
     def specific_job(self):
         """See `IBuildQueue`."""
+        specific_class = self.specific_job_classes[self.job_type]
         store = Store.of(self)
         result_set = store.find(
-            BuildPackageJob, BuildPackageJob.job == self.job)
+            specific_class, specific_class.job == self.job)
         return result_set.one()
 
     @property

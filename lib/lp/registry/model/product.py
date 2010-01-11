@@ -69,8 +69,10 @@ from lp.answers.model.question import (
 from lp.blueprints.model.specification import (
     HasSpecificationsMixin, Specification)
 from lp.blueprints.model.sprint import HasSprintsMixin
+from lp.translations.interfaces.translationimportqueue import (
+    ITranslationImportQueue)
 from lp.translations.model.translationimportqueue import (
-    HasTranslationImportsMixin, ITranslationImportQueue)
+    HasTranslationImportsMixin)
 from lp.registry.model.structuralsubscription import (
     StructuralSubscriptionTargetMixin)
 from canonical.launchpad.helpers import shortlist
