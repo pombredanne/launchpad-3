@@ -59,7 +59,7 @@ class JobStatus(DBEnumeratedType):
     SUSPENDED = DBItem(4, """
         Suspended
 
-        The job is suspended because it's dependencies are deactivated.
+        The job is suspended, so should not be run.
         """)
 
 

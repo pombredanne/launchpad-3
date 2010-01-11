@@ -125,6 +125,8 @@ class Job(SQLBase):
 
     def resume(self):
         """See `IJob`."""
+        if self.status is not JobStatus.SUSPENDED:
+            raise InvalidTransition(self._status, JobStatus.WAITING)
         self._set_status(JobStatus.WAITING)
 
 
