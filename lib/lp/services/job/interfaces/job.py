@@ -56,6 +56,12 @@ class JobStatus(DBEnumeratedType):
         The job was run, but failed.  Will not be run again.
         """)
 
+    SUSPENDED = DBItem(4, """
+        Suspended
+
+        The job is suspended because it's dependencies are deactivated.
+        """)
+
 
 class IJob(Interface):
     """Basic attributes of a job."""
