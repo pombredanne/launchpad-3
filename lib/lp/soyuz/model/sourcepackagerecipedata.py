@@ -11,7 +11,8 @@ interfaces.
 __metaclass__ = type
 __all__ = ['_SourcePackageRecipeData']
 
-from bzrlib.plugins.builder.recipe import BaseRecipeBranch, RecipeBranch
+from bzrlib.plugins.builder.recipe import (
+    BaseRecipeBranch, MergeInstruction, NestInstruction, RecipeBranch)
 
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -119,15 +120,23 @@ class _SourcePackageRecipeData(Storm):
         return base_branch
 
     def _record_instructions(self, branch, parent_insn):
-        for b in branch.child_branches:
-            db_branch = getUtility(IBranchLookup).getByUrl(b.recipe_branch.url)
-            type = InstructionType.MERGE
+        for instruction in branch.child_branches:
+            db_branch = getUtility(IBranchLookup).getByUrl(
+                instruction.recipe_branch.url)
+            if isinstance(instruction, MergeInstruction):
+                type = InstructionType.MERGE
+            elif isinstance(instruction, NestInstruction):
+                type = InstructionType.NEST
+            else:
+                raise AssertionError(
+                    "Unsupported instruction %r" % instruction)
             comment = None
             line_number = 0
             insn = _SourcePackageRecipeDataInstruction(
-                b.recipe_branch.name, type, comment, line_number, db_branch,
-                b.recipe_branch.revspec, b.nest_path, self, parent_insn)
-            self._record_instructions(b.recipe_branch, insn)
+                instruction.recipe_branch.name, type, comment, line_number,
+                db_branch, instruction.recipe_branch.revspec,
+                instruction.nest_path, self, parent_insn)
+            self._record_instructions(instruction.recipe_branch, insn)
 
     def setRecipe(self, builder_recipe):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
