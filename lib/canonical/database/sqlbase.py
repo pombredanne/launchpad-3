@@ -268,7 +268,10 @@ class ZopelessTransactionManager(object):
     @classmethod
     def _get_zopeless_connection_config(self, dbname, dbhost):
         # This method exists for testability.
-        main_connection_string = dbconfig.main_master
+
+        # We must connect to the read-write DB here, so we use rw_main_master
+        # directly.
+        main_connection_string = dbconfig.rw_main_master
         auth_connection_string = dbconfig.auth_master
 
         # Override dbname and dbhost in the connection string if they
@@ -755,20 +758,14 @@ def connect(user, dbname=None, isolation=ISOLATION_LEVEL_DEFAULT):
 
     Default database name is the one specified in the main configuration file.
     """
-    con_str = connect_string(user, dbname)
-    con = psycopg2.connect(con_str)
-    con.set_isolation_level(isolation)
-    return con
-
-
-def connect_string(user, dbname=None):
-    """Return a PostgreSQL connection string."""
     from canonical import lp
     # We start with the config string from the config file, and overwrite
     # with the passed in dbname or modifications made by db_options()
     # command line arguments. This will do until db_options gets an overhaul.
-    con_str = dbconfig.main_master
     con_str_overrides = []
+    # We must connect to the read-write DB here, so we use rw_main_master
+    # directly.
+    con_str = dbconfig.rw_main_master
     assert 'user=' not in con_str, (
             'Connection string already contains username')
     if user is not None:
@@ -782,7 +779,11 @@ def connect_string(user, dbname=None):
         con_str = re.sub(r'dbname=\S*', '', con_str) # Remove if exists.
         con_str_overrides.append('dbname=%s' % dbname)
 
-    return ' '.join([con_str] + con_str_overrides)
+    con_str = ' '.join([con_str] + con_str_overrides)
+
+    con = psycopg2.connect(con_str)
+    con.set_isolation_level(isolation)
+    return con
 
 
 class cursor:

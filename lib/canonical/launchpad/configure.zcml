@@ -94,4 +94,9 @@
       directory="../../contrib/PlotKit"
       />
 
+  <utility
+      factory="canonical.launchpad.readonly.IsReadOnlyUtility"
+      provides="canonical.launchpad.readonly.IIsReadOnly"
+      permission="zope.Public"
+      />
 </configure>

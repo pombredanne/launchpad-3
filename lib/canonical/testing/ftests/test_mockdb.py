@@ -92,7 +92,7 @@ class MockDbTestCase(unittest.TestCase):
         """Open a connection to the (possibly fake) database."""
         if connection_string is None:
             connection_string = "%s user=%s" % (
-                    dbconfig.main_master, config.launchpad.dbuser)
+                    dbconfig.rw_main_master, config.launchpad.dbuser)
         if self.mode == 'direct':
             con = psycopg2.connect(connection_string)
             #con = canonical.ftests.pgsql._org_connect(connection_string)
@@ -159,9 +159,9 @@ class MockDbTestCase(unittest.TestCase):
 
     # @dont_retry
     def testFailedConnection(self):
-        # Ensure failed database connections are reproducable.
+        # Ensure failed database connections are reproducible.
         for mode in self.modes():
-            connection_string = dbconfig.main_master
+            connection_string = dbconfig.rw_main_master
             connection_string = re.sub(
                     r"dbname=\S*", r"dbname=not_a_sausage", connection_string)
             self.assertRaises(

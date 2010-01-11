@@ -31,7 +31,7 @@ from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, PersonCreationRationale)
 from canonical.launchpad.interfaces.validation import valid_password
-from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.readonly import IIsReadOnly
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.interfaces import (
@@ -59,7 +59,7 @@ class UnauthorizedView(SystemErrorView):
         # to render the read-only failure screen so the user knows their
         # request failed for operational reasons rather than a genuine
         # permission problem.
-        if is_read_only():
+        if getUtility(IIsReadOnly).isReadOnly():
             # Our context is an Unauthorized exception, which acts like
             # a tuple containing (object, attribute_requested, permission).
             lp_permission = getUtility(ILaunchpadPermission, self.context[2])

@@ -51,7 +51,7 @@ from canonical.mem import (
     countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
     resident)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
-from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.readonly import IIsReadOnly
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
@@ -187,7 +187,7 @@ class LaunchpadBrowserPublication(
 
     def maybeNotifyReadOnlyMode(self, request):
         """Hook to notify about read-only mode."""
-        if is_read_only():
+        if getUtility(IIsReadOnly).isReadOnly():
             try:
                 INotificationResponse(request).addWarningNotification(
                     structured("""

@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
 from canonical.launchpad.layers import (
     FeedsLayer, setFirstLayer, WebServiceLayer)
 from canonical.launchpad.readonly import (
-    remove_read_only_file, touch_read_only_file)
+    _remove_read_only_file, _touch_read_only_file)
 from lp.testing import TestCase
 from canonical.launchpad.webapp.dbpolicy import (
     BaseDatabasePolicy, LaunchpadDatabasePolicy, MasterDatabasePolicy,
@@ -205,7 +205,7 @@ class LayerDatabasePolicyTestCase(TestCase):
         """WebService requests should use the read only database
         policy in read only mode.
         """
-        touch_read_only_file()
+        _touch_read_only_file()
         try:
             api_prefix = getUtility(
                 IWebServiceConfiguration).service_version_uri_prefix
@@ -215,17 +215,17 @@ class LayerDatabasePolicyTestCase(TestCase):
             policy = IDatabasePolicy(request)
             self.assertIsInstance(policy, ReadOnlyLaunchpadDatabasePolicy)
         finally:
-            remove_read_only_file()
+            _remove_read_only_file()
 
     def test_read_only_mode_uses_ReadOnlyLaunchpadDatabasePolicy(self):
-        touch_read_only_file()
+        _touch_read_only_file()
         try:
             request = LaunchpadTestRequest(
                 SERVER_URL='http://launchpad.dev')
             policy = IDatabasePolicy(request)
             self.assertIsInstance(policy, ReadOnlyLaunchpadDatabasePolicy)
         finally:
-            remove_read_only_file()
+            _remove_read_only_file()
 
     def test_other_request_uses_LaunchpadDatabasePolicy(self):
         """By default, requests should use the LaunchpadDatabasePolicy."""

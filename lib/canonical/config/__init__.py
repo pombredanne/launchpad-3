@@ -19,10 +19,13 @@ from urlparse import urlparse, urlunparse
 import pkg_resources
 import ZConfig
 
+from zope.component import getUtility
+from zope.component.interfaces import ComponentLookupError
+
 from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
 
-from canonical.launchpad.readonly import is_read_only
+from canonical.launchpad.readonly import IIsReadOnly, read_only_file_exists
 
 
 __all__ = [
@@ -374,14 +377,28 @@ class DatabaseConfig:
 
     @property
     def main_master(self):
-        if is_read_only():
+        # XXX: Nasty hack because this code is called as part of, say,
+        # execute_zcml_for_scripts(), and in that case we won't have the ZCA
+        # setup yet.  Obviously need to, at least, do something else to figure
+        # out whether or not the ZCA is setup.
+        try:
+            is_read_only = getUtility(IIsReadOnly).isReadOnly()
+        except ComponentLookupError:
+            is_read_only = read_only_file_exists()
+
+        if is_read_only:
             return self.ro_main_master
         else:
             return self.rw_main_master
 
     @property
     def main_slave(self):
-        if is_read_only():
+        try:
+            is_read_only = getUtility(IIsReadOnly).isReadOnly()
+        except ComponentLookupError:
+            is_read_only = read_only_file_exists()
+
+        if is_read_only:
             return self.ro_main_slave
         else:
             return self.rw_main_slave
