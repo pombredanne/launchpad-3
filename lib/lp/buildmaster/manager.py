@@ -344,7 +344,7 @@ class BuilddManager(service.Service):
             candidate = builder.findAndStartJob(buildd_slave=slave)
             if candidate is not None:
                 recording_slaves.append(slave)
-            transaction.commit()
+                transaction.commit()
 
         return recording_slaves
 
