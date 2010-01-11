@@ -16,7 +16,7 @@ from bzrlib.plugins.builder.recipe import (
 
 from lazr.enum import DBEnumeratedType, DBItem
 
-from storm.locals import Int, Reference, ReferenceSet, Storm, Unicode
+from storm.locals import Int, Reference, ReferenceSet, Store, Storm, Unicode
 
 from zope.component import getUtility
 
@@ -167,10 +167,10 @@ class _SourcePackageRecipeData(Storm):
             raise TooNewRecipeFormat(builder_recipe.format, 0.2)
         self._scanInstructions(
             builder_recipe, parent_insn=None)
-        # XXX Why doesn't self.instructions.clear() work?
-        IStore(self).find(
-            _SourcePackageRecipeDataInstruction,
-            _SourcePackageRecipeDataInstruction.recipe_data == self).remove()
+        # If this object hasn't been added to a store yet, there can't be any
+        # instructions linking to us yet.
+        if Store.of(self) is not None:
+            self.instructions.find().remove()
         branch_lookup = getUtility(IBranchLookup)
         self.base_branch = branch_lookup.getByUrl(builder_recipe.url)
         self.deb_version_template = unicode(builder_recipe.deb_version)
