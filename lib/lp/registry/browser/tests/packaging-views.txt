@@ -105,6 +105,22 @@ A source package name must be provided.
     ('sourcepackagename', u'Source Package Name', RequiredMissing())
     You must choose the source package name.
 
+In the case of full functionality distributions like Ubuntu, the source
+package must be published in the distro series. 
+
+    >>> vapour_spn = factory.makeSourcePackageName('vapour')
+    >>> form = {
+    ...     'field.distroseries': 'ubuntu/hoary',
+    ...     'field.sourcepackagename': 'vapour',
+    ...     'field.packaging': 'Primary Project',
+    ...     'field.actions.continue': 'Continue',
+    ...     }
+    >>> view = create_initialized_view(
+    ...     productseries, '+addpackage', form=form)
+    >>> for error in view.errors:
+    ...     print error
+    The source package is not published in Hoary.
+
 The +addpackage view provides the default_distroseries property. It is None
 by default, but subclasses may change it.
 
