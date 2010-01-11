@@ -402,7 +402,7 @@ class ProductSeriesUbuntuPackagingView(PackagingAddView):
             vocabulary=series_vocabulary,
             description=_(
                 "Select the Ubuntu series that this package is published "
-                "in. The current series is most imporant to the Ubuntu "
+                "in. The current series is most important to the Ubuntu "
                 "community."),
             required=True)
         field = form.Fields(choice, render_context=self.render_context)
