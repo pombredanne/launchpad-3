@@ -21,25 +21,29 @@ class BuildRecipe:
         self.package_name = package_name
         self.suite = suite
         self.tree_path = None
+        self.base_branch = None
 
     def buildTree(self):
-        changed, base_branch = builder.get_prepared_branch_from_recipe(
+        changed, self.base_branch = builder.get_prepared_branch_from_recipe(
             self.recipe_text)
-        tree_path = builder.calculate_package_dir(base_branch,
+        tree_path = builder.calculate_package_dir(self.base_branch,
                                                   self.package_name,
                                                   self.work_dir)
         self.tree_path = tree_path
         os.mkdir(tree_path)
-        builder.build_tree(base_branch, tree_path)
-        builder.add_changelog_entry(base_branch, tree_path,
+        builder.build_tree(self.base_branch, tree_path)
+        builder.add_changelog_entry(self.base_branch, tree_path,
                                     distribution=self.suite,
                                     package=self.package_name,
                                     author_name=self.author_name,
                                     author_email=self.author_email)
-        return recipe.build_manifest(base_branch)
 
     def installBuildDeps(self):
         pass
 
     def buildSourcePackage(self):
-        pass
+        builder.build_source_package(self.tree_path)
+
+    def writeManifest(self):
+        manifest_path = os.path.join(self.work_dir, 'manifest')
+        builder.write_manifest_to_path(manifest_path, self.base_branch)
