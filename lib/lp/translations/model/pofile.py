@@ -1542,19 +1542,25 @@ class POFileSet:
                    ' None at the same time.')
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        general_conditions = And(
+            POFile.path == path,
+            POFile.potemplate == POTemplate.id)
+
         if productseries is not None:
             return store.find(POFile, And(
-                POFile.path == path,
-                POFile.potemplate == POTemplate.id,
+                general_conditions,
                 POTemplate.productseries == productseries))
         else:
+            distro_conditions = And(
+                general_conditions,
+                POTemplate.distroseries == distroseries)
+
             # The POFile belongs to a distribution and it could come from
             # another package that its POTemplate is linked to, so we first
             # check to find it at IPOFile.from_sourcepackagename
             matches = store.find(POFile, And(
-                POFile.path == path,
-                POFile.potemplate == POTemplate.id,
-                POTemplate.distroseries == distroseries,
+                distro_conditions,
                 POFile.from_sourcepackagename == sourcepackagename))
 
             if matches.any() is not None:
@@ -1564,9 +1570,7 @@ class POFileSet:
             # 'IPOFile.from_sourcepackagename' so we do a search using the
             # usual sourcepackagename.
             return store.find(POFile, And(
-                POFile.path == path,
-                POFile.potemplate == POTemplate.id,
-                POTemplate.distroseries == distroseries,
+                distro_conditions,
                 POTemplate.sourcepackagename == sourcepackagename))
 
     def getBatch(self, starting_id, batch_size):

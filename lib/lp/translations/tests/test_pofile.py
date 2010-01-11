@@ -1490,6 +1490,102 @@ class TestPOFileSet(TestCaseWithFactory):
             total + 1,
             pofiles_with_credits.count())
 
+    def test_getPOFilesByPathAndOrigin_path_mismatch(self):
+        # getPOFilesByPathAndOrigin matches on POFile path.
+        template = self.factory.makePOTemplate()
+        pofile = template.newPOFile('ta')
+
+        not_found = self.pofileset.getPOFilesByPathAndOrigin(
+            'tu.po', distroseries=template.distroseries,
+            sourcepackagename=template.sourcepackagename,
+            productseries=template.productseries)
+
+        self.assertContentEqual([], not_found)
+
+    def test_getPOFilesByPathAndOrigin_productseries_none(self):
+        # getPOFilesByPathAndOrigin returns an empty result set if a
+        # ProductSeries search matches no POFiles.
+        productseries = self.factory.makeProductSeries()
+
+        not_found = self.pofileset.getPOFilesByPathAndOrigin(
+            'br.po', productseries=productseries)
+
+        self.assertContentEqual([], not_found)
+
+    def test_getPOFilesByPathAndOrigin_productseries(self):
+        # getPOFilesByPathAndOrigin finds a POFile for a productseries.
+        productseries = self.factory.makeProductSeries()
+        template = self.factory.makePOTemplate(productseries=productseries)
+        pofile = template.newPOFile('nl')
+        removeSecurityProxy(pofile).path = 'nl.po'
+
+        found = self.pofileset.getPOFilesByPathAndOrigin(
+            'nl.po', productseries=productseries)
+
+        self.assertContentEqual([pofile], found)
+
+    def test_getPOFilesByPathAndOrigin_sourcepackage_none(self):
+        # getPOFilesByPathAndOrigin returns an empty result set if a
+        # source-package search matches no POFiles.
+        package = self.factory.makeSourcePackage()
+
+        not_found = self.pofileset.getPOFilesByPathAndOrigin(
+            'sux.po', distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+
+        self.assertContentEqual([], not_found)
+
+    def test_getPOFilesByPathAndOrigin_sourcepackage(self):
+        # getPOFilesByPathAndOrigin finds a POFile for a source package
+        # name.
+        package = self.factory.makeSourcePackage()
+        template = self.factory.makePOTemplate(
+            distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+        pofile = template.newPOFile('kk')
+        removeSecurityProxy(pofile).path = 'kk.po'
+
+        found = self.pofileset.getPOFilesByPathAndOrigin(
+            'kk.po', distroseries=package.distroseries,
+            sourcepackagename=package.sourcepackagename)
+
+        self.assertContentEqual([pofile], found)
+
+    def test_getPOFilesByPathAndOrigin_from_sourcepackage_none(self):
+        # getPOFilesByPathAndOrigin returns an empty result set if a
+        # from-source-package search matches no POFiles.
+        upload_package = self.factory.makeSourcePackage()
+
+        not_found = self.pofileset.getPOFilesByPathAndOrigin(
+            'la.po', distroseries=upload_package.distroseries,
+            sourcepackagename=upload_package.sourcepackagename)
+
+        self.assertContentEqual([], not_found)
+
+    def test_getPOFilesByPathAndOrigin_from_sourcepackage(self):
+        # getPOFilesByPathAndOrigin finds a POFile for the source
+        # package it was uploaded for (which may not be the same as the
+        # source package it's actually in).
+        upload_package = self.factory.makeSourcePackage()
+        distroseries = upload_package.distroseries
+        target_package = self.factory.makeSourcePackage(
+            distroseries=distroseries)
+        template = self.factory.makePOTemplate(
+            distroseries=distroseries,
+            sourcepackagename=target_package.sourcepackagename)
+        removeSecurityProxy(template).from_sourcepackagename = (
+            upload_package.sourcepackagename)
+        pofile = template.newPOFile('ka')
+        removeSecurityProxy(pofile).path = 'ka.po'
+        removeSecurityProxy(pofile).from_sourcepackagename = (
+            upload_package.sourcepackagename)
+
+        found = self.pofileset.getPOFilesByPathAndOrigin(
+            'ka.po', distroseries=distroseries,
+            sourcepackagename=upload_package.sourcepackagename)
+
+        self.assertContentEqual([pofile], found)
+
 
 class TestPOFileStatistics(TestCaseWithFactory):
     """Test PO files statistics calculation."""
