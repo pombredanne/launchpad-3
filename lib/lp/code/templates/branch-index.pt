@@ -163,7 +163,7 @@
 
   <div class="yui-g" tal:condition="view/pending_writes">
     <div class="portlet">
-      <div id="branch-pending-writes">
+      <div id="branch-pending-writes" class="pending-update">
         <h3>Updating branch...</h3>
         <p>
           Launchpad is processing new changes to this branch and will be

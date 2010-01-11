@@ -626,13 +626,13 @@ class BugzillaAPI(Bugzilla):
 
         return bug_products
 
-    def getCommentIds(self, bug_watch):
+    def getCommentIds(self, remote_bug_id):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # Check that the bug exists, first.
         if actual_bug_id not in self._bugs:
-            raise BugNotFound(bug_watch.remotebug)
+            raise BugNotFound(remote_bug_id)
 
         # Get only the remote comment IDs and store them in the
         # 'comments' field of the bug.
@@ -648,9 +648,9 @@ class BugzillaAPI(Bugzilla):
 
         return [str(comment['id']) for comment in bug_comments]
 
-    def fetchComments(self, bug_watch, comment_ids):
+    def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_ids to integers, since
         # BugWatchUpdater.importBugComments() will pass us a list of
@@ -664,7 +664,7 @@ class BugzillaAPI(Bugzilla):
         comments = return_dict['comments']
 
         # As a sanity check, drop any comments that don't belong to the
-        # bug in bug_watch.
+        # bug in remote_bug_id.
         for comment_id, comment in comments.items():
             if int(comment['bug_id']) != actual_bug_id:
                 del comments[comment_id]
@@ -674,9 +674,9 @@ class BugzillaAPI(Bugzilla):
             (int(id), comments[id]) for id in comments)
         self._bugs[actual_bug_id]['comments'] = comments_with_int_ids
 
-    def getPosterForComment(self, bug_watch, comment_id):
+    def getPosterForComment(self, remote_bug_id, comment_id):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_id to integers, since
         # BugWatchUpdater.importBugComments() will pass us a string (see
@@ -693,9 +693,9 @@ class BugzillaAPI(Bugzilla):
 
         return (display_name, email)
 
-    def getMessageForComment(self, bug_watch, comment_id, poster):
+    def getMessageForComment(self, remote_bug_id, comment_id, poster):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_id to integers, since
         # BugWatchUpdater.importBugComments() will pass us a string (see
@@ -845,13 +845,13 @@ class BugzillaLPPlugin(BugzillaAPI):
         server_utc_time = time_dict['utc_time']
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
 
-    def getCommentIds(self, bug_watch):
+    def getCommentIds(self, remote_bug_id):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # Check that the bug exists, first.
         if actual_bug_id not in self._bugs:
-            raise BugNotFound(bug_watch.remotebug)
+            raise BugNotFound(remote_bug_id)
 
         # Get only the remote comment IDs and store them in the
         # 'comments' field of the bug.
@@ -871,9 +871,9 @@ class BugzillaLPPlugin(BugzillaAPI):
         # bug 248938).
         return [str(comment['id']) for comment in bug_comments]
 
-    def fetchComments(self, bug_watch, comment_ids):
+    def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_ids to integers, since
         # BugWatchUpdater.importBugComments() will pass us a list of

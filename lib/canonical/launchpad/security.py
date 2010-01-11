@@ -76,7 +76,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
-    IPerson, ITeam, PersonVisibility)
+    IPerson, IPersonSet, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
@@ -557,7 +557,6 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
             return True
         return user.inTeam(self.obj.target.owner)
 
-
 class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IMilestone
@@ -568,6 +567,11 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
         them."""
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class ModeratePersonSetByExpertsOrAdmins(ReviewByRegistryExpertsOrAdmins):
+    permission = 'launchpad.Moderate'
+    usedfor = IPersonSet
 
 
 class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
@@ -591,6 +595,21 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         The Launchpad admins also have launchpad.Edit on all teams.
         """
         return can_edit_team(self.obj, user)
+
+
+class ModerateTeam(ReviewByRegistryExpertsOrAdmins):
+    permission = 'launchpad.Moderate'
+    usedfor = ITeam
+
+    def checkAuthenticated(self, user):
+        """Is the user a privileged team member or Launchpad staff?
+        
+        Return true when the user is a member of Launchpad admins,
+        registry experts, team admins, or the team owners.
+        """
+        return (
+            super(ModerateTeam, self).checkAuthenticated(user)
+            or can_edit_team(self.obj, user))
 
 
 class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
