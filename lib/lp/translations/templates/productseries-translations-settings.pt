@@ -32,13 +32,36 @@
           <tal:rosetta>
             <h2>Import translations from branch</h2>
             <p>
-              You can ask Launchpad to continuously import any translation
-              files (templates and translations) that it finds in
-              <strong><tal:series replace="structure view/series_title">
-                  Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
-              After the initial import, Launchpad will continue to scan your Bazaar
-              branch for updates to template and translation files.
+              Launchpad can continuously import translation files (templates and
+              translations) from <strong><tal:series replace="structure view/series_title">
+              Evolution Series:trunk</tal:series>'s</strong> official Bazaar branch.
             </p>
+
+            <p>
+              Following a delay, Launchpad will make an initial import, then check regularly
+              for updates.
+              (<a tal:attributes="href context/menu:navigation/imports/url">See the import
+              queue</a>)
+            </p>
+
+            <p>
+              When preparing the translation files in your Bazaar branch, you must
+              follow our <a href="https://help.launchpad.net/Translations/YourProject/ImportPolicy"
+              >translations import policy</a>. At a minimum, your branch must:
+            </p>
+
+            <ul class="bulleted">
+              <li>
+                contain at least one <code>.pot</code> file with English strings,
+                rather than message IDs or another language
+              </li>
+              <li>
+                give each template its own directory (<a
+                href="/+help/directory-example.html" target="help">see
+                an example directory layout</a>).
+              </li>
+            </ul>
+
             <p id="bzr-request-display"  class="info sprite">
               If you only need a one-time import, please request it
               <a tal:attributes="href view/request_bzr_import_url">here</a>.

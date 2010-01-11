@@ -32,11 +32,11 @@
   <p>
     When uploading a tarball or importing from a Bazaar branch, you must
     follow our <a href="https://help.launchpad.net/Translations/YourProject/ImportPolicy"
-    >translations import policy</a>. At a minimum, your tarball must:
+    >translations import policy</a>. At a minimum, your tarball or branch must:
   </p>
 
   <ul class="bulleted">
-    <li>contain at least one <code>.pot</code> with English strings,
+    <li>contain at least one <code>.pot</code> file with English strings,
     rather than message IDs or another language</li>
     <li>give each template its own directory (<a href="/+help/directory-example.html"
     target="help">see an example directory layout</a>).</li>
