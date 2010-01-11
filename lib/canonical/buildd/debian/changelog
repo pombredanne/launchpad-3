@@ -1,3 +1,11 @@
+launchpad-buildd (55) hardy-cat; urgency=low
+
+  * Split the sbuild wrapper from DebianBuildManager into a new
+    BinaryPackageBuildManager, and point the 'debian' builder at that
+    instead.
+
+ -- William Grant <wgrant@ubuntu.com>  Tue, 12 Jan 2010 09:22:50 +1300
+
 launchpad-buildd (54) hardy-cat; urgency=low
 
   [ William Grant ]

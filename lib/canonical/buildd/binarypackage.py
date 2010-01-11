@@ -39,8 +39,8 @@ class BinaryPackageBuildManager(DebianBuildManager):
 
     def __init__(self, slave, buildid):
         DebianBuildManager.__init__(self, slave, buildid)
-        self._sbuildpath = slave._config.get("debianmanager", "sbuildpath")
-        self._sbuildargs = slave._config.get("debianmanager",
+        self._sbuildpath = slave._config.get("binarypackagemanager", "sbuildpath")
+        self._sbuildargs = slave._config.get("binarypackagemanager",
                                              "sbuildargs").split(" ")
 
     def initiate(self, files, chroot, extra_args):
