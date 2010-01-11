@@ -190,7 +190,7 @@ class BranchJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BaseRunnableJob.getOopsVars(self)
+        vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('branch_job_id', self.context.id),
             ('branch_job_type', self.context.job_type.title)])
@@ -203,8 +203,8 @@ class BranchDiffJob(BranchJobDerived):
     """A Job that calculates the a diff related to a Branch."""
 
     implements(IBranchDiffJob)
-
     classProvides(IBranchDiffJobSource)
+
     @classmethod
     def create(cls, branch, from_revision_spec, to_revision_spec):
         """See `IBranchDiffJobSource`."""
@@ -439,7 +439,7 @@ class RevisionsAddedJob(BranchJobDerived):
         history = self.bzr_branch.revision_history()
         for num, revid in enumerate(history):
             if revid in added_revisions:
-                yield repository.get_revision(revid), num+1
+                yield repository.get_revision(revid), num + 1
 
     def generateDiffs(self):
         """Determine whether to generate diffs."""
@@ -930,4 +930,3 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
             shutil.rmtree(mirrored_path)
         if os.path.exists(hosted_path):
             shutil.rmtree(hosted_path)
-
