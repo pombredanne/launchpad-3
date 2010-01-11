@@ -257,13 +257,12 @@ class CodeImportEventSet:
     def _iterSourceDetails(self, code_import):
         """Yield key-value tuples describing the source of the import."""
         if code_import.rcs_type in (RevisionControlSystems.SVN,
-                                    RevisionControlSystems.BZR_SVN):
-            yield 'SVN_BRANCH_URL', code_import.svn_branch_url
+                                    RevisionControlSystems.BZR_SVN,
+                                    RevisionControlSystems.GIT):
+            yield 'URL', code_import.url
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             yield 'CVS_ROOT', code_import.cvs_root
             yield 'CVS_MODULE', code_import.cvs_module
-        elif code_import.rcs_type == RevisionControlSystems.GIT:
-            yield 'GIT_REPO_URL', code_import.git_repo_url
         else:
             raise AssertionError(
                 "Unknown RCS type: %s" % (code_import.rcs_type,))

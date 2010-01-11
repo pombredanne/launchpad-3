@@ -221,22 +221,16 @@ class CodeImportSet:
     implements(ICodeImportSet)
 
     def new(self, registrant, product, branch_name, rcs_type,
-            svn_branch_url=None, cvs_root=None, cvs_module=None,
-            review_status=None, git_repo_url=None):
+            url=None, cvs_root=None, cvs_module=None, review_status=None):
         """See `ICodeImportSet`."""
         if rcs_type == RevisionControlSystems.CVS:
             assert cvs_root is not None and cvs_module is not None
-            assert svn_branch_url is None
-            assert git_repo_url is None
+            assert url is None
         elif rcs_type in (RevisionControlSystems.SVN,
-                          RevisionControlSystems.BZR_SVN):
+                          RevisionControlSystems.BZR_SVN,
+                          RevisionControlSystems.GIT):
             assert cvs_root is None and cvs_module is None
-            assert svn_branch_url is not None
-            assert git_repo_url is None
-        elif rcs_type == RevisionControlSystems.GIT:
-            assert cvs_root is None and cvs_module is None
-            assert svn_branch_url is None
-            assert git_repo_url is not None
+            assert url is not None
         else:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
@@ -255,9 +249,9 @@ class CodeImportSet:
 
         code_import = CodeImport(
             registrant=registrant, owner=registrant, branch=import_branch,
-            rcs_type=rcs_type, svn_branch_url=svn_branch_url,
+            rcs_type=rcs_type, url=url,
             cvs_root=cvs_root, cvs_module=cvs_module,
-            review_status=review_status, git_repo_url=git_repo_url)
+            review_status=review_status)
 
         getUtility(ICodeImportEventSet).newCreate(code_import, registrant)
         notify(ObjectCreatedEvent(code_import))
@@ -336,13 +330,9 @@ class CodeImportSet:
         return CodeImport.selectOneBy(
             cvs_root=cvs_root, cvs_module=cvs_module)
 
-    def getByGitDetails(self, git_repo_url):
+    def getByURL(self, url):
         """See `ICodeImportSet`."""
-        return CodeImport.selectOneBy(git_repo_url=git_repo_url)
-
-    def getBySVNDetails(self, svn_branch_url):
-        """See `ICodeImportSet`."""
-        return CodeImport.selectOneBy(svn_branch_url=svn_branch_url)
+        return CodeImport.selectOneBy(url=url)
 
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""

@@ -1242,13 +1242,13 @@ class LaunchpadObjectFactory(ObjectFactory):
                                     RevisionControlSystems.BZR_SVN)
             return code_import_set.new(
                 registrant, product, branch_name, rcs_type=rcs_type,
-                svn_branch_url=svn_branch_url)
+                url=svn_branch_url)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
             return code_import_set.new(
                 registrant, product, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
-                git_repo_url=git_repo_url)
+                url=git_repo_url)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
             return code_import_set.new(

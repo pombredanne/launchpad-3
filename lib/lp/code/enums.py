@@ -666,6 +666,19 @@ class CodeImportEventDataType(DBEnumeratedType):
         Previous Git repo URL, when recording on import source change.
         """)
 
+    URL = DBItem(240, """
+        Foreign VCS branch URL
+
+        Location of the foreign VCS branch to import.
+        """)
+
+    OLD_URL = DBItem(241, """
+        Previous foreign VCS branch URL
+
+        Previous foreign VCS branch location, when recording an import source
+        change.
+        """)
+
     # Data related to machine events
 
     OFFLINE_REASON = DBItem(410, """Offline Reason
