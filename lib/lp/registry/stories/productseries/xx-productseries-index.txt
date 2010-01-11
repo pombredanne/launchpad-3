@@ -130,7 +130,7 @@ If there are no sourcepackages, any user can see there are none:
    This series is not packaged in any distribution series.
 
 
-The driver sees a packaging links near the distribution packaging.
+The driver sees a packaging link near the distribution packaging.
 
     >>> driver_browser.getLink('Link to Ubuntu package')
     <Link ... url='http://launchpad.dev/firefox/trunk/+ubuntupkg'>
