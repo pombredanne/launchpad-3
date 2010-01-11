@@ -51,7 +51,7 @@ class TestCodeImportCreation(unittest.TestCase):
             product=self.factory.makeProduct(),
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
-            svn_branch_url=self.factory.getUniqueURL())
+            url=self.factory.getUniqueURL())
         self.assertEqual(
             CodeImportReviewStatus.NEW,
             code_import.review_status)
@@ -65,7 +65,7 @@ class TestCodeImportCreation(unittest.TestCase):
             product=self.factory.makeProduct(),
             branch_name='imported',
             rcs_type=RevisionControlSystems.SVN,
-            svn_branch_url=self.factory.getUniqueURL(),
+            url=self.factory.getUniqueURL(),
             review_status=CodeImportReviewStatus.REVIEWED)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,
@@ -111,7 +111,7 @@ class TestCodeImportCreation(unittest.TestCase):
             product=self.factory.makeProduct(),
             branch_name='imported',
             rcs_type=RevisionControlSystems.GIT,
-            git_repo_url=self.factory.getUniqueURL(),
+            url=self.factory.getUniqueURL(),
             review_status=None)
         self.assertEqual(
             CodeImportReviewStatus.REVIEWED,

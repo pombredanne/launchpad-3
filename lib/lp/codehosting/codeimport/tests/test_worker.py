@@ -403,7 +403,7 @@ class TestForeignTreeStore(WorkerTest):
         working_tree = store._getForeignTree('path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(
-            working_tree.remote_url, source_details.svn_branch_url)
+            working_tree.remote_url, source_details.url)
 
     def test_getForeignTreeCVS(self):
         # _getForeignTree() returns a CVS working tree for CVS code imports.
@@ -770,7 +770,7 @@ class SubversionImportHelpers:
     def makeForeignCommit(self, source_details):
         """Change the foreign tree."""
         client = pysvn.Client()
-        client.checkout(source_details.svn_branch_url, 'working_tree')
+        client.checkout(source_details.url, 'working_tree')
         file = open('working_tree/newfile', 'w')
         file.write('No real content\n')
         file.close()
@@ -790,7 +790,7 @@ class SubversionImportHelpers:
         svn_branch_url = svn_branch_url.replace('://localhost/', ':///')
         self.foreign_commit_count = 2
         return self.factory.makeCodeImportSourceDetails(
-            rcstype=self.rcstype, svn_branch_url=svn_branch_url)
+            rcstype=self.rcstype, url=svn_branch_url)
 
 
 class TestSubversionImport(WorkerTest, SubversionImportHelpers,
@@ -827,7 +827,6 @@ class PullingImportWorkerTests:
         else:
             raise AssertionError("unexpected rcs_type %r" % self.rcs_type)
         source_details = self.factory.makeCodeImportSourceDetails(**args)
-
         worker = self.makeImportWorker(source_details)
         self.assertRaises(NotBranchError, worker.run)
 
@@ -864,7 +863,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         """Change the foreign tree, generating exactly one commit."""
         from bzrlib.plugins.git.tests import run_git
         wd = os.getcwd()
-        os.chdir(source_details.git_repo_url)
+        os.chdir(source_details.url)
         try:
             run_git('config', 'user.name', 'Joe Random Hacker')
             run_git('commit', '-m', 'dsadas')
@@ -884,7 +883,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git', git_repo_url=repository_path)
+            rcstype='git', url=repository_path)
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
