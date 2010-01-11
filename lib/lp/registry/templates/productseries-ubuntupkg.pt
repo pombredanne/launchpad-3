@@ -17,12 +17,6 @@
           translations from Ubuntu to the
           <span tal:replace="context/product/displayname">Firefox</span> team.
         </p>
-
-        <p>
-          Use
-          <a tal:replace="structure context/menu:overview/add_package/fmt:link" />
-           to link this series to packages in other distribution series.
-        </p>
       </div>
 
       <div class="portlet">
@@ -36,7 +30,7 @@
             <p>
               Ensure both the <tal:series replace="context/title" /> and the
               Ubuntu package are exactly correct. Don&rsquo;t link "HEAD",
-              "MAIN", or "TRUNK" to an Ubuntu package unless you are
+              "MAIN", "MASTER", or "TRUNK" to an Ubuntu package unless you are
               absolutely certain that the package is really based on the
               trunk of development.
             </p>
