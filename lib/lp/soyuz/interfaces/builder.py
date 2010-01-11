@@ -157,16 +157,6 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
         title=u"The current behavior of the builder for the current job.",
         required=False)
 
-    def cacheFileOnSlave(logger, libraryfilealias):
-        """Ask the slave to cache a librarian file to its local disk.
-
-        This is used in preparation for a build.
-
-        :param logger: A logger used for providing debug information.
-        :param libraryfilealias: A library file alias representing the needed
-            file.
-        """
-
     def checkCanBuildForDistroArchSeries(distro_arch_series):
         """Check that the slave can compile for the given distro_arch_release.
 

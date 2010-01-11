@@ -60,7 +60,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # Start the binary package build on the slave builder. First
         # we send the chroot.
         chroot = self.build.distroarchseries.getChroot()
-        self._builder.cacheFileOnSlave(logger, chroot)
+        self._builder.slave.cacheFile(logger, chroot)
 
         # Build filemap structure with the files required in this build
         # and send them to the slave.
@@ -75,8 +75,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             lfa = source_file.libraryfile
             filemap[lfa.filename] = lfa.content.sha1
             if not private:
-                self._builder.cacheFileOnSlave(
-                    logger, source_file.libraryfile)
+                self._builder.slave.cacheFile(logger, source_file.libraryfile)
 
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in
@@ -206,7 +205,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             logger.debug("Asking builder on %s to ensure it has file %s "
                          "(%s, %s)" % (
                             self._builder.url, file_name, url, sha1))
-            self._builder._sendFileToSlave(
+            self._builder.slave._sendFileToSlave(
                 url, sha1, "buildd", archive.buildd_secret)
 
     def _extraBuildArgs(self, build):

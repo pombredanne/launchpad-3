@@ -81,10 +81,6 @@ class TimeoutTransport(xmlrpclib.Transport):
         return TimeoutHTTP(host)
 
 
-# XXX: Add methods to this that wrap common operations, move them off IBuilder.
-# - cacheFileOnSlave
-
-
 class BuilderSlave(xmlrpclib.ServerProxy):
     """Add in a few useful methods for the XMLRPC slave."""
 
@@ -120,7 +116,7 @@ class BuilderSlave(xmlrpclib.ServerProxy):
 
         return (stdout, stderr, resume_process.returncode)
 
-    def cacheFileOnSlave(self, logger, libraryfilealias):
+    def cacheFile(self, logger, libraryfilealias):
         """See `IBuilder`."""
         url = libraryfilealias.http_url
         logger.debug("Asking builder on %s to ensure it has file %s "
