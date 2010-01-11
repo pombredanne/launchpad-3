@@ -120,6 +120,7 @@ class _SourcePackageRecipeData(Storm):
         return base_branch
 
     def _record_instructions(self, branch, parent_insn):
+        line_number = 0
         for instruction in branch.child_branches:
             db_branch = getUtility(IBranchLookup).getByUrl(
                 instruction.recipe_branch.url)
@@ -131,7 +132,7 @@ class _SourcePackageRecipeData(Storm):
                 raise AssertionError(
                     "Unsupported instruction %r" % instruction)
             comment = None
-            line_number = 0
+            line_number += 1
             insn = _SourcePackageRecipeDataInstruction(
                 instruction.recipe_branch.name, type, comment, line_number,
                 db_branch, instruction.recipe_branch.revspec,
