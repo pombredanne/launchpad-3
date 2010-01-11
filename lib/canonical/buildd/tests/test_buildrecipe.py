@@ -16,6 +16,7 @@ from canonical.buildd.buildrecipe import BuildRecipe
 
 STD_HEADER = "# bzr-builder format 0.2 deb-version farblesnitch\n"
 EXAMPLE_RECIPE = STD_HEADER + "foo\n"
+EXAMPLE_MANIFEST = STD_HEADER + "foo revid:rev1\n"
 
 
 class TestBuildRecipe(TestCaseWithTransport):
@@ -24,12 +25,12 @@ class TestBuildRecipe(TestCaseWithTransport):
         tree = self.make_branch_and_tree('foo')
         self.build_tree_contents([('foo/README', 'example')])
         tree.add('README')
-        tree.commit('add readme')
+        tree.commit('add readme', rev_id='rev1')
 
         os.mkdir('work')
         recipe = BuildRecipe(EXAMPLE_RECIPE, 'Author Name',
                              'author@example.com', 'work', 'foo-la', 'suite')
-        recipe.buildTree()
+        manifest = recipe.buildTree()
         self.failUnlessExists(recipe.tree_path)
         self.assertFileEqual('example',
                              os.path.join(recipe.tree_path, 'README'))
@@ -40,6 +41,7 @@ class TestBuildRecipe(TestCaseWithTransport):
         self.assertContainsRe(lines[0], '^foo-la \(farblesnitch\) suite;')
         self.assertContainsRe(lines[-2],
                               '^ -- Author Name <author@example.com>  ')
+        self.assertEqual(manifest, EXAMPLE_MANIFEST)
 
 
 def test_suite():

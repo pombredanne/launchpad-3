@@ -7,6 +7,7 @@ __metaclass__ = type
 import os.path
 import lp.codehosting
 from bzrlib.plugins import builder
+from bzrlib.plugins.builder import recipe
 
 
 class BuildRecipe:
@@ -35,6 +36,7 @@ class BuildRecipe:
                                     package=self.package_name,
                                     author_name=self.author_name,
                                     author_email=self.author_email)
+        return recipe.build_manifest(base_branch)
 
     def installBuildDeps(self):
         pass
