@@ -18,6 +18,7 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.fields import Reference
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.soyuz.interfaces.processor import IProcessor
 
 
@@ -85,6 +86,11 @@ class IBuildFarmJob(Interface):
             "The virtualization setting required by this build farm job. "
             "For job types that do not care about virtualization please "
             "return None."))
+
+    build = Reference(
+        IBuildBase, title=_("Build"),
+        description=_(
+            "The specific build for the build farm job."))
 
 
 class IBuildFarmJobDispatchEstimation(Interface):
