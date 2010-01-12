@@ -126,7 +126,7 @@ class TestCodeImportCreation(unittest.TestCase):
             product=self.factory.makeProduct(),
             branch_name='imported',
             rcs_type=RevisionControlSystems.HG,
-            hg_repo_url=self.factory.getUniqueURL(),
+            url=self.factory.getUniqueURL(),
             review_status=None)
         self.assertEqual(
             CodeImportReviewStatus.NEW,

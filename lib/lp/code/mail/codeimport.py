@@ -97,17 +97,12 @@ def make_email_body_for_code_import_update(
                 "\ninstead of:\n" + old_details)
     elif code_import.rcs_type in (RevisionControlSystems.SVN,
                                   RevisionControlSystems.BZR_SVN,
-                                  RevisionControlSystems.GIT):
+                                  RevisionControlSystems.GIT,
+                                  RevisionControlSystems.HG):
         if CodeImportEventDataType.OLD_URL in event_data:
             old_url = event_data[CodeImportEventDataType.OLD_URL]
             body.append(
                 details_change_prefix + '\n    ' +code_import.url +
-                "\ninstead of:\n    " + old_url)
-    elif code_import.rcs_type == RevisionControlSystems.HG:
-        if CodeImportEventDataType.OLD_HG_REPO_URL in event_data:
-            old_url = event_data[CodeImportEventDataType.OLD_HG_REPO_URL]
-            body.append(
-                details_change_prefix + '\n    ' +code_import.hg_repo_url +
                 "\ninstead of:\n    " + old_url)
     else:
         raise AssertionError(

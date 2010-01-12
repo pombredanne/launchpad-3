@@ -106,7 +106,7 @@ in the form.
     >>> import_browser.open(hg_import_location)
     >>> import_browser.getLink('Edit import source or review import').click()
     >>> print_form_fields(import_browser)
-    field.hg_repo_url: http://hg.example.org/bar
+    field.url: http://hg.example.org/bar
 
 
 Editing the import location
@@ -160,7 +160,7 @@ Git imports,
 and Mercurial imports.
 
     >>> import_browser.open(hg_import_location + '/+edit-import')
-    >>> import_browser.getControl('Repo URL').value = \
+    >>> import_browser.getControl(URL').value = \
     ...     'http://metal.example.org/bar'
     >>> import_browser.getControl('Update').click()
     >>> for message in get_feedback_messages(import_browser.contents):

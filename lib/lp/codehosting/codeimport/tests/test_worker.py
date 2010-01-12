@@ -915,7 +915,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin):
         """Change the foreign tree, generating exactly one commit."""
         from mercurial.ui import ui
         from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), self.source_details.hg_repo_url)
+        repo = localrepository(ui(), self.source_details.url)
         repo.commit(text="hello world!", user="Jane Random Hacker", force=1)
         self.foreign_commit_count += 1
 
@@ -931,7 +931,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin):
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='hg', hg_repo_url=repository_path)
+            rcstype='hg', url=repository_path)
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,

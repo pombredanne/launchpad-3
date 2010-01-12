@@ -177,17 +177,17 @@ And for a Git import, the git details are recorded.
 
 And for a Mercurial import, the hg details are recorded.
 
-    >>> hg_import = new_code_import('hg-main',
-    ...     rcs_type=RevisionControlSystems.HG,
+    >>> hg_import = factory.makeCodeImport(
     ...     hg_repo_url='http://hg.example.org/main')
     >>> hg_create_event = event_set.newCreate(hg_import, nopriv)
     >>> print_items(hg_create_event)
     CODE_IMPORT <muted>
-    OWNER u'52'
+    OWNER ...
     REVIEW_STATUS u'NEW'
     ASSIGNEE None
     UPDATE_INTERVAL None
     HG_REPO_URL u'http://hg.example.org/main'
+
 
 == MODIFY ==
 

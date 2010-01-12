@@ -89,8 +89,6 @@ class CodeImport(SQLBase):
 
     url = StringCol(default=None)
 
-    hg_repo_url = StringCol(default=None)
-
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)
 

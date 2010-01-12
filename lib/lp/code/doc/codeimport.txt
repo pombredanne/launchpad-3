@@ -207,7 +207,7 @@ retrieve the branch to import.
     >>> hg_url = 'http://hg.example.com/metallic'
     >>> hg_import = code_import_set.new(
     ...     registrant=nopriv, product=product, branch_name='trunk-hg',
-    ...     rcs_type=hg, hg_repo_url=hg_url)
+    ...     rcs_type=hg, url=hg_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(hg_import))
     True
 
@@ -220,8 +220,7 @@ Creating a CodeImport object creates a corresponding CodeImportEvent.
 The CodeImportSet is also able to retrieve the code imports with the
 specified hg repo url.
 
-    >>> existing_import = code_import_set.getByHgDetails(
-    ...     hg_repo_url=hg_url)
+    >>> existing_import = code_import_set.getByURL(url=hg_url)
     >>> hg_import == existing_import
     True
 
@@ -537,15 +536,13 @@ Imports via bzr-svn are also similar.
 
 And for Mercurial.
 
-    >>> data = {'hg_repo_url': 'http://metal.example.com/byebye.hg'}
+    >>> data = {'url': 'http://metal.example.com/byebye.hg'}
     >>> modify_event = hg_import.updateFromData(data, nopriv)
     >>> print make_email_body_for_code_import_update(
     ...     hg_import, modify_event, None)
     ~no-priv/firefox/trunk-hg is now being imported from:
         http://metal.example.com/byebye.hg
-
     instead of:
-
         http://hg.example.com/metallic
 
 In addition, updateFromData can be used to set the branch whiteboard,
