@@ -9,7 +9,7 @@ import unittest
 
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
-from lp.code.adapters.recipebuilder import RecipeBuildBehavior
+from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
 from lp.testing import TestCase
 
 
