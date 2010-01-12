@@ -161,7 +161,7 @@ class HasBugsBase:
         """See `IHasBugs`."""
         lst = []
         for bugtask in self.all_bugtasks:
-            for attachment in bugtask.attachments:
+            for attachment in bugtask.bug.attachments:
                 if attachment.is_patch:
                     lst.append(attachment)
         return lst
