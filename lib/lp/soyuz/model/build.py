@@ -1237,3 +1237,8 @@ class BuildSet:
             BuildQueue.job == queue_entry.job)
 
         return result_set.one()
+
+    def storeBuildInfo(self, queueItem, librarian, slave_status):
+        """See `IBuildBase`."""
+        super(Build, self).storeBuildInfo(queueItem, librarian, slave_status)
+        self.dependencies = slave_status.get('dependencies')

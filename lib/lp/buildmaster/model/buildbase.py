@@ -306,7 +306,6 @@ class BuildBase:
         """See `IBuildBase`."""
         self.buildlog = self.getLogFromSlave(queueItem)
         self.builder = queueItem.builder
-        self.dependencies = slave_status.get('dependencies')
         # XXX cprov 20060615 bug=120584: Currently buildduration includes
         # the scanner latency, it should really be asking the slave for
         # the duration spent building locally.
