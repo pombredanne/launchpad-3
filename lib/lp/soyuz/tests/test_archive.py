@@ -10,8 +10,7 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.database.sqlbase import (
-    cursor, quote, quote_like, sqlvalues, SQLBase)
+from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
@@ -498,7 +497,8 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.assertFalse(self.archive.enabled)
 
     def test_disableArchiveAlreadyDisabled(self):
-        # Disabling an already disabled Archive should raise an AssertionError.
+        # Disabling an already disabled Archive should raise an
+        # AssertionError.
         self.archive.disable()
         self.assertRaises(AssertionError, self.archive.disable)
 
