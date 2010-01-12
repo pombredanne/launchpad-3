@@ -110,6 +110,7 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         current_ubuntu = ubuntu.currentseries
         distroarchseries = current_ubuntu.nominatedarchindep
 
+        # Set an arbitrary chroot file.
         fake_chroot_file = getUtility(ILibraryFileAliasSet)[1]
         distroarchseries.addOrUpdateChroot(fake_chroot_file)
 
