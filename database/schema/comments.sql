@@ -1288,7 +1288,79 @@ COMMENT ON COLUMN SourcePackageRelease.build_conflicts_indep IS 'The list of pac
 
 COMMENT ON TABLE SourcePackageName IS 'SourcePackageName: A soyuz source package name.';
 
+-- SourcePackageRecipeData
+
+COMMENT ON TABLE SourcePackageRecipeData IS '';
+COMMENT ON COLUMN SourcePackageRecipeData.id IS '';
+COMMENT ON COLUMN SourcePackageRecipeData.base_branch IS '';
+COMMENT ON COLUMN SourcePackageRecipeData.recipe_format IS '';
+COMMENT ON COLUMN SourcePackageRecipeData.deb_version_template IS '';
+COMMENT ON COLUMN SourcePackageRecipeData.revspec IS '';
+
+-- SourcePackageRecipeDataInstruction
+
+COMMENT ON TABLE SourcePackageRecipeDataInstruction IS '';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.id IS '';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.name IS '';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.type IS '';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.comment IS '';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.line_number IS '';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.branch IS '';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.revspec IS '';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS '';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.recipe_data IS '';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS '';
+
+-- SourcePackageRecipe
+
+COMMENT ON TABLE SourcePackageRecipe IS '';
+COMMENT ON COLUMN SourcePackageRecipe.id IS '';
+COMMENT ON COLUMN SourcePackageRecipe.date_created IS '';
+COMMENT ON COLUMN SourcePackageRecipe.date_last_modified IS '';
+COMMENT ON COLUMN SourcePackageRecipe.registrant IS '';
+COMMENT ON COLUMN SourcePackageRecipe.owner IS '';
+COMMENT ON COLUMN SourcePackageRecipe.distroseries IS '';
+COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS '';
+COMMENT ON COLUMN SourcePackageRecipe.name IS '';
+COMMENT ON COLUMN SourcePackageRecipe.recipe_data IS '';
+
+-- SourcePackageRecipeBuild
+
+COMMENT ON TABLE SourcePackageRecipeBuild IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.id IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.date_created IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.distroseries IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.sourcepackagename IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.build_state IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.date_built IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.build_duration IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.build_log IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS '';
+
+-- SourcePackageRecipeBuildUpload
+
+COMMENT ON TABLE SourcePackageRecipeBuildUpload IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.id IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.date_created IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.registrant IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.source_package_recipe_build IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.archive IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.upload_log IS '';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.state IS '';
+
+-- BuildSourcePackageFromRecipeJob
+
+COMMENT ON TABLE BuildSourcePackageFromRecipeJob IS '';
+COMMENT ON COLUMN BuildSourcePackageFromRecipeJob.id IS '';
+COMMENT ON COLUMN BuildSourcePackageFromRecipeJob.job IS '';
+COMMENT ON COLUMN BuildSourcePackageFromRecipeJob.source_package_recipe_build IS '';
+
 -- Specification
+
 COMMENT ON TABLE Specification IS 'A feature specification. At the moment we do not store the actual specification, we store a URL for the spec, which is managed in a wiki somewhere else. We store the overall state of the spec, as well as queueing information about who needs to review the spec, and why.';
 COMMENT ON COLUMN Specification.assignee IS 'The person who has been assigned to implement this specification.';
 COMMENT ON COLUMN Specification.drafter IS 'The person who has been asked to draft this specification. They are responsible for getting the spec to "approved" state.';

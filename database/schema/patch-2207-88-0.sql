@@ -17,7 +17,7 @@ CREATE TABLE SourcePackageRecipeDataInstruction (
     branch integer NOT NULL REFERENCES Branch,
     revspec text,
     directory text,
-    recipe_data integer REFERENCES SourcePackageRecipeData,
+    recipe_data integer NOT NULL REFERENCES SourcePackageRecipeData,
     parent_instruction integer REFERENCES SourcePackageRecipeDataInstruction
 );
 
