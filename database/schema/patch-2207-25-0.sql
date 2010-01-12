@@ -49,14 +49,17 @@ CREATE TABLE SourcePackageRecipeBuildUpload (
 ALTER TABLE SourcePackageRelease
   ADD COLUMN sourcepackage_recipe_build integer REFERENCES SourcePackageRecipeBuild;
 
-CREATE TABLE BuildSourcePackageFromRecipeJob (
+CREATE TABLE SourcePackageRecipeBuildJob (
     id serial PRIMARY KEY,
     job integer NOT NULL REFERENCES Job,
     sourcepackage_recipe_build integer REFERENCES SourcePackageRecipeBuild
 );
 
-ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipejob__sourcepackage_recipe_build__key
+ALTER TABLE SourcePackageRecipeBuildJob ADD CONSTRAINT sourcepackagerecipebuildjob__sourcepackage_recipe_build__key
     UNIQUE (sourcepackage_recipe_build);
+
+ALTER TABLE SourcePackageRecipeBuildJob ADD CONSTRAINT sourcepackagerecipebuildjob__job__key
+    UNIQUE (job);
 
 CREATE TABLE SourcePackageRecipeData (
     id serial PRIMARY KEY,
@@ -70,8 +73,12 @@ CREATE TABLE SourcePackageRecipeData (
 
 ALTER TABLE SourcePackageRecipeData ADD CONSTRAINT sourcepackagerecipedata__recipe_or_build_is_not_null
     CHECK (sourcepackage_recipe IS NULL != sourcepackage_recipe_build IS NULL);
-ALTER TABLE SourcePackageRecipeData ADD CONSTRAINT sourcepackagerecipedata__sourcepackage_recipe__sourcepackage_recipe_build__key
-    UNIQUE (sourcepackage_recipe, sourcepackage_recipe_build);
+CREATE UNIQUE INDEX sourcepackagerecipedata__sourcepackage_recipe__key
+    ON SourcepackageRecipeData(sourcepackage_recipe)
+ WHERE sourcepackage_recipe IS NOT NULL;
+CREATE UNIQUE INDEX sourcepackagerecipedata__sourcepackage_recipe_build__key
+    ON SourcepackageRecipeData(sourcepackage_recipe_build)
+ WHERE sourcepackage_recipe_build IS NOT NULL;
 
 CREATE TABLE SourcePackageRecipeDataInstruction (
     id serial PRIMARY KEY,
@@ -125,5 +132,14 @@ ON SourcepackageRecipeBuild(recipe);
 
 CREATE INDEX sourcepackagebuildupload__registrant__idx
 ON SourcepackageRecipeBuildUpload(registrant);
+
+CREATE INDEX sourcepackagerecipebuildupload__archive__idx
+ON SourcepackageRecipeBuildUpload(archive);
+
+CREATE INDEX sourcepackagerecipebuildupload__upload_log__idx
+ON SourcepackageRecipeBuildUpload(upload_log) WHERE upload_log IS NOT NULL;
+
+CREATE INDEX sourcepackagerelease__sourcepackage_recipe_build__idx
+ON SourcepackageRelease(sourcepackage_recipe_build);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 25, 0);

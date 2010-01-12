@@ -1343,10 +1343,10 @@ COMMENT ON COLUMN SourcePackageRecipeBuildUpload.archive IS 'The archive to uplo
 COMMENT ON COLUMN SourcePackageRecipeBuildUpload.upload_log IS 'The output from uploading the source package to the archive.';
 COMMENT ON COLUMN SourcePackageRecipeBuildUpload.state IS 'The state of the upload.';
 
--- BuildSourcePackageFromRecipeJob
+-- SourcePackageRecipeBuildJob
 
-COMMENT ON TABLE BuildSourcePackageFromRecipeJob IS 'The link between a SourcePackageRecipeBuild row and a Job row to schedule a build of a source package recipe.';
-COMMENT ON COLUMN BuildSourcePackageFromRecipeJob.sourcepackage_recipe_build IS 'The build record describing the package being built.';
+COMMENT ON TABLE SourcePackageRecipeBuildJob IS 'The link between a SourcePackageRecipeBuild row and a Job row to schedule a build of a source package recipe.';
+COMMENT ON COLUMN SourcePackageRecipeBuildJob.sourcepackage_recipe_build IS 'The build record describing the package being built.';
 
 -- Specification
 
