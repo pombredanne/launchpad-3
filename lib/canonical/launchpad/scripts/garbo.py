@@ -725,6 +725,7 @@ class BugHeatUpdater(TunableLoop):
         start = self.offset
         end = self.offset + chunk_size
 
+        transaction.begin()
         # XXX 2010-01-08 gmb bug=505850:
         #     This method call should be taken out and shot as soon as
         #     we have a proper permissions system for scripts.
@@ -749,6 +750,7 @@ class BugHeatUpdater(TunableLoop):
             heat = bug_heat_calculator.getBugHeat()
             bug.setHeat(heat)
             self.total_updated += 1
+        transaction.commit()
 
 
 class BaseDatabaseGarbageCollector(LaunchpadCronScript):
