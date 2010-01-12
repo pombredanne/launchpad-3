@@ -27,7 +27,7 @@ class BuildRecipe:
         self.username = pwd.getpwuid(os.getuid())[0]
 
     def install(self):
-        return self.chroot(['apt-get', 'install', 'pbuilder', 'bzr-builder'])
+        return self.chroot(['apt-get', 'install', 'pbuilder'])
 
     def buildTree(self):
         recipe_path = os.path.join(self.work_dir, 'recipe')
