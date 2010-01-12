@@ -196,7 +196,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             file_name = source_file.libraryfile.filename
             sha1 = source_file.libraryfile.content.sha1
             spn = self.build.sourcepackagerelease.sourcepackagename
-            poolpath = makePoolPath(spn, component_name)
+            poolpath = makePoolPath(spn.name, component_name)
             url = urlappend(archive_url, poolpath)
             url = urlappend(url, file_name)
             logger.debug("Asking builder on %s to ensure it has file %s "
