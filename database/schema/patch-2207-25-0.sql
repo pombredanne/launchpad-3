@@ -11,7 +11,7 @@ CREATE TABLE SourcePackageRecipe (
     name text NOT NULL
 );
 
-ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipe__owner__distroseries__sourcepackagename__name
+ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipe__owner__distroseries__sourcepackagename__name__key
      UNIQUE (owner, distroseries, sourcepackagename, name);
 
 CREATE TABLE SourcePackageRecipeBuild (
@@ -38,7 +38,7 @@ CREATE TABLE SourcePackageRecipeBuildUpload (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     registrant integer NOT NULL REFERENCES Person,
-    source_package_recipe_build integer NOT NULL REFERENCES SourcePackageRecipeBuild,
+    sourcepackage_recipe_build integer NOT NULL REFERENCES SourcePackageRecipeBuild,
     archive integer NOT NULL REFERENCES Archive,
     upload_log integer REFERENCES LibraryFileAlias,
     state integer NOT NULL -- an enum, WAITING/UPLOADED/FAILED or something like that.
@@ -47,16 +47,16 @@ CREATE TABLE SourcePackageRecipeBuildUpload (
 -- indexes for SourcePackageRecipeBuildUpload I guess
 
 ALTER TABLE SourcePackageRelease
-  ADD COLUMN source_package_recipe_build integer REFERENCES SourcePackageRecipeBuild;
+  ADD COLUMN sourcepackage_recipe_build integer REFERENCES SourcePackageRecipeBuild;
 
 CREATE TABLE BuildSourcePackageFromRecipeJob (
     id serial PRIMARY KEY,
     job integer NOT NULL REFERENCES Job,
-    source_package_recipe_build integer REFERENCES SourcePackageRecipeBuild
+    sourcepackage_recipe_build integer REFERENCES SourcePackageRecipeBuild
 );
 
-ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipejob__source_package_recipe_build
-    UNIQUE (source_package_recipe_build);
+ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipejob__sourcepackage_recipe_build__key
+    UNIQUE (sourcepackage_recipe_build);
 
 CREATE TABLE SourcePackageRecipeData (
     id serial PRIMARY KEY,
@@ -64,14 +64,14 @@ CREATE TABLE SourcePackageRecipeData (
     recipe_format text NOT NULL,
     deb_version_template text NOT NULL,
     revspec text,
-    source_package_recipe integer REFERENCES SourcePackageRecipe,
-    source_package_recipe_build integer REFERENCES SourcePackageRecipeBuild
+    sourcepackage_recipe integer REFERENCES SourcePackageRecipe,
+    sourcepackage_recipe_build integer REFERENCES SourcePackageRecipeBuild
 );
 
 ALTER TABLE SourcePackageRecipeData ADD CONSTRAINT sourcepackagerecipedata__recipe_or_build_is_not_null
-    CHECK (source_package_recipe IS NULL != source_package_recipe_build IS NULL);
-ALTER TABLE SourcePackageRecipeData ADD CONSTRAINT sourcepackagerecipedata__recipe_unique
-    UNIQUE (source_package_recipe, source_package_recipe_build);
+    CHECK (sourcepackage_recipe IS NULL != sourcepackage_recipe_build IS NULL);
+ALTER TABLE SourcePackageRecipeData ADD CONSTRAINT sourcepackagerecipedata__sourcepackage_recipe__sourcepackage_recipe_build__key
+    UNIQUE (sourcepackage_recipe, sourcepackage_recipe_build);
 
 CREATE TABLE SourcePackageRecipeDataInstruction (
     id serial PRIMARY KEY,
@@ -86,11 +86,44 @@ CREATE TABLE SourcePackageRecipeDataInstruction (
     parent_instruction integer REFERENCES SourcePackageRecipeDataInstruction
 );
 
-ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__name__recipe_data
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__name__recipe_data__key
      UNIQUE (name, recipe_data);
-ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__line_number__recipe_data
-     UNIQUE (line_number, recipe_data);
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__recipe_data__line_number__key
+     UNIQUE (recipe_data, line_number);
 ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__directory_not_null
      CHECK ((type = 1 AND directory IS NULL) OR (type = 2 AND directory IS NOT NULL));
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 88, 0);
+CREATE INDEX sourcepackagerecipedata__base_branch__idx
+ON SourcepackageRecipeData(base_branch);
+
+CREATE INDEX sourcepackagerecipedatainstruction__branch__idx
+ON SourcepackageRecipeDataInstruction(branch);
+
+CREATE INDEX sourcepackagerecipe__registrant__idx
+ON SourcepackageRecipe(registrant);
+
+--CREATE INDEX sourcepackagerecipe__owner__idx
+--ON SourcepackageRecipe(owner);
+
+CREATE INDEX sourcepackagerecipebuild__distroseries__idx
+ON SourcepackageRecipeBuild(distroseries);
+
+CREATE INDEX sourcepackagerecipebuild__sourcepackagename__idx
+ON SourcepackageRecipeBuild(sourcepackagename);
+
+CREATE INDEX sourcepackagerecipebuild__build_log__idx
+ON SourcepackageRecipeBuild(build_log) WHERE build_log IS NOT NULL;
+
+CREATE INDEX sourcepackagerecipebuild__builder__idx
+ON SourcepackageRecipeBuild(builder);
+
+CREATE INDEX sourcepackagerecipebuild__requester__idx
+ON SourcepackageRecipeBuild(requester);
+
+CREATE INDEX sourcepackagerecipebuild__recipe__idx
+ON SourcepackageRecipeBuild(recipe);
+
+CREATE INDEX sourcepackagebuildupload__registrant__idx
+ON SourcepackageRecipeBuildUpload(registrant);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 25, 0);

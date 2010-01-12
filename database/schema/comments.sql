@@ -1290,13 +1290,13 @@ COMMENT ON TABLE SourcePackageName IS 'SourcePackageName: A soyuz source package
 
 -- SourcePackageRecipeData
 
-COMMENT ON TABLE SourcePackageRecipeData IS 'The database representation of a BaseRecipeBranch from bzr-builder.  Exactly one of source_package_recipe or source_package_recipe_build will be non-NULL.';
+COMMENT ON TABLE SourcePackageRecipeData IS 'The database representation of a BaseRecipeBranch from bzr-builder.  Exactly one of sourcepackage_recipe or sourcepackage_recipe_build will be non-NULL.';
 COMMENT ON COLUMN SourcePackageRecipeData.base_branch IS 'The branch the recipe is based on.';
 COMMENT ON COLUMN SourcePackageRecipeData.recipe_format IS 'The format version of the recipe.';
 COMMENT ON COLUMN SourcePackageRecipeData.deb_version_template IS 'The template for the revision number of the build.';
 COMMENT ON COLUMN SourcePackageRecipeData.revspec IS 'The revision from base_branch to use.';
-COMMENT ON COLUMN SourcePackageRecipeData.source_package_recipe IS 'The recipe that this data is for.';
-COMMENT ON COLUMN SourcePackageRecipeData.source_package_recipe_build IS 'The build that resulted in this manifest.';
+COMMENT ON COLUMN SourcePackageRecipeData.sourcepackage_recipe IS 'The recipe that this data is for.';
+COMMENT ON COLUMN SourcePackageRecipeData.sourcepackage_recipe_build IS 'The build that resulted in this manifest.';
 
 -- SourcePackageRecipeDataInstruction
 
@@ -1338,7 +1338,7 @@ COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed
 
 COMMENT ON TABLE SourcePackageRecipeBuildUpload IS 'The record of uploading the source package built by a SourcePackageRecipeBuild to an archive.';
 COMMENT ON COLUMN SourcePackageRecipeBuildUpload.registrant IS 'Who requested the upload.';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.source_package_recipe_build IS 'Upload the output of this build.';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.sourcepackage_recipe_build IS 'Upload the output of this build.';
 COMMENT ON COLUMN SourcePackageRecipeBuildUpload.archive IS 'The archive to upload to.';
 COMMENT ON COLUMN SourcePackageRecipeBuildUpload.upload_log IS 'The output from uploading the source package to the archive.';
 COMMENT ON COLUMN SourcePackageRecipeBuildUpload.state IS 'The state of the upload.';
@@ -1346,7 +1346,7 @@ COMMENT ON COLUMN SourcePackageRecipeBuildUpload.state IS 'The state of the uplo
 -- BuildSourcePackageFromRecipeJob
 
 COMMENT ON TABLE BuildSourcePackageFromRecipeJob IS 'The link between a SourcePackageRecipeBuild row and a Job row to schedule a build of a source package recipe.';
-COMMENT ON COLUMN BuildSourcePackageFromRecipeJob.source_package_recipe_build IS 'The build record describing the package being built.';
+COMMENT ON COLUMN BuildSourcePackageFromRecipeJob.sourcepackage_recipe_build IS 'The build record describing the package being built.';
 
 -- Specification
 
