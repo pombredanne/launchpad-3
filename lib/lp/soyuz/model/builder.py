@@ -634,7 +634,7 @@ class BuilderSet(object):
             Build.archive == Archive.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,
             Build.buildstate == BuildStatus.NEEDSBUILD,
-            Archive.enabled == True,
+            Archive._enabled == True,
             Processor.id == processor.id,
             Archive.require_virtualized == virtualized,
             )

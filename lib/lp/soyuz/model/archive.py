@@ -1506,7 +1506,7 @@ class ArchiveSet:
             Archive,
             Archive.signing_key == None,
             Archive.purpose == ArchivePurpose.PPA,
-            Archive.enabled == True)
+            Archive._enabled == True)
         results.order_by(Archive.date_created)
         return results.config(distinct=True)
 
