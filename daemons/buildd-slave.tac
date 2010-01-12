@@ -10,6 +10,8 @@
 from twisted.application import service, strports
 from canonical.buildd import XMLRPCBuildDSlave
 from canonical.buildd.binarypackage import BinaryPackageBuildManager
+from canonical.buildd.sourcepackagerecipe import (
+    SourcePackageRecipeBuildManager)
 from canonical.launchpad.daemons import tachandler
 
 from twisted.web import server, resource, static
@@ -26,6 +28,7 @@ slave = XMLRPCBuildDSlave(conf)
 # 'debian' is the old name. It remains here for compatibility.
 slave.registerBuilder(BinaryPackageBuildManager, "debian")
 slave.registerBuilder(BinaryPackageBuildManager, "binarypackage")
+slave.registerBuilder(SourcePackageRecipeBuildManager, "sourcepackagerecipe")
 
 application = service.Application('BuildDSlave')
 builddslaveService = service.IServiceCollection(application)
