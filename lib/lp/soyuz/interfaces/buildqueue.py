@@ -13,7 +13,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Choice, Datetime, Field, Timedelta
+from zope.schema import Bool, Choice, Datetime, Field, Int, Text, Timedelta
 
 from lazr.restful.fields import Reference
 
@@ -21,6 +21,8 @@ from canonical.launchpad import _
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, BuildFarmJobType)
 from lp.services.job.interfaces.job import IJob
+from lp.soyuz.interfaces.builder import IBuilder
+from lp.soyuz.interfaces.processor import IProcessor
 
 
 class IBuildQueue(Interface):
@@ -38,10 +40,21 @@ class IBuildQueue(Interface):
     """
 
     id = Attribute("Job identifier")
-    builder = Attribute("The IBuilder instance processing this job")
-    logtail = Attribute("The current tail of the log of the build")
-    lastscore = Attribute("Last score to be computed for this job")
-    manual = Attribute("Whether or not the job was manually scored")
+    builder = Reference(
+        IBuilder, title=_("Builder"), required=True, readonly=True,
+        description=_("The IBuilder instance processing this job"))
+    logtail = Text(
+        description=_("The current tail of the log of the job"))
+    lastscore = Int(description=_("This job's score."))
+    manual = Bool(
+        description=_("Whether or not the job was manually scored."))
+    processor = Reference(
+        IProcessor, title=_("Processor"), required=False, readonly=True,
+        description=_("The processor required by this build farm job."))
+    virtualized = Bool(
+        required=False,
+        description=_(
+            "The virtualization setting required by this build farm job."))
 
     job = Reference(
         IJob, title=_("Job"), required=True, readonly=True,
@@ -54,6 +67,10 @@ class IBuildQueue(Interface):
     required_build_behavior = Field(
         title=_('The builder behavior required to run this job.'),
         required=False, readonly=True)
+
+    specific_job_classes = Field(
+        title=_('Job classes that may run on the build farm.'),
+        required=True, readonly=True)
 
     estimated_duration = Timedelta(
         title=_("Estimated Job Duration"), required=True,

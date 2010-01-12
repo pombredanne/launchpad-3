@@ -537,7 +537,7 @@ class TestCaseWithFactory(TestCase):
         return BzrDir.create_branch_convenience(
             branch_url, format=format)
 
-    def create_branch_and_tree(self, tree_location='.', product=None,
+    def create_branch_and_tree(self, tree_location=None, product=None,
                                hosted=False, db_branch=None, format=None,
                                **kwargs):
         """Create a database branch, bzr branch and bzr checkout.
@@ -562,6 +562,9 @@ class TestCaseWithFactory(TestCase):
         if self.real_bzr_server:
             transaction.commit()
         bzr_branch = self.createBranchAtURL(branch_url, format=format)
+        if tree_location is None:
+            tree_location = tempfile.mkdtemp()
+            self.addCleanup(lambda: shutil.rmtree(tree_location))
         return db_branch, bzr_branch.create_checkout(
             tree_location, lightweight=True)
 
