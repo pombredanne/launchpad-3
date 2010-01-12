@@ -67,7 +67,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
     def _getChroot(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        return ubuntu.currentseries.nominatedarchindep
+        return ubuntu.currentseries.nominatedarchindep.getChroot()
 
     def _findTranslationTemplatesBuildJob(self, build_queue_item):
         """Find the `TranslationTemplatesBuildJob` for a job.
