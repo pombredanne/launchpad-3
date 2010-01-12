@@ -53,6 +53,6 @@ member of launchpad-buildd-admin:
     >>> print buildqueue.date_started
     None
 
-    >>> builder.dispatchBuildCandidate(buildqueue)
+    >>> builder.startBuild(buildqueue, logger)
     >>> print buildqueue.date_started
     None
