@@ -456,24 +456,32 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
             bq.lastscore = score
             bq.estimated_duration = timedelta(seconds=duration)
 
-    def assertNoBuildJobsHaveStatus(self, archive, status):
-        # Check that that the jobs attached to this archive do not have this
-        # status.
+    def _getBuildJobsByStatus(self, archive, status):
+        # Return the count for archive build jobs with the given status.
         query = """
-        SELECT COUNT(Job.id)
-        FROM Build, BuildPackageJob, BuildQueue, Job
-        WHERE
-            Build.archive = %s
-            AND BuildPackageJob.build = Build.id
-            AND BuildPackageJob.job = BuildQueue.job
-            AND Job.id = BuildQueue.job
-            AND Build.buildstate = %s
-            AND Job.status = %s;
+            SELECT COUNT(Job.id)
+            FROM Build, BuildPackageJob, BuildQueue, Job
+            WHERE
+                Build.archive = %s
+                AND BuildPackageJob.build = Build.id
+                AND BuildPackageJob.job = BuildQueue.job
+                AND Job.id = BuildQueue.job
+                AND Build.buildstate = %s
+                AND Job.status = %s;
         """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        result = store.execute(query).get_one()
-        self.assertEqual(result[0], 0)
+        return store.execute(query).get_one()[0]
+
+    def assertNoBuildJobsHaveStatus(self, archive, status):
+        # Check that that the jobs attached to this archive do not have this
+        # status.
+        self.assertEqual(self._getBuildJobsByStatus(archive, status), 0)
+
+    def assertHasBuildJobsWithStatus(self, archive, status):
+        # Check that that there are jobs attached to this archive that have
+        # the specified status.
+        self.assertEqual(self._getBuildJobsByStatus(archive, status), 8)
 
     def test_enableArchive(self):
         # Enabling an archive should set all the Archive's suspended builds to
@@ -481,6 +489,7 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
 
         # Disable the archive, because it's currently enabled.
         self.archive.disable()
+        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.SUSPENDED)
         self.archive.enable()
         self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.SUSPENDED)
         self.assertTrue(self.archive.enabled)
@@ -492,6 +501,7 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
     def test_disableArchive(self):
         # Disabling an archive should set all the Archive's pending bulds to
         # SUSPENDED.
+        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.WAITING)
         self.archive.disable()
         self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.WAITING)
         self.assertFalse(self.archive.enabled)
