@@ -23,8 +23,8 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.database import (SecureBinaryPackagePublishingHistory,
-                                          SecureSourcePackagePublishingHistory)
+from canonical.launchpad.database import (BinaryPackagePublishingHistory,
+                                          SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     IDistributionSet, PackagePublishingStatus)
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
@@ -377,9 +377,9 @@ def do_removal(removal):
     """
     current = removal["publishing"]
     if removal["type"] == "binary":
-        real_current = SecureBinaryPackagePublishingHistory.get(current.id)
+        real_current = BinaryPackagePublishingHistory.get(current.id)
     else:
-        real_current = SecureSourcePackagePublishingHistory.get(current.id)
+        real_current = SourcePackagePublishingHistory.get(current.id)
     real_current.status = PackagePublishingStatus.SUPERSEDED
     real_current.datesuperseded = UTC_NOW
 
