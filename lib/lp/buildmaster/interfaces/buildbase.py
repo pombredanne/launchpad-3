@@ -76,3 +76,9 @@ class IBuildBase(Interface):
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
 
+    def storeBuildInfo(queueItem, librarian, slave_status):
+        """Store available information for the build job.
+
+        Subclasses can override this as needed, and call it from custom status
+        handlers, but it should not be called externally.
+        """

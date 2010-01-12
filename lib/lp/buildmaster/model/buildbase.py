@@ -163,7 +163,7 @@ class BuildBase:
 
         # Store build information, build record was already updated during
         # the binary upload.
-        self._storeBuildInfo(queueItem, librarian, slave_status)
+        self.storeBuildInfo(queueItem, librarian, slave_status)
 
         # Retrive the up-to-date build record and perform consistency
         # checks. The build record should be updated during the binary
@@ -223,7 +223,7 @@ class BuildBase:
         remove Buildqueue entry.
         """
         self.buildstate = BuildStatus.FAILEDTOBUILD
-        self._storeBuildInfo(queueItem, librarian, slave_status)
+        self.storeBuildInfo(queueItem, librarian, slave_status)
         queueItem.builder.cleanSlave()
         self.notify()
         queueItem.destroySelf()
@@ -237,7 +237,7 @@ class BuildBase:
         entry and release builder slave for another job.
         """
         self.buildstate = BuildStatus.MANUALDEPWAIT
-        self._storeBuildInfo(queueItem, librarian, slave_status)
+        self.storeBuildInfo(queueItem, librarian, slave_status)
         logger.critical("***** %s is MANUALDEPWAIT *****"
                         % queueItem.builder.name)
         queueItem.builder.cleanSlave()
@@ -252,7 +252,7 @@ class BuildBase:
         and release the builder.
         """
         self.buildstate = BuildStatus.CHROOTWAIT
-        self._storeBuildInfo(queueItem, librarian, slave_status)
+        self.storeBuildInfo(queueItem, librarian, slave_status)
         logger.critical("***** %s is CHROOTWAIT *****" %
                         queueItem.builder.name)
         queueItem.builder.cleanSlave()
@@ -272,7 +272,7 @@ class BuildBase:
         queueItem.builder.failbuilder(
             "Builder returned BUILDERFAIL when asked for its status")
         # simply reset job
-        self._storeBuildInfo(queueItem, librarian, slave_status)
+        self.storeBuildInfo(queueItem, librarian, slave_status)
         queueItem.reset()
 
     def _handleStatus_GIVENBACK(self, queueItem, librarian, slave_status,
@@ -285,7 +285,7 @@ class BuildBase:
         """
         logger.warning("***** %s is GIVENBACK by %s *****"
                        % (slave_status['build_id'], queueItem.builder.name))
-        self._storeBuildInfo(queueItem, librarian, slave_status)
+        self.storeBuildInfo(queueItem, librarian, slave_status)
         # XXX cprov 2006-05-30: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
         # the next Paris Summit, infinity has some ideas about how
@@ -302,11 +302,8 @@ class BuildBase:
             'buildlog', queueItem.getLogFileName(),
             self.archive.private)
 
-    def _storeBuildInfo(self, queueItem, librarian, slave_status):
-        """Store available information for build jobs.
-
-        Store Buildlog, datebuilt, duration, dependencies.
-        """
+    def storeBuildInfo(self, queueItem, librarian, slave_status):
+        """See `IBuildBase`."""
         self.buildlog = self.getLogFromSlave(queueItem)
         self.builder = queueItem.builder
         self.dependencies = slave_status.get('dependencies')
