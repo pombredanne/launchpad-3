@@ -240,8 +240,3 @@ class BuilderGroup:
         buildstatus = build_status[len('BuildStatus.'):]
         queueItem.specific_job.build.handleStatus(
             buildstatus, librarian, slave_status)
-
-
-
-
-
