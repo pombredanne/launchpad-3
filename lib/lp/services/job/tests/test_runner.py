@@ -301,7 +301,9 @@ class TestTwistedJobRunner(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
-    def test_timeout(self):
+    # XXX: salgado, 2010-01-11, bug=505913: Disabled because of intermittent
+    # failures.
+    def disabled_test_timeout(self):
         """When a job exceeds its lease, an exception is raised."""
         logger = ListLogger()
         runner = TwistedJobRunner.runFromSource(StuckJob, logger)
