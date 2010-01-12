@@ -52,6 +52,8 @@ def upgrade_to_39():
     out_file.close()
 
 if __name__ == "__main__":
+    if old_version.find("~") > 0:
+	old_version = old_version[:old_version.find("~")]
     if int(old_version) < 12:
         upgrade_to_12()
     if int(old_version) < 34:

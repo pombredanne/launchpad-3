@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'InMemoryFrontend',
-    'XMLRPCWrapper'
+    'XMLRPCWrapper',
     ]
 
 import operator
@@ -28,10 +28,10 @@ from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_ANONYMOUS,
     LAUNCHPAD_SERVICES)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.utils import iter_split
 from lp.testing.factory import ObjectFactory
 from canonical.launchpad.validators import LaunchpadValidationError
-from lp.code.xmlrpc.codehosting import (
-    datetime_from_tuple, iter_split)
+from lp.code.xmlrpc.codehosting import datetime_from_tuple
 from canonical.launchpad.xmlrpc import faults
 
 
