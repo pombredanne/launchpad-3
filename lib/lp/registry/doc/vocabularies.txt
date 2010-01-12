@@ -20,7 +20,9 @@
 The active mailing lists vocabulary matches and returns only those mailing
 lists which are active.
 
-    >>> list_vocabulary = vocabulary_registry.get(None, 'ActiveMailingList')
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> list_vocabulary = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, 'ActiveMailingList'))
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
     >>> verifyObject(IHugeVocabulary, list_vocabulary)
@@ -203,6 +205,7 @@ Reflects the available distribution series.  Results are ordered by
     u'The Hoary Hedgehog Release'
 
     >>> def getTerms(vocab, search_text):
+    ...     vocab = removeSecurityProxy(vocab)
     ...     [vocab.toTerm(item) for item in vocab.search(search_text)]
 
     >>> getTerms(distroseries_vocabulary, 'woody')
@@ -508,7 +511,8 @@ All the products in a project.
 
 The list of selectable projects. The results are ordered by displayname.
 
-    >>> project_vocabulary = vocabulary_registry.get(None, "Project")
+    >>> project_vocabulary = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "Project"))
     >>> project_vocabulary.displayname
     'Select a project group'
 
@@ -542,7 +546,8 @@ The list of selectable projects. The results are ordered by displayname.
 
 The list of selectable products. Results are ordered by displayname.
 
-    >>> product_vocabulary = vocabulary_registry.get(None, "Product")
+    >>> product_vocabulary = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "Product"))
     >>> product_vocabulary.displayname
     'Select a project'
 
@@ -583,8 +588,8 @@ The ProductVocabulary does not list inactive products.
 
 The list of selectable products releases.
 
-    >>> productrelease_vocabulary = vocabulary_registry.get(None,
-    ...                                                     "ProductRelease")
+    >>> productrelease_vocabulary = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "ProductRelease"))
     >>> productrelease_vocabulary.displayname
     'Select a Product Release'
 
@@ -603,7 +608,8 @@ The list of selectable products releases.
 All non-merged people with at least one email address. This vocabulary is
 meant to be used only in the people merge form.
 
-    >>> vocab = vocabulary_registry.get(None, "PersonAccountToMerge")
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "PersonAccountToMerge"))
     >>> vocab.displayname
     'Select a Person to Merge'
 
@@ -693,7 +699,8 @@ INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
 
 The set of non-merged people.
 
-    >>> vocab = vocabulary_registry.get(None, "AdminMergeablePerson")
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "AdminMergeablePerson"))
     >>> vocab.displayname
     'Select a Person to Merge'
 
@@ -712,7 +719,8 @@ single email address, as it's fine for admins to merge them.
 
 All non-merged people and teams.
 
-    >>> vocab = vocabulary_registry.get(None, "NonMergedPeopleAndTeams")
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "NonMergedPeopleAndTeams"))
     >>> vocab.displayname
     'Select a Person or Team'
 
@@ -746,7 +754,8 @@ password, a preferred email address and not merged (Person.merged is
 None).  It also includes all public teams and private teams the
 user has permission to view.
 
-    >>> vocab = vocabulary_registry.get(None, "ValidPersonOrTeam")
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "ValidPersonOrTeam"))
     >>> vocab.displayname
     'Select a Person or Team'
 
@@ -794,7 +803,8 @@ lookup still omits myteam.
 A PRIVATE team is displayed when the logged in user is a member of the team.
 
     >>> commercial = person_set.getByEmail('commercial-member@canonical.com')
-    >>> vocab = vocabulary_registry.get(commercial, "ValidPersonOrTeam")
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(commercial, "ValidPersonOrTeam"))
     >>> login('commercial-member@canonical.com')
     >>> priv_team = factory.makeTeam(
     ...     name='private-team',
@@ -861,7 +871,8 @@ as part of their name or displayname, or the beginning of
 one of its email addresses.
 
     >>> login('foo.bar@canonical.com')
-    >>> vocab = vocabulary_registry.get(None, "ValidPersonOrTeam")
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "ValidPersonOrTeam"))
     >>> sorted(person.name for person in vocab.search('support'))
     [u'ubuntu-team']
 
@@ -932,7 +943,8 @@ ValidOwner
 All valid persons and teams are also valid owners.
 
     >>> login(ANONYMOUS)
-    >>> vocab = vocabulary_registry.get(None, "ValidOwner")
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "ValidOwner"))
     >>> vocab.displayname
     'Select a Person or Team'
 
@@ -955,7 +967,8 @@ The valid team vocabulary is just like the ValidPersonOrTeam vocabulary,
 except that its terms are limited only to teams.  No non-team Persons will be
 returned.
 
-    >>> vocab = vocabulary_registry.get(None, 'ValidTeam')
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, 'ValidTeam'))
     >>> vocab.displayname
     'Select a Team'
     >>> sorted((team.displayname, team.teamowner.displayname)
@@ -1076,7 +1089,8 @@ ValidTeamMember's context must implement ITeam:
 
 'name16' is a valid member for 'ubuntu-team':
 
-    >>> vocab = vocabulary_registry.get(team, "ValidTeamMember")
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(team, "ValidTeamMember"))
     >>> vocab.displayname
     'Select a Person or Team'
 
@@ -1126,7 +1140,8 @@ ValidTeamOwner's context must provide IPerson or IPersonSet.
 
 'ubuntu-team' is not a valid owner for itself.
 
-    >>> vocab = vocabulary_registry.get(team, "ValidTeamOwner")
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(team, "ValidTeamOwner"))
     >>> vocab.displayname
     'Select a Person or Team'
 
@@ -1147,7 +1162,8 @@ ValidTeamOwner's context must provide IPerson or IPersonSet.
 
 All 'valid' persons who are not a team.
 
-    >>> vocab = vocabulary_registry.get(None, "ValidPerson")
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "ValidPerson"))
     >>> vocab.displayname
     'Select a Person'
     >>> people = vocab.search(None)
@@ -1172,8 +1188,8 @@ ValidPerson does not include teams.
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> carlos_team = factory.makeTeam(
     ...     owner=carlos, name='carlos-team')
-    >>> person_or_team_vocab = vocabulary_registry.get(
-    ...     None, "ValidPersonOrTeam")
+    >>> person_or_team_vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "ValidPersonOrTeam"))
     >>> carlos_people_or_team = person_or_team_vocab.search('carlos')
     >>> # The people or team search yields our one Carlos person and
     >>> # the new team.

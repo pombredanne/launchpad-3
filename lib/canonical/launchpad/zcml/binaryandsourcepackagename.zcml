@@ -15,6 +15,10 @@
         <allow interface="canonical.launchpad.interfaces.IBinaryAndSourcePackageName" />
     </class>
 
+    <class class="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameIterator">
+        <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator" />
+    </class>
+
     <securedutility
       name="BinaryAndSourcePackageName"
       component="canonical.launchpad.database.binaryandsourcepackagename.BinaryAndSourcePackageNameVocabulary"

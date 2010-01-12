@@ -271,6 +271,13 @@
           <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
         </class>
 
+        <!-- BinaryPackagenameIterator -->
+
+        <class
+            class="lp.soyuz.model.binarypackagename.BinaryPackageNameIterator">
+            <allow
+                interface="canonical.launchpad.webapp.vocabulary.ICountableIterator"/>
+        </class>
 
         <!-- BinaryPackageNameSet -->
 

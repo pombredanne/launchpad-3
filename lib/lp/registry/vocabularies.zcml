@@ -398,4 +398,9 @@
     <allow interface="canonical.launchpad.webapp.vocabulary.IHugeVocabulary"/>
   </class>
 
+
+  <class class="lp.registry.vocabularies.SourcePackageNameIterator">
+    <allow interface="canonical.launchpad.webapp.vocabulary.ICountableIterator"/>
+  </class>
+
 </configure>

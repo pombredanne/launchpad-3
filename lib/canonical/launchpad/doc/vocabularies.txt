@@ -56,8 +56,9 @@ vocabulary registry.
 
 All the distributions that use Malone as their main bug tracker.
 
-    >>> using_malone_vocabulary = vocabulary_registry.get(
-    ...     None, 'DistributionUsingMalone')
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> using_malone_vocabulary = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, 'DistributionUsingMalone'))
     >>> len(using_malone_vocabulary)
     2
     >>> for term in using_malone_vocabulary:
@@ -358,7 +359,8 @@ are restricted based on who is asking (as far as private branches is
 concerned).
 
     # Just use None as the context.
-    >>> branch_vocabulary = vocabulary_registry.get(None, "Branch")
+    >>> branch_vocabulary = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, "Branch"))
     >>> def print_vocab_branches(vocab, search):
     ...     for term in vocab.searchForTerms(search):
     ...         print term.value.unique_name
@@ -639,8 +641,8 @@ The search() method returns specifications within the vocabulary
 that matches the search string. The string is matched against the name,
 or fallbacks to a full text search.
 
-    >>> vocab = vocabulary_registry.get(
-    ...     spec_a, "SpecificationDepCandidates")
+    >>> vocab = removeSecurityProxy(
+    ...     vocabulary_registry.get(spec_a, "SpecificationDepCandidates"))
     >>> list(vocab.search('spec-b')) == [spec_b]
     True
     >>> list(vocab.search('third')) == [spec_c]
@@ -664,7 +666,8 @@ collection. It provides the IHugeVocabulary interface.
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
-    >>> vocabulary = vocabulary_registry.get(None, 'PPA')
+    >>> vocabulary = removeSecurityProxy(
+    ...     vocabulary_registry.get(None, 'PPA'))
     >>> verifyObject(IHugeVocabulary, vocabulary)
     True
 

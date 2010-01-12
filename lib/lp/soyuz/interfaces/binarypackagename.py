@@ -84,6 +84,7 @@ class IBinaryAndSourcePackageName(Interface):
     to report a bug in.
     """
 
+    id = Int(title=_('ID'), required=True, readonly=True)
+
     name = TextLine(title=_('Binary or Source package name'),
                     required=True, constraint=name_validator)
-
