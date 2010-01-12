@@ -21,20 +21,18 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.model.buildfarmjobbehavior import (
+    BuildFarmJobBehaviorBase)
 from lp.soyuz.interfaces.builder import BuildSlaveFailure
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
-from lp.buildmaster.model.buildfarmjobbehavior import (
-    BuildFarmJobBehaviorBase)
 
 
 class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
     """Dispatches `TranslationTemplateBuildJob`s to slaves."""
-    # Note: If this class had a "metadata" dict, it'd effectively be
-    # implementing IBranchJob as well.
     implements(IBuildFarmJobBehavior)
 
-    # XXX JeroenVermeulen 2009-12-24 bug=499405: What really goes here?
+    # Identify the type of job to the slave.
     build_type = 'translation-templates'
 
     def dispatchBuildToSlave(self, build_queue_item, logger):

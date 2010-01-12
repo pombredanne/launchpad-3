@@ -45,6 +45,9 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         verifyObject(IBuildFarmJob, self.specific_job)
         verifyObject(ITranslationTemplatesBuildJob, self.specific_job)
 
+        # The class also implements a utility.
+        verifyObject(ITranslationTemplatesBuildJobSource, self.jobset)
+
         # Each of these jobs knows the branch it will operate on.
         self.assertEqual(self.branch, self.specific_job.branch)
 

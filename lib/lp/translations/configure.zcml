@@ -583,6 +583,10 @@
         provides="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource">
         <allow interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource"/>
     </securedutility>
+    <utility
+        component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
+        provides="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJob"
+        name="TRANSLATION_TEMPLATES_BUILD"/>
 
     <!-- TranslationTemplateBuildBehavior -->
     <class
