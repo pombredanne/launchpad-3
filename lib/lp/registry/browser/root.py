@@ -25,7 +25,7 @@ from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
-from canonical.launchpad.utilities.celebrities import ILaunchpadCelebrities
+from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.publisher import canonical_url
 from lp.code.interfaces.branchcollection import IAllBranches
 from lp.bugs.interfaces.bug import IBugSet
