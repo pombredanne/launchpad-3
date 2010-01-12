@@ -29,6 +29,8 @@ the mailing list administrator.
     >>> login_person(team.teamowner)
     >>> view = create_initialized_view(
     ...     held_message, name='+moderation', principal=team.teamowner)
+    >>> print view.widget_name
+    field.%3Cmonkey%3E
     >>> print view.message_id
     <monkey>
     >>> print view.subject
@@ -56,9 +58,12 @@ The view uses a helper method to format the paragraphs.
     >>> paragraphs = []
     >>> current_paragraph = ['line 1', 'line 2']
     >>> view._append_paragraph(paragraphs, current_paragraph)
-    >>> print paragraphs[0]
+    >>> for line in paragraphs:
+    ...     print line
+    <p>
     line 1
     line 2
+    </p>
 
 The _append_paragraph method ignores empty paragraphs.
 
