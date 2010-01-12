@@ -32,7 +32,6 @@ from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.registry.model.sourcepackagename import getSourcePackageDescriptions
 
-from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.interfaces import (
     NoCanonicalUrl, UnexpectedFormData)
