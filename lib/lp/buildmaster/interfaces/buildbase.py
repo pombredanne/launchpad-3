@@ -63,14 +63,11 @@ class IBuildBase(Interface):
 
     buildqueue_record = Attribute("Corespondent BuildQueue record")
 
-    def handleStatus(status, queueItem, librarian, buildid, filemap,
-                     dependencies):
+    def handleStatus(status, queueItem, librarian, slave_status):
         """Handle a finished build status from a slave.
 
-        The status should be a slave build status string with the
-        'BuildStatus.' stripped such as 'OK
-
-        Different actions will be taken depending on the given status.
+        :param status: Slave build status string with 'BuildStatus.' stripped.
+        :param slave_status: A dict as returned by IBuilder.slaveStatus
         """
 
     def getLogFromSlave(queueItem):

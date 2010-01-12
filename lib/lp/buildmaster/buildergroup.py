@@ -207,8 +207,7 @@ class BuilderGroup:
             # handler only until we are able to also move it to
             # BuildQueue content class and avoid to pass 'queueItem'.
             if builder_status == 'BuilderStatus.WAITING':
-                method(queueItem, build_id, build_status, logtail,
-                       filemap, dependencies, self.logger)
+                method(queueItem, slave_status, logtail, self.logger)
             else:
                 method(build_id, build_status, logtail,
                        filemap, dependencies, self.logger)
@@ -218,8 +217,7 @@ class BuilderGroup:
 
         self.commit()
 
-    def updateBuild_WAITING(self, queueItem, buildid, build_status,
-                            logtail, filemap, dependencies, logger):
+    def updateBuild_WAITING(self, queueItem, slave_status, logtail, logger):
         """Perform the actions needed for a slave in a WAITING state
 
         Buildslave can be WAITING in five situations:
@@ -233,6 +231,7 @@ class BuilderGroup:
           the uploader for processing.
         """
         librarian = getUtility(ILibrarianClient)
+        build_status = slave_status['build_status']
 
         # XXX: dsilvers 2005-03-02: Confirm the builder has the right build?
         assert build_status.startswith('BuildStatus.'), (
@@ -240,7 +239,7 @@ class BuilderGroup:
 
         buildstatus = build_status[len('BuildStatus.'):]
         queueItem.specific_job.build.handleStatus(
-            buildstatus, queueItem, librarian, buildid, filemap, dependencies)
+            buildstatus, queueItem, librarian, slave_status)
 
 
 
