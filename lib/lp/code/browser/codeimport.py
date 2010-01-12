@@ -218,7 +218,7 @@ class NewCodeImportForm(Interface):
         allowed_schemes=["git"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
-        allow_query=False,    # Query makes no sense in Subversion.
+        allow_query=False,
         allow_fragment=False,
         trailing_slash=False)
 

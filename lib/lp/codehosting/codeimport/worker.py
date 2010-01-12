@@ -477,12 +477,8 @@ class CSCVSImportWorker(ImportWorker):
 class PullingImportWorker(ImportWorker):
     """An import worker for imports that can be done by a bzr plugin.
 
-    Subclasses need to implement `pull_url` and `format_classes`.
+    Subclasses need to implement `format_classes`.
     """
-    @property
-    def pull_url(self):
-        """Return the URL that should be pulled from."""
-        return self.source_details.url
 
     @property
     def format_classes(self):
@@ -497,7 +493,7 @@ class PullingImportWorker(ImportWorker):
         bzrlib.ui.ui_factory = LoggingUIFactory(
             writer=lambda m: self._logger.info('%s', m))
         try:
-            transport = get_transport(self.pull_url)
+            transport = get_transport(self.source_details.url)
             for format_class in self.format_classes:
                 try:
                     format = format_class.probe_transport(transport)
@@ -505,7 +501,7 @@ class PullingImportWorker(ImportWorker):
                 except NotBranchError:
                     pass
             else:
-                raise NotBranchError(self.pull_url)
+                raise NotBranchError(self.source_details.url)
             foreign_branch = format.open(transport).open_branch()
             bazaar_tree.branch.pull(foreign_branch, overwrite=True)
         finally:

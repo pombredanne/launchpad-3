@@ -95,16 +95,6 @@ CodeImportEvent, we need to use the CodeImport constructor directly.
 
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
 
-    >>> def new_code_import(name, **kw_details):
-    ...     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    ...     product = getUtility(IProductSet).getByName('firefox')
-    ...     namespace = get_branch_namespace(vcs_imports, product=product)
-    ...     import_branch = namespace.createBranch(
-    ...         BranchType.IMPORTED, name, vcs_imports, title='Import branch')
-    ...     return CodeImport(
-    ...         registrant=nopriv, owner=nopriv, branch=import_branch,
-    ...         **kw_details)
-
 First we create a Subversion import.
 
     >>> from lp.code.enums import RevisionControlSystems
