@@ -19,11 +19,12 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, ISpecificBuildFarmJobClass)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.code.interfaces.branchjob import IBranchJob
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJob, ITranslationTemplatesBuildJobSource)
+    ITranslationTemplatesBuildJobSource)
 from lp.translations.model.translationtemplatesbuildjob import (
     TranslationTemplatesBuildJob)
 
@@ -46,9 +47,9 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
 
     def test_new_TranslationTemplatesBuildJob(self):
         # TranslationTemplateBuildJob implements IBuildFarmJob and
-        # ITranslationTemplatesBuildJob.
+        # IBranchJob.
+        verifyObject(IBranchJob, self.specific_job)
         verifyObject(IBuildFarmJob, self.specific_job)
-        verifyObject(ITranslationTemplatesBuildJob, self.specific_job)
 
         # The class also implements a utility and
         # ISpecificBuildFarmJobClass.

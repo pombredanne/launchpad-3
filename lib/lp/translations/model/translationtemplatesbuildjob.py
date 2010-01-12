@@ -16,12 +16,13 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, ISpecificBuildFarmJobClass)
+    BuildFarmJobType, IBuildFarmJob, ISpecificBuildFarmJobClass)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.code.interfaces.branchjob import IBranchJob
 from lp.code.model.branchjob import BranchJob, BranchJobDerived, BranchJobType
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJob, ITranslationTemplatesBuildJobSource)
+    ITranslationTemplatesBuildJobSource)
 
 
 class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
@@ -29,7 +30,7 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
 
     Implementation-wise, this is actually a `BranchJob`.
     """
-    implements(ITranslationTemplatesBuildJob)
+    implements(IBranchJob, IBuildFarmJob)
     classProvides(
         ISpecificBuildFarmJobClass, ITranslationTemplatesBuildJobSource)
 

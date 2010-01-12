@@ -6,7 +6,6 @@
 __metaclass__ = type
 
 __all__ = [
-    'ITranslationTemplatesBuildJob',
     'ITranslationTemplatesBuildJobSource',
     ]
 
@@ -16,19 +15,15 @@ from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.code.interfaces.branchjob import IBranchJob
 
 
-class ITranslationTemplatesBuildJob(IBranchJob, IBuildFarmJob):
-    """Build-farm job type for generating translation templates."""
-
-
 class ITranslationTemplatesBuildJobSource(Interface):
-    """Container for `ITranslationTemplatesBuildJob`s."""
+    """Container for `TranslationTemplatesBuildJob`s."""
 
     def create(branch):
-        """Create new `ITranslationTemplatesBuildJob`.
+        """Create new `TranslationTemplatesBuildJob`.
 
         Also creates the matching `IBuildQueue` and `IJob`.
 
         :param branch: A `Branch` that this job will check out and
             generate templates for.
-        :return: A new `ITranslationTemplatesBuildJob`.
+        :return: A new `TranslationTemplatesBuildJob`.
         """
