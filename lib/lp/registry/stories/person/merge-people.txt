@@ -63,8 +63,10 @@ duplicate account. Here the user choses the ones which he want to claim.
     >>> browser.getControl(
     ...     'Duplicated Account').value = 'foo'
     >>> browser.getControl('Continue').click()
-    >>> 'has more than one registered e-mail address' in browser.contents
-    True
+    >>> explanation = find_tag_by_id(browser.contents, 'explanation')
+    >>> print extract_text(explanation)
+    The account...has more than one registered e-mail address...
+
 
 Make sure we haven't got leftovers from a previous test
 
@@ -76,9 +78,10 @@ Claim all the email addresses
     >>> email_select_control = browser.getControl(name='selected')
     >>> for ctrl in email_select_control.controls:
     ...     ctrl.selected = True
-    >>> browser.getControl('Submit').click()
-    >>> 'Individual email messages were sent to' in browser.contents
-    True
+    >>> browser.getControl('Merge Accounts').click()
+    >>> confirmation = find_tag_by_id(browser.contents, 'confirmation')
+    >>> print extract_text(confirmation)
+    Confirmation email messages were sent to:...
     >>> 'foo@baz.com' in browser.contents
     True
     >>> 'bar.foo@canonical.com' in browser.contents
@@ -200,7 +203,7 @@ addresses.
 
     >>> explanation = find_tag_by_id(browser.contents, 'explanation')
     >>> print extract_text(explanation)
-    The account...trying to merge, has 2 registered e-mail addresses...
+    The account...has 2 registered e-mail addresses...
 
 
 Since the addresses are hidden we cannot display them therefore there
@@ -211,14 +214,14 @@ are no controls to select.
     ...
     LookupError: name 'selected'
 
-    >>> browser.getControl('Submit').click()
+    >>> browser.getControl('Merge Accounts').click()
 
     >>> len(stub.test_emails)
     2
 
     >>> confirmation = find_tag_by_id(browser.contents, 'confirmation')
     >>> print extract_text(confirmation)
-    Individual email messages were sent to the 2 registered e-mail addresses...
+    Confirmation email messages were sent to the 2 registered e-mail addresses...
 
     >>> maincontent = extract_text(find_main_content(browser.contents))
 

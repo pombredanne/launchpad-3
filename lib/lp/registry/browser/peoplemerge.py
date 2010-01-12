@@ -11,7 +11,8 @@ __all__ = [
     'DeleteTeamView',
     'FinishedPeopleMergeRequestView',
     'RequestPeopleMergeMultipleEmailsView',
-    'RequestPeopleMergeView']
+    'RequestPeopleMergeView',
+    ]
 
 
 from zope.component import getUtility
@@ -44,6 +45,7 @@ class RequestPeopleMergeView(LaunchpadFormView):
     """
 
     label = 'Merge Launchpad accounts'
+    page_title = label
     schema = IRequestPeopleMerge
 
     @property
@@ -361,12 +363,16 @@ class FinishedPeopleMergeRequestView(LaunchpadView):
 class RequestPeopleMergeMultipleEmailsView:
     """Merge request view when dupe account has multiple email addresses."""
 
+    label = 'Merge Launchpad accounts'
+    page_title = label
+
     def __init__(self, context, request):
         self.context = context
         self.request = request
         self.form_processed = False
         self.dupe = None
         self.notified_addresses = []
+        self.user = getUtility(ILaunchBag).user
 
     def processForm(self):
         dupe = self.request.form.get('dupe')
@@ -385,7 +391,6 @@ class RequestPeopleMergeMultipleEmailsView:
             return
 
         self.form_processed = True
-        user = getUtility(ILaunchBag).user
         login = getUtility(ILaunchBag).login
         logintokenset = getUtility(ILoginTokenSet)
 
@@ -416,9 +421,14 @@ class RequestPeopleMergeMultipleEmailsView:
 
         for emailaddress in email_addresses:
             token = logintokenset.new(
-                user, login, emailaddress, LoginTokenType.ACCOUNTMERGE)
+                self.user, login, emailaddress, LoginTokenType.ACCOUNTMERGE)
             token.sendMergeRequestEmail()
             self.notified_addresses.append(emailaddress)
+
+    @property
+    def cancel_url(self):
+        """Cancel URL."""
+        return canonical_url(self.user)
 
     @property
     def email_hidden(self):
