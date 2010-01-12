@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
+    'BugAttachmentContentCheck',
     'BugAttachmentSetNavigation',
     'BugAttachmentEditView',
     'BugAttachmentURL',
@@ -27,6 +28,31 @@ from canonical.launchpad.webapp.launchpadform import (
 from canonical.launchpad.webapp.menu import structured
 
 from canonical.lazr.utils import smartquote
+
+
+class BugAttachmentContentCheck:
+    """A mixin class that checks the consistency of patch flag and file type.
+    """
+
+    def guess_content_type(self, filename, file_content):
+        """Guess the content type a file with the given anme and content."""
+        guessed_type, encoding = guess_content_type(
+            name=filename, body=file_content)
+        return guessed_type
+
+    def attachment_type_consistent_with_content_type(
+        self, patch_flag_set, filename, file_content):
+        """Return True iff patch_flag is consistent with filename and content.
+        """
+        guessed_type = self.guess_content_type(filename, file_content)
+        # An XOR of "is the patch flag selected?" with "is the
+        # guessed type not a diff?" tells us if the type selected
+        # b y the user matches the guessed type.
+        return (patch_flag_set ^ (guessed_type != 'text/x-diff'))
+
+    def next_url_for_inconsistent_patch_flags(self, attachment):
+        """The next_url value used for an inconistent patch flag."""
+        return canonical_url(attachment) + '?need_confirm=1'
 
 
 class BugAttachmentSetNavigation(GetitemNavigation):
@@ -57,8 +83,7 @@ class BugAttachmentURL:
         """Return the path component of the URL."""
         return u"+attachment/%d" % self.context.id
 
-
-class BugAttachmentEditView(LaunchpadFormView):
+class BugAttachmentEditView(LaunchpadFormView, BugAttachmentContentCheck):
     """Edit a bug attachment."""
 
     schema = IBugAttachmentEditForm
@@ -86,25 +111,23 @@ class BugAttachmentEditView(LaunchpadFormView):
         if new_type != self.context.type:
             filename = self.context.libraryfile.filename
             file_content = self.context.libraryfile.read()
-            guessed_type, encoding = guess_content_type(
-                name=filename, body=file_content)
             # We expect that users set data['patch'] to True only for
             # real patch data, indicated by guessed_content_type ==
             # 'text/x-diff'. If there are inconsistencies, we don't
-            # the value automatically, but show the user this form
-            # again with an explanation when the flag data['patch'] should
-            # be used.
-
+            # set the value automatically, but show the user this form
+            # again with an explanation of when the flag data['patch']
+            # should be used.
             new_type_consistent_with_guessed_type = (
-                (new_type == BugAttachmentType.PATCH) ^
-                (guessed_type != 'text/x-diff'))
+                self.attachment_type_consistent_with_content_type(
+                    new_type == BugAttachmentType.PATCH, filename,
+                    file_content))
             is_confirmation_step = self.request.form_ng.getOne(
                 'confirmation_step') is not None
             if new_type_consistent_with_guessed_type or is_confirmation_step:
                 self.context.type = new_type
             else:
-                self.next_url = (canonical_url(self.context) +
-                                 '?need_confirm=1')
+                self.next_url = self.next_url_for_inconsistent_patch_flags(
+                    self.context)
 
         if data['title'] != self.context.title:
             self.context.title = data['title']
@@ -143,7 +166,7 @@ class BugAttachmentEditView(LaunchpadFormView):
             self.context.bug.id, self.context.title)
 
     @property
-    def is_confirmation_step(self):
+    def rendering_confirmation_step(self):
         """Is the page is displayed to confirm an unexpected "patch" value?"""
         return self.request.get('need_confirm') is not None
 
@@ -151,7 +174,7 @@ class BugAttachmentEditView(LaunchpadFormView):
     def confirmation_element(self):
         """An extra hidden input field for the patch flag confirmation step.
         """
-        if self.is_confirmation_step:
+        if self.rendering_confirmation_step:
             return ('<input type="hidden" name="confirmation_step" '
                     'value="1"/>')
         else:

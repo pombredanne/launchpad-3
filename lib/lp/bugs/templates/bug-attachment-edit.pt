@@ -16,7 +16,7 @@
           can also provide a direct solution to a bug - for example a patch
           that fixes the bug.
         </p>
-        <tal:is-confirmation condition="view/is_confirmation_step">
+        <tal:is-confirmation condition="view/rendering_confirmation_step">
           <tal:is_patch condition="view/is_patch">
             <p><strong>This file looks like a patch, but you unselected the
               checkbox "This attachment contains a solution (patch) for this

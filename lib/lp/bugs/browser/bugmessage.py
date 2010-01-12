@@ -11,15 +11,15 @@ __all__ = [
 from StringIO import StringIO
 
 from zope.component import getUtility
-from zope.contenttype import guess_content_type
 
+from lp.bugs.browser.bugattachment import BugAttachmentContentCheck
 from lp.bugs.interfaces.bugmessage import IBugMessageAddForm
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
 from canonical.launchpad.webapp import action, canonical_url
 from canonical.launchpad.webapp import LaunchpadFormView
 
 
-class BugMessageAddFormView(LaunchpadFormView):
+class BugMessageAddFormView(LaunchpadFormView, BugAttachmentContentCheck):
     """Browser view class for adding a bug comment/attachment."""
 
     schema = IBugMessageAddForm
@@ -108,12 +108,13 @@ class BugMessageAddFormView(LaunchpadFormView):
             # override the flag and redirect the user to the bug
             # attachment edit page, where he can confirm his setting,
             # if he really wants to set the to the desired value.
-            content_type, encoding = guess_content_type(
-                name=filename, body=data['filecontent'])
             patch_flag_consistent = (
-                (content_type != 'text/x-diff') ^ data['patch'])
+                self.attachment_type_consistent_with_content_type(
+                    data['patch'], filename, data['filecontent']))
             if not patch_flag_consistent:
-                is_patch = content_type == 'text/x-diff'
+                guessed_type = self.guess_content_type(
+                    filename, data['filecontent'])
+                is_patch = guessed_type == 'text/x-diff'
             else:
                 is_patch = data['patch']
             attachment = bug.addAttachment(
@@ -122,7 +123,8 @@ class BugMessageAddFormView(LaunchpadFormView):
                 comment=message, is_patch=is_patch)
 
             if not patch_flag_consistent:
-                self.next_url = canonical_url(attachment) + '?need_confirm=1'
+                self.next_url = self.next_url_for_inconsistent_patch_flags(
+                    attachment)
 
             self.request.response.addNotification(
                 "Attachment %s added to bug." % filename)
