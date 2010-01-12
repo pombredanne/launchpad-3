@@ -32,6 +32,3 @@ class ITranslationTemplatesBuildJobSource(Interface):
             generate templates for.
         :return: A new `ITranslationTemplatesBuildJob`.
         """
-
-    def getForJob(job):
-        """Find `ITranslationTemplatesBuildJob` matching given `Job`."""

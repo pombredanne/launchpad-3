@@ -26,6 +26,8 @@ from lp.buildmaster.model.buildfarmjobbehavior import (
 from lp.soyuz.interfaces.builder import BuildSlaveFailure
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
+from lp.translations.model.translationtemplatesbuildjob import (
+    TranslationTemplatesBuildJob)
 
 
 class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
@@ -50,20 +52,8 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         args = { 'branch_url': build_queue_item.branch.url }
         filemap = {}
 
-        try:
-            status, info = self._builder.slave.build(
-                buildid, self.build_type, chroot_sha1, filemap, args)
-        except xmlrpclib.Fault, info:
-            # Mark builder as 'failed'.
-            logger.debug(
-                "Disabling builder: %s" % self._builder.url, exc_info=1)
-            self._builder.failbuilder(
-                "Exception (%s) when setting up to new job" % info)
-            raise BuildSlaveFailure
-        except socket.error, info:
-            error_message = "Exception (%s) when setting up new job" % info
-            self._builder.handleTimeout(logger, error_message)
-            raise BuildSlaveFailure
+        status, info = self._builder.slave.build(
+            buildid, self.build_type, chroot_sha1, filemap, args)
 
     def _getChroot(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
@@ -75,5 +65,10 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         :param build_queue_item: A `BuildQueue` entry.
         :return: The matching `TranslationTemplatesBuildJob`.
         """
-        jobsource = getUtility(ITranslationTemplatesBuildJobSource)
-        return jobsource.getForJob(build_queue_item.job)
+        return TranslationTemplatesBuildJob.getByJob(build_queue_item.job)
+
+    def logStartBuild(self, build_queue_item, logger):
+        """See `IBuildFarmJobBehavior`."""
+        specific_job = TranslationTemplatesBuildJob.getByJob(
+            build_queue_item.job)
+        logger.info("Start templates build for %s" % specific_job.branch.name)

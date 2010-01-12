@@ -1,0 +1,13 @@
+= BuildFarmJob =
+
+BuildFarmJob provides a basic implementation of IBuildFarmJob.  The
+specific build farm job classes should inherit from it.
+
+    >>> buildfarmjob = BuildFarmJob()
+    >>> verifyObject(IBuildFarmJob, buildfarmjob) 
+
+As a class, it also provides ISpecificBuildFarmJobClass so that
+BuildQueue can find the instance of a specific build-farm job
+implementation associated with a given Job instance.
+
+    >>> verifyObject(ISpecificBuildFarmJobClass, BuildFarmJob)

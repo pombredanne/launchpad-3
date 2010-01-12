@@ -15,7 +15,8 @@ from canonical.testing import ZopelessDatabaseLayer
 
 from lp.testing import TestCaseWithFactory
 
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob, ISpecificBuildFarmJobClass)
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.services.job.model.job import Job
@@ -23,6 +24,8 @@ from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJob, ITranslationTemplatesBuildJobSource)
+from lp.translations.model.translationtemplatesbuildjob import (
+    TranslationTemplatesBuildJob)
 
 
 def get_job_id(job):
@@ -47,8 +50,10 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         verifyObject(IBuildFarmJob, self.specific_job)
         verifyObject(ITranslationTemplatesBuildJob, self.specific_job)
 
-        # The class also implements a utility.
+        # The class also implements a utility and
+        # ISpecificBuildFarmJobClass.
         verifyObject(ITranslationTemplatesBuildJobSource, self.jobset)
+        verifyObject(ISpecificBuildFarmJobClass, TranslationTemplatesBuildJob)
 
         # Each of these jobs knows the branch it will operate on.
         self.assertEqual(self.branch, self.specific_job.branch)
@@ -61,7 +66,7 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         # From a Job, the TranslationTemplatesBuildJobSource can find the
         # TranslationTemplatesBuildJob back for us.
         specific_job_for_base_job = removeSecurityProxy(
-            self.jobset.getForJob(base_job))
+            TranslationTemplatesBuildJob.getByJob(base_job))
         self.assertEqual(self.specific_job, specific_job_for_base_job)
 
     def test_has_BuildQueue(self):

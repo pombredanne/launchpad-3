@@ -78,10 +78,7 @@ class BuildQueue(SQLBase):
     def specific_job(self):
         """See `IBuildQueue`."""
         specific_class = self.specific_job_classes[self.job_type]
-        store = Store.of(self)
-        result_set = store.find(
-            specific_class, specific_class.job == self.job)
-        return result_set.one()
+        return specific_class.getByJob(self.job)
 
     @property
     def date_started(self):
