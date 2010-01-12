@@ -1507,8 +1507,9 @@ class TestPOFileSet(TestCaseWithFactory):
         # ProductSeries search matches no POFiles.
         productseries = self.factory.makeProductSeries()
 
+        # Look for zh.po, which does not exist.
         not_found = self.pofileset.getPOFilesByPathAndOrigin(
-            'br.po', productseries=productseries)
+            'zh.po', productseries=productseries)
 
         self.assertContentEqual([], not_found)
 
@@ -1529,8 +1530,9 @@ class TestPOFileSet(TestCaseWithFactory):
         # source-package search matches no POFiles.
         package = self.factory.makeSourcePackage()
 
+        # Look for no.po, which does not exist.
         not_found = self.pofileset.getPOFilesByPathAndOrigin(
-            'sux.po', distroseries=package.distroseries,
+            'no.po', distroseries=package.distroseries,
             sourcepackagename=package.sourcepackagename)
 
         self.assertContentEqual([], not_found)
@@ -1556,6 +1558,7 @@ class TestPOFileSet(TestCaseWithFactory):
         # from-source-package search matches no POFiles.
         upload_package = self.factory.makeSourcePackage()
 
+        # Look for la.po, which does not exist.
         not_found = self.pofileset.getPOFilesByPathAndOrigin(
             'la.po', distroseries=upload_package.distroseries,
             sourcepackagename=upload_package.sourcepackagename)

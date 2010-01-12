@@ -687,7 +687,7 @@ class POTemplate(SQLBase, RosettaStats):
         existing_pofiles = pofileset.getPOFilesByPathAndOrigin(
             path, self.productseries, self.distroseries,
             self.sourcepackagename)
-        return existing_pofiles.any() is None
+        return existing_pofiles.is_empty()
 
     def _composePOFilePath(self, language, variant=None):
         """Make up a good name for a new `POFile` for given language.

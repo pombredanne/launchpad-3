@@ -32,7 +32,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR, MASTER_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.registry.interfaces.person import validate_public_person
@@ -1563,7 +1563,7 @@ class POFileSet:
                 distro_conditions,
                 POFile.from_sourcepackagename == sourcepackagename))
 
-            if matches.any() is not None:
+            if not matches.is_empty():
                 return matches
 
             # There is no pofile in that 'path' and
