@@ -15,8 +15,11 @@ __all__ = [
     'IBranchDiffJobSource',
     'IBranchUpgradeJob',
     'IBranchUpgradeJobSource',
+    'IReclaimBranchSpaceJob',
+    'IReclaimBranchSpaceJobSource',
     'IRevisionMailJob',
     'IRevisionMailJobSource',
+    'IRevisionsAddedJob',
     'IRevisionsAddedJobSource',
     'IRosettaUploadJob',
     'IRosettaUploadJobSource',
@@ -29,7 +32,6 @@ from zope.schema import Bytes, Int, Object, Text, TextLine, Bool
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
 from lp.services.job.interfaces.job import IJob, IRunnableJob
-
 
 
 class IBranchJob(Interface):
@@ -183,7 +185,6 @@ class IRosettaUploadJobSource(Interface):
     def iterReady():
         """Iterate through ready IRosettaUploadJobs."""
 
-
     def findUnfinishedJobs(branch, since=None):
         """Find any `IRosettaUploadJob`s for `branch` that haven't run yet.
 
@@ -212,4 +213,3 @@ class IReclaimBranchSpaceJobSource(Interface):
 
     def iterReady():
         """Iterate through ready IReclaimBranchSpaceJobs."""
-
