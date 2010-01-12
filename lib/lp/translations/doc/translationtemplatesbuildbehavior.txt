@@ -1,0 +1,62 @@
+= TranslationTemplatesBuildJobBehavior =
+
+Set up build environment.
+
+    >>> import transaction
+    >>> import logging
+    >>> logger = logging.getLogger()
+    >>> logger.setLevel(logging.CRITICAL)
+
+    >>> from lp.buildmaster.master import BuilddMaster
+    >>> bm = BuilddMaster(logger, transaction)
+
+    >>> from canonical.buildd.tests import BuilddSlaveTestSetup
+    >>> BuilddSlaveTestSetup().setUp()
+
+    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from StringIO import StringIO
+    >>> librarian_client = getUtility(ILibrarianClient)
+
+    >>> content = 'anything'
+    >>> alias_id = librarian_client.addFile(
+    ...    'foo.tar.gz', len(content), StringIO(content), 'text/plain')
+
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
+
+    >>> distroseries = getUtility(IDistributionSet)['ubuntu'].currentseries
+    >>> archdistroseries = distroseries['i386']
+
+    >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
+    >>> pc = archdistroseries.addOrUpdateChroot(chroot=chroot)
+
+Activate builders present in sampledata, we need to be logged in as a
+member of launchpad-buildd-admin:
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('celso.providelo@canonical.com')
+
+    >>> bm.addDistroArchSeries(archdistroseries)
+    >>> bm.setupBuilders(archdistroseries)
+
+    >>> builder = factory.makeBuilder(virtualized=False)
+
+    >>> from lp.translations.interfaces.translationtemplatesbuildjob import (
+    ...     ITranslationTemplatesBuildJobSource)
+    >>> branch = factory.makeBranch()
+    >>> job = getUtility(ITranslationTemplatesBuildJobSource).create(branch)
+    >>> buildqueue = getUtility(IBuildQueueSet).getByJob(job)
+
+    >>> print buildqueue.builder
+    None
+    >>> print buildqueue.date_started
+    None
+
+    >>> builder.dispatchBuildCandidate(buildqueue)
+    >>> flush_database_updates()
+
+Verify if the job (BuildQueue) was updated appropriately:
+
+    >>> buildqueue.builder.id == builder.id
+    True
