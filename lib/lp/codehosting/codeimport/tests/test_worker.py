@@ -32,10 +32,10 @@ from canonical.testing import BaseLayer
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore, BzrSvnImportWorker, CSCVSImportWorker,
-    ForeignTreeStore, GitImportWorker, ImportDataStore, ImportWorker,
-    get_default_bazaar_branch_store)
+    ForeignTreeStore, GitImportWorker, HgImportWorker, ImportDataStore,
+    ImportWorker, get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, SubversionServer)
+    CVSServer, GitServer, MercurialServer, SubversionServer)
 from lp.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from lp.testing.factory import LaunchpadObjectFactory
@@ -884,6 +884,54 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
 
         return self.factory.makeCodeImportSourceDetails(
             rcstype='git', url=repository_path)
+
+
+class TestMercurialImport(WorkerTest, TestActualImportMixin):
+
+    def setUp(self):
+        super(TestMercurialImport, self).setUp()
+        load_optional_plugin('hg')
+        self.setUpImport()
+
+    def tearDown(self):
+        """Clear bzr-hg's cache of tdb connections.
+
+        This is rather obscure: different test runs tend to re-use the same
+        paths on disk, which confuses bzr-hg as it keeps a cache that maps
+        paths to database connections, which happily returns the connection
+        that corresponds to a path that no longer exists.
+        """
+        from bzrlib.plugins.hg.idmap import mapdbs
+        mapdbs().clear()
+        WorkerTest.tearDown(self)
+
+    def makeImportWorker(self):
+        """Make a new `ImportWorker`."""
+        return HgImportWorker(
+            self.source_details, self.get_transport('import_data'),
+            self.bazaar_store, logging.getLogger())
+
+    def makeForeignCommit(self):
+        """Change the foreign tree, generating exactly one commit."""
+        from mercurial.ui import ui
+        from mercurial.localrepo import localrepository
+        repo = localrepository(ui(), self.source_details.hg_repo_url)
+        repo.commit(text="hello world!", user="Jane Random Hacker", force=1)
+        self.foreign_commit_count += 1
+
+    def makeSourceDetails(self, branch_name, files):
+        """Make a Mercurial `CodeImportSourceDetails` pointing at a real repo.
+        """
+        repository_path = self.makeTemporaryDirectory()
+        hg_server = MercurialServer(repository_path)
+        hg_server.setUp()
+        self.addCleanup(hg_server.tearDown)
+
+        hg_server.makeRepo(files)
+        self.foreign_commit_count = 1
+
+        return self.factory.makeCodeImportSourceDetails(
+            rcstype='hg', hg_repo_url=repository_path)
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,

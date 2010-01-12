@@ -222,6 +222,16 @@ class NewCodeImportForm(Interface):
         allow_fragment=False,
         trailing_slash=False)
 
+    hg_repo_url = URIField(
+        title=_("Repo URL"), required=False,
+        description=_("The URL of the Mercurial repository."),
+        allowed_schemes=["http", "https"],
+        allow_userinfo=False, # Only anonymous access is supported.
+        allow_port=True,
+        allow_query=False,    # Query makes no sense in Mercurial
+        allow_fragment=False, # Fragment makes no sense in Mercurial
+        trailing_slash=False) # See http://launchpad.net/bugs/56357.
+
     branch_name = copy_field(
         IBranch['name'],
         __name__='branch_name',
@@ -258,16 +268,18 @@ class CodeImportNewView(CodeImportBaseView):
         # display them separately in the form.
         soup = BeautifulSoup(self.widgets['rcs_type']())
         fields = soup.findAll('input')
-        [cvs_button, svn_button, git_button, empty_marker] = [
+        [cvs_button, svn_button, git_button, hg_button, empty_marker] = [
             field for field in fields
-            if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', '1']]
+            if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', 'HG', '1']]
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
         git_button['onclick'] = 'updateWidgets()'
+        hg_button['onclick'] = 'updateWidgets()'
         # The following attributes are used only in the page template.
         self.rcs_type_cvs = str(cvs_button)
         self.rcs_type_svn = str(svn_button)
         self.rcs_type_git = str(git_button)
+        self.rcs_type_hg = str(hg_button)
         self.rcs_type_emptymarker = str(empty_marker)
 
     def _getImportLocation(self, data):
@@ -279,6 +291,8 @@ class CodeImportNewView(CodeImportBaseView):
             return None, None, data.get('svn_branch_url')
         elif rcs_type == RevisionControlSystems.GIT:
             return None, None, data.get('git_repo_url')
+        elif rcs_type == RevisionControlSystems.HG:
+            return None, None, data.get('hg_repo_url')
         else:
             raise AssertionError(
                 'Unexpected revision control type %r.' % rcs_type)
@@ -379,6 +393,9 @@ class CodeImportNewView(CodeImportBaseView):
         elif rcs_type == RevisionControlSystems.GIT:
             self._validateURL(
                 data.get('git_repo_url'), field_name='git_repo_url')
+        elif rcs_type == RevisionControlSystems.HG:
+            self._validateURL(
+                data.get('hg_repo_url'), field_name='hg_repo_url')
         else:
             raise AssertionError(
                 'Unexpected revision control type %r.' % rcs_type)
@@ -469,7 +486,8 @@ class CodeImportEditView(CodeImportBaseView):
             self.form_fields = self.form_fields.omit('url')
         elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
                                            RevisionControlSystems.BZR_SVN,
-                                           RevisionControlSystems.GIT):
+                                           RevisionControlSystems.GIT,
+                                           RevisionControlSystems.HG):
             self.form_fields = self.form_fields.omit(
                 'cvs_root', 'cvs_module')
         else:
@@ -503,7 +521,8 @@ class CodeImportEditView(CodeImportBaseView):
                 self.code_import)
         elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
                                            RevisionControlSystems.BZR_SVN,
-                                           RevisionControlSystems.GIT):
+                                           RevisionControlSystems.GIT,
+                                           RevisionControlSystems.HG):
             self._validateURL(data.get('url'), self.code_import)
         else:
             raise AssertionError('Unknown rcs_type for code import.')

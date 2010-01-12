@@ -197,6 +197,34 @@ specified git repo url.
     >>> git_import == existing_import
     True
 
+Import from Mercurial
++++++++++++++++++++++
+
+Code imports from Mercurial specify the URL used with "hg clone" to
+retrieve the branch to import.
+
+    >>> hg = RevisionControlSystems.HG
+    >>> hg_url = 'http://hg.example.com/metallic'
+    >>> hg_import = code_import_set.new(
+    ...     registrant=nopriv, product=product, branch_name='trunk-hg',
+    ...     rcs_type=hg, hg_repo_url=hg_url)
+    >>> verifyObject(ICodeImport, removeSecurityProxy(hg_import))
+    True
+
+Creating a CodeImport object creates a corresponding CodeImportEvent.
+
+    >>> hg_events = event_set.getEventsForCodeImport(hg_import)
+    >>> [event.event_type.name for event in hg_events]
+    ['CREATE']
+
+The CodeImportSet is also able to retrieve the code imports with the
+specified hg repo url.
+
+    >>> existing_import = code_import_set.getByHgDetails(
+    ...     hg_repo_url=hg_url)
+    >>> hg_import == existing_import
+    True
+
 
 Updating code import details
 ----------------------------
@@ -316,6 +344,8 @@ set in the Launchpad configuration system.
     ...     seconds=config.codeimport.default_interval_subversion)
     >>> default_interval_git = timedelta(
     ...     seconds=config.codeimport.default_interval_git)
+    >>> default_interval_hg = timedelta(
+    ...     seconds=config.codeimport.default_interval_hg)
 
 By default, code imports are created with an unspecified update interval.
 
@@ -344,6 +374,12 @@ appropriate default value for the RCS type.
     datetime.timedelta(0, 21600)
     >>> git_import.effective_update_interval
     datetime.timedelta(0, 21600)
+
+    >>> default_interval_hg
+    datetime.timedelta(0, 21600)
+    >>> hg_import.effective_update_interval
+    datetime.timedelta(0, 21600)
+
 
 If the update interval is set, then it overrides the default value.
 
@@ -477,7 +513,7 @@ CVS details are displayed in a similar way.
     instead of:
         hello from :pserver:anonymous@cvs.example.com:/cvsroot
 
-And for Git.
+For Git.
 
     >>> data = {'url': 'git://git.example.com/goodbye.git'}
     >>> modify_event = git_import.updateFromData(data, nopriv)
@@ -499,6 +535,18 @@ Imports via bzr-svn are also similar.
     instead of:
         svn://svn.example.com/for-bzr-svn/trunk
 
+And for Mercurial.
+
+    >>> data = {'hg_repo_url': 'http://metal.example.com/byebye.hg'}
+    >>> modify_event = hg_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(
+    ...     hg_import, modify_event, None)
+    ~no-priv/firefox/trunk-hg is now being imported from:
+        http://metal.example.com/byebye.hg
+
+    instead of:
+
+        http://hg.example.com/metallic
 
 In addition, updateFromData can be used to set the branch whiteboard,
 which is also described in the email that is sent.

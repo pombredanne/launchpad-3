@@ -119,6 +119,21 @@ class TestCodeImportCreation(unittest.TestCase):
         # A job is created for the import.
         self.assertTrue(code_import.import_job is not None)
 
+    def test_hg_import_reviewed(self):
+        """A new hg import is always reviewed by default."""
+        code_import = CodeImportSet().new(
+            registrant=self.factory.makePerson(),
+            product=self.factory.makeProduct(),
+            branch_name='imported',
+            rcs_type=RevisionControlSystems.HG,
+            hg_repo_url=self.factory.getUniqueURL(),
+            review_status=None)
+        self.assertEqual(
+            CodeImportReviewStatus.NEW,
+            code_import.review_status)
+        # No job is created for the import.
+        self.assertTrue(code_import.import_job is None)
+
 
 class TestCodeImportDeletion(unittest.TestCase):
     """Test the deletion of CodeImports."""
@@ -534,7 +549,7 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
 def make_active_import(factory, project_name=None, product_name=None,
                        branch_name=None, svn_branch_url=None,
                        cvs_root=None, cvs_module=None, git_repo_url=None,
-                       last_update=None, rcs_type=None):
+                       hg_repo_url=None, last_update=None, rcs_type=None):
     """Make a new CodeImport for a new Product, maybe in a new Project.
 
     The import will be 'active' in the sense used by
@@ -549,7 +564,8 @@ def make_active_import(factory, project_name=None, product_name=None,
     code_import = factory.makeCodeImport(
         product=product, branch_name=branch_name,
         svn_branch_url=svn_branch_url, cvs_root=cvs_root,
-        cvs_module=cvs_module, git_repo_url=git_repo_url, rcs_type=rcs_type)
+        cvs_module=cvs_module, git_repo_url=git_repo_url,
+        hg_repo_url=hg_repo_url, rcs_type=None)
     make_import_active(factory, code_import, last_update)
     return code_import
 

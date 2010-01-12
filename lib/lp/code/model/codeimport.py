@@ -89,6 +89,8 @@ class CodeImport(SQLBase):
 
     url = StringCol(default=None)
 
+    hg_repo_url = StringCol(default=None)
+
     date_last_successful = UtcDateTimeCol(default=None)
     update_interval = IntervalCol(default=None)
 
@@ -106,6 +108,8 @@ class CodeImport(SQLBase):
                 config.codeimport.default_interval_subversion,
             RevisionControlSystems.GIT:
                 config.codeimport.default_interval_git,
+            RevisionControlSystems.HG:
+                config.codeimport.default_interval_hg,
             }
         seconds = default_interval_dict[self.rcs_type]
         return timedelta(seconds=seconds)
@@ -122,7 +126,8 @@ class CodeImport(SQLBase):
         elif self.rcs_type in (
             RevisionControlSystems.SVN,
             RevisionControlSystems.GIT,
-            RevisionControlSystems.BZR_SVN):
+            RevisionControlSystems.BZR_SVN,
+            RevisionControlSystems.HG):
             return self.url
         else:
             raise AssertionError(
@@ -218,7 +223,8 @@ class CodeImportSet:
             assert url is None
         elif rcs_type in (RevisionControlSystems.SVN,
                           RevisionControlSystems.BZR_SVN,
-                          RevisionControlSystems.GIT):
+                          RevisionControlSystems.GIT,
+                          RevisionControlSystems.HG):
             assert cvs_root is None and cvs_module is None
             assert url is not None
         else:

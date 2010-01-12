@@ -258,7 +258,8 @@ class CodeImportEventSet:
         """Yield key-value tuples describing the source of the import."""
         if code_import.rcs_type in (RevisionControlSystems.SVN,
                                     RevisionControlSystems.BZR_SVN,
-                                    RevisionControlSystems.GIT):
+                                    RevisionControlSystems.GIT,
+                                    RevisionControlSystems.HG):
             yield 'URL', code_import.url
         elif code_import.rcs_type == RevisionControlSystems.CVS:
             yield 'CVS_ROOT', code_import.cvs_root

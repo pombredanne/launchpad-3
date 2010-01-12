@@ -60,6 +60,12 @@
           </p>
         </tal:svn-import>
 
+        <tal:hg-import condition="code_import/rcs_type/enumvalue:HG">
+          <p>This branch is an import of the Mercurial repo at
+            <span tal:replace="code_import/hg_repo_url" />.
+          </p>
+        </tal:hg-import>
+
         <tal:cvs-import condition="code_import/rcs_type/enumvalue:CVS">
           <p>This branch is an import of the CVS module
           <strong tal:content="code_import/cvs_module"/> from

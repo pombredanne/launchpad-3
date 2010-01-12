@@ -11,6 +11,7 @@ __all__ = [
     'CodeImportSourceDetails',
     'ForeignTreeStore',
     'GitImportWorker',
+    'HgImportWorker',
     'ImportWorker',
     'get_default_bazaar_branch_store',
     ]
@@ -111,7 +112,7 @@ class CodeImportSourceDetails:
         'git'], None otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
-    """
+   """
 
     def __init__(self, branch_id, rcstype, url=None, cvs_root=None,
                  cvs_module=None):
@@ -126,7 +127,7 @@ class CodeImportSourceDetails:
         """Convert command line-style arguments to an instance."""
         branch_id = int(arguments.pop(0))
         rcstype = arguments.pop(0)
-        if rcstype in ['svn', 'bzr-svn', 'git']:
+        if rcstype in ['svn', 'bzr-svn', 'git', 'hg']:
             [url] = arguments
             cvs_root = cvs_module = None
         elif rcstype == 'cvs':
@@ -151,6 +152,8 @@ class CodeImportSourceDetails:
                 cvs_module=str(code_import.cvs_module))
         elif code_import.rcs_type == RevisionControlSystems.GIT:
             return cls(branch_id, 'git', str(code_import.url))
+        elif code_import.rcs_type == RevisionControlSystems.HG:
+            return cls(branch_id, 'hg', str(code_import.url))
         else:
             raise AssertionError("Unknown rcstype %r." % code_import.rcs_type)
 
@@ -158,7 +161,7 @@ class CodeImportSourceDetails:
         """Return a list of arguments suitable for passing to a child process.
         """
         result = [str(self.branch_id), self.rcstype]
-        if self.rcstype in ['svn', 'bzr-svn', 'git']:
+        if self.rcstype in ['svn', 'bzr-svn', 'git', 'hg']:
             result.append(self.url)
         elif self.rcstype == 'cvs':
             result.append(self.cvs_root)
@@ -546,6 +549,40 @@ class GitImportWorker(PullingImportWorker):
         PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
         self.import_data_store.put(
             'git.db', bazaar_tree.branch.repository._transport)
+
+
+class HgImportWorker(PullingImportWorker):
+    """An import worker for Mercurial imports.
+
+    The only behaviour we add is preserving the 'hg.db' map between runs.
+    """
+
+    @property
+    def pull_url(self):
+        return self.source_details.hg_repo_url
+
+    def getBazaarWorkingTree(self):
+        """See `ImportWorker.getBazaarWorkingTree`.
+
+        In addition to the superclass' behaviour, we retrieve the 'hg.db'
+        map from the import data store and put it where bzr-hg will find
+        it in the Bazaar tree, that is at '.bzr/repository/hg.db'.
+        """
+        tree = PullingImportWorker.getBazaarWorkingTree(self)
+        self.import_data_store.fetch(
+            'hg.db', tree.branch.repository._transport)
+        return tree
+
+    def pushBazaarWorkingTree(self, bazaar_tree):
+        """See `ImportWorker.pushBazaarWorkingTree`.
+
+        In addition to the superclass' behaviour, we store the 'hg.db' shamap
+        that bzr-hg will have created at .bzr/repository/hg.db into the
+        import data store.
+        """
+        PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
+        self.import_data_store.put(
+            'hg.db', bazaar_tree.branch.repository._transport)
 
 
 class BzrSvnImportWorker(PullingImportWorker):

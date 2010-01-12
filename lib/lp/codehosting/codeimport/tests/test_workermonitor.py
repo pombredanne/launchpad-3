@@ -43,7 +43,7 @@ from lp.codehosting.codeimport.workermonitor import (
     CodeImportWorkerMonitor, CodeImportWorkerMonitorProtocol, ExitQuietly,
     read_only_transaction)
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, SubversionServer)
+    CVSServer, GitServer, MercurialServer, SubversionServer)
 from lp.codehosting.codeimport.tests.test_worker import (
     clean_up_default_stores_for_import)
 from lp.testing import login, logout
@@ -501,6 +501,18 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
 
         return self.factory.makeCodeImport(git_repo_url=self.repo_path)
 
+    def makeHgCodeImport(self):
+        """Make a `CodeImport` that points to a real Git repository."""
+        load_optional_plugin('hg')
+        self.hg_server = MercurialServer(self.repo_path)
+        self.hg_server.setUp()
+        self.addCleanup(self.hg_server.tearDown)
+
+        self.hg_server.makeRepo([('README', 'contents')])
+        self.foreign_commit_count = 1
+
+        return self.factory.makeCodeImport(hg_repo_url=self.repo_path)
+
     def getStartedJobForImport(self, code_import):
         """Get a started `CodeImportJob` for `code_import`.
 
@@ -586,6 +598,15 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
     def test_import_git(self):
         # Create a Git CodeImport and import it.
         job = self.getStartedJobForImport(self.makeGitCodeImport())
+        code_import_id = job.code_import.id
+        job_id = job.id
+        self.layer.txn.commit()
+        result = self.performImport(job_id)
+        return result.addCallback(self.assertImported, code_import_id)
+
+    def test_import_hg(self):
+        # Create a Mercurial CodeImport and import it.
+        job = self.getStartedJobForImport(self.makeHgCodeImport())
         code_import_id = job.code_import.id
         job_id = job.id
         self.layer.txn.commit()
