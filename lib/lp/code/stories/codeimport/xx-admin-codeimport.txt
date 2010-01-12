@@ -160,7 +160,7 @@ Git imports,
 and Mercurial imports.
 
     >>> import_browser.open(hg_import_location + '/+edit-import')
-    >>> import_browser.getControl(URL').value = \
+    >>> import_browser.getControl('URL').value = \
     ...     'http://metal.example.org/bar'
     >>> import_browser.getControl('Update').click()
     >>> for message in get_feedback_messages(import_browser.contents):

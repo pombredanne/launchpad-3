@@ -822,7 +822,7 @@ class PullingImportWorkerTests:
         # import should be rejected.
         args = {'rcstype': self.rcstype}
         reference_url = self.createBranchReference()
-        if self.rcstype in ('git', 'bzr-svn'):
+        if self.rcstype in ('git', 'bzr-svn', 'hg'):
             args['url'] = reference_url
         else:
             raise AssertionError("unexpected rcs_type %r" % self.rcs_type)
@@ -886,7 +886,10 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
             rcstype='git', url=repository_path)
 
 
-class TestMercurialImport(WorkerTest, TestActualImportMixin):
+class TestMercurialImport(WorkerTest, TestActualImportMixin,
+                          PullingImportWorkerTests):
+
+    rcstype = 'hg'
 
     def setUp(self):
         super(TestMercurialImport, self).setUp()
@@ -905,17 +908,17 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin):
         mapdbs().clear()
         WorkerTest.tearDown(self)
 
-    def makeImportWorker(self):
+    def makeImportWorker(self, source_details):
         """Make a new `ImportWorker`."""
         return HgImportWorker(
-            self.source_details, self.get_transport('import_data'),
+            source_details, self.get_transport('import_data'),
             self.bazaar_store, logging.getLogger())
 
-    def makeForeignCommit(self):
+    def makeForeignCommit(self, source_details):
         """Change the foreign tree, generating exactly one commit."""
         from mercurial.ui import ui
         from mercurial.localrepo import localrepository
-        repo = localrepository(ui(), self.source_details.url)
+        repo = localrepository(ui(), source_details.url)
         repo.commit(text="hello world!", user="Jane Random Hacker", force=1)
         self.foreign_commit_count += 1
 

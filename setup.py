@@ -43,6 +43,7 @@ setup(
         'lazr.uri',
         'lazr-js',
         'mechanize',
+        'mercurial',
         'mocker',
         'oauth',
         'paramiko',

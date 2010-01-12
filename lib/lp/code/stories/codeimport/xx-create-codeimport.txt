@@ -32,6 +32,7 @@ The default foreign VCS type is Subversion.
 
     >>> print_radio_button_field(browser.contents, "rcs_type")
     ( ) Git
+    ( ) Mercurial
     (*) Subversion
     ( ) CVS
 
@@ -66,21 +67,14 @@ attribute on the text of 'Subversion'.
 Requesting a Git import
 =======================
 
-The default foreign VCS type is Subversion.
-
-    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
-    >>> print_radio_button_field(browser.contents, "rcs_type")
-    ( ) Git
-    (*) Subversion
-    ( ) CVS
-
 The user is required to enter a project that the import is for,
 a name for the import branch, and a subversion branch location.
 
+    >>> browser.open("http://code.launchpad.dev/+code-imports/+new")
     >>> browser.getControl('Project').value = "firefox"
     >>> browser.getControl('Branch Name').value = "git-import"
     >>> browser.getControl('Git').click()
-    >>> browser.getControl('Repo URL').value = (
+    >>> browser.getControl('Repo URL', index=0).value = (
     ...     "git://example.com/firefox.git")
     >>> browser.getControl('Request Import').click()
 

@@ -553,9 +553,14 @@ class HgImportWorker(PullingImportWorker):
     The only behaviour we add is preserving the 'hg.db' map between runs.
     """
 
+    db_file = 'hg-v2.db'
+
     @property
-    def pull_url(self):
-        return self.source_details.hg_repo_url
+    def format_classes(self):
+        """See `PullingImportWorker.opening_format`."""
+        # We only return HgLocalRepository for tests.
+        from bzrlib.plugins.hg import HgBzrDirFormat
+        return [HgBzrDirFormat]
 
     def getBazaarWorkingTree(self):
         """See `ImportWorker.getBazaarWorkingTree`.
@@ -566,7 +571,7 @@ class HgImportWorker(PullingImportWorker):
         """
         tree = PullingImportWorker.getBazaarWorkingTree(self)
         self.import_data_store.fetch(
-            'hg.db', tree.branch.repository._transport)
+            self.db_file, tree.branch.repository._transport)
         return tree
 
     def pushBazaarWorkingTree(self, bazaar_tree):
@@ -578,7 +583,7 @@ class HgImportWorker(PullingImportWorker):
         """
         PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)
         self.import_data_store.put(
-            'hg.db', bazaar_tree.branch.repository._transport)
+            self.db_file, bazaar_tree.branch.repository._transport)
 
 
 class BzrSvnImportWorker(PullingImportWorker):

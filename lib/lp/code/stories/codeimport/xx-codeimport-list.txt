@@ -58,7 +58,7 @@ It lists the active imports, sorted by product then branch name:
    >>> print_import_table()
    Project    Branch Name Source Details                             Last Updated
    herproj    master      git://git.example.org/herproj              2007-01-04
-   hg-proj    tip         http://hg.example.org/proj                 2007-01-04
+   hg-proj    tip         http://hg.example.org/proj                 2007-01-05
    hisproj    main        :pserver:anon@example.com:/cvs hisproj     2007-01-03
    myproject  trunk       http://example.com/svn/myproject/trunk     2007-01-01
    ourproject trunk       http://example.com/bzr-svn/myproject/trunk 2007-01-02
