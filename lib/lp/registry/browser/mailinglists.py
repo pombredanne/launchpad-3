@@ -158,7 +158,7 @@ class HeldMessageView(LaunchpadView):
         for lineno, line in enumerate(details.splitlines()):
             if lineno > 20:
                 break
-            if len(line.strip()) == 0 and len(current_paragraph) > 0:
+            if len(line.strip()) == 0:
                 self._append_paragraph(paragraphs, current_paragraph)
                 current_paragraph = []
             else:
@@ -167,6 +167,10 @@ class HeldMessageView(LaunchpadView):
         self.body_details = u''.join(paragraphs)
 
     def _append_paragraph(self, paragraphs, current_paragraph):
+        if len(current_paragraph) == 0:
+            # There is nothing to append. The message has multiple
+            # blank lines.
+            return
         paragraphs.append(u'\n<p>\n')
         paragraphs.append(u'\n'.join(current_paragraph))
         paragraphs.append(u'\n</p>\n')
