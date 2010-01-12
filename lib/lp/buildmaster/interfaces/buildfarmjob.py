@@ -47,24 +47,24 @@ class BuildFarmJobType(DBEnumeratedType):
         Build a package from a bazaar branch and a recipe.
         """)
 
-    TRANSLATION = DBItem(4, """
-        TranslationJob
+    TRANSLATIONTEMPLATESBUILD = DBItem(4, """
+        TranslationTemplatesBuildJob
 
-        Perform a translation job.
+        Generate translation templates from a bazaar branch.
         """)
 
 
 class IBuildFarmJob(Interface):
-    """Operations that Soyuz build farm jobs must implement."""
+    """Operations that jobs for the build farm must implement."""
 
     def score():
         """Calculate a job score appropriate for the job type in question."""
 
     def getLogFileName():
-        """The preferred file name for the log of this Soyuz job."""
+        """The preferred file name for this job's log."""
 
     def getName():
-        """An appropriate name for this Soyuz job."""
+        """An appropriate name for this job."""
 
     def jobStarted():
         """'Job started' life cycle event, handle as appropriate."""
