@@ -363,7 +363,7 @@ purge mailing lists.
     >>> person_set = getUtility(IPersonSet)
     >>> test = person_set.getByName('name12')
     >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-    >>> experts.addMember(test, reviewer=experts.teamowner)
+    >>> ignored = experts.addMember(test, reviewer=experts.teamowner)
     >>> logout()
     >>> transaction.commit()
 

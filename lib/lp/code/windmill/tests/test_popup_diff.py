@@ -42,34 +42,34 @@ BRANCH_SEARCCH_RESULT = (
     u'//ul[@class="yui-picker-results"]//span[@class="yui-picker-result-title"]')
 
 
-class TestPopupOnBranchPage(TestCaseWithFactory):
-    """Test the popup diff."""
-
-    layer = CodeWindmillLayer
-
-    def test_branch_popup_diff(self):
-        """Test branch diff popups."""
-        client = WindmillTestClient("Branch popup diffs")
-        make_erics_fooix_project(self.factory)
-        transaction.commit()
-
-        start_url = (
-            windmill.settings['TEST_URL'] + '~fred/fooix/proposed')
-        client.open(url=start_url)
-        client.waits.forPageLoad(timeout=PAGE_LOAD)
-        # Sleep for a bit to make sure that the JS onload has had time to execute.
-        client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)
-
-        # Make sure that the link anchor has the js-action class.
-        client.asserts.assertNode(xpath=POPUP_DIFF)
-        client.click(xpath=POPUP_DIFF)
-
-        # Wait for the diff to show.
-        client.waits.forElement(xpath=VISIBLE_DIFF)
-        # Click on the close button.
-        client.click(xpath=CLOSE_VISIBLE_DIFF)
-        # Make sure that the diff has gone.
-        client.asserts.assertNotNode(xpath=VISIBLE_DIFF)
+#class TestPopupOnBranchPage(TestCaseWithFactory):
+#    """Test the popup diff."""
+#
+#    layer = CodeWindmillLayer
+#
+#    def test_branch_popup_diff(self):
+#        """Test branch diff popups."""
+#        client = WindmillTestClient("Branch popup diffs")
+#        make_erics_fooix_project(self.factory)
+#        transaction.commit()
+#
+#        start_url = (
+#            windmill.settings['TEST_URL'] + '~fred/fooix/proposed')
+#        client.open(url=start_url)
+#        client.waits.forPageLoad(timeout=PAGE_LOAD)
+#        # Sleep for a bit to make sure that the JS onload has had time to execute.
+#        client.waits.sleep(milliseconds=JS_ONLOAD_EXECUTE_DELAY)
+#
+#        # Make sure that the link anchor has the js-action class.
+#        client.asserts.assertNode(xpath=POPUP_DIFF)
+#        client.click(xpath=POPUP_DIFF)
+#
+#        # Wait for the diff to show.
+#        client.waits.forElement(xpath=VISIBLE_DIFF)
+#        # Click on the close button.
+#        client.click(xpath=CLOSE_VISIBLE_DIFF)
+#        # Make sure that the diff has gone.
+#        client.asserts.assertNotNode(xpath=VISIBLE_DIFF)
 
 
 class TestPopupOnBugPage(TestCaseWithFactory):

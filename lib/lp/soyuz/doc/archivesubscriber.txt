@@ -448,7 +448,8 @@ If the subscription is for a group which itself contains a group, all
 indirect members that are not themselves groups are included:
 
     >>> launchpad_devs = getUtility(IPersonSet).getByName('launchpad')
-    >>> launchpad_devs.addMember(team_cprov, mark, force_team_add=True)
+    >>> ignored = launchpad_devs.addMember(
+    ...     team_cprov, mark, force_team_add=True)
     >>> subscription = mark.archive.newSubscription(
     ...     launchpad_devs, mark, description=u"LP team too")
     >>> for person in subscription.getNonActiveSubscribers():

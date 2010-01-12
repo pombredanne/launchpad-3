@@ -226,6 +226,7 @@
                     date_review_requested
                     date_reviewed
                     review_diff
+                    next_preview_diff_job
                     preview_diff
                     votes
                     root_comment
@@ -889,6 +890,7 @@
   </securedutility>
   <class class="lp.code.model.branchmergeproposaljob.UpdatePreviewDiffJob">
     <allow interface="lp.services.job.interfaces.job.IRunnableJob" />
+    <allow interface="lp.code.interfaces.branchmergeproposal.IBranchMergeProposalJob" />
   </class>
 
   <securedutility

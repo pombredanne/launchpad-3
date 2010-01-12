@@ -53,12 +53,11 @@ from lp.registry.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
     IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
-from lp.services.permission_helpers import (
-    is_admin, is_admin_or_registry_expert, is_admin_or_rosetta_expert)
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities)
+    IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities,
+    IPersonRoles)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -77,7 +76,7 @@ from lp.soyuz.interfaces.queue import (
     IPackageUpload, IPackageUploadQueue)
 from lp.registry.interfaces.packaging import IPackaging
 from lp.registry.interfaces.person import (
-    IPerson, ITeam, PersonVisibility)
+    IPerson, IPersonSet, ITeam, PersonVisibility)
 from lp.registry.interfaces.pillar import IPillar
 from lp.registry.interfaces.poll import (
     IPoll, IPollOption, IPollSubset)
@@ -195,7 +194,8 @@ class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
     usedfor = None
 
     def checkAuthenticated(self, user):
-        return is_admin_or_registry_expert(user)
+        user = IPersonRoles(user)
+        return user.in_admin or user.in_registry_experts
 
 
 class ReviewProduct(ReviewByRegistryExpertsOrAdmins):
@@ -231,9 +231,10 @@ class ViewPillar(AuthorizationBase):
         if self.obj.active:
             return True
         else:
-            celebrities = getUtility(ILaunchpadCelebrities)
-            return (user.inTeam(celebrities.commercial_admin)
-                    or is_admin_or_registry_expert(user))
+            user = IPersonRoles(user)
+            return (user.in_commercial_admin or
+                    user.in_admin or
+                    user.in_registry_experts)
 
 
 class EditAccountBySelfOrAdmin(AuthorizationBase):
@@ -247,7 +248,8 @@ class EditAccountBySelfOrAdmin(AuthorizationBase):
             EditAccountBySelfOrAdmin, self).checkAccountAuthenticated(account)
 
     def checkAuthenticated(self, user):
-        return is_admin(user)
+        user = IPersonRoles(user)
+        return user.in_admin
 
 
 class ViewAccount(EditAccountBySelfOrAdmin):
@@ -259,7 +261,8 @@ class SpecialAccount(EditAccountBySelfOrAdmin):
 
     def checkAuthenticated(self, user):
         """Extend permission to registry experts."""
-        return is_admin_or_registry_expert(user)
+        user = IPersonRoles(user)
+        return user.in_admin or user.in_registry_experts
 
 
 class ModerateAccountByRegistryExpert(AuthorizationBase):
@@ -267,7 +270,8 @@ class ModerateAccountByRegistryExpert(AuthorizationBase):
     permission = 'launchpad.Moderate'
 
     def checkAuthenticated(self, user):
-        return is_admin_or_registry_expert(user)
+        user = IPersonRoles(user)
+        return user.in_admin or user.in_registry_experts
 
 
 class EditOAuthAccessToken(AuthorizationBase):
@@ -498,7 +502,8 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Allow Launchpad's admins and Rosetta experts edit all fields."""
-        return is_admin_or_rosetta_expert(user)
+        user = IPersonRoles(user)
+        return user.in_admin or user.in_rosetta_experts
 
 
 class AdminProductTranslations(AuthorizationBase):
@@ -511,8 +516,10 @@ class AdminProductTranslations(AuthorizationBase):
         Any Launchpad/Launchpad Translations administrator or owners are
         able to change translation settings for a product.
         """
-        return (user.inTeam(self.obj.owner) or
-                is_admin_or_rosetta_expert(user))
+        user = IPersonRoles(user)
+        return (user.isOwner(self.obj) or
+                user.in_rosetta_experts or
+                user.in_admin)
 
 
 class AdminSeriesByVCSImports(AuthorizationBase):
@@ -550,7 +557,6 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
             return True
         return user.inTeam(self.obj.target.owner)
 
-
 class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IMilestone
@@ -561,6 +567,11 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
         them."""
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
+
+
+class ModeratePersonSetByExpertsOrAdmins(ReviewByRegistryExpertsOrAdmins):
+    permission = 'launchpad.Moderate'
+    usedfor = IPersonSet
 
 
 class EditTeamByTeamOwnerOrLaunchpadAdmins(AuthorizationBase):
@@ -584,6 +595,21 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
         The Launchpad admins also have launchpad.Edit on all teams.
         """
         return can_edit_team(self.obj, user)
+
+
+class ModerateTeam(ReviewByRegistryExpertsOrAdmins):
+    permission = 'launchpad.Moderate'
+    usedfor = ITeam
+
+    def checkAuthenticated(self, user):
+        """Is the user a privileged team member or Launchpad staff?
+        
+        Return true when the user is a member of Launchpad admins,
+        registry experts, team admins, or the team owners.
+        """
+        return (
+            super(ModerateTeam, self).checkAuthenticated(user)
+            or can_edit_team(self.obj, user))
 
 
 class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
@@ -698,6 +724,11 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
         admins = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(admins) or user.inTeam(self.obj):
             return True
+        # We also grant visibility of the private team to administrators of
+        # other teams that have been invited to join the private team.
+        for invitee in self.obj.invited_members:
+            if invitee.is_team and invitee in user.getAdministratedTeams():
+                return True
         return False
 
 
@@ -852,17 +883,20 @@ class EditProductSeries(EditByOwnersOrAdmins):
     usedfor = IProductSeries
 
     def checkAuthenticated(self, user):
-        """Allow product owner, Rosetta Experts, or admins."""
+        """Allow product owner, some experts, or admins."""
         if (user.inTeam(self.obj.product.owner) or
             user.inTeam(self.obj.driver)):
             # The user is the owner of the product, or the release manager.
             return True
         # Rosetta experts need to be able to upload translations.
-        rosetta_experts = getUtility(ILaunchpadCelebrities).rosetta_experts
-        if user.inTeam(rosetta_experts):
+        # Bazaar experts need to be able to change the linked branches.
+        # Registry admins are just special.
+        celebrities = getUtility(ILaunchpadCelebrities)
+        if (user.inTeam(celebrities.registry_experts) or
+            user.inTeam(celebrities.bazaar_experts) or
+            user.inTeam(celebrities.rosetta_experts)):
             return True
-        return EditByOwnersOrAdmins.checkAuthenticated(
-            self, user)
+        return EditByOwnersOrAdmins.checkAuthenticated(self, user)
 
 
 class EditBugTask(AuthorizationBase):

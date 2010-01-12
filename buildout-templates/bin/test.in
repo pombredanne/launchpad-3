@@ -143,7 +143,7 @@ defaults = {
     'tests_pattern': '^f?tests$',
     'test_path': ['${buildout:directory}/lib'],
     'package': ['canonical', 'lp', 'devscripts'],
-    'layer': ['!(MailmanLayer|WindmillLayer)'],
+    'layer': ['!(MailmanLayer)'],
     }
 
 # Monkey-patch os.listdir to randomise the results
