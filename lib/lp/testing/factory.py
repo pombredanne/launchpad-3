@@ -40,6 +40,7 @@ from canonical.database.sqlbase import flush_database_updates
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
@@ -76,7 +77,7 @@ from lp.blueprints.interfaces.specification import (
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translator import ITranslatorSet
-from lp.translations.interfaces.translationsperson import ITranslationsPerson 
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -517,7 +518,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             group = self.makeTranslationGroup()
         if person is None:
             person = self.makePerson()
-        ITranslationsPerson(person).translations_relicensing_agreement = license
+        tx_person = ITranslationsPerson(person)
+        tx_person.translations_relicensing_agreement = license
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(
@@ -952,7 +954,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             author = self.getUniqueString('author')
         for index in range(count):
             revision = revision_set.new(
-                revision_id = self.getUniqueString('revision-id'),
+                revision_id=self.getUniqueString('revision-id'),
                 log_body=self.getUniqueString('log-body'),
                 revision_date=date_generator.next(),
                 revision_author=author,
@@ -1574,6 +1576,24 @@ class LaunchpadObjectFactory(ObjectFactory):
             text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
         parser = RecipeParser(text)
         return parser.parse()
+
+    def makeSourcePackageRecipe(self, registrant=None, owner=None,
+                                distroseries=None, sourcepackagename=None,
+                                name=None, *branches):
+        """Make a `SourcePackageRecipe`."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        if name is None:
+            name = self.getUniqueString().decode('utf8')
+        recipe = self.makeRecipe(*branches)
+        return getUtility(ISourcePackageRecipeSource).new(
+            registrant, owner, distroseries, sourcepackagename, name, recipe)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
