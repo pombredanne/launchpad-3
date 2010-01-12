@@ -37,12 +37,14 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             build_queue_item)
         chroot = self._getChroot()
         chroot_sha1 = chroot.content.sha1
+# XXX: API change in lp:~jml/launchpad/behavior-refactor
         self._builder.cacheFileOnSlave(logger, chroot)
         buildid = templatesbuildjob.getName()
 
-        args = { 'branch_url': build_queue_item.branch.url }
+        args = { 'branch_url': templatesbuildjob.branch.url }
         filemap = {}
 
+# XXX: API change in lp:~jml/launchpad/behavior-refactor
         status, info = self._builder.slave.build(
             buildid, self.build_type, chroot_sha1, filemap, args)
 
