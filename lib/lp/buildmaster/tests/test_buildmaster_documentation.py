@@ -13,11 +13,11 @@ import unittest
 from canonical.config import config
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.testing.systemdocs import (
-    LayeredDocFileSuite, setGlobs)
-from canonical.testing import LaunchpadZopelessLayer
+    LayeredDocFileSuite, setGlobs, setUp, tearDown)
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 
-def setUp(test):
+def buildmasterSetUp(test):
     """Setup a typical builddmaster test environment.
 
     Log in as ANONYMOUS and perform DB operations as the builddmaster
@@ -30,9 +30,16 @@ def setUp(test):
     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
 
-def tearDown(test):
+def buildmasterTearDown(test):
     logout()
 
+special = {
+    'builder.txt': LayeredDocFileSuite(
+        '../doc/builder.txt',
+        setUp=setUp, tearDown=tearDown,
+        layer=LaunchpadFunctionalLayer,
+        ),
+    }
 
 def test_suite():
     """Load doctests in this directory.
@@ -45,15 +52,22 @@ def test_suite():
     tests_dir = os.path.dirname(os.path.realpath(__file__))
     docs_dir = tests_dir + "/../doc"
 
+    # Add special tests that do not use the default buildmaster setup
+    # and teardown.
+    for key in sorted(special):
+        suite.addTest(special[key])
+
+    # Add tests using the default buildmaster setup and teardown.
     filenames = [
         filename
         for filename in os.listdir(docs_dir)
-        if filename.lower().endswith('.txt')
+        if filename.lower().endswith('.txt') and filename not in special
         ]
 
     for filename in sorted(filenames):
         test = LayeredDocFileSuite(
-            filename, setUp=setUp, tearDown=tearDown,
+            "../doc/" +filename, setUp=buildmasterSetUp,
+            tearDown=buildmasterTearDown,
             stdout_logging_level=logging.WARNING,
             layer=LaunchpadZopelessLayer)
         suite.addTest(test)
