@@ -1,33 +1,5 @@
 SET client_min_messages=ERROR;
 
-CREATE TABLE SourcePackageRecipeData (
-    id serial PRIMARY KEY,
-    base_branch integer NOT NULL REFERENCES Branch,
-    recipe_format text NOT NULL,
-    deb_version_template text NOT NULL,
-    revspec text
-);
-
-CREATE TABLE SourcePackageRecipeDataInstruction (
-    id serial PRIMARY KEY,
-    name text NOT NULL,
-    type integer NOT NULL, -- MERGE == 1, NEST == 2
-    comment text,
-    line_number integer NOT NULL,
-    branch integer NOT NULL REFERENCES Branch,
-    revspec text,
-    directory text,
-    recipe_data integer NOT NULL REFERENCES SourcePackageRecipeData,
-    parent_instruction integer REFERENCES SourcePackageRecipeDataInstruction
-);
-
-ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__name__recipe_data
-     UNIQUE (name, recipe_data);
-ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__line_number__recipe_data
-     UNIQUE (line_number, recipe_data);
-ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__directory_not_null
-     CHECK ((type = 1 AND directory IS NULL) OR (type = 2 AND directory IS NOT NULL));
-
 CREATE TABLE SourcePackageRecipe (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, now()) NOT NULL,
@@ -36,15 +8,11 @@ CREATE TABLE SourcePackageRecipe (
     owner integer NOT NULL REFERENCES Person,
     distroseries integer NOT NULL REFERENCES DistroSeries,
     sourcepackagename integer NOT NULL REFERENCES SourcePackageName,
-    name text NOT NULL,
-    recipe_data integer NOT NULL REFERENCES SourcePackageRecipeData
+    name text NOT NULL
 );
 
 ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipe__owner__distroseries__sourcepackagename__name
      UNIQUE (owner, distroseries, sourcepackagename, name);
-
-ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipedata__recipe_data
-     UNIQUE (recipe_data);
 
 CREATE TABLE SourcePackageRecipeBuild (
     id serial PRIMARY KEY,
@@ -63,12 +31,8 @@ CREATE TABLE SourcePackageRecipeBuild (
     builder integer REFERENCES builder,
     date_first_dispatched timestamp without time zone,
     requester integer NOT NULL REFERENCES Person,
-    recipe integer REFERENCES SourcePackageRecipe NOT NULL,
-    manifest integer REFERENCES SourcePackageRecipeData
+    recipe integer REFERENCES SourcePackageRecipe NOT NULL
 );
-
-ALTER TABLE SourcePackageRecipeBuild ADD CONSTRAINT sourcepackagerecipebuild__manifest
-    UNIQUE (manifest);
 
 CREATE TABLE SourcePackageRecipeBuildUpload (
     id serial PRIMARY KEY,
@@ -93,5 +57,41 @@ CREATE TABLE BuildSourcePackageFromRecipeJob (
 
 ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipejob__source_package_recipe_build
     UNIQUE (source_package_recipe_build);
+
+CREATE TABLE SourcePackageRecipeData (
+    id serial PRIMARY KEY,
+    base_branch integer NOT NULL REFERENCES Branch,
+    recipe_format text NOT NULL,
+    deb_version_template text NOT NULL,
+    revspec text,
+    recipe integer REFERENCES SourcePackageRecipe,
+    build integer REFERENCES SourcePackageRecipeBuild
+);
+
+ALTER TABLE SourcePackageRecipeData ADD CONSTRAINT sourcepackagerecipedata__recipe_or_build_is_not_null
+    CHECK (recipe IS NULL != build IS NULL);
+ALTER TABLE SourcePackageRecipeData ADD CONSTRAINT sourcepackagerecipedata__recipe_unique
+    UNIQUE (recipe, build);
+
+
+CREATE TABLE SourcePackageRecipeDataInstruction (
+    id serial PRIMARY KEY,
+    name text NOT NULL,
+    type integer NOT NULL, -- MERGE == 1, NEST == 2
+    comment text,
+    line_number integer NOT NULL,
+    branch integer NOT NULL REFERENCES Branch,
+    revspec text,
+    directory text,
+    recipe_data integer NOT NULL REFERENCES SourcePackageRecipeData,
+    parent_instruction integer REFERENCES SourcePackageRecipeDataInstruction
+);
+
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__name__recipe_data
+     UNIQUE (name, recipe_data);
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__line_number__recipe_data
+     UNIQUE (line_number, recipe_data);
+ALTER TABLE SourcePackageRecipeDataInstruction ADD CONSTRAINT sourcepackagerecipedatainstruction__directory_not_null
+     CHECK ((type = 1 AND directory IS NULL) OR (type = 2 AND directory IS NOT NULL));
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 88, 0);

@@ -1317,7 +1317,7 @@ COMMENT ON COLUMN SourcePackageRecipe.owner IS 'The person or team who can edit 
 COMMENT ON COLUMN SourcePackageRecipe.distroseries IS 'The distroseries this recipe builds a package for.';
 COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS 'The name of the source package this recipe builds.';
 COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
-COMMENT ON COLUMN SourcePackageRecipe.recipe_data IS 'The SourcePackageRecipeData that contains the data from the BaseRecipeBranch from bzr-builder.';
+--COMMENT ON COLUMN SourcePackageRecipe.recipe_data IS 'The SourcePackageRecipeData that contains the data from the BaseRecipeBranch from bzr-builder.';
 
 -- SourcePackageRecipeBuild
 
@@ -1332,7 +1332,7 @@ COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS 'Points to the builder whi
 COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
-COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS 'The frozen recipe that describes how to reproduce precisely this build.';
+--COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS 'The frozen recipe that describes how to reproduce precisely this build.';
 
 -- SourcePackageRecipeBuildUpload
 
