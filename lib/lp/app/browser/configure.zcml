@@ -60,7 +60,7 @@
         class="lp.registry.browser.featuredproject.FeaturedProjectsView"
         name="+featuredprojects"
         template="../templates/root-featuredprojects.pt"
-        permission="launchpad.Admin"
+        permission="launchpad.Edit"
         />
 
   <browser:page

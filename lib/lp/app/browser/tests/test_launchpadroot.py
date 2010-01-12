@@ -9,6 +9,7 @@ import unittest
 
 
 from zope.component import getUtility
+from zope.security.checker import selectChecker
 
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import ILaunchpadRoot
@@ -17,6 +18,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import login_person, TestCaseWithFactory
+from lp.testing.views import create_view
 
 
 class LaunchpadRootPermissionTest(TestCaseWithFactory):
@@ -51,6 +53,12 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
         login_person(self.admin)
         self.failUnless(check_permission('launchpad.Edit', self.root),
             "Admins should have launchpad.Edit on ILaunchpadRoot")
+
+    def test_featured_projects_view_requires_edit(self):
+        view = create_view(self.root, '+featuredprojects')
+        checker = selectChecker(view)
+        self.assertEquals('launchpad.Edit', checker.permission_id('__call__'))
+
 
 
 def test_suite():
