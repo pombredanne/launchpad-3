@@ -221,7 +221,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     screenshotsurl = StringCol(
         dbName='screenshotsurl', notNull=False, default=None)
-    wikiurl =  StringCol(dbName='wikiurl', notNull=False, default=None)
+    wikiurl = StringCol(dbName='wikiurl', notNull=False, default=None)
     programminglang = StringCol(
         dbName='programminglang', notNull=False, default=None)
     downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
@@ -773,7 +773,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             Specification.product = %s AND
             Specification.id = MentoringOffer.specification
             """ % sqlvalues(self.id) + """ AND NOT
-            (""" + Specification.completeness_clause +")",
+            (""" + Specification.completeness_clause + ")",
             clauseTables=['Specification'],
             distinct=True)
         via_bugs = MentoringOffer.select("""
@@ -876,7 +876,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
-        completeness =  Specification.completeness_clause
+        completeness = Specification.completeness_clause
 
         if SpecificationFilter.COMPLETE in filter:
             query += ' AND ( %s ) ' % completeness
@@ -929,7 +929,6 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             series.driver = owner
         return series
 
-
     def getRelease(self, version):
         """See `IProduct`."""
         store = Store.of(self)
@@ -959,14 +958,14 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             Packaging.productseriesID == ProductSeries.id,
             ProductSeries.product == self,
             Packaging.distroseriesID == DistroSeries.id,
-            DistroSeries.distributionID == Distribution.id
+            DistroSeries.distributionID == Distribution.id,
             ).config(distinct=True).order_by(Distribution.name)
 
     def setBugSupervisor(self, bug_supervisor, user):
         """See `IHasBugSupervisor`."""
         self.bug_supervisor = bug_supervisor
         if bug_supervisor is not None:
-            subscription = self.addBugSubscription(bug_supervisor, user)
+            self.addBugSubscription(bug_supervisor, user)
 
     def composeCustomLanguageCodeMatch(self):
         """See `HasCustomLanguageCodesMixin`."""
@@ -1008,8 +1007,7 @@ class Product(SQLBase, BugTargetBase, MakesAnnouncements,
             series.getTimeline(include_inactive=include_inactive)
             for series in series_list
             if include_inactive or series.active or
-               series == self.development_focus
-            ]
+               series == self.development_focus]
 
 
 class ProductSet:
@@ -1296,7 +1294,7 @@ class ProductSet:
             Product.id == ProductSeries.productID,
             POTemplate.productseriesID == ProductSeries.id,
             Product.official_rosetta == True,
-            Person.id == Product._ownerID
+            Person.id == Product._ownerID,
             ).config(distinct=True).order_by(Product.title)
 
         # We only want Product - the other tables are just to populate

@@ -51,6 +51,25 @@ def upgrade_to_39():
     in_file.close()
     out_file.close()
 
+def upgrade_to_57():
+    print "Upgrading %s to version 57" % conf_file
+    subprocess.call(["mv", conf_file, conf_file+"-prev57~"])
+    in_file = open(conf_file+"-prev57~", "r")
+    out_file = open(conf_file, "w")
+    # We want to move all the sbuild lines to a new
+    # 'binarypackagemanager' section at the end.
+    binarypackage_lines = []
+    for line in in_file:
+        if line.startswith("sbuild"):
+            binarypackage_lines.append(line)
+        else:
+            out_file.write(line)
+    out_file.write('[binarypackagemanager]\n')
+    for line in binarypackage_lines:
+        out_file.write(line)
+    in_file.close()
+    out_file.close()
+
 if __name__ == "__main__":
     if old_version.find("~") > 0:
 	old_version = old_version[:old_version.find("~")]
@@ -60,4 +79,6 @@ if __name__ == "__main__":
         upgrade_to_34()
     if int(old_version) < 39:
         upgrade_to_39()
+    if int(old_version) < 57:
+        upgrade_to_57()
 

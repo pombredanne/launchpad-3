@@ -8,7 +8,8 @@
 # passed through to the twistd log too. this could get dangerous/big
 
 from twisted.application import service, strports
-from canonical.buildd import XMLRPCBuildDSlave, DebianBuildManager
+from canonical.buildd import XMLRPCBuildDSlave
+from canonical.buildd.binarypackage import BinaryPackageBuildManager
 from canonical.launchpad.daemons import tachandler
 
 from twisted.web import server, resource, static
@@ -22,7 +23,9 @@ conf = SafeConfigParser()
 conf.read(conffile)
 slave = XMLRPCBuildDSlave(conf)
 
-slave.registerBuilder(DebianBuildManager,"debian")
+# 'debian' is the old name. It remains here for compatibility.
+slave.registerBuilder(BinaryPackageBuildManager, "debian")
+slave.registerBuilder(BinaryPackageBuildManager, "binarypackage")
 
 application = service.Application('BuildDSlave')
 builddslaveService = service.IServiceCollection(application)

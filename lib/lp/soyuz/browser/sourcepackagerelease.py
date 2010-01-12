@@ -5,7 +5,12 @@
 
 __metaclass__ = type
 
+# XXX: JonathanLange 2010-01-06: Many of these functions should be moved to a
+# generic lp.services.text module.
 __all__ = [
+    'extract_bug_numbers',
+    'extract_email_addresses',
+    'linkify_changelog',
     'SourcePackageReleaseView',
     ]
 

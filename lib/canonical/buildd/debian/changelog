@@ -1,3 +1,20 @@
+launchpad-buildd (57) hardy-cat; urgency=low
+
+  * Split the sbuild wrapper from DebianBuildManager into a new
+    BinaryPackageBuildManager, and point the 'debian' builder at that
+    instead.
+
+ -- William Grant <wgrant@ubuntu.com>  Tue, 12 Jan 2010 09:22:50 +1300
+
+launchpad-buildd (56) hardy-cat; urgency=low
+
+  * only error out on implicit-function-pointers check on lucid or later,
+    non-32-bit architectures.  Warnings elsewhere.  LP#504078
+  * drop use of ccache and /var/cache/apt/archives, since we don't use one,
+    and the other is just plain silly.
+
+ -- LaMont Jones <lamont@canonical.com>  Mon, 11 Jan 2010 13:12:49 -0700
+
 launchpad-buildd (54) hardy-cat; urgency=low
 
   [ William Grant ]

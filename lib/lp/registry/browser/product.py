@@ -58,7 +58,7 @@ from lp.app.interfaces.headings import IEditableContextTitle
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
-from lp.bugs.interfaces.bugwatch import IBugTracker
+from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet

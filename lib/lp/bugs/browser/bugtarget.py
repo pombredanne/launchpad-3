@@ -39,6 +39,7 @@ from zope.schema.vocabulary import SimpleVocabulary
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
+from lp.bugs.interfaces.bug import IBug
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
@@ -50,8 +51,6 @@ from lp.bugs.interfaces.bugtask import (
     BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
-from canonical.launchpad.interfaces._schema_circular_imports import (
-    IBug, IDistribution)
 from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
@@ -62,11 +61,13 @@ from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
 from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugAddForm, IProjectBugAddForm)
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.product import IProduct, IProject
+from lp.registry.interfaces.product import IProduct
 from lp.registry.interfaces.productseries import IProductSeries
+from lp.registry.interfaces.project import IProject
 from lp.registry.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
