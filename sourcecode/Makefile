@@ -24,7 +24,6 @@ build:
 			$(MAKE) -C $$subdir $(TEST_ENV_VARS) || exit $$?;\
 		fi;\
 	done
-	$(MAKE) -C mercurial local $(TEST_ENV_VARS)
 
 clean:
 	@ for subdir in ${build_dirs}; do\
