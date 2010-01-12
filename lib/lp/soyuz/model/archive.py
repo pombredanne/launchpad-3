@@ -1243,15 +1243,27 @@ class Archive(SQLBase):
         """See `IArchive`."""
         assert self._enabled == False, "This archive is already enabled."
         self._enabled = True
-        # XXX al-maisan: Resume all `Build` records in state NEEDSBUILD that
-        # target this archive.
+        result = Store.of(self).find(
+            Job,
+            Job.id == BuildQueue.job,
+            BuildPackageJob.job == BuildQueue.job,
+            BuildPackageJob.build == Build.id,
+            Build.archive == self,
+            Build.buildstate == BuildStatus.NEEDSBUILD).set(
+                status=JobStatus.WAITING)
 
     def disable(self):
         """See `IArchive`."""
         assert self._enabled == True, "This archive is already disabled."
         self._enabled = True
-        # XXX al-maisan: Suspend all `Build` records in state NEEDSBUILD that
-        # target this archive.
+        result = Store.of(self).find(
+            Job,
+            Job.id == BuildQueue.job,
+            BuildPackageJob.job == BuildQueue.job,
+            BuildPackageJob.build == Build.id,
+            Build.archive == self,
+            Build.buildstate == BuildStatus.NEEDSBUILD).set(
+                status=JobStatus.SUSPENDED)
 
 
 class ArchiveSet:
