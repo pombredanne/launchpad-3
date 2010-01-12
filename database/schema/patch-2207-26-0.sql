@@ -25,4 +25,4 @@ ALTER TABLE CodeImport DROP COLUMN svn_branch_url;
 
 CREATE UNIQUE INDEX codeimport__url__idx ON CodeImport USING btree (url) WHERE (url is NOT NULL);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (4200, 24, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 26, 0);
