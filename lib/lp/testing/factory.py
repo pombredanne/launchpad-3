@@ -228,7 +228,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     """
 
     # Used for makeBuilderRecipe.
-    MINIMAL_RECIPE_TEXT = dedent(u'''
+    MINIMAL_RECIPE_TEXT = dedent(u'''\
         # bzr-builder format 0.2 deb-version 1.0
         %s
         ''')
