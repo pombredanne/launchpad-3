@@ -103,7 +103,7 @@
             the merge.
           </p>
           <p>
-            <a href tal:attributes="href view/cancel_url">Continue</a>
+            <a href tal:attributes="href view/cancel_url">Back to my account</a>
           </p>
 
         </tal:block>
