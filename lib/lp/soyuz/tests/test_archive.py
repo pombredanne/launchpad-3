@@ -3,13 +3,15 @@
 
 """Test Archive features."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
@@ -18,8 +20,10 @@ from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.build import Build
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
 
@@ -388,15 +392,78 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        super(TestArchiveEnableDisable, self).setUp()
+
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        self.archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PRIMARY)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        sample_data = store.find(Build)
+        for build in sample_data:
+            build.buildstate = BuildStatus.FULLYBUILT
+        store.flush()
+
+        # We test builds that target a primary archive.
+        self.builds = []
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="firefox",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="apg", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="vim", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gcc", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="bison", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="flex", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="postgres",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        # Set up the builds for test.
+        score = 1000
+        duration = 0
+        for build in self.builds:
+            score += 1
+            duration += 60
+            bq = build.buildqueue_record
+            bq.lastscore = score
+            bq.estimated_duration = timedelta(seconds=duration)
+
     def test_enableArchive(self):
         # Enabling an archive should set all the Archive's suspended jobs to
         # WAITING.
-        pass
+        self.archive.disable()
+        self.archive.enable()
 
     def test_disableArchive(self):
         # Enabling an archive should set all the Archive's suspended jobs to
         # WAITING.
-        pass
+        self.archive.disable()
 
 
 def test_suite():

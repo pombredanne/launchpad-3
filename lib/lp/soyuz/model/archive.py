@@ -31,6 +31,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
+from lp.services.job.interfaces.job import JobStatus
+from lp.services.job.model.job import Job
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table)
@@ -38,6 +40,8 @@ from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 from lp.soyuz.model.build import Build
+from lp.soyuz.model.buildpackagejob import BuildPackageJob
+from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
@@ -1243,27 +1247,41 @@ class Archive(SQLBase):
         """See `IArchive`."""
         assert self._enabled == False, "This archive is already enabled."
         self._enabled = True
-        result = Store.of(self).find(
-            Job,
-            Job.id == BuildQueue.job,
-            BuildPackageJob.job == BuildQueue.job,
-            BuildPackageJob.build == Build.id,
-            Build.archive == self,
-            Build.buildstate == BuildStatus.NEEDSBUILD).set(
-                status=JobStatus.WAITING)
+        query = """
+        UPDATE Job SET status = %s
+        FROM Build, BuildPackageJob, BuildQueue
+        WHERE
+            -- insert self.id here
+            Build.archive = %s
+            AND BuildPackageJob.build = Build.id
+            AND BuildPackageJob.job = BuildQueue.job
+            AND Job.id = BuildQueue.job
+            -- Build is in state BuildStatus.NEEDSBUILD (0)
+            AND Build.buildstate = %s;
+        """ % sqlvalues(JobStatus.WAITING, self, BuildStatus.NEEDSBUILD)
+
+        store = Store.of(self)
+        store.execute(query)
 
     def disable(self):
         """See `IArchive`."""
         assert self._enabled == True, "This archive is already disabled."
-        self._enabled = True
-        result = Store.of(self).find(
-            Job,
-            Job.id == BuildQueue.job,
-            BuildPackageJob.job == BuildQueue.job,
-            BuildPackageJob.build == Build.id,
-            Build.archive == self,
-            Build.buildstate == BuildStatus.NEEDSBUILD).set(
-                status=JobStatus.SUSPENDED)
+        self._enabled = False
+        query = """
+        UPDATE Job SET status = %s
+        FROM Build, BuildPackageJob, BuildQueue
+        WHERE
+            -- insert self.id here
+            Build.archive = %s
+            AND BuildPackageJob.build = Build.id
+            AND BuildPackageJob.job = BuildQueue.job
+            AND Job.id = BuildQueue.job
+            -- Build is in state BuildStatus.NEEDSBUILD (0)
+            AND Build.buildstate = %s;
+        """ % sqlvalues(JobStatus.SUSPENDED, self, BuildStatus.NEEDSBUILD)
+
+        store = Store.of(self)
+        store.execute(query)
 
 
 class ArchiveSet:
