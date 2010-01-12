@@ -741,7 +741,7 @@ class BugHeatUpdater(TunableLoop):
         for bug in bugs:
             # We set the starting point of the next batch to the Bug
             # id after the one we're looking at now. If there aren't any
-            # bugs this loop will run for 0 iterations and start_id
+            # bugs this loop will run for 0 iterations and starting_id
             # will remain set to None.
             start += 1
             self.offset = start
