@@ -10,12 +10,15 @@ import unittest
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import (
+    cursor, quote, quote_like, sqlvalues, SQLBase)
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
@@ -454,16 +457,39 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
             bq.lastscore = score
             bq.estimated_duration = timedelta(seconds=duration)
 
+    def assertArchiveJobNotStatus(self, archive, status):
+        query = """
+        SELECT COUNT(Job.id)
+        FROM Build, BuildPackageJob, BuildQueue, Job
+        WHERE
+            Build.archive = %s
+            AND BuildPackageJob.build = Build.id
+            AND BuildPackageJob.job = BuildQueue.job
+            AND Job.id = BuildQueue.job
+            AND Build.buildstate = %s
+            AND Job.status = %s;
+        """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        result = store.execute(query).get_one()
+        self.assertEqual(result[0], 0)
+
+
     def test_enableArchive(self):
         # Enabling an archive should set all the Archive's suspended jobs to
         # WAITING.
+
+        # Disable the archive, because it's currently enabled.
         self.archive.disable()
         self.archive.enable()
+        self.assertArchiveJobNotStatus(self.archive, JobStatus.SUSPENDED)
+
 
     def test_disableArchive(self):
         # Enabling an archive should set all the Archive's suspended jobs to
         # WAITING.
         self.archive.disable()
+        self.assertArchiveJobNotStatus(self.archive, JobStatus.WAITING)
 
 
 def test_suite():
