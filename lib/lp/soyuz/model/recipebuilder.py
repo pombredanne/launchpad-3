@@ -8,10 +8,13 @@ __all__ = [
     'RecipeBuildBehavior',
     ]
 
+from zope.component import adapts
 from zope.interface import implements
 
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.soyuz.interfaces.sourcepackagebuild import (
+    IBuildSourcePackageFromRecipeJob)
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
 
@@ -19,12 +22,13 @@ from lp.buildmaster.model.buildfarmjobbehavior import (
 class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     """How to build a recipe on the build farm."""
 
+    adapts(IBuildSourcePackageFromRecipeJob)
     implements(IBuildFarmJobBehavior)
 
     status = None
 
     def logStartBuild(self, logger):
-        pass
+        """See `IBuildFarmJobBehavior`."""
 
     def dispatchBuildToSlave(self, build_queue_id, logger):
-        pass
+        """See `IBuildFarmJobBehavior`."""

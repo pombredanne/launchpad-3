@@ -7,23 +7,31 @@ __metaclass__ = type
 
 import unittest
 
+from canonical.testing import DatabaseFunctionalLayer
+
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
-from lp.testing import TestCase
+from lp.testing import TestCaseWithFactory
 
 
-class TestRecipeBuilder(TestCase):
+class TestRecipeBuilder(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
 
     def test_providesInterface(self):
         # RecipeBuildBehavior provides IBuildFarmJobBehavior.
         recipe_builder = RecipeBuildBehavior(None)
         self.assertProvides(recipe_builder, IBuildFarmJobBehavior)
 
+    def makeJob(self):
+        return getUtility(IBuildSourcePackageFromRecipeJobSource).new(
+            build, job)
+
     def test_adapts_IBuildSourcePackageFromRecipeJob(self):
-        # XXX: We don't actually have a IBuildSourcePackageFromRecipeJob yet,
-        # so this test doesn't do anything.
-        pass
+        job = self.factory.makeSourcePackageBuild().makeJob()
+        job = IBuildFarmJobBehavior(job)
+        self.assertProvides(job, IBuildFarmJobBehavior)
 
 
 def test_suite():
