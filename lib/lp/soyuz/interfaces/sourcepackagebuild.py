@@ -28,7 +28,6 @@ from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 class ISourcePackageBuild(Interface):
     """A build of a source package."""
 
-    # XXX: possibly move to a base class shared w/ IBuild
     date_created = Datetime(required=True, readonly=True)
 
     distroseries = Reference(
@@ -41,32 +40,29 @@ class ISourcePackageBuild(Interface):
         title=_("The name of the source package will build"),
         readonly=True)
 
-    # XXX: possibly move to a base class shared w/ IBuild. Maybe. It's got
-    # some deb-specific stuff.
+    # XXX: JonathanLange 2010-01-12: Move build_state, date_built,
+    # build_duration, build_log, builder and maybe date_first_dispatched to a
+    # separate base interface shared by this and IBuild. Additionally, change
+    # IBuild to IBinaryPackageBuild.
     build_state = Choice(
         title=_('State'), required=True, vocabulary=BuildStatus,
         description=_("The current build state."))
 
-    # XXX: possibly move to a base class shared w/ IBuild
     date_built = Datetime(required=False)
 
-    # XXX: possibly move to a base class shared w/ IBuild
     build_duration = Timedelta(
         title=_("Build Duration"), required=False,
         description=_("Build duration interval, calculated when the "
                       "build result gets collected."))
 
-    # XXX: possibly move to a base class shared w/ IBuild
     build_log = Object(
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the entire buildlog."))
 
-    # XXX: possibly move to a base class shared w/ IBuild
     builder = Object(
         title=_("Builder"), schema=IBuilder, required=False,
         description=_("The Builder which address this build request."))
 
-    # XXX: possibly move to a base class shared w/ IBuild
     date_first_dispatched = Datetime(
         title=_('Date first dispatched'), required=False,
         description=_("The actual build start time. Set when the build "
