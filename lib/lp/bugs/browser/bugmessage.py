@@ -11,6 +11,7 @@ __all__ = [
 from StringIO import StringIO
 
 from zope.component import getUtility
+from zope.contenttype import guess_content_type
 
 from lp.bugs.interfaces.bugmessage import IBugMessageAddForm
 from lp.bugs.interfaces.bugwatch import IBugWatchSet
@@ -88,6 +89,7 @@ class BugMessageAddFormView(LaunchpadFormView):
                 self.request.response.addNotification(
                     "Thank you for your comment.")
 
+        self.next_url = canonical_url(self.context)
         if file_:
 
             # Slashes in filenames cause problems, convert them to dashes
@@ -102,15 +104,29 @@ class BugMessageAddFormView(LaunchpadFormView):
                 file_description = filename
 
             # Process the attachment.
-            bug.addAttachment(
+            # If the patch flag indicates a confict with the content,
+            # override the flag and redirect the user to the bug
+            # attachment edit page, where he can confirm his setting,
+            # if he really wants to set the to the desired value.
+            content_type, encoding = guess_content_type(
+                name=filename, body=data['filecontent'])
+            patch_flag_consistent = (
+                (content_type != 'text/x-diff') ^ data['patch'])
+            if not patch_flag_consistent:
+                is_patch = content_type == 'text/x-diff'
+            else:
+                is_patch = data['patch']
+            attachment = bug.addAttachment(
                 owner=self.user, data=StringIO(data['filecontent']),
                 filename=filename, description=file_description,
-                comment=message, is_patch=data['patch'])
+                comment=message, is_patch=is_patch)
+
+            if not patch_flag_consistent:
+                self.next_url = canonical_url(attachment) + '?need_confirm=1'
 
             self.request.response.addNotification(
                 "Attachment %s added to bug." % filename)
 
-        self.next_url = canonical_url(self.context)
 
     def shouldShowEmailMeWidget(self):
         """Should the subscribe checkbox be shown?"""

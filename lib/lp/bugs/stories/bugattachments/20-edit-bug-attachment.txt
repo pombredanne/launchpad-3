@@ -32,18 +32,57 @@ whitespace to test that's correctly stripped)...
 We can edit the attachment to be a patch.
 
     >>> user_browser.getLink(url='+attachment/1').click()
-    >>> user_browser.getControl('This attachment is a patch').selected = True
+    >>> patch_control = user_browser.getControl(
+    ...     'This attachment contains a solution (patch) for this bug')
+    >>> patch_control.selected = True
     >>> user_browser.getControl('Change').click()
+
+The server now checks if the attachment looks like a patch. In this case,
+is doesn't, and we get the edit page again, with a message asking us if
+the attachment should indeed be labeled as a patch
+
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/1?need_confirm=1'
+
+    >>> print extract_text(find_tags_by_class(
+    ...     user_browser.contents, 'documentDescription')[0])
+    An attachment can provide valuable information about the bug. It
+    can also provide a direct solution to a bug - for example a patch
+    that fixes the bug.
+    This file does not look like a patch, but you selected the checkbox
+    "This attachment contains a solution (patch) for this bug". Please
+    select it again and click on "change", if you are sure that this
+    file does indeed contain a patch.
+    Please leave the field unchecked, if the attachment contains
+    data that describes a bug, for example a screenshot or test
+    data to reproduce a bug.
+    Patches normally describe changes to the source code which fix
+    a bug. See also Launchpad help on Bug Attachments.
+
+We are sure that this file is indeed a patch, so let's activate the
+currenty inactive "patch" checkbox again and submit the form.
+
+    >>> patch_control = user_browser.getControl(
+    ...     'This attachment contains a solution (patch) for this bug')
+    >>> patch_control.selected
+    False
+    >>> patch_control.selected = True
+    >>> user_browser.getControl('Change').click()
+
+Now we are redirected to the main bug page...
 
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
 
-The attachment that became a patch is now shown in the portlet "Patches"...
+...the attachment that became a patch is now shown in the portlet
+"Patches"...
 
     >>> patches = find_portlet(user_browser.contents, 'Patches')
     >>> for li_tag in patches.findAll('li', 'download-attachment'):
     ...   print li_tag.a.renderContents()
     Another title
+    A fix for this bug.
+    A better icon for foo
 
 ...while it is gone from the portlet "Bug attachments".
 
@@ -51,6 +90,7 @@ The attachment that became a patch is now shown in the portlet "Patches"...
     >>> for li_tag in attachments.findAll('li', 'download-attachment'):
     ...   print li_tag.a.renderContents()
     bar.txt
+    More data
 
 The content type of a patch is automatically changed to text/plain.
 
@@ -58,12 +98,13 @@ The content type of a patch is automatically changed to text/plain.
     >>> user_browser.getControl('Content Type').value
     'text/plain'
 
-Clicking the link "Add patch" in the patches portlet open the form
+Clicking the link "Add patch" in the patches portlet opens the form
 to add bug comments with the checkbox "This attachment is a patch"
 enabled.
 
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1')
     >>> user_browser.getLink('Add patch').click()
-    >>> patch_checkbox = user_browser.getControl('This attachment is a patch')
+    >>> patch_checkbox = user_browser.getControl(
+    ...     'This attachment contains a solution (patch) for this bug')
     >>> patch_checkbox.selected
     True

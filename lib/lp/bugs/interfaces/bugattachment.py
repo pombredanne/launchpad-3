@@ -133,5 +133,5 @@ class IBugAttachmentEditForm(Interface):
             "text/plain"),
         required=True)
     patch = Bool(
-        title=u"This attachment is a patch",
+        title=u"This attachment contains a solution (patch) for this bug",
         required=True, default=False)

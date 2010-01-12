@@ -14,6 +14,7 @@ from cStringIO import StringIO
 
 from zope.interface import implements
 from zope.component import getUtility
+from zope.contenttype import guess_content_type
 
 from canonical.launchpad.webapp import canonical_url, GetitemNavigation
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -62,7 +63,6 @@ class BugAttachmentEditView(LaunchpadFormView):
 
     schema = IBugAttachmentEditForm
     field_names = ['title', 'patch', 'contenttype']
-    label = "Change bug attachment information"
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -84,7 +84,27 @@ class BugAttachmentEditView(LaunchpadFormView):
         else:
             new_type = BugAttachmentType.UNSPECIFIED
         if new_type != self.context.type:
-            self.context.type = new_type
+            filename = self.context.libraryfile.filename
+            file_content = self.context.libraryfile.read()
+            guessed_type, encoding = guess_content_type(
+                name=filename, body=file_content)
+            # We expect that users set data['patch'] to True only for
+            # real patch data, indicated by guessed_content_type ==
+            # 'text/x-diff'. If there are inconsistencies, we don't
+            # the value automatically, but show the user this form
+            # again with an explanation when the flag data['patch'] should
+            # be used.
+
+            new_type_consistent_with_guessed_type = (
+                (new_type == BugAttachmentType.PATCH) ^
+                (guessed_type != 'text/x-diff'))
+            is_confirmation_step = self.request.form_ng.getOne(
+                'confirmation_step') is not None
+            if new_type_consistent_with_guessed_type or is_confirmation_step:
+                self.context.type = new_type
+            else:
+                self.next_url = (canonical_url(self.context) +
+                                 '?need_confirm=1')
 
         if data['title'] != self.context.title:
             self.context.title = data['title']
@@ -121,5 +141,25 @@ class BugAttachmentEditView(LaunchpadFormView):
     def label(self):
         return smartquote('Bug #%d - Edit attachment "%s"') % (
             self.context.bug.id, self.context.title)
+
+    @property
+    def is_confirmation_step(self):
+        """Is the page is displayed to confirm an unexpected "patch" value?"""
+        return self.request.get('need_confirm') is not None
+
+    @property
+    def confirmation_element(self):
+        """An extra hidden input field for the patch flag confirmation step.
+        """
+        if self.is_confirmation_step:
+            return ('<input type="hidden" name="confirmation_step" '
+                    'value="1"/>')
+        else:
+            return ''
+
+    @property
+    def is_patch(self):
+        """True if this attachment contains a patch, else False."""
+        return self.context.type == BugAttachmentType.PATCH
 
     page_title = label

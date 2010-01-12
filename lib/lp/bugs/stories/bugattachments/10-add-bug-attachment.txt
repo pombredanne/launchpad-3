@@ -70,3 +70,148 @@ also not necessary to enter a comment in order to add an attachment.
   ...   print li_tag.a.renderContents()
   Some information
   bar.txt
+
+We can also declare an attachment to be a patch.
+
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment')
+
+Leading and trailing whitespace are stripped from the description of the
+attachment.
+
+  >>> foo_file.seek(0)
+  >>> user_browser.getControl('Attachment').add_file(
+  ...   foo_file, 'text/plain', 'foo.diff')
+  >>> user_browser.getControl('Description').value = 'A fix for this bug.'
+  >>> patch_control = user_browser.getControl(
+  ...     'This attachment contains a solution (patch) for this bug')
+  >>> patch_control.selected = True
+  >>> user_browser.getControl(
+  ...     name="field.comment").value = 'Added some information'
+  >>> user_browser.getControl('Post Comment').click()
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1'
+
+If we add an attachment that looks like a patch but if we don't set
+the flag "this attachment is a patch"...
+
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment')
+  >>> foo_file.seek(0)
+  >>> user_browser.getControl('Attachment').add_file(
+  ...   foo_file, 'text/plain', 'foo2.diff')
+  >>> user_browser.getControl('Description').value = 'More data'
+  >>> patch_control = user_browser.getControl(
+  ...     'This attachment contains a solution (patch) for this bug')
+  >>> patch_control.selected = False
+  >>> user_browser.getControl(
+  ...     name="field.comment").value = 'Added even more information'
+  >>> user_browser.getControl('Post Comment').click()
+
+...we are redirected to the "edit attachment" page...
+
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/4?need_confirm=1'
+
+...where we see a message that we should double-check if this file
+is indeed not a patch.
+
+  >>> print extract_text(find_tags_by_class(
+  ...     user_browser.contents, 'documentDescription')[0])
+  An attachment can provide valuable information about the bug. It
+  can also provide a direct solution to a bug - for example a patch
+  that fixes the bug.
+  This file looks like a patch, but you unselected the
+  checkbox "This attachment contains a solution (patch) for this
+  bug". Please unselect it again and click on "change",
+  if you are sure that this file does not contain a patch.
+  Patches normally describe changes to the source code which fix
+  a bug. See also Launchpad help on Bug Attachments.
+
+Also, the flag "patch" is currently set.
+
+  >>> patch_control = user_browser.getControl(
+  ...     'This attachment contains a solution (patch) for this bug')
+  >>> patch_control.selected
+  True
+
+We want indeed to declare the file as not being a patch, so we unselect
+the "patch" checkbox again and submit the form.
+
+  >>> patch_control.selected = False
+  >>> user_browser.getControl('Change').click()
+
+Now we are redirected to the main bug page, and the new file is
+listed as an ordinary attachment.
+
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1'
+  >>> attachments = find_portlet(user_browser.contents, 'Bug attachments')
+  >>> for li_tag in attachments.findAll('li', 'download-attachment'):
+  ...   print li_tag.a.renderContents()
+  Some information
+  bar.txt
+  More data
+
+Similary, if we add an attachment that does not look like a patch ans
+if we set the "patch" flag for this attachment...
+
+  >>> user_browser.open(
+  ...     'http://bugs.launchpad.dev/firefox/+bug/1/+addcomment')
+  >>> foo_file.seek(0)
+  >>> user_browser.getControl('Attachment').add_file(
+  ...   foo_file, 'text/plain', 'foo.png')
+  >>> user_browser.getControl('Description').value = 'A better icon for foo'
+  >>> patch_control = user_browser.getControl(
+  ...     'This attachment contains a solution (patch) for this bug')
+  >>> patch_control.selected = True
+  >>> user_browser.getControl('Post Comment').click()
+
+...we are redirected to the bug attachment edit page...
+
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1/+attachment/5?need_confirm=1'
+
+...where we see a message asking us if we really ant to declare this file
+as a patch.
+
+  >>> print extract_text(find_tags_by_class(
+  ...     user_browser.contents, 'documentDescription')[0])
+  An attachment can provide valuable information about the bug. It
+  can also provide a direct solution to a bug - for example a patch
+  that fixes the bug.
+  This file does not look like a patch, but you selected the checkbox
+  "This attachment contains a solution (patch) for this bug". Please
+  select it again and click on "change", if you are sure that this
+  file does indeed contain a patch.
+  Please leave the field unchecked, if the attachment contains
+  data that describes a bug, for example a screenshot or test
+  data to reproduce a bug.
+  Patches normally describe changes to the source code which fix
+  a bug. See also Launchpad help on Bug Attachments.
+
+Also, the "patch" flag is not yet set.
+
+  >>> patch_control = user_browser.getControl(
+  ...     'This attachment contains a solution (patch) for this bug')
+  >>> patch_control.selected
+  False
+
+Let's pretend that the file contains an improved icon, so we set
+the "patch" flag again and save the changes.
+
+  >>> patch_control.selected = True
+  >>> user_browser.getControl('Change').click()
+
+Now we are redirected to the main bug page...
+
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/firefox/+bug/1'
+
+...and the new attachment is listed as a patch.
+
+  >>> patches = find_portlet(user_browser.contents, 'Patches')
+  >>> for li_tag in patches.findAll('li', 'download-attachment'):
+  ...   print li_tag.a.renderContents()
+  A fix for this bug.
+  A better icon for foo
