@@ -38,6 +38,11 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.buildmaster.master import BuilddMaster
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from canonical.database.sqlbase import SQLBase, sqlvalues
+
+# XXX Michael Nelson 2010-01-13 bug=491330
+# These dependencies on soyuz will be removed when getBuildRecords()
+# is moved, as well as when the generalisation of findBuildCandidate()
+# is completed.
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
