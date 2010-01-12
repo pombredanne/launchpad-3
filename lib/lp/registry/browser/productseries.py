@@ -392,7 +392,7 @@ class ProductSeriesUbuntuPackagingView(PackagingAddView):
         The packaging is restricted to ubuntu series and the default value
         is the current development series.
         """
-        super(PackagingAddView, self).setUpFields()
+        super(ProductSeriesUbuntuPackagingView, self).setUpFields()
         series_vocabulary = SimpleVocabulary(
             [SimpleTerm(series, series.name, series.named_version)
              for series in self._ubuntu.series])
