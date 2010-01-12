@@ -377,13 +377,12 @@ class DatabaseConfig:
 
     @property
     def main_master(self):
-        # XXX: Nasty hack because this code is called as part of, say,
-        # execute_zcml_for_scripts(), and in that case we won't have the ZCA
-        # setup yet.  Obviously need to, at least, do something else to figure
-        # out whether or not the ZCA is setup.
         try:
             is_read_only = getUtility(IIsReadOnly).isReadOnly()
         except ComponentLookupError:
+            # The zcml has not been executed yet, so we have to use the lower
+            # level API instead of the utility. This is needed because this
+            # property is (indirectly) called by execute_zcml_for_scripts()
             is_read_only = read_only_file_exists()
 
         if is_read_only:
@@ -396,6 +395,9 @@ class DatabaseConfig:
         try:
             is_read_only = getUtility(IIsReadOnly).isReadOnly()
         except ComponentLookupError:
+            # The zcml has not been executed yet, so we have to use the lower
+            # level API instead of the utility. This is needed because this
+            # property is (indirectly) called by execute_zcml_for_scripts()
             is_read_only = read_only_file_exists()
 
         if is_read_only:

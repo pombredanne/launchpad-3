@@ -16,7 +16,7 @@ from canonical.launchpad.readonly import (
 from canonical.testing.layers import FunctionalLayer
 
 
-class TestReadOnlyMode(TestCase):
+class TestReadOnlyModeDetection(TestCase):
 
     def test_read_only_file_exists(self):
         # By default we run in read-write mode.
@@ -80,7 +80,5 @@ class TestIsReadOnlyUtility(TestCase):
         self.assertFalse(read_only_file_exists())
 
     def test_logging_mode_changes(self):
-        pass
-
-    def test_locking(self):
+        # XXX: Fill me!
         pass

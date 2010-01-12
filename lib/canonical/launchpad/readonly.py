@@ -12,13 +12,14 @@ import threading
 
 from zope.interface import implements, Interface
 from zope.schema import Bool
+from zope.security.management import queryInteraction
 
 from lazr.restful.utils import get_current_browser_request
 
 
 root = os.path.join(
     os.path.dirname(__file__), os.pardir, os.pardir, os.pardir)
-file_path = os.path.join(root, 'read-only.txt')
+read_only_file_path = os.path.join(root, 'read-only.txt')
 READ_ONLY_MODE_ANNOTATIONS_KEY = 'launchpad.read_only_mode'
 
 
@@ -28,7 +29,7 @@ def read_only_file_exists():
     Use with caution as this function will hit the filesystem to check for the
     presence of a file.
     """
-    return os.path.isfile(file_path)
+    return os.path.isfile(read_only_file_path)
 
 
 def _touch_read_only_file():
@@ -39,13 +40,13 @@ def _touch_read_only_file():
     assert not read_only_file_exists(), (
         "This function must not be called when a read-only.txt file "
         "already exists.")
-    f = open(file_path, 'w')
+    f = open(read_only_file_path, 'w')
     f.close()
 
 
 def _remove_read_only_file():
     """Remove the file named read-only.txt from the root of the tree."""
-    os.remove(file_path)
+    os.remove(read_only_file_path)
 
 
 class IIsReadOnly(Interface):
@@ -57,16 +58,17 @@ class IIsReadOnly(Interface):
 
     _currently_in_read_only = Bool()
 
-    def isReadOnly(request=None):
+    def isReadOnly():
         """Are we in read-only mode?
 
-        If a request is given, we'll look in its annotations for a
-        read-only key (READ_ONLY_MODE_ANNOTATIONS_KEY), and if it exists we'll
-        just return its value.
+        If called as part of the processing of a request, we'll look in the
+        request's annotations for a read-only key
+        (READ_ONLY_MODE_ANNOTATIONS_KEY), and if it exists we'll just return
+        its value.
         
         If there's no request or the key doesn't exist, we check for the
         presence of a read-only.txt file in the root of our tree, set the
-        read-only key in the request's annotations (if there is a request),
+        read-only key in the request's annotations (when there is a request),
         update self._currently_in_read_only (in case it changed, also logging
         the change) and return it.
         """
@@ -78,13 +80,14 @@ class IsReadOnlyUtility:
     _currently_in_read_only = False
 
     def __init__(self):
-        self.lock = threading.Lock()
+        self._lock = threading.Lock()
         self._currently_in_read_only = self.isReadOnly()
 
     def isReadOnly(self):
         """See `IIsReadOnly`."""
-        from zope.security.management import queryInteraction
         request = None
+        # Only call get_current_browser_request() when we have an interaction,
+        # or else it will choke.
         if queryInteraction() is not None:
             request = get_current_browser_request()
         if request is not None:
@@ -95,12 +98,17 @@ class IsReadOnlyUtility:
         if request is not None:
             request.annotations[READ_ONLY_MODE_ANNOTATIONS_KEY] = read_only
 
+        log_change = False
         try:
-            self.lock.acquire()
+            self._lock.acquire()
             if self._currently_in_read_only != read_only:
                 self._currently_in_read_only = read_only
-                # log the change
+                log_change = True
         finally:
-            self.lock.release()
+            self._lock.release()
+
+        if log_change:
+            # log the change
+            pass
 
         return read_only

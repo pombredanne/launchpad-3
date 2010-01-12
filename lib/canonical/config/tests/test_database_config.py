@@ -42,7 +42,7 @@ class TestDatabaseConfig(TestCase):
 
     def test_main_master_and_main_slave(self):
         # DatabaseConfig provides two extra properties: main_master and
-        # main_slave property, which return the value of either
+        # main_slave, which return the value of either
         # rw_main_master/rw_main_slave or ro_main_master/ro_main_slave,
         # depending on whether or not we're in read-only mode.
         self.assertFalse(read_only_file_exists())
