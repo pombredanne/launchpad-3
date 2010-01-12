@@ -72,13 +72,13 @@ class IBuildBase(Interface):
         :param slave_status: A dict as returned by IBuilder.slaveStatus
         """
 
-    def getLogFromSlave(queueItem):
+    def getLogFromSlave():
         """Get last buildlog from slave.
 
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
 
-    def storeBuildInfo(queueItem, librarian, slave_status):
+    def storeBuildInfo(librarian, slave_status):
         """Store available information for the build job.
 
         Subclasses can override this as needed, and call it from custom status

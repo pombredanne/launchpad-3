@@ -894,7 +894,7 @@ class Build(BuildBase, SQLBase):
 
         raise NotFoundError(filename)
 
-    def _handleStatus_OK(self, queueItem, librarian, slave_status, logger):
+    def _handleStatus_OK(self, librarian, slave_status, logger):
         """Handle a package that built successfully.
 
         Once built successfully, we pull the files, store them in a
@@ -934,7 +934,7 @@ class Build(BuildBase, SQLBase):
         upload_path = os.path.join(upload_dir, target_path)
         os.makedirs(upload_path)
 
-        slave = removeSecurityProxy(queueItem.builder.slave)
+        slave = removeSecurityProxy(self.buildqueue_record.builder.slave)
         for filename in filemap:
             slave_file = slave.getFile(filemap[filename])
             out_file_name = os.path.join(upload_path, filename)
@@ -994,7 +994,7 @@ class Build(BuildBase, SQLBase):
             'BuildMaster/BuilderGroup transaction isolation should be '
             'ISOLATION_LEVEL_READ_COMMITTED (not "%s")' % isolation_str)
 
-        original_slave = queueItem.builder.slave
+        original_slave = self.buildqueue_record.builder.slave
 
         # XXX Robert Collins, Celso Providelo 2007-05-26 bug=506256:
         # 'Refreshing' objects  procedure  is forced on us by using a
@@ -1008,12 +1008,12 @@ class Build(BuildBase, SQLBase):
         # us by sqlobject refreshing the builder object during the
         # transaction cache clearing. Once we sort the previous problem
         # this step should probably not be required anymore.
-        queueItem.builder.setSlaveForTesting(
+        self.buildqueue_record.builder.setSlaveForTesting(
             removeSecurityProxy(original_slave))
 
         # Store build information, build record was already updated during
         # the binary upload.
-        self.storeBuildInfo(queueItem, librarian, slave_status)
+        self.storeBuildInfo(librarian, slave_status)
 
         # Retrive the up-to-date build record and perform consistency
         # checks. The build record should be updated during the binary
@@ -1060,13 +1060,13 @@ class Build(BuildBase, SQLBase):
                 self.sourcepackagerelease.name)
 
         # Release the builder for another job.
-        queueItem.builder.cleanSlave()
+        self.buildqueue_record.builder.cleanSlave()
         # Remove BuildQueue record.
-        queueItem.destroySelf()
+        self.buildqueue_record.destroySelf()
 
-    def storeBuildInfo(self, queueItem, librarian, slave_status):
+    def storeBuildInfo(self, librarian, slave_status):
         """See `IBuildBase`."""
-        super(Build, self).storeBuildInfo(queueItem, librarian, slave_status)
+        super(Build, self).storeBuildInfo(librarian, slave_status)
         self.dependencies = slave_status.get('dependencies')
 
 
