@@ -382,5 +382,22 @@ class TestCorrespondingDebugArchive(TestCaseWithFactory):
         self.assertIs(
             self.primary_archive.debug_archive, None)
 
+
+class TestArchiveEnableDisable(TestCaseWithFactory):
+    """Test the enable and disable methods of Archive."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_enableArchive(self):
+        # Enabling an archive should set all the Archive's suspended jobs to
+        # WAITING.
+        pass
+
+    def test_disableArchive(self):
+        # Enabling an archive should set all the Archive's suspended jobs to
+        # WAITING.
+        pass
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
