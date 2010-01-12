@@ -31,13 +31,12 @@ class ISourcePackageBuild(Interface):
     date_created = Datetime(required=True, readonly=True)
 
     distroseries = Reference(
-        IDistroSeries, title=_(
-            "The distroseries this will build a source package for"),
+        IDistroSeries, title=_("The distroseries being built for"),
         readonly=True)
 
     sourcepackagename = Reference(
         ISourcePackageName,
-        title=_("The name of the source package will build"),
+        title=_("The name of the source package being built"),
         readonly=True)
 
     # XXX: JonathanLange 2010-01-12: Move build_state, date_built,
@@ -61,7 +60,7 @@ class ISourcePackageBuild(Interface):
 
     builder = Object(
         title=_("Builder"), schema=IBuilder, required=False,
-        description=_("The Builder which address this build request."))
+        description=_("The builder handling this build request."))
 
     date_first_dispatched = Datetime(
         title=_('Date first dispatched'), required=False,
@@ -71,7 +70,7 @@ class ISourcePackageBuild(Interface):
 
     requester = Object(
         schema=IPerson, required=False,
-        title=_("The person who wanted to do this."))
+        title=_("The person who wants this to be done."))
 
     recipe = Object(
         schema=ISourcePackageRecipe, required=True,
