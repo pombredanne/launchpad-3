@@ -956,4 +956,16 @@
       <allow interface="lp.soyuz.interfaces.sourcepackagebuild.ISourcePackageBuildSource"/>
     </securedutility>
 
+
+    <class
+       class="lp.soyuz.model.sourcepackagebuild.BuildSourcePackageFromRecipeJob">
+      <allow interface="lp.soyuz.interfaces.sourcepackagebuild.IBuildSourcePackageFromRecipeJob"/>
+    </class>
+
+    <securedutility
+       component="lp.soyuz.model.sourcepackagebuild.BuildSourcePackageFromRecipeJob"
+       provides="lp.soyuz.interfaces.sourcepackagebuild.IBuildSourcePackageFromRecipeJobSource">
+      <allow interface="lp.soyuz.interfaces.sourcepackagebuild.IBuildSourcePackageFromRecipeJobSource"/>
+    </securedutility>
+
 </configure>

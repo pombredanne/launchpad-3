@@ -13,7 +13,8 @@ from zope.component import getUtility
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.soyuz.interfaces.sourcepackagebuild import (
-    ISourcePackageBuild, ISourcePackageBuildSource)
+    IBuildSourcePackageFromRecipeJob, ISourcePackageBuild,
+    ISourcePackageBuildSource)
 from lp.testing import TestCaseWithFactory
 
 
@@ -37,6 +38,11 @@ class TestSourcePackageBuild(TestCaseWithFactory):
         spb = self.makeSourcePackageBuild()
         transaction.commit()
         self.assertProvides(spb, ISourcePackageBuild)
+
+    def test_makeJob(self):
+        spb = self.makeSourcePackageBuild()
+        job = spb.makeJob()
+        self.assertProvides(job, IBuildSourcePackageFromRecipeJob)
 
 
 def test_suite():

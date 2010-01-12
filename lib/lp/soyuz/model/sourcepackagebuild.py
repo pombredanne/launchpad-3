@@ -14,11 +14,16 @@ from canonical.database.enumcol import EnumCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from storm.locals import Int, Reference, Storm, TimeDelta
+from storm.store import Store
 
+from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.sourcepackagebuild import (
+    IBuildSourcePackageFromRecipeJob,
+    IBuildSourcePackageFromRecipeJobSource,
     ISourcePackageBuild, ISourcePackageBuildSource)
 
 
@@ -95,3 +100,69 @@ class SourcePackageBuild(Storm):
             date_created=date_created)
         store.add(spbuild)
         return spbuild
+
+    def makeJob(self):
+        """See `ISourcePackageBuild`."""
+        store = Store.of(self)
+        job = Job()
+        store.add(job)
+        specific_job = getUtility(
+            IBuildSourcePackageFromRecipeJobSource).new(self, job)
+        return specific_job
+
+
+class BuildSourcePackageFromRecipeJob(Storm):
+
+    classProvides(IBuildSourcePackageFromRecipeJobSource)
+    implements(IBuildSourcePackageFromRecipeJob)
+
+    __storm_table__ = 'buildsourcepackagefromrecipejob'
+
+    id = Int(primary=True)
+
+    job_id = Int(name='job', allow_none=False)
+    job = Reference(job_id, 'Job.id')
+
+    source_package_build_id = Int(name='build', allow_none=False)
+    source_package_build = Reference(
+        source_package_build_id, 'SourcePackageBuild.id')
+
+    processor = None
+    virtualized = False
+
+    def __init__(self, build, job):
+        super(BuildSourcePackageFromRecipeJob, self).__init__()
+        self.build = build
+        self.job = job
+
+    def score(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError()
+
+    def getLogFileName(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError()
+
+    def getName(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError()
+
+    def jobStarted(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError()
+
+    def jobReset(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError()
+
+    def jobAborted(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError()
+
+    @classmethod
+    def new(cls, build, job):
+        """See `IBuildSourcePackageFromRecipeJobSource`."""
+        specific_job = cls(build, job)
+        store = IMasterStore(BuildSourcePackageFromRecipeJob)
+        store.add(specific_job)
+        return specific_job

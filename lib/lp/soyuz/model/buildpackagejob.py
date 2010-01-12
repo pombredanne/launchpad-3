@@ -2,7 +2,9 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 __metaclass__ = type
-__all__ = ['BuildPackageJob']
+__all__ = [
+    'BuildPackageJob',
+    ]
 
 
 from datetime import datetime
