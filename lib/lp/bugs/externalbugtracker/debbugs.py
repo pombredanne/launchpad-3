@@ -221,9 +221,9 @@ class DebBugs(ExternalBugTracker):
         debian_bug = self._findBug(remote_bug)
         return debian_bug.subject, debian_bug.description
 
-    def getCommentIds(self, bug_watch):
+    def getCommentIds(self, remote_bug_id):
         """See `ISupportsCommentImport`."""
-        debian_bug = self._findBug(bug_watch.remotebug)
+        debian_bug = self._findBug(remote_bug_id)
         self._loadLog(debian_bug)
 
         comment_ids = []
@@ -244,16 +244,16 @@ class DebBugs(ExternalBugTracker):
 
         return comment_ids
 
-    def fetchComments(self, bug_watch, comment_ids):
+    def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
         # This method does nothing since DebBugs bugs are stored locally
         # and their comments don't need to be pre-fetched. It exists
         # purely to ensure that BugWatchUpdater doesn't choke on it.
         pass
 
-    def getPosterForComment(self, bug_watch, comment_id):
+    def getPosterForComment(self, remote_bug_id, comment_id):
         """See `ISupportsCommentImport`."""
-        debian_bug = self._findBug(bug_watch.remotebug)
+        debian_bug = self._findBug(remote_bug_id)
         self._loadLog(debian_bug)
 
         for comment in debian_bug.comments:
@@ -304,9 +304,9 @@ class DebBugs(ExternalBugTracker):
 
         return msg_date
 
-    def getMessageForComment(self, bug_watch, comment_id, poster):
+    def getMessageForComment(self, remote_bug_id, comment_id, poster):
         """See `ISupportsCommentImport`."""
-        debian_bug = self._findBug(bug_watch.remotebug)
+        debian_bug = self._findBug(remote_bug_id)
         self._loadLog(debian_bug)
 
         for comment in debian_bug.comments:

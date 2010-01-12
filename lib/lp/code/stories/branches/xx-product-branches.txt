@@ -50,8 +50,8 @@ The 'Read more' links go to the help wiki.
 
     >>> for anchor in summary.fetch('a'):
     ...     print anchor['href']
-    https://help.launchpad.net/CreatingAMirroredBranch
-    https://help.launchpad.net/CreatingAHostedBranch
+    https://help.launchpad.net/Code/MirroredBranches
+    https://help.launchpad.net/Code/UploadingABranch
     https://help.launchpad.net/VcsImports
 
 
