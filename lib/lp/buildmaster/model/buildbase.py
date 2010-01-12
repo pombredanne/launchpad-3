@@ -47,7 +47,7 @@ class BuildBase:
         method(queueItem, librarian, buildid, filemap, dependencies, logger)
 
     def buildStatus_OK(self, queueItem, librarian, buildid,
-                       filemap=None, dependencies=None, logger=None):
+                       filemap, dependencies, logger):
         """Handle a package that built successfully.
 
         Once built successfully, we pull the files, store them in a
@@ -221,7 +221,7 @@ class BuildBase:
         queueItem.destroySelf()
 
     def buildStatus_PACKAGEFAIL(self, queueItem, librarian, buildid,
-                                filemap=None, dependencies=None, logger=None):
+                                filemap, dependencies, logger):
         """Handle a package that had failed to build.
 
         Build has failed when trying the work with the target package,
@@ -236,7 +236,7 @@ class BuildBase:
         queueItem.destroySelf()
 
     def buildStatus_DEPFAIL(self, queueItem, librarian, buildid,
-                            filemap=None, dependencies=None, logger=None):
+                            filemap, dependencies, logger):
         """Handle a package that had missing dependencies.
 
         Build has failed by missing dependencies, set the job status as
@@ -252,7 +252,7 @@ class BuildBase:
         queueItem.destroySelf()
 
     def buildStatus_CHROOTFAIL(self, queueItem, librarian, buildid,
-                               filemap=None, dependencies=None, logger=None):
+                               filemap, dependencies, logger):
         """Handle a package that had failed when unpacking the CHROOT.
 
         Build has failed when installing the current CHROOT, mark the
@@ -269,7 +269,7 @@ class BuildBase:
         queueItem.destroySelf()
 
     def buildStatus_BUILDERFAIL(self, queueItem, librarian, buildid,
-                                filemap=None, dependencies=None, logger=None):
+                                filemap, dependencies, logger):
         """Handle builder failures.
 
         Build has been failed when trying to build the target package,
@@ -286,7 +286,7 @@ class BuildBase:
         queueItem.reset()
 
     def buildStatus_GIVENBACK(self, queueItem, librarian, buildid,
-                              filemap=None, dependencies=None, logger=None):
+                              filemap, dependencies, logger):
         """Handle automatic retry requested by builder.
 
         GIVENBACK pseudo-state represents a request for automatic retry
