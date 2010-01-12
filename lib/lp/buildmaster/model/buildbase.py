@@ -28,16 +28,19 @@ from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache, cursor)
 
 class BuildBase:
-    def handleBuildStatus(self, status, queueItem, librarian, buildid,
-                          filemap, dependencies):
-        """Handle a finished build status.
+    def handleStatus(self, status, queueItem, librarian, buildid,
+                     filemap, dependencies):
+        """Handle a finished build status from a slave.
+
+        The status should be a slave build status string with the
+        'BuildStatus.' stripped such as 'OK
 
         Different actions will be taken depending on the given status.
         """
         # XXX: queueItem should be gettable from self?
         logger = logging.getLogger()
 
-        method = getattr(self, 'buildStatus_' + status, None)
+        method = getattr(self, '_handleStatus_' + status, None)
 
         if method is None:
             logger.critical("Unknown BuildStatus '%s' for builder '%s'"
@@ -46,8 +49,8 @@ class BuildBase:
 
         method(queueItem, librarian, buildid, filemap, dependencies, logger)
 
-    def buildStatus_OK(self, queueItem, librarian, buildid,
-                       filemap, dependencies, logger):
+    def _handleStatus_OK(self, queueItem, librarian, buildid,
+                         filemap, dependencies, logger):
         """Handle a package that built successfully.
 
         Once built successfully, we pull the files, store them in a
@@ -60,7 +63,7 @@ class BuildBase:
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         if not self.archive.allowUpdatesToReleasePocket():
-            assert self.distroseries.canUploadToPocket(build.pocket), (
+            assert self.distroseries.canUploadToPocket(self.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
                 % (self.title, self.id, self.pocket.name))
 
@@ -165,7 +168,7 @@ class BuildBase:
 
         # Store build information, build record was already updated during
         # the binary upload.
-        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
+        self._storeBuildInfo(queueItem, librarian, buildid, dependencies)
 
         # Retrive the up-to-date build record and perform consistency
         # checks. The build record should be updated during the binary
@@ -216,8 +219,8 @@ class BuildBase:
         # Remove BuildQueue record.
         queueItem.destroySelf()
 
-    def buildStatus_PACKAGEFAIL(self, queueItem, librarian, buildid,
-                                filemap, dependencies, logger):
+    def _handleStatus_PACKAGEFAIL(self, queueItem, librarian, buildid,
+                                  filemap, dependencies, logger):
         """Handle a package that had failed to build.
 
         Build has failed when trying the work with the target package,
@@ -225,13 +228,13 @@ class BuildBase:
         remove Buildqueue entry.
         """
         self.buildstate = BuildStatus.FAILEDTOBUILD
-        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
+        self._storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder.cleanSlave()
         self.notify()
         queueItem.destroySelf()
 
-    def buildStatus_DEPFAIL(self, queueItem, librarian, buildid,
-                            filemap, dependencies, logger):
+    def _handleStatus_DEPFAIL(self, queueItem, librarian, buildid,
+                              filemap, dependencies, logger):
         """Handle a package that had missing dependencies.
 
         Build has failed by missing dependencies, set the job status as
@@ -239,14 +242,14 @@ class BuildBase:
         entry and release builder slave for another job.
         """
         self.buildstate = BuildStatus.MANUALDEPWAIT
-        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
+        self._storeBuildInfo(queueItem, librarian, buildid, dependencies)
         logger.critical("***** %s is MANUALDEPWAIT *****"
                         % queueItem.builder.name)
         queueItem.builder.cleanSlave()
         queueItem.destroySelf()
 
-    def buildStatus_CHROOTFAIL(self, queueItem, librarian, buildid,
-                               filemap, dependencies, logger):
+    def _handleStatus_CHROOTFAIL(self, queueItem, librarian, buildid,
+                                 filemap, dependencies, logger):
         """Handle a package that had failed when unpacking the CHROOT.
 
         Build has failed when installing the current CHROOT, mark the
@@ -254,15 +257,15 @@ class BuildBase:
         and release the builder.
         """
         self.buildstate = BuildStatus.CHROOTWAIT
-        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
+        self._storeBuildInfo(queueItem, librarian, buildid, dependencies)
         logger.critical("***** %s is CHROOTWAIT *****" %
                         queueItem.builder.name)
         queueItem.builder.cleanSlave()
-        build.notify()
+        self.notify()
         queueItem.destroySelf()
 
-    def buildStatus_BUILDERFAIL(self, queueItem, librarian, buildid,
-                                filemap, dependencies, logger):
+    def _handleStatus_BUILDERFAIL(self, queueItem, librarian, buildid,
+                                  filemap, dependencies, logger):
         """Handle builder failures.
 
         Build has been failed when trying to build the target package,
@@ -274,11 +277,11 @@ class BuildBase:
         queueItem.builder.failbuilder(
             "Builder returned BUILDERFAIL when asked for its status")
         # simply reset job
-        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
+        self._storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.reset()
 
-    def buildStatus_GIVENBACK(self, queueItem, librarian, buildid,
-                              filemap, dependencies, logger):
+    def _handleStatus_GIVENBACK(self, queueItem, librarian, buildid,
+                                filemap, dependencies, logger):
         """Handle automatic retry requested by builder.
 
         GIVENBACK pseudo-state represents a request for automatic retry
@@ -287,7 +290,7 @@ class BuildBase:
         """
         logger.warning("***** %s is GIVENBACK by %s *****"
                        % (buildid, queueItem.builder.name))
-        self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
+        self._storeBuildInfo(queueItem, librarian, buildid, dependencies)
         # XXX cprov 2006-05-30: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
         # the next Paris Summit, infinity has some ideas about how
@@ -304,7 +307,7 @@ class BuildBase:
             'buildlog', queueItem.getLogFileName(),
             self.archive.private)
 
-    def storeBuildInfo(self, queueItem, librarian, buildid, dependencies):
+    def _storeBuildInfo(self, queueItem, librarian, buildid, dependencies):
         """Store available information for build jobs.
 
         Store Buildlog, datebuilt, duration, dependencies.

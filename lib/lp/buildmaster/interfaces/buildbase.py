@@ -12,9 +12,12 @@ __all__ = ['IBuildBase']
 from zope.interface import Interface
 
 class IBuildBase(Interface):
-    def handleBuildStatus(status, queueItem, librarian, buildid, filemap,
-                          dependencies):
-        """Handle a finished build status.
+    def handleStatus(status, queueItem, librarian, buildid, filemap,
+                     dependencies):
+        """Handle a finished build status from a slave.
+
+        The status should be a slave build status string with the
+        'BuildStatus.' stripped such as 'OK
 
         Different actions will be taken depending on the given status.
         """
