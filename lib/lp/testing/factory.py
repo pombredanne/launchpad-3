@@ -225,6 +225,12 @@ class LaunchpadObjectFactory(ObjectFactory):
     for any other required objects.
     """
 
+    # Used for makeBuilderRecipe.
+    MINIMAL_RECIPE_TEXT = u'''\
+# bzr-builder format 0.2 deb-version 1.0
+%s
+'''
+
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
         """Create and return a new arbitrary location for copy packages."""
@@ -1551,6 +1557,23 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBuilderSet).new(
             processor, url, name, title, description, owner, active,
             virtualized, vm_host)
+
+    def makeRecipe(self, *branches):
+        """Make a builder recipe that references `branches`.
+
+        If no branches are passed, return a recipe text that references an
+        arbitrary branch.
+        """
+        from bzrlib.plugins.builder.recipe import RecipeParser
+        if len(branches) == 0:
+            branches = (self.makeAnyBranch(),)
+        base_branch = branches[0]
+        other_branches = branches[1:]
+        text = self.MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
+        for i, branch in enumerate(other_branches):
+            text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
+        parser = RecipeParser(text)
+        return parser.parse()
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
