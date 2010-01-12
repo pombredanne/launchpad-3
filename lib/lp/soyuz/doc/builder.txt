@@ -38,40 +38,6 @@ with binary packages
     ...     builder.current_build_behavior, BinaryPackageBuildBehavior)
     True
 
-In case of copy archives the status string will show both the copy
-archive owner as well as the copy archive name.
-
-    >>> from lp.soyuz.interfaces.archive import ArchivePurpose
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.soyuz.interfaces.build import IBuildSet
-    >>> build = getUtility(IBuildSet).getByQueueEntry(builder.currentjob)
-    >>> builder_archive = removeSecurityProxy(
-    ...     build.archive)
-    >>> saved_purpose = builder_archive.purpose
-    >>> builder_archive.purpose = ArchivePurpose.COPY
-
-The name of a PRIVATE team cannot be displayed publicly, so it is we
-simply don't bother in adding the PPA information in the content
-class domain.
-
-    # Create a new PRIVATE team and reassign the building PPA to it.
-    >>> from lp.registry.interfaces.person import (
-    ...     IPersonSet, PersonVisibility)
-    >>> login('foo.bar@canonical.com')
-    >>> salgado = getUtility(IPersonSet).getByName('salgado')
-    >>> private_team = factory.makeTeam(
-    ...     salgado, name='private-team',
-    ...     displayname='Private Team',
-    ...     visibility=PersonVisibility.PRIVATE)
-    >>> saved_owner = builder_archive.owner
-    >>> builder_archive.owner = private_team
-    >>> login(ANONYMOUS)
-
-Restore the original archive purpose and owner.
-
-    >>> builder_archive.purpose = saved_purpose
-    >>> builder_archive.owner = saved_owner
-
 Confirm we can get the slave xmlrpc interface
 
     >>> s = builder.slave
