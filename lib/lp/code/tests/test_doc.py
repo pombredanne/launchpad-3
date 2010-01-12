@@ -69,4 +69,4 @@ special = {
 
 
 def test_suite():
-    return build_test_suite(here, special, layer=DatabaseFunctionalLayer)
+    return build_test_suite(here, special)
