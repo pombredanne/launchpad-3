@@ -3,6 +3,7 @@
 
 """Tests for error logging & OOPS reporting."""
 
+from __future__ import with_statement
 __metaclass__ = type
 
 import datetime
@@ -596,7 +597,8 @@ class TestErrorReportingUtility(unittest.TestCase):
         self.assertEqual(lines[0], 'Oops-Id: OOPS-1T1\n')
         self.assertEqual(lines[1], 'Exception-Type: UnprintableException\n')
         self.assertEqual(
-            lines[2], 'Exception-Value: <unprintable instance object>\n')
+            lines[2],
+            'Exception-Value: <unprintable UnprintableException object>\n')
         self.assertEqual(lines[3], 'Date: 2006-01-01T00:30:00+00:00\n')
         self.assertEqual(lines[4], 'Page-Id: \n')
         self.assertEqual(lines[5], 'Branch: %s\n' % versioninfo.branch_nick)
@@ -618,8 +620,9 @@ class TestErrorReportingUtility(unittest.TestCase):
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise UnprintableException()
         self.assertEqual(
-            lines[17], 'UnprintableException: <unprintable instance object>\n'
-            )
+            lines[17],
+            'UnprintableException:'
+            ' <unprintable UnprintableException object>\n')
 
     def test_raising_unauthorized_without_request(self):
         """Unauthorized exceptions are logged when there's no request."""
@@ -773,6 +776,50 @@ class TestErrorReportingUtility(unittest.TestCase):
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise ArbitraryException(\'xyz\')
         self.assertEqual(lines[17], 'ArbitraryException: xyz\n')
+
+    def test_oopsMessage(self):
+        """oopsMessage pushes and pops the messages."""
+        utility = ErrorReportingUtility()
+        with utility.oopsMessage({'a':'b', 'c':'d'}):
+            self.assertEqual(
+                {0: {'a':'b', 'c':'d'}}, utility._oops_messages)
+            # An additional message doesn't supplant the original message.
+            with utility.oopsMessage(dict(e='f', a='z', c='d')):
+                self.assertEqual({
+                    0: {'a':'b', 'c':'d'},
+                    1: {'a': 'z', 'e': 'f', 'c': 'd'},
+                    }, utility._oops_messages)
+            # Messages are removed when out of context.
+            self.assertEqual(
+                {0: {'a':'b', 'c':'d'}},
+                utility._oops_messages)
+
+    def test__makeErrorReport_includes_oops_messages(self):
+        """The error report should include the oops messages."""
+        utility = ErrorReportingUtility()
+        with utility.oopsMessage(dict(a='b', c='d')):
+            try:
+                raise ArbitraryException('foo')
+            except ArbitraryException:
+                info = sys.exc_info()
+                oops = utility._makeErrorReport(info)
+                self.assertEqual(
+                    [('<oops-message-0>', "{'a': 'b', 'c': 'd'}")],
+                    oops.req_vars)
+
+    def test__makeErrorReport_combines_request_and_error_vars(self):
+        """The oops messages should be distinct from real request vars."""
+        utility = ErrorReportingUtility()
+        request = ScriptRequest([('c', 'd')])
+        with utility.oopsMessage(dict(a='b')):
+            try:
+                raise ArbitraryException('foo')
+            except ArbitraryException:
+                info = sys.exc_info()
+                oops = utility._makeErrorReport(info, request)
+                self.assertEqual(
+                    [('<oops-message-0>', "{'a': 'b'}"), ('c', 'd')],
+                    oops.req_vars)
 
 
 class TestSensitiveRequestVariables(unittest.TestCase):

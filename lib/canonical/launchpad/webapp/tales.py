@@ -471,8 +471,7 @@ class ObjectFormatterAPI:
         try:
             url = canonical_url(
                 self._context, path_only_if_possible=True,
-                rootsite=rootsite,
-                view_name=view_name)
+                rootsite=rootsite, view_name=view_name)
         except Unauthorized:
             url = ""
         return url
@@ -480,14 +479,15 @@ class ObjectFormatterAPI:
     def api_url(self, context):
         """Return the object's (partial) canonical web service URL.
 
-        This method returns everything that goes after the web service
-        version number. It's the same as 'url', but without any view
-        name.
+        This method returns everything that goes after the web service version
+        number.  Effectively the canonical URL but only the relative part with
+        no site.
         """
-
-        # Some classes override the rootsite. We always want a path-only
-        # URL, so we override it to nothing.
-        return self.url(rootsite=None)
+        try:
+            url = canonical_url(self._context, force_local_path=True)
+        except Unauthorized:
+            url = ""
+        return url
 
     def traverse(self, name, furtherPath):
         if name.startswith('link:') or name.startswith('url:'):
@@ -1368,7 +1368,8 @@ class BranchFormatterAPI(ObjectFormatterAPI):
 
     traversable_names = {
         'link': 'link', 'url': 'url', 'project-link': 'projectLink',
-        'title-link': 'titleLink', 'bzr-link': 'bzrLink'}
+        'title-link': 'titleLink', 'bzr-link': 'bzrLink',
+        'api_url': 'api_url'}
 
     def _args(self, view_name):
         """Generate a dict of attributes for string template expansion."""
@@ -1404,68 +1405,6 @@ class BranchFormatterAPI(ObjectFormatterAPI):
         return (
             '<a href="%(url)s" title="%(display_name)s">'
             '%(name)s</a>: %(title)s' % self._args(view_name))
-
-
-class PreviewDiffFormatterAPI(ObjectFormatterAPI):
-    """Formatter for preview diffs."""
-
-    def url(self, view_name=None, rootsite=None):
-        """Use the url of the librarian file containing the diff.
-        """
-        librarian_alias = self._context.diff_text
-        if librarian_alias is None:
-            return None
-        else:
-            return librarian_alias.getURL()
-
-    def link(self, view_name):
-        """The link to the diff should show the line count.
-
-        Stale diffs will have a stale-diff css class.
-        Diffs with conflicts will have a conflict-diff css class.
-        Diffs with neither will have clean-diff css class.
-
-        The title of the diff will show the number of lines added or removed
-        if available.
-
-        :param view_name: If not None, the link will point to the page with
-            that name on this object.
-        """
-        title_words = []
-        if self._context.conflicts is not None:
-            style = 'conflicts-diff'
-            title_words.append(_('CONFLICTS'))
-        else:
-            style = 'clean-diff'
-        # Stale style overrides conflicts or clean.
-        if self._context.stale:
-            style = 'stale-diff'
-            title_words.append(_('Stale'))
-
-        if self._context.added_lines_count:
-            title_words.append(
-                _("%s added") % self._context.added_lines_count)
-
-        if self._context.removed_lines_count:
-            title_words.append(
-                _("%s removed") % self._context.removed_lines_count)
-
-        args = {
-            'line_count': _('%s lines') % self._context.diff_lines_count,
-            'style': style,
-            'title': ', '.join(title_words),
-            'url': self.url(view_name),
-            }
-        # Under normal circumstances, there will be an associated file,
-        # however if the diff is empty, then there is no alias to link to.
-        if args['url'] is None:
-            return (
-                '<span title="%(title)s" class="%(style)s">'
-                '%(line_count)s</span>' % args)
-        else:
-            return (
-                '<a href="%(url)s" title="%(title)s" class="%(style)s">'
-                '<img src="/@@/download"/>&nbsp;%(line_count)s</a>' % args)
 
 
 class BranchSubscriptionFormatterAPI(CustomizableFormatter):
@@ -2876,7 +2815,7 @@ class FormattersAPI:
             "<<email address hidden>>", "<email address hidden>")
         return text
 
-    def linkify_email(self):
+    def linkify_email(self, preloaded_person_data=None):
         """Linkify any email address recognised in Launchpad.
 
         If an email address is recognised as one registered in Launchpad,
@@ -2891,7 +2830,14 @@ class FormattersAPI:
         matches = re.finditer(self._re_email, text)
         for match in matches:
             address = match.group()
-            person = getUtility(IPersonSet).getByEmail(address)
+            person = None
+            # First try to find the person required in the preloaded person
+            # data dictionary.
+            if preloaded_person_data is not None:
+                person = preloaded_person_data.get(address, None)
+            else:
+                # No pre-loaded data -> we need to perform a database lookup.
+                person = getUtility(IPersonSet).getByEmail(address)
             # Only linkify if person exists and does not want to hide
             # their email addresses.
             if person is not None and not person.hide_email_addresses:
@@ -3052,17 +2998,13 @@ class PageMacroDispatcher:
     """Selects a macro, while storing information about page layout.
 
         view/macro:page
-        view/macro:page/onecolumn
-        view/macro:page/applicationhome
-        view/macro:page/pillarindex
-        view/macro:page/freeform
+        view/macro:page/main_side
+        view/macro:page/main_only
+        view/macro:page/searchless
+        view/macro:page/locationless
 
         view/macro:pagehas/applicationtabs
-        view/macro:pagehas/applicationborder
-        view/macro:pagehas/applicationbuttons
         view/macro:pagehas/globalsearch
-        view/macro:pagehas/heading
-        view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
 
         view/macro:pagetype
@@ -3071,7 +3013,6 @@ class PageMacroDispatcher:
 
     implements(ITraversable)
 
-    master = ViewPageTemplateFile('../templates/main-template.pt')
     base = ViewPageTemplateFile('../../../lp/app/templates/base-layout.pt')
 
     def __init__(self, context):
@@ -3108,7 +3049,7 @@ class PageMacroDispatcher:
         if pagetype not in self._pagetypes:
             raise TraversalError('unknown pagetype: %s' % pagetype)
         self.context.__pagetype__ = pagetype
-        return self._template.macros['master']
+        return self.base.macros['master']
 
     def haspage(self, layoutelement):
         pagetype = getattr(self.context, '__pagetype__', None)
@@ -3123,15 +3064,9 @@ class PageMacroDispatcher:
 
         def __init__(self,
             applicationtabs=False,
-            applicationborder=False,
-            applicationbuttons=False,
             globalsearch=False,
-            heading=False,
-            pageheading=True,
             portlets=False,
             pagetypewasset=True,
-            actionsmenu=True,
-            navigationtabs=False
             ):
             self.elements = vars()
 
@@ -3139,107 +3074,24 @@ class PageMacroDispatcher:
             return self.elements[name]
 
     _pagetypes = {
-        'unset':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                pagetypewasset=False),
-        'default':
-            LayoutElements(
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True),
-        'default2.0':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                portlets=True,
-                navigationtabs=True),
-        'onecolumn':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=True,
-                navigationtabs=True,
-                portlets=False),
-        'applicationhome':
-            LayoutElements(
-                applicationborder=True,
-                applicationbuttons=True,
-                applicationtabs=True,
-                globalsearch=True,
-                pageheading=False,
-                heading=True),
-        'pillarindex':
-            LayoutElements(
-                applicationborder=True,
-                applicationbuttons=True,
-                globalsearch=True,
-                heading=True,
-                pageheading=False,
-                portlets=True),
-        'search':
-            LayoutElements(
-                actionsmenu=False,
-                applicationborder=True,
-                applicationtabs=True,
-                globalsearch=False,
-                heading=False,
-                pageheading=False,
-                portlets=False),
-       'freeform':
-            LayoutElements(),
        'main_side':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=True,
-                heading=False,
-                pageheading=False,
                 portlets=True),
        'main_only':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=True,
-                heading=False,
-                pageheading=False,
                 portlets=False),
        'searchless':
             LayoutElements(
-                actionsmenu=False,
-                applicationborder=False,
                 applicationtabs=True,
                 globalsearch=False,
-                heading=False,
-                pageheading=False,
                 portlets=False),
        'locationless':
             LayoutElements(),
         }
-
-    _3_0_pagetypes = [
-        'main_side',
-        'main_only',
-        'searchless',
-        'locationless',
-        ]
-
-    @property
-    def _template(self):
-        """Return the ViewPageTemplateFile used by layout."""
-        if self.context.__pagetype__ in self._3_0_pagetypes:
-            return self.base
-        else:
-            return self.master
 
 
 class TranslationGroupFormatterAPI(ObjectFormatterAPI):

@@ -50,9 +50,11 @@ __all__ = [
     'AsyncLaunchpadTransport',
     'BadUrl',
     'BadUrlLaunchpad',
+    'BadUrlScheme',
     'BadUrlSsh',
     'branch_id_to_path',
     'BranchPolicy',
+    'DirectDatabaseLaunchpadServer',
     'get_lp_server',
     'get_multi_server',
     'get_puller_server',
@@ -77,16 +79,17 @@ from lazr.uri import URI
 from twisted.internet import defer
 from twisted.python import failure
 
+from zope.component import getUtility
 from zope.interface import implements, Interface
 
 from lp.codehosting.vfs.branchfsclient import (
     BlockingProxy, BranchFileSystemClient, trap_fault)
-from lp.codehosting.bzrutils import ensure_base
 from lp.codehosting.vfs.transport import (
     AsyncVirtualServer, AsyncVirtualTransport, _MultiServer,
     get_chrooted_transport, get_readonly_transport, TranslationError)
 from canonical.config import config
 from lp.code.enums import BranchType
+from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.codehosting import (
     BRANCH_TRANSPORT, CONTROL_TRANSPORT, LAUNCHPAD_SERVICES)
 from canonical.launchpad.xmlrpc import faults
@@ -106,6 +109,7 @@ class BadUrlLaunchpad(BadUrl):
 
 class BadUrlScheme(BadUrl):
     """Found a URL with an untrusted scheme."""
+
     def __init__(self, scheme, url):
         BadUrl.__init__(self, scheme, url)
         self.scheme = scheme
@@ -180,20 +184,25 @@ def get_puller_server():
     return get_multi_server(write_mirrored=True)
 
 
-def get_multi_server(write_hosted=False, write_mirrored=False):
+def get_multi_server(write_hosted=False, write_mirrored=False,
+                     direct_database=False):
     """Get a server with access to both mirrored and hosted areas.
 
-    The server wraps up two `LaunchpadInternalServer`s. One of them points to
-    the hosted branch area, the other points to the mirrored area.
+    The server wraps up two `LaunchpadInternalServer`s or
+    `DirectDatabaseLaunchpadServer`s. One server points to the hosted branch
+    area and the other points to the mirrored area.
 
     Write permision defaults to False, but can be overridden.
+
     :param write_hosted: if True, lp-hosted URLs are writeable.  Otherwise,
         they are read-only.
     :param write_mirrored: if True, lp-mirrored URLs are writeable.
         Otherwise, they are read-only.
+
+    :param direct_database: if True, use a server implementation that talks
+        directly to the database.  If False, the default, use a server
+        implementation that talks to the internal XML-RPC server.
     """
-    proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
-    branchfs_endpoint = BlockingProxy(proxy)
     hosted_transport = get_chrooted_transport(
         config.codehosting.hosted_branches_root, mkdir=True)
     if not write_hosted:
@@ -202,10 +211,16 @@ def get_multi_server(write_hosted=False, write_mirrored=False):
         config.codehosting.mirrored_branches_root, mkdir=True)
     if not write_mirrored:
         mirrored_transport = get_readonly_transport(mirrored_transport)
-    hosted_server = LaunchpadInternalServer(
-        'lp-hosted:///', branchfs_endpoint, hosted_transport)
-    mirrored_server = LaunchpadInternalServer(
-        'lp-mirrored:///', branchfs_endpoint, mirrored_transport)
+    if direct_database:
+        make_server = DirectDatabaseLaunchpadServer
+    else:
+        proxy = xmlrpclib.ServerProxy(config.codehosting.branchfs_endpoint)
+        branchfs_endpoint = BlockingProxy(proxy)
+        def make_server(scheme, transport):
+            return LaunchpadInternalServer(
+                scheme, branchfs_endpoint, transport)
+    hosted_server = make_server('lp-hosted:///', hosted_transport)
+    mirrored_server = make_server('lp-mirrored:///', mirrored_transport)
     return _MultiServer(hosted_server, mirrored_server)
 
 
@@ -267,7 +282,7 @@ class BranchTransportDispatch:
         self._checkPath(trailing_path)
         transport = self.base_transport.clone(branch_id_to_path(data['id']))
         try:
-            ensure_base(transport)
+            transport.create_prefix()
         except TransportNotPossible:
             # Silently ignore TransportNotPossible. This is raised when the
             # base transport is read-only.
@@ -425,6 +440,44 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
         """Delete the on-disk branches and tear down."""
         self._transport_dispatch.base_transport.delete_tree('.')
         self.tearDown()
+
+
+class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
+
+    def __init__(self, scheme, branch_transport):
+        AsyncVirtualServer.__init__(self, scheme)
+        self._transport_dispatch = BranchTransportDispatch(branch_transport)
+
+    def setUp(self):
+        super(DirectDatabaseLaunchpadServer, self).setUp()
+        try:
+            self._transport_dispatch.base_transport.ensure_base()
+        except TransportNotPossible:
+            pass
+
+    def destroy(self):
+        """Delete the on-disk branches and tear down."""
+        self._transport_dispatch.base_transport.delete_tree('.')
+        self.tearDown()
+
+    def translateVirtualPath(self, virtual_url_fragment):
+        """See `AsyncVirtualServer.translateVirtualPath`.
+
+        This implementation connects to the database directly.
+        """
+        deferred = defer.succeed(
+            getUtility(IBranchLookup).getIdAndTrailingPath(
+                virtual_url_fragment))
+
+        def process_result((branch_id, trailing)):
+            if branch_id is None:
+                raise NoSuchFile(virtual_url_fragment)
+            else:
+                return self._transport_dispatch.makeTransport(
+                    (BRANCH_TRANSPORT, dict(id=branch_id), trailing[1:]))
+
+        deferred.addCallback(process_result)
+        return deferred
 
 
 class AsyncLaunchpadTransport(AsyncVirtualTransport):

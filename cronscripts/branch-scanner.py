@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -26,7 +26,7 @@ class UpdateBranches(LaunchpadCronScript):
         bzr_logger.setLevel(logging.INFO)
         globalErrorUtility.configure('branchscanner')
 
-        BranchScanner(self.txn, self.logger).scanAllBranches()
+        BranchScanner(self.logger).scanAllBranches()
 
 
 if __name__ == '__main__':

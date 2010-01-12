@@ -714,8 +714,13 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
     def __init__(self, header_output=None, http_transaction=None):
         super(LaunchpadBrowserResponse, self).__init__()
 
-    def redirect(self, location, status=None, temporary_if_possible=False):
+    def redirect(self, location, status=None, trusted=True,
+                 temporary_if_possible=False):
         """Do a redirect.
+
+        Unlike Zope's BrowserResponse.redirect(), consider all redirects to be
+        trusted. Otherwise we'd have to change all callsites that redirect
+        from lp.net to vhost.lp.net to pass trusted=True.
 
         If temporary_if_possible is True, then do a temporary redirect
         if this is a HEAD or GET, otherwise do a 303.
@@ -737,8 +742,7 @@ class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
             else:
                 status = 303
         super(LaunchpadBrowserResponse, self).redirect(
-                unicode(location).encode('UTF-8'), status=status
-                )
+            unicode(location).encode('UTF-8'), status=status, trusted=trusted)
 
 
 def adaptResponseToSession(response):
@@ -1173,10 +1177,42 @@ class WebServicePublication(WebServicePublicationMixin,
         form = get_oauth_authorization(request)
 
         consumer_key = form.get('oauth_consumer_key')
-        consumer = getUtility(IOAuthConsumerSet).getByKey(consumer_key)
-        if consumer is None:
-            raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        consumers = getUtility(IOAuthConsumerSet)
+        consumer = consumers.getByKey(consumer_key)
         token_key = form.get('oauth_token')
+        anonymous_request = (token_key == '')
+        if consumer is None:
+            if consumer_key is None:
+                # Most likely the user is trying to make a totally
+                # unauthenticated request.
+                raise Unauthorized(
+                    'Request is missing an OAuth consumer key.')
+            if anonymous_request:
+                # This is the first time anyone has tried to make an
+                # anonymous request using this consumer
+                # name. Dynamically create the consumer.
+                #
+                # In the normal website this wouldn't be possible
+                # because GET requests have their transactions rolled
+                # back. But webservice requests always have their
+                # transactions committed so that we can keep track of
+                # the OAuth nonces and prevent replay attacks.
+                consumer = consumers.new(consumer_key, '')
+            else:
+                # An unknown consumer can never make a non-anonymous
+                # request, because access tokens are registered with a
+                # specific, known consumer.
+                raise Unauthorized('Unknown consumer (%s).' % consumer_key)
+        if anonymous_request:
+            # Skip the OAuth verification step and let the user access the
+            # web service as an unauthenticated user.
+            #
+            # XXX leonardr 2009-12-15 bug=496964: Ideally we'd be
+            # auto-creating a token for the anonymous user the first
+            # time, passing it through the OAuth verification step,
+            # and using it on all subsequent anonymous requests.
+            auth_utility = getUtility(IPlacelessAuthUtility)
+            return auth_utility.unauthenticatedPrincipal()
         token = consumer.getAccessToken(token_key)
         if token is None:
             raise Unauthorized('Unknown access token (%s).' % token_key)

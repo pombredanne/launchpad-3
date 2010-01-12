@@ -63,7 +63,7 @@ from lp.soyuz.interfaces.archivepermission import (
 from lp.soyuz.interfaces.archivesubscriber import (
     IArchiveSubscriberSet)
 from lp.soyuz.interfaces.build import (
-    BuildStatus, IBuildSet)
+    BuildStatus, BuildSetStatus, IBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
@@ -286,14 +286,28 @@ class ArchiveNavigation(Navigation, FileNavigationMixin):
             # See if "item" is a source package name.
             the_item = getUtility(ISourcePackageNameSet).queryByName(item)
         elif item_type == 'packageset':
-            # See if "item" is a package set.
-            the_item = getUtility(IPackagesetSet).getByName(item)
+            the_item = None
+            # Was a 'series' URL param passed?
+            series = get_url_param('series')
+            if series is not None:
+                # Get the requested distro series.
+                try:
+                    series = self.context.distribution[series]
+                except NotFoundError:
+                    series = None
+            if series is not None:
+                the_item = getUtility(IPackagesetSet).getByName(
+                    item, distroseries=series)
         else:
             the_item = None
 
         if the_item is not None:
-            return getUtility(IArchivePermissionSet).checkAuthenticated(
-                user, self.context, permission_type, the_item)[0]
+            result_set = getUtility(IArchivePermissionSet).checkAuthenticated(
+                user, self.context, permission_type, the_item)
+            if result_set.count() > 0:
+                return result_set[0]
+            else:
+                return None
         else:
             return None
 
@@ -392,7 +406,7 @@ class ArchiveMenuMixin:
 
     @enabled_with_permission('launchpad.Edit')
     def edit_dependencies(self):
-        text = 'Edit dependencies'
+        text = 'Edit PPA dependencies'
         return Link('+edit-dependencies', text, icon='edit')
 
 
@@ -818,21 +832,29 @@ class ArchiveView(ArchiveSourcePackageListViewBase):
             'FULLYBUILT': 'Successfully built',
             'FULLYBUILT_PENDING': 'Successfully built',
             'NEEDSBUILD': 'Waiting to build',
-            'FAILEDTOBUILD': 'Failed to build',
+            'FAILEDTOBUILD': 'Failed to build:',
             'BUILDING': 'Currently building',
             }
 
         now = datetime.now(tz=pytz.UTC)
         for result_tuple in result_tuples:
             source_pub = result_tuple[0]
-            current_status = source_pub.getStatusSummaryForBuilds()['status']
+            status_summary = source_pub.getStatusSummaryForBuilds()
+            current_status = status_summary['status']
             duration = now - source_pub.datepublished
+
+            # We'd like to include the builds in the latest updates
+            # iff the build failed.
+            builds = []
+            if current_status == BuildSetStatus.FAILEDTOBUILD:
+                builds = status_summary['builds']
 
             latest_updates_list.append({
                 'title': source_pub.source_package_name,
                 'status': status_names[current_status.title],
                 'status_class': current_status.title,
                 'duration': duration,
+                'builds': builds
                 })
 
         return latest_updates_list
@@ -1167,7 +1189,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         # a problem when we support PPAs for other distribution. If we do
         # it will be probably simpler to use the DistroSeries vocabulary
         # and validate the selected value before copying.
-        for series in self.context.distribution.serieses:
+        for series in self.context.distribution.series:
             if series.status == DistroSeriesStatus.OBSOLETE:
                 continue
             terms.append(
@@ -1295,6 +1317,9 @@ class ArchiveEditDependenciesView(ArchiveViewBase, LaunchpadFormView):
                   cssClass='highlight-selected')
     custom_widget('primary_components', LaunchpadRadioWidget,
                   cssClass='highlight-selected')
+
+    label = "Edit PPA dependencies"
+    page_title = label
 
     def initialize(self):
         self.cancel_url = canonical_url(self.context)
@@ -1625,17 +1650,27 @@ class ArchiveActivateView(LaunchpadFormView):
 
     schema = IPPAActivateForm
     custom_widget('description', TextAreaWidget, height=3)
+    label = "Personal Package Archive Activation"
 
     @property
     def ubuntu(self):
         return getUtility(ILaunchpadCelebrities).ubuntu
 
+    @property
+    def initial_values(self):
+        """Set up default values for form fields."""
+        # Suggest a default value of "ppa" for the name for the
+        # first PPA activation.
+        if self.context.archive is None:
+            return {'name': 'ppa'}
+        return {}
+
     def setUpFields(self):
         """Override `LaunchpadFormView`.
 
         Reorder the fields in a way the make more sense to users and also
-        omit 'name' and present a checkbox for acknowledging the PPA-ToS
-        if the user is creating his first PPA.
+        present a checkbox for acknowledging the PPA-ToS if the user is
+        creating his first PPA.
         """
         LaunchpadFormView.setUpFields(self)
 
@@ -1644,7 +1679,7 @@ class ArchiveActivateView(LaunchpadFormView):
                 'name', 'displayname', 'description')
         else:
             self.form_fields = self.form_fields.select(
-                'displayname', 'accepted', 'description')
+                'name', 'displayname', 'accepted', 'description')
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
@@ -1747,7 +1782,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['displayname', 'description']
+    field_names = ['displayname', 'description', 'enabled']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 

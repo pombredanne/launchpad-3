@@ -42,9 +42,9 @@ put the person we will merge into some of those.
     >>> ubuntu_team.teamowner = marilize
 
     >>> ubuntu_translators = personset.getByName('ubuntu-translators')
-    >>> ubuntu_translators.addMember(marilize, marilize)
+    >>> ignored = ubuntu_translators.addMember(marilize, marilize)
     >>> rosetta_admins = personset.getByName('rosetta-admins')
-    >>> rosetta_admins.addMember(marilize, marilize)
+    >>> ignored = rosetta_admins.addMember(marilize, marilize)
 
 Karma gets reassigned to the person we merge into. Let's assign karma to
 Marilize and save it for later comparison.
@@ -199,8 +199,32 @@ merged accounts from lists etc.
     >>> results.get_one()[0] is None
     True
 
+An email is sent to the user informing him that he should review his email
+and mailing list subscription settings.
 
-== Person decoration ==
+    >>> from canonical.launchpad.interfaces.personnotification import (
+    ...     IPersonNotificationSet)
+
+    >>> notification_set = getUtility(IPersonNotificationSet)
+    >>> notifications = notification_set.getNotificationsToSend()
+    >>> notifications.count()
+    1
+    >>> notification = notifications[0]
+    >>> print notification.person.name
+    name12
+    >>> print notification.subject
+    Launchpad accounts merged
+    >>> print notification.body
+    The Launchpad account named 'marilize-merged' was merged into the account
+    named 'name12'. ...
+
+    You can review and update your email and subscription settings at:
+
+        https://launchpad.net/name12/+editemails ...
+
+
+Person decoration
+-----------------
 
 Several tables "extend" the Person table by having additional information
 that is UNIQUEly keyed to Person.id. We have a utility function that merges
@@ -324,7 +348,7 @@ are carried over just like when merging people.
     >>> from canonical.launchpad.interfaces import IPollSubset, PollSecrecy
     >>> test_team = personset.newTeam(sample, 'test-team', 'Test team')
     >>> launchpad_devs = personset.getByName('launchpad')
-    >>> launchpad_devs.addMember(
+    >>> ignored = launchpad_devs.addMember(
     ...     test_team, reviewer=launchpad_devs.teamowner, force_team_add=True)
     >>> today = datetime.now(pytz.timezone('UTC'))
     >>> tomorrow = today + timedelta(days=1)
@@ -367,8 +391,10 @@ artifacts of the list on the Mailman side.
 
     >>> from canonical.launchpad.interfaces import IMailingListSet
     >>> mailing_list = getUtility(IMailingListSet).new(landscape)
+    >>> from lp.registry.tests.mailinglists_helper import mailman
+    >>> mailman.act()
     >>> print mailing_list.status.name
-    REGISTERED
+    ACTIVE
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> personset.merge(landscape, ubuntu_team)
     Traceback (most recent call last):
@@ -379,13 +405,15 @@ Purging the associated mailing list doesn't delete it, but puts it into a
 state that essentially treats it as nonexistent.  It still can't be merged
 until all the members are deactivated though.
 
+    >>> mailing_list.deactivate()
+    >>> mailman.act()
     >>> mailing_list.purge()
     >>> print mailing_list.status.name
     PURGED
     >>> personset.merge(landscape, ubuntu_team)
     Traceback (most recent call last):
     ...
-    AssertionError: Only teams without active members can be merged
+    AssertionError: from_person still has email addresses.
 
 For cases like this we have an API which takes care of deactivating all
 active members of the team so that we can perform the merge.

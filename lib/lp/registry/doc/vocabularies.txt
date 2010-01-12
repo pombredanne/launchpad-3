@@ -68,18 +68,6 @@ Mailing lists are not active when they are first registered.
     >>> list(list_vocabulary.search())
     []
 
-Even when the mailing lists are approved, they are not yet active.
-
-    >>> list_one.review(carlos, MailingListStatus.APPROVED)
-    >>> list_two.review(carlos, MailingListStatus.APPROVED)
-    >>> list_three.review(carlos, MailingListStatus.APPROVED)
-    >>> list(list_vocabulary)
-    []
-    >>> len(list_vocabulary)
-    0
-    >>> list(list_vocabulary.search())
-    []
-
 Mailing lists become active once they have been constructed by Mailman (which
 indicates so by transitioning the state to ACTIVE).
 
@@ -190,7 +178,7 @@ Sometimes, the vocabulary search doesn't return any active lists.
 
 === DistroSeriesVocabulary ===
 
-Reflects the available distribution serieses.  Results are ordered by
+Reflects the available distribution series.  Results are ordered by
 `name`
 
     >>> distroseries_vocabulary = vocabulary_registry.get(
@@ -267,8 +255,7 @@ membership is public.
 
     >>> from canonical.launchpad.interfaces import PersonVisibility
     >>> otherteam = person_set.getByName('otherteam')
-    >>> otherteam.addMember(foo_bar, foo_bar)
-
+    >>> ignored = otherteam.addMember(foo_bar, foo_bar)
     >>> otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
     >>> for term in person_active_membership:
     ...     print term.token, term.value.displayname, term.title
@@ -445,7 +432,7 @@ it'll still show up on the vocabulary so that users can change it.
     2
 
 This is true for inactive milestones used in bugtasks for products and
-product serieses as well.
+product series as well.
 
     >>> product_bugtask = factory.makeBugTask(target=firefox)
     >>> product_bugtask.milestone = firefox_milestone
@@ -778,10 +765,22 @@ Almost all teams have the word 'team' as part of their names, so a search
 for 'team' should give us some of them.  Notice that the
 PRIVATE_MEMBERSHIP_TEAM 'myteam' is not included in the results.
 
+    >>> ephemeral = factory.makeTeam(owner=foo_bar, name='ephemeral-team')
     >>> sorted(person.name for person in vocab.search('team'))
-    [u'hwdb-team', u'name18', u'name20', u'name21', u'no-team-memberships',
-     u'otherteam', u'simple-team', u'testing-spanish-team',
-     u'ubuntu-security', u'ubuntu-team', u'warty-gnome']
+    [u'ephemeral-team', u'hwdb-team', u'name18', u'name20', u'name21',
+     u'no-team-memberships', u'otherteam', u'simple-team',
+     u'testing-spanish-team', u'ubuntu-security', u'ubuntu-team',
+     u'warty-gnome']
+
+Valid teams do not include teams that have been merged.
+
+    >>> ephemeral.deactivateAllMembers("Merging", foo_bar)
+    >>> person_set.merge(ephemeral, foo_bar)
+    >>> sorted(person.name for person in vocab.search('team'))
+    [u'hwdb-team', u'name18', u'name20', u'name21',
+     u'no-team-memberships', u'otherteam', u'simple-team',
+     u'testing-spanish-team', u'ubuntu-security', u'ubuntu-team',
+     u'warty-gnome']
 
 Logging in as 'owner', who is a member of myteam shows that the token
 lookup still omits myteam.
@@ -906,8 +905,29 @@ displayname and the first set of those are the ones returned
     >>> [person.displayname for person in vocab.search('team')]
     [u'HWDB Team', u'No Team Memberships', u'testing Spanish team']
 
+Search for names with '%' and '?' is supported.
 
-=== ValidOwner ===
+    >>> from lp.registry.interfaces.irc import IIrcIDSet
+
+    >>> symbolic_person = factory.makePerson(name='symbolic')
+    >>> ircid_set = getUtility(IIrcIDSet)
+    >>> irc_id = ircid_set.new(
+    ...     symbolic_person, 'irc.freenode.net', '%percent')
+    >>> irc_id =ircid_set.new(
+    ...     symbolic_person, 'irc.fnord.net', 'question?')
+    >>> transaction.commit()
+
+    >>> for person in vocab.search('%percent'):
+    ...     print person.name
+    symbolic
+
+    >>> for person in vocab.search('question?'):
+    ...     print person.name
+    symbolic
+
+
+ValidOwner
+..........
 
 All valid persons and teams are also valid owners.
 
@@ -1377,7 +1397,7 @@ projects are returned.
     >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
-    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
     >>> login_person(registry_member)

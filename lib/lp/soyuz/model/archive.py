@@ -54,9 +54,9 @@ from lp.soyuz.model.sourcepackagerelease import SourcePackageRelease
 from lp.registry.model.teammembership import TeamParticipation
 from lp.soyuz.interfaces.archive import (
     AlreadySubscribed, ArchiveDependencyError, ArchiveNotPrivate,
-    ArchivePurpose, DistroSeriesNotFound, IArchive, IArchiveSet,
+    ArchivePurpose, CannotCopy, DistroSeriesNotFound, IArchive, IArchiveSet,
     IDistributionArchive, InvalidComponent, IPPA, MAIN_ARCHIVE_PURPOSES,
-    PocketNotFound, VersionRequiresName, default_name_by_purpose)
+    NoSuchPPA, PocketNotFound, VersionRequiresName, default_name_by_purpose)
 from lp.soyuz.interfaces.archiveauthtoken import IArchiveAuthTokenSet
 from lp.soyuz.interfaces.archivepermission import (
     ArchivePermissionType, IArchivePermissionSet)
@@ -77,7 +77,7 @@ from lp.soyuz.interfaces.packagecopyrequest import IPackageCopyRequestSet
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus, IPublishingSet)
 from lp.registry.interfaces.sourcepackagename import ISourcePackageNameSet
-from lp.soyuz.scripts.packagecopier import CannotCopy, do_copy
+from lp.soyuz.scripts.packagecopier import do_copy
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.url import urlappend
@@ -220,7 +220,7 @@ class Archive(SQLBase):
         # Import DistroSeries here to avoid circular imports.
         from lp.registry.model.distroseries import DistroSeries
 
-        distro_serieses = store.find(
+        distro_series = store.find(
             DistroSeries,
             DistroSeries.distribution == self.distribution,
             SourcePackagePublishingHistory.distroseries == DistroSeries.id,
@@ -228,12 +228,12 @@ class Archive(SQLBase):
             SourcePackagePublishingHistory.status.is_in(
                 active_publishing_status))
 
-        distro_serieses.config(distinct=True)
+        distro_series.config(distinct=True)
 
         # Ensure the ordering is the same as presented by
-        # Distribution.serieses
+        # Distribution.series
         return sorted(
-            distro_serieses, key=lambda a: Version(a.version), reverse=True)
+            distro_series, key=lambda a: Version(a.version), reverse=True)
 
     @property
     def dependencies(self):
@@ -260,11 +260,21 @@ class Archive(SQLBase):
         return archives
 
     @property
+    def debug_archive(self):
+        """See `IArchive`."""
+        if self.purpose == ArchivePurpose.PRIMARY:
+            return getUtility(IArchiveSet).getByDistroPurpose(
+                self.distribution, ArchivePurpose.DEBUG)
+        else:
+            return self
+
+    @property
     def archive_url(self):
         """See `IArchive`."""
         archive_postfixes = {
             ArchivePurpose.PRIMARY : '',
             ArchivePurpose.PARTNER : '-partner',
+            ArchivePurpose.DEBUG : '-debug',
         }
 
         if self.is_ppa:
@@ -994,11 +1004,12 @@ class Archive(SQLBase):
         return permission_set.packagesetsForSource(
             self, sourcepackagename, direct_permissions)
 
-    def isSourceUploadAllowed(self, sourcepackagename, person):
+    def isSourceUploadAllowed(
+        self, sourcepackagename, person, distroseries=None):
         """See `IArchive`."""
         permission_set = getUtility(IArchivePermissionSet)
         return permission_set.isSourceUploadAllowed(
-            self, sourcepackagename, person)
+            self, sourcepackagename, person, distroseries)
 
     def getFileByName(self, filename):
         """See `IArchive`."""
@@ -1085,7 +1096,9 @@ class Archive(SQLBase):
         # Find and validate the source package names in source_names.
         sources = []
         for name in source_names:
-            source_package_name = getUtility(ISourcePackageNameSet)[name]
+            # Check to see if the source package exists, and raise a useful
+            # error if it doesn't.
+            getUtility(ISourcePackageNameSet)[name]
             # Grabbing the item at index 0 ensures it's the most recent
             # publication.
             sources.append(
@@ -1097,8 +1110,10 @@ class Archive(SQLBase):
     def syncSource(self, source_name, version, from_archive, to_pocket,
                    to_series=None, include_binaries=False):
         """See `IArchive`."""
+        # Check to see if the source package exists, and raise a useful error
+        # if it doesn't.
+        getUtility(ISourcePackageNameSet)[source_name]
         # Find and validate the source package version required.
-        source_package_name = getUtility(ISourcePackageNameSet)[source_name]
         source = from_archive.getPublishedSources(
             name=source_name, version=version, exact_match=True)[0]
 
@@ -1404,6 +1419,19 @@ class ArchiveSet:
             return 0
         return int(size)
 
+    def getPPAOwnedByPerson(self, person, name=None):
+        """See `IArchiveSet`."""
+        store = Store.of(person)
+        clause = [
+            Archive.purpose == ArchivePurpose.PPA,
+            Archive.owner == person]
+        if name is not None:
+            clause.append(Archive.name == name)
+        result = store.find(Archive, *clause).order_by(Archive.id).first()
+        if name is not None and result is None:
+            raise NoSuchPPA(name)
+        return result
+
     def getPPAsForUser(self, user):
         """See `IArchiveSet`."""
         # Avoiding circular imports.
@@ -1416,14 +1444,15 @@ class ArchiveSet:
             TeamParticipation.team == Archive.ownerID,
             TeamParticipation.person == user,
             )
-        third_part_upload_acl = store.find(
+        third_party_upload_acl = store.find(
             Archive,
             Archive.purpose == ArchivePurpose.PPA,
             ArchivePermission.archiveID == Archive.id,
-            ArchivePermission.person == user,
+            TeamParticipation.person == user,
+            TeamParticipation.team == ArchivePermission.personID,
             )
 
-        result = direct_membership.union(third_part_upload_acl)
+        result = direct_membership.union(third_party_upload_acl)
         result.order_by(Archive.displayname)
 
         return result
@@ -1537,7 +1566,8 @@ class ArchiveSet:
             Archive.purpose == ArchivePurpose.PPA)
 
     def getArchivesForDistribution(self, distribution, name=None,
-                                   purposes=None, user=None):
+                                   purposes=None, user=None,
+                                   exclude_disabled=True):
         """See `IArchiveSet`."""
         extra_exprs = []
 
@@ -1551,6 +1581,12 @@ class ArchiveSet:
 
         if name is not None:
             extra_exprs.append(Archive.name == name)
+
+        if exclude_disabled:
+            public_archive = And(Archive.private == False,
+                                 Archive.enabled == True)
+        else:
+            public_archive = (Archive.private == False)
 
         if user is not None:
             admins = getUtility(ILaunchpadCelebrities).admin
@@ -1576,16 +1612,13 @@ class ArchiveSet:
                 # that consists of themselves.
                 extra_exprs.append(
                     Or(
-                        And(Archive.private == False,
-                            Archive.enabled == True),
+                        public_archive,
                         Archive.ownerID.is_in(user_teams_subselect)))
 
         else:
             # Anonymous user; filter to include only public archives in
             # the results.
-            extra_exprs.append(Archive.private == False)
-            extra_exprs.append(Archive.enabled == True)
-
+            extra_exprs.append(public_archive)
 
         query = Store.of(distribution).find(
             Archive,

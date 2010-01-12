@@ -3,20 +3,25 @@
 
 __all__ = [
     'BranchJob',
+    'BranchUpgradeJob',
     'RevisionsAddedJob',
     'RevisionMailJob',
     'RosettaUploadJob',
 ]
 
+import contextlib
 import os
 import shutil
 from StringIO import StringIO
+import tempfile
 
+from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
 from bzrlib.revisionspec import RevisionInfo, RevisionSpec
+from bzrlib.transport import get_transport
 from bzrlib.upgrade import upgrade
 
 from lazr.enum import DBEnumeratedType, DBItem
@@ -36,14 +41,14 @@ from zope.interface import classProvides, implements
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp import canonical_url, errorlog
 from lp.code.bzr import (
     BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
-from lp.codehosting.vfs import branch_id_to_path
+from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
@@ -185,7 +190,7 @@ class BranchJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BaseRunnableJob.getOopsVars(self)
+        vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('branch_job_id', self.context.id),
             ('branch_job_type', self.context.job_type.title)])
@@ -198,8 +203,8 @@ class BranchDiffJob(BranchJobDerived):
     """A Job that calculates the a diff related to a Branch."""
 
     implements(IBranchDiffJob)
-
     classProvides(IBranchDiffJobSource)
+
     @classmethod
     def create(cls, branch, from_revision_spec, to_revision_spec):
         """See `IBranchDiffJobSource`."""
@@ -244,24 +249,56 @@ class BranchUpgradeJob(BranchJobDerived):
     implements(IBranchUpgradeJob)
 
     classProvides(IBranchUpgradeJobSource)
+    class_job_type = BranchJobType.UPGRADE_BRANCH
+
     @classmethod
     def create(cls, branch):
         """See `IBranchUpgradeJobSource`."""
+        if not branch.needs_upgrading:
+            raise AssertionError('Branch does not need upgrading.')
         branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
         return cls(branch_job)
 
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        """See `IBranchUpgradeJobSource`."""
+        errorlog.globalErrorUtility.configure('upgrade_branches')
+        server = get_multi_server(write_hosted=True)
+        server.setUp()
+        yield
+        server.tearDown()
+
     def run(self):
         """See `IBranchUpgradeJob`."""
-        self._prepare_upgrade()
-        self._upgrade()
+        # Set up the new branch structure
+        upgrade_branch_path = tempfile.mkdtemp()
+        try:
+            upgrade_transport = get_transport(upgrade_branch_path)
+            source_branch_transport = get_transport(self.branch.getPullURL())
+            source_branch_transport.copy_tree_to_transport(upgrade_transport)
+            upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
-    def _prepare_upgrade(self):
-        """Prepares the branch for upgrade."""
-        self._upgrade_branch = self.branch.getBzrBranch()
+            # Perform the upgrade.
+            upgrade(upgrade_branch.base, self.upgrade_format)
 
-    def _upgrade(self):
-        """Performs the upgrade of the branch."""
-        upgrade(self._upgrade_branch.base, self.upgrade_format)
+            # Re-open the branch, since its format has changed.
+            upgrade_branch = BzrBranch.open_from_transport(
+                upgrade_transport)
+            source_branch = BzrBranch.open_from_transport(
+                source_branch_transport)
+
+            source_branch.lock_write()
+            upgrade_branch.pull(source_branch)
+            upgrade_branch.fetch(source_branch)
+            source_branch.unlock()
+
+            # Move the branch in the old format to backup.bzr
+            upgrade_transport.delete_tree('backup.bzr')
+            source_branch_transport.rename('.bzr', 'backup.bzr')
+            upgrade_transport.copy_tree_to_transport(source_branch_transport)
+        finally:
+            shutil.rmtree(upgrade_branch_path)
 
     @property
     def upgrade_format(self):
@@ -272,7 +309,7 @@ class BranchUpgradeJob(BranchJobDerived):
         repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
             self.branch.repository_format)
         if branch_format is None or repository_format is None:
-            branch = self.branch.getBzrBranch()
+            branch = BzrBranch.open(self.branch.getPullURL())
             if branch_format is None:
                 branch_format = type(branch._format)
             if repository_format is None:
@@ -402,7 +439,7 @@ class RevisionsAddedJob(BranchJobDerived):
         history = self.bzr_branch.revision_history()
         for num, revid in enumerate(history):
             if revid in added_revisions:
-                yield repository.get_revision(revid), num+1
+                yield repository.get_revision(revid), num + 1
 
     def generateDiffs(self):
         """Determine whether to generate diffs."""
@@ -529,8 +566,8 @@ class RevisionsAddedJob(BranchJobDerived):
         """
         store = Store.of(self.branch)
         conditions = [
-            BranchMergeProposal.target_branch==self.branch.id,
-            BranchMergeProposal.source_branch==Branch.id,
+            BranchMergeProposal.target_branch == self.branch.id,
+            BranchMergeProposal.source_branch == Branch.id,
             Branch.last_scanned_id.is_in(revision_ids)]
         if not include_superseded:
             conditions.append(
@@ -843,15 +880,18 @@ class RosettaUploadJob(BranchJobDerived):
         return (RosettaUploadJob(job) for job in jobs)
 
     @staticmethod
-    def findUnfinishedJobs(branch):
+    def findUnfinishedJobs(branch, since=None):
         """See `IRosettaUploadJobSource`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
-        jobs = store.using(BranchJob, Job).find((BranchJob), And(
+        match = And(
             Job.id == BranchJob.jobID,
             BranchJob.branch == branch,
             BranchJob.job_type == BranchJobType.ROSETTA_UPLOAD,
             Job._status != JobStatus.COMPLETED,
-            Job._status != JobStatus.FAILED))
+            Job._status != JobStatus.FAILED)
+        if since is not None:
+            match = And(match, Job.date_created > since)
+        jobs = store.using(BranchJob, Job).find((BranchJob), match)
         return jobs
 
 
@@ -890,4 +930,3 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
             shutil.rmtree(mirrored_path)
         if os.path.exists(hosted_path):
             shutil.rmtree(hosted_path)
-

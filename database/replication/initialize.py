@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -224,7 +224,8 @@ def main():
             fails += 1
     for sequence in all_sequences_in_schema(cur, 'public'):
         times_seen = 0
-        for sequence_set in [authdb_sequences, lpmain_sequences]:
+        for sequence_set in [
+            authdb_sequences, lpmain_sequences, helpers.IGNORED_SEQUENCES]:
             if sequence in sequence_set:
                 times_seen += 1
         if times_seen == 0:

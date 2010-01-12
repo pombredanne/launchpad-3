@@ -28,7 +28,7 @@ class TestBranchRewriter(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestBranchRewriter, self).setUp()
         self.fake_time = FakeTime(0)
 
     def makeRewriter(self):
@@ -150,6 +150,19 @@ class TestBranchRewriter(TestCaseWithFactory):
             re.match("INFO: .* -> .* (.*s, cache: MISS)",
                      logging_output_lines[-1]),
             "No miss found in %r" % logging_output_lines[-1])
+
+    def test_getBranchIdAndTrailingPath_cached(self):
+        """When results come from cache, they should be the same."""
+        rewriter = self.makeRewriter()
+        branch = self.factory.makeAnyBranch()
+        transaction.commit()
+        id_path = (branch.id, u'/.bzr/README',)
+        result = rewriter._getBranchIdAndTrailingPath(
+            '/' + branch.unique_name + '/.bzr/README')
+        self.assertEqual(id_path + ('MISS',), result)
+        result = rewriter._getBranchIdAndTrailingPath(
+            '/' + branch.unique_name + '/.bzr/README')
+        self.assertEqual(id_path + ('HIT',), result)
 
 
 class TestBranchRewriterScript(TestCaseWithFactory):

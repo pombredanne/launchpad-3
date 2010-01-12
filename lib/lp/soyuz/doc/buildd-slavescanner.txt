@@ -188,10 +188,11 @@ We want to get a Build and make BuildQueue items for it:
 To make testing easier we provide a convenience function to put a BuildQueue
 object into a preset fixed state:
 
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> default_start = datetime.datetime(2005, 1, 1, 8, 0, 0, tzinfo=UTC)
     >>> def setupBuildQueue(build_queue, builder):
     ...      build_queue.builder = builder
-    ...      build_queue.buildstart = default_start
+    ...      build_queue.setDateStarted(default_start)
 
 Remove any previous buildmaster ROOT directory, to avoid any garbage
 lock conflict (it would be recreated automatically if necessary)
@@ -216,7 +217,7 @@ Make sure that a_builder has no active builds:
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> if a_builder.currentjob is not None:
     ...     currentjob = a_builder.currentjob
-    ...     currentjob.buildstart = None
+    ...     currentjob.setDateStarted(None)
     ...     currentjob.builder = None
     ...     syncUpdate(currentjob)
 
@@ -229,29 +230,26 @@ Create a mock slave so the builder can operate - one with a failed package.
 
     >>> a_builder.setSlaveForTesting(WaitingSlave('BuildStatus.PACKAGEFAIL'))
 
-    >>> bqItem3 = a_build.createBuildQueueEntry()
+    >>> bqItem3 = a_build.buildqueue_record
     >>> setupBuildQueue(bqItem3, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
 Do the test execution:
 
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem3)
     >>> buildergroup.updateBuild(bqItem3)
-    >>> bqItem3.build.builder is not None
+    >>> build.builder is not None
     True
-    >>> bqItem3.build.datebuilt is not None
+    >>> build.datebuilt is not None
     True
-    >>> bqItem3.build.buildduration is not None
+    >>> build.buildduration is not None
     True
-    >>> bqItem3.build.buildlog is not None
+    >>> build.buildlog is not None
     True
     >>> check_mail_sent(last_stub_mail_count)
     True
-    >>> bqItem3.build.buildstate.title
+    >>> build.buildstate.title
     'Failed to build'
-
-Cleanup in preparation for the next test:
-
-    bqItem3.destroySelf()
 
 WAITING - DEPWAIT -> a required dependency is missing, again notice
 from builder, but Build.buildstate has the right state:
@@ -268,26 +266,23 @@ Create a mock slave so the builder can operate - one with a dependency error.
 
 Do the test execution:
 
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem4)
     >>> buildergroup.updateBuild(bqItem4)
     CRITICAL:root:***** bob is MANUALDEPWAIT *****
-    >>> bqItem4.build.builder is not None
+    >>> build.builder is not None
     True
-    >>> bqItem4.build.datebuilt is not None
+    >>> build.datebuilt is not None
     True
-    >>> bqItem4.build.buildduration is not None
+    >>> build.buildduration is not None
     True
-    >>> bqItem4.build.buildlog is not None
+    >>> build.buildlog is not None
     True
     >>> check_mail_sent(last_stub_mail_count)
     False
-    >>> bqItem4.build.dependencies
+    >>> build.dependencies
     u'baz (>= 1.0.1)'
-    >>> bqItem4.build.buildstate.title
+    >>> build.buildstate.title
     'Dependency wait'
-
-Cleanup in preparation for the next test:
-
-    bqItem4.destroySelf()
 
 WAITING - CHROOTFAIL -> the Chroot for this distroseries is damage, nor
 builder, but right state stored in Build entry:
@@ -300,30 +295,26 @@ builder, but right state stored in Build entry:
 
     >>> bqItem5.builder.setSlaveForTesting(
     ...     WaitingSlave('BuildStatus.CHROOTFAIL'))
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem5)
     >>> buildergroup.updateBuild(bqItem5)
     CRITICAL:root:***** bob is CHROOTWAIT *****
-    >>> bqItem5.build.builder is not None
+    >>> build.builder is not None
     True
-    >>> bqItem5.build.datebuilt is not None
+    >>> build.datebuilt is not None
     True
-    >>> bqItem5.build.buildduration is not None
+    >>> build.buildduration is not None
     True
-    >>> bqItem5.build.buildlog is not None
+    >>> build.buildlog is not None
     True
     >>> check_mail_sent(last_stub_mail_count)
     True
-    >>> bqItem5.build.buildstate.title
+    >>> build.buildstate.title
     'Chroot problem'
 
-Cleanup in preparation for the next test:
-
-    bqItem5.destroySelf()
-
-WAITING - BUILDERFAIL -> builder has failed by internal error, job is
-available for next build round:
+WAITING - BUILDERFAIL -> builder has failed by internal error, job is available for next build round:
 
     >>> bqItem6 = a_build.createBuildQueueEntry()
-    >>> setupBuildQueue(bqItem6, a_builder)
+    >>> bqItem6.markAsBuilding(a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
 Create a mock slave so the builder can operate - one with a builder error.
@@ -343,8 +334,12 @@ Create a mock slave so the builder can operate - one with a builder error.
     True
     >>> check_mail_sent(last_stub_mail_count)
     False
-    >>> bqItem6.build.buildstate.title
-    'Needs building'
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem6)
+    >>> print build.buildstate.title
+    Needs building
+    >>> job = bqItem6.specific_job.job
+    >>> print job.status.title
+    Waiting
 
 Cleanup in preparation for the next test:
 
@@ -384,6 +379,8 @@ next build round:
     >>> setupBuildQueue(bqItem8, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
+    >>> bqItem8.builder.setSlaveForTesting(BuildingSlave())
+    >>> buildergroup.updateBuild(bqItem8)
     >>> bqItem8.builder.setSlaveForTesting(AbortedSlave())
     >>> bqItem8.builder.name
     u'bob'
@@ -444,18 +441,19 @@ If the build record wasn't updated before/during the updateBuild
 (precisely on binary upload time), the build will be considered
 FAILEDTOUPLOAD:
 
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem10)
     >>> buildergroup.updateBuild(bqItem10)
-    >>> bqItem10.build.builder is not None
+    >>> build.builder is not None
     True
-    >>> bqItem10.build.datebuilt is not None
+    >>> build.datebuilt is not None
     True
-    >>> bqItem10.build.buildduration is not None
+    >>> build.buildduration is not None
     True
-    >>> bqItem10.build.buildlog is not None
+    >>> build.buildlog is not None
     True
     >>> check_mail_sent(last_stub_mail_count)
     True
-    >>> bqItem10.build.buildstate.title
+    >>> build.buildstate.title
     'Failed to upload'
 
 Let's check the emails generated by this 'failure'
@@ -493,17 +491,13 @@ When a failure in processing the generated binaries occurs, the log
 output is both emailed in an immediate notification, and stored in the
 librarian for future reference.
 
-    >>> bqItem10.build.upload_log is not None
+    >>> build.upload_log is not None
     True
 
 What we can clearly notice is that the buildlog is still containing
 the old build state (BUILDING) in its name. This is a minor problem
 that can be sorted by modifying the execution order of procedures
 inside Buildergroup.buildStatus_OK method.
-
-Cleanup in preparation for the next test:
-
-     bqItem10.destroySelf()
 
 
 === Successfully collected and uploaded  (FULLYBUILT) ===
@@ -514,16 +508,16 @@ uploading to warty.
 
     >>> bqItem10 = getUtility(IBuildSet).getByBuildID(
     ...     6).createBuildQueueEntry()
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem10)
 
 XXX: The pocket attribute is not intended to be changed in regular code, but
 for this test we want to change it on the fly. An alternative would be to add
 new sample data for a build that can be uploaded with binary packages attached
 to it.
 
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
     >>> removeSecurityProxy(
-    ...     bqItem10.build).pocket = PackagePublishingPocket.UPDATES
+    ...     build).pocket = PackagePublishingPocket.UPDATES
     >>> setupBuildQueue(bqItem10, a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -535,22 +529,22 @@ Now in order to emulate a successfully binary upload we will update
 the build record to FULLYBUILT, as the process-upload would do:
 
     >>> from canonical.launchpad.interfaces import BuildStatus
-    >>> bqItem10.build.buildstate = BuildStatus.FULLYBUILT
+    >>> build.buildstate = BuildStatus.FULLYBUILT
 
 Now the updateBuild should recognize this build record as a
 Successfully built and uploaded procedure, not sending any
 notification and updating the build information:
 
     >>> buildergroup.updateBuild(bqItem10)
-    >>> bqItem10.build.builder is not None
+    >>> build.builder is not None
     True
-    >>> bqItem10.build.datebuilt is not None
+    >>> build.datebuilt is not None
     True
-    >>> bqItem10.build.buildduration is not None
+    >>> build.buildduration is not None
     True
-    >>> bqItem10.build.buildlog is not None
+    >>> build.buildlog is not None
     True
-    >>> bqItem10.build.buildstate.title
+    >>> build.buildstate.title
     'Successfully built'
     >>> check_mail_sent(last_stub_mail_count)
     False
@@ -558,17 +552,13 @@ notification and updating the build information:
 We do not store any build log information when the binary upload
 processing succeeded.
 
-    >>> bqItem10.build.upload_log is None
+    >>> build.upload_log is None
     True
-
-Cleanup in preparation for the next test:
-
-    bqItem10.destroySelf()
 
 WAITING -> GIVENBACK - slave requested build record to be rescheduled.
 
     >>> bqItem11 = a_build.createBuildQueueEntry()
-    >>> setupBuildQueue(bqItem11, a_builder)
+    >>> bqItem11.markAsBuilding(a_builder)
     >>> last_stub_mail_count = len(stub.test_emails)
 
 Create a mock slave so the builder gets the right responses for this test.
@@ -585,14 +575,18 @@ scanned it)
 
     >>> bqItem11.builder is None
     True
-    >>> bqItem11.buildstart is None
+    >>> bqItem11.date_started is None
     True
     >>> bqItem11.lastscore
     0
     >>> check_mail_sent(last_stub_mail_count)
     False
-    >>> bqItem11.build.buildstate.title
-    'Needs building'
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem11)
+    >>> print build.buildstate.title
+    Needs building
+    >>> job = bqItem11.specific_job.job
+    >>> print job.status.title
+    Waiting
 
 Cleanup in preparation for the next test:
 
@@ -616,10 +610,17 @@ Create a mock slave so the builder gets the right responses for this test.
     ...
     AssertionError: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE (2) can not be built for pocket RELEASE: illegal status
 
+We need 'a_builder' released (from 'bqItem12') so it can be associated with
+'bqItem10' below.
+
+    >>> bqItem12.builder = None
 
 The buildlog is collected and compressed locally using gzip algorithm,
 let's see how this method works:
 
+    >>> bqItem10 = getUtility(IBuildSet).getByBuildID(
+    ...     6).createBuildQueueEntry()
+    >>> setupBuildQueue(bqItem10, a_builder)
     >>> bqItem10.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
 
 Before collecting and processing the buildlog we will store the files
@@ -731,6 +732,9 @@ Check the log from the uploader run has made it into the upload directory:
 Remove build upload results root
 
     >>> shutil.rmtree(config.builddmaster.root)
+    >>> bqItem10.destroySelf()
+    >>> setupBuildQueue(bqItem12, a_builder)
+
 
 == Setup chroots ==
 
@@ -790,11 +794,11 @@ We will reset the sampledata building job before continue with the
 tests.
 
     >>> current_job = a_builder.currentjob
-    >>> resurrect_build = current_job.build
+    >>> resurrect_build = getUtility(IBuildSet).getByQueueEntry(current_job)
     >>> resurrect_build.buildstate = BuildStatus.NEEDSBUILD
     >>> syncUpdate(resurrect_build)
     >>> current_job.builder = None
-    >>> current_job.buildstart = None
+    >>> current_job.setDateStarted(None)
     >>> syncUpdate(current_job)
 
 IBuilder.findCandidate also identifies if there are builds for
@@ -802,7 +806,8 @@ superseded source package releases in the queue and marks the
 corresponding build record as SUPERSEDED.
 
     >>> old_candidate = a_builder.findBuildCandidate()
-    >>> print old_candidate.build.buildstate.name
+    >>> build = getUtility(IBuildSet).getByQueueEntry(old_candidate)
+    >>> print build.buildstate.name
     NEEDSBUILD
 
 The 'candidate' is constant until we dispatch it.
@@ -814,7 +819,7 @@ The 'candidate' is constant until we dispatch it.
 Now let's disable the archive of the associated build record and see
 whether the candidate will still be found.
 
-    >>> old_candidate.build.archive.enabled = False
+    >>> build.archive.enabled = False
     >>> new_candidate = a_builder.findBuildCandidate()
     >>> new_candidate is None
     True
@@ -823,7 +828,7 @@ The build candidate was not found because builds associated with disabled
 archives are ignored. Now let's re-enable that archive and the build
 candidate will be found again.
 
-    >>> old_candidate.build.archive.enabled = True
+    >>> build.archive.enabled = True
     >>> new_candidate = a_builder.findBuildCandidate()
     >>> new_candidate.id == old_candidate.id
     True
@@ -836,9 +841,9 @@ permissive database user.
     >>> from canonical.launchpad.interfaces import PackagePublishingStatus
     >>> from canonical.testing.layers import LaunchpadZopelessLayer
 
-    >>> spr = old_candidate.build.sourcepackagerelease
+    >>> spr = build.sourcepackagerelease
     >>> secure_pub = removeSecurityProxy(
-    ...     old_candidate).build.current_source_publication.secure_record
+    ...     build).current_source_publication.secure_record
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
@@ -854,7 +859,7 @@ Now, there we have another build candidate.
 Because the 'previous' candidate was marked as superseded, so it's not
 part of the candidates list anymore.
 
-    >>> print old_candidate.build.buildstate.name
+    >>> print build.buildstate.name
     SUPERSEDED
 
 If the candidate is for a private build whose source has not been
@@ -862,9 +867,10 @@ published yet, it will be temporarily skipped until the source is
 published.  We need to tweak the status of the publishing record again
 to demonstrate this, and also make the archive private:
 
-    >>> source = new_candidate.build.sourcepackagerelease
+    >>> build = getUtility(IBuildSet).getByQueueEntry(new_candidate)
+    >>> source = build.sourcepackagerelease
     >>> secure_pub = removeSecurityProxy(
-    ...     new_candidate).build.current_source_publication.secure_record
+    ...     build).current_source_publication.secure_record
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub.status = PackagePublishingStatus.PENDING
@@ -903,22 +909,23 @@ making the build be superseded and no candidate is returned.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> secure_pub = removeSecurityProxy(
-    ...     new_candidate).build.current_source_publication.secure_record
+    ...     build).current_source_publication.secure_record
     >>> secure_pub.status = PackagePublishingStatus.DELETED
     >>> secure_pub = removeSecurityProxy(
-    ...     new_candidate).build.current_source_publication.secure_record
+    ...     build).current_source_publication.secure_record
     >>> secure_pub.status = PackagePublishingStatus.SUPERSEDED
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(config.builddmaster.dbuser)
 
-    >>> print current_job.build.buildstate.name
+    >>> build = getUtility(IBuildSet).getByQueueEntry(current_job)
+    >>> print build.buildstate.name
     NEEDSBUILD
 
     >>> another_candidate = a_builder.findBuildCandidate()
     >>> print another_candidate
     None
 
-    >>> print current_job.build.buildstate.name
+    >>> print build.buildstate.name
     SUPERSEDED
 
 We'll reset the archive back to non-private for further tests:
@@ -950,7 +957,7 @@ builder.  It is True for private archives and False otherwise.
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+        url=http://localhost:58000/3/firefox_0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main
@@ -978,7 +985,7 @@ API/UI method to request the dispatch in advance.
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+        url=http://localhost:58000/3/firefox_0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main
@@ -1030,7 +1037,7 @@ hoary/i386. It's not passed to the builder.
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+        url=http://localhost:58000/3/firefox_0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
@@ -1122,7 +1129,7 @@ dispatching.
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+        url=http://localhost:58000/3/firefox_0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
@@ -1147,7 +1154,8 @@ password for the archive):
     >>> cprov_archive.private = True
     >>> cprov_archive.buildd_secret = "secret"
     >>> cprov_archive.require_virtualized = False
-    >>> for build_file in candidate.files:
+    >>> build = getUtility(IBuildSet).getByQueueEntry(candidate)
+    >>> for build_file in build.sourcepackagerelease.files:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = True
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
@@ -1169,7 +1177,8 @@ In this circumstance, it also uses the component override from the PRIMARY
 archive and not the one from the PPA, which on the absence of ancestry
 defaults to 'universe'.
 
-    >>> print candidate.build.current_component.name
+    >>> build = getUtility(IBuildSet).getByQueueEntry(candidate)
+    >>> print build.current_component.name
     main
 
 This is so that the mangling tools will run over the built packages.
@@ -1177,7 +1186,7 @@ This is so that the mangling tools will run over the built packages.
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://private-ppa.launchpad.dev/cprov/ppa/ubuntu/pool/main/m/mozilla-firefox/firefox-0.9.2.orig.tar.gz
+        url=http://private-ppa.launchpad.dev/cprov/ppa/ubuntu/pool/main/m/mozilla-firefox/firefox_0.9.2.orig.tar.gz
     URL authorisation with buildd/secret
     OkSlave BUILDING
     Archives:
@@ -1196,7 +1205,7 @@ This is so that the mangling tools will run over the built packages.
 We will create an ancestry in the primary archive target to the 'main'
 component and this time the dispatching will follow that component.
 
-    >>> sourcename = candidate.build.sourcepackagerelease.name
+    >>> sourcename = build.sourcepackagerelease.name
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> login('foo.bar@canonical.com')
@@ -1227,14 +1236,14 @@ the restricted librarian.
 
     >>> candidate = a_build.createBuildQueueEntry()
     >>> setupBuildQueue(candidate, a_builder)
-    >>> candidate.build.upload_log = None
+    >>> build.upload_log = None
     >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
     >>> buildergroup.updateBuild(candidate)
 
-    >>> candidate.build.archive.private
+    >>> build.archive.private
     True
 
-    >>> lfa = candidate.build.buildlog
+    >>> lfa = build.buildlog
     >>> lfa.restricted
     True
     >>> print lfa.filename
@@ -1269,7 +1278,7 @@ Mark's PPA:
 
     >>> cprov_archive.private = False
     >>> cprov_archive.require_virtualized = True
-    >>> for build_file in candidate.files:
+    >>> for build_file in a_build.sourcepackagerelease.files:
     ...     removeSecurityProxy(build_file).libraryfile.restricted = False
     >>> mark_archive = getUtility(IPersonSet).getByName('mark').archive
 
@@ -1296,7 +1305,7 @@ published in hoary/i386, which is not the case.
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+        url=http://localhost:58000/3/firefox_0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
@@ -1325,7 +1334,7 @@ We will create the required publication in Mark's PPA and try again.
     >>> a_builder.dispatchBuildCandidate(candidate)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+        url=http://localhost:58000/3/firefox_0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
@@ -1388,13 +1397,14 @@ A build in the updates pocket:
     >>> a_builder.currentjob.destroySelf()
 
     >>> bqItem3 = a_build.createBuildQueueEntry()
-    >>> removeSecurityProxy(bqItem3.build).pocket = (
+    >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem3)
+    >>> removeSecurityProxy(build).pocket = (
     ...     PackagePublishingPocket.UPDATES)
     >>> last_stub_mail_count = len(stub.test_emails)
     >>> a_builder.dispatchBuildCandidate(bqItem3)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+        url=http://localhost:58000/3/firefox_0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main
@@ -1410,13 +1420,13 @@ A build in the proposed pocket:
     >>> a_builder.currentjob.destroySelf()
 
     >>> bqItem3 = a_build.createBuildQueueEntry()
-    >>> removeSecurityProxy(bqItem3.build).pocket = (
+    >>> removeSecurityProxy(build).pocket = (
     ...     PackagePublishingPocket.PROPOSED)
     >>> last_stub_mail_count = len(stub.test_emails)
     >>> a_builder.dispatchBuildCandidate(bqItem3)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+        url=http://localhost:58000/3/firefox_0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main
@@ -1433,13 +1443,13 @@ A build in the backports pocket:
     >>> a_builder.currentjob.destroySelf()
 
     >>> bqItem3 = a_build.createBuildQueueEntry()
-    >>> removeSecurityProxy(bqItem3.build).pocket = (
+    >>> removeSecurityProxy(build).pocket = (
     ...     PackagePublishingPocket.BACKPORTS)
     >>> last_stub_mail_count = len(stub.test_emails)
     >>> a_builder.dispatchBuildCandidate(bqItem3)
     ensurepresent called, url=...
     ensurepresent called,
-        url=http://localhost:58000/3/firefox-0.9.2.orig.tar.gz
+        url=http://localhost:58000/3/firefox_0.9.2.orig.tar.gz
     OkSlave BUILDING
     Archives:
      deb http://ftpmaster.internal/ubuntu hoary main restricted universe multiverse
@@ -1456,9 +1466,9 @@ A build in the security pocket:
     >>> a_builder.currentjob.destroySelf()
 
     >>> bqItem3 = a_build.createBuildQueueEntry()
-    >>> removeSecurityProxy(bqItem3.build).buildstate = (
+    >>> removeSecurityProxy(build).buildstate = (
     ...     BuildStatus.NEEDSBUILD)
-    >>> removeSecurityProxy(bqItem3.build).pocket = (
+    >>> removeSecurityProxy(build).pocket = (
     ...     PackagePublishingPocket.SECURITY)
     >>> last_stub_mail_count = len(stub.test_emails)
 
@@ -1478,8 +1488,8 @@ findBuildCandidate method, see doc/buildd-dispatching.txt
 
 == Builder Status Handler ==
 
-IBuilder.slaveStatus should return a size homogeneous tuple despite of
-the current slave state. This tuple should contain, in this order:
+IBuilder.slaveStatus should return a dict containing the following
+items:
 
  * slave status string:  'BuilderStatus.IDLE'
  * job identifier string: '1-1'
@@ -1488,24 +1498,60 @@ the current slave state. This tuple should contain, in this order:
  * result file list: {'foo.deb', 'foo.changes'} or None
  * dependencies string: 'bar baz zaz' or None
 
+    # Define a helper to print the slave status dict.
+    >>> from collections import defaultdict
+    >>> def printSlaveStatus(status_dict):
+    ...     status_dict = defaultdict(lambda:None, status_dict)
+    ...     print (
+    ...         "builder_status: %(builder_status)s\n"
+    ...         "build_id: %(build_id)s\n"
+    ...         "build_status: %(build_status)s\n"
+    ...         "logtail: %(logtail)r\n"
+    ...         "filemap: %(filemap)s\n"
+    ...         "dependencies: %(dependencies)s\n" % status_dict)
 
     >>> a_builder.setSlaveForTesting(OkSlave())
-    >>> a_builder.slaveStatus()
-    ('BuilderStatus.IDLE', '', None, None, None, None)
+    >>> printSlaveStatus(a_builder.slaveStatus())
+    builder_status: BuilderStatus.IDLE
+    build_id:
+    build_status: None
+    logtail: None
+    filemap: None
+    dependencies: None
 
     >>> a_builder.setSlaveForTesting(BuildingSlave())
-    >>> a_builder.slaveStatus()
-    ('BuilderStatus.BUILDING', '1-1', None, <xmlrpclib.Binary ...>, None, None)
+    >>> printSlaveStatus(a_builder.slaveStatus())
+    builder_status: BuilderStatus.BUILDING
+    build_id: 1-1
+    build_status: None
+    logtail: <xmlrpclib.Binary ...>
+    filemap: None
+    dependencies: None
 
     >>> a_builder.setSlaveForTesting(WaitingSlave(state='BuildStatus.OK'))
-    >>> a_builder.slaveStatus()
-    ('BuilderStatus.WAITING', '1-1', 'BuildStatus.OK', None, {}, None)
+    >>> printSlaveStatus(a_builder.slaveStatus())
+    builder_status: BuilderStatus.WAITING
+    build_id: 1-1
+    build_status: BuildStatus.OK
+    logtail: None
+    filemap: {}
+    dependencies: None
 
     >>> a_builder.setSlaveForTesting(AbortingSlave())
-    >>> a_builder.slaveStatus()
-    ('BuilderStatus.ABORTING', '1-1', None, None, None, None)
+    >>> printSlaveStatus(a_builder.slaveStatus())
+    builder_status: BuilderStatus.ABORTING
+    build_id: 1-1
+    build_status: None
+    logtail: None
+    filemap: None
+    dependencies: None
 
     >>> a_builder.setSlaveForTesting(AbortedSlave())
-    >>> a_builder.slaveStatus()
-    ('BuilderStatus.ABORTED', '1-1', None, None, None, None)
+    >>> printSlaveStatus(a_builder.slaveStatus())
+    builder_status: BuilderStatus.ABORTED
+    build_id: 1-1
+    build_status: None
+    logtail: None
+    filemap: None
+    dependencies: None
 

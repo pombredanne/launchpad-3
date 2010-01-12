@@ -58,6 +58,11 @@ meaningless because teams cannot post to mailing lists.
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
 
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+
+    >>> verifyObject(IPersonSet, personset)
+    True
+
 You can create a new person using the createPersonAndEmail method of
 IPersonSet. All you need for that is a valid email address. You can also
 hide the user email addresses.
@@ -482,7 +487,7 @@ The team owner is also added as an administrator of its team.
 And we can even add other members to our new team!
 
     >>> login('foo.bar@canonical.com')
-    >>> not_a_person.addMember(lifeless, reviewer=ddaa)
+    >>> ignored = not_a_person.addMember(lifeless, reviewer=ddaa)
     >>> login(ANONYMOUS)
     >>> [member.name for member in not_a_person.activemembers]
     [u'ddaa', u'lifeless']
@@ -626,9 +631,7 @@ to ensure that the cache can be kept consistent when membership changes.
     {}
 
 ** See lib/canonical/launchpad/doc/teammembership.txt for more
-information
-
-   about team membership/participation.
+information about team membership/participation.
 
 
 === Email notifications to teams ===
@@ -887,6 +890,18 @@ Searching only for People based on their names or email addresses:
     Dave Miller (justdave): [u'dave.miller@ubuntulinux.com',
                              u'justdave@bugzilla.org']
 
+The created_before and created_after arguments can be used to restrict the
+matches by the IPerson.datecreated value.
+
+    >>> from datetime import datetime
+    >>> import pytz
+
+    >>> created_after = datetime(2008, 6, 27, tzinfo=pytz.UTC)
+    >>> created_before = datetime(2008, 7, 1, tzinfo=pytz.UTC)
+    >>> print_people(personset.findPerson(text='',
+    ...     created_after=created_after, created_before=created_before))
+    Brad Crittenden (bac): [u'bac@canonical.com']
+
 By default, when searching only for people, any person whose account is
 inactive is not included in the list, but we can tell findPerson to
 include them as well.
@@ -1127,7 +1142,7 @@ The method does not return inactive projects.
     >>> registry_member = factory.makePerson()
     >>> celebs = getUtility(ILaunchpadCelebrities)
     >>> registry = celebs.registry_experts
-    >>> registry.addMember(registry_member, registry.teamowner)
+    >>> ignored = registry.addMember(registry_member, registry.teamowner)
     >>> logout()
 
     >>> login_person(registry_member)

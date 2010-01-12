@@ -13,6 +13,7 @@ __all__ = [
     'IDistroSeriesEditRestricted',
     'IDistroSeriesPublic',
     'IDistroSeriesSet',
+    'ISeriesMixin',
     'NoSuchDistroSeries',
     ]
 
@@ -25,7 +26,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 from canonical.launchpad.fields import (
     ContentNameField, Description, PublicPersonChoice, Summary, Title,
     UniqueField)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.bugs.interfaces.bugtarget import IBugTarget, IHasBugs
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
@@ -264,6 +265,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
             Interface, # Really IDistribution, see circular import fix below.
             title=_("Distribution"), required=True,
             description=_("The distribution for which this is a series.")))
+    named_version =  Attribute('The combined display name and version.')
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
     upload_components = Attribute("The series components that can be "
@@ -388,7 +390,7 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         "All language packs associated with this distribution series.")
 
     # other properties
-    previous_serieses = Attribute("Previous series from the same "
+    previous_series = Attribute("Previous series from the same "
         "distribution.")
 
     main_archive = exported(
@@ -848,6 +850,12 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
 
         :param pocket: A `DBItem` of `PackagePublishingPocket`.
         :return: A string.
+        """
+
+    def isSourcePackageFormatPermitted(format):
+        """Check if the specified source format is allowed in this series.
+
+        :param format: The SourcePackageFormat to check.
         """
 
 

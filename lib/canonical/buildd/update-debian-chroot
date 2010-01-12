@@ -24,7 +24,7 @@ exec 2>&1
 
 echo "Updating debian chroot for build $BUILDID"
 
-hostarch=$(dpkg --print-installation-architecture)
+hostarch=$(dpkg --print-architecture)
 architecturetag=$hostarch
 
 if [ -f /etc/launchpad-buildd/default ]; then

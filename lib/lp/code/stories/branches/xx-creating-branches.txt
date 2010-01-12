@@ -165,6 +165,34 @@ with that product, and a link to other branches maintained by that person.
     Other branches owned by No Privileges Person
 
 
+Adding a branch via a product series
+------------------------------------
+
+A user can register a branch from the project series page using the
+'Submit code' link, or in the case of a series driver, by using the
+'registering a mirrored branch' link.
+
+    >>> browser.open('http://launchpad.dev/gnome-terminal/trunk')
+    >>> browser.getLink('registering a mirrored branch').click()
+    >>> print browser.title
+    Register a branch : Series trunk : GNOME Terminal
+
+The user sees that he is registering a branch for the series' project.
+
+    >>> print extract_text(find_main_content(browser.contents).h1)
+    Register a branch on GNOME Terminal
+
+After posting the form, he sees the registered branch page.
+
+    >>> browser.getControl('Branch URL').value = (
+    ...     'http://example.com/applets/master')
+    >>> browser.getControl('Name').value = 'master'
+    >>> browser.getControl('Experimental').click()
+    >>> browser.getControl('Register Branch').click()
+    >>> print browser.title
+    master : Branches : GNOME Terminal
+
+
 == Finding person/+addbranch ==
 
 The user is only able to register a branch where either they or a team

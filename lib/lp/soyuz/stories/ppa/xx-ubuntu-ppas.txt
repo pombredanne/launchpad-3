@@ -27,16 +27,8 @@ supported for PPA.
     ...    find_tag_by_id(anon_browser.contents,
     ...                   'supports_virtualized_architectures'))
     PPA supported series
-    5.04
-    "Hoary"
-    - development
-    i386
-    (official)
-    4.10
-    "Warty"
-    - current
-    i386
-    (official)
+    Hoary (5.04) - development i386 (official)
+    Warty (4.10) - current i386 (official)
 
 The sample data contains three PPAs.  Only Celso's and Mark's have
 packages (the active ones). Altogether there 4 sources and 4 binaries
@@ -95,9 +87,8 @@ PPA supported architectures reflects what we have in sampledata.
     ...    find_tag_by_id(anon_browser.contents,
     ...                   'supports_virtualized_architectures'))
     PPA supported series
-    3.1 "Sarge" - frozen
-    3.0 "Woody" - current
-      i386 (official)
+    Sarge (3.1) - frozen
+    Woody (3.0) - current i386 (official)
 
 Archive and package counter are empty.
 
@@ -246,6 +237,20 @@ In the three sample data PPAs, only one matches the search string "Celso".
     1
 
 
+=== Hand-hacked search URLs ==
+
+If the search term is specified more than once by someone hand-hacking the
+URL, the page copes gracefully with this by searching for all the terms
+specified.
+
+    >>> anon_browser.open(
+    ...     "http://launchpad.dev/ubuntu/+ppas"
+    ...     "?name_filter=packages&name_filter=friends")
+    >>> [row] = find_tags_by_class(anon_browser.contents, 'ppa_batch_row')
+    >>> print extract_text(row)
+    PPA for Celso Providelo...
+
+
 == Owner's PPA pages ==
 
 Let's start by adding an extra package to Celso's archive:
@@ -349,6 +354,36 @@ The source packages list is presented publicly.
     iceweasel           1.0             no signer (2007-07-09)
     pmount              0.1-1           no signer (2007-07-09)
 
+If a ppa package has been superseded by an package in the primary
+archive for the distroseries, this will be indicated with a link
+to the newer version.
+
+    # Publish a newer version of iceweasel in hoary.
+    >>> login('admin@canonical.com')
+    >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> warty = getUtility(IDistributionSet)['ubuntu']['warty']
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> new_version = test_publisher.getPubSource(
+    ...     distroseries=warty, version="1.1", sourcename='iceweasel')
+    >>> import transaction
+    >>> transaction.commit()
+    >>> logout()
+
+    >>> anon_browser.reload()
+    >>> print_archive_package_rows(anon_browser.contents)
+    Package             Version         Uploaded by
+    cdrkit              1.0             no signer (2007-07-09)
+    commercialpackage   1.0-1           no signer
+    iceweasel           1.0 (Newer version available)
+                                        no signer (2007-07-09)
+    pmount              0.1-1           no signer (2007-07-09)
+
+The link itself will point to the newer version in the distro series.
+
+    >>> print anon_browser.getLink('Newer version').url
+    http://launchpad.dev/ubuntu/warty/+source/iceweasel/1.1
+
 A Latest updates portlet is included on the index page indicating the
 latest published sources with their states.
 
@@ -357,7 +392,7 @@ latest published sources with their states.
     >>> print extract_text(latest_updates)
     Latest updates
     cdrkit ... ago
-    Failed to build
+    Failed to build: i386
     pmount ... ago
     Successfully built
     iceweasel ... ago
@@ -412,7 +447,8 @@ explicitly set the 'Any Series' filter and get the same result:
     Package             Version         Uploaded by
     cdrkit              1.0             no signer (2007-07-09)
     commercialpackage   1.0-1           no signer
-    iceweasel           1.0             no signer (2007-07-09)
+    iceweasel           1.0 (Newer version available)
+                                        no signer (2007-07-09)
     pmount              0.1-1           no signer (2007-07-09)
 
 If the packages are filtered by a particular series, then the result

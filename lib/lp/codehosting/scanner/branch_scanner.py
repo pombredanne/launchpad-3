@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -33,8 +33,7 @@ class BranchScanner:
     This class is used by cronscripts/branch-scanner.py to perform its task.
     """
 
-    def __init__(self, ztm, log):
-        self.ztm = ztm
+    def __init__(self, log):
         self.log = log
 
     def _failsafe(self, log_message, default, function, *args, **kwargs):
@@ -110,7 +109,7 @@ class BranchScanner:
     def scanOneBranch(self, branch):
         """Run BzrSync on a single branch and handle expected exceptions."""
         try:
-            bzrsync = BzrSync(self.ztm, branch, self.log)
+            bzrsync = BzrSync(branch, self.log)
         except NotBranchError:
             # The branch is not present in the Warehouse
             self._failsafe(

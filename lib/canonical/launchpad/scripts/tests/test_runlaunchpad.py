@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = [
     'CommandLineArgumentProcessing',
-    'ServersToStart'
+    'ServersToStart',
     ]
 
 
@@ -68,11 +68,11 @@ class CommandLineArgumentProcessing(lp.testing.TestCase):
             split_out_runlaunchpad_arguments(['-o', 'foo', '--bar=baz']))
 
 
-
 class TestDefaultConfigArgument(lp.testing.TestCase):
     """Tests for the processing of the -C argument."""
 
     def setUp(self):
+        super(TestDefaultConfigArgument, self).setUp()
         self.config_root = tempfile.mkdtemp('configs')
         self.saved_instance = config.instance_name
         self.saved_config_roots = canonical.config.CONFIG_ROOT_DIRS

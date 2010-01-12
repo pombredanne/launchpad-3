@@ -107,7 +107,6 @@ class DistroSeriesLanguagePackView(LaunchpadEditFormView):
         else:
             self.adminlabel = 'Settings for language packs'
 
-
     @cachedproperty
     def unused_language_packs(self):
         unused_language_packs = helpers.shortlist(self.context.language_packs)
@@ -167,10 +166,8 @@ class DistroSeriesTemplatesView(LaunchpadView):
 
     def iter_templates(self):
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(distroseries=self.context)
-
-    def can_administer(self, template):
-        return check_permission('launchpad.Admin', template)
+        return potemplateset.getSubset(distroseries=self.context,
+                                       ordered_by_names=True)
 
 
 class DistroSeriesView(LaunchpadView, TranslationsMixin):
@@ -197,7 +194,7 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
             hidden and the user is not one of the limited caste that is
             allowed to access them.
         """
-        if check_permission('launchpad.Admin', self.context):
+        if check_permission('launchpad.TranslationsAdmin', self.context):
             # Anyone with admin rights on this series passes.  This
             # includes Launchpad admins.
             return
@@ -238,6 +235,14 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
 
         return sorted(distroserieslangs, key=lambda a: a.language.englishname)
 
+    def isPreferredLanguage(self, language):
+        # if there are no preferred languages, mark all
+        # languages as preferred
+        if (len(self.translatable_languages) == 0):
+            return True
+        else:
+            return language in self.translatable_languages
+
     @property
     def potemplates(self):
         return list(self.context.getCurrentTranslationTemplates())
@@ -246,6 +251,7 @@ class DistroSeriesView(LaunchpadView, TranslationsMixin):
     def is_translation_focus(self):
         """Is this DistroSeries the translation focus."""
         return self.context.distribution.translation_focus == self.context
+
 
 class DistroSeriesTranslationsMenu(NavigationMenu):
 

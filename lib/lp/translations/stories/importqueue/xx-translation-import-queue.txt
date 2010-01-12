@@ -50,12 +50,11 @@ shown as static HTML.
     ...     'http://translations.launchpad.dev/firefox/1.0/+imports')
     >>> print anon_browser.url
     http://translations.launchpad.dev/firefox/1.0/+imports
-    >>> 'po/es.po' in anon_browser.contents
-    True
-    >>> 'Mozilla Firefox 1.0 series' in anon_browser.contents
-    True
-    >>> '<td>Needs Review</td>' in anon_browser.contents
-    True
+    >>> row = find_tags_by_class(anon_browser.contents, 'import_entry_row')[1]
+    >>> print extract_text(row.find('', 'import_source'))
+    po/es.po in Mozilla Firefox 1.0 series
+    >>> print extract_text(row.find('', 'import_status'))
+    Needs Review
 
 Some tarballs contain files whose names look like PO or POT files, but
 that are really editor backups whose name begin with a dot.  These are
@@ -131,9 +130,8 @@ the last entry.
   ...     'batch-navigation-index')
   >>> print extract_text(nav_index)
   1 &rarr; 5 of 5 results
-  >>> table = find_tag_by_id(anon_browser.contents, 'import-entries-list')
-  >>> last_row = table.findAll('tr')[10]
-  >>> print extract_text(last_row)
+  >>> rows = find_tags_by_class(anon_browser.contents, 'import_entry_row')
+  >>> print extract_text(rows[4])
   evolution.pot in
   evolution in Ubuntu Hoary
   Needs Review
@@ -208,7 +206,7 @@ Removing from the import queue
 
 There is an option to remove entries from the queue.
 
-No Privileges Person will try to remove it, but will fail.
+No Privileges Person tries to remove entries but to no effect.
 
   >>> import urllib
   >>> post_data = urllib.urlencode(
@@ -226,9 +224,13 @@ No Privileges Person will try to remove it, but will fail.
   >>> user_browser.open(
   ...     'http://translations.launchpad.dev/+imports',
   ...     data=post_data)
-  Traceback (most recent call last):
-  ...
-  UnexpectedFormData...
+  >>> for status in find_tags_by_class(user_browser.contents, 'import_status'):
+  ...     print extract_text(status)
+  Approved
+  Approved
+  Imported
+  Imported
+  Needs Review
 
 But Jordi, a Rosetta expert, will be allowed to remove it.
 

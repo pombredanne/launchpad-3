@@ -86,7 +86,7 @@ The table includes a number of convenience links:
     >>> for anchor in all_anchors:
     ...     url = extract_link_from_tag(anchor, base_href)
     ...     url = url.replace("http://bugs.launchpad.dev/ubuntu", "**")
-    ...     url = url.replace("&amp;", "\n&")
+    ...     url = url.replace("&", "\n&")
     ...     print extract_text(anchor), url
     linux-source-2.6.15 **/+source/linux-source-2.6.15
     (find) http://bugs.launchpad.dev/projects
@@ -194,7 +194,8 @@ link them):
     >>> user_browser.open("http://bugs.launchpad.dev/ubuntu/+upstreamreport")
     >>> user_browser.getLink('link').click()
     >>> print user_browser.title
-    Define upstream link : ...
+    Link to an upstream project : ...
+
 
 If you are logged in and can edit the upstream project, you can also set
 a bug tracker and a bug supervisor. Let's first fix Firefox to stop using

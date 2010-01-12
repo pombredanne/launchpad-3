@@ -14,6 +14,7 @@ __all__ = [
     'GettextPOExporter',
     ]
 
+import logging
 import os
 
 from zope.interface import implements
@@ -29,6 +30,15 @@ from lp.translations.utilities.translation_export import (
     ExportFileStorage)
 
 
+def strip_last_newline(text):
+    """Return text with the final newline/carriage return stripped."""
+    if text.endswith('\r\n'):
+        return text[:-2]
+    elif text[-1] in '\r\n':
+        return text[:-1]
+    else:
+        return text
+
 def comments_text_representation(translation_message):
     """Return text representation of the comments.
 
@@ -37,12 +47,11 @@ def comments_text_representation(translation_message):
     """
     comment_lines = []
     comment_lines_previous_msgids = []
-    # Comment and source_comment always end in a newline, so
-    # splitting by \n always results in an empty last element.
     # Previous msgsid comments (indicated by a | symbol) have to come
     # after the other comments to preserve the order expected by msgfmt.
     if translation_message.comment:
-        for line in translation_message.comment.split('\n')[:-1]:
+        unparsed_comment = strip_last_newline(translation_message.comment)
+        for line in unparsed_comment.split('\n'):
             if line.startswith('|'):
                 if translation_message.is_obsolete:
                     comment_prefix = u'#~'
@@ -54,7 +63,9 @@ def comments_text_representation(translation_message):
     if not translation_message.is_obsolete:
         # Source comments are only exported if it's not an obsolete entry.
         if translation_message.source_comment:
-            for line in translation_message.source_comment.split('\n')[:-1]:
+            unparsed_comment = (
+                strip_last_newline(translation_message.source_comment))
+            for line in unparsed_comment.split('\n'):
                 comment_lines.append(u'#. ' + line)
         if translation_message.file_references:
             for line in translation_message.file_references.split('\n'):
@@ -334,8 +345,20 @@ class GettextPOExporterBase:
                         raise UnicodeEncodeError(
                             '%s:\n%s' % (file_path, str(error)))
 
-                    # This message cannot be represented in current encoding,
-                    # change to UTF-8 and try again.
+                    # This message cannot be represented in the current
+                    # encoding.
+                    if translation_file.path:
+                        file_description = translation_file.path
+                    elif translation_file.language_code:
+                        file_description = (
+                            "%s translation" % translation_file.language_code)
+                    else:
+                        file_description = "template"
+                    logging.info(
+                        "Can't represent %s as %s; using UTF-8 instead." % (
+                            file_description,
+                            translation_file.header.charset.upper()))
+
                     old_charset = translation_file.header.charset
                     translation_file.header.charset = 'UTF-8'
                     # We need to update the header too.

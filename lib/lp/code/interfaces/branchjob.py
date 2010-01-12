@@ -14,8 +14,12 @@ __all__ = [
     'IBranchDiffJob',
     'IBranchDiffJobSource',
     'IBranchUpgradeJob',
+    'IBranchUpgradeJobSource',
+    'IReclaimBranchSpaceJob',
+    'IReclaimBranchSpaceJobSource',
     'IRevisionMailJob',
     'IRevisionMailJobSource',
+    'IRevisionsAddedJob',
     'IRevisionsAddedJobSource',
     'IRosettaUploadJob',
     'IRosettaUploadJobSource',
@@ -28,7 +32,6 @@ from zope.schema import Bytes, Int, Object, Text, TextLine, Bool
 from canonical.launchpad import _
 from lp.code.interfaces.branch import IBranch
 from lp.services.job.interfaces.job import IJob, IRunnableJob
-
 
 
 class IBranchJob(Interface):
@@ -71,7 +74,7 @@ class IBranchDiffJobSource(Interface):
         """
 
 
-class IBranchUpgradeJob(Interface):
+class IBranchUpgradeJob(IRunnableJob):
     """A job to upgrade branches with out-of-date formats."""
 
     def run():
@@ -85,6 +88,12 @@ class IBranchUpgradeJobSource(Interface):
 
         :param branch: The database branch to upgrade.
         """
+
+    def iterReady():
+        """Iterate through all IBranchUpgradeJobs."""
+
+    def contextManager():
+        """Get a context for running this kind of job in."""
 
 
 class IRevisionMailJob(IRunnableJob):
@@ -157,12 +166,13 @@ class IRosettaUploadJobSource(Interface):
     def iterReady():
         """Iterate through ready IRosettaUploadJobs."""
 
-
-    def findUnfinishedJobs(branch):
+    def findUnfinishedJobs(branch, since=None):
         """Find any `IRosettaUploadJob`s for `branch` that haven't run yet.
 
-        Returns ready jobs, but also ones in any other state except
-        "complete" or "failed."
+        :param branch: Branch to find unfinished jobs for.
+        :param since: Optional cutoff date: ignore jobs older than this.
+        :return: Any jobs for `branch` (and newer than `since`, if
+            given) whose status is neither "complete" nor "failed."
         """
 
 
@@ -184,4 +194,3 @@ class IReclaimBranchSpaceJobSource(Interface):
 
     def iterReady():
         """Iterate through ready IReclaimBranchSpaceJobs."""
-

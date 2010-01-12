@@ -42,7 +42,7 @@ also sends the email to the list of recipients.
     ...     BranchSubscriptionDiffSize.WHOLEDIFF,
     ...     CodeReviewNotificationLevel.NOEMAIL)
     >>> BranchMailer.forRevision(branch, 1, 'foo@canonical.com',
-    ...     'The contents.', None, None).sendAll()
+    ...     'The contents.', None, 'Subject line').sendAll()
 
     >>> notifications = pop_notifications()
     >>> len(notifications)
@@ -53,7 +53,7 @@ also sends the email to the list of recipients.
     >>> print branch_notification['From']
     foo@canonical.com
     >>> print branch_notification['Subject']
-    [Branch ~name12/firefox/main]
+    Subject line
     >>> print branch_notification['X-Launchpad-Project']
     firefox
     >>> print branch_notification['X-Launchpad-Branch']

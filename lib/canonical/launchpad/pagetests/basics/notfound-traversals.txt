@@ -96,8 +96,8 @@ status is returned.
 
 
 >>> check("/codeofconduct")
->>> check("/codeofconduct/1.0")
->>> check("/codeofconduct/1.0/+download")
+>>> check("/codeofconduct/1.1")
+>>> check("/codeofconduct/1.1/+download")
 
 >>> check("/projectgroups", auth=True)
 >>> check("/projectgroups/+all", auth=True)
@@ -191,7 +191,6 @@ Test the DARBPR page for a REMOVED package:
 ...                 host='translations.launchpad.dev')
 
 >>> check("/ubuntu/hoary/+source/evolution/+changelog")
->>> check("/ubuntu/hoary/+source/evolution/+packaging")
 >>> check("/ubuntu/hoary/+source/evolution/+edit-packaging", auth=True)
 >>> check("/ubuntu/hoary/+source/evolution/+gethelp")
 
@@ -401,7 +400,6 @@ And this is for a person:
 >>> check("/~name16/+codesofconduct", auth=True)
 >>> check("/~name16/+edithomepage", auth=True)
 >>> check("/~name16/+review", auth=True)
->>> check("/~name16/+portlet-emails")
 >>> check("/~name16/+portlet-team-assignedbugs")
 >>> check("/~name16/+specworkload")
 >>> check("/~name16/+imports", host='translations.launchpad.dev')

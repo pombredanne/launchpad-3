@@ -8,15 +8,15 @@ __metaclass__ = type
 
 __all__ = ['TacTestSetup', 'ReadyService', 'TacException']
 
-import errno
 import sys
 import os
 import time
-from signal import SIGTERM, SIGKILL
 import subprocess
 
 from twisted.application import service
 from twisted.python import log
+
+from lp.services.osutils import kill_by_pidfile, remove_if_exists
 
 
 twistd_script = os.path.abspath(os.path.join(
@@ -60,11 +60,11 @@ class TacTestSetup:
             raise TacException('Error %d running %s' % (rv, args))
 
         # Wait for the daemon to fully start (as determined by watching the
-        # log file). If it takes more than 10 seconds, we assume it's gone
+        # log file). If it takes more than 20 seconds, we assume it's gone
         # wrong, and raise TacException.
         start = time.time()
         while True:
-            if time.time() > start + 10:
+            if time.time() > start + 20:
                 raise TacException(
                     'Unable to start %s. Check %s.'
                     % (self.tacfile, self.logfile))
@@ -79,53 +79,11 @@ class TacTestSetup:
         # started. If it sees an old logfile, then it will find the LOG_MAGIC
         # string and return immediately, provoking hard-to-diagnose race
         # conditions. Delete the logfile to make sure this does not happen.
-        self._removeFile(self.logfile)
-
-    def _removeFile(self, filename):
-        """Remove the given file if it exists."""
-        try:
-            os.remove(filename)
-        except OSError, e:
-            if e.errno != errno.ENOENT:
-                raise
+        remove_if_exists(self.logfile)
 
     def killTac(self):
         """Kill the TAC file, if it is running, and clean up any mess"""
-        pidfile = self.pidfile
-        if not os.path.exists(pidfile):
-            return
-
-        # Get the pid.
-        pid = open(pidfile, 'r').read().strip()
-        try:
-            pid = int(pid)
-        except ValueError:
-            # pidfile contains rubbish
-            return
-
-        # Kill the process.
-        try:
-            os.kill(pid, SIGTERM)
-        except OSError, e:
-            if e.errno in (errno.ESRCH, errno.ECHILD):
-                # Process has already been killed.
-                return
-
-        # Poll until the process has ended.
-        for i in range(50):
-            try:
-                os.kill(pid, 0)
-                time.sleep(0.1)
-            except OSError, e:
-                break
-        else:
-            # The process is still around, so terminate it violently.
-            try:
-                os.kill(pid, SIGKILL)
-            except OSError:
-                # Already terminated
-                pass
-        self._removeFile(self.logfile)
+        kill_by_pidfile(self.pidfile)
 
     def setUpRoot(self):
         """Override this.

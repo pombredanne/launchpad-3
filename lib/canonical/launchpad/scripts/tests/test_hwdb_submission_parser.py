@@ -12,7 +12,7 @@ from datetime import datetime
 import logging
 import os
 from textwrap import dedent
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 
 import pytz
 
@@ -23,6 +23,8 @@ from canonical.launchpad.scripts.hwdbsubmissions import (SubmissionParser,
     ROOT_UDI)
 from canonical.testing import BaseLayer
 
+from lp.testing import TestCase, validate_mock_class
+
 
 class SubmissionParserTestParseSoftware(SubmissionParser):
     """A Variant used to test SubmissionParser._parseSoftware.
@@ -30,6 +32,7 @@ class SubmissionParserTestParseSoftware(SubmissionParser):
     This class can be used to test the regular case of
     submission data.
     """
+
     def __init__(self, test, logger=None):
         super(SubmissionParserTestParseSoftware, self).__init__(logger)
         self.test = test
@@ -53,6 +56,7 @@ class SubmissionParserTestParseSoftwareNoXorgNode(SubmissionParser):
     This class is intended to test submission data that does not contain
     a <xorg> node.
     """
+
     def __init__(self, test, logger=None):
         super(SubmissionParserTestParseSoftwareNoXorgNode, self).__init__(
             logger)
@@ -73,6 +77,7 @@ class SubmissionParserTestParseSoftwareNoPackagesNode(SubmissionParser):
     This class is intended to test submission data that does not contain
     a <packages> node.
     """
+
     def __init__(self, test, logger=None):
         super(SubmissionParserTestParseSoftwareNoPackagesNode, self).__init__(
             logger)
@@ -94,6 +99,7 @@ class TestHWDBSubmissionParser(TestCase):
 
     def setUp(self):
         """Setup the test environment."""
+        super(TestHWDBSubmissionParser, self).setUp()
         self.log = logging.getLogger('test_hwdb_submission_parser')
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
@@ -111,6 +117,39 @@ class TestHWDBSubmissionParser(TestCase):
                 'PCI_SUBSYS_ID': '10CF:1387',
                 'PCI_SLOT_NAME': '0000:00:1f.2',
                 }
+            }
+        self.udev_usb_device = {
+            'P': '/devices/pci0000:00/0000:00:1d.1/usb3/3-2',
+            'E': {
+                'SUBSYSTEM': 'usb',
+                'DEVTYPE': 'usb_device',
+                'PRODUCT': '46d/a01/1013',
+                'TYPE': '0/0/0',
+                },
+            }
+        self.udev_usb_interface = {
+            'P': '/devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.1',
+            'E': {
+                'SUBSYSTEM': 'usb',
+                'DEVTYPE': 'usb_interface',
+                'PRODUCT': '46d/a01/1013',
+                'TYPE': '0/0/0',
+                'INTERFACE': '1/2/0',
+                },
+            }
+
+        self.udev_scsi_device = {
+            'P': '/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0',
+            'E': {
+                'SUBSYSTEM': 'scsi',
+                'DEVTYPE': 'scsi_device',
+                },
+            }
+
+        self.sysfs_scsi_device = {
+            'vendor': 'MATSHITA',
+            'model': 'DVD-RAM UJ-841S',
+            'type': '5',
             }
 
     def getTimestampETreeNode(self, time_string):
@@ -216,7 +255,7 @@ class TestHWDBSubmissionParser(TestCase):
                     {'name': 'architecture_info',
                      'version': '1.1'},
                     {'name': 'find_network_controllers',
-                     'version': '2.34'}]}
+                     'version': '2.34'}]},
             }
         self.assertEqual(
             summary, expected_data,
@@ -259,7 +298,7 @@ class TestHWDBSubmissionParser(TestCase):
                 'plugins': [
                     {
                         'name': 'architecture_info',
-                        'version': '1.1'
+                        'version': '1.1',
                         },
                     {
                         'name': 'find_network_controllers',
@@ -450,7 +489,6 @@ class TestHWDBSubmissionParser(TestCase):
             """)
         self.assertRaises(ValueError, parser._parseProperties, node)
 
-
     def testDevice(self):
         """A device node is converted into a dictionary."""
         test = self
@@ -602,6 +640,7 @@ S: char/189:256
                         'MODALIAS': 'acpi:LNXSYSTM:',
                         },
                     'S': [],
+                    'id': 1,
                     },
                 {
                     'P': '/devices/pci0000:00/0000:00:1a.0',
@@ -610,6 +649,7 @@ S: char/189:256
                         'DEVPATH': '/devices/pci0000:00/0000:00:1a.0',
                         },
                     'S': ['char/189:256'],
+                    'id': 2,
                     },
                 ],
             result,
@@ -671,6 +711,7 @@ W:2
                     'E': {},
                     'S': [],
                     'W': '2',
+                    'id': 1,
                     },
                 ],
             result,
@@ -877,44 +918,113 @@ invalid line
             "Line 2 in <sysfs-attributes>: Unexpected key: "
             "'X: an invalid line'")
 
+    class MockSubmissionParserParseHardwareTest(SubmissionParser):
+        """A SubmissionParser variant for testing checkCOnsistentData()
+
+        All "method substitutes" return a valid result.
+        """
+
+        def __init__(self, logger=None):
+            super(self.__class__, self).__init__(logger)
+            self.hal_result = 'parsed HAL data'
+            self.processors_result = 'parsed processor data'
+            self.aliases_result = 'parsed alias data'
+            self.udev_result = 'parsed udev data'
+            self.dmi_result = 'parsed DMI data'
+            self.sysfs_result = 'parsed sysfs data'
+
+        def _parseHAL(self, hal_node):
+            """See `SubmissionParser`."""
+            return self.hal_result
+
+        def _parseProcessors(self, processors_node):
+            """See `SubmissionParser`."""
+            return self.processors_result
+
+        def _parseAliases(self, aliases_node):
+            """See `SubmissionParser`."""
+            return self.aliases_result
+
+        def _parseUdev(self, udev_node):
+            """See `SubmissionParser`."""
+            return self.udev_result
+
+        def _parseDmi(self, dmi_node):
+            """See `SubmissionParser`."""
+            return self.dmi_result
+
+        def _parseSysfsAttributes(self, sysfs_node):
+            """See `SubmissionParser`."""
+            return self.sysfs_result
+
+    validate_mock_class(MockSubmissionParserParseHardwareTest)
+
     def testHardware(self):
         """The <hardware> tag is converted into a dictionary."""
-        test = self
-
-        def _parseHAL(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'hal')
-            return 'parsed HAL data'
-
-        def _parseProcessors(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'processors')
-            return 'parsed processor data'
-
-        def _parseAliases(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'aliases')
-            return 'parsed alias data'
-
-        parser = SubmissionParser(self.log)
-        parser._parseHAL = lambda node: _parseHAL(parser, node)
-        parser._parseProcessors = lambda node: _parseProcessors(parser, node)
-        parser._parseAliases = lambda node: _parseAliases(parser, node)
-        parser._setHardwareSectionParsers()
+        parser = self.MockSubmissionParserParseHardwareTest(self.log)
 
         node = etree.fromstring("""
             <hardware>
                 <hal/>
                 <processors/>
                 <aliases/>
+                <udev/>
+                <dmi/>
+                <sysfs-attributes/>
             </hardware>
             """)
         result = parser._parseHardware(node)
-        self.assertEqual(result,
-                         {'hal': 'parsed HAL data',
-                          'processors': 'parsed processor data',
-                          'aliases': 'parsed alias data'},
-                         'Invalid parsing result for <hardware>')
+        self.assertEqual({
+            'hal': 'parsed HAL data',
+            'processors': 'parsed processor data',
+            'aliases': 'parsed alias data',
+            'udev': 'parsed udev data',
+            'dmi': 'parsed DMI data',
+            'sysfs-attributes': 'parsed sysfs data',
+            },
+            result,
+            'Invalid parsing result for <hardware>')
+
+    def test_parseHardware_sub_parsers_fail(self):
+        """Test of SubmissionParser._parseHardware().
+
+        If one of the sub-parsers returns None, _parseHardware() returns
+        None.
+        """
+        node = etree.fromstring("""
+            <hardware>
+               <hal/>
+                <processors/>
+                <aliases/>
+                <udev/>
+                <dmi/>
+                <sysfs-attributes/>
+            </hardware>
+            """)
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.hal_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.processors_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.aliases_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.udev_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.dmi_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
+
+        submission_parser = self.MockSubmissionParserParseHardwareTest()
+        submission_parser.sysfs_result = None
+        self.assertIs(None, submission_parser._parseHardware(node))
 
     def testLsbRelease(self):
         """The <lsbrelease> node is converted into a Python dictionary.
@@ -1197,42 +1307,53 @@ invalid line
         parser.submission_key = 'Test of <context> parsing'
         node = etree.fromstring('<context/>')
         parser._parseContext(node)
+        self.assertEqual({}, parser._parseContext(node))
         self.assertWarningMessage(
             parser.submission_key,
             'Submission contains unprocessed <context> data.')
+
+    class MockSubmissionParserMainParserTest(SubmissionParser):
+        """A SubmissionParser variant for testing checkCOnsistentData()
+
+        All "method substitutes" return a valid result.
+        """
+
+        def __init__(self, logger=None):
+            SubmissionParser.__init__(self, logger)
+            self.summary_result = 'parsed summary'
+            self.hardware_result = 'parsed hardware'
+            self.software_result = 'parsed software'
+            self.questions_result = 'parsed questions'
+            self.context_result = 'parsed context'
+
+        def _parseSummary(self, summary_node):
+            """See `SubmissionParser`."""
+            return self.summary_result
+
+        def _parseHardware(self, hardware_node):
+            """See `SubmissionParser`."""
+            return self.hardware_result
+
+        def _parseSoftware(self, software_node):
+            """See `SubmissionParser`."""
+            return self.software_result
+
+        def _parseQuestions(self, questions_node):
+            """See `SubmissionParser`."""
+            return self.questions_result
+
+        def _parseContext(self, context_node):
+            """See `SubmissionParser`."""
+            return self.context_result
+
+    validate_mock_class(MockSubmissionParserMainParserTest)
 
     def testMainParser(self):
         """Test SubmissionParser.parseMainSections
 
         Ensure that all sub-parsers are properly called.
         """
-        test = self
-        def _parseSummary(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'summary')
-            return 'parsed summary'
-
-        def _parseHardware(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'hardware')
-            return 'parsed hardware'
-
-        def _parseSoftware(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'software')
-            return 'parsed software'
-
-        def _parseQuestions(self, node):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            test.assertEqual(node.tag, 'questions')
-            return 'parsed questions'
-
-        parser = SubmissionParser(self.log)
-        parser._parseSummary = lambda node: _parseSummary(parser, node)
-        parser._parseHardware = lambda node: _parseHardware(parser, node)
-        parser._parseSoftware = lambda node: _parseSoftware(parser, node)
-        parser._parseQuestions = lambda node: _parseQuestions(parser, node)
-        parser._setMainSectionParsers()
+        parser = self.MockSubmissionParserMainParserTest()
 
         node = etree.fromstring("""
             <system>
@@ -1240,6 +1361,7 @@ invalid line
                 <hardware/>
                 <software/>
                 <questions/>
+                <context/>
             </system>
             """)
 
@@ -1247,11 +1369,33 @@ invalid line
             'summary': 'parsed summary',
             'hardware': 'parsed hardware',
             'software': 'parsed software',
-            'questions':  'parsed questions'}
+            'questions': 'parsed questions',
+            'context': 'parsed context',
+            }
 
         result = parser.parseMainSections(node)
         self.assertEqual(result, expected_data,
             'SubmissionParser.parseSubmission returned an unexpected result')
+
+        parser = self.MockSubmissionParserMainParserTest()
+        parser.summary_result = None
+        self.assertIs(None, parser.parseMainSections(node))
+
+        parser = self.MockSubmissionParserMainParserTest()
+        parser.hardware_result = None
+        self.assertIs(None, parser.parseMainSections(node))
+
+        parser = self.MockSubmissionParserMainParserTest()
+        parser.software_result = None
+        self.assertIs(None, parser.parseMainSections(node))
+
+        parser = self.MockSubmissionParserMainParserTest()
+        parser.questions_result = None
+        self.assertIs(None, parser.parseMainSections(node))
+
+        parser = self.MockSubmissionParserMainParserTest()
+        parser.context_result = None
+        self.assertIs(None, parser.parseMainSections(node))
 
     def testSubmissionParser(self):
         """Test the entire parser."""
@@ -1412,7 +1556,7 @@ invalid line
             'hardware': {
                 'udev': udev,
                 'sysfs-attributes': sysfs_attributes,
-                'processors': processors
+                'processors': processors,
                 },
             'software': {
                 'packages': packages
@@ -1441,7 +1585,7 @@ invalid line
             ]
         processors = [
             {'id': 1},
-            {'id': 2}
+            {'id': 2},
             ]
         packages = {
             'bzr': {'id': 4},
@@ -1451,7 +1595,7 @@ invalid line
             'hardware': {
                 'udev': udev,
                 'sysfs-attributes': sysfs_attributes,
-                'processors': processors
+                'processors': processors,
                 },
             'software': {
                 'packages': packages
@@ -1508,7 +1652,7 @@ invalid line
         submission = {
             'hardware': {
                 'udev': devices,
-                'processors': processors
+                'processors': processors,
                 },
             'software': {
                 'packages': packages
@@ -1569,8 +1713,7 @@ invalid line
          {'udi': DEVICE_2_UDI,
           'properties': {
               'info.parent': (ROOT_UDI,
-                              'dbus.String')}
-         }]
+                              'dbus.String')}}]
 
     def testUDIDeviceMap(self):
         """Test the creation of the mapping UDI -> device."""
@@ -1755,7 +1898,7 @@ invalid line
                    'properties':
                        {'info.parent':
                             (self.CIRCULAR_UDI_1, 'str')}}
-        devices = [device1, device2, circular_device1,  circular_device2]
+        devices = [device1, device2, circular_device1, circular_device2]
         parser = SubmissionParser()
         udi_device_map = parser.getUDIDeviceMap(devices)
         udi_children = parser.getUDIChildren(udi_device_map)
@@ -1788,7 +1931,7 @@ invalid line
             parser.submission_key, 'udev node found without a "P" key')
 
     def testCheckUdevPciProperties(self):
-        """Test of SubmmissionParser.checkUdevPciProperties()."""
+        """Test of SubmissionParser.checkUdevPciProperties()."""
         # udev PCI devices must have the properties PCI_CLASS, PCI_ID,
         # PCI_SUBSYS_ID, PCI_SLOT_NAME; other devices must not have
         # these properties.
@@ -1797,7 +1940,7 @@ invalid line
             [self.udev_root_device, self.udev_pci_device]))
 
     def testCheckUdevPciPropertiesNonPciDeviceWithPciProperties(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A non-PCI device having PCI properties makes a submission invalid.
         """
@@ -1812,7 +1955,7 @@ invalid line
             "'/devices/LNXSYSTM:00'")
 
     def testCheckUdevPciPropertiesPciDeviceWithoutRequiredProperties(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A PCI device not having a required PCI property makes a submission
         invalid.
@@ -1828,7 +1971,7 @@ invalid line
             "set(['PCI_CLASS']) '/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithNonIntegerPciClass(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A PCI device with a non-integer class value makes a submission
         invalid.
@@ -1844,7 +1987,7 @@ invalid line
             "'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithInvalidPciClassValue(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A PCI device with invalid class data makes a submission
         invalid.
@@ -1860,7 +2003,7 @@ invalid line
             "'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithInvalidDeviceID(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A PCI device with an invalid device ID makes a submission
         invalid.
@@ -1876,7 +2019,7 @@ invalid line
             "'/devices/pci0000:00/0000:00:1f.2'")
 
     def testCheckUdevPciPropertiesPciDeviceWithInvalidSubsystemID(self):
-        """Test of SubmmissionParser.checkUdevPciProperties().
+        """Test of SubmissionParser.checkUdevPciProperties().
 
         A PCI device with an invalid subsystem ID makes a submission
         invalid.
@@ -1891,12 +2034,196 @@ invalid line
             "Invalid udev PCI device ID: 'not-a-subsystem-id' "
             "'/devices/pci0000:00/0000:00:1f.2'")
 
+    def testCheckUdevUsbProperties(self):
+        """Test of SubmissionParser.checkUdevUsbProperties().
+
+        udev nodes for USB devices must define the three properties
+        DEVTYPE, PRODUCT, TYPE or none of them.
+        """
+        parser = SubmissionParser()
+        self.assertTrue(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_device,
+             self.udev_usb_interface]))
+
+        for property_name in ('DEVTYPE', 'PRODUCT', 'TYPE'):
+            del self.udev_usb_device['E'][property_name]
+        self.assertTrue(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_device,
+             self.udev_usb_interface]))
+
+    def testCheckUdevUsbProperties_missing_required_property(self):
+        """Test of SubmissionParser.checkUdevUsbProperties().
+
+        A USB device where some but not all of the properties DEVTYPE,
+        PRODUCT, TYPE are defined makes a submission invalid.
+        """
+        for property_name in ('DEVTYPE', 'PRODUCT', 'TYPE'):
+            saved_property = self.udev_usb_device['E'].pop(property_name)
+            parser = SubmissionParser(self.log)
+            parser.submission_key = (
+                'USB device without %s property' % property_name)
+            self.assertFalse(parser.checkUdevUsbProperties(
+                [self.udev_root_device, self.udev_usb_device]))
+            self.assertErrorMessage(
+                parser.submission_key,
+                "USB udev device found without required properties: "
+                "set(['%s']) '/devices/pci0000:00/0000:00:1d.1/usb3/3-2'"
+                % property_name)
+            self.udev_usb_device['E'][property_name] = saved_property
+
+    def testCheckUdevUsbProperties_with_invalid_product_id(self):
+        """Test of SubmissionParser.checkUdevUsbProperties().
+
+        A USB device with an invalid product ID makes a submission
+        invalid.
+        """
+        self.udev_usb_device['E']['PRODUCT'] = 'not-a-valid-usb-product-id'
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB device with invalid product ID'
+        self.assertFalse(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_device]))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "USB udev device found with invalid product ID: "
+            "'not-a-valid-usb-product-id' "
+            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
+
+    def testCheckUdevUsbProperties_with_invalid_type_data(self):
+        """Test of SubmmissionParser.checkUdevUsbProperties().
+
+        A USB device with invalid type data makes a submission invalid.
+        """
+        self.udev_usb_device['E']['TYPE'] = 'no-type'
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB device with invalid type data'
+        self.assertFalse(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_device]))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "USB udev device found with invalid type data: 'no-type' "
+            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
+
+    def testCheckUdevUsbProperties_with_invalid_devtype(self):
+        """Test of SubmmissionParser.checkUdevUsbProperties().
+
+        A udev USB device must have DEVTYPE set to 'usb_device' or
+        'usb_interface'.
+        """
+        self.udev_usb_device['E']['DEVTYPE'] = 'nonsense'
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB device with invalid DEVTYPE'
+        self.assertFalse(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_device]))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "USB udev device found with invalid udev type data: 'nonsense' "
+            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2'")
+
+    def testCheckUdevUsbProperties_interface_without_interface_property(self):
+        """Test of SubmmissionParser.checkUdevUsbProperties().
+
+        A udev USB device for a USB interface have the property INTERFACE.
+        """
+        del self.udev_usb_interface['E']['INTERFACE']
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB interface without INTERFACE property'
+        self.assertFalse(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_interface]))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "USB interface udev device found without INTERFACE property: "
+            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.1'")
+
+    def testCheckUdevUsbProperties_interface_invalid_interface_property(self):
+        """Test of SubmmissionParser.checkUdevUsbProperties().
+
+        The INTERFACE proeprty of A udev USB device for a USB interface
+        must have value in the format main_class/sub_class/version
+        """
+        self.udev_usb_interface['E']['INTERFACE'] = 'nonsense'
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'USB interface with invalid INTERFACE data'
+        self.assertFalse(parser.checkUdevUsbProperties(
+            [self.udev_root_device, self.udev_usb_interface]))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "USB Interface udev device found with invalid INTERFACE "
+            "property: 'nonsense' "
+            "'/devices/pci0000:00/0000:00:1d.1/usb3/3-2/3-2:1.1'")
+
+    def testCheckUdevScsiProperties(self):
+        """Test of SubmissionParser.checkUdevScsiProperties()."""
+        parser = SubmissionParser()
+        sysfs_data = {
+            self.udev_scsi_device['P']: self.sysfs_scsi_device,
+            }
+        self.assertTrue(
+            parser.checkUdevScsiProperties(
+                [self.udev_root_device, self.udev_scsi_device], sysfs_data))
+
+    def testCheckUdevScsiProperties_missing_devtype(self):
+        """Test of SubmissionParser.checkUdevScsiProperties().
+
+        Each udev SCSI node must define the DEVTYPE property.
+        """
+        del self.udev_scsi_device['E']['DEVTYPE']
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'udev SCSI device without DEVTYPE'
+        sysfs_data = {
+            self.udev_scsi_device['P']: self.sysfs_scsi_device,
+            }
+        self.assertFalse(
+            parser.checkUdevScsiProperties(
+                [self.udev_root_device, self.udev_scsi_device], sysfs_data))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "SCSI udev node found without DEVTYPE property: "
+            "'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
+
+    def testCheckUdevScsiProperties_no_sysfs_data(self):
+        """Test of SubmissionParser.checkUdevScsiProperties().
+
+        Each udev SCSI node must have a corresponding sysfs node.
+        """
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'udev SCSI device without sysfs data'
+        sysfs_data = {}
+        self.assertFalse(
+            parser.checkUdevScsiProperties(
+                [self.udev_root_device, self.udev_scsi_device], sysfs_data))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "SCSI udev device node found without related sysfs record: "
+            "'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
+
+    def testCheckUdevScsiProperties_missing_sysfs_attributes(self):
+        """Test of SubmissionParser.checkUdevScsiProperties().
+
+        Each sysfs node for a udev SCSI node must have a the attribues
+        vendor, model and type.
+        """
+        del self.sysfs_scsi_device['model']
+        parser = SubmissionParser(self.log)
+        parser.submission_key = 'udev SCSI device with incomplete sysfs data'
+        sysfs_data = {
+            self.udev_scsi_device['P']: self.sysfs_scsi_device,
+            }
+        self.assertFalse(
+            parser.checkUdevScsiProperties(
+                [self.udev_root_device, self.udev_scsi_device], sysfs_data))
+        self.assertErrorMessage(
+            parser.submission_key,
+            "SCSI udev device found without required sysfs attributes: "
+            "set(['model']) "
+            "'/devices/pci0000:00/0000:00:1f.1/host4/target4:0:0/4:0:0:0'")
+
+
     class UdevTestSubmissionParser(SubmissionParser):
         """A variant of SubmissionParser that shortcuts udev related tests.
 
         All shortcut methods return True.
         """
-        def checkUdevDictsHavePathKey(self, udev_data):
+        def checkUdevDictsHavePathKey(self, udev_nodes):
             """See `SubmissionParser`."""
             return True
 
@@ -1904,10 +2231,25 @@ invalid line
             """See `SubmissionParser`."""
             return True
 
+        def checkUdevUsbProperties(self, udev_data):
+            """See `SubmissionParser`."""
+            return True
+
+        def checkUdevScsiProperties(self, udev_data, sysfs_data):
+            """See `SubmissionParser`."""
+            return True
+
+        def checkUdevDmiData(self, dmi_data):
+            """See `SubmissionParser`."""
+            return True
+
+    validate_mock_class(UdevTestSubmissionParser)
+
     def testCheckConsistentUdevDeviceData(self):
         """Test of SubmissionParser.checkConsistentUdevDeviceData(),"""
         parser = self.UdevTestSubmissionParser()
-        self.assertTrue(parser.checkConsistentUdevDeviceData(None))
+        self.assertTrue(parser.checkConsistentUdevDeviceData(
+            None, None, None))
 
     def testCheckConsistentUdevDeviceData_invalid_path_data(self):
         """Test of SubmissionParser.checkConsistentUdevDeviceData(),
@@ -1918,12 +2260,15 @@ invalid line
             self.UdevTestSubmissionParser):
             """A SubmissionPaser where checkUdevDictsHavePathKey() fails."""
 
-            def checkUdevDictsHavePathKey(self, udev_data):
+            def checkUdevDictsHavePathKey(self, udev_nodes):
                 """See `SubmissionParser`."""
                 return False
 
+        validate_mock_class(SubmissionParserUdevPathCheckFails)
+
         parser = SubmissionParserUdevPathCheckFails()
-        self.assertFalse(parser.checkConsistentUdevDeviceData(None))
+        self.assertFalse(parser.checkConsistentUdevDeviceData(
+            None, None, None))
 
     def testCheckConsistentUdevDeviceData_invalid_pci_data(self):
         """Test of SubmissionParser.checkConsistentUdevDeviceData(),
@@ -1938,54 +2283,95 @@ invalid line
                 """See `SubmissionParser`."""
                 return False
 
-        parser = SubmissionParserUdevPciCheckFails()
-        self.assertFalse(parser.checkConsistentUdevDeviceData(None))
+        validate_mock_class(SubmissionParserUdevPciCheckFails)
 
-    def _setupConsistencyCheckParser(self):
-        """Prepare and return a SubmissionParser instance.
+        parser = SubmissionParserUdevPciCheckFails()
+        self.assertFalse(parser.checkConsistentUdevDeviceData(
+            None, None, None))
+
+    def testCheckConsistentUdevDeviceData_invalid_usb_data(self):
+        """Test of SubmissionParser.checkConsistentUdevDeviceData(),
+
+        Detection of invalid USB data lets the check fail.
+        """
+        class SubmissionParserUdevUsbCheckFails(
+            self.UdevTestSubmissionParser):
+            """A SubmissionPaser where checkUdevUsbProperties() fails."""
+
+            def checkUdevUsbProperties(self, udev_data):
+                """See `SubmissionParser`."""
+                return False
+
+        validate_mock_class(SubmissionParserUdevUsbCheckFails)
+
+        parser = SubmissionParserUdevUsbCheckFails()
+        self.assertFalse(parser.checkConsistentUdevDeviceData(
+            None, None, None))
+
+    def testCheckConsistentUdevDeviceData_invalid_scsi_data(self):
+        """Test of SubmissionParser.checkConsistentUdevDeviceData(),
+
+        Detection of invalid SCSI data lets the check fail.
+        """
+        class SubmissionParserUdevUsbCheckFails(
+            self.UdevTestSubmissionParser):
+            """A SubmissionPaser where checkUdevScsiProperties() fails."""
+
+            def checkUdevScsiProperties(self, udev_data, sysfs_data):
+                """See `SubmissionParser`."""
+                return False
+
+        validate_mock_class(SubmissionParserUdevUsbCheckFails)
+
+        parser = SubmissionParserUdevUsbCheckFails()
+        self.assertFalse(parser.checkConsistentUdevDeviceData(
+            None, None, None))
+
+    def testCheckConsistentUdevDeviceData_invalid_dmi_data(self):
+        """Test of SubmissionParser.checkConsistentUdevDeviceData(),
+
+        Detection of invalid DMI data lets the check fail.
+        """
+        class SubmissionParserUdevUsbCheckFails(
+            self.UdevTestSubmissionParser):
+            """A SubmissionPaser where checkUdevDmiData() fails."""
+
+            def checkUdevDmiData(self, dmi_data):
+                """See `SubmissionParser`."""
+                return False
+
+        validate_mock_class(SubmissionParserUdevUsbCheckFails)
+
+        parser = SubmissionParserUdevUsbCheckFails()
+        self.assertFalse(parser.checkConsistentUdevDeviceData(
+            None, None, None))
+
+    class MockSubmissionParser(SubmissionParser):
+        """A SubmissionParser variant for testing checkCOnsistentData()
 
         All "method substitutes" return a valid result.
         """
-        test = self
+
         def findDuplicateIDs(self, parsed_data):
-            test.assertTrue(isinstance(self, SubmissionParser))
             return set()
 
         def findInvalidIDReferences(self, parsed_data):
-            test.assertTrue(isinstance(self, SubmissionParser))
             return set()
 
         def getUDIDeviceMap(self, devices):
-            test.assertTrue(isinstance(self, SubmissionParser))
             return {}
 
         def getUDIChildren(self, udi_device_map):
-            test.assertTrue(isinstance(self, SubmissionParser))
             return {}
 
-        def checkHALDevicesParentChildConsistency(self, devices):
-            test.assertTrue(isinstance(self, SubmissionParser))
+        def checkHALDevicesParentChildConsistency(self, udi_children):
             return []
 
-        def checkConsistentUdevDeviceData(self, udev_data):
+        def checkConsistentUdevDeviceData(
+            self, udev_data, sysfs_data, dmi_data):
             return True
 
-        parser = SubmissionParser(self.log)
-        parser.findDuplicateIDs = (
-            lambda parsed_data: findDuplicateIDs(parser, parsed_data))
-        parser.findInvalidIDReferences = (
-            lambda parsed_data: findInvalidIDReferences(parser, parsed_data))
-        parser.getUDIDeviceMap = (
-            lambda devices: getUDIDeviceMap(parser, devices))
-        parser.getUDIChildren = (
-            lambda udi_device_map: getUDIChildren(parser, udi_device_map))
-        parser.checkHALDevicesParentChildConsistency = (
-            lambda udi_children: checkHALDevicesParentChildConsistency(
-                parser, udi_children))
-        parser.checkConsistentUdevDeviceData = (
-            lambda udev_data: checkConsistentUdevDeviceData(
-                parser, udev_data))
-        return parser
+    validate_mock_class(MockSubmissionParser)
 
     def assertErrorMessage(self, submission_key, log_message):
         """Search for message in the log entries for submission_key.
@@ -2037,7 +2423,7 @@ invalid line
 
     def testConsistencyCheck(self):
         """Test of SubmissionParser.checkConsistency."""
-        parser = self._setupConsistencyCheckParser()
+        parser = self.MockSubmissionParser()
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, True,
@@ -2046,45 +2432,53 @@ invalid line
 
     def testConsistencyCheckValidUdevData(self):
         """Test of SubmissionParser.checkConsistency."""
-        parser = self._setupConsistencyCheckParser()
+        parser = self.MockSubmissionParser()
         self.assertTrue(parser.checkConsistency(
             {
                 'hardware': {
-                    'udev': [],
-                    'sysfs-attributes': []
+                    'udev': None,
+                    'sysfs-attributes': None,
+                    'dmi': None,
                     }
                 }
             ))
 
     def testConsistencyCheck_invalid_udev_data(self):
         """Test of SubmissionParser.checkConsistency."""
-        def checkConsistentUdevDeviceData(self, udev_data):
-            return False
+        class MockSubmissionParserBadUdevDeviceData(
+            self.MockSubmissionParser):
+            """A parser where checkConsistentUdevDeviceData() fails."""
 
-        parser = self._setupConsistencyCheckParser()
-        parser.checkConsistentUdevDeviceData = (
-            lambda udev_data: checkConsistentUdevDeviceData(
-                parser, udev_data))
+            def checkConsistentUdevDeviceData(self, udev_data, sysfs_data,
+                                              dmi_data):
+                return False
+
+        validate_mock_class(MockSubmissionParserBadUdevDeviceData)
+
+        parser = MockSubmissionParserBadUdevDeviceData()
         self.assertFalse(parser.checkConsistency(
             {
                 'hardware': {
-                    'udev': [{}],
-                    'sysfs-attributes': []
+                    'udev': None,
+                    'sysfs-attributes': None,
+                    'dmi': None,
                     }
                 }
             ))
 
     def testConsistencyCheckWithDuplicateIDs(self):
         """SubmissionParser.checkConsistency detects duplicate IDs."""
-        test = self
-        def findDuplicateIDs(self, parsed_data):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            return set([1])
+        class MockSubmissionParserDuplicateIds(
+            self.MockSubmissionParser):
+            """A parser where findDuplicateIDs() fails."""
 
-        parser = self._setupConsistencyCheckParser()
+            def findDuplicateIDs(self, parsed_data):
+                return set([1])
+
+        validate_mock_class(MockSubmissionParserDuplicateIds)
+
+        parser = MockSubmissionParserDuplicateIds(self.log)
         parser.submission_key = 'Consistency check detects duplicate IDs'
-        parser.findDuplicateIDs = (
-            lambda parsed_data: findDuplicateIDs(parser, parsed_data))
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, False,
@@ -2094,15 +2488,16 @@ invalid line
 
     def testConsistencyCheckWithInvalidIDReferences(self):
         """SubmissionParser.checkConsistency detects invalid ID references."""
-        test = self
-        def findInvalidIDReferences(self, parsed_data):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            return set([1])
+        class MockSubmissionParserInvalidIDReferences(
+            self.MockSubmissionParser):
+            """A parser where findInvalidIDReferences() fails."""
+            def findInvalidIDReferences(self, parsed_data):
+                return set([1])
 
-        parser = self._setupConsistencyCheckParser()
+        validate_mock_class(MockSubmissionParserInvalidIDReferences)
+
+        parser = MockSubmissionParserInvalidIDReferences(self.log)
         parser.submission_key = 'Consistency check detects invalid ID refs'
-        parser.findInvalidIDReferences = (
-            lambda parsed_data: findInvalidIDReferences(parser, parsed_data))
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, False,
@@ -2112,16 +2507,18 @@ invalid line
 
     def testConsistencyCheckWithDuplicateUDI(self):
         """SubmissionParser.checkConsistency detects duplicate UDIs."""
-        test = self
-        def getUDIDeviceMap(self, parsed_data):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            raise ValueError(
-                'Duplicate UDI: /org/freedesktop/Hal/devices/computer')
+        class MockSubmissionParserUDIDeviceMapFails(
+            self.MockSubmissionParser):
+            """A parser where getUDIDeviceMap() fails."""
 
-        parser = self._setupConsistencyCheckParser()
+            def getUDIDeviceMap(self, devices):
+                raise ValueError(
+                    'Duplicate UDI: /org/freedesktop/Hal/devices/computer')
+
+        validate_mock_class(MockSubmissionParserUDIDeviceMapFails)
+
+        parser = MockSubmissionParserUDIDeviceMapFails(self.log)
         parser.submission_key = 'Consistency check detects invalid ID refs'
-        parser.getUDIDeviceMap = (
-            lambda devices: getUDIDeviceMap(parser, devices))
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, False,
@@ -2132,15 +2529,17 @@ invalid line
 
     def testConsistencyCheckChildUDIWithoutParent(self):
         """SubmissionParser.checkConsistency detects "orphaned" devices."""
-        test = self
-        def getUDIChildren(self, udi_device_map):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            raise ValueError('Unknown parent UDI /foo in <device id="3">')
+        class MockSubmissionParserUDIChildrenFails(
+            self.MockSubmissionParser):
+            """A parser where getUDIChildren() fails."""
 
-        parser = self._setupConsistencyCheckParser()
+            def getUDIChildren(self, udi_device_map):
+                raise ValueError('Unknown parent UDI /foo in <device id="3">')
+
+        validate_mock_class(MockSubmissionParserUDIChildrenFails)
+
+        parser = MockSubmissionParserUDIChildrenFails(self.log)
         parser.submission_key = 'Consistency check detects invalid ID refs'
-        parser.getUDIChildren = (
-            lambda udi_device_map: getUDIChildren(parser, udi_device_map))
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, False,
@@ -2151,17 +2550,21 @@ invalid line
 
     def testConsistencyCheckCircularParentChildRelation(self):
         """SubmissionParser.checkConsistency detects "orphaned" devices."""
-        test = self
-        def checkHALDevicesParentChildConsistency(self, devices):
-            test.assertTrue(isinstance(self, SubmissionParser))
-            return ['/foo', '/bar']
+        class MockSubmissionParserHALDevicesParentChildConsistency(
+            self.MockSubmissionParser):
+            """A parser where checkHALDevicesParentChildConsistency() fails.
+            """
 
-        parser = self._setupConsistencyCheckParser()
+            def checkHALDevicesParentChildConsistency(self, udi_children):
+                return ['/foo', '/bar']
+
+        validate_mock_class(
+            MockSubmissionParserHALDevicesParentChildConsistency)
+
+        parser = MockSubmissionParserHALDevicesParentChildConsistency(
+            self.log)
         parser.submission_key = ('Consistency check detects circular '
                                  'parent-child relationships')
-        parser.checkHALDevicesParentChildConsistency = (
-            lambda devices: checkHALDevicesParentChildConsistency(
-                parser, devices))
         result = parser.checkConsistency({'hardware':
                                               {'hal': {'devices': []}}})
         self.assertEqual(result, False,

@@ -112,9 +112,6 @@
             name="+files"
             facet="overview"
             template="../templates/sourcepackagerelease-files.pt"/>
-        <browser:page
-            name="+change_summary"
-            template="../templates/sourcepackagerelease-change-summary.pt"/>
     </browser:pages>
     <facet
         facet="overview">
@@ -786,7 +783,7 @@
         />
     <browser:url
         for="lp.soyuz.interfaces.packageset.IPackageset"
-        path_expression="name"
+        path_expression="string:${distroseries/name}/${name}"
         parent_utility="lp.soyuz.interfaces.packageset.IPackagesetSet"
         />
     <browser:url

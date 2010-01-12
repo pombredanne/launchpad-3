@@ -1,4 +1,5 @@
-= Code Imports =
+Code Imports
+============
 
 CodeImport objects model the process surrounding the code import
 service of Launchpad. A CodeImport object is created by a user
@@ -14,7 +15,8 @@ of the vcs-imports team.
     >>> login('david.allouche@canonical.com')
 
 
-== Code import set utility ==
+Code import set utility
+-----------------------
 
 CodeImports are created and found using the ICodeImportSet interface,
 which is registered as a utility.
@@ -34,7 +36,8 @@ this is done by 'No Privileges Person'.
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
 
 
-== CodeImport events ==
+CodeImport events
+-----------------
 
 Most mutating operations affecting code imports should create
 CodeImportEvent objects in the database to provide an audit trail.
@@ -43,7 +46,8 @@ CodeImportEvent objects in the database to provide an audit trail.
     >>> event_set = getUtility(ICodeImportEventSet)
 
 
-== Supported source systems ==
+Supported source systems
+------------------------
 
 The rcs_type field, which indicates whether the import is from CVS or
 Subversion, takes values from the 'RevisionControlSystems' vocabulary.
@@ -52,12 +56,13 @@ Subversion, takes values from the 'RevisionControlSystems' vocabulary.
     >>> for item in RevisionControlSystems:
     ...     print item.title
     Concurrent Versions System
-    Subversion
+    Subversion via CSCVS
     Subversion via bzr-svn
     Git
 
 
-=== Import from CVS ===
+Import from CVS
++++++++++++++++
 
 Code imports from CVS specify the CVSROOT value, and the path to import
 in the repository, known as the "module".
@@ -94,7 +99,7 @@ three members of the vcs-imports team.
     Operator @vcs-imports
     >>> print message.get_payload()
     A new code import has been requested by No Privileges Person:
-        http://code.launchpad.dev/~vcs-imports/firefox/trunk-cvs
+        http://code.launchpad.dev/~no-priv/firefox/trunk-cvs
     -- =
     You are getting this email because you are a member of the vcs-imports team.
 
@@ -113,7 +118,8 @@ specified root and module.
     True
 
 
-=== Import from Subversion ===
+Import from Subversion
+++++++++++++++++++++++
 
 Code imports from Subversion specify the URL used with "svn checkout" to
 retrieve the tree to import.
@@ -140,7 +146,33 @@ specified subversion branch url.
     >>> svn_import == existing_import
     True
 
-=== Import from Git ===
+
+Import from Subversion via bzr-svn
+++++++++++++++++++++++++++++++++++
+
+Code imports from Subversion can also specify that they should be
+imported with 'bzr-svn' rather than cscvs.  In most respects these
+imports are similar to the Subversion via cscvs imports.
+
+    >>> bzr_svn = RevisionControlSystems.BZR_SVN
+    >>> bzr_svn_url = 'svn://svn.example.com/for-bzr-svn/trunk'
+    >>> bzr_svn_import = code_import_set.new(
+    ...     registrant=nopriv, product=product, branch_name='trunk-bzr-svn',
+    ...     rcs_type=bzr_svn, svn_branch_url=bzr_svn_url)
+    >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
+    True
+
+The CodeImportSet.getBySVNDetails is also able to find bzr-svn
+imports.
+
+    >>> existing_bzr_svn_import = code_import_set.getBySVNDetails(
+    ...     svn_branch_url=bzr_svn_url)
+    >>> bzr_svn_import == existing_bzr_svn_import
+    True
+
+
+Import from Git
++++++++++++++++
 
 Code imports from Git specify the URL used with "git clone" to
 retrieve the branch to import.
@@ -167,7 +199,9 @@ specified git repo url.
     >>> git_import == existing_import
     True
 
-== Updating code import details ==
+
+Updating code import details
+----------------------------
 
 Members of the VCS Imports team (import operators), or Launchpad
 administrators can update the details of the code import, including
@@ -207,6 +241,24 @@ created if done through the web UI, so we'll add nopriv here.
     ...     nopriv)
     >>> print_emails(group_similar=True)
     From: No Privileges Person <no-priv@canonical.com>
+    To: david.allouche@canonical.com, ...
+    Subject: Code import product.../name... status: Reviewed
+    <BLANKLINE>
+    The import has been approved and an import will start shortly.
+    <BLANKLINE>
+    ... is now being imported from:
+        http://svn.example.com/project/trunk
+    instead of:
+        http://svn.example.com/project
+    <BLANKLINE>
+    -- =
+    <BLANKLINE>
+    http://code.launchpad.dev/~person.../product.../name...
+    You are getting this email because you are a member of the vcs-imports
+    team.
+    <BLANKLINE>
+    ----------------------------------------
+    From: No Privileges Person <no-priv@canonical.com>
     To: no-priv@canonical.com
     Subject: Code import product.../name... status: Reviewed
     <BLANKLINE>
@@ -218,10 +270,11 @@ created if done through the web UI, so we'll add nopriv here.
         http://svn.example.com/project
     <BLANKLINE>
     -- =
-    http://code.launchpad.dev/~vcs-imports/product.../name...
+    <BLANKLINE>
+    http://code.launchpad.dev/~person.../product.../name...
     You are receiving this email as you are subscribed to the branch.
-    To unsubscribe from this branch go to http://code.launchpad.dev/~vcs-import=
-    s/product.../name.../+edit-subscription.
+    To unsubscribe from this branch go to .../+edit-subscription.
+    <BLANKLINE>
     ----------------------------------------
 
 updateFromData is smart enough to not send an email if no changes were
@@ -239,12 +292,17 @@ from a 'noreply' address.
     ...     None)
     >>> print_emails(group_similar=True)
     From: noreply@launchpad.net
+    To: david.allouche@canonical.com, ...
+    Subject: Code import product.../name... status: Reviewed
+    ...
+    From: noreply@launchpad.net
     To: no-priv@canonical.com
     Subject: Code import product.../name... status: Reviewed
     ...
 
 
-== Update intervals ==
+Update intervals
+----------------
 
 After an import is initially completed, it must be updated regularly. Each
 code import can specify a custom update interval, or use a default value.
@@ -281,6 +339,8 @@ appropriate default value for the RCS type.
     datetime.timedelta(0, 21600)
     >>> svn_import.effective_update_interval
     datetime.timedelta(0, 21600)
+    >>> bzr_svn_import.effective_update_interval
+    datetime.timedelta(0, 21600)
 
     >>> default_interval_git
     datetime.timedelta(0, 21600)
@@ -302,7 +362,9 @@ direct attribute modification. So we use removeSecurityProxy in this example.
     >>> svn_import.effective_update_interval
     datetime.timedelta(0, 3600)
 
-== Retreiving CodeImports ==
+
+Retrieving CodeImports
+----------------------
 
 You can retrieve all imports with the `getAll` method of ICodeImport.
 
@@ -338,7 +400,8 @@ internal database exception.
     NotFoundError: -10
 
 
-== Canonical URLs ==
+Canonical URLs
+--------------
 
 We've registered the ICodeImportSet utility on the 'code' part of the
 site:
@@ -351,13 +414,14 @@ The code imports themselves are viewed under the branch's URL,
 and are not traversable in themselves.
 
     >>> print canonical_url(svn_import.branch)
-    http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn
+    http://code.launchpad.dev/~no-priv/firefox/trunk-svn
     >>> print canonical_url(svn_import)
     Traceback (most recent call last):
     NoCanonicalUrl: ...
 
 
-== Modifying CodeImports ==
+Modifying CodeImports
+---------------------
 
 Modifications to CodeImport objects must be done using setter methods
 that create CodeImportEvent objects when appropriate. This is enforced
@@ -410,7 +474,7 @@ CVS details are displayed in a similar way.
     >>> modify_event = cvs_import.updateFromData(data, nopriv)
     >>> print make_email_body_for_code_import_update(
     ...     cvs_import, modify_event, None)
-    ~vcs-imports/firefox/trunk-cvs is now being imported from:
+    ~no-priv/firefox/trunk-cvs is now being imported from:
         hello from :pserver:anoncvs@cvs.example.com:/var/cvsroot
     instead of:
         hello from :pserver:anonymous@cvs.example.com:/cvsroot
@@ -421,10 +485,22 @@ And for Git.
     >>> modify_event = git_import.updateFromData(data, nopriv)
     >>> print make_email_body_for_code_import_update(
     ...     git_import, modify_event, None)
-    ~vcs-imports/firefox/trunk-git is now being imported from:
+    ~no-priv/firefox/trunk-git is now being imported from:
         git://git.example.com/goodbye.git
     instead of:
         git://git.example.com/hello.git
+
+Imports via bzr-svn are also similar.
+
+    >>> data = {'svn_branch_url': 'http://svn.example.com/for-bzr-svn/trunk'}
+    >>> modify_event = bzr_svn_import.updateFromData(data, nopriv)
+    >>> print make_email_body_for_code_import_update(
+    ...     bzr_svn_import, modify_event, None)
+    ~no-priv/firefox/trunk-bzr-svn is now being imported from:
+        http://svn.example.com/for-bzr-svn/trunk
+    instead of:
+        svn://svn.example.com/for-bzr-svn/trunk
+
 
 In addition, updateFromData can be used to set the branch whiteboard,
 which is also described in the email that is sent.

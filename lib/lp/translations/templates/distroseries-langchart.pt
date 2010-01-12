@@ -25,7 +25,18 @@
     </thead>
 
     <tbody>
-      <tr tal:repeat="drlang view/distroserieslanguages">
+      <tal:loop tal:repeat="drlang view/distroserieslanguages">
+        <tal:preferred
+            condition="python: view.isPreferredLanguage(drlang.language)">
+            <tal:set-class
+                define="global series_language_class string:preferred-language" />
+        </tal:preferred>
+        <tal:not-preferred
+            condition="not:python: view.isPreferredLanguage(drlang.language)">
+            <tal:set-class
+                define="global series_language_class string:not-preferred-language" />
+        </tal:not-preferred>
+      <tr tal:attributes="class series_language_class">
         <td>
           <a tal:attributes="href string:${drlang/fmt:url}"
              tal:content="drlang/language/englishname">
@@ -72,6 +83,10 @@
           </tal:count>
         </td>
       </tr>
+      </tal:loop>
     </tbody>
   </table>
+  <metal:languages-table-actions
+    use-macro="context/@@+translations-macros/languages-table-actions" />
+
 </tal:root>

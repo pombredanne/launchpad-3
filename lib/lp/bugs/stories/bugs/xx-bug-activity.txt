@@ -34,6 +34,14 @@ The activity log itself is presented as a table.
     2005-08-10 16:30:47 | Sample Person | bug |  |  | assigned to source ...
     2006-02-24 21:34:52 | Foo Bar | mozilla-firefox: statusexplanation |  |  |
 
+The bug page contains a link to the activity log.
+
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/debian/+source/'
+    ...     'mozilla-firefox/+bug/3')
+    >>> print anon_browser.getLink('See full activity log').url
+    http://.../+bug/3/+activity
+
 
 == Activity interleaved with comments ==
 
@@ -269,3 +277,25 @@ bundled with that comment in the UI.
     status:
     Confirmed &#8594; New
     --------
+
+If a target of a bug task is changed the old and new value will be shown.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/'
+    ...     '1/+editstatus')
+    >>> admin_browser.getControl(
+    ...     'Package').value = 'linux-source-2.6.15'
+    >>> admin_browser.getControl("Save Changes").click()
+    >>> print_comments(admin_browser.contents)
+    Sample Person
+    ...
+    Foo Bar
+    wrote
+    ...
+    --------
+    Foo Bar
+    ...
+    affects:
+    mozilla-firefox (Ubuntu) &#8594; linux-source-2.6.15 (Ubuntu)
+    --------
+

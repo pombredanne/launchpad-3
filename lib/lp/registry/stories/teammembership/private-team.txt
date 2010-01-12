@@ -9,7 +9,6 @@ admins and members of that team can see the team.
     >>> from zope.component import getUtility
     >>> from lp.registry.interfaces.person import (
     ...     IPersonSet, PersonVisibility)
-    >>> from lp.registry.interfaces.teammembership import TeamMembershipStatus
     >>> login('foo.bar@canonical.com')
     >>> owner = factory.makePerson(name='team-owner')
     >>> priv_team = factory.makeTeam(name='private-team',
@@ -18,7 +17,7 @@ admins and members of that team can see the team.
     >>> person_set = getUtility(IPersonSet)
     >>> cprov = person_set.getByName('cprov')
     >>> login_person(owner)
-    >>> priv_team.addMember(cprov, reviewer=owner)
+    >>> ignored = priv_team.addMember(cprov, reviewer=owner)
     >>> logout()
 
     >>> admin_browser.open('http://launchpad.dev/~private-team')
@@ -31,12 +30,11 @@ admins and members of that team can see the team.
     >>> cprov_browser.title
     'Private Team in Launchpad'
 
-The page states that the team is private.
+The page indicates that the team is private.
 
     >>> privacy_info = find_tag_by_id(cprov_browser.contents, 'privacy')
     >>> print extract_text(privacy_info)
-    Private Team
-    Viewable by team members.
+    Private team
 
 A normal user cannot see the team.
 

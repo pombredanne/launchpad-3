@@ -17,7 +17,7 @@ from canonical.testing import LaunchpadZopelessLayer, ZopelessLayer
 from canonical.launchpad.scripts.librarian_apache_log_parser import DBUSER
 from lp.services.apachelogparser.base import (
     create_or_update_parsedlog_entry, get_day, get_files_to_parse,
-    get_host_date_status_and_request, parse_file)
+    get_fd_and_file_size, get_host_date_status_and_request, parse_file)
 from lp.services.apachelogparser.model.parsedapachelog import ParsedApacheLog
 from lp.testing import TestCase
 
@@ -57,6 +57,30 @@ class TestLineParsing(TestCase):
     def test_day_extraction(self):
         date = '[13/Jun/2008:18:38:57 +0100]'
         self.assertEqual(get_day(date), datetime(2008, 6, 13))
+
+
+class Test_get_fd_and_file_size(TestCase):
+
+    def _ensureFileSizeIsCorrect(self, file_path):
+        """Ensure the file size returned is correct.
+
+        Also ensure that the file descriptors returned where seek()ed to the
+        very beginning.
+        """
+        fd, file_size = get_fd_and_file_size(file_path)
+        self.assertEqual(fd.tell(), 0)
+        self.assertEqual(len(fd.read()), file_size)
+
+    def test_regular_file(self):
+        file_path = os.path.join(
+            here, 'apache-log-files', 'librarian-oneline.log')
+        self._ensureFileSizeIsCorrect(file_path)
+
+    def test_gzip_file(self):
+        file_path = os.path.join(
+            here, 'apache-log-files',
+            'launchpadlibrarian.net.access-log.1.gz')
+        self._ensureFileSizeIsCorrect(file_path)
 
 
 def get_path_download_key(path):
@@ -206,6 +230,7 @@ class TestParsedFilesDetection(TestCase):
     root = os.path.join(here, 'apache-log-files')
 
     def setUp(self):
+        super(TestParsedFilesDetection, self).setUp()
         self.layer.switchDbUser(DBUSER)
 
     def test_not_parsed_file(self):
@@ -277,6 +302,7 @@ class Test_create_or_update_parsedlog_entry(TestCase):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        super(Test_create_or_update_parsedlog_entry, self).setUp()
         self.layer.switchDbUser(DBUSER)
 
     def test_creation_of_new_entries(self):

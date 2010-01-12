@@ -36,7 +36,7 @@ can quickly activate one via the link in his PPA section.
     >>> sample_browser.getLink("Create a new PPA").click()
 
     >>> print sample_browser.title
-    Activate Personal Package Archive...
+    Personal Package Archive Activation : Sample Person
 
 This page presents a pointer to the current PPA-ToS (terms of service)
 with mandatory 'displayname' and checkbox ('accepted') fields. The
@@ -54,7 +54,11 @@ the context launchpad user.
     Activating this PPA will block future renaming of Sample Person
     ...
 
-'Displayname' is required.
+'PPA name' and 'Displayname' are required fields.  For the first activated
+PPA, the name is pre-filled with a suggestion of "ppa":
+
+    >>> print sample_browser.getControl(name="field.name").value
+    ppa
 
     >>> sample_browser.getControl("Activate").click()
 
@@ -63,9 +67,11 @@ the context launchpad user.
     There is 1 error.
     Required input is missing.
 
-By submitting the form without acknowledge the PPA-ToS results in a
+By submitting the form without acknowledging the PPA-ToS results in a
 error with a specific message.
 
+    >>> sample_browser.getControl(
+    ...     name="field.name").value = 'sampleppa'
     >>> sample_browser.getControl(
     ...     name="field.displayname").value = 'Sample PPA'
     >>> sample_browser.getControl("Activate").click()
@@ -116,7 +122,7 @@ where he can see the updated information.
     PPA description
     Howdy, cowboys !
 
-Empty 'description' fields are not be rendered.
+Empty 'description' fields are not rendered.
 
     >>> sample_browser.getLink("Change details").click()
     >>> sample_browser.getControl(name="field.description").value = ('')
@@ -143,7 +149,7 @@ user can't have an emtpy displayname on his PPA.
     There is 1 error.
     Required input is missing.
 
-Once the PPA is activated, Sample user account cannot be renamed
+Once the PPA is activated, the Sample user account cannot be renamed
 anymore. Changing the account name affects the PPA repository paths
 and we don't have infrastructure in place to support that yet. See
 more information about the feature in bug #87326.
@@ -193,9 +199,11 @@ Let's proceed with the required permissions:
 
     >>> sample_browser.getLink('Create a new PPA').click()
 
-    >>> sample_browser.title
-    'Activate Personal Package Archive...
+    >>> print sample_browser.title
+    Personal Package Archive Activation : ...
 
+    >>> sample_browser.getControl(
+    ...     name="field.name").value = 'develppa'
     >>> sample_browser.getControl(
     ...     name="field.displayname").value = 'Devel PPA'
     >>> sample_browser.getControl(name="field.accepted").value = True
@@ -285,6 +293,7 @@ name of other users or teams:
     Create a new PPA
 
     >>> admin_browser.getLink("Create a new PPA").click()
+    >>> admin_browser.getControl(name="field.name").value = 'hackppa'
     >>> admin_browser.getControl(
     ...    name="field.displayname").value = 'Hack PPA'
     >>> admin_browser.getControl(name="field.accepted").value = True
@@ -330,7 +339,7 @@ they need to be able to make PPAs private.
 Trying to shortcut the URL as a non-privileged user does not work:
 
     >>> sample_browser.open(
-    ...     "http://launchpad.dev/~jblack/+archive/ppa/+admin")
+    ...     "http://launchpad.dev/~jblack/+archive/hackppa/+admin")
     Traceback (most recent call last):
     ...
     Unauthorized...
@@ -439,7 +448,8 @@ the size limit is 2 PiB.
 
     >>> limit = 2 ** 31 - 1
 
-    >>> admin_browser.open("http://launchpad.dev/~jblack/+archive/ppa/+admin")
+    >>> admin_browser.open(
+    ...     "http://launchpad.dev/~jblack/+archive/hackppa/+admin")
     >>> admin_browser.getControl(
     ...     name="field.authorized_size").value = str(limit)
     >>> admin_browser.getControl("Save").click()
@@ -493,11 +503,13 @@ Set up two browsers (waiting for bug #68655):
 Prepare the forms in both browsers to activate the default PPA for the
 user 'Foo Bar'.
 
+    >>> browser1.getControl(name="field.name").value = 'boomppa'
     >>> browser1.getControl(name="field.displayname").value = 'Boom PPA'
     >>> browser1.getControl(name="field.accepted").value = True
     >>> browser1.getControl(
     ...    name="field.description").value = 'PPA rocks!'
 
+    >>> browser2.getControl(name="field.name").value = 'boomppa'
     >>> browser2.getControl(name="field.displayname").value = 'Boom PPA'
     >>> browser2.getControl(name="field.accepted").value = True
     >>> browser2.getControl(
@@ -523,18 +535,16 @@ and the rendered form contains the 'name' field.
     >>> for error in get_feedback_messages(browser2.contents):
     ...     print error
     There is 1 error.
-    The default PPA is already activated.
-    Please specify a name for the new PPA and resubmit the form.
+    You already have a PPA named 'boomppa'.
 
-    >>> browser2.getControl(name="field.name").value
-    ''
+    >>> print browser2.getControl(name="field.name").value
+    boomppa
 
 
-== Activating a named PPA ==
+== Activating an additional PPA ==
 
-Users who already have a PPA may as well activate a second one.
-
-That's the case for Celso.
+Users who already have a PPA may activate a second one.  That's the case for
+Celso.
 
     >>> cprov_browser.open("http://launchpad.dev/~cprov")
 
@@ -544,15 +554,15 @@ That's the case for Celso.
     Create a new PPA
 
 Celso can simply click on 'Create a new PPA' and will be presented to
-the usual PPA activation form where the checkbox for acknowledge the
-PPA-ToS is replaced by a 'name' field and a list of 'Existing PPAs'.
-Launchpad requires an user to acknowledge the PPA-ToS only once for
+the usual PPA activation form where the checkbox for acknowledging the
+PPA-ToS is no longer present and a list of 'Existing PPAs' is presented.
+Launchpad requires a user to acknowledge the PPA-ToS only once for
 all his PPAs.
 
     >>> cprov_browser.getLink("Create a new PPA").click()
 
     >>> print cprov_browser.title
-    Activate Personal Package Archive...
+    Personal Package Archive Activation : Celso Providelo
 
     >>> print_tag_with_id(cprov_browser.contents, 'ppas')
     Existing PPAs
@@ -566,12 +576,14 @@ all his PPAs.
     >>> print extract_text(
     ...     first_tag_by_class(cprov_browser.contents, 'form'))
     PPA name:
-      A unique name used to identify this PPA.
+      A unique name used to identify this PPA. It will form part of the URL
+      to the archive repository.
     Displayname:
-      Displayname for this PPA.
+      Displayname for this PPA. It will be used in the signing key's
+      description if this is the first PPA for a person.
     PPA contents description: (Optional)
-      A short description of this PPA. URLs are allowed and will be
-      rendered as links.
+      A short description of this PPA. URLs are allowed and will be rendered
+      as links.
 
 Note that, differently than the time when the first PPA was activated,
 this time there is no warning about the fact that the context renaming
@@ -582,7 +594,11 @@ known aspect.
     ...     first_tag_by_class(cprov_browser.contents, 'actions'))
     or Cancel
 
-If Celso does not fill 'PPA name' an error is raised.
+The 'PPA name' field is not pre-filled and if Celso does not fill it then
+an error is raised.
+
+    >>> print cprov_browser.getControl(name="field.name").value
+    <BLANKLINE>
 
     >>> cprov_browser.getControl(
     ...     name="field.displayname").value = 'Edge PPA'
@@ -694,3 +710,36 @@ And direct access to the PPA page is also denied.
     ...
     Unauthorized: ...
 
+
+== Enabling or disabling of PPAs by the owner ==
+
+Users with 'launchpad.Edit' permission for a PPA may disable or enable it.
+
+    >>> no_priv_browser = setupBrowser(
+    ...     auth='Basic no-priv@canonical.com:test')
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+
+Initially, the PPA is enabled.
+
+    >>> print no_priv_browser.getControl(name='field.enabled').value
+    True
+
+After disabling the PPA a warning message is displayed on its page.
+
+    >>> no_priv_browser.getControl(name='field.enabled').value = False
+    >>> no_priv_browser.getControl('Save').click()
+    >>> print extract_text(
+    ...     first_tag_by_class(no_priv_browser.contents, 'warning message'))
+    This archive has been disabled.
+
+Once we re-enable the PPA the warning message is gone.
+
+    >>> no_priv_browser.open("http://launchpad.dev/~no-priv/+archive/ppa/+edit")
+    >>> print no_priv_browser.getControl(name='field.enabled').value
+    False
+
+    >>> no_priv_browser.getControl(name='field.enabled').value = True
+    >>> no_priv_browser.getControl('Save').click()
+    >>> (first_tag_by_class(no_priv_browser.contents, 'warning message')
+    ...  is None)
+    True

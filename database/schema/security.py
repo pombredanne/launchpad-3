@@ -1,4 +1,4 @@
-#!/usr/bin/python2.4
+#!/usr/bin/python2.5
 #
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
@@ -23,6 +23,17 @@ from canonical.launchpad.scripts import logger_options, logger, db_options
 import replication.helpers
 
 
+# The 'read' group does not get given select permission on the following
+# tables. This is to stop the ro user being given access to secrurity
+# sensitive information that interactive sessions don't need.
+SECURE_TABLES = [
+    'public.accountpassword',
+    'public.oauthnonce',
+    'public.openidnonce',
+    'public.openidconsumernonce',
+    ]
+
+
 class DbObject(object):
     def __init__(
             self, schema, name, type_, owner, arguments=None, language=None):
@@ -39,7 +50,7 @@ class DbObject(object):
     @property
     def fullname(self):
         fn = "%s.%s" % (
-                quote_identifier(self.schema), quote_identifier(self.name)
+                self.schema, self.name
                 )
         if self.type == 'function':
             fn = "%s(%s)" % (fn, self.arguments)
@@ -322,9 +333,10 @@ def reset_permissions(con, config, options):
                 cur.execute(
                     'GRANT %s ON TABLE %s TO %s'
                     % (perm, obj.fullname, who))
-                cur.execute(
-                    'GRANT SELECT ON TABLE %s TO GROUP read'
-                    % obj.fullname)
+                if obj.fullname not in SECURE_TABLES:
+                    cur.execute(
+                        'GRANT SELECT ON TABLE %s TO GROUP read'
+                        % obj.fullname)
                 cur.execute(
                     'GRANT ALL ON TABLE %s TO GROUP admin'
                     % obj.fullname)
@@ -339,9 +351,10 @@ def reset_permissions(con, config, options):
                     cur.execute(
                         'GRANT %s ON %s TO %s'
                         % (seqperm, obj.seqname, who))
-                    cur.execute(
-                        'GRANT SELECT ON %s TO GROUP read'
-                        % obj.seqname)
+                    if obj.fullname not in SECURE_TABLES:
+                        cur.execute(
+                            'GRANT SELECT ON %s TO GROUP read'
+                            % obj.seqname)
                     cur.execute(
                         'GRANT ALL ON %s TO GROUP admin'
                         % obj.seqname)

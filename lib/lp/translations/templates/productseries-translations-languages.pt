@@ -11,12 +11,22 @@
             <th>Untranslated</th>
             <th>Needs review</th>
             <th>Changed</th>
+            <th>Last Changed</th>
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="language_stats view/productserieslanguages"
-             tal:attributes="class
-                 string:stats language-${language_stats/language/code}">
+          <tal:loop tal:repeat="language_stats view/productserieslanguages">
+            <tal:preferred
+                condition="python: view.isPreferredLanguage(language_stats.language)">
+                <tal:set-class
+                    define="global series_language_class string:stats language-${language_stats/language/code} preferred-language" />
+            </tal:preferred>
+            <tal:not-preferred
+                condition="not:python: view.isPreferredLanguage(language_stats.language)">
+                <tal:set-class
+                    define="global series_language_class string:stats language-${language_stats/language/code} not-preferred-language" />
+            </tal:not-preferred>
+          <tr tal:attributes="class series_language_class">
             <td>
               <tal:multiple_pofile condition="not:view/single_potemplate">
               <a tal:attributes="href language_stats/fmt:url"
@@ -47,7 +57,29 @@
                     tal:content="language_stats/updatesCount">0</span>
               <tal:value content="language_stats/updatesCount" />
             </td>
+            <td>
+              <span class="sortkey"
+                tal:condition="language_stats/last_changed_date"
+                tal:content="language_stats/last_changed_date/fmt:datetime">
+                time sort key
+              </span>
+              <span
+                tal:condition="language_stats/last_changed_date"
+                tal:attributes="
+                  title language_stats/last_changed_date/fmt:datetime"
+                tal:content="
+                  language_stats/last_changed_date/fmt:approximatedate"
+                >
+                2007-02-10
+              </span>
+              <tal:block condition="not: language_stats/last_changed_date">
+                  &mdash;
+              </tal:block>
+            </td>
           </tr>
+          </tal:loop>
         </tbody>
       </table>
+      <metal:languages-table-actions
+        use-macro="context/@@+translations-macros/languages-table-actions" />
 </tal:root>

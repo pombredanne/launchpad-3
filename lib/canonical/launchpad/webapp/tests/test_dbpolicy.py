@@ -10,6 +10,8 @@ import unittest
 
 from zope.component import getAdapter, getUtility
 from zope.publisher.interfaces.xmlrpc import IXMLRPCRequest
+from zope.security.management import newInteraction, endInteraction
+from zope.session.interfaces import ISession, IClientIdManager
 
 from lazr.restful.interfaces import IWebServiceConfiguration
 from canonical.config import config
@@ -58,12 +60,14 @@ class BaseDatabasePolicyTestCase(ImplicitDatabasePolicyTestCase):
     policy = None
 
     def setUp(self):
+        super(BaseDatabasePolicyTestCase, self).setUp()
         if self.policy is None:
             self.policy = BaseDatabasePolicy()
         getUtility(IStoreSelector).push(self.policy)
 
     def tearDown(self):
         getUtility(IStoreSelector).pop()
+        super(BaseDatabasePolicyTestCase, self).tearDown()
 
     def test_correctly_implements_IDatabasePolicy(self):
         self.assertProvides(self.policy, IDatabasePolicy)
@@ -75,7 +79,7 @@ class SlaveDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
     def setUp(self):
         if self.policy is None:
             self.policy = SlaveDatabasePolicy()
-        BaseDatabasePolicyTestCase.setUp(self)
+        super(SlaveDatabasePolicyTestCase, self).setUp()
 
     def test_defaults(self):
         for store in ALL_STORES:
@@ -95,7 +99,7 @@ class SlaveOnlyDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
 
     def setUp(self):
         self.policy = SlaveOnlyDatabasePolicy()
-        BaseDatabasePolicyTestCase.setUp(self)
+        super(SlaveOnlyDatabasePolicyTestCase, self).setUp()
 
     def test_master_allowed(self):
         for store in ALL_STORES:
@@ -109,7 +113,7 @@ class MasterDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
     def setUp(self):
         self.policy = MasterDatabasePolicy()
-        BaseDatabasePolicyTestCase.setUp(self)
+        super(MasterDatabasePolicyTestCase, self).setUp()
 
     def test_XMLRPCRequest_uses_MasterPolicy(self):
         """XMLRPC should always use the master flavor, since they always
@@ -137,10 +141,11 @@ class LaunchpadDatabasePolicyTestCase(SlaveDatabasePolicyTestCase):
     This test just checks the defaults, which is the same as the
     slave policy for unauthenticated requests.
     """
+
     def setUp(self):
         request = LaunchpadTestRequest(SERVER_URL='http://launchpad.dev')
         self.policy = LaunchpadDatabasePolicy(request)
-        SlaveDatabasePolicyTestCase.setUp(self)
+        super(LaunchpadDatabasePolicyTestCase, self).setUp()
 
 
 class LayerDatabasePolicyTestCase(TestCase):
@@ -173,6 +178,49 @@ class LayerDatabasePolicyTestCase(TestCase):
         policy = IDatabasePolicy(request)
         self.assertIsInstance(policy, MasterDatabasePolicy)
 
+    def test_WebServiceRequest_uses_LaunchpadDatabasePolicy(self):
+        """WebService requests with a session cookie will use the
+        standard LaunchpadDatabasePolicy so their database queries
+        can be outsourced to a slave database when possible.
+        """
+        api_prefix = getUtility(
+            IWebServiceConfiguration).service_version_uri_prefix
+        server_url = 'http://api.launchpad.dev/%s' % api_prefix
+        request = LaunchpadTestRequest(SERVER_URL=server_url)
+        newInteraction(request)
+        try:
+            # First, generate a valid session cookie.
+            cookie_name = getUtility(IClientIdManager).namespace
+            ISession(request)['whatever']['whatever'] = 'whatever'
+            # Then stuff it into the request where we expect to
+            # find it. The database policy is only interested if
+            # a session cookie was sent with the request, not it
+            # one has subsequently been set in the response.
+            request._cookies = request.response._cookies
+            setFirstLayer(request, WebServiceLayer)
+            policy = IDatabasePolicy(request)
+            self.assertIsInstance(policy, LaunchpadDatabasePolicy)
+        finally:
+            endInteraction()
+
+    def test_WebServiceRequest_uses_ReadOnlyDatabasePolicy(self):
+        """WebService requests should use the read only database
+        policy in read only mode.
+        """
+        config.push('read_only', """
+            [launchpad]
+            read_only: True""")
+        try:
+            api_prefix = getUtility(
+                IWebServiceConfiguration).service_version_uri_prefix
+            server_url = 'http://api.launchpad.dev/%s' % api_prefix
+            request = LaunchpadTestRequest(SERVER_URL=server_url)
+            setFirstLayer(request, WebServiceLayer)
+            policy = IDatabasePolicy(request)
+            self.assertIsInstance(policy, ReadOnlyLaunchpadDatabasePolicy)
+        finally:
+            config.pop('read_only')
+
     def test_read_only_mode_uses_ReadOnlyLaunchpadDatabasePolicy(self):
         config.push('read_only', """
             [launchpad]
@@ -198,7 +246,7 @@ class ReadOnlyLaunchpadDatabasePolicyTestCase(BaseDatabasePolicyTestCase):
 
     def setUp(self):
         self.policy = ReadOnlyLaunchpadDatabasePolicy()
-        BaseDatabasePolicyTestCase.setUp(self)
+        super(ReadOnlyLaunchpadDatabasePolicyTestCase, self).setUp()
 
     def test_defaults(self):
         # default Store is the slave.

@@ -78,7 +78,7 @@ class ReviewTestMixin:
             translator=self.person, translations=['bi'],
             date_updated=self.base_time)
 
-        later_time = self.base_time + timedelta(0, 0, 1)
+        later_time = self.base_time + timedelta(0, 3600)
         self.suggestion = removeSecurityProxy(
             self.factory.makeTranslationMessage(
                 potmsgset=self.potmsgset, pofile=self.pofile,

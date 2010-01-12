@@ -16,11 +16,7 @@ from bzrlib.smart import server
 from bzrlib.tests import (
     multiply_tests, TestCase, TestCaseWithTransport, TestLoader,
     TestNotApplicable)
-try:
-    from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
-except ImportError:
-    from bzrlib.tests.branch_implementations import (
-        TestCaseWithBzrDir, branch_scenarios)
+from bzrlib.tests.per_branch import TestCaseWithBzrDir, branch_scenarios
 
 from lp.codehosting.bzrutils import (
     add_exception_logging_hook, DenyingServer, get_branch_stacked_on_url,
@@ -175,12 +171,16 @@ class TestGetVfsFormatClasses(TestCaseWithTransport):
     """Tests for `lp.codehosting.bzrutils.get_vfs_format_classes`.
     """
 
+    def setUp(self):
+        TestCaseWithTransport.setUp(self)
+        self.disable_directory_isolation()
+
     def tearDown(self):
         # This makes sure the connections held by the branches opened in the
         # test are dropped, so the daemon threads serving those branches can
         # exit.
         gc.collect()
-        super(TestGetVfsFormatClasses, self).tearDown()
+        TestCaseWithTransport.tearDown(self)
 
     def test_get_vfs_format_classes(self):
         # get_vfs_format_classes for a returns the underlying format classes

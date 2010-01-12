@@ -29,6 +29,9 @@
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.IBinaryPackagePublishingHistory"/>
+            <require
+                permission="launchpad.Edit"
+                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
         </class>
 
         <!-- BinaryPackageFilePublishing -->
@@ -119,6 +122,9 @@
             <require
                 permission="launchpad.View"
                 interface="lp.soyuz.interfaces.publishing.ISourcePackagePublishingHistory"/>
+            <require
+                permission="launchpad.Edit"
+                interface="lp.soyuz.interfaces.publishing.IPublishingEdit"/>
         </class>
 
         <!-- SourcePackageFilePublishing -->
@@ -395,11 +401,11 @@
         <require
             permission="launchpad.Edit"
             interface="lp.soyuz.interfaces.archive.IArchiveEdit"
-            set_attributes="description displayname"/>
+            set_attributes="description displayname enabled"/>
         <require
             permission="launchpad.Commercial"
             set_attributes="authorized_size buildd_secret
-                            enabled external_dependencies private
+                            external_dependencies private
                             require_virtualized relative_build_score "/>
         <require
             permission="launchpad.Admin"
@@ -499,7 +505,7 @@
     bug=3580: We need a autobuild celebrity. -->
 
         <require
-            permission="zope.Public"
+            permission="launchpad.Edit"
             set_attributes="buildlog datebuilt buildduration builder                                                                                                                 buildstate dependencies upload_log"/>
     </class>
 
@@ -560,7 +566,7 @@
 
         <require
             permission="zope.Public"
-            set_attributes="lastscore builder buildstart logtail"/>
+            set_attributes="lastscore builder logtail date_started"/>
     </class>
 
     <!-- BuildQueueSet -->
@@ -791,6 +797,28 @@
             interface="lp.soyuz.interfaces.section.ISectionSet"/>
     </securedutility>
 
+    <!-- SourcePackageFormatSelection -->
+
+    <class
+        class="lp.soyuz.model.sourcepackageformat.SourcePackageFormatSelection">
+        <allow
+            interface="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelection"/>
+    </class>
+
+    <!-- SourcePackageFormatSelectionSet -->
+
+    <class
+        class="lp.soyuz.model.sourcepackageformat.SourcePackageFormatSelectionSet">
+        <allow
+            interface="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelectionSet"/>
+    </class>
+    <securedutility
+        class="lp.soyuz.model.sourcepackageformat.SourcePackageFormatSelectionSet"
+        provides="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelectionSet">
+        <allow
+            interface="lp.soyuz.interfaces.sourcepackageformat.ISourcePackageFormatSelectionSet"/>
+    </securedutility>
+
     <!-- SourcePackageReleaseFile -->
 
     <class
@@ -855,5 +883,36 @@
             attributes="
                 new"/>
     </securedutility>
+
+    <!-- PackagesetGroup -->
+    <class
+        class="lp.soyuz.model.packagesetgroup.PackagesetGroup">
+        <allow
+            interface="lp.soyuz.interfaces.packagesetgroup.IPackagesetGroup"/>
+    </class>
+
+    <!-- BuildPackageJob -->
+    <class
+        class="lp.soyuz.model.buildpackagejob.BuildPackageJob">
+        <allow
+            interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
+    </class>
+    <!-- 
+        The registration below is used to discover all build farm job classes
+        that implement the `IBuildFarmJob` interface. Please see bug #503839
+        for more detail.
+        The 'name' attribute needs to be set to the appropriate
+        `BuildFarmJobType` enumeration value.
+    -->
+    <utility component="lp.soyuz.model.buildpackagejob.BuildPackageJob"
+        name="PACKAGEBUILD"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
+
+    <!-- BinaryPackageBuildBehavior -->
+    <adapter
+        for="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"
+        provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
+        factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
+        permission="zope.Public" />
 
 </configure>

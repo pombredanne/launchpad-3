@@ -163,7 +163,7 @@ class LibrarianFormatter(logging.Formatter):
         except:
             pass
         if not exception_string:
-            exception_string = str(ei[0]).split('.')[-1]
+            exception_string = ei[0].__name__
 
         expiry = datetime.now().replace(tzinfo=utc) + timedelta(days=90)
         try:
