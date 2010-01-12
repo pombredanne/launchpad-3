@@ -1622,7 +1622,7 @@ class ArchiveSet:
 
         if exclude_disabled:
             public_archive = And(Archive.private == False,
-                                 Archive.enabled == True)
+                                 Archive._enabled == True)
         else:
             public_archive = (Archive.private == False)
 
