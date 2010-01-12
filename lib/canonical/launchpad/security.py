@@ -53,12 +53,11 @@ from lp.registry.interfaces.entitlement import IEntitlement
 from canonical.launchpad.interfaces.hwdb import (
     IHWDBApplication, IHWDevice, IHWDeviceClass, IHWDriver, IHWDriverName,
     IHWDriverPackageName, IHWSubmission, IHWSubmissionDevice, IHWVendorID)
-from lp.services.permission_helpers import (
-    is_admin, is_admin_or_registry_expert, is_admin_or_rosetta_expert)
 from lp.services.worlddata.interfaces.language import ILanguage, ILanguageSet
 from lp.translations.interfaces.languagepack import ILanguagePack
 from canonical.launchpad.interfaces.launchpad import (
-    IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities)
+    IBazaarApplication, IHasBug, IHasDrivers, ILaunchpadCelebrities,
+    IPersonRoles)
 from lp.registry.interfaces.role import IHasOwner
 from lp.registry.interfaces.location import IPersonLocation
 from lp.registry.interfaces.mailinglist import IMailingListSet
@@ -196,7 +195,8 @@ class EditByRegistryExpertsOrAdmins(AuthorizationBase):
     usedfor = ILaunchpadRoot
 
     def checkAuthenticated(self, user):
-        return is_admin_or_registry_expert(user)
+        user = IPersonRoles(user)
+        return user.in_admin or user.in_registry_experts
 
 
 class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
@@ -204,7 +204,8 @@ class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
     usedfor = None
 
     def checkAuthenticated(self, user):
-        return is_admin_or_registry_expert(user)
+        user = IPersonRoles(user)
+        return user.in_admin or user.in_registry_experts
 
 
 class ReviewProduct(ReviewByRegistryExpertsOrAdmins):
@@ -240,9 +241,10 @@ class ViewPillar(AuthorizationBase):
         if self.obj.active:
             return True
         else:
-            celebrities = getUtility(ILaunchpadCelebrities)
-            return (user.inTeam(celebrities.commercial_admin)
-                    or is_admin_or_registry_expert(user))
+            user = IPersonRoles(user)
+            return (user.in_commercial_admin or
+                    user.in_admin or
+                    user.in_registry_experts)
 
 
 class EditAccountBySelfOrAdmin(AuthorizationBase):
@@ -256,7 +258,8 @@ class EditAccountBySelfOrAdmin(AuthorizationBase):
             EditAccountBySelfOrAdmin, self).checkAccountAuthenticated(account)
 
     def checkAuthenticated(self, user):
-        return is_admin(user)
+        user = IPersonRoles(user)
+        return user.in_admin
 
 
 class ViewAccount(EditAccountBySelfOrAdmin):
@@ -268,7 +271,8 @@ class SpecialAccount(EditAccountBySelfOrAdmin):
 
     def checkAuthenticated(self, user):
         """Extend permission to registry experts."""
-        return is_admin_or_registry_expert(user)
+        user = IPersonRoles(user)
+        return user.in_admin or user.in_registry_experts
 
 
 class ModerateAccountByRegistryExpert(AuthorizationBase):
@@ -276,7 +280,8 @@ class ModerateAccountByRegistryExpert(AuthorizationBase):
     permission = 'launchpad.Moderate'
 
     def checkAuthenticated(self, user):
-        return is_admin_or_registry_expert(user)
+        user = IPersonRoles(user)
+        return user.in_admin or user.in_registry_experts
 
 
 class EditOAuthAccessToken(AuthorizationBase):
@@ -507,7 +512,8 @@ class OnlyRosettaExpertsAndAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Allow Launchpad's admins and Rosetta experts edit all fields."""
-        return is_admin_or_rosetta_expert(user)
+        user = IPersonRoles(user)
+        return user.in_admin or user.in_rosetta_experts
 
 
 class AdminProductTranslations(AuthorizationBase):
@@ -520,8 +526,10 @@ class AdminProductTranslations(AuthorizationBase):
         Any Launchpad/Launchpad Translations administrator or owners are
         able to change translation settings for a product.
         """
-        return (user.inTeam(self.obj.owner) or
-                is_admin_or_rosetta_expert(user))
+        user = IPersonRoles(user)
+        return (user.isOwner(self.obj) or
+                user.in_rosetta_experts or
+                user.in_admin)
 
 
 class AdminSeriesByVCSImports(AuthorizationBase):
