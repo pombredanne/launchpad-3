@@ -1084,13 +1084,11 @@ class IArchiveEdit(Interface):
         :param component: An `IComponent` or textual component name.
         """
 
-    @export_write_operation()
     def enable():
         """Enable the archive."""
 
-    @export_write_operation()
     def disable():
-        """Enable the archive."""
+        """Disable the archive."""
 
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):

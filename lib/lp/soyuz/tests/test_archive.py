@@ -457,7 +457,9 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
             bq.lastscore = score
             bq.estimated_duration = timedelta(seconds=duration)
 
-    def assertArchiveJobNotStatus(self, archive, status):
+    def assertNoBuildJobsHaveStatus(self, archive, status):
+        # Check that that the jobs attached to this archive do not have this
+        # status.
         query = """
         SELECT COUNT(Job.id)
         FROM Build, BuildPackageJob, BuildQueue, Job
@@ -475,13 +477,13 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.assertEqual(result[0], 0)
 
     def test_enableArchive(self):
-        # Enabling an archive should set all the Archive's suspended jobs to
+        # Enabling an archive should set all the Archive's suspended builds to
         # WAITING.
 
         # Disable the archive, because it's currently enabled.
         self.archive.disable()
         self.archive.enable()
-        self.assertArchiveJobNotStatus(self.archive, JobStatus.SUSPENDED)
+        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.SUSPENDED)
         self.assertTrue(self.archive.enabled)
 
     def test_enableArchiveAlreadyEnabled(self):
@@ -489,10 +491,10 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.assertRaises(AssertionError, self.archive.enable)
 
     def test_disableArchive(self):
-        # Enabling an archive should set all the Archive's suspended jobs to
-        # WAITING.
+        # Disabling an archive should set all the Archive's pending bulds to
+        # SUSPENDED.
         self.archive.disable()
-        self.assertArchiveJobNotStatus(self.archive, JobStatus.WAITING)
+        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.WAITING)
         self.assertFalse(self.archive.enabled)
 
     def test_disableArchiveAlreadyDisabled(self):
