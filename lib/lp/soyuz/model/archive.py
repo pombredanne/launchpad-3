@@ -1412,7 +1412,11 @@ class ArchiveSet:
             owner=owner, distribution=distribution, name=name,
             displayname=displayname, description=description,
             purpose=purpose, publish=publish, signing_key=signing_key,
-            enabled=enabled, require_virtualized=require_virtualized)
+            require_virtualized=require_virtualized)
+
+        # Upon creation archives are enabled by default.
+        if enabled == False:
+            new_archive.disable()
 
         # Private teams cannot have public PPAs.
         if owner.visibility == PersonVisibility.PRIVATE:
