@@ -13,6 +13,7 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.builder import IBuilderSet
@@ -662,3 +663,80 @@ class TestMinTimeToNextBuilderMulti(MultiArchBuildsBase):
 
         # That builder should be available immediately since it's idle.
         check_mintime_to_builder(self, apg_job, None, None, 0)
+
+
+class TestJobClasses(TestCaseWithFactory):
+    """Tests covering build farm job type classes."""
+    layer = LaunchpadZopelessLayer
+    def setUp(self):
+        """Set up a native x86 build for the test archive."""
+        super(TestJobClasses, self).setUp()
+
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        # First mark all builds in the sample data as already built.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        sample_data = store.find(Build)
+        for build in sample_data:
+            build.buildstate = BuildStatus.FULLYBUILT
+        store.flush()
+
+        # We test builds that target a primary archive.
+        self.non_ppa = self.factory.makeArchive(
+            name="primary", purpose=ArchivePurpose.PRIMARY)
+        self.non_ppa.require_virtualized = False
+
+        self.builds = []
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.non_ppa).createMissingBuilds())
+
+    def test_BuildPackageJob(self):
+        """`BuildPackageJob` is one of the job type classes."""
+        from lp.soyuz.model.buildpackagejob import BuildPackageJob
+        _build, bq = find_job(self, 'gedit')
+
+        # This is a binary package build.
+        self.assertEqual(
+            bq.job_type, BuildFarmJobType.PACKAGEBUILD,
+            "This is a binary package build")
+
+        # The class registered for 'PACKAGEBUILD' is `BuildPackageJob`.
+        self.assertEqual(
+            bq.specific_job_classes[BuildFarmJobType.PACKAGEBUILD],
+            BuildPackageJob,
+            "The class registered for 'PACKAGEBUILD' is `BuildPackageJob`")
+
+        # The 'specific_job' object associated with this `BuildQueue`
+        # instance is of type `BuildPackageJob`.
+        self.assertTrue(bq.specific_job is not None)
+        self.assertEqual(
+            bq.specific_job.__class__, BuildPackageJob,
+            "The 'specific_job' object associated with this `BuildQueue` "
+            "instance is of type `BuildPackageJob`")
+
+    def test_OtherTypeClasses(self):
+        """Other job type classes are picked up as well."""
+        from zope import component
+        from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+        class FakeBranchBuild:
+            pass
+
+        _build, bq = find_job(self, 'gedit')
+        # First make sure that we don't have a job type class registered for
+        # 'BRANCHBUILD' yet.
+        self.assertTrue(
+            bq.specific_job_classes.get(BuildFarmJobType.BRANCHBUILD) is None)
+
+        # Pretend that our `FakeBranchBuild` class implements the
+        # `IBuildFarmJob` interface.
+        component.provideUtility(
+            FakeBranchBuild, IBuildFarmJob, 'BRANCHBUILD')
+
+        # Now we should see the `FakeBranchBuild` class "registered" in the
+        # `specific_job_classes` dictionary under the 'BRANCHBUILD' key.
+        self.assertEqual(
+            bq.specific_job_classes[BuildFarmJobType.BRANCHBUILD],
+            FakeBranchBuild)

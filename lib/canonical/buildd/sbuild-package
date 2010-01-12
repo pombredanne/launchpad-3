@@ -30,7 +30,7 @@ fi
 
 cd "$HOME/build-$BUILDID"
 
-hostarch=$(dpkg --print-installation-architecture)
+hostarch=$(dpkg --print-architecture)
 architecturetag=$hostarch
 
 if [ -f /etc/launchpad-buildd/default ]; then
@@ -48,9 +48,10 @@ case $hostarch in
     ;;
 esac
 
-LANG=C LC_ALL=C $SBUILD "$@"
+LANG=C LC_ALL=C $SBUILD "$@" | /usr/bin/check-implicit-pointer-functions --inline
 RET=$?
 
+# really successful returns
 [ $RET = 0 ] || exit $RET
 
 STATE=$(cat build-progress | awk '{print $2}')

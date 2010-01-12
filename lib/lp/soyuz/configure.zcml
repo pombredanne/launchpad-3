@@ -897,6 +897,16 @@
         <allow
             interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
     </class>
+    <!-- 
+        The registration below is used to discover all build farm job classes
+        that implement the `IBuildFarmJob` interface. Please see bug #503839
+        for more detail.
+        The 'name' attribute needs to be set to the appropriate
+        `BuildFarmJobType` enumeration value.
+    -->
+    <utility component="lp.soyuz.model.buildpackagejob.BuildPackageJob"
+        name="PACKAGEBUILD"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
 
     <!-- BinaryPackageBuildBehavior -->
     <adapter
@@ -904,5 +914,46 @@
         provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
         factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
         permission="zope.Public" />
+
+    <!-- SourcePackageRecipe -->
+    <class
+       class="lp.soyuz.model.sourcepackagerecipe.SourcePackageRecipe">
+      <allow interface="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageRecipe"/>
+      <require
+         permission="launchpad.Edit"
+         set_attributes="builder_recipe"/>
+    </class>
+    <class
+       class="bzrlib.plugins.builder.recipe.BaseRecipeBranch">
+      <allow attributes="name url revspec revid child_branches deb_version" />
+    </class>
+    <class
+       class="bzrlib.plugins.builder.recipe.RecipeBranch">
+      <allow attributes="name url revspec revid child_branches" />
+    </class>
+    <class
+       class="bzrlib.plugins.builder.recipe.MergeInstruction">
+      <allow attributes="as_tuple recipe_branch nest_path" />
+    </class>
+    <class
+       class="bzrlib.plugins.builder.recipe.NestInstruction">
+      <allow attributes="as_tuple recipe_branch nest_path" />
+    </class>
+    <securedutility
+       component="lp.soyuz.model.sourcepackagerecipe.SourcePackageRecipe"
+       provides="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource">
+      <allow interface="lp.soyuz.interfaces.sourcepackagerecipe.ISourcePackageRecipeSource"/>
+    </securedutility>
+
+    <class
+       class="lp.soyuz.model.sourcepackagebuild.SourcePackageBuild">
+      <allow interface="lp.soyuz.interfaces.sourcepackagebuild.ISourcePackageBuild"/>
+    </class>
+
+    <securedutility
+       component="lp.soyuz.model.sourcepackagebuild.SourcePackageBuild"
+       provides="lp.soyuz.interfaces.sourcepackagebuild.ISourcePackageBuildSource">
+      <allow interface="lp.soyuz.interfaces.sourcepackagebuild.ISourcePackageBuildSource"/>
+    </securedutility>
 
 </configure>
