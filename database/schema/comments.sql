@@ -1290,74 +1290,63 @@ COMMENT ON TABLE SourcePackageName IS 'SourcePackageName: A soyuz source package
 
 -- SourcePackageRecipeData
 
-COMMENT ON TABLE SourcePackageRecipeData IS '';
-COMMENT ON COLUMN SourcePackageRecipeData.id IS '';
-COMMENT ON COLUMN SourcePackageRecipeData.base_branch IS '';
-COMMENT ON COLUMN SourcePackageRecipeData.recipe_format IS '';
-COMMENT ON COLUMN SourcePackageRecipeData.deb_version_template IS '';
-COMMENT ON COLUMN SourcePackageRecipeData.revspec IS '';
+COMMENT ON TABLE SourcePackageRecipeData IS 'The database representation of a BaseRecipeBranch from bzr-builder.  Referenced from SourcePackageRecipe.recipe_data and SourcePackageRecipeBuild.manifest';
+COMMENT ON COLUMN SourcePackageRecipeData.base_branch IS 'The branch the recipe is based on.';
+COMMENT ON COLUMN SourcePackageRecipeData.recipe_format IS 'The format version of the recipe.';
+COMMENT ON COLUMN SourcePackageRecipeData.deb_version_template IS 'The template for the revision number of the build.';
+COMMENT ON COLUMN SourcePackageRecipeData.revspec IS 'The revision from base_branch to use.';
 
 -- SourcePackageRecipeDataInstruction
 
-COMMENT ON TABLE SourcePackageRecipeDataInstruction IS '';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.id IS '';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.name IS '';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.type IS '';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.comment IS '';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.line_number IS '';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.branch IS '';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.revspec IS '';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS '';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.recipe_data IS '';
-COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS '';
+COMMENT ON TABLE SourcePackageRecipeDataInstruction IS 'A line from the recipe, specifying a branch to nest or merge.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.name IS 'The name of the instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.type IS 'The type of the instruction (MERGE == 1, NEST == 2).';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.comment IS 'The comment from the recipe about this instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.line_number IS 'The line number of the instruction in the recipe.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.branch IS 'The branch being merged or nested.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.revspec IS 'The revision of the branch to use.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.directory IS 'The location to nest at, if this is a nest instruction.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.recipe_data IS 'The SourcePackageRecipeData this instruction is part of.';
+COMMENT ON COLUMN SourcePackageRecipeDataInstruction.parent_instruction IS 'The nested branch this instruction applies to, or NULL for a top-level instruction.';
 
 -- SourcePackageRecipe
 
-COMMENT ON TABLE SourcePackageRecipe IS '';
-COMMENT ON COLUMN SourcePackageRecipe.id IS '';
-COMMENT ON COLUMN SourcePackageRecipe.date_created IS '';
-COMMENT ON COLUMN SourcePackageRecipe.date_last_modified IS '';
-COMMENT ON COLUMN SourcePackageRecipe.registrant IS '';
-COMMENT ON COLUMN SourcePackageRecipe.owner IS '';
-COMMENT ON COLUMN SourcePackageRecipe.distroseries IS '';
-COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS '';
-COMMENT ON COLUMN SourcePackageRecipe.name IS '';
-COMMENT ON COLUMN SourcePackageRecipe.recipe_data IS '';
+COMMENT ON TABLE SourcePackageRecipe IS 'A recipe for assembling a source package from branches.';
+COMMENT ON COLUMN SourcePackageRecipe.registrant IS 'The person who created this recipe.';
+COMMENT ON COLUMN SourcePackageRecipe.owner IS 'The person or team who can edit this recipe.';
+COMMENT ON COLUMN SourcePackageRecipe.distroseries IS 'The distroseries this recipe builds a package for.';
+COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS 'The name of the source package this recipe builds.';
+COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
+COMMENT ON COLUMN SourcePackageRecipe.recipe_data IS 'The SourcePackageRecipeData that contains the data from the BaseRecipeBranch from bzr-builder.';
 
 -- SourcePackageRecipeBuild
 
-COMMENT ON TABLE SourcePackageRecipeBuild IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.id IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.date_created IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.distroseries IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.sourcepackagename IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_state IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.date_built IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_duration IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.build_log IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS '';
+COMMENT ON TABLE SourcePackageRecipeBuild IS 'The build record for the process of building a source package as described by a recipe.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.distroseries IS 'The distroseries the build was for.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.sourcepackagename IS 'The name of the source package that was built.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.build_state IS 'The state of the build.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.date_built IS 'When the build record was processed.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.build_duration IS 'How long this build took to be processed.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.build_log IS 'Points to the build_log file stored in librarian.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS 'Points to the builder which has once processed it.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS 'The frozen recipe that describes how to reproduce precisely this build.';
 
 -- SourcePackageRecipeBuildUpload
 
-COMMENT ON TABLE SourcePackageRecipeBuildUpload IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.id IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.date_created IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.registrant IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.source_package_recipe_build IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.archive IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.upload_log IS '';
-COMMENT ON COLUMN SourcePackageRecipeBuildUpload.state IS '';
+COMMENT ON TABLE SourcePackageRecipeBuildUpload IS 'The record of uploading the source package built by a SourcePackageRecipeBuild to an archive.';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.registrant IS 'Who requested the upload.';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.source_package_recipe_build IS 'Upload the output of this build.';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.archive IS 'The archive to upload to.';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.upload_log IS 'The output from uploading the source package to the archive.';
+COMMENT ON COLUMN SourcePackageRecipeBuildUpload.state IS 'The state of the upload.';
 
 -- BuildSourcePackageFromRecipeJob
 
-COMMENT ON TABLE BuildSourcePackageFromRecipeJob IS '';
-COMMENT ON COLUMN BuildSourcePackageFromRecipeJob.id IS '';
-COMMENT ON COLUMN BuildSourcePackageFromRecipeJob.job IS '';
-COMMENT ON COLUMN BuildSourcePackageFromRecipeJob.source_package_recipe_build IS '';
+COMMENT ON TABLE BuildSourcePackageFromRecipeJob IS 'The link between a SourcePackageRecipeBuild row and a Job row to schedule a build of a source package recipe.';
+COMMENT ON COLUMN BuildSourcePackageFromRecipeJob.source_package_recipe_build IS 'The build record describing the package being built.';
 
 -- Specification
 
