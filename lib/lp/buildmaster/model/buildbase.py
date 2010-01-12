@@ -11,21 +11,10 @@ __all__ = ['BuildBase']
 
 import datetime
 import logging
-import os
-import subprocess
-import time
 import pytz
 
-from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
-
-from canonical.config import config
-from canonical.librarian.utils import copy_and_close
-from lp.registry.interfaces.pocket import pocketsuffix
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import BuildStatus
 from canonical.database.constants import UTC_NOW
-from canonical.database.sqlbase import (
-    flush_database_updates, clear_current_connection_cache, cursor)
 
 class BuildBase:
     def handleStatus(self, status, queueItem, librarian, slave_status):
