@@ -58,7 +58,7 @@ from lp.app.interfaces.headings import IEditableContextTitle
 from lp.blueprints.browser.specificationtarget import (
     HasSpecificationsMenuMixin)
 from lp.bugs.interfaces.bugtask import RESOLVED_BUGTASK_STATUSES
-from lp.bugs.interfaces.bugwatch import IBugTracker
+from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.services.worlddata.interfaces.country import ICountry
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
@@ -1678,13 +1678,16 @@ class ProjectAddStepTwo(StepView, ProductLicenseMixin):
 
     def create_product(self, data):
         """Create the product from the user data."""
-        project = data.get('project', None)
+        # Get optional data.
+        project = data.get('project')
+        description = data.get('description')
         return getUtility(IProductSet).createProduct(
             owner=self.user,
             name=data['name'],
+            displayname=data['displayname'],
             title=data['title'],
             summary=data['summary'],
-            displayname=data['displayname'],
+            description=description,
             licenses=data['licenses'],
             license_info=data['license_info'],
             project=project

@@ -1533,6 +1533,8 @@ COMMENT ON COLUMN BuildQueue.manual IS 'Indicates if the current record was or n
 COMMENT ON COLUMN BuildQueue.job IS 'Foreign key to the `Job` table row with the generic job data.';
 COMMENT ON COLUMN BuildQueue.job_type IS 'Type of job (enumeration value), enables us to find/query the correct table with the data specific to this type of job.';
 COMMENT ON COLUMN BuildQueue.estimated_duration IS 'Estimated job duration, based on previous running times of comparable jobs.';
+COMMENT ON COLUMN BuildQueue.processor IS 'The processor required by the associated build farm job.';
+COMMENT ON COLUMN BuildQueue.virtualized IS 'The virtualization setting required by the associated build farm job.';
 
 -- Mirrors
 

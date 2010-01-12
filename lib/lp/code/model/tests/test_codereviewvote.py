@@ -9,7 +9,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.code.enums import CodeReviewVote
-from lp.code.errors import ClaimReviewFailed, ReviewNotPending
+from lp.code.errors import (
+    ClaimReviewFailed, ReviewNotPending, UserHasExistingReview)
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.testing import login_person, TestCaseWithFactory
 
@@ -43,7 +44,7 @@ class TestCodeReviewVoteReferenceClaimReview(TestCaseWithFactory):
         TestCaseWithFactory.setUp(self)
         # Setup the proposal, claimant and team reviewer.
         self.bmp = self.factory.makeBranchMergeProposal()
-        self.claimant = self.factory.makePerson()
+        self.claimant = self.factory.makePerson(name='eric')
         self.review_team = self.factory.makeTeam()
 
     def _addPendingReview(self):
@@ -71,8 +72,10 @@ class TestCodeReviewVoteReferenceClaimReview(TestCaseWithFactory):
             vote=CodeReviewVote.APPROVE)
         review = self._addPendingReview()
         self._addClaimantToReviewTeam()
-        self.assertRaises(
-            ClaimReviewFailed, review.claimReview, self.claimant)
+        self.assertRaisesWithContent(
+            UserHasExistingReview,
+            'Eric (eric) has already reviewed this',
+            review.claimReview, self.claimant)
 
     def test_personal_pending_review(self):
         # If the claimant has a pending review already, then they can't claim
@@ -83,8 +86,10 @@ class TestCodeReviewVoteReferenceClaimReview(TestCaseWithFactory):
         self.bmp.nominateReviewer(
             reviewer=self.claimant, registrant=self.bmp.registrant)
         login_person(self.claimant)
-        self.assertRaises(
-            ClaimReviewFailed, review.claimReview, self.claimant)
+        self.assertRaisesWithContent(
+            UserHasExistingReview,
+            'Eric (eric) has already been asked to review this',
+            review.claimReview, self.claimant)
 
     def test_personal_not_in_review_team(self):
         # If the claimant is not in the review team, an error is raised.
@@ -181,6 +186,76 @@ class TestCodeReviewVoteReferenceDelete(TestCaseWithFactory):
             vote=CodeReviewVote.APPROVE)
         [review] = list(bmp.votes)
         self.assertRaises(ReviewNotPending, review.delete)
+
+
+class TestCodeReviewVoteReferenceReassignReview(TestCaseWithFactory):
+    """Tests for CodeReviewVoteReference.reassignReview."""
+
+    layer = DatabaseFunctionalLayer
+
+    def makeMergeProposalWithReview(self, completed=False):
+        """Return a new merge proposal with a review."""
+        bmp = self.factory.makeBranchMergeProposal()
+        reviewer = self.factory.makePerson()
+        if completed:
+            login_person(reviewer)
+            bmp.createComment(
+                reviewer, 'Message subject', 'Message content',
+                vote=CodeReviewVote.APPROVE)
+            [review] = list(bmp.votes)
+        else:
+            login_person(bmp.registrant)
+            review = bmp.nominateReviewer(
+                reviewer=reviewer, registrant=bmp.registrant)
+        return bmp, review
+
+    def test_reassign_pending(self):
+        # A pending review can be reassigned to someone else.
+        bmp, review = self.makeMergeProposalWithReview()
+        new_reviewer = self.factory.makePerson()
+        review.reassignReview(new_reviewer)
+        self.assertEqual(new_reviewer, review.reviewer)
+
+    def test_reassign_completed_review(self):
+        # A completed review cannot be reassigned
+        bmp, review = self.makeMergeProposalWithReview(completed=True)
+        self.assertRaises(
+            ReviewNotPending, review.reassignReview, bmp.registrant)
+
+    def test_reassign_to_user_existing_pending(self):
+        # If a user has an existing pending review, they cannot have another
+        # pending review assigned to them.
+        bmp, review = self.makeMergeProposalWithReview()
+        reviewer = self.factory.makePerson(name='eric')
+        user_review = bmp.nominateReviewer(
+            reviewer=reviewer, registrant=bmp.registrant)
+        self.assertRaisesWithContent(
+            UserHasExistingReview,
+            'Eric (eric) has already been asked to review this',
+            review.reassignReview, reviewer)
+
+    def test_reassign_to_user_existing_completed(self):
+        # If a user has an existing completed review, they cannot have another
+        # pending review assigned to them.
+        bmp, review = self.makeMergeProposalWithReview()
+        reviewer = self.factory.makePerson(name='eric')
+        bmp.createComment(
+            reviewer, 'Message subject', 'Message content',
+            vote=CodeReviewVote.APPROVE)
+        self.assertRaisesWithContent(
+            UserHasExistingReview,
+            'Eric (eric) has already reviewed this',
+            review.reassignReview, reviewer)
+
+    def test_reassign_to_team_existing(self):
+        # If a team has an existing review, they can have another pending
+        # review assigned to them.
+        bmp, review = self.makeMergeProposalWithReview()
+        reviewer_team = self.factory.makeTeam()
+        team_review = bmp.nominateReviewer(
+            reviewer=reviewer_team, registrant=bmp.registrant)
+        review.reassignReview(reviewer_team)
+        self.assertEqual(reviewer_team, review.reviewer)
 
 
 def test_suite():
