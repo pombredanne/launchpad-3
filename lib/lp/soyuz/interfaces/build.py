@@ -266,24 +266,6 @@ class IBuildView(IBuildBase):
     def createBuildQueueEntry():
         """Create a BuildQueue entry for this build record."""
 
-    def notify():
-        """Notify current build state to related people via email.
-
-        If config.buildmaster.build_notification is disable, simply
-        return.
-
-        If config.builddmaster.notify_owner is enabled and SPR.creator
-        has preferredemail it will send an email to the creator, Bcc:
-        to the config.builddmaster.default_recipient. If one of the
-        conditions was not satisfied, no preferredemail found (autosync
-        or untouched packages from debian) or config options disabled,
-        it will only send email to the specified default recipient.
-
-        This notification will contain useful information about
-        the record in question (all states are supported), see
-        doc/build-notification.txt for further information.
-        """
-
     def getEstimatedBuildStartTime():
         """Get the estimated build start time for a pending build job.
 

@@ -294,13 +294,10 @@ class BuildBase:
         queueItem.reset()
 
     def getLogFromSlave(self, queueItem):
-        """Get last buildlog from slave.
-
-        Invoke getFileFromSlave method with 'buildlog' identifier.
-        """
+        """See `IBuildBase`."""
         return queueItem.builder.transferSlaveFileToLibrarian(
             'buildlog', queueItem.getLogFileName(),
-            self.archive.private)
+            self.is_private)
 
     def storeBuildInfo(self, queueItem, librarian, slave_status):
         """See `IBuildBase`."""

@@ -220,6 +220,11 @@ class Build(BuildBase, SQLBase):
         return self.archive.require_virtualized
 
     @property
+    def is_private(self):
+        """See `IBuildBase`"""
+        return self.archive.private
+
+    @property
     def title(self):
         """See `IBuild`"""
         return '%s build of %s %s in %s %s %s' % (
@@ -688,7 +693,23 @@ class Build(BuildBase, SQLBase):
         return queue_entry
 
     def notify(self, extra_info=None):
-        """See `IBuild`"""
+        """See `IBuildBase`.
+
+        If config.buildmaster.build_notification is disable, simply
+        return.
+
+        If config.builddmaster.notify_owner is enabled and SPR.creator
+        has preferredemail it will send an email to the creator, Bcc:
+        to the config.builddmaster.default_recipient. If one of the
+        conditions was not satisfied, no preferredemail found (autosync
+        or untouched packages from debian) or config options disabled,
+        it will only send email to the specified default recipient.
+
+        This notification will contain useful information about
+        the record in question (all states are supported), see
+        doc/build-notification.txt for further information.
+        """
+
         if not config.builddmaster.send_build_notification:
             return
 

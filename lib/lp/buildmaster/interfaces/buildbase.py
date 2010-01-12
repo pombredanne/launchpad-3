@@ -63,6 +63,8 @@ class IBuildBase(Interface):
 
     buildqueue_record = Attribute("Corespondent BuildQueue record")
 
+    is_private = Attribute("Whether the build should be treated as private.")
+
     def handleStatus(status, queueItem, librarian, slave_status):
         """Handle a finished build status from a slave.
 
@@ -82,3 +84,6 @@ class IBuildBase(Interface):
         Subclasses can override this as needed, and call it from custom status
         handlers, but it should not be called externally.
         """
+
+    def notify(extra_info=None):
+        """Notify current build state to related people via email."""
