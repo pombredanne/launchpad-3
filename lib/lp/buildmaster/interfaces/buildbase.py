@@ -12,4 +12,15 @@ __all__ = ['IBuildBase']
 from zope.interface import Interface
 
 class IBuildBase(Interface):
-    pass
+    def handleBuildStatus(status, queueItem, librarian, buildid, filemap,
+                          dependencies):
+        """Handle a finished build status.
+
+        Different actions will be taken depending on the given status.
+        """
+
+    def getLogFromSlave(queueItem):
+        """Get last buildlog from slave.
+
+        Invoke getFileFromSlave method with 'buildlog' identifier.
+        """
