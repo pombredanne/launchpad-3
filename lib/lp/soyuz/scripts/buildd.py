@@ -201,12 +201,10 @@ class SlaveScanner(LaunchpadCronScript):
             if not builder.is_available:
                 self.logger.warn('builder is not available. Ignored.')
                 continue
-            candidate = builder.findBuildCandidate()
+
+            candidate = builder.findAndStartJob()
             if candidate is None:
-                self.logger.debug(
-                    "No candidates available for builder.")
                 continue
-            builder.dispatchBuildCandidate(candidate)
             self.txn.commit()
 
         self.logger.info("Slave Scan Process Finished.")
