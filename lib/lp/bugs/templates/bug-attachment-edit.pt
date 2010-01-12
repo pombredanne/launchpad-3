@@ -18,16 +18,16 @@
         </p>
         <tal:is-confirmation condition="view/rendering_confirmation_step">
           <tal:is_patch condition="view/is_patch">
-            <p><strong>This file looks like a patch, but you unselected the
+            <p><strong>This file looks like a patch, but you unchecked the
               checkbox "This attachment contains a solution (patch) for this
-              bug". Please unselect it again and click on "change",
+              bug". Please uncheck it again and click on "change",
               if you are sure that this file does not contain a patch.
             </strong></p>
           </tal:is_patch>
           <tal:is_not_patch condition="not: view/is_patch">
             <p><strong>This file does not look like a patch, but you
-              selected the checkbox "This attachment contains a solution
-              (patch) for this bug". Please select it again and
+              checked the checkbox "This attachment contains a solution
+              (patch) for this bug". Please check it again and
                 click on "change", if you are sure that this file does
                 indeed contain a patch.
             </strong></p>
