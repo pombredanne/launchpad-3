@@ -474,7 +474,6 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         result = store.execute(query).get_one()
         self.assertEqual(result[0], 0)
 
-
     def test_enableArchive(self):
         # Enabling an archive should set all the Archive's suspended jobs to
         # WAITING.
@@ -485,6 +484,9 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.assertArchiveJobNotStatus(self.archive, JobStatus.SUSPENDED)
         self.assertTrue(self.archive.enabled)
 
+    def test_enableArchiveAlreadyEnabled(self):
+        # Enabling an already enabled Archive should raise an AssertionError.
+        self.assertRaises(AssertionError, self.archive.enable)
 
     def test_disableArchive(self):
         # Enabling an archive should set all the Archive's suspended jobs to
@@ -492,6 +494,11 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.archive.disable()
         self.assertArchiveJobNotStatus(self.archive, JobStatus.WAITING)
         self.assertFalse(self.archive.enabled)
+
+    def test_disableArchiveAlreadyDisabled(self):
+        # Disabling an already disabled Archive should raise an AssertionError.
+        self.archive.disable()
+        self.assertRaises(AssertionError, self.archive.disable)
 
 
 def test_suite():
