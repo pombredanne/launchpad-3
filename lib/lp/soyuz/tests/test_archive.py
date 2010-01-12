@@ -483,6 +483,7 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.archive.disable()
         self.archive.enable()
         self.assertArchiveJobNotStatus(self.archive, JobStatus.SUSPENDED)
+        self.assertTrue(self.archive.enabled)
 
 
     def test_disableArchive(self):
@@ -490,6 +491,7 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         # WAITING.
         self.archive.disable()
         self.assertArchiveJobNotStatus(self.archive, JobStatus.WAITING)
+        self.assertFalse(self.archive.enabled)
 
 
 def test_suite():
