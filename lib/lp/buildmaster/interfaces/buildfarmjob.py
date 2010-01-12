@@ -87,11 +87,6 @@ class IBuildFarmJob(Interface):
             "For job types that do not care about virtualization please "
             "return None."))
 
-    build = Reference(
-        IBuildBase, title=_("Build"),
-        description=_(
-            "The specific build for the build farm job."))
-
 
 class IBuildFarmJobDispatchEstimation(Interface):
     """Operations needed for job dipatch time estimation."""
