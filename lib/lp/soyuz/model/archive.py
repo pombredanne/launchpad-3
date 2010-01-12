@@ -32,7 +32,6 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     cursor, quote, quote_like, sqlvalues, SQLBase)
 from lp.services.job.interfaces.job import JobStatus
-from lp.services.job.model.job import Job
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from canonical.launchpad.components.tokens import (
     create_unique_token_for_table)
@@ -40,8 +39,6 @@ from lp.soyuz.model.archivedependency import ArchiveDependency
 from lp.soyuz.model.archiveauthtoken import ArchiveAuthToken
 from lp.soyuz.model.archivesubscriber import ArchiveSubscriber
 from lp.soyuz.model.build import Build
-from lp.soyuz.model.buildpackagejob import BuildPackageJob
-from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
 from lp.soyuz.model.distroseriespackagecache import DistroSeriesPackageCache
@@ -1244,7 +1241,8 @@ class Archive(SQLBase):
         return result_set
 
     def _setBuildStatuses(self, status):
-        """Update the Jobs' status attached to the Archive's pending Builds."""
+        """Update the Jobs' status attached to the Archive's pending Builds.
+        """
 
         query = """
         UPDATE Job SET status = %s
