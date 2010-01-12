@@ -10,7 +10,7 @@ CREATE TABLE SourcePackageRecipeData (
 
 CREATE TABLE SourcePackageRecipeDataInstruction (
     id serial PRIMARY KEY,
-    name text NOT NULL, -- NOT NULL?
+    name text NOT NULL,
     type integer NOT NULL, -- MERGE == 1, NEST == 2
     comment text,
     line_number integer NOT NULL,
@@ -46,7 +46,7 @@ ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipe__owner__distr
 ALTER TABLE SourcePackageRecipe ADD CONSTRAINT sourcepackagerecipedata__recipe_data
      UNIQUE (recipe_data);
 
-CREATE TABLE SourcePackageBuild (
+CREATE TABLE SourcePackageRecipeBuild (
     id serial PRIMARY KEY,
     -- most of this is just copied from Build
 
@@ -62,36 +62,36 @@ CREATE TABLE SourcePackageBuild (
     build_log integer REFERENCES libraryfilealias,
     builder integer REFERENCES builder,
     date_first_dispatched timestamp without time zone,
-    requester integer REFERENCES Person,
+    requester integer NOT NULL REFERENCES Person,
     recipe integer REFERENCES SourcePackageRecipe NOT NULL,
     manifest integer REFERENCES SourcePackageRecipeData
 );
 
-ALTER TABLE SourcePackageBuild ADD CONSTRAINT sourcepackagebuild__manifest
+ALTER TABLE SourcePackageRecipeBuild ADD CONSTRAINT sourcepackagerecipebuild__manifest
     UNIQUE (manifest);
 
-CREATE TABLE SourcePackageBuildUpload (
+CREATE TABLE SourcePackageRecipeBuildUpload (
     id serial PRIMARY KEY,
     date_created timestamp without time zone DEFAULT timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone) NOT NULL,
     registrant integer NOT NULL REFERENCES Person,
-    source_package_build integer NOT NULL REFERENCES SourcePackageBuild,
+    source_package_recipe_build integer NOT NULL REFERENCES SourcePackageRecipeBuild,
     archive integer NOT NULL REFERENCES Archive,
     upload_log integer REFERENCES LibraryFileAlias,
     state integer NOT NULL -- an enum, WAITING/UPLOADED/FAILED or something like that.
 );
 
--- indexes for SourcePackageBuildUpload I guess
+-- indexes for SourcePackageRecipeBuildUpload I guess
 
 ALTER TABLE SourcePackageRelease
-  ADD COLUMN source_package_build integer REFERENCES SourcePackageBuild;
+  ADD COLUMN source_package_recipe_build integer REFERENCES SourcePackageRecipeBuild;
 
 CREATE TABLE BuildSourcePackageFromRecipeJob (
     id serial PRIMARY KEY,
     job integer NOT NULL REFERENCES Job,
-    source_package_build integer REFERENCES SourcePackageBuild
+    source_package_recipe_build integer REFERENCES SourcePackageRecipeBuild
 );
 
-ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipejob__source_package_build
-    UNIQUE (source_package_build);
+ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipejob__source_package_recipe_build
+    UNIQUE (source_package_recipe_build);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 88, 0);
