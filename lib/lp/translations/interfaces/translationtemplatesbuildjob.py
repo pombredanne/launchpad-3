@@ -11,9 +11,6 @@ __all__ = [
 
 from zope.interface import Interface
 
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-from lp.code.interfaces.branchjob import IBranchJob
-
 
 class ITranslationTemplatesBuildJobSource(Interface):
     """Container for `TranslationTemplatesBuildJob`s."""
