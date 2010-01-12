@@ -996,8 +996,7 @@ class Build(BuildBase, SQLBase):
 
         original_slave = queueItem.builder.slave
 
-        # XXX: Add XXX
-        # XXX Robert Collins, Celso Providelo 2007-05-26:
+        # XXX Robert Collins, Celso Providelo 2007-05-26 bug=506256:
         # 'Refreshing' objects  procedure  is forced on us by using a
         # different process to do the upload, but as that process runs
         # in the same unix account, it is simply double handling and we
