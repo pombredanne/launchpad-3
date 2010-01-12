@@ -1243,10 +1243,9 @@ class Archive(SQLBase):
         result_set.config(distinct=True).order_by(SourcePackageRelease.id)
         return result_set
 
-    def enable(self):
-        """See `IArchive`."""
-        assert self._enabled == False, "This archive is already enabled."
-        self._enabled = True
+    def _setBuildStatuses(self, status):
+        """Update the Jobs' status attached to the Archive's pending Builds."""
+
         query = """
         UPDATE Job SET status = %s
         FROM Build, BuildPackageJob, BuildQueue
@@ -1258,30 +1257,22 @@ class Archive(SQLBase):
             AND Job.id = BuildQueue.job
             -- Build is in state BuildStatus.NEEDSBUILD (0)
             AND Build.buildstate = %s;
-        """ % sqlvalues(JobStatus.WAITING, self, BuildStatus.NEEDSBUILD)
+        """ % sqlvalues(status, self, BuildStatus.NEEDSBUILD)
 
         store = Store.of(self)
         store.execute(query)
+
+    def enable(self):
+        """See `IArchive`."""
+        assert self._enabled == False, "This archive is already enabled."
+        self._enabled = True
+        self._setBuildStatuses(JobStatus.WAITING)
 
     def disable(self):
         """See `IArchive`."""
         assert self._enabled == True, "This archive is already disabled."
         self._enabled = False
-        query = """
-        UPDATE Job SET status = %s
-        FROM Build, BuildPackageJob, BuildQueue
-        WHERE
-            -- insert self.id here
-            Build.archive = %s
-            AND BuildPackageJob.build = Build.id
-            AND BuildPackageJob.job = BuildQueue.job
-            AND Job.id = BuildQueue.job
-            -- Build is in state BuildStatus.NEEDSBUILD (0)
-            AND Build.buildstate = %s;
-        """ % sqlvalues(JobStatus.SUSPENDED, self, BuildStatus.NEEDSBUILD)
-
-        store = Store.of(self)
-        store.execute(query)
+        self._setBuildStatuses(JobStatus.SUSPENDED)
 
 
 class ArchiveSet:
