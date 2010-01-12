@@ -67,6 +67,5 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
 
     def gatherResults(self):
         DebianBuildManager.gatherResults(self)
-        with get_buildpath(self._buildid, 'work/manifest') as f:
-            self._slave.waitingfiles['manifest'] = self._slave.storeFile(
-                f.read())
+        self._slave.addWaitingFile(
+            get_buildpath(self._buildid, 'work/manifest'))

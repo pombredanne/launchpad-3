@@ -116,17 +116,15 @@ class DebianBuildManager(BuildManager):
         """
         path = self.getChangesFilename()
         chfile = open(path, "r")
-        filemap = {}
-        filemap[changes] = self._slave.storeFile(chfile.read())
+        self._slave.waitingfiles[changes] = self._slave.storeFile(
+            chfile.read())
         chfile.seek(0)
         seenfiles = False
 
         for fn in self._parseChangesFile(chfile):
-            with open(get_build_path(fn), "r") as f:
-                filemap[fn] = self._slave.storeFile(f.read())
+            self._slave.addWaitingFile(get_build_path(self.buildid, fn))
 
         chfile.close()
-        self._slave.waitingfiles = filemap
 
     def iterate(self, success):
         # When a Twisted ProcessControl class is killed by SIGTERM,
