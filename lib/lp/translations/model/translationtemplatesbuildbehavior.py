@@ -11,9 +11,6 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
-import socket
-import xmlrpclib
-
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -23,9 +20,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
-from lp.soyuz.interfaces.builder import BuildSlaveFailure
-from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource)
 from lp.translations.model.translationtemplatesbuildjob import (
     TranslationTemplatesBuildJob)
 
@@ -39,9 +33,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
-        # XXX JeroenVermeulen 2009-12-24 bug=500110: This method is not
-        # covered by tests yet.  Either unify it with Soyuz code into a
-        # generalised method, or test it.
         templatesbuildjob = self._findTranslationTemplatesBuildJob(
             build_queue_item)
         chroot = self._getChroot()

@@ -53,5 +53,8 @@ member of launchpad-buildd-admin:
     None
 
     >>> builder.startBuild(buildqueue, logger)
+
+The build is now marked as started.
+
     >>> print buildqueue.date_started
-    None
+    2...
