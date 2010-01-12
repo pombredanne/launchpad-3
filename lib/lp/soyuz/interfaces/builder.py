@@ -69,7 +69,7 @@ class BuildSlaveFailure(BuildDaemonError):
     """The build slave has suffered an error and cannot be used."""
 
 
-class IBuilder(IHasOwner, IBuildFarmJobBehavior):
+class IBuilder(IHasOwner):
     """Build-slave information and state.
 
     Builder instance represents a single builder slave machine within the
