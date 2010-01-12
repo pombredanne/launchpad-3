@@ -23,7 +23,10 @@ class TestSourcePackageBuild(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def makeSourcePackageBuild(self):
-        return getUtility(ISourcePackageBuildSource).new()
+        return getUtility(ISourcePackageBuildSource).new(
+            sourcepackage=self.factory.makeSourcePackage(),
+            recipe=self.factory.makeSourcePackageRecipe(),
+            requester=self.factory.makePerson())
 
     def test_providesInterface(self):
         # SourcePackageBuild provides ISourcePackageBuild.
