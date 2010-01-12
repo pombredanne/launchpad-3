@@ -24,6 +24,7 @@ from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
+
 def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
     for build in test.builds:
@@ -98,6 +99,7 @@ class TestBuildPackageJob(TestBuildJobBase):
     farm job type) targetting a single processor architecture and the primary
     archive.
     """
+
     def setUp(self):
         """Set up some native x86 builds for the test archive."""
         super(TestBuildPackageJob, self).setUp()
@@ -234,7 +236,7 @@ class TestBuildPackageJob(TestBuildJobBase):
 
         # Processor == 1 -> Intel 386
         # SELECT id,name,title FROM processor
-        #  id | name  |     title      
+        #  id | name  |     title
         # ----+-------+----------------
         #   1 | 386   | Intel 386
         #   2 | amd64 | AMD 64bit
@@ -313,7 +315,7 @@ class TestBuildPackageJob(TestBuildJobBase):
 
         # Processor == 3 -> HPPA
         # SELECT id,name,title FROM processor
-        #  id | name  |     title      
+        #  id | name  |     title
         # ----+-------+----------------
         #   1 | 386   | Intel 386
         #   2 | amd64 | AMD 64bit
