@@ -64,15 +64,14 @@ CREATE TABLE SourcePackageRecipeData (
     recipe_format text NOT NULL,
     deb_version_template text NOT NULL,
     revspec text,
-    recipe integer REFERENCES SourcePackageRecipe,
-    build integer REFERENCES SourcePackageRecipeBuild
+    source_package_recipe integer REFERENCES SourcePackageRecipe,
+    source_package_recipe_build integer REFERENCES SourcePackageRecipeBuild
 );
 
 ALTER TABLE SourcePackageRecipeData ADD CONSTRAINT sourcepackagerecipedata__recipe_or_build_is_not_null
-    CHECK (recipe IS NULL != build IS NULL);
+    CHECK (source_package_recipe IS NULL != source_package_recipe_build IS NULL);
 ALTER TABLE SourcePackageRecipeData ADD CONSTRAINT sourcepackagerecipedata__recipe_unique
-    UNIQUE (recipe, build);
-
+    UNIQUE (source_package_recipe, source_package_recipe_build);
 
 CREATE TABLE SourcePackageRecipeDataInstruction (
     id serial PRIMARY KEY,

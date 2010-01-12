@@ -1290,11 +1290,13 @@ COMMENT ON TABLE SourcePackageName IS 'SourcePackageName: A soyuz source package
 
 -- SourcePackageRecipeData
 
-COMMENT ON TABLE SourcePackageRecipeData IS 'The database representation of a BaseRecipeBranch from bzr-builder.  Referenced from SourcePackageRecipe.recipe_data and SourcePackageRecipeBuild.manifest';
+COMMENT ON TABLE SourcePackageRecipeData IS 'The database representation of a BaseRecipeBranch from bzr-builder.  Exactly one of source_package_recipe or source_package_recipe_build will be non-NULL.';
 COMMENT ON COLUMN SourcePackageRecipeData.base_branch IS 'The branch the recipe is based on.';
 COMMENT ON COLUMN SourcePackageRecipeData.recipe_format IS 'The format version of the recipe.';
 COMMENT ON COLUMN SourcePackageRecipeData.deb_version_template IS 'The template for the revision number of the build.';
 COMMENT ON COLUMN SourcePackageRecipeData.revspec IS 'The revision from base_branch to use.';
+COMMENT ON COLUMN SourcePackageRecipeData.source_package_recipe IS 'The recipe that this data is for.';
+COMMENT ON COLUMN SourcePackageRecipeData.source_package_recipe_build IS 'The build that resulted in this manifest.';
 
 -- SourcePackageRecipeDataInstruction
 
@@ -1317,7 +1319,6 @@ COMMENT ON COLUMN SourcePackageRecipe.owner IS 'The person or team who can edit 
 COMMENT ON COLUMN SourcePackageRecipe.distroseries IS 'The distroseries this recipe builds a package for.';
 COMMENT ON COLUMN SourcePackageRecipe.sourcepackagename IS 'The name of the source package this recipe builds.';
 COMMENT ON COLUMN SourcePackageRecipe.name IS 'The name of the recipe in the web/URL.';
---COMMENT ON COLUMN SourcePackageRecipe.recipe_data IS 'The SourcePackageRecipeData that contains the data from the BaseRecipeBranch from bzr-builder.';
 
 -- SourcePackageRecipeBuild
 
@@ -1332,7 +1333,6 @@ COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS 'Points to the builder whi
 COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
---COMMENT ON COLUMN SourcePackageRecipeBuild.manifest IS 'The frozen recipe that describes how to reproduce precisely this build.';
 
 -- SourcePackageRecipeBuildUpload
 
