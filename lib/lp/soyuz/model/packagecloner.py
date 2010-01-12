@@ -102,7 +102,7 @@ class PackageCloner:
             SELECT bpph.binarypackagerelease, %s as distroarchseries,
                    bpph.status, bpph.component, bpph.section, bpph.priority,
                    %s as archive, %s as datecreated, %s as datepublished,
-                   %s as pocket)
+                   %s as pocket
             FROM BinaryPackagePublishingHistory AS bpph
             WHERE bpph.distroarchseries = %s AND bpph.status in (%s, %s)
             AND
