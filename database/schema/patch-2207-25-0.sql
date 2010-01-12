@@ -49,16 +49,16 @@ CREATE TABLE SourcePackageRecipeBuildUpload (
 ALTER TABLE SourcePackageRelease
   ADD COLUMN sourcepackage_recipe_build integer REFERENCES SourcePackageRecipeBuild;
 
-CREATE TABLE BuildSourcePackageFromRecipeJob (
+CREATE TABLE SourcePackageRecipeBuildJob (
     id serial PRIMARY KEY,
     job integer NOT NULL REFERENCES Job,
     sourcepackage_recipe_build integer REFERENCES SourcePackageRecipeBuild
 );
 
-ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipejob__sourcepackage_recipe_build__key
+ALTER TABLE SourcePackageRecipeBuildJob ADD CONSTRAINT sourcepackagerecipebuildjob__sourcepackage_recipe_build__key
     UNIQUE (sourcepackage_recipe_build);
 
-ALTER TABLE BuildSourcePackageFromRecipeJob ADD CONSTRAINT buildsourcepackagefromrecipe__job__key
+ALTER TABLE SourcePackageRecipeBuildJob ADD CONSTRAINT sourcepackagerecipebuildjob__job__key
     UNIQUE (job);
 
 CREATE TABLE SourcePackageRecipeData (
