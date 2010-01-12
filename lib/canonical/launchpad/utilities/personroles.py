@@ -9,7 +9,7 @@ __all__ = ['PersonRoles']
 from zope.interface import implements
 from zope.component import adapts, getUtility
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPersonRoles)
+    IHasDrivers, ILaunchpadCelebrities, IPersonRoles)
 
 from lp.registry.interfaces.person import IPerson
 
@@ -37,10 +37,13 @@ class PersonRoles:
 
     def isDriver(self, obj):
         """See IPersonRoles."""
-        drivers = getattr(obj, 'drivers', None)
-        if drivers is None:
-            return self.person.inTeam(obj.driver)
-        for driver in drivers:
+        return self.person.inTeam(obj.driver)
+
+    def isOneOfDrivers(self, obj):
+        """See IPersonRoles."""
+        if not IHasDrivers.providedBy(obj):
+            return self.isDriver(obj)
+        for driver in obj.drivers:
             if self.person.inTeam(driver):
                 return True
         return False

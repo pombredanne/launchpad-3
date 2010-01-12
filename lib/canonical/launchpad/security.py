@@ -370,8 +370,9 @@ class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         assert self.obj.target
-        if self.obj.goal is not None:
-            if user.isOwner(self.obj.goal) or user.isDriver(self.obj.goal):
+        goal = self.obj.goal
+        if goal is not None:
+            if user.isOwner(goal) or user.isOneOfDrivers(goal):
                 return True
         return (user.in_admin or
                 user.isOwner(self.obj.target) or
@@ -385,8 +386,9 @@ class AdminSpecification(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         assert self.obj.target
-        target = self.obj.target
-        return user.isOwner(target) or user.isDriver(target) or user.in_admin
+        return (user.isOwner(self.obj.target) or
+                user.isOneOfDrivers(self.obj.target) or
+                user.in_admin)
 
 
 class DriverSpecification(AuthorizationBase):
@@ -413,7 +415,7 @@ class EditSprintSpecification(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         sprint = self.obj.sprint
-        return user.isOwner(sprint) or user.inDriver(sprint) or user.in_admin
+        return user.isOwner(sprint) or user.isDriver(sprint) or user.in_admin
 
 
 class DriveSprint(AuthorizationBase):
@@ -450,10 +452,10 @@ class EditSpecificationSubscription(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         if self.obj.specification.goal is not None:
-            if user.isDriver(self.obj.specification.goal):
+            if user.isOneOfDrivers(self.obj.specification.goal):
                 return True
         else:
-            if user.isDriver(self.obj.specification.target):
+            if user.isOneOfDrivers(self.obj.specification.target):
                 return True
         return (user.inTeam(self.obj.person) or
                 user.isOneOf(
@@ -614,7 +616,7 @@ class EditPersonBySelfOrAdmins(AuthorizationBase):
 
         The admin team can also edit any Person.
         """
-        return self.obj.id == user.id or user.in_admin
+        return self.obj.id == user.person.id or user.in_admin
 
 
 class EditTranslationsPersonByPerson(AuthorizationBase):
@@ -803,10 +805,9 @@ class SeriesDrivers(AuthorizationBase):
     usedfor = IHasDrivers
 
     def checkAuthenticated(self, user):
-        for driver in self.obj.drivers:
-            if user.inTeam(driver):
-                return True
-        return user.inTeam(self.obj.owner) or user.in_admin
+        return (user.isOneOfDrivers(self.obj) or
+                user.isOwner(self.obj) or
+                user.in_admin)
 
 
 class ViewProductSeries(AuthorizationBase):
@@ -993,16 +994,11 @@ class ViewAnnouncement(AuthorizationBase):
             return True
 
         # Project drivers can view any project announcements.
-        assert self.obj.target
-        if self.obj.target.drivers:
-            for driver in self.obj.target.drivers:
-                if user.inTeam(driver):
-                    return True
-        if user.inTeam(self.obj.target.owner):
-            return True
-
         # Launchpad admins can view any announcement.
-        return user.in_admin
+        assert self.obj.target
+        return (user.isOneOfDrivers(self.obj.target) or
+                user.isOwner(self.obj.target) or
+                user.in_admin)
 
 
 class EditAnnouncement(AuthorizationBase):
@@ -1013,14 +1009,9 @@ class EditAnnouncement(AuthorizationBase):
         """Allow the project owner and drivers to edit any project news."""
 
         assert self.obj.target
-        if self.obj.target.drivers:
-            for driver in self.obj.target.drivers:
-                if user.inTeam(driver):
-                    return True
-        if user.inTeam(self.obj.target.owner):
-            return True
-
-        return user.in_admin
+        return (user.isOneOfDrivers(self.obj.target) or
+                user.isOwner(self.obj.target) or
+                user.in_admin)
 
 
 class UseApiDoc(AuthorizationBase):
@@ -1426,11 +1417,12 @@ class EditBuildRecord(AdminByBuilddAdmin):
         # Primary or partner section here: is the user in question allowed
         # to upload to the respective component? Allow user to retry build
         # if so.
-        if self.obj.archive.canUpload(user, self.obj.current_component):
+        archive = self.obj.archive
+        if archive.canUpload(user.person, self.obj.current_component):
             return True
         else:
-            return self.obj.archive.canUpload(
-                user, self.obj.sourcepackagerelease.sourcepackagename)
+            return archive.canUpload(
+                user.person, self.obj.sourcepackagerelease.sourcepackagename)
 
 
 class ViewBuildRecord(EditBuildRecord):
@@ -1596,7 +1588,7 @@ class EditBranch(AuthorizationBase):
                 and user.inTeam(code_import.registrant)))
 
 
-def can_upload_linked_package(person, branch):
+def can_upload_linked_package(person_role, branch):
     """True if person may upload the package linked to `branch`."""
     # No associated `ISuiteSourcePackage` data -> not an official branch.
     # Abort.
@@ -1611,7 +1603,7 @@ def can_upload_linked_package(person, branch):
     # one combination that allows us to upload the corresponding source
     # package.
     for ssp in ssp_list:
-        if can_upload_to_archive(person, ssp):
+        if can_upload_to_archive(person_role.person, ssp):
             return True
     return False
 
@@ -2035,7 +2027,7 @@ class ViewArchiveAuthToken(AuthorizationBase):
     usedfor = IArchiveAuthToken
 
     def checkAuthenticated(self, user):
-        if user == self.obj.person:
+        if user.person == self.obj.person:
             return True
         auth_edit = EditArchiveAuthToken(self.obj)
         return auth_edit.checkAuthenticated(user)
@@ -2067,7 +2059,7 @@ class ViewPersonalArchiveSubscription(AuthorizationBase):
     usedfor = IPersonalArchiveSubscription
 
     def checkAuthenticated(self, user):
-        if user == self.obj.subscriber:
+        if user.person == self.obj.subscriber:
             return True
         append_archive = AppendArchive(self.obj.archive)
 
@@ -2229,10 +2221,11 @@ class ViewEmailAddress(AuthorizationBase):
                 self.obj.person.hide_email_addresses):
             return True
 
-        user = IPerson(account, None)
-        if user is None:
+        person = IPerson(account, None)
+        if person is None:
             return False
 
+        user = IPersonRoles(person)
         return (self.obj.person is not None and user.inTeam(self.obj.person)
                 or user.in_commercial_admin
                 or user.in_registry_experts
