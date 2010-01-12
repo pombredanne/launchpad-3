@@ -41,6 +41,7 @@ from canonical.database.sqlbase import flush_database_updates
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.interfaces.sourcepackagebuild import ISourcePackageBuildSource
 from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
@@ -1595,6 +1596,20 @@ class LaunchpadObjectFactory(ObjectFactory):
         recipe = self.makeRecipe(*branches)
         return getUtility(ISourcePackageRecipeSource).new(
             registrant, owner, distroseries, sourcepackagename, name, recipe)
+
+    def makeSourcePackageBuild(self, sourcepackage=None, recipe=None,
+                               requester=None):
+        """Make a new SourcePackageBuild."""
+        if sourcepackage is None:
+            sourcepackage = self.makeSourcePackage()
+        if recipe is None:
+            recipe = self.makeSourcePackageRecipe()
+        if requester is None:
+            requester = self.makePerson()
+        return getUtility(ISourcePackageBuildSource).new(
+            sourcepackage=sourcepackage,
+            recipe=recipe,
+            requester=requester)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
