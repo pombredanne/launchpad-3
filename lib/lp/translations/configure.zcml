@@ -586,7 +586,7 @@
     <utility
         component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
         provides="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJob"
-        name="TRANSLATION_TEMPLATES_BUILD"/>
+        name="TRANSLATIONTEMPLATESBUILD"/>
 
     <!-- TranslationTemplateBuildBehavior -->
     <class
