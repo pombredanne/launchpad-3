@@ -7,10 +7,12 @@ __metaclass__ = type
 import os.path
 from subprocess import call
 
+from canonical.buildd.sourcepackagerecipe import *
+
 
 class BuildRecipe:
 
-    def __init__(self, recipe_text, author_name, author_email, build_id,
+    def __init__(self, build_id, recipe_text, author_name, author_email,
                  package_name, suite):
         self.recipe_text = recipe_text
         self.author_name = author_name
@@ -65,15 +67,15 @@ class BuildRecipe:
                       ' -I -us -uc -S' % self.source_dir_relative,
                       self.username])
 
+
 if __name__ == '__main__':
     builder = RecipeBuilder(*sys.argv[1:])
     if builder.install() != 0:
-        sys.exit(1)
+        sys.exit()
     if builder.buildTree() != 0:
-        sys.exit(2)
+        sys.exit(RETCODE_BUILD_TREE_FAILED)
     if builder.installBuildDeps() != 0:
-        sys.exit(3)
+        sys.exit(RETCODE_FAILURE_INSTALL_BUILD_DEPS)
     if builder.buildSourcePackage() != 0:
-        sys.exit(4)
-    sys.exit(0)
-
+        sys.exit(RETCODE_FAILURE_BUILD_SOURCE_PACKAGE)
+    sys.exit(RETCODE_SUCCESS)

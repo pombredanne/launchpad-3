@@ -2,6 +2,11 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 from canonical.buildd.debian import DebianBuildManager, DebianBuildState
+RETCODE_SUCCESS = 0
+RETCODE_FAILURE_INSTALL = 200
+RETCODE_FAILURE_BUILD_TREE = 201
+RETCODE_FAILURE_INSTALL_BUILD_DEPS = 202
+RETCODE_FAILURE_BUILD_SOURCE_PACKAGE = 203
 
 
 class SourcePackageRecipeBuildState(DebianBuildState):
@@ -11,11 +16,12 @@ class SourcePackageRecipeBuildState(DebianBuildState):
 class SourcePackageRecipeBuildManager(DebianBuildManager):
     """Build a source package from a bzr-builder recipe."""
 
-    initial_build_state = BinaryPackageBuildState.BUILD_RECIPE
+    initial_build_state = SourcePackageRecipeState.BUILD_RECIPE
 
     def __init__(self, slave, buildid):
         DebianBuildManager.__init__(self, slave, buildid)
-        self._sbuildpath = slave._config.get("sourcepackagerecipemanager", "buildrecipepath")
+        self.build_recipe_path = slave._config.get(
+            "sourcepackagerecipemanager", "buildrecipepath")
 
     def initiate(self, files, chroot, extra_args):
         """Initiate a build with a given set of files and chroot."""
@@ -31,73 +37,25 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
 
     def doRunSbuild(self):
         """Run the sbuild process to build the package."""
-        # XXX: Replace this method here with something to run your
-        # script.
-        args = ["sbuild-package", self._buildid ]
-        args.extend(self._sbuildargs)
-        if self.arch_indep:
-            args.extend(["-A"])
-        if self.archive_purpose:
-            args.extend(["--purpose=" + self.archive_purpose])
-        if self.build_debug_symbols:
-            args.extend(["--build-debug-symbols"])
-        if self.suite:
-            args.extend(["--dist=" + self.suite])
-        else:
-            args.extend(["--dist=autobuild"])
-        args.extend(["--comp=" + self.ogre])
-        args.extend([self._dscfile])
-        self.runSubProcess( self._sbuildpath, args )
+        args = ["buildrecipe.py", self._buildid, self.recipe_data,
+        self.author_name, self.author_email, self.package_name, self.suite]
+        self.runSubProcess(self.build_recipe_path, args)
 
-    def iterate_BUILD_RECIPE(self, success):
-        """Finished the recipe build."""
-        # XXX: Replace this method here with something to run your
-        # script.
-        if success != 0:
-        if success != SBuildExitCodes.OK:
-            tmpLogHandle = open(os.path.join(self._cachepath, "buildlog"))
-            tmpLog = tmpLogHandle.read()
-            tmpLogHandle.close()
-            if (success == SBuildExitCodes.DEPFAIL or
-                success == SBuildExitCodes.PACKAGEFAIL):
-                for rx in BuildLogRegexes.GIVENBACK:
-                    mo=re.search(rx, tmpLog, re.M)
-                    if mo:
-                        success = SBuildExitCodes.GIVENBACK
-
-            if success == SBuildExitCodes.DEPFAIL:
-                for rx, dep in BuildLogRegexes.DEPFAIL:
-                    mo=re.search(rx, tmpLog, re.M)
-                    if mo:
-                        if not self.alreadyfailed:
-                            print("Returning build status: DEPFAIL")
-                            print("Dependencies: " + mo.expand(dep))
-                            self._slave.depFail(mo.expand(dep))
-                            success = SBuildExitCodes.DEPFAIL
-                            break
-                    else:
-                        success = SBuildExitCodes.PACKAGEFAIL
-
-            if success == SBuildExitCodes.GIVENBACK:
-                if not self.alreadyfailed:
-                    print("Returning build status: GIVENBACK")
-                    self._slave.giveBack()
-            elif success == SBuildExitCodes.PACKAGEFAIL:
-                if not self.alreadyfailed:
-                    print("Returning build status: PACKAGEFAIL")
-                    self._slave.buildFail()
-            elif success >= SBuildExitCodes.BUILDERFAIL:
-                # anything else is assumed to be a buildd failure
-                if not self.alreadyfailed:
-                    print("Returning build status: BUILDERFAIL")
-                    self._slave.builderFail()
-            self.alreadyfailed = True
-            self._state = DebianBuildState.REAP
-            self.doReapProcesses()
-        else:
-            print("Returning build status: OK")
-            # XXX: You'll probably need to change gatherResults a little
-            # to find your changes file.
+    def iterate_BUILD_RECIPE(self, retcode):
+        """Move from BUILD_RECIPE to the next logical state."""
+        if retcode == RETCODE_SUCCESS:
             self.gatherResults()
-            self._state = DebianBuildState.REAP
-            self.doReapProcesses()
+            print("Returning build status: OK")
+        elif (
+            retcode >= RETCODE_FAILURE_INSTALL and
+            retcode <= RETCODE_FAILURE_BUILD_SOURCE_PACKAGE):
+            # XXX AaronBentley 2009-01-13: We should handle depwait separately
+            if not self.alreadyfailed:
+                self._slave.buildFail()
+                print("Returning build status: Build failed.")
+        else:
+            if not self.alreadyfailed:
+                self._slave.builderFail()
+                print("Returning build status: Builder failed.")
+        self._state = DebianBuildState.REAP
+        self.doReapProcesses()
