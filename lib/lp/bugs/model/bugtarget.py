@@ -156,6 +156,16 @@ class HasBugsBase:
 
         return self.searchTasks(all_tasks_query)
 
+    @property
+    def patches(self):
+        """See `IHasBugs`."""
+        lst = []
+        for bugtask in self.all_bugtasks:
+            for attachment in bugtask.attachments:
+                if attachment.is_patch:
+                    lst.append(attachment)
+        return lst
+
     def getBugCounts(self, user, statuses=None):
         """See `IHasBugs`."""
         if statuses is None:

@@ -108,6 +108,13 @@
             facet="bugs"
             permission="launchpad.Edit"
             template="../templates/official-bug-target-manage-tags.pt"/>
+        <browser:page
+            name="+patches"
+            for="lp.bugs.interfaces.bugtarget.IBugTarget"
+            class="lp.bugs.browser.bugtarget.BugsPatchesView"
+            facet="bugs"
+            permission="zope.Public"
+            template="../templates/bugtarget-patches.pt"/>
     </facet>
     <browser:page
         name="+bugtarget-macros-search"

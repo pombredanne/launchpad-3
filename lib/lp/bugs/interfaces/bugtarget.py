@@ -61,6 +61,14 @@ class IHasBugs(Interface):
         description=_("The list of bug tags defined as official."),
         value_type=Tag(),
         readonly=True))
+    patches = exported(List(
+        title=_("Patches Attached to Bugs"),
+        description=_("A list of patches attached to bugs for this target."),
+        ### Using IBugAttachment() below gets this error on 'make run':
+        ###   "NameError: name 'IBugAttachment' is not defined"
+        ### But Tag() seems wrong too.  What's the right type here?
+        value_type=Tag(),
+        readonly=True))
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(

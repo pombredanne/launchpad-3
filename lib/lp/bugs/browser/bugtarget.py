@@ -15,6 +15,7 @@ __all__ = [
     "FileBugViewBase",
     "OfficialBugTagsManageView",
     "ProjectFileBugGuidedView",
+    "BugsPatchesView",
     ]
 
 import cgi
@@ -1372,3 +1373,12 @@ class OfficialBugTagsManageView(LaunchpadEditFormView):
 class BugsVHostBreadcrumb(Breadcrumb):
     rootsite = 'bugs'
     text = 'Bugs'
+
+
+class BugsPatchesView(LaunchpadView):
+    """View list of patch attachments associated with bugs."""
+
+    @property
+    def label(self):
+        """The display label for the view."""
+        return 'Patch attachments in %s' % self.context.title
