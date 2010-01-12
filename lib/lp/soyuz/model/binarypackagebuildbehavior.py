@@ -43,18 +43,6 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
                     spr.name, spr.version, build.pocket.title)
 
-    @property
-    def status(self):
-        """See `IBuildFarmJobBehavior`."""
-        build = getUtility(IBuildSet).getByQueueEntry(
-            self._builder.currentjob)
-        msg = 'Building %s' % build.title
-        archive = build.archive
-        if not archive.owner.private and (archive.is_ppa or archive.is_copy):
-            return '%s [%s/%s]' % (msg, archive.owner.name, archive.name)
-        else:
-            return msg
-
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
 

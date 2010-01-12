@@ -292,22 +292,6 @@ class Builder(SQLBase):
         build_queue_item.markAsBuilding(self)
         self.dispatchBuildToSlave(build_queue_item, logger)
 
-    # XXX cprov 2009-06-24: This code does not belong to the content
-    # class domain. Here we cannot make sensible decisions about what
-    # we are allowed to present according to the request user. Then
-    # bad things happens, see bug #391721.
-    @property
-    def status(self):
-        """See IBuilder"""
-        if not self.builderok:
-            if self.failnotes is not None:
-                return self.failnotes
-            return 'Disabled'
-
-        # If the builder is OK then we delegate the status
-        # to our current behavior.
-        return self.current_build_behavior.status
-
     def failbuilder(self, reason):
         """See IBuilder"""
         self.builderok = False

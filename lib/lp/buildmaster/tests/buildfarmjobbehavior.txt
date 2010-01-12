@@ -73,8 +73,6 @@ attribute with some binary-build specific information.
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
     >>> bob = store.find(Builder, Builder.name == 'bob').one()
-    >>> print bob.status
-    Building i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE
 
 XXX Michael Nelson 2009-12-04 bug 484819. At the time of writing the
 BuildQueue.specific_job method has not been updated to support different
@@ -87,17 +85,6 @@ Once the builder has the relevant behavior, it is able to provide both general
 builder functionality of its own accord, while delegating any build-type
 specific functionality to the behavior. For example, if the builder is not
 disabled, the builder delegates the status property to the behavior.
-
-    >>> print bob.status
-    Currently building a MyNewBuild object.
-
-On the other hand, if the builder is disabled, the builder itself determines
-the status.
-
-    >>> bob.builderok = False
-    >>> print bob.status
-    Disabled
-    >>> bob.builderok = True
 
 The IBuildFarmJobBehavior interface currently provides customisation points
 throughout the build life-cycle, from logging the start of a build, verifying
@@ -119,9 +106,6 @@ First, we'll reset the current build behavior and destroy the current job.
 
     >>> bob.current_build_behavior = None
     >>> bob.currentjob.destroySelf()
-
-    >>> print bob.status
-    Idle
 
 Attempting to use any other build-related functionality when a builder is
 idle, such as making a call to log the start of a build, will raise an
