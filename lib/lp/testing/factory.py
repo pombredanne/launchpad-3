@@ -230,7 +230,7 @@ class LaunchpadObjectFactory(ObjectFactory):
     MINIMAL_RECIPE_TEXT = dedent(u'''
         # bzr-builder format 0.2 deb-version 1.0
         %s
-        '''
+        ''')
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
