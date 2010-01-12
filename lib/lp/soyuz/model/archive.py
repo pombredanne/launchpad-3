@@ -1241,20 +1241,19 @@ class Archive(SQLBase):
         return result_set
 
     def _setBuildStatuses(self, status):
-        """Update the Jobs' status attached to the Archive's pending Builds.
-        """
+        """Update the pending Build Jobs' status for this archive."""
 
         query = """
-        UPDATE Job SET status = %s
-        FROM Build, BuildPackageJob, BuildQueue
-        WHERE
-            -- insert self.id here
-            Build.archive = %s
-            AND BuildPackageJob.build = Build.id
-            AND BuildPackageJob.job = BuildQueue.job
-            AND Job.id = BuildQueue.job
-            -- Build is in state BuildStatus.NEEDSBUILD (0)
-            AND Build.buildstate = %s;
+            UPDATE Job SET status = %s
+            FROM Build, BuildPackageJob, BuildQueue
+            WHERE
+                -- insert self.id here
+                Build.archive = %s
+                AND BuildPackageJob.build = Build.id
+                AND BuildPackageJob.job = BuildQueue.job
+                AND Job.id = BuildQueue.job
+                -- Build is in state BuildStatus.NEEDSBUILD (0)
+                AND Build.buildstate = %s;
         """ % sqlvalues(status, self, BuildStatus.NEEDSBUILD)
 
         store = Store.of(self)

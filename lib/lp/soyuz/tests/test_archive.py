@@ -395,6 +395,7 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
+        #XXX: rockstar - 12 Jan 2010 - Bug #506255 - Tidy up these tests!
         super(TestArchiveEnableDisable, self).setUp()
 
         self.publisher = SoyuzTestPublisher()
