@@ -666,20 +666,14 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
             return True
         return False
 
-    def checkAccountAuthenticated(self, account):
-        """See `IAuthorization.checkAccountAuthenticated`.
-
-        Verify that the user can view the team's membership.
+    def checkAuthenticated(self, user):
+        """Verify that the user can view the team's membership.
 
         Anyone can see a public team's membership. Only a team member
         or a Launchpad admin can view a private membership.
         """
         if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
-        person = IPerson(account, None)
-        if person is None:
-            return False
-        user = IPersonRoles(person)
         if user.in_admin or user.inTeam(self.obj):
             return True
         # We also grant visibility of the private team to administrators of
