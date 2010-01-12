@@ -11,6 +11,8 @@ __all__ = [
 from zope.component import adapts
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
+
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.soyuz.interfaces.sourcepackagebuild import (
@@ -27,8 +29,23 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
 
     status = None
 
+    @cachedproperty
+    def build(self):
+        return self.buildfarmjob.build
+
+    @property
+    def displayName(self):
+        sp = self.build.distroseries.getSourcePackage(
+            self.build.sourcepackagename)
+        ret = "%s, %s" % (
+            sp.path, self.build.recipe.name)
+        if self._builder is not None:
+            ret += " (on %s)" % self._builder.url
+        return ret
+
     def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""
+        logger.info("startBuild(%s)", self.displayName)
 
     def dispatchBuildToSlave(self, build_queue_id, logger):
         """See `IBuildFarmJobBehavior`."""
