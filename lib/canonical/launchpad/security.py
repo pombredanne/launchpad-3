@@ -676,10 +676,10 @@ class ViewPublicOrPrivateTeamMembers(AuthorizationBase):
         """
         if self.obj.visibility == PersonVisibility.PUBLIC:
             return True
-        user = IPerson(account, None)
-        if user is None:
+        person = IPerson(account, None)
+        if person is None:
             return False
-        user = IPersonRoles(user)
+        user = IPersonRoles(person)
         if user.in_admin or user.inTeam(self.obj):
             return True
         # We also grant visibility of the private team to administrators of
