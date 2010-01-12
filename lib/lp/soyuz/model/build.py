@@ -46,6 +46,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
@@ -64,7 +65,7 @@ from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
 
 
-class Build(SQLBase):
+class Build(BuildBase, SQLBase):
     implements(IBuild)
     _table = 'Build'
     _defaultOrder = 'id'

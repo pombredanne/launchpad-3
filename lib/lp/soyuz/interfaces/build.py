@@ -23,6 +23,7 @@ from zope.schema import (
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.builder import IBuilder
 from lp.registry.interfaces.distribution import IDistribution
@@ -131,7 +132,7 @@ incomplete_building_status = (
     )
 
 
-class IBuildView(Interface):
+class IBuildView(IBuildBase):
     """A Build interface for items requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
 
