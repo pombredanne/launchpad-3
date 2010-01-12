@@ -57,7 +57,7 @@ class ISourcePackageBuild(Interface):
 
     build_log = Object(
         schema=ILibraryFileAlias, required=False,
-        title=_("The LibraryFileAlias containing the entire buildlog."))
+        title=_("The LibraryFileAlias containing the entire build log."))
 
     builder = Object(
         title=_("Builder"), schema=IBuilder, required=False,
