@@ -39,7 +39,7 @@ from lp.buildmaster.master import BuilddMaster
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from canonical.database.sqlbase import SQLBase, sqlvalues
 
-# XXX Michael Nelson 2010-01-13 bug=491330
+# XXX Michael Nelson 2010-01-13 bug=491330,506617
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved, as well as when the generalisation of findBuildCandidate()
 # is completed.
