@@ -44,6 +44,7 @@ member of launchpad-buildd-admin:
 
     >>> from lp.translations.interfaces.translationtemplatesbuildjob import (
     ...     ITranslationTemplatesBuildJobSource)
+    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
     >>> branch = factory.makeBranch()
     >>> job = getUtility(ITranslationTemplatesBuildJobSource).create(branch)
     >>> buildqueue = getUtility(IBuildQueueSet).getByJob(job)
