@@ -45,19 +45,14 @@ member of launchpad-buildd-admin:
     >>> from lp.translations.interfaces.translationtemplatesbuildjob import (
     ...     ITranslationTemplatesBuildJobSource)
     >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+    >>> specific_job_source = getUtility(ITranslationTemplatesBuildJobSource)
     >>> branch = factory.makeBranch()
-    >>> job = getUtility(ITranslationTemplatesBuildJobSource).create(branch)
-    >>> buildqueue = getUtility(IBuildQueueSet).getByJob(job)
+    >>> specific_job = specific_job_source.create(branch)
+    >>> buildqueue = getUtility(IBuildQueueSet).getByJob(specific_job.job)
 
-    >>> print buildqueue.builder
-    None
     >>> print buildqueue.date_started
     None
 
     >>> builder.dispatchBuildCandidate(buildqueue)
-    >>> flush_database_updates()
-
-Verify if the job (BuildQueue) was updated appropriately:
-
-    >>> buildqueue.builder.id == builder.id
-    True
+    >>> print buildqueue.date_started
+    None
