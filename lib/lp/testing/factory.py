@@ -22,6 +22,7 @@ from email.MIMEMultipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
 import os.path
+from textwrap import dedent
 
 import pytz
 from storm.store import Store
