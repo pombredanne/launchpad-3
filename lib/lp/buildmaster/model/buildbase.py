@@ -59,12 +59,10 @@ class BuildBase:
         logger.debug("Processing successful build %s" % buildid)
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
-        build = getUtility(IBuildSet).getByQueueEntry(queueItem)
-        if not build.archive.allowUpdatesToReleasePocket():
-            assert build.distroseries.canUploadToPocket(build.pocket), (
+        if not self.archive.allowUpdatesToReleasePocket():
+            assert self.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
-                % (build.title, build.id,
-                   build.pocket.name))
+                % (self.title, self.id, self.pocket.name))
 
         # ensure we have the correct build root as:
         # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]
@@ -81,9 +79,8 @@ class BuildBase:
         # can be correctly found during the upload:
         #       <archive_id>/distribution_name
         # for all destination archive types.
-        build = getUtility(IBuildSet).getByQueueEntry(queueItem)
-        archive = build.archive
-        distribution_name = build.distribution.name
+        archive = self.archive
+        distribution_name = self.distribution.name
         target_path = '%s/%s' % (archive.id, distribution_name)
         upload_path = os.path.join(upload_dir, target_path)
         os.makedirs(upload_path)
@@ -103,10 +100,10 @@ class BuildBase:
         # add extra arguments for processing a binary upload
         extra_args = [
             "--log-file", "%s" %  uploader_logfilename,
-            "-d", "%s" % build.distribution.name,
-            "-s", "%s" % (build.distroseries.name +
-                          pocketsuffix[build.pocket]),
-            "-b", "%s" % build.id,
+            "-d", "%s" % self.distribution.name,
+            "-s", "%s" % (self.distroseries.name +
+                          pocketsuffix[self.pocket]),
+            "-b", "%s" % self.id,
             "-J", "%s" % upload_leaf,
             "%s" % root,
             ]
@@ -183,11 +180,10 @@ class BuildBase:
         # uploader about this occurrence. The failure notification will
         # also contain the information required to manually reprocess the
         # binary upload when it was the case.
-        build = getUtility(IBuildSet).getByQueueEntry(queueItem)
-        if (build.buildstate != BuildStatus.FULLYBUILT or
-            build.binarypackages.count() == 0):
-            logger.debug("Build %s upload failed." % build.id)
-            build.buildstate = BuildStatus.FAILEDTOUPLOAD
+        if (self.buildstate != BuildStatus.FULLYBUILT or
+            self.binarypackages.count() == 0):
+            logger.debug("Build %s upload failed." % self.id)
+            self.buildstate = BuildStatus.FAILEDTOUPLOAD
             # Retrieve log file content.
             possible_locations = (
                 'failed', 'failed-to-move', 'rejected', 'accepted')
@@ -207,13 +203,13 @@ class BuildBase:
                 uploader_log_content = 'Could not find upload log file'
             # Store the upload_log_contents in librarian so it can be
             # accessed by anyone with permission to see the build.
-            build.storeUploadLog(uploader_log_content)
+            self.storeUploadLog(uploader_log_content)
             # Notify the build failure.
-            build.notify(extra_info=uploader_log_content)
+            self.notify(extra_info=uploader_log_content)
         else:
             logger.debug(
                 "Gathered build %s completely" %
-                build.sourcepackagerelease.name)
+                self.sourcepackagerelease.name)
 
         # Release the builder for another job.
         queueItem.builder.cleanSlave()
@@ -228,11 +224,10 @@ class BuildBase:
         set the job status as FAILEDTOBUILD, store available info and
         remove Buildqueue entry.
         """
-        build = getUtility(IBuildSet).getByQueueEntry(queueItem)
-        build.buildstate = BuildStatus.FAILEDTOBUILD
+        self.buildstate = BuildStatus.FAILEDTOBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.builder.cleanSlave()
-        build.notify()
+        self.notify()
         queueItem.destroySelf()
 
     def buildStatus_DEPFAIL(self, queueItem, librarian, buildid,
@@ -243,8 +238,7 @@ class BuildBase:
         MANUALDEPWAIT, store available information, remove BuildQueue
         entry and release builder slave for another job.
         """
-        build = getUtility(IBuildSet).getByQueueEntry(queueItem)
-        build.buildstate = BuildStatus.MANUALDEPWAIT
+        self.buildstate = BuildStatus.MANUALDEPWAIT
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         logger.critical("***** %s is MANUALDEPWAIT *****"
                         % queueItem.builder.name)
@@ -259,8 +253,7 @@ class BuildBase:
         job as CHROOTFAIL, store available information, remove BuildQueue
         and release the builder.
         """
-        build = getUtility(IBuildSet).getByQueueEntry(queueItem)
-        build.buildstate = BuildStatus.CHROOTWAIT
+        self.buildstate = BuildStatus.CHROOTWAIT
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         logger.critical("***** %s is CHROOTWAIT *****" %
                         queueItem.builder.name)
@@ -281,7 +274,6 @@ class BuildBase:
         queueItem.builder.failbuilder(
             "Builder returned BUILDERFAIL when asked for its status")
         # simply reset job
-        build = getUtility(IBuildSet).getByQueueEntry(queueItem)
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         queueItem.reset()
 
@@ -295,7 +287,6 @@ class BuildBase:
         """
         logger.warning("***** %s is GIVENBACK by %s *****"
                        % (buildid, queueItem.builder.name))
-        build = getUtility(IBuildSet).getByQueueEntry(queueItem)
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         # XXX cprov 2006-05-30: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
@@ -309,25 +300,23 @@ class BuildBase:
 
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
-        build = getUtility(IBuildSet).getByQueueEntry(queueItem)
         return queueItem.builder.transferSlaveFileToLibrarian(
             'buildlog', queueItem.getLogFileName(),
-            build.archive.private)
+            self.archive.private)
 
     def storeBuildInfo(self, queueItem, librarian, buildid, dependencies):
         """Store available information for build jobs.
 
         Store Buildlog, datebuilt, duration, dependencies.
         """
-        build = getUtility(IBuildSet).getByQueueEntry(queueItem)
-        build.buildlog = self.getLogFromSlave(queueItem)
-        build.builder = queueItem.builder
-        build.dependencies = dependencies
+        self.buildlog = self.getLogFromSlave(queueItem)
+        self.builder = queueItem.builder
+        self.dependencies = dependencies
         # XXX cprov 20060615 bug=120584: Currently buildduration includes
         # the scanner latency, it should really be asking the slave for
         # the duration spent building locally.
-        build.datebuilt = UTC_NOW
+        self.datebuilt = UTC_NOW
         # We need dynamic datetime.now() instance to be able to perform
         # the time operations for duration.
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
-        build.buildduration = RIGHT_NOW - queueItem.date_started
+        self.buildduration = RIGHT_NOW - queueItem.date_started
