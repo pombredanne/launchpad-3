@@ -6,6 +6,8 @@
 
 # Buildd Slave sbuild manager implementation
 
+from __future__ import with_statement
+
 __metaclass__ = type
 
 import os
@@ -103,16 +105,16 @@ class DebianBuildManager(BuildManager):
                 filename = line.split(' ')[-1]
                 yield filename
 
+    def getChangesFilename(self):
+        changes = self._dscfile[:-4] + "_" + self._slave.getArch() + ".changes"
+        return get_build_path(self._buildid, changes)
+
     def gatherResults(self):
         """Gather the results of the build and add them to the file cache.
 
         The primary file we care about is the .changes file. We key from there.
         """
-        changes = self._dscfile[:-4] + "_" + self._slave.getArch() + ".changes"
-        # XXX: dsilvers 2005-03-17: This join thing needs to be split out
-        # into a method and unit tested.
-        path = os.path.join(os.environ["HOME"], "build-"+self._buildid,
-                            changes)
+        path = self.getChangesFilename()
         chfile = open(path, "r")
         filemap = {}
         filemap[changes] = self._slave.storeFile(chfile.read())
@@ -120,10 +122,8 @@ class DebianBuildManager(BuildManager):
         seenfiles = False
 
         for fn in self._parseChangesFile(chfile):
-            path = os.path.join(os.environ["HOME"], "build-"+self._buildid, fn)
-            f = open(path, "r")
-            filemap[fn] = self._slave.storeFile(f.read())
-            f.close()
+            with open(get_build_path(fn), "r") as f:
+                filemap[fn] = self._slave.storeFile(f.read())
 
         chfile.close()
         self._slave.waitingfiles = filemap
@@ -250,3 +250,8 @@ class DebianBuildManager(BuildManager):
             if not self.alreadyfailed:
                 self._slave.buildOK()
         self._slave.buildComplete()
+
+
+def get_build_path(build_id, *extra):
+    return os.path.join(
+        os.environ["HOME"], "build-" + build_id, *extra)

@@ -17,13 +17,11 @@ class BuildRecipe:
         self.recipe_text = recipe_text
         self.author_name = author_name
         self.author_email = author_email
-        self.output_dir = os.path.join(os.path.expanduser('~/build-%s',
-                                                          build_id))
         self.package_name = package_name
         self.suite = suite
         self.tree_path = None
         self.base_branch = None
-        self.chroot_path = os.path.join(self.output_dir, 'chroot-autobuild')
+        self.chroot_path = get_build_path(build_id, 'chroot-autobuild')
         self.work_dir_relative = '/home/buildd/work'
         self.work_dir = os.path.join(self.chroot_path, self.work_dir_relative)
         self.username = pwd.getpwuid(os.getuid())[0]
@@ -34,14 +32,17 @@ class BuildRecipe:
     def buildTree(self):
         recipe_path = os.path.join(self.work_dir, 'recipe')
         recipe_path_relative = os.path.join(self.work_dir_relative, 'recipe')
+        manifest_path = os.path.join(self.work_dir_relative, 'manifest')
         with open(recipe_path, 'w') as recipe_file:
             recipe_file.write(self.recipe_text)
         self.tree_path_relative = os.path.join(self.work_dir_relative, 'tree')
         env = {'DEBEMAIL': self.author_email,
                'DEBFULLNAME': self.author_name}
-        retcode = self.chroot(['su' '-c' 'bzr dailydeb --no-build %s %s' % (
+        retcode = self.chroot(['su' '-c' 'bzr dailydeb --no-build %s %s'
+                               ' --manifest %s' % (
                               recipe_path_relative, self.tree_path_relative,
-                              self.username)], env=env)
+                              self.username, manifest_path_relative)],
+                              env=env)
         if retcode == 0:
             for source in os.listdir(self.tree_path):
                 if source in ('.', '..'):

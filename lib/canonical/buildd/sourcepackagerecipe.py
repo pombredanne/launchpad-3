@@ -59,3 +59,14 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
                 print("Returning build status: Builder failed.")
         self._state = DebianBuildState.REAP
         self.doReapProcesses()
+
+    def getChangesFilename(self):
+        for name in os.listdir(get_buildpath(self._buildid, 'work')):
+            if name.endswith('_source.changes'):
+                return get_buildpath(self._buildid, 'work', name)
+
+    def gatherResults(self):
+        DebianBuildManager.gatherResults(self)
+        with get_buildpath(self._buildid, 'work/manifest') as f:
+            self._slave.waitingfiles['manifest'] = self._slave.storeFile(
+                f.read())
