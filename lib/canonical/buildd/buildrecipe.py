@@ -7,10 +7,6 @@ __metaclass__ = type
 import os.path
 from subprocess import call
 
-import lp.codehosting
-from bzrlib.plugins import builder
-from bzrlib.plugins.builder import recipe
-
 
 class BuildRecipe:
 
