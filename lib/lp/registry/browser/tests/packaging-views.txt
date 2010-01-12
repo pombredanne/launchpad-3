@@ -108,10 +108,10 @@ A source package name must be provided.
 In the case of full functionality distributions like Ubuntu, the source
 package must be published in the distro series. 
 
-    >>> vapour_spn = factory.makeSourcePackageName('vapour')
+    >>> vapor_spn = factory.makeSourcePackageName('vapor')
     >>> form = {
     ...     'field.distroseries': 'ubuntu/hoary',
-    ...     'field.sourcepackagename': 'vapour',
+    ...     'field.sourcepackagename': 'vapor',
     ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }

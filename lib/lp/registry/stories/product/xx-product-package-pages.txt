@@ -36,7 +36,7 @@ Evolution.
     >>> evo_owner.getLink(url='/ubuntu/hoary/+source/evolution') is not None
     True
 
-Any login users can still see the links to create a packaging link.
+Any logged in users can still see the links to create a packaging link.
 
     >>> user_browser.open('http://launchpad.dev/evolution/+packages')
     >>> print user_browser.getLink(url='/evolution/trunk/+ubuntupkg').url

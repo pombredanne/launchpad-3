@@ -401,9 +401,8 @@ class ProductSeriesUbuntuPackagingView(PackagingAddView):
             default=self._ubuntu_series,
             vocabulary=series_vocabulary,
             description=_(
-                "Select the Ubuntu series that this package is published "
-                "in. The current series is most important to the Ubuntu "
-                "community."),
+                "Series where this package is published. The current series "
+                "is most important to the Ubuntu community."),
             required=True)
         field = form.Fields(choice, render_context=self.render_context)
         self.form_fields = self.form_fields.omit(choice.__name__) + field
