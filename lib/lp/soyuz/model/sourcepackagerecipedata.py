@@ -4,7 +4,7 @@
 """Implementation of the recipe storage.
 
 This is purely an implementation detail of SourcePackageRecipe.recipe_data and
-SourcePackageBuild.manifest, the classes in this file have no public
+SourcePackageRecipeBuild.manifest, the classes in this file have no public
 interfaces.
 """
 
@@ -101,7 +101,8 @@ class _SourcePackageRecipeData(Storm):
     """The database representation of a BaseRecipeBranch from bzr-builder.
 
     This is referenced from the SourcePackageRecipe table as the 'recipe_data'
-    column and from the SourcePackageBuild table as the 'manifest' column.
+    column and from the SourcePackageRecipeBuild table as the 'manifest'
+    column.
     """
 
     __storm_table__ = "SourcePackageRecipeData"
