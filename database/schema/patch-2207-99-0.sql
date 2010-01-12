@@ -15,7 +15,11 @@ ALTER SEQUENCE securebinarypackagepublishinghistory_id_seq
     RENAME TO binarypackagepublishinghistory_id_seq;
 
 ALTER TABLE SourcePackagePublishingHistory
+    DROP COLUMN embargolifted;
+ALTER TABLE SourcePackagePublishingHistory
     DROP COLUMN embargo;
+ALTER TABLE BinaryPackagePublishingHistory
+    DROP COLUMN embargolifted;
 ALTER TABLE BinaryPackagePublishingHistory
     DROP COLUMN embargo;
 
