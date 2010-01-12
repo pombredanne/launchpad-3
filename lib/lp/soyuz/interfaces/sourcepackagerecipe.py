@@ -27,7 +27,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 
 
 class ForbiddenInstruction(Exception):
-    """An unsupported instruction was found in the recipe."""
+    """A forbidden instruction was found in the recipe."""
 
     def __init__(self, instruction_name):
         self.instruction_name = instruction_name

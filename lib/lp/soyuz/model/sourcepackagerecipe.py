@@ -41,7 +41,8 @@ class SourcePackageRecipe(Storm):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
-    sourcepackagename = Reference(sourcepackagename_id, 'SourcePackageName.id')
+    sourcepackagename = Reference(
+        sourcepackagename_id, 'SourcePackageName.id')
 
     name = Unicode(allow_none=True)
 

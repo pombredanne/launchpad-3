@@ -126,7 +126,8 @@ class _SourcePackageRecipeData(Storm):
             self.recipe_format, self.revspec)
         insn_stack = []
         for insn in self.instructions:
-            while insn_stack and insn_stack[-1]['insn'] != insn.parent_instruction:
+            while insn_stack and \
+                      insn_stack[-1]['insn'] != insn.parent_instruction:
                 insn_stack.pop()
             if insn_stack:
                 target_branch = insn_stack[-1]['recipe_branch']
