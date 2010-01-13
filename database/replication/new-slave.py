@@ -166,9 +166,12 @@ def main():
     source_connection.rollback()
     master_node = replication.helpers.get_master_node(source_connection)
     cur = source_connection.cursor()
-    cur.execute(
-        "SELECT set_id FROM _sl.sl_set WHERE set_origin=%d"
-        % master_node.node_id)
+    cur.execute("""
+        SELECT set_id FROM _sl.sl_set WHERE set_origin=%d
+        UNION
+        SELECT sub_set AS set_id FROM _sl.sl_subscribe
+        WHERE sub_receiver=%d AND sub_forward IS TRUE AND sub_active IS TRUE
+        """ % (master_node.node_id, master_node.node_id))
     set_ids = [set_id for set_id, in cur.fetchall()]
     log.debug("Discovered set ids %s" % repr(list(set_ids)))
 
