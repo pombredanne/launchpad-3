@@ -78,7 +78,3 @@ class TestIsReadOnlyUtility(TestCase):
         request.annotations[READ_ONLY_MODE_ANNOTATIONS_KEY] = True
         self.assertTrue(getUtility(IIsReadOnly).isReadOnly())
         self.assertFalse(read_only_file_exists())
-
-    def test_logging_mode_changes(self):
-        # XXX: Fill me!
-        pass

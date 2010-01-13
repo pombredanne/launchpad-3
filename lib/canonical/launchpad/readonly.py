@@ -7,6 +7,7 @@ To switch an app server to read-only mode, all you need to do is create a file
 named read-only.txt under the root of the Launchpad tree.
 """
 
+import logging
 import os
 import threading
 
@@ -108,7 +109,8 @@ class IsReadOnlyUtility:
             self._lock.release()
 
         if log_change:
-            # log the change
-            pass
+            logging.warning(
+                'Read-only mode change detected; now read-only is %s'
+                % read_only)
 
         return read_only
