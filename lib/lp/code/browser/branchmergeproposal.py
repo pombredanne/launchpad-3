@@ -1382,7 +1382,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
                 # Claim this vote reference, i.e. say that the individual
                 # self. user is doing this review ond behalf of the 'reviewer'
                 # team.
-                vote_ref.reviewer = self.user
+                vote_ref.claimReview(self.user)
 
         comment = self.context.createComment(
             self.user, subject=None, content=data['comment'],

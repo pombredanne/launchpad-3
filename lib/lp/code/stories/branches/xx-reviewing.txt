@@ -9,7 +9,8 @@ team review the proposal on behalf of the team.
     ...     name='eric', email='eric@example.com', password='test')
     >>> vikings = factory.makeTeam(owner=eric, name='vikings')
     >>> bmp = factory.makeBranchMergeProposal()
-    >>> ignored = bmp.nominateReviewer(eric, bmp.registrant)
+    >>> login_person(bmp.registrant)
+    >>> ignored = bmp.nominateReviewer(vikings, bmp.registrant)
     >>> url = canonical_url(bmp)
     >>> logout()
 
@@ -18,6 +19,11 @@ the reviewer block with the link '[Review]'.
 
     >>> browser = setupBrowser(auth='Basic eric@example.com:test')
     >>> browser.open(url)
+    >>> print_tag_with_id(browser.contents, 'code-review-votes')
+    Reviewer    Review Type    Date Requested   Status
+    Vikings                    ... ago          Pending   [Review]
+    Review via email:   mp...@code.launchpad.dev
+
     >>> browser.getLink('[Review]').click()
 
 The user can then add their comment.
@@ -25,3 +31,9 @@ The user can then add their comment.
     >>> browser.getControl('Comment').value = 'Looks good'
     >>> browser.getControl('Save Review').click()
 
+The team review is now claimed by the user.
+
+    >>> print_tag_with_id(browser.contents, 'code-review-votes')
+    Reviewer    Review Type    Date Requested   Status
+    Eric (community)           ... ago          Approve ... ago
+    Review via email:   mp...@code.launchpad.dev
