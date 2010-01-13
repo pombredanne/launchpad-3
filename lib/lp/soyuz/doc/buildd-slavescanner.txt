@@ -631,7 +631,7 @@ not leaving any temporary file behind. See bug #172798.
 
 Collect and process the buildlog.
 
-    >>> logfile_alias = buildergroup.getLogFromSlave(bqItem10)
+    >>> logfile_alias = bqItem10.specific_job.build.getLogFromSlave()
 
 Audit the /tmp for lost temporary files, there should not be any new
 files. For the record, the procedure creates files with the
