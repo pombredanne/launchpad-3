@@ -6,7 +6,7 @@
 __metaclass__ = type
 __all__ = ['SourcePackageRecipe']
 
-from storm.locals import Int, Reference, Storm, Unicode
+from storm.locals import Int, Reference, Store, Storm, Unicode
 
 from zope.interface import classProvides, implements
 
@@ -46,11 +46,13 @@ class SourcePackageRecipe(Storm):
 
     name = Unicode(allow_none=True)
 
-    _recipe_data_id = Int(name='recipe_data', allow_none=True)
-    _recipe_data = Reference(_recipe_data_id, '_SourcePackageRecipeData.id')
+    _recipe_data = Reference(
+        "SourcePackageRecipe.id",
+        "_SourcePackageRecipeData.sourcepackage_recipe_id", on_remote=True)
 
     def _get_builder_recipe(self):
         """Accesses of the recipe go to the _SourcePackageRecipeData."""
+        Store.of(self).flush()
         return self._recipe_data.getRecipe()
 
     def _set_builder_recipe(self, value):
@@ -61,6 +63,7 @@ class SourcePackageRecipe(Storm):
 
     def getReferencedBranches(self):
         """See `ISourcePackageRecipe.getReferencedBranches`."""
+        Store.of(self).flush()
         return self._recipe_data.getReferencedBranches()
 
     @staticmethod
@@ -69,7 +72,7 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        sprecipe._recipe_data = _SourcePackageRecipeData(builder_recipe)
+        _SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
         sprecipe.distroseries = distroseries

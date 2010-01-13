@@ -120,6 +120,16 @@ class _SourcePackageRecipeData(Storm):
         id, _SourcePackageRecipeDataInstruction.recipe_data_id,
         order_by=_SourcePackageRecipeDataInstruction.line_number)
 
+    sourcepackage_recipe_id = Int(
+        name='sourcepackage_recipe', allow_none=True)
+    sourcepackage_recipe = Reference(
+        sourcepackage_recipe_id, 'SourcePackageRecipe.id')
+
+    sourcepackage_recipe_build_id = Int(
+        name='sourcepackage_recipe_build', allow_none=True)
+    #sourcepackage_recipe = Reference(
+    #    sourcepackage_recipe_build_id, 'SourcePackageRecipeBuild.id')
+
     def getRecipe(self):
         """The BaseRecipeBranch version of the recipe."""
         base_branch = BaseRecipeBranch(
@@ -139,8 +149,8 @@ class _SourcePackageRecipeData(Storm):
                 dict(insn=insn, recipe_branch=recipe_branch))
         return base_branch
 
-    def _scanInstructions(self, branch, parent_insn, record=False,
-                             line_number=0):
+    def _scanInstructions(self, branch, parent_insn, insn_args, record=False,
+                          line_number=0):
         """Walk over the instructions in the recipe branch.
 
         If `record` is True, the instructions will be recorded in the
@@ -162,14 +172,16 @@ class _SourcePackageRecipeData(Storm):
                 comment = None
                 db_branch = getUtility(IBranchLookup).getByUrl(
                     instruction.recipe_branch.url)
-                insn = _SourcePackageRecipeDataInstruction(
-                    instruction.recipe_branch.name, type, comment,
-                    line_number, db_branch, instruction.recipe_branch.revspec,
-                    instruction.nest_path, self, parent_insn)
+                insn = len(insn_args)
+                insn_args.append(
+                    (instruction.recipe_branch.name, type, comment,
+                     line_number, db_branch, instruction.recipe_branch.revspec,
+                     instruction.nest_path, self, parent_insn))
             else:
                 insn = None
             line_number = self._scanInstructions(
-                instruction.recipe_branch, insn, record, line_number)
+                instruction.recipe_branch, insn, insn_args, record,
+                line_number)
         return line_number
 
     def setRecipe(self, builder_recipe):
@@ -177,23 +189,36 @@ class _SourcePackageRecipeData(Storm):
         if builder_recipe.format > 0.2:
             raise TooNewRecipeFormat(builder_recipe.format, 0.2)
         self._scanInstructions(
-            builder_recipe, parent_insn=None)
+            builder_recipe, parent_insn=None, insn_args=[])
         # If this object hasn't been added to a store yet, there can't be any
         # instructions linking to us yet.
         if Store.of(self) is not None:
             self.instructions.find().remove()
         branch_lookup = getUtility(IBranchLookup)
-        self.base_branch = branch_lookup.getByUrl(builder_recipe.url)
-        self.deb_version_template = unicode(builder_recipe.deb_version)
-        self.recipe_format = unicode(builder_recipe.format)
+        base_branch = branch_lookup.getByUrl(builder_recipe.url)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
+        insn_args = []
         self._scanInstructions(
-            builder_recipe, parent_insn=None, record=True)
+            builder_recipe, parent_insn=None, insn_args=insn_args,
+            record=True)
+        insns = []
+        for args in insn_args:
+            (name, type, comment, line_number, db_branch, revspec, nest_path,
+             s, parent_insn) = args
+            if parent_insn is not None:
+                parent_insn = insns[parent_insn]
+            insns.append(_SourcePackageRecipeDataInstruction(
+                name, type, comment, line_number, db_branch, revspec,
+                nest_path, s, parent_insn))
+        self.base_branch = base_branch
+        self.deb_version_template = unicode(builder_recipe.deb_version)
+        self.recipe_format = unicode(builder_recipe.format)
 
-    def __init__(self, recipe):
+    def __init__(self, recipe, sourcepackage_recipe):
         """Initialize the object from the BaseRecipeBranch."""
         self.setRecipe(recipe)
+        self.sourcepackage_recipe = sourcepackage_recipe
 
     def getReferencedBranches(self):
         """Return an iterator of the Branch objects referenced by this recipe.
