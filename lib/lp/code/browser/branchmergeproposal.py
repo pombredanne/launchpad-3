@@ -1343,11 +1343,11 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
             team = getUtility(IPersonSet).getByName(claim_review)
             if team is not None and self.user.inTeam(team):
                 # If the review type is None, then don't show the field.
+                self.reviewer = team.name
                 if self.initial_values['review_type'] == '':
                     self.form_fields = self.form_fields.omit('review_type')
                 else:
                     # Disable the review_type field
-                    self.reviewer = team.name
                     self.form_fields['review_type'].for_display = True
 
     @property
