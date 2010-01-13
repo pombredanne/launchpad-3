@@ -19,24 +19,24 @@ from zope.testing import doctest
 from canonical.launchpad.testing.pages import PageTestSuite
 from canonical.launchpad.testing.systemdocs import (
     LayeredDocFileSuite, setUp, tearDown)
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.testing.systemdocs import strip_prefix
 
 def build_test_suite(base_dir, special_tests={},
-                     layer=LaunchpadFunctionalLayer,
+                     layer=DatabaseFunctionalLayer,
                      setUp=setUp, tearDown=tearDown):
     """Build a test suite from a directory containing test files.
 
-    The 'stories' subdirectory will be checked for pagetests and the
-    'doc' subdirectory will be checked for doctests.
+    The parent's 'stories' subdirectory will be checked for pagetests and 
+    the parent's 'doc' subdirectory will be checked for doctests.
 
-    :param base_dir: The directory to check for tests.
+    :param base_dir: The tests subdirectory that.
 
     :param special_tests: A dict mapping filenames to TestSuite
-    objects. These files need special treatment (for instance, they
-    should be run in a different layer, or they need custom
-    setup/teardown). The given TestSuite object will be used for that
-    file, rather than a new one generated.
+        objects. These files need special treatment (for instance, they
+        should be run in a different layer, or they need custom
+        setup/teardown). The given TestSuite object will be used for that
+        file, rather than a new one generated.
 
     :param layer: The layer in which to run the tests.
     """

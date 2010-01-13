@@ -269,7 +269,7 @@ becomes True, but only if the viewer has permission to edit the PPA.
 
     # Disable the just created testing PPA.
     >>> login('foo.bar@canonical.com')
-    >>> testing_ppa.enabled = False
+    >>> testing_ppa.disable()
     >>> login(ANONYMOUS)
 
     >>> view = create_initialized_view(cprov.archive, name="+index")
@@ -729,7 +729,7 @@ anymore, so it's not rendered as a link.
 
     # Disable Mark's PPA.
     >>> login('foo.bar@canonical.com')
-    >>> mark.archive.enabled = False
+    >>> mark.archive.disable()
     >>> login('celso.providelo@canonical.com')
 
     >>> view = create_initialized_view(
@@ -1109,7 +1109,7 @@ When the No-Priv's PPA is disabled it's not available as a
 
     # Disable No-Priv's PPA.
     >>> login('foo.bar@canonical.com')
-    >>> no_priv.archive.enabled = False
+    >>> no_priv.archive.disable()
 
     >>> login('no-priv@canonical.com')
     >>> view = create_initialized_view(
@@ -1121,7 +1121,7 @@ When the No-Priv's PPA is disabled it's not available as a
 
     # Re-enable No-Priv's PPA.
     >>> login('foo.bar@canonical.com')
-    >>> no_priv.archive.enabled = True
+    >>> no_priv.archive.enable()
 
 'Foo Bar' user has no PPA, so he cannot perform copies at all.
 
