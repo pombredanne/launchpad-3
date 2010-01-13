@@ -64,7 +64,7 @@ from lp.code.interfaces.branchnamespace import InvalidNamespace
 from lp.code.interfaces.linkedbranch import (
     CannotHaveLinkedBranch, NoLinkedBranch)
 from lp.bugs.interfaces.bug import IBugSet
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.code.interfaces.codeimport import ICodeImportSet
 from lp.registry.interfaces.codeofconduct import ICodeOfConductSet

@@ -21,7 +21,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.soyuz.interfaces.builder import (
+from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildJobMismatch, IBuilderSet)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.interfaces import NotFoundError

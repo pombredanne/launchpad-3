@@ -10,7 +10,7 @@ from zope.component import getUtility
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.model.sourcepackage import SourcePackage
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_build import BaseTestCaseWithThreeBuilds
