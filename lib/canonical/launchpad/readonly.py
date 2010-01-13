@@ -59,6 +59,7 @@ class IIsReadOnly(Interface):
 
     _currently_in_read_only = Bool()
 
+    # pylint: disable-msg=E0211
     def isReadOnly():
         """Are we in read-only mode?
 

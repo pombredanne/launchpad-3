@@ -18,6 +18,7 @@ from zope.testing.cleanup import CleanUp
 from canonical.lazr.interfaces import IObjectPrivacy
 
 from canonical.launchpad.interfaces.account import IAccount
+from canonical.launchpad.readonly import IIsReadOnly
 from canonical.launchpad.security import AuthorizationBase
 from canonical.launchpad.webapp.authentication import LaunchpadPrincipal
 from canonical.launchpad.webapp.authorization import (
@@ -129,6 +130,11 @@ class FakeStoreSelector:
         pass
 
 
+class FakeIsReadOnlyUtility:
+    def isReadOnly(self):
+        return False
+
+
 class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
     """Test the caching done by `LaunchpadSecurityPolicy.checkPermission`."""
 
@@ -137,6 +143,9 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         super(TestCheckPermissionCaching, self).setUp()
         self.factory = ObjectFactory()
         ztapi.provideUtility(IStoreSelector, FakeStoreSelector)
+        # LaunchpadSecurityPolicy.checkPermission() needs an IIsReadOnly
+        # utility, so we provide a fake one to please it.
+        ztapi.provideUtility(IIsReadOnly, FakeIsReadOnlyUtility())
 
     def makeRequest(self):
         """Construct an arbitrary `LaunchpadBrowserRequest` object."""
