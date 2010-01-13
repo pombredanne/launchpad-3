@@ -20,8 +20,6 @@ import tempfile
 import urllib2
 import xmlrpclib
 
-from lazr.delegates import delegates
-
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -34,7 +32,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch, IBuildFarmJobBehavior)
+    BuildBehaviorMismatch)
 from lp.buildmaster.master import BuilddMaster
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -124,7 +122,7 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         """
         url = libraryfilealias.http_url
         logger.debug("Asking builder on %s to ensure it has file %s "
-                     "(%s, %s)" % (self.url, libraryfilealias.filename,
+                     "(%s, %s)" % (self.urlbase, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
         self._sendFileToSlave(url, libraryfilealias.content.sha1)
 
@@ -145,9 +143,12 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         :param args: A dictionary of extra arguments. The contents depend on
             the build job type.
         """
+        # Can't upcall to xmlrpclib.ServerProxy, since it doesn't actually
+        # have a 'build' method.
+        build_method = xmlrpclib.ServerProxy.__getattr__(self, 'build')
         try:
-            return super(BuilderSlave, self).build(
-                buildid, builder_type, chroot_sha1, filemap, args)
+            return build_method(
+                self, buildid, builder_type, chroot_sha1, filemap, args)
         except xmlrpclib.Fault, info:
             raise BuildSlaveFailure(info)
 
@@ -308,8 +309,7 @@ class Builder(SQLBase):
             self.current_build_behavior.dispatchBuildToSlave(
                 build_queue_item.id, logger)
         except BuildSlaveFailure, e:
-            logger.debug(
-                "Disabling builder: %s" % self._builder.url, exc_info=1)
+            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
             self.failbuilder(
                 "Exception (%s) when setting up to new job" % (e,))
         except CannotFetchFile, e:
