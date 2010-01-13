@@ -5,14 +5,16 @@ __metaclass__ = type
 __all__ = ['BuildFarmJob']
 
 
-from zope.interface import implements
+from zope.interface import classProvides, implements
 
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob, IBuildFarmCandidateJobSelection)
 
 
 class BuildFarmJob:
     """Mix-in class for `IBuildFarmJob` implementations."""
     implements(IBuildFarmJob)
+    classProvides(IBuildFarmCandidateJobSelection)
 
     def score(self):
         """See `IBuildFarmJob`."""
@@ -48,3 +50,12 @@ class BuildFarmJob:
         """See `IBuildFarmJob`."""
         return None
 
+    @staticmethod
+    def extraCandidateSelectionCriteria():
+        """See `IBuildFarmCandidateJobSelection`."""
+        return ([], '')
+
+    @staticmethod
+    def checkCandidate(job):
+        """See `IBuildFarmCandidateJobSelection`."""
+        return True

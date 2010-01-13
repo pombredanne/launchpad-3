@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
+    'IBuildFarmCandidateJobSelection',
     'IBuildFarmJobDispatchEstimation',
     'BuildFarmJobType',
     ]
@@ -134,3 +135,30 @@ class IBuildFarmJobDispatchEstimation(Interface):
             the pending jobs of the appropriate type.
         """
 
+
+class IBuildFarmCandidateJobSelection(Interface):
+    """Operations for refining candidate job selection (optional).
+    
+    Job type classes that do *not* need to refine candidate job selection may
+    be derived from `BuildFarmJob` which provides a base implementation of
+    this interface.
+    """
+
+    def extraCandidateSelectionCriteria():
+        """A 2-tuple with extra tables and clauses to be used to narrow down
+        the list of candidate jobs.
+
+        Example:
+            (('Build', 'BuildPackageJob'),
+             "BuildPackageJob.build = Build.id AND ..")
+        """
+
+    def checkCandidate(job):
+        """True if the candidate job is fine and should be dispatched
+        to a builder, False otherwise.
+        
+        :param job: The `BuildQueue` instance to be scrutinized.
+
+        :return: True if the candidate job should be dispatched
+            to a builder, False otherwise.
+        """
