@@ -20,7 +20,6 @@ from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
 
-from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces.launchpadstatistic import (
