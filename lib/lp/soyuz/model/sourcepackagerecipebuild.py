@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'SourcePackageBuild',
+    'SourcePackageRecipeBuild',
     ]
 
 from canonical.database.constants import UTC_NOW
@@ -18,16 +18,16 @@ from storm.locals import Int, Reference, Storm, TimeDelta
 from zope.interface import classProvides, implements
 
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.sourcepackagebuild import (
-    ISourcePackageBuild, ISourcePackageBuildSource)
+from lp.soyuz.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 
 
-class SourcePackageBuild(Storm):
+class SourcePackageRecipeBuild(Storm):
 
-    __storm_table__ = 'SourcePackageBuild'
+    __storm_table__ = 'SourcePackageRecipeBuild'
 
-    implements(ISourcePackageBuild)
-    classProvides(ISourcePackageBuildSource)
+    implements(ISourcePackageRecipeBuild)
+    classProvides(ISourcePackageRecipeBuildSource)
 
     id = Int(primary=True)
 
@@ -58,16 +58,16 @@ class SourcePackageBuild(Storm):
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
-    manifest_id = Int(name='manifest', allow_none=True)
-    manifest = Reference(manifest_id, '_SourcePackageRecipeData.id')
+    #manifest_id = Int(name='manifest', allow_none=True)
+    #manifest = Reference(manifest_id, '_SourcePackageRecipeData.id')
 
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
                  date_created=None, date_first_dispatched=None,
                  date_built=None, manifest=None, builder=None,
                  build_state=BuildStatus.NEEDSBUILD, build_log=None,
                  build_duration=None):
-        """Construct a SourcePackageBuild."""
-        super(SourcePackageBuild, self).__init__()
+        """Construct a SourcePackageRecipeBuild."""
+        super(SourcePackageRecipeBuild, self).__init__()
         self.build_duration = build_duration
         self.build_log = build_log
         self.builder = builder
@@ -76,15 +76,15 @@ class SourcePackageBuild(Storm):
         self.date_created = date_created
         self.date_first_dispatched = date_first_dispatched
         self.distroseries = distroseries
-        self.manifest = manifest
+        #self.manifest = manifest
         self.recipe = recipe
         self.requester = requester
         self.sourcepackagename = sourcepackagename
 
     @classmethod
     def new(cls, sourcepackage, recipe, requester, date_created=None):
-        """See `ISourcePackageBuildSource`."""
-        store = IMasterStore(SourcePackageBuild)
+        """See `ISourcePackageRecipeBuildSource`."""
+        store = IMasterStore(SourcePackageRecipeBuild)
         if date_created is None:
             date_created = UTC_NOW
         spbuild = cls(

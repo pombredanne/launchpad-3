@@ -12,31 +12,31 @@ from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
-from lp.soyuz.interfaces.sourcepackagebuild import (
-    ISourcePackageBuild, ISourcePackageBuildSource)
+from lp.soyuz.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 from lp.testing import TestCaseWithFactory
 
 
-class TestSourcePackageBuild(TestCaseWithFactory):
+class TestSourcePackageRecipeBuild(TestCaseWithFactory):
     """Test the source package build object."""
 
     layer = DatabaseFunctionalLayer
 
-    def makeSourcePackageBuild(self):
-        return getUtility(ISourcePackageBuildSource).new(
+    def makeSourcePackageRecipeBuild(self):
+        return getUtility(ISourcePackageRecipeBuildSource).new(
             sourcepackage=self.factory.makeSourcePackage(),
             recipe=self.factory.makeSourcePackageRecipe(),
             requester=self.factory.makePerson())
 
     def test_providesInterface(self):
-        # SourcePackageBuild provides ISourcePackageBuild.
-        spb = self.makeSourcePackageBuild()
-        self.assertProvides(spb, ISourcePackageBuild)
+        # SourcePackageRecipeBuild provides ISourcePackageRecipeBuild.
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertProvides(spb, ISourcePackageRecipeBuild)
 
     def test_saves_record(self):
-        spb = self.makeSourcePackageBuild()
+        spb = self.makeSourcePackageRecipeBuild()
         transaction.commit()
-        self.assertProvides(spb, ISourcePackageBuild)
+        self.assertProvides(spb, ISourcePackageRecipeBuild)
 
 
 def test_suite():

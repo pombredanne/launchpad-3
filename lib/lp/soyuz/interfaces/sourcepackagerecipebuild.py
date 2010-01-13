@@ -5,8 +5,8 @@
 
 __metaclass__ = type
 __all__ = [
-    'ISourcePackageBuild',
-    'ISourcePackageBuildSource',
+    'ISourcePackageRecipeBuild',
+    'ISourcePackageRecipeBuildSource',
     ]
 
 from lazr.restful.fields import Reference
@@ -25,7 +25,7 @@ from lp.soyuz.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 
 
-class ISourcePackageBuild(Interface):
+class ISourcePackageRecipeBuild(Interface):
     """A build of a source package."""
 
     date_created = Datetime(required=True, readonly=True)
@@ -76,19 +76,19 @@ class ISourcePackageBuild(Interface):
         schema=ISourcePackageRecipe, required=True,
         title=_("The recipe being built."))
 
-    manifest = Attribute(_("The manifest of the built package."))
+    #manifest = Attribute(_("The manifest of the built package."))
 
 
-class ISourcePackageBuildSource(Interface):
+class ISourcePackageRecipeBuildSource(Interface):
     """A utility of this interface be used to create source package builds."""
 
     def new(sourcepackage, recipe, requester, date_created=None):
-        """Create an `ISourcePackageBuild`.
+        """Create an `ISourcePackageRecipeBuild`.
 
         :param sourcepackage: The `ISourcePackage` that this is building.
         :param recipe: The `ISourcePackageRecipe` that this is building.
         :param requester: The `IPerson` who wants to build it.
         :param date_created: The date this build record was created. If not
             provided, defaults to now.
-        :return: `ISourcePackageBuild`.
+        :return: `ISourcePackageRecipeBuild`.
         """
