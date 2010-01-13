@@ -30,7 +30,7 @@ class IBuildFarmJobBehavior(Interface):
     def setBuilder(builder):
         """Sets the associated builder reference for this instance."""
 
-    def logStartBuild(build_queue_item, logger):
+    def logStartBuild(logger):
         """Log the start of a specific build queue item.
 
         The form of the log message will vary depending on the type of build.
@@ -38,21 +38,20 @@ class IBuildFarmJobBehavior(Interface):
         :param logger: A logger to be used to log diagnostic information.
         """
 
-    def dispatchBuildToSlave(build_queue_item, logger):
+    def dispatchBuildToSlave(build_queue_item_id, logger):
         """Dispatch a specific build to the slave.
 
-        :param build_queue_item: The `BuildQueueItem` that will be built.
-        :logger: A logger to be used to log diagnostic information.
+        :param build_queue_item_id: An identifier for the build queue item.
+        :param logger: A logger to be used to log diagnostic information.
         """
 
-    def verifyBuildRequest(build_queue_item, logger):
+    def verifyBuildRequest(logger):
         """Carry out any pre-build checks.
 
-        :param build_queue_item: The `BuildQueueItem` that is to be built.
-        :logger: A logger to be used to log diagnostic information.
+        :param logger: A logger to be used to log diagnostic information.
         """
 
-    def slaveStatus(self, raw_slave_status):
+    def slaveStatus(raw_slave_status):
         """Return a dict of custom slave status values for this behavior.
 
         :param raw_slave_status: The value returned by the build slave's

@@ -20,7 +20,6 @@ from zope.schema.interfaces import TooLong
 from zope.schema.vocabulary import getVocabularyRegistry
 
 
-from canonical.config import config
 from canonical.cachedproperty import cachedproperty
 from lp.registry.browser.announcement import HasAnnouncementsView
 from canonical.launchpad.interfaces.launchpadstatistic import (
@@ -57,6 +56,10 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
     featured_projects = []
     featured_projects_top = None
 
+
+    # Used by the footer to display the lp-arcana section.
+    is_root_page = True
+
     @staticmethod
     def _get_day_of_year():
         """Calculate the number of the current day.
@@ -82,12 +85,6 @@ class LaunchpadRootIndexView(HasAnnouncementsView, LaunchpadView):
             top_project = self._get_day_of_year() % project_count
             self.featured_projects_top = self.featured_projects.pop(
                 top_project)
-
-    def canRedirect(self):
-        """Return True if the beta server is available to the user."""
-        return bool(
-            config.launchpad.beta_testers_redirection_host is not None and
-            self.isBetaUser)
 
     @cachedproperty
     def apphomes(self):

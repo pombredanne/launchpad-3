@@ -14,7 +14,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.binarypackagebuildbehavior import (
     BinaryPackageBuildBehavior)
