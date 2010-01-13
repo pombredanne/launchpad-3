@@ -13,11 +13,10 @@ person:
 
     >>> beta_browser = setupBrowser(auth='Basic beta-admin@launchpad.net:test')
 
-# XXX jamesh 2007-01-31:
+# XXX jamesh 2007-01-31 bug=98482:
 # zope.testbrowser does not handle redirects to remote sites, so we
 # disable the redirection handling at the mechanize layer.  We then need
 # to check the HTTPError directly.
-# See http://www.zope.org/Collectors/Zope3-dev/755
 
     >>> user_browser.mech_browser.set_handle_redirect(False)
     >>> beta_browser.mech_browser.set_handle_redirect(False)
@@ -108,29 +107,36 @@ However, domains not under the main site will not be redirected:
     # Now retore our mainsite's hostname.
     >>> dummy = config.pop('mainsite_data')
 
-So that beta testers can still access the production site, the front
-page of Launchpad does not redirect.  They will also see a message
-explaining why they get redirected, and provide a link to disable the
-redirection for 2 hours:
+The front page of Launchpad does not redirect.
 
     >>> check(beta_browser.open, 'http://launchpad.dev/')
     >>> print beta_browser.url
     http://launchpad.dev/
-    >>> print find_tags_by_class(beta_browser.contents,
-    ...                          'informational message')[0]
-    <div class="informational message">
-    <p>As a member of the Launchpad Beta Testers team, you will be
-    redirected to the beta site when viewing Launchpad pages other
-    than the front page.</p>
-    <p><button onclick="setBetaRedirect(false)">Disable redirection
-    for 2 hours</button></p>
+
+On the beta site, a client side JS is available on every page (except
+the home page) in the footer that sets a cookie to inhibit
+the redirection.
+
+    # Configure the site as the beta site.
+    >>> config.push('fake_beta_site', """
+    ...     [launchpad]
+    ...     beta_testers_redirection_host = none
+    ...     is_edge: True
+    ...     site_message: This is the beta site
+    ...     """)
+
+    >>> check(beta_browser.open, 'http://launchpad.dev/ubuntu')
+    >>> print beta_browser.url
+    http://launchpad.dev/ubuntu
+    >>> print find_tags_by_class(beta_browser.contents, 'sitemessage')[0]
+    <div class="sitemessage">
+        This is the beta site
+        <a href="#" class="js-action" onclick="setBetaRedirect(false)">
+          Disable edge redirect.
+        </a>
     </div>
 
-This is so that the user can make use of some client side JS on that
-page that sets a cookie to inhibit the redirection.  When the
-redirection is inhibited, the info message changes to one that lets
-them inhibit the redirection (a lower cookie expiry is used, since the
-default is to redirect if no cookie exists):
+    >>> dummy = config.pop('fake_beta_site')
 
     # Workaround bug in mechanize where you cannot use the Cookie
     # header with the CookieJar
@@ -144,18 +150,6 @@ default is to redirect if no cookie exists):
     ...         domain_specified=True, domain_initial_dot=True, path='/',
     ...         path_specified=True, secure=False, expires=None,
     ...         discard=None, comment=None, comment_url=None, rest={}))
-    >>> check(beta_browser.open, 'http://launchpad.dev/')
-    >>> print beta_browser.url
-    http://launchpad.dev/
-    >>> print find_tags_by_class(beta_browser.contents,
-    ...                          'informational message')[0]
-    <div class="informational message">
-    <p>As a member of the Launchpad Beta Testers team, you would
-    normally be redirected to the beta site when viewing Launchpad
-    pages.  However, you currently have this disabled.</p>
-    <p><button onclick="setBetaRedirect(true)">Enable beta site
-    redirection</button></p>
-    </div>
 
 Now when they go to a page on the site, it loads as normal:
 
@@ -239,7 +233,7 @@ Add Foo Bar to the beta team.
     >>> foo_bar = getUtility(IPersonSet).getByName('name16')
     >>> launchpad_beta_testers = getUtility(
     ...     ILaunchpadCelebrities).launchpad_beta_testers
-    >>> launchpad_beta_testers.addMember(foo_bar, reviewer=foo_bar)
+    >>> ignored = launchpad_beta_testers.addMember(foo_bar, reviewer=foo_bar)
     >>> foo_bar.inTeam(launchpad_beta_testers)
     True
 

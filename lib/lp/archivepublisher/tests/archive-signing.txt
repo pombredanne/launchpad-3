@@ -75,7 +75,7 @@ we copy an arbitrary source into it.
 
 Disabled PPAs are excluded from the 'PendingSigningKey' pool:
 
-    >>> no_priv.archive.enabled = False
+    >>> no_priv.archive.disable()
 
     >>> for ppa in archive_set.getPPAsPendingSigningKey():
     ...     print ppa.displayname

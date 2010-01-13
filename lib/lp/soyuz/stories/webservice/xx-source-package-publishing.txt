@@ -111,8 +111,6 @@ publication to play with first.
     >>> from lazr.restful.testing.webservice import pprint_entry
     >>> pprint_entry(pubs['entries'][0])
     archive_link: u'http://.../~cprov/+archive/ppa'
-    binary_file_urls: []
-    changes_file_url: u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
     component_name: u'main'
     date_created: ...
     date_made_pending: None
@@ -131,10 +129,13 @@ publication to play with first.
     scheduled_deletion_date: None
     section_name: u'base'
     self_link: u'http://.../~cprov/+archive/ppa/+sourcepub/...'
-    source_file_urls: [u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666.dsc']
     source_package_name: u'testwebservice'
     source_package_version: u'666'
     status: u'Pending'
+
+    >>> webservice.named_get(
+    ...     pubs['entries'][0]['self_link'], 'changesFileUrl').jsonBody()
+    u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666_source.changes'
 
 
 Unsigned sources
@@ -180,7 +181,7 @@ A user can request a package to be deleted:
 Anonymous users can't remove packages.
 
     >>> response = webservice.named_post(
-    ...     package, 'requestDeletion', removed_by=cprov_link,
+    ...     package, 'requestDeletion', 
     ...     removal_comment="No longer needed")
     >>> print response 
     HTTP/1.1 401 Unauthorized
@@ -196,7 +197,7 @@ The owner of a PPA can delete packages.
     >>> cprov_webservice = webservice_for_person(cprov, 
     ...     permission=OAuthPermission.WRITE_PUBLIC)
     >>> response = cprov_webservice.named_post(
-    ...     package, 'requestDeletion', removed_by=cprov_link,
+    ...     package, 'requestDeletion', 
     ...     removal_comment="No longer needed")
     >>> print response 
     HTTP/1.1 200 Ok
@@ -339,23 +340,23 @@ and a list of all the relevant builds for the summary:
 
     >>> pubs = webservice.named_get(
     ...     cprov_archive['self_link'], 'getPublishedSources').jsonBody()
-    >>> def print_source_urls(pubs):
-    ...     for source_file_urls in sorted(
-    ...         entry['source_file_urls'] for entry in pubs['entries']):
-    ...         print source_file_urls
-    >>> print_source_urls(pubs)
-    []
-    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox_0.9.2.orig.tar.gz', u'http://launchpad.dev/~cprov/+archive/ppa/+files/iceweasel-1.0.dsc']
+    >>> for pub_link in sorted(
+    ...     entry['self_link'] for entry in pubs['entries']):
+    ...     source_urls = webservice.named_get(
+    ...         pub_link, 'sourceFileUrls').jsonBody()
+    ...     print source_urls
     [u'http://launchpad.dev/~cprov/+archive/ppa/+files/foobar-1.0.dsc']
+    [u'http://launchpad.dev/~cprov/+archive/ppa/+files/firefox_0.9.2.orig.tar.gz', u'http://launchpad.dev/~cprov/+archive/ppa/+files/iceweasel-1.0.dsc']
+    []
     [u'http://launchpad.dev/~cprov/+archive/ppa/+files/testwebservice_666.dsc']
 
-    >>> def print_binary_urls(pubs):
-    ...     for binary_file_urls in sorted(
-    ...         entry['binary_file_urls'] for entry in pubs['entries']):
-    ...         print binary_file_urls
-    >>> print_binary_urls(pubs)
-    []
-    []
+    >>> for pub_link in sorted(
+    ...     entry['self_link'] for entry in pubs['entries']):
+    ...     binary_urls = webservice.named_get(
+    ...         pub_link, 'binaryFileUrls').jsonBody()
+    ...     print binary_urls
     []
     [u'http://launchpad.dev/~cprov/+archive/ppa/+files/mozilla-firefox_0.9_i386.deb']
+    []
+    []
 

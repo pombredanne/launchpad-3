@@ -153,6 +153,52 @@ class TestJob(TestCase):
         job = Job(_status=JobStatus.FAILED)
         self.assertRaises(InvalidTransition, job.queue)
 
+    def test_suspend(self):
+        """A job that is in the WAITING state can be suspended."""
+        job = Job(_status=JobStatus.WAITING)
+        job.suspend()
+        self.assertEqual(
+            job.status,
+            JobStatus.SUSPENDED)
+
+    def test_suspend_when_running(self):
+        """When a job is running, attempting to suspend is invalid."""
+        job = Job(_status=JobStatus.RUNNING)
+        self.assertRaises(InvalidTransition, job.suspend)
+
+    def test_suspend_when_completed(self):
+        """When a job is completed, attempting to suspend is invalid."""
+        job = Job(_status=JobStatus.COMPLETED)
+        self.assertRaises(InvalidTransition, job.suspend)
+
+    def test_suspend_when_failed(self):
+        """When a job is failed, attempting to suspend is invalid."""
+        job = Job(_status=JobStatus.FAILED)
+        self.assertRaises(InvalidTransition, job.suspend)
+
+    def test_resume(self):
+        """A job that is suspended can be resumed."""
+        job = Job(_status=JobStatus.SUSPENDED)
+        job.resume()
+        self.assertEqual(
+            job.status,
+            JobStatus.WAITING)
+
+    def test_resume_when_running(self):
+        """When a job is running, attempting to resume is invalid."""
+        job = Job(_status=JobStatus.RUNNING)
+        self.assertRaises(InvalidTransition, job.resume)
+
+    def test_resume_when_completed(self):
+        """When a job is completed, attempting to resume is invalid."""
+        job = Job(_status=JobStatus.COMPLETED)
+        self.assertRaises(InvalidTransition, job.resume)
+
+    def test_resume_when_failed(self):
+        """When a job is failed, attempting to resume is invalid."""
+        job = Job(_status=JobStatus.FAILED)
+        self.assertRaises(InvalidTransition, job.resume)
+
 
 class TestReadiness(TestCase):
     """Test the implementation of readiness."""
@@ -224,6 +270,24 @@ class TestReadiness(TestCase):
         job = Job()
         job.acquireLease(-1)
         job.acquireLease()
+
+    def test_acquireLeaseTimeout(self):
+        """Test that getTimeout correctly calculates value from lease.
+
+        The imprecision is because leases are relative to the current time,
+        and the current time may have changed by the time we get to
+        job.getTimeout() <= 300.
+        """
+        job = Job()
+        job.acquireLease(300)
+        self.assertTrue(job.getTimeout() > 0)
+        self.assertTrue(job.getTimeout() <= 300)
+
+    def test_acquireLeaseTimeoutExpired(self):
+        """Expired leases don't produce negative timeouts."""
+        job = Job()
+        job.acquireLease(-300)
+        self.assertEqual(0, job.getTimeout())
 
 
 def test_suite():

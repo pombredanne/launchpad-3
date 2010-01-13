@@ -20,6 +20,10 @@
     <script type="text/javascript">
       LPS.use('node', 'lp.pofile', function(Y) {
           Y.on('domready', Y.lp.pofile.setupSuggestionDismissal);
+          Y.on('domready', Y.lp.pofile.initializeKeyBindings);
+          Y.on('domready', function(e) {
+            Y.one('#' + autofocus_field).focus();
+          });
       });
     </script>
     </div>
@@ -76,12 +80,13 @@
                 <th colspan="5" style="text-align: right;">
                   <input type="submit"
                          name="submit_translations"
+                         accesskey="S"
+                         id="save_and_continue_button"
                          value="Save &amp; Continue" />
                 </th>
               </tr>
             </tfoot>
           </table>
-
         </form>
 
         <!-- Paging doodads. -->
@@ -89,8 +94,9 @@
           replace="structure view/batchnav/@@+navigation-links-lower" />
       <tal:status replace="structure context/pofile/@@+access" />
       </tal:havepluralforms>
+      <metal:pofile-js-footer 
+            use-macro="context/@@+translations-macros/pofile-js-footer" />
     </div>
-
   </body>
 
 </html>

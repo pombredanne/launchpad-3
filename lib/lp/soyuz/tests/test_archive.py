@@ -3,23 +3,29 @@
 
 """Test Archive features."""
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import pytz
 import unittest
 
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
+from lp.soyuz.model.build import Build
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+
 
 class TestGetPublicationsInArchive(TestCaseWithFactory):
 
@@ -381,6 +387,132 @@ class TestCorrespondingDebugArchive(TestCaseWithFactory):
 
         self.assertIs(
             self.primary_archive.debug_archive, None)
+
+
+class TestArchiveEnableDisable(TestCaseWithFactory):
+    """Test the enable and disable methods of Archive."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        #XXX: rockstar - 12 Jan 2010 - Bug #506255 - Tidy up these tests!
+        super(TestArchiveEnableDisable, self).setUp()
+
+        self.publisher = SoyuzTestPublisher()
+        self.publisher.prepareBreezyAutotest()
+
+        self.ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+        self.archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.PRIMARY)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        sample_data = store.find(Build)
+        for build in sample_data:
+            build.buildstate = BuildStatus.FULLYBUILT
+        store.flush()
+
+        # We test builds that target a primary archive.
+        self.builds = []
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gedit", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="firefox",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="apg", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="vim", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="gcc", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="bison", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="flex", status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        self.builds.extend(
+            self.publisher.getPubSource(
+                sourcename="postgres",
+                status=PackagePublishingStatus.PUBLISHED,
+                archive=self.archive).createMissingBuilds())
+        # Set up the builds for test.
+        score = 1000
+        duration = 0
+        for build in self.builds:
+            score += 1
+            duration += 60
+            bq = build.buildqueue_record
+            bq.lastscore = score
+            bq.estimated_duration = timedelta(seconds=duration)
+
+    def _getBuildJobsByStatus(self, archive, status):
+        # Return the count for archive build jobs with the given status.
+        query = """
+            SELECT COUNT(Job.id)
+            FROM Build, BuildPackageJob, BuildQueue, Job
+            WHERE
+                Build.archive = %s
+                AND BuildPackageJob.build = Build.id
+                AND BuildPackageJob.job = BuildQueue.job
+                AND Job.id = BuildQueue.job
+                AND Build.buildstate = %s
+                AND Job.status = %s;
+        """ % sqlvalues(archive, BuildStatus.NEEDSBUILD, status)
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.execute(query).get_one()[0]
+
+    def assertNoBuildJobsHaveStatus(self, archive, status):
+        # Check that that the jobs attached to this archive do not have this
+        # status.
+        self.assertEqual(self._getBuildJobsByStatus(archive, status), 0)
+
+    def assertHasBuildJobsWithStatus(self, archive, status):
+        # Check that that there are jobs attached to this archive that have
+        # the specified status.
+        self.assertEqual(self._getBuildJobsByStatus(archive, status), 8)
+
+    def test_enableArchive(self):
+        # Enabling an archive should set all the Archive's suspended builds to
+        # WAITING.
+
+        # Disable the archive, because it's currently enabled.
+        self.archive.disable()
+        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.SUSPENDED)
+        self.archive.enable()
+        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.SUSPENDED)
+        self.assertTrue(self.archive.enabled)
+
+    def test_enableArchiveAlreadyEnabled(self):
+        # Enabling an already enabled Archive should raise an AssertionError.
+        self.assertRaises(AssertionError, self.archive.enable)
+
+    def test_disableArchive(self):
+        # Disabling an archive should set all the Archive's pending bulds to
+        # SUSPENDED.
+        self.assertHasBuildJobsWithStatus(self.archive, JobStatus.WAITING)
+        self.archive.disable()
+        self.assertNoBuildJobsHaveStatus(self.archive, JobStatus.WAITING)
+        self.assertFalse(self.archive.enabled)
+
+    def test_disableArchiveAlreadyDisabled(self):
+        # Disabling an already disabled Archive should raise an
+        # AssertionError.
+        self.archive.disable()
+        self.assertRaises(AssertionError, self.archive.disable)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

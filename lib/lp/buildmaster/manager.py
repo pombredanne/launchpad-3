@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BaseDispatchResult',
-    'BuilddManager'
+    'BuilddManager',
     'FailDispatchResult',
     'RecordingSlave',
     'ResetDispatchResult',
@@ -70,6 +70,7 @@ class RecordingSlave:
     major slave-scanner throughput issue while avoiding large-scale changes to
     its code base.
     """
+
     def __init__(self, name, url, vm_host):
         self.name = name
         self.url = url
@@ -80,6 +81,11 @@ class RecordingSlave:
 
     def __repr__(self):
         return '<%s:%s>' % (self.name, self.url)
+
+    def cacheFile(self, logger, libraryfilealias):
+        """Cache the file on the server."""
+        self.ensurepresent(
+            libraryfilealias.content.sha1, libraryfilealias.http_url, '', '')
 
     def ensurepresent(self, *args):
         """Download files needed for the build."""
@@ -159,7 +165,7 @@ class FailDispatchResult(BaseDispatchResult):
     @write_transaction
     def __call__(self):
         # Avoiding circular imports.
-        from lp.soyuz.interfaces.builder import IBuilderSet
+        from lp.buildmaster.interfaces.builder import IBuilderSet
 
         builder = getUtility(IBuilderSet)[self.slave.name]
         builder.failbuilder(self.info)
@@ -179,7 +185,7 @@ class ResetDispatchResult(BaseDispatchResult):
     @write_transaction
     def __call__(self):
         # Avoiding circular imports.
-        from lp.soyuz.interfaces.builder import IBuilderSet
+        from lp.buildmaster.interfaces.builder import IBuilderSet
 
         builder = getUtility(IBuilderSet)[self.slave.name]
         self._cleanJob(builder.currentjob)
@@ -314,7 +320,7 @@ class BuilddManager(service.Service):
         handled in an asynchronous and parallel fashion.
         """
         # Avoiding circular imports.
-        from lp.soyuz.interfaces.builder import IBuilderSet
+        from lp.buildmaster.interfaces.builder import IBuilderSet
 
         recording_slaves = []
         builder_set = getUtility(IBuilderSet)
@@ -340,19 +346,11 @@ class BuilddManager(service.Service):
                     transaction.commit()
                 continue
 
-            candidate = builder.findBuildCandidate()
-            if candidate is None:
-                self.logger.debug(
-                    "No build candidates available for builder.")
-                continue
-
             slave = RecordingSlave(builder.name, builder.url, builder.vm_host)
-            builder.setSlaveForTesting(slave)
-
-            builder.dispatchBuildCandidate(candidate)
+            candidate = builder.findAndStartJob(buildd_slave=slave)
             if builder.currentjob is not None:
                 recording_slaves.append(slave)
-            transaction.commit()
+                transaction.commit()
 
         return recording_slaves
 

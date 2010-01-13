@@ -79,16 +79,14 @@ from lp.code.browser.branchref import BranchRef
 from lp.code.browser.branchmergeproposal import (
     latest_proposals_for_each_branch)
 from lp.code.enums import (
-    BranchLifecycleStatus, BranchType, RevisionControlSystems,
-    UICreatableBranchType)
+    BranchLifecycleStatus, BranchType, CodeImportJobState,
+    CodeImportReviewStatus, RevisionControlSystems, UICreatableBranchType)
 from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch,
     user_has_special_branch_access)
 from lp.code.interfaces.branchtarget import IBranchTarget
-from lp.code.interfaces.codeimport import CodeImportReviewStatus
-from lp.code.interfaces.codeimportjob import (
-    CodeImportJobState, ICodeImportJobWorkflow)
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
 from lp.code.interfaces.codereviewvote import ICodeReviewVoteReference
 from lp.registry.interfaces.person import IPerson, IPersonSet

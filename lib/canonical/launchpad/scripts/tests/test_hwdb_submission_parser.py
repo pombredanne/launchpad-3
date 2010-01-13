@@ -25,12 +25,14 @@ from canonical.testing import BaseLayer
 
 from lp.testing import TestCase, validate_mock_class
 
+
 class SubmissionParserTestParseSoftware(SubmissionParser):
     """A Variant used to test SubmissionParser._parseSoftware.
 
     This class can be used to test the regular case of
     submission data.
     """
+
     def __init__(self, test, logger=None):
         super(SubmissionParserTestParseSoftware, self).__init__(logger)
         self.test = test
@@ -54,6 +56,7 @@ class SubmissionParserTestParseSoftwareNoXorgNode(SubmissionParser):
     This class is intended to test submission data that does not contain
     a <xorg> node.
     """
+
     def __init__(self, test, logger=None):
         super(SubmissionParserTestParseSoftwareNoXorgNode, self).__init__(
             logger)
@@ -74,6 +77,7 @@ class SubmissionParserTestParseSoftwareNoPackagesNode(SubmissionParser):
     This class is intended to test submission data that does not contain
     a <packages> node.
     """
+
     def __init__(self, test, logger=None):
         super(SubmissionParserTestParseSoftwareNoPackagesNode, self).__init__(
             logger)
@@ -95,6 +99,7 @@ class TestHWDBSubmissionParser(TestCase):
 
     def setUp(self):
         """Setup the test environment."""
+        super(TestHWDBSubmissionParser, self).setUp()
         self.log = logging.getLogger('test_hwdb_submission_parser')
         self.log.setLevel(logging.INFO)
         self.handler = Handler(self)
@@ -250,7 +255,7 @@ class TestHWDBSubmissionParser(TestCase):
                     {'name': 'architecture_info',
                      'version': '1.1'},
                     {'name': 'find_network_controllers',
-                     'version': '2.34'}]}
+                     'version': '2.34'}]},
             }
         self.assertEqual(
             summary, expected_data,
@@ -293,7 +298,7 @@ class TestHWDBSubmissionParser(TestCase):
                 'plugins': [
                     {
                         'name': 'architecture_info',
-                        'version': '1.1'
+                        'version': '1.1',
                         },
                     {
                         'name': 'find_network_controllers',
@@ -483,7 +488,6 @@ class TestHWDBSubmissionParser(TestCase):
             </container>
             """)
         self.assertRaises(ValueError, parser._parseProperties, node)
-
 
     def testDevice(self):
         """A device node is converted into a dictionary."""
@@ -919,6 +923,7 @@ invalid line
 
         All "method substitutes" return a valid result.
         """
+
         def __init__(self, logger=None):
             super(self.__class__, self).__init__(logger)
             self.hal_result = 'parsed HAL data'
@@ -1312,6 +1317,7 @@ invalid line
 
         All "method substitutes" return a valid result.
         """
+
         def __init__(self, logger=None):
             SubmissionParser.__init__(self, logger)
             self.summary_result = 'parsed summary'
@@ -1363,8 +1369,8 @@ invalid line
             'summary': 'parsed summary',
             'hardware': 'parsed hardware',
             'software': 'parsed software',
-            'questions':  'parsed questions',
-            'context':  'parsed context',
+            'questions': 'parsed questions',
+            'context': 'parsed context',
             }
 
         result = parser.parseMainSections(node)
@@ -1550,7 +1556,7 @@ invalid line
             'hardware': {
                 'udev': udev,
                 'sysfs-attributes': sysfs_attributes,
-                'processors': processors
+                'processors': processors,
                 },
             'software': {
                 'packages': packages
@@ -1579,7 +1585,7 @@ invalid line
             ]
         processors = [
             {'id': 1},
-            {'id': 2}
+            {'id': 2},
             ]
         packages = {
             'bzr': {'id': 4},
@@ -1589,7 +1595,7 @@ invalid line
             'hardware': {
                 'udev': udev,
                 'sysfs-attributes': sysfs_attributes,
-                'processors': processors
+                'processors': processors,
                 },
             'software': {
                 'packages': packages
@@ -1646,7 +1652,7 @@ invalid line
         submission = {
             'hardware': {
                 'udev': devices,
-                'processors': processors
+                'processors': processors,
                 },
             'software': {
                 'packages': packages
@@ -1707,8 +1713,7 @@ invalid line
          {'udi': DEVICE_2_UDI,
           'properties': {
               'info.parent': (ROOT_UDI,
-                              'dbus.String')}
-         }]
+                              'dbus.String')}}]
 
     def testUDIDeviceMap(self):
         """Test the creation of the mapping UDI -> device."""
@@ -1893,7 +1898,7 @@ invalid line
                    'properties':
                        {'info.parent':
                             (self.CIRCULAR_UDI_1, 'str')}}
-        devices = [device1, device2, circular_device1,  circular_device2]
+        devices = [device1, device2, circular_device1, circular_device2]
         parser = SubmissionParser()
         udi_device_map = parser.getUDIDeviceMap(devices)
         udi_children = parser.getUDIChildren(udi_device_map)
