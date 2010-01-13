@@ -14,7 +14,7 @@ from zope.schema import Choice, Datetime, Object, TextLine, Timedelta
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import exported
 
-from lp.soyuz.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.builder import IBuilder
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad import _
 
