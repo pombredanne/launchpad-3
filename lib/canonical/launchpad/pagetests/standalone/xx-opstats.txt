@@ -234,8 +234,8 @@ to somewhere that doesn't exist.
 
     >>> no_db_overrides = """
     ...     [database]
-    ...     main_master: dbname=nonexistant
-    ...     main_slave: dbname=nonexistant
+    ...     rw_main_master: dbname=nonexistant
+    ...     rw_main_slave: dbname=nonexistant
     ...     auth_master: dbname=nonexistant
     ...     auth_slave: dbname=nonexistant
     ...

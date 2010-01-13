@@ -48,3 +48,10 @@ The above only works because our custom Database class (LaunchpadDatabase)
 sets self._dsn inside raw_connect(), instead of inside __init__() (like its
 parent class does).  That's needed because the Database objects are reused
 across threads/stores by ZStorm.
+
+Tests
+=====
+
+- pagetests/standalone/xx-read-only-mode.txt works as the integration test
+- test_readonly.py
+- webapp/tests/test_publication.py

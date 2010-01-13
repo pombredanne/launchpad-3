@@ -13,7 +13,7 @@ request is querying the master or slave database.
     >>> from textwrap import dedent
     >>> config_overlay = dedent("""
     ...     [database]
-    ...     main_slave: dbname=launchpad_empty
+    ...     rw_main_slave: dbname=launchpad_empty
     ...     """)
     >>> config.push('empty_slave', config_overlay)
 
