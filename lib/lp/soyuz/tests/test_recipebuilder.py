@@ -28,7 +28,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertProvides(recipe_builder, IBuildFarmJobBehavior)
 
     def test_adapts_IBuildSourcePackageFromRecipeJob(self):
-        job = self.factory.makeSourcePackageBuild().makeJob()
+        job = self.factory.makeSourcePackageRecipeBuild().makeJob()
         job = IBuildFarmJobBehavior(job)
         self.assertProvides(job, IBuildFarmJobBehavior)
 
@@ -38,10 +38,13 @@ class TestRecipeBuilder(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries(name="mydistro", 
             distribution=distro)
         sourcepackage = self.factory.makeSourcePackage(spn, distroseries)
-        recipe = self.factory.makeSourcePackageRecipe(name=u"recept")
         requester = self.factory.makePerson(email="requester@ubuntu.com",
-            displayname="Joe User")
-        spb = self.factory.makeSourcePackageBuild(sourcepackage=sourcepackage,
+            name="joe", displayname="Joe User")
+        somebranch = self.factory.makeBranch(owner=requester, name="pkg", 
+            product=self.factory.makeProduct("someapp"))
+        recipe = self.factory.makeSourcePackageRecipe(requester, requester, 
+             distroseries, spn, u"recept", somebranch)
+        spb = self.factory.makeSourcePackageRecipeBuild(sourcepackage=sourcepackage,
             recipe=recipe, requester=requester)
         job = spb.makeJob()
         job = IBuildFarmJobBehavior(job)
@@ -77,7 +80,9 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'suite': u'mydistro',
            'author_name': u'Joe User',
            'package_name': u'apackage',
-           'recipe_text': "",
+           'archive_purpose': 'PPA',
+           'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
+                          'lp://dev/~joe/someapp/pkg\n',
             }, job._extraBuildArgs())
 
     def test_dispatchBuildToSlave(self):

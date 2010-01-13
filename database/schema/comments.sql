@@ -321,7 +321,7 @@ COMMENT ON COLUMN CodeImport.registrant IS 'The person who originally requested 
 COMMENT ON COLUMN CodeImport.owner IS 'The person who is currently responsible for keeping the import details up to date, initially set to the registrant. This person can edit some of the details of the code import branch.';
 COMMENT ON COLUMN CodeImport.review_status IS 'Whether this code import request has been reviewed, and whether it was accepted.';
 COMMENT ON COLUMN CodeImport.rcs_type IS 'The revision control system used by the import source. The value is defined in dbschema.RevisionControlSystems.';
-COMMENT ON COLUMN CodeImport.svn_branch_url IS 'The URL of the Subversion branch for this import.';
+COMMENT ON COLUMN CodeImport.url IS 'The URL of the foreign VCS branch for this import.';
 COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the form :pserver:user@host:/path.';
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
 COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
@@ -1333,6 +1333,7 @@ COMMENT ON COLUMN SourcePackageRecipeBuild.builder IS 'Points to the builder whi
 COMMENT ON COLUMN SourcePackageRecipeBuild.date_first_dispatched IS 'The instant the build was dispatched the first time. This value will not get overridden if the build is retried.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.requester IS 'Who requested the build.';
 COMMENT ON COLUMN SourcePackageRecipeBuild.recipe IS 'The recipe being processed.';
+COMMENT ON COLUMN SourcePackageRecipeBuild.archive IS 'The archive the source package will be uploaded to.';
 
 -- SourcePackageRecipeBuildUpload
 

@@ -18,10 +18,10 @@ from zope.schema import Bool, Choice, Datetime, Field, Int, Text, Timedelta
 from lazr.restful.fields import Reference
 
 from canonical.launchpad import _
+from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJob, BuildFarmJobType)
 from lp.services.job.interfaces.job import IJob
-from lp.soyuz.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.processor import IProcessor
 
 

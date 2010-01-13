@@ -15,7 +15,6 @@ __all__ = [
     'CodeImportView',
     ]
 
-from cgi import escape
 
 from BeautifulSoup import BeautifulSoup
 from zope.app.form import CustomWidgetFactory
@@ -24,16 +23,16 @@ from zope.app.form.utility import setUpWidget
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import Interface
-from zope.schema import Choice, TextLine
+from zope.schema import Choice
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeImportReviewStatus, CodeReviewNotificationLevel,
     RevisionControlSystems)
-from lp.code.interfaces.branch import branch_name_validator
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace, IBranchNamespacePolicy)
 from lp.code.interfaces.codeimport import (
@@ -128,8 +127,7 @@ class CodeImportBaseView(LaunchpadFormView):
 
     custom_widget('cvs_root', StrippedTextWidget, displayWidth=50)
     custom_widget('cvs_module', StrippedTextWidget, displayWidth=20)
-    custom_widget('svn_branch_url', URIWidget, displayWidth=50)
-    custom_widget('git_repo_url', URIWidget, displayWidth=50)
+    custom_widget('url', URIWidget, displayWidth=50)
 
     @cachedproperty
     def _super_user(self):
@@ -173,56 +171,85 @@ class CodeImportBaseView(LaunchpadFormView):
                     canonical_url(code_import.branch),
                     code_import.branch.unique_name))
 
-    def _validateSVN(self, svn_branch_url, existing_import=None):
-        """If the user has specified a subversion url, we need
-        to make sure that there isn't already an import with
-        that url."""
-        if svn_branch_url is None:
+    def _validateURL(self, url, existing_import=None, field_name='url'):
+        """If the user has specified a url, we need to make sure that there
+        isn't already an import with that url."""
+        if url is None:
             self.setSecondaryFieldError(
-                'svn_branch_url', 'Enter the URL of a Subversion branch.')
+                field_name, 'Enter the URL of a foreign VCS branch.')
         else:
-            code_import = getUtility(ICodeImportSet).getBySVNDetails(
-                svn_branch_url)
+            code_import = getUtility(ICodeImportSet).getByURL(url)
             if (code_import is not None and
                 code_import != existing_import):
                 self.setFieldError(
-                    'svn_branch_url',
+                    field_name,
                     structured("""
-                    This Subversion branch URL is already specified for
+                    This foreign branch URL is already specified for
                     the imported branch <a href="%s">%s</a>.""",
                     canonical_url(code_import.branch),
                     code_import.branch.unique_name))
 
-    def _validateGit(self, git_repo_url, existing_import=None):
-        """If the user has specified a git repo url, we need
-        to make sure that there isn't already an import with
-        that url."""
-        if git_repo_url is None:
-            self.setSecondaryFieldError(
-                'git_repo_url', 'Enter the URL of a Git repo.')
-        else:
-            code_import = getUtility(ICodeImportSet).getByGitDetails(
-                git_repo_url)
-            if (code_import is not None and
-                code_import != existing_import):
-                self.setFieldError(
-                    'git_repo_url',
-                    structured("""
-                    This Git repository URL is already specified for
-                    the imported branch <a href="%s">%s</a>.""",
-                    escape(canonical_url(code_import.branch)),
-                    escape(code_import.branch.unique_name)))
+
+
+class NewCodeImportForm(Interface):
+    """The fields presented on the form for editing a code import."""
+
+    use_template(
+        ICodeImport,
+        ['product', 'rcs_type', 'cvs_root', 'cvs_module'])
+
+    svn_branch_url = URIField(
+        title=_("Branch URL"), required=False,
+        description=_(
+            "The URL of a Subversion branch, starting with svn:// or"
+            " http(s)://. Only trunk branches are imported."),
+        allowed_schemes=["http", "https", "svn"],
+        allow_userinfo=False,
+        allow_port=True,
+        allow_query=False,
+        allow_fragment=False,
+        trailing_slash=False)
+
+    git_repo_url = URIField(
+        title=_("Repo URL"), required=False,
+        description=_(
+            "The URL of the git repository.  The HEAD branch will be "
+            "imported."),
+        allowed_schemes=["git"],
+        allow_userinfo=False, # Only anonymous access is supported.
+        allow_port=True,
+        allow_query=False,
+        allow_fragment=False,
+        trailing_slash=False)
+
+    hg_repo_url = URIField(
+        title=_("Repo URL"), required=False,
+        description=_(
+            "The URL of the Mercurial repository.  The tip branch will be "
+            "imported."),
+        allowed_schemes=["http", "https"],
+        allow_userinfo=False, # Only anonymous access is supported.
+        allow_port=True,
+        allow_query=False,    # Query makes no sense in Mercurial
+        allow_fragment=False, # Fragment makes no sense in Mercurial
+        trailing_slash=False) # See http://launchpad.net/bugs/56357.
+
+    branch_name = copy_field(
+        IBranch['name'],
+        __name__='branch_name',
+        title=_('Branch Name'),
+        description=_(
+            "This will be used in the branch URL to identify the "
+            "imported branch.  Examples: main, trunk."),
+        )
 
 
 class CodeImportNewView(CodeImportBaseView):
     """The view to request a new code import."""
 
+    schema = NewCodeImportForm
     for_input = True
     label = 'Request a code import'
-    field_names = [
-        'product', 'rcs_type', 'svn_branch_url', 'cvs_root', 'cvs_module',
-        'git_repo_url',
-        ]
 
     custom_widget('rcs_type', LaunchpadRadioWidget)
 
@@ -236,19 +263,6 @@ class CodeImportNewView(CodeImportBaseView):
         """Cancel should take the user back to the root site."""
         return '/'
 
-    def setUpFields(self):
-        CodeImportBaseView.setUpFields(self)
-        # Add in the field for the branch name.
-        name_field = form.Fields(
-            TextLine(
-                __name__='branch_name',
-                title=_('Branch Name'), required=True, description=_(
-                    "This will be used in the branch URL to identify the "
-                    "imported branch.  Examples: main, trunk."),
-                constraint=branch_name_validator),
-            render_context=self.render_context)
-        self.form_fields = self.form_fields + name_field
-
     def setUpWidgets(self):
         CodeImportBaseView.setUpWidgets(self)
 
@@ -256,30 +270,47 @@ class CodeImportNewView(CodeImportBaseView):
         # display them separately in the form.
         soup = BeautifulSoup(self.widgets['rcs_type']())
         fields = soup.findAll('input')
-        [cvs_button, svn_button, git_button, empty_marker] = [
+        [cvs_button, svn_button, git_button, hg_button, empty_marker] = [
             field for field in fields
-            if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', '1']]
+            if field.get('value') in ['CVS', 'BZR_SVN', 'GIT', 'HG', '1']]
         cvs_button['onclick'] = 'updateWidgets()'
         svn_button['onclick'] = 'updateWidgets()'
         git_button['onclick'] = 'updateWidgets()'
+        hg_button['onclick'] = 'updateWidgets()'
         # The following attributes are used only in the page template.
         self.rcs_type_cvs = str(cvs_button)
         self.rcs_type_svn = str(svn_button)
         self.rcs_type_git = str(git_button)
+        self.rcs_type_hg = str(hg_button)
         self.rcs_type_emptymarker = str(empty_marker)
+
+    def _getImportLocation(self, data):
+        """Return the import location based on type."""
+        rcs_type = data['rcs_type']
+        if rcs_type == RevisionControlSystems.CVS:
+            return data.get('cvs_root'), data.get('cvs_module'), None
+        elif rcs_type == RevisionControlSystems.BZR_SVN:
+            return None, None, data.get('svn_branch_url')
+        elif rcs_type == RevisionControlSystems.GIT:
+            return None, None, data.get('git_repo_url')
+        elif rcs_type == RevisionControlSystems.HG:
+            return None, None, data.get('hg_repo_url')
+        else:
+            raise AssertionError(
+                'Unexpected revision control type %r.' % rcs_type)
 
     def _create_import(self, data, status):
         """Create the code import."""
+        cvs_root, cvs_module, url = self._getImportLocation(data)
         return getUtility(ICodeImportSet).new(
             registrant=self.user,
             product=data['product'],
             branch_name=data['branch_name'],
             rcs_type=data['rcs_type'],
-            svn_branch_url=data['svn_branch_url'],
-            cvs_root=data['cvs_root'],
-            cvs_module=data['cvs_module'],
-            review_status=status,
-            git_repo_url=data['git_repo_url'])
+            url=url,
+            cvs_root=cvs_root,
+            cvs_module=cvs_module,
+            review_status=status)
 
     def _setBranchExists(self, existing_branch):
         """Set a field error indicating that the branch already exists."""
@@ -357,19 +388,16 @@ class CodeImportNewView(CodeImportBaseView):
         # Make sure fields for unselected revision control systems
         # are blanked out:
         if rcs_type == RevisionControlSystems.CVS:
-            data['svn_branch_url'] = None
-            data['git_repo_url'] = None
             self._validateCVS(data.get('cvs_root'), data.get('cvs_module'))
         elif rcs_type == RevisionControlSystems.BZR_SVN:
-            data['cvs_root'] = None
-            data['cvs_module'] = None
-            data['git_repo_url'] = None
-            self._validateSVN(data.get('svn_branch_url'))
+            self._validateURL(
+                data.get('svn_branch_url'), field_name='svn_branch_url')
         elif rcs_type == RevisionControlSystems.GIT:
-            data['cvs_root'] = None
-            data['cvs_module'] = None
-            data['svn_branch_url'] = None
-            self._validateGit(data.get('git_repo_url'))
+            self._validateURL(
+                data.get('git_repo_url'), field_name='git_repo_url')
+        elif rcs_type == RevisionControlSystems.HG:
+            self._validateURL(
+                data.get('hg_repo_url'), field_name='hg_repo_url')
         else:
             raise AssertionError(
                 'Unexpected revision control type %r.' % rcs_type)
@@ -380,7 +408,7 @@ class EditCodeImportForm(Interface):
 
     use_template(
         ICodeImport,
-        ['svn_branch_url', 'cvs_root', 'cvs_module', 'git_repo_url'])
+        ['url', 'cvs_root', 'cvs_module'])
     whiteboard = copy_field(IBranch['whiteboard'])
 
 
@@ -457,15 +485,13 @@ class CodeImportEditView(CodeImportBaseView):
         # If the import is a Subversion import, then omit the CVS
         # fields, and vice versa.
         if self.code_import.rcs_type == RevisionControlSystems.CVS:
-            self.form_fields = self.form_fields.omit(
-                'svn_branch_url', 'git_repo_url')
+            self.form_fields = self.form_fields.omit('url')
         elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
-                                           RevisionControlSystems.BZR_SVN):
+                                           RevisionControlSystems.BZR_SVN,
+                                           RevisionControlSystems.GIT,
+                                           RevisionControlSystems.HG):
             self.form_fields = self.form_fields.omit(
-                'cvs_root', 'cvs_module', 'git_repo_url')
-        elif self.code_import.rcs_type == RevisionControlSystems.GIT:
-            self.form_fields = self.form_fields.omit(
-                'cvs_root', 'cvs_module', 'svn_branch_url')
+                'cvs_root', 'cvs_module')
         else:
             raise AssertionError('Unknown rcs_type for code import.')
 
@@ -496,12 +522,10 @@ class CodeImportEditView(CodeImportBaseView):
                 data.get('cvs_root'), data.get('cvs_module'),
                 self.code_import)
         elif self.code_import.rcs_type in (RevisionControlSystems.SVN,
-                                           RevisionControlSystems.BZR_SVN):
-            self._validateSVN(
-                data.get('svn_branch_url'), self.code_import)
-        elif self.code_import.rcs_type == RevisionControlSystems.GIT:
-            self._validateGit(
-                data.get('git_repo_url'), self.code_import)
+                                           RevisionControlSystems.BZR_SVN,
+                                           RevisionControlSystems.GIT,
+                                           RevisionControlSystems.HG):
+            self._validateURL(data.get('url'), self.code_import)
         else:
             raise AssertionError('Unknown rcs_type for code import.')
 

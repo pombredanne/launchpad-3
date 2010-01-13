@@ -16,7 +16,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobDispatchEstimation)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.buildpackagejob import BuildPackageJob

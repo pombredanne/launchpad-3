@@ -35,6 +35,9 @@ class SourcePackageRecipeBuild(Storm):
 
     id = Int(primary=True)
 
+    archive_id = Int(name='archive', allow_none=False)
+    archive = Reference(archive_id, 'Archive.id')
+
     build_duration = TimeDelta(name='build_duration', default=None)
 
     builder_id = Int(name='builder', allow_none=True)
@@ -62,16 +65,14 @@ class SourcePackageRecipeBuild(Storm):
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
-    #manifest_id = Int(name='manifest', allow_none=True)
-    #manifest = Reference(manifest_id, '_SourcePackageRecipeData.id')
-
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
-                 date_created=None, date_first_dispatched=None,
-                 date_built=None, manifest=None, builder=None,
+                 archive, date_created=None, date_first_dispatched=None,
+                 date_built=None, builder=None,
                  build_state=BuildStatus.NEEDSBUILD, build_log=None,
                  build_duration=None):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
+        self.archive = archive
         self.build_duration = build_duration
         self.build_log = build_log
         self.builder = builder
@@ -80,13 +81,12 @@ class SourcePackageRecipeBuild(Storm):
         self.date_created = date_created
         self.date_first_dispatched = date_first_dispatched
         self.distroseries = distroseries
-        #self.manifest = manifest
         self.recipe = recipe
         self.requester = requester
         self.sourcepackagename = sourcepackagename
 
     @classmethod
-    def new(cls, sourcepackage, recipe, requester, date_created=None):
+    def new(cls, sourcepackage, recipe, requester, archive, date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         if date_created is None:
@@ -96,6 +96,7 @@ class SourcePackageRecipeBuild(Storm):
             sourcepackage.sourcepackagename,
             recipe,
             requester,
+            archive,
             date_created=date_created)
         store.add(spbuild)
         return spbuild

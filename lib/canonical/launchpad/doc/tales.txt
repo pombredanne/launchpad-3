@@ -133,7 +133,7 @@ Disabled PPAs links use a different icon and are only linkified for
 users with launchpad.View on them.
 
     >>> login('foo.bar@canonical.com')
-    >>> mark.archive.enabled = False
+    >>> mark.archive.disable()
 
     >>> print test_tales("ppa/fmt:link", ppa=mark.archive)
     <a href="/~mark/+archive/ppa" class="sprite ppa-icon-inactive">PPA
@@ -148,7 +148,7 @@ Private PPAs links are not rendered for users without launchpad.View on
 them.
 
     >>> login('foo.bar@canonical.com')
-    >>> mark.archive.enabled = True
+    >>> mark.archive.enable()
     >>> mark.archive.buildd_secret = 'x'
     >>> mark.archive.private = True
 

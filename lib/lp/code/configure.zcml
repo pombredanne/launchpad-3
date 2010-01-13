@@ -749,8 +749,7 @@
                        rcs_type
                        cvs_root
                        cvs_module
-                       svn_branch_url
-                       git_repo_url
+                       url
                        date_last_successful
                        source_product_series
                        update_interval

@@ -18,13 +18,14 @@ from zope.schema import Choice, Datetime, Object, Timedelta
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
+from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.job.interfaces.job import IJob
+from lp.soyuz.interfaces.archive import IArchive
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 
 
@@ -41,6 +42,10 @@ class ISourcePackageRecipeBuild(Interface):
         ISourcePackageName,
         title=_("The name of the source package being built"),
         readonly=True)
+
+    archive = Object(
+        schema=IArchive, required=True,
+        title=_("The archive the recipe build is in."))
 
     # XXX: JonathanLange 2010-01-12: Move build_state, date_built,
     # build_duration, build_log, builder and maybe date_first_dispatched to a

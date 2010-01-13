@@ -26,7 +26,7 @@ import subprocess
 import xmlrpclib
 
 from canonical.config import config
-from lp.soyuz.interfaces.builder import CannotFetchFile
+from lp.buildmaster.interfaces.builder import CannotFetchFile
 
 
 class MockBuilder:

@@ -27,6 +27,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         return getUtility(ISourcePackageRecipeBuildSource).new(
             sourcepackage=self.factory.makeSourcePackage(),
             recipe=self.factory.makeSourcePackageRecipe(),
+            archive=self.factory.makeArchive(),
             requester=self.factory.makePerson())
 
     def test_providesInterface(self):

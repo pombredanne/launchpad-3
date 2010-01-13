@@ -53,5 +53,8 @@ dist
 bzr.dev
 _trial_temp
 lazr-js
+.bazaar
+.cache
+.subversion
 lib/canonical/buildd/launchpad-files
 .testrepository

@@ -18,8 +18,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
-from lp.soyuz.adapters.archivedependencies import (
-    get_primary_current_component)
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob)
 
@@ -72,10 +70,8 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             # This ensures that the package mangling tools will run over
             # the built packages.
             args['archive_purpose'] = ArchivePurpose.PRIMARY.name
-            args["ogrecomponent"] = get_primary_current_component(self.build)
         else:
             args['archive_purpose'] = archive_purpose.name
-            args["ogrecomponent"] = self.build.current_component.name
 
         return args
 
