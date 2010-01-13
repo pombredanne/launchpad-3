@@ -173,7 +173,7 @@ And for a Mercurial import, the hg details are recorded.
     >>> print_items(hg_create_event)
     CODE_IMPORT <muted>
     OWNER ...
-    REVIEW_STATUS u'NEW'
+    REVIEW_STATUS u'REVIEWED'
     ASSIGNEE None
     UPDATE_INTERVAL None
     URL u'http://hg.example.org/main'
