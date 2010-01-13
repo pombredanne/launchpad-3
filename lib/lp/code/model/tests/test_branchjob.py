@@ -46,11 +46,12 @@ from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchJob, IBranchUpgradeJob, IReclaimBranchSpaceJob,
-    IReclaimBranchSpaceJobSource, IRevisionMailJob, IRosettaUploadJob)
+    IBranchDiffJob, IBranchJob, IBranchScanJob, IBranchUpgradeJob,
+    IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionMailJob,
+    IRosettaUploadJob)
 from lp.code.model.branchjob import (
     BranchDiffJob, BranchJob, BranchJobDerived, BranchJobType,
-    BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
+    BranchScanJob, BranchUpgradeJob, ReclaimBranchSpaceJob, RevisionMailJob,
     RevisionsAddedJob, RosettaUploadJob)
 from lp.code.model.branchrevision import BranchRevision
 from lp.code.model.revision import RevisionSet
@@ -116,7 +117,8 @@ class TestBranchDiffJob(TestCaseWithFactory):
         tree_location = tempfile.mkdtemp()
         self.addCleanup(lambda: shutil.rmtree(tree_location)) 
 
-        branch, tree = self.create_branch_and_tree(tree_location=tree_location)
+        branch, tree = self.create_branch_and_tree(
+            tree_location=tree_location)
         tree_file = os.path.join(tree_location, 'file')
         open(tree_file, 'wb').write('foo\n')
         tree.add('file')
@@ -182,6 +184,44 @@ class TestBranchDiffJob(TestCaseWithFactory):
         """
         diff = self.create_rev1_diff()
         self.assertIsInstance(diff.diff.text, str)
+
+
+class TestBranchScanJob(TestCaseWithFactory):
+    """Tests for `BranchScanJob`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_providesInterface(self):
+        """Ensure that BranchScanJob implements IBranchScanJob."""
+        branch = self.factory.makeAnyBranch()
+        job = BranchScanJob.create(branch)
+        verifyObject(IBranchScanJob, job)
+
+    def test_run(self):
+        """Ensure the job scans the branch."""
+        self.useBzrBranches()
+
+        db_branch, bzr_tree = self.create_branch_and_tree()
+        bzr_tree.commit('First commit', rev_id='rev1')
+        bzr_tree.commit('Second commit', rev_id='rev2')
+        bzr_tree.commit('Third commit', rev_id='rev3')
+        LaunchpadZopelessLayer.commit()
+
+        job = BranchScanJob.create(db_branch)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        job.run()
+        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
+
+        self.assertEqual(db_branch.revision_count, 3)
+
+        bzr_tree.commit('Fourth commit', rev_id='rev4')
+        bzr_tree.commit('Fifth commit', rev_id='rev5')
+
+        job = BranchScanJob.create(db_branch)
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
+        job.run()
+
+        self.assertEqual(db_branch.revision_count, 5)
 
 
 class TestBranchUpgradeJob(TestCaseWithFactory):
