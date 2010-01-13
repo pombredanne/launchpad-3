@@ -22,7 +22,7 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.builder import CannotBuild
+from lp.buildmaster.interfaces.builder import CannotBuild
 
 
 class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):

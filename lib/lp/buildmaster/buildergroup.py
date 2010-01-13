@@ -16,7 +16,7 @@ from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.builder import (
+from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildJobMismatch, IBuilderSet)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.interfaces import NotFoundError
