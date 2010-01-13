@@ -23,17 +23,12 @@
         tal:content="structure link/render"
         />
       </div>
-      <h2>Subscribers</h2>
-      <p id="subscriber-list">
-        <noscript>
-          Please enable javascript to view branch subscribers.
-        </noscript>
-      </p>
-      <div id="subscribers-portlet-spinner"
-          style="text-align: center; display: none;">
-        <img src="/@@/spinner" />
-      </div>
+    </div>
+
+    <h2>Subscribers</h2>
+    <div id="branch-subscribers-outer">
+      <div tal:replace="structure context/@@+branch-portlet-subscriber-content"
+           />
     </div>
   </div>
-
 </div>
