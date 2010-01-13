@@ -213,7 +213,7 @@ class NewCodeImportForm(Interface):
     git_repo_url = URIField(
         title=_("Repo URL"), required=False,
         description=_(
-            "The URL of the git repository.  The MASTER branch will be "
+            "The URL of the git repository.  The HEAD branch will be "
             "imported."),
         allowed_schemes=["git"],
         allow_userinfo=False, # Only anonymous access is supported.
@@ -224,7 +224,9 @@ class NewCodeImportForm(Interface):
 
     hg_repo_url = URIField(
         title=_("Repo URL"), required=False,
-        description=_("The URL of the Mercurial repository."),
+        description=_(
+            "The URL of the Mercurial repository.  The tip branch will be "
+            "imported."),
         allowed_schemes=["http", "https"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
