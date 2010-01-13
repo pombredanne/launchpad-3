@@ -237,9 +237,9 @@ class BuilderGroup:
         assert build_status.startswith('BuildStatus.'), (
             'Malformed status string: %s' % build_status)
 
-        buildstatus = build_status[len('BuildStatus.'):]
+        build_status = build_status[len('BuildStatus.'):]
         # XXX: wgrant 2009-01-13: build is not part of IBuildFarmJob,
         # but this method will move and be fixed before any other job
         # types come into use.
         queueItem.specific_job.build.handleStatus(
-            buildstatus, librarian, slave_status)
+            build_status, librarian, slave_status)

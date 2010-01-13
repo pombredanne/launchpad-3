@@ -18,7 +18,6 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad import _
 from lazr.enum import DBEnumeratedType, DBItem
 from lazr.restful.fields import Reference
-from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.soyuz.interfaces.processor import IProcessor
 
 
