@@ -18,7 +18,8 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
-from lp.soyuz.interfaces.builder import CannotBuild
+from lp.soyuz.adapters.archivedependencies import (
+    get_primary_current_component)
 from lp.soyuz.interfaces.sourcepackagebuild import (
     IBuildSourcePackageFromRecipeJob)
 
@@ -58,6 +59,9 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         # XXX: JRV 2010-01-13: When build gets a pocket property, it should 
         # be appended to suite here.
         args['suite'] = build.distroarchseries.distroseries.name
+        args["package_name"] = build.sourcepackagename.name
+        args["author_name"] = build.requester.displayname
+        args["author_email"] = build.requester.preferredemail.email
 
         archive_purpose = build.archive.purpose
         if (archive_purpose == ArchivePurpose.PPA and
@@ -66,19 +70,14 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
             # to PRIMARY and use the primary component override.
             # This ensures that the package mangling tools will run over
             # the built packages.
-            args['archive_purpose'] = ArchivePurpose.PRIMARY.name
-            args["ogrecomponent"] = (
-                get_primary_current_component(build))
+            args['purpose'] = ArchivePurpose.PRIMARY.name
+            args["component"] = get_primary_current_component(build)
         else:
-            args['archive_purpose'] = archive_purpose.name
-            args["ogrecomponent"] = (
-                build.current_component.name)
+            args['purpose'] = archive_purpose.name
+            args["ogrecomponent"] = build.current_component.name
 
-        args['archives'] = get_sources_list_for_building(build)
+        args["recipe_text"] = build.manifest.getRecipe()
 
-        # Let the build slave know whether this is a build in a private
-        # archive.
-        args['archive_private'] = build.archive.private
         return args
 
     def dispatchBuildToSlave(self, build_queue_id, logger):
@@ -100,13 +99,9 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
-        # recipetext
-        # packagename
-        # requestername
-        # requesteremail
         args = self._extraBuildArgs(self.build)
         status, info = self._builder.slave.build(
-            buildid, "sourcepackage", chroot_sha1, {}, args)
+            buildid, "sourcepackagerecipe", chroot_sha1, {}, args)
         message = """%s (%s):
         ***** RESULT *****
         %s
