@@ -50,7 +50,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         logger.info("startBuild(%s)", self.displayName)
 
-    def _extraBuildArgs(self, build):
+    def _extraBuildArgs(self):
         """
         Return the extra arguments required by the slave for the given build.
         """
@@ -58,25 +58,24 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         args = {}
         # XXX: JRV 2010-01-13: When build gets a pocket property, it should 
         # be appended to suite here.
-        args['suite'] = build.distroarchseries.distroseries.name
-        args["package_name"] = build.sourcepackagename.name
-        args["author_name"] = build.requester.displayname
-        args["author_email"] = build.requester.preferredemail.email
+        args['suite'] = self.build.distroseries.name
+        args["package_name"] = self.build.sourcepackagename.name
+        args["author_name"] = self.build.requester.displayname
+        args["author_email"] = self.build.requester.preferredemail.email
+        args["recipe_text"] = str(self.build.recipe.builder_recipe)
 
-        archive_purpose = build.archive.purpose
+        archive_purpose = self.build.archive.purpose
         if (archive_purpose == ArchivePurpose.PPA and
-            not build.archive.require_virtualized):
+            not self.build.archive.require_virtualized):
             # If we're building a non-virtual PPA, override the purpose
             # to PRIMARY and use the primary component override.
             # This ensures that the package mangling tools will run over
             # the built packages.
             args['purpose'] = ArchivePurpose.PRIMARY.name
-            args["component"] = get_primary_current_component(build)
+            args["component"] = get_primary_current_component(self.build)
         else:
             args['purpose'] = archive_purpose.name
-            args["ogrecomponent"] = build.current_component.name
-
-        args["recipe_text"] = build.manifest.getRecipe()
+            args["component"] = self.build.current_component.name
 
         return args
 
@@ -85,6 +84,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
 
         # Start the binary package build on the slave builder. First
         # we send the chroot.
+        import pdb; pdb.set_trace()
         distroarchseries = self.build.distroseries.getDistroArchSeries(
             self._builder.processor.family.name)
 
@@ -105,20 +105,16 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         message = """%s (%s):
         ***** RESULT *****
         %s
-        %s
         %s: %s
         ******************
         """ % (
             self._builder.name,
             self._builder.url,
-            filemap,
             args,
             status,
             info,
             )
         logger.info(message)
-
-
 
     def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.
@@ -132,6 +128,9 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         build = self.build
         assert not (not self._builder.virtualized and build.is_virtualized), (
             "Attempt to build non-virtual item on a virtual builder.")
+
+        # XXX: Check whether this is allowed using 
+        # lp.archiveuploader.permission.can_upload_to_archive
 
         # The main distribution has policies to prevent uploads to some
         # pockets (e.g. security) during different parts of the distribution

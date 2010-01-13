@@ -12,11 +12,11 @@ from canonical.launchpad.scripts.logger import BufferLogger
 
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
-from lp.soyuz.interfaces.builder import CannotBuild
 from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
-from lp.testing import TestCaseWithFactory
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import (MockBuilder,
     SaneBuildingSlave)
+from lp.testing import TestCaseWithFactory
 
 class TestRecipeBuilder(TestCaseWithFactory):
 
@@ -35,10 +35,12 @@ class TestRecipeBuilder(TestCaseWithFactory):
     def makeJob(self):
         spn = self.factory.makeSourcePackageName("apackage")
         distro = self.factory.makeDistribution(name="distro")
-        distroseries = self.factory.makeDistroSeries(name="mydistro", distribution=distro)
+        distroseries = self.factory.makeDistroSeries(name="mydistro", 
+            distribution=distro)
         sourcepackage = self.factory.makeSourcePackage(spn, distroseries)
         recipe = self.factory.makeSourcePackageRecipe(name=u"recept")
-        requester = self.factory.makePerson()
+        requester = self.factory.makePerson(email="requester@ubuntu.com",
+            displayname="Joe User")
         spb = self.factory.makeSourcePackageBuild(sourcepackage=sourcepackage,
             recipe=recipe, requester=requester)
         job = spb.makeJob()
@@ -63,6 +65,38 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job.setBuilder(builder)
         logger = BufferLogger()
         job.verifyBuildRequest(logger)
+        self.assertEquals("", logger.buffer.getvalue())
+
+    # XXX: Make sure that a verifyBuildRequest() for a recipe upload to an
+    # archive that the user doesn't have access to fails.
+
+    def test__extraBuildArgs(self):
+        job = self.makeJob()
+        self.assertEquals({
+           'author_email': u'requester@ubuntu.com',
+           'suite': u'mydistro',
+           'author_name': u'Joe User',
+           'package_name': u'apackage',
+           'recipe_text': "",
+            }, job._extraBuildArgs())
+
+    def test_dispatchBuildToSlave(self):
+        job = self.makeJob()
+        # XXX: Use RecordingSlave
+        builder = MockBuilder("bob-de-bouwer", SaneBuildingSlave())
+        processorfamily = ProcessorFamilySet().getByProcessorName('386')
+        builder.processor = processorfamily.processors[0]
+        job.setBuilder(builder)
+        logger = BufferLogger()
+        job.dispatchBuildToSlave("someid", logger)
+        logger.buffer.seek(0)
+        self.assertEquals(
+            "DEBUG: Initiating build foo-someid on %s\n" % builder.url,
+            logger.buffer.readline())
+        self.assertEquals(
+            """INFO: bob-de-bouwer (http://):
+            """, logger.buffer.getvalue())
+        # XXX: Check rest of logger output
 
 
 def test_suite():
