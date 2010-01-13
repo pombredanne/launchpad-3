@@ -1,12 +1,30 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-from canonical.buildd.debian import DebianBuildManager, DebianBuildState
+import os
+
+from canonical.buildd.debian import (
+    DebianBuildManager,
+    DebianBuildState,
+    get_build_path,
+)
 RETCODE_SUCCESS = 0
 RETCODE_FAILURE_INSTALL = 200
 RETCODE_FAILURE_BUILD_TREE = 201
 RETCODE_FAILURE_INSTALL_BUILD_DEPS = 202
 RETCODE_FAILURE_BUILD_SOURCE_PACKAGE = 203
+
+
+def splat_file(path, contents):
+    file_obj = open(path, 'w')
+    try:
+        file_obj.write(contents)
+    finally:
+        file_obj.close()
+
+
+def get_chroot_path(build_id, *extra):
+    return get_build_path(build_id, 'chroot-autobuild/home/buildd', *extra)
 
 
 class SourcePackageRecipeBuildState(DebianBuildState):
@@ -28,7 +46,7 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
 
         self.recipe_data = extra_args['recipe_data']
         self.suite = extra_args['suite']
-        self.component = extra_args['component']
+        self.component = extra_args['ogrecomponent']
         self.package_name = extra_args['package_name']
         self.author_name = extra_args['author_name']
         self.author_email = extra_args['author_email']
@@ -39,22 +57,18 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
 
     def doRunSbuild(self):
         """Run the sbuild process to build the package."""
-        currently_building = get_buildpath(
-            self._buildid, 'work/chroot-autobuild/CurrentlyBuilding')
-        currently_building.write(
+        currently_building = get_build_path(
+            self._buildid, 'chroot-autobuild/CurrentlyBuilding')
+        splat_file(currently_building,
             'Package: %s\n'
             'Suite: %s\n'
             'Component: %s\n'
             'Purpose: %s\n'
             'Build-Debug-Symbols: no\n' %
             (self.package_name, self.suite, self.component, self.purpose))
-        os.makedirs(get_buildpath(self._buildid, 'work'))
-        recipe_path = get_buildpath(self._buildid, 'work/recipe')
-        recipe_file = open(recipe_path, 'w')
-        try:
-            recipe_file.write(self.recipe_text)
-        finally:
-            recipe_file.close()
+        os.makedirs(get_chroot_path(self._buildid, 'work'))
+        recipe_path = get_chroot_path(self._buildid, 'work/recipe')
+        splat_file(recipe_path, self.recipe_data)
         args = [
             "buildrecipe.py", self._buildid, self.author_name,
             self.author_email, self.package_name, self.suite]
@@ -80,11 +94,11 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
         self.doReapProcesses()
 
     def getChangesFilename(self):
-        for name in os.listdir(get_buildpath(self._buildid, 'work')):
+        work_path = get_build_path(self._buildid)
+        for name in os.listdir(work_path):
             if name.endswith('_source.changes'):
-                return get_buildpath(self._buildid, 'work', name)
+                return os.path.join(work_path, name)
 
     def gatherResults(self):
         DebianBuildManager.gatherResults(self)
-        self._slave.addWaitingFile(
-            get_buildpath(self._buildid, 'work/manifest'))
+        self._slave.addWaitingFile(get_build_path(self._buildid, 'manifest'))

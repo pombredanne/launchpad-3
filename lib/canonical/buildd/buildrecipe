@@ -22,6 +22,7 @@ class RecipeBuilder:
 
     def __init__(self, build_id, author_name, author_email,
                  package_name, suite):
+        self.build_id = build_id
         self.author_name = author_name
         self.author_email = author_email
         self.package_name = package_name
@@ -39,10 +40,11 @@ class RecipeBuilder:
                             'bzr-builder'])
 
     def buildTree(self):
+        assert not os.path.exists(self.tree_path)
         recipe_path_relative = os.path.join(self.work_dir_relative, 'recipe')
-        manifest_path_relative = os.path.join(self.work_dir_relative,
-                                              'manifest')
         self.tree_path_relative = os.path.join(self.work_dir_relative, 'tree')
+        manifest_path_relative = os.path.join(
+            self.tree_path_relative, 'manifest')
         env = {'DEBEMAIL': self.author_email,
                'DEBFULLNAME': self.author_name}
         retcode = self.chroot(['su', '-c', 'bzr dailydeb --no-build %s %s'
@@ -50,14 +52,10 @@ class RecipeBuilder:
                               recipe_path_relative, self.tree_path_relative,
                               manifest_path_relative), self.username],
                               env=env)
-        if retcode == 0:
-            for source in os.listdir(self.tree_path):
-                if source in ('.', '..'):
-                    continue
-                else:
-                    break
-            self.source_dir_relative = os.path.join(self.tree_path_relative,
-                                                    source)
+        (source,) = [name for name in os.listdir(self.tree_path)
+                     if name != 'manifest']
+        self.source_dir_relative = os.path.join(self.tree_path_relative,
+                                                source)
         return retcode
 
     def installBuildDeps(self):
@@ -71,9 +69,14 @@ class RecipeBuilder:
                      env=env)
 
     def buildSourcePackage(self):
-        return self.chroot(['su', '-c', 'cd %s && /usr/bin/dpkg-buildpackage -i'
-                            ' -I -us -uc -S' % self.source_dir_relative,
-                      self.username])
+        retcode = self.chroot([
+            'su', '-c', 'cd %s && /usr/bin/dpkg-buildpackage -i -I -us -uc -S'
+            % self.source_dir_relative, self.username])
+        for filename in os.listdir(self.tree_path):
+            path = os.path.join(self.tree_path, filename)
+            if os.path.isfile(path):
+                os.rename(path, get_build_path(self.build_id, filename))
+        return retcode
 
 def get_build_path(build_id, *extra):
     return os.path.join(
@@ -82,7 +85,7 @@ def get_build_path(build_id, *extra):
 if __name__ == '__main__':
     builder = RecipeBuilder(*sys.argv[1:])
     if builder.install() != 0:
-        sys.exit()
+        sys.exit(RETCODE_FAILURE_INSTALL)
     if builder.buildTree() != 0:
         sys.exit(RETCODE_FAILURE_BUILD_TREE)
     if builder.installBuildDeps() != 0:
