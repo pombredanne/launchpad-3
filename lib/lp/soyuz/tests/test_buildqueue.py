@@ -13,11 +13,12 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.builder import specific_job_classes
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
@@ -722,7 +723,7 @@ class TestJobClasses(TestCaseWithFactory):
         """Other job type classes are picked up as well."""
         from zope import component
         from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
-        class FakeBranchBuild:
+        class FakeBranchBuild(BuildFarmJob):
             pass
 
         _build, bq = find_job(self, 'gedit')
