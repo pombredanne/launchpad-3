@@ -121,6 +121,8 @@ The 'bob' builder is available for build jobs.
     False
     >>> bob_builder.is_available
     True
+    >>> bob_builder.builderok
+    True
 
 
 == Builder dispatching API ==
@@ -167,6 +169,7 @@ Check the dispatching method itself:
     >>> dispatched_job = bob_builder.findAndStartJob()
     >>> job == dispatched_job
     True
+    >>> bob_builder.builderok = True
 
     >>> flush_database_updates()
 
