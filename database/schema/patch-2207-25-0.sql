@@ -131,6 +131,9 @@ ON SourcepackageRecipeBuild(requester);
 CREATE INDEX sourcepackagerecipebuild__recipe__idx
 ON SourcepackageRecipeBuild(recipe);
 
+CREATE INDEX sourcepackagerecipebuild__archive__idx
+ON SourcepackageRecipeBuild(archive);
+
 CREATE INDEX sourcepackagebuildupload__registrant__idx
 ON SourcepackageRecipeBuildUpload(registrant);
 
