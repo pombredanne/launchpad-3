@@ -24,7 +24,7 @@ from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
 from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.builder import IBuilder
+from lp.buildmaster.interfaces.builder import IBuilder
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias

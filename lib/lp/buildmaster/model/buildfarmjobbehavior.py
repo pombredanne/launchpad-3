@@ -33,7 +33,7 @@ class BuildFarmJobBehaviorBase:
         """The builder should be set once and not changed."""
         self._builder = builder
 
-    def verifyBuildRequest(self, build_queue_item, logger):
+    def verifyBuildRequest(self, logger):
         """The default behavior is a no-op."""
         pass
 
@@ -55,12 +55,12 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
         """
         super(IdleBuildBehavior, self).__init__(None)
 
-    def logStartBuild(self, build_queue_item, logger):
+    def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""
         raise BuildBehaviorMismatch(
             "Builder was idle when asked to log the start of a build.")
 
-    def dispatchBuildToSlave(self, build_queue_item, logger):
+    def dispatchBuildToSlave(self, build_queue_item_id, logger):
         """See `IBuildFarmJobBehavior`."""
         raise BuildBehaviorMismatch(
             "Builder was idle when asked to dispatch a build to the slave.")

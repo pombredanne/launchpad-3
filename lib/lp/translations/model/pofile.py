@@ -32,7 +32,7 @@ from canonical.database.sqlbase import (
 from canonical.launchpad import helpers
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
-    IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 from canonical.launchpad.webapp.publisher import canonical_url
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.registry.interfaces.person import validate_public_person
@@ -1524,9 +1524,12 @@ class POFileSet:
     def getDummy(self, potemplate, language):
         return DummyPOFile(potemplate, language)
 
-    def getPOFileByPathAndOrigin(self, path, productseries=None,
-        distroseries=None, sourcepackagename=None):
+    def getPOFilesByPathAndOrigin(self, path, productseries=None,
+                                  distroseries=None, sourcepackagename=None):
         """See `IPOFileSet`."""
+        # Avoid circular imports.
+        from lp.translations.model.potemplate import POTemplate
+
         assert productseries is not None or distroseries is not None, (
             'Either productseries or sourcepackagename arguments must be'
             ' not None.')
@@ -1538,38 +1541,37 @@ class POFileSet:
                 ), ('sourcepackagename and distroseries must be None or not'
                    ' None at the same time.')
 
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+
+        general_conditions = And(
+            POFile.path == path,
+            POFile.potemplate == POTemplate.id)
+
         if productseries is not None:
-            return POFile.selectOne('''
-                POFile.path = %s AND
-                POFile.potemplate = POTemplate.id AND
-                POTemplate.productseries = %s''' % sqlvalues(
-                    path, productseries.id),
-                clauseTables=['POTemplate'])
+            return store.find(POFile, And(
+                general_conditions,
+                POTemplate.productseries == productseries))
         else:
+            distro_conditions = And(
+                general_conditions,
+                POTemplate.distroseries == distroseries)
+
             # The POFile belongs to a distribution and it could come from
             # another package that its POTemplate is linked to, so we first
             # check to find it at IPOFile.from_sourcepackagename
-            pofile = POFile.selectOne('''
-                POFile.path = %s AND
-                POFile.potemplate = POTemplate.id AND
-                POTemplate.distroseries = %s AND
-                POFile.from_sourcepackagename = %s''' % sqlvalues(
-                    path, distroseries.id, sourcepackagename.id),
-                clauseTables=['POTemplate'])
+            matches = store.find(POFile, And(
+                distro_conditions,
+                POFile.from_sourcepackagename == sourcepackagename))
 
-            if pofile is not None:
-                return pofile
+            if not matches.is_empty():
+                return matches
 
             # There is no pofile in that 'path' and
             # 'IPOFile.from_sourcepackagename' so we do a search using the
             # usual sourcepackagename.
-            return POFile.selectOne('''
-                POFile.path = %s AND
-                POFile.potemplate = POTemplate.id AND
-                POTemplate.distroseries = %s AND
-                POTemplate.sourcepackagename = %s''' % sqlvalues(
-                    path, distroseries.id, sourcepackagename.id),
-                clauseTables=['POTemplate'])
+            return store.find(POFile, And(
+                distro_conditions,
+                POTemplate.sourcepackagename == sourcepackagename))
 
     def getBatch(self, starting_id, batch_size):
         """See `IPOFileSet`."""
