@@ -17,7 +17,6 @@ from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJobDispatchEstimation)
-from lp.buildmaster.model.builder import Builder
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -216,6 +215,9 @@ class BuildPackageJob(Storm, BuildFarmJob):
     @staticmethod
     def extraCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmCandidateJobSelection`."""
+        # Avoiding circular import.
+        from lp.buildmaster.model.builder import Builder
+
         private_statuses = (
             PackagePublishingStatus.PUBLISHED,
             PackagePublishingStatus.SUPERSEDED,
