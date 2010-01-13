@@ -166,7 +166,7 @@
       <div id="branch-pending-writes" class="pending-update">
         <h3>Updating branch...</h3>
         <p>
-          Launchpad is processing new changes to this branch and will be
+          Launchpad is processing new changes to this branch which will be
           available in a few minutes. Reload to see the changes.
         </p>
       </div>
