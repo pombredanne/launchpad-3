@@ -736,7 +736,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
         if the user is the owner or an admin.
         """
 
-    def setBugHeat(heat):
+    def setHeat(heat):
         """Set the heat for the bug."""
 
 class InvalidDuplicateValue(Exception):
