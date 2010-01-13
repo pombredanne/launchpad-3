@@ -16,7 +16,7 @@ class SourcePackageRecipeBuildState(DebianBuildState):
 class SourcePackageRecipeBuildManager(DebianBuildManager):
     """Build a source package from a bzr-builder recipe."""
 
-    initial_build_state = SourcePackageRecipeState.BUILD_RECIPE
+    initial_build_state = SourcePackageRecipeBuildState.BUILD_RECIPE
 
     def __init__(self, slave, buildid):
         DebianBuildManager.__init__(self, slave, buildid)

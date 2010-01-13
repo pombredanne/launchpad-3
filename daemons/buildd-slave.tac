@@ -49,5 +49,5 @@ strports.service(slave.slave._config.get("slave","bindport"),
 #
 # python
 # import xmlrpclib
-# s = xmlrpclib.Server("http://localhost:8221/")
+# s = xmlrpclib.ServerProxy("http://localhost:8221/rpc")
 # s.echo("Hello World")

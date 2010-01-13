@@ -70,6 +70,18 @@ def upgrade_to_57():
     in_file.close()
     out_file.close()
 
+def upgrade_to_58():
+    print "Upgrading %s to version 58" % conf_file
+    subprocess.call(["mv", conf_file, conf_file+"-prev58~"])
+    in_file = open(conf_file+"-prev58~", "r")
+    out_file = open(conf_file, "w")
+    out_file.write(in_file.read())
+    out_file.write(
+        '\n[sourcepackagerecipemanager]\n'
+        'buildrecipepath = /usr/share/launchpad-buildd'
+        '/slavebin/buildrecipe\n')
+
+
 if __name__ == "__main__":
     if old_version.find("~") > 0:
 	old_version = old_version[:old_version.find("~")]
@@ -81,4 +93,6 @@ if __name__ == "__main__":
         upgrade_to_39()
     if int(old_version) < 57:
         upgrade_to_57()
+    if int(old_version) < 58:
+        upgrade_to_58()
 
