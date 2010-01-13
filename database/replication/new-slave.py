@@ -162,7 +162,12 @@ def main():
     target_con.commit()
     del target_con
 
-    # Get a list of existing set ids.
+    # Get a list of existing set ids that can be subscribed too. This
+    # is all sets where the origin is the master_node, and set 2 if
+    # the master happens to be configured as a forwarding slave. We
+    # don't allow other sets where the master is configured as a
+    # forwarding slave as we have to special case rebuilding the database
+    # schema (such as we do for the authdb replication set 2).
     source_connection.rollback()
     master_node = replication.helpers.get_master_node(source_connection)
     cur = source_connection.cursor()
@@ -171,6 +176,7 @@ def main():
         UNION
         SELECT sub_set AS set_id FROM _sl.sl_subscribe
         WHERE sub_receiver=%d AND sub_forward IS TRUE AND sub_active IS TRUE
+            AND sub_set=2
         """ % (master_node.node_id, master_node.node_id))
     set_ids = [set_id for set_id, in cur.fetchall()]
     log.debug("Discovered set ids %s" % repr(list(set_ids)))
