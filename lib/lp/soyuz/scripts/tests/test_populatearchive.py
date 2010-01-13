@@ -454,7 +454,7 @@ class TestPopulateArchiveScript(TestCase):
             '--merge-copy', '--from-archive', second_stage.name]
 
         # We need to enable the copy archive before we can copy to it.
-        copy_archive.enabled = True
+        copy_archive.enable()
         # An empty 'reason' string is passed to runScript() i.e. the latter
         # will not pass a '--reason' command line argument to the script which
         # is OK since this is a repeated population of an *existing* COPY
@@ -684,8 +684,8 @@ class TestPopulateArchiveScript(TestCase):
         distro = getUtility(IDistributionSet).getByName('ubuntu')
         disabled_archive = getUtility(IArchiveSet).new(
             ArchivePurpose.COPY, cprov, name='disabled-copy-archive',
-            distribution=distro, description='disabled-copy-archive test')
-        disabled_archive.enabled = False
+            distribution=distro, description='disabled-copy-archive test',
+            enabled=False)
 
         extra_args = ['--from-user', 'cprov', '--merge-copy']
         copy_archive = self.runScript(
