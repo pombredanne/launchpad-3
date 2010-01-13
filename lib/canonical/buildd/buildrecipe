@@ -37,7 +37,7 @@ class RecipeBuilder:
 
     def install(self):
         return self.chroot(['apt-get', 'install', '-y', 'pbuilder',
-                            'bzr-builder'])
+                            'bzr-builder', 'sudo'])
 
     def buildTree(self):
         assert not os.path.exists(self.tree_path)
@@ -45,13 +45,13 @@ class RecipeBuilder:
         self.tree_path_relative = os.path.join(self.work_dir_relative, 'tree')
         manifest_path_relative = os.path.join(
             self.tree_path_relative, 'manifest')
-        env = {'DEBEMAIL': self.author_email,
-               'DEBFULLNAME': self.author_name}
-        retcode = self.chroot(['su', '-c', 'bzr dailydeb --no-build %s %s'
-                               ' --manifest %s' % (
-                              recipe_path_relative, self.tree_path_relative,
-                              manifest_path_relative), self.username],
-                              env=env)
+        retcode = self.chroot([
+            'sudo', '-u', self.username, 'DEBEMAIL=%s' % self.author_email,
+            'DEBFULLNAME=%s' % self.author_name, 'bzr', 'dailydeb',
+            '--no-build', recipe_path_relative, self.tree_path_relative,
+            '--manifest', manifest_path_relative])
+        if retcode != 0:
+            return retcode
         (source,) = [name for name in os.listdir(self.tree_path)
                      if name != 'manifest']
         self.source_dir_relative = os.path.join(self.tree_path_relative,
