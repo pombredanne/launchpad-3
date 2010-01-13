@@ -44,8 +44,8 @@ Make a builder to process our build request.
 
 == Get a job! ==
 
-Use the ITranslationTemplatesBuildJobSource to create
-TranslationTemplateBuildJobs.
+Use the ITranslationTemplatesBuildJobSource to create a
+TranslationTemplatesBuildJob.
 
     >>> from lp.translations.interfaces.translationtemplatesbuildjob import (
     ...     ITranslationTemplatesBuildJobSource)

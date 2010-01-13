@@ -97,7 +97,7 @@ class ISpecificBuildFarmJobClass(Interface):
     """
 
     def getByJob(job):
-        """Get the `ISpecificBuildFarmJob` for the given `Job`.
+        """Get the specific `IBuildFarmJob` for the given `Job`.
 
         Invoked on the specific `IBuildFarmJob`-implementing class that
         has an entry associated with `job`.

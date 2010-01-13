@@ -79,7 +79,7 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
 
     @classmethod
     def getByJob(cls, job):
-        """See `ITranslationTemplatesBuildJobSource`."""
+        """See `ISpecificBuildFarmJobClass`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         branch_job = store.find(BranchJob, BranchJob.job == job).one()
         if branch_job is None:
