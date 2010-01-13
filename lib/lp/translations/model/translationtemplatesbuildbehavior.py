@@ -20,8 +20,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
-from lp.translations.model.translationtemplatesbuildjob import (
-    TranslationTemplatesBuildJob)
 
 
 class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
