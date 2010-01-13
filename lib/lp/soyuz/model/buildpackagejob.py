@@ -11,6 +11,7 @@ import pytz
 from storm.locals import Int, Reference, Storm
 
 from zope.interface import classProvides, implements
+from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
@@ -22,7 +23,7 @@ from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
@@ -283,6 +284,34 @@ class BuildPackageJob(Storm, BuildFarmJob):
         return(extra_tables, extra_clauses)
 
     @staticmethod
-    def checkCandidate(job):
+    def checkCandidate(job, logger):
         """See `IBuildFarmCandidateJobSelection`."""
+        # Mark build records targeted to old source versions as SUPERSEDED
+        # and build records target to SECURITY pocket as FAILEDTOBUILD.
+        # Builds in those situation should not be built because they will
+        # be wasting build-time, the former case already has a newer source
+        # and the latter could not be built in DAK.
+        build_set = getUtility(IBuildSet)
+
+        build = build_set.getByQueueEntry(job)
+        if build.pocket == PackagePublishingPocket.SECURITY:
+            # We never build anything in the security pocket.
+            logger.debug(
+                "Build %s FAILEDTOBUILD, queue item %s REMOVED"
+                % (build.id, job.id))
+            build.buildstate = BuildStatus.FAILEDTOBUILD
+            job.destroySelf()
+            return False
+
+        publication = build.current_source_publication
+        if publication is None:
+            # The build should be superseded if it no longer has a
+            # current publishing record.
+            logger.debug(
+                "Build %s SUPERSEDED, queue item %s REMOVED"
+                % (build.id, job.id))
+            build.buildstate = BuildStatus.SUPERSEDED
+            job.destroySelf()
+            return False
+
         return True

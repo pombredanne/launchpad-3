@@ -56,6 +56,6 @@ class BuildFarmJob:
         return ([], '')
 
     @staticmethod
-    def checkCandidate(job):
+    def checkCandidate(job, logger):
         """See `IBuildFarmCandidateJobSelection`."""
         return True

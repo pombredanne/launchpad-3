@@ -443,6 +443,7 @@ class Builder(SQLBase):
 
         :return: A candidate job.
         """
+        logger = self._getSlaveScannerLogger()
         candidate = None
 
         query_tables = set(('buildqueue', 'job'))
@@ -480,7 +481,7 @@ class Builder(SQLBase):
         for (candidate_id,) in candidate_jobs:
             candidate = getUtility(IBuildQueueSet).get(candidate_id)
             job_class = job_classes[candidate.job_type]
-            if job_class.checkCandidate(candidate) == True:
+            if job_class.checkCandidate(candidate, logger) == True:
                 return candidate
 
         return None

@@ -161,11 +161,12 @@ class IBuildFarmCandidateJobSelection(Interface):
             the combined query for `extra_query` to work. 
         """
 
-    def checkCandidate(job):
+    def checkCandidate(job, logger):
         """True if the candidate job is fine and should be dispatched
         to a builder, False otherwise.
         
         :param job: The `BuildQueue` instance to be scrutinized.
+        :param logger: The logger to use.
 
         :return: True if the candidate job should be dispatched
             to a builder, False otherwise.
