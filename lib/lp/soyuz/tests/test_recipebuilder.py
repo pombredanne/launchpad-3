@@ -10,6 +10,7 @@ import unittest
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.scripts.logger import BufferLogger
 
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.manager import RecordingSlave
@@ -43,8 +44,6 @@ class TestRecipeBuilder(TestCaseWithFactory):
             distribution=distro)
         distroarchseries = self.factory.makeDistroArchSeries(
             distroseries=distroseries, architecturetag='i386')
-        test_publisher = SoyuzTestPublisher()
-        test_publisher.addFakeChroots(distroseries)
         sourcepackage = self.factory.makeSourcePackage(spn, distroseries)
         requester = self.factory.makePerson(email="requester@ubuntu.com",
             name="joe", displayname="Joe User")
@@ -95,6 +94,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
 
     def test_dispatchBuildToSlave(self):
         job = self.makeJob()
+        test_publisher = SoyuzTestPublisher()
+        test_publisher.addFakeChroots(job.build.distroseries)
         slave = RecordingSlave("i386-slave-1", "http://myurl", "vmhost")
         builder = MockBuilder("bob-de-bouwer", slave)
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
@@ -113,6 +114,16 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertEquals(build_args[1], "sourcepackagerecipe")
         self.assertEquals(build_args[3], {})
         self.assertEquals(build_args[4], job._extraBuildArgs())
+
+    def test_dispatchBuildToSlave_nochroot(self):
+        job = self.makeJob()
+        builder = MockBuilder("bob-de-bouwer", SaneBuildingSlave())
+        processorfamily = ProcessorFamilySet().getByProcessorName('386')
+        builder.processor = processorfamily.processors[0]
+        job.setBuilder(builder)
+        logger = BufferLogger()
+        self.assertRaises(CannotBuild, job.dispatchBuildToSlave, 
+            "someid", logger)
 
 
 def test_suite():

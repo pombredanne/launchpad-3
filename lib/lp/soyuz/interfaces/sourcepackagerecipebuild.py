@@ -8,6 +8,7 @@ __all__ = [
     'ISourcePackageRecipeBuild',
     'ISourcePackageRecipeBuildSource',
     'ISourcePackageRecipeBuildJob',
+    'ISourcePackageRecipeBuildJobSource',
     ]
 
 from lazr.restful.fields import Reference
