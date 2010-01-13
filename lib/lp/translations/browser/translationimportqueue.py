@@ -231,7 +231,7 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                             path, self.context.productseries,
                             self.context.distroseries,
                             self.context.sourcepackagename))
-                    already_exists = not existing_files.is_empty()
+                    already_exists = existing_file is not None
                 else:
                     pofile_set = getUtility(IPOFileSet)
                     existing_files = pofile_set.getPOFilesByPathAndOrigin(
