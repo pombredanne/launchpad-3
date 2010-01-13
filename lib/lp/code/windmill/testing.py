@@ -9,9 +9,6 @@ __all__ = [
     ]
 
 
-import windmill
-
-from canonical.launchpad.webapp import canonical_url as real_canonical_url
 from canonical.testing.layers import BaseWindmillLayer
 
 
