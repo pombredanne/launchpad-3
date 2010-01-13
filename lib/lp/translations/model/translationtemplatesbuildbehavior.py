@@ -41,7 +41,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         args = { 'branch_url': self.buildfarmjob.branch.url }
         filemap = {}
 
-# XXX: API change in lp:~jml/launchpad/behavior-refactor
         status, info = self._builder.slave.build(
             buildid, self.build_type, chroot_sha1, filemap, args)
 
