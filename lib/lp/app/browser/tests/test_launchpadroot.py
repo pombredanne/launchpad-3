@@ -8,6 +8,8 @@ __metaclass__ = type
 import unittest
 
 
+from BeautifulSoup import BeautifulSoup, SoupStrainer
+
 from zope.component import getUtility
 from zope.security.checker import selectChecker
 
@@ -18,7 +20,7 @@ from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.registry.interfaces.person import IPersonSet
 from lp.testing import login_person, TestCaseWithFactory
-from lp.testing.views import create_view
+from lp.testing.views import create_initialized_view, create_view
 
 
 class LaunchpadRootPermissionTest(TestCaseWithFactory):
@@ -31,6 +33,14 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
         self.admin = getUtility(IPersonSet).getByEmail(
             'foo.bar@canonical.com')
 
+    def setUpRegistryExpert(self):
+        """Create a registry expert and logs in as them."""
+        login_person(self.admin)
+        self.expert = self.factory.makePersonNoCommit()
+        getUtility(ILaunchpadCelebrities).registry_experts.addMember(
+            self.expert, self.admin)
+        login_person(self.expert)
+
     def test_anonymous_cannot_edit(self):
         self.failIf(check_permission('launchpad.Edit', self.root),
             "Anonymous user shouldn't have launchpad.Edit on ILaunchpadRoot")
@@ -41,11 +51,7 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
             "Regular users shouldn't have launchpad.Edit on ILaunchpadRoot")
 
     def test_registry_expert_can_edit(self):
-        login_person(self.admin)
-        expert = self.factory.makePersonNoCommit()
-        getUtility(ILaunchpadCelebrities).registry_experts.addMember(
-            expert, self.admin)
-        login_person(expert)
+        self.setUpRegistryExpert()
         self.failUnless(check_permission('launchpad.Edit', self.root),
             "Registry experts should have launchpad.Edit on ILaunchpadRoot")
 
@@ -59,6 +65,14 @@ class LaunchpadRootPermissionTest(TestCaseWithFactory):
         checker = selectChecker(view)
         self.assertEquals('launchpad.Edit', checker.permission_id('__call__'))
 
+    def test_featured_projects_manage_link_requires_edit(self):
+        self.setUpRegistryExpert()
+        view = create_initialized_view(
+            self.root, 'index.html', principal=self.expert)
+        content = BeautifulSoup(view(), parseOnlyThese=SoupStrainer('a'))
+        self.failUnless(
+            content.find('a', href='+featuredprojects'),
+            "Cannot find the +featuredprojects link on the first page")
 
 
 def test_suite():

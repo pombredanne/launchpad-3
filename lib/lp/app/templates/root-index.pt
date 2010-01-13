@@ -252,7 +252,7 @@
                     <tal:count content="view/project_count">42</tal:count>
                     projects</a>!</strong>
                 </li>
-                <li tal:condition="context/required:launchpad.Admin">
+                <li tal:condition="context/required:launchpad.Edit">
                   <a class="sprite edit" href="+featuredprojects">Manage
                   featured project list</a>
                 </li>
