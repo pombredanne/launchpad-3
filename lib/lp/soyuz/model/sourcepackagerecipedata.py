@@ -127,7 +127,7 @@ class _SourcePackageRecipeData(Storm):
 
     sourcepackage_recipe_build_id = Int(
         name='sourcepackage_recipe_build', allow_none=True)
-    #sourcepackage_recipe = Reference(
+    #sourcepackage_recipe_build = Reference(
     #    sourcepackage_recipe_build_id, 'SourcePackageRecipeBuild.id')
 
     def getRecipe(self):
@@ -149,20 +149,18 @@ class _SourcePackageRecipeData(Storm):
                 dict(insn=insn, recipe_branch=recipe_branch))
         return base_branch
 
-    def _scanInstructions(self, branch):
-        """Walk over the instructions in the recipe branch.
+    def _scanInstructions(self, recipe_branch):
+        """Check the recipe_branch doesn't use 'run' and look up the branches.
 
-        If `record` is True, the instructions will be recorded in the
-        database.  Otherwise, we just check that no unexpected instructions
-        are present.
+        We do all the lookups before we start constructing database objects to
+        avoid flushing half-constructed objects to the database.
+
+        :return: A map ``{branch_url: db_branch}``.
         """
         r = {}
-        for instruction in branch.child_branches:
-            if isinstance(instruction, MergeInstruction):
-                pass
-            elif isinstance(instruction, NestInstruction):
-                pass
-            else:
+        for instruction in recipe_branch.child_branches:
+            if not (isinstance(instruction, MergeInstruction) or
+                    isinstance(instruction, NestInstruction)):
                 raise ForbiddenInstruction(str(instruction))
             db_branch = getUtility(IBranchLookup).getByUrl(
                 instruction.recipe_branch.url)
@@ -170,19 +168,18 @@ class _SourcePackageRecipeData(Storm):
             r.update(self._scanInstructions(instruction.recipe_branch))
         return r
 
-    def _recordInstructions(self, branch, parent_insn, branch_map, line_number=0):
-        """Walk over the instructions in the recipe branch.
-
-        If `record` is True, the instructions will be recorded in the
-        database.  Otherwise, we just check that no unexpected instructions
-        are present.
+    def _recordInstructions(self, recipe_branch, parent_insn, branch_map,
+                            line_number=0):
+        """Build _SourcePackageRecipeDataInstructions for the recipe_branch.
         """
-        for instruction in branch.child_branches:
+        for instruction in recipe_branch.child_branches:
             if isinstance(instruction, MergeInstruction):
                 type = InstructionType.MERGE
             elif isinstance(instruction, NestInstruction):
                 type = InstructionType.NEST
             else:
+                # Unsupported instructions should have been filtered out by
+                # _scanInstructions; if we get surprised here, that's a bug.
                 raise AssertionError(
                     "Unsupported instruction %r" % instruction)
             line_number += 1
@@ -216,7 +213,8 @@ class _SourcePackageRecipeData(Storm):
         self.recipe_format = unicode(builder_recipe.format)
 
     def __init__(self, recipe, sourcepackage_recipe):
-        """Initialize the object from the BaseRecipeBranch."""
+        """Initialize from the bzr-builder recipe and link it to a db recipe.
+        """
         self.setRecipe(recipe)
         self.sourcepackage_recipe = sourcepackage_recipe
 
