@@ -214,7 +214,7 @@ We will temporarily disable the ubuntu primary archive.
     >>> login('foo.bar@canonical.com')
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu.main_archive.enabled = False
+    >>> ubuntu.main_archive.disable()
     >>> login(ANONYMOUS)
 
 That done, the non-virtualized queue for i386 becomes empty.
@@ -225,7 +225,7 @@ That done, the non-virtualized queue for i386 becomes empty.
 Let's re-enable the ubuntu primary archive.
 
     >>> login('foo.bar@canonical.com')
-    >>> ubuntu.main_archive.enabled = True
+    >>> ubuntu.main_archive.enable()
     >>> login(ANONYMOUS)
 
 The build for the ubuntu primary archive shows up again.

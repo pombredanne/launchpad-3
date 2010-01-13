@@ -11,9 +11,7 @@ __all__ = [
     'BinaryPackageBuildBehavior',
     ]
 
-import socket
-import xmlrpclib
-
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import urlappend
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
@@ -23,10 +21,8 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import IBuildSet
-from lp.buildmaster.interfaces.builder import BuildSlaveFailure, CannotBuild
+from lp.buildmaster.interfaces.builder import CannotBuild
 
-from zope.component import getUtility
 from zope.interface import implements
 
 
@@ -35,91 +31,77 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
     implements(IBuildFarmJobBehavior)
 
-    def logStartBuild(self, build_queue_item, logger):
-        """See `IBuildFarmJobBehavior`."""
-        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
-        spr = build.sourcepackagerelease
+    @cachedproperty
+    def build(self):
+        return self.buildfarmjob.build
 
+    def logStartBuild(self, logger):
+        """See `IBuildFarmJobBehavior`."""
+        spr = self.build.sourcepackagerelease
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
-                    spr.name, spr.version, build.pocket.title)
+                    spr.name, spr.version, self.build.pocket.title)
 
     @property
     def status(self):
         """See `IBuildFarmJobBehavior`."""
-        build = getUtility(IBuildSet).getByQueueEntry(
-            self._builder.currentjob)
-        msg = 'Building %s' % build.title
-        archive = build.archive
+        msg = 'Building %s' % self.build.title
+        archive = self.build.archive
         if not archive.owner.private and (archive.is_ppa or archive.is_copy):
             return '%s [%s/%s]' % (msg, archive.owner.name, archive.name)
         else:
             return msg
 
-    def dispatchBuildToSlave(self, build_queue_item, logger):
+    def dispatchBuildToSlave(self, build_queue_id, logger):
         """See `IBuildFarmJobBehavior`."""
 
         # Start the binary package build on the slave builder. First
         # we send the chroot.
-        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
-        chroot = build.distroarchseries.getChroot()
-        self._builder.cacheFileOnSlave(logger, chroot)
+        chroot = self.build.distroarchseries.getChroot()
+        self._builder.slave.cacheFile(logger, chroot)
 
         # Build filemap structure with the files required in this build
         # and send them to the slave.
         # If the build is private we tell the slave to get the files from the
         # archive instead of the librarian because the slaves cannot
         # access the restricted librarian.
-        private = build.archive.private
+        private = self.build.archive.private
         if private:
-            self._cachePrivateSourceOnSlave(build_queue_item, logger)
+            self._cachePrivateSourceOnSlave(logger)
         filemap = {}
-        for source_file in build.sourcepackagerelease.files:
+        for source_file in self.build.sourcepackagerelease.files:
             lfa = source_file.libraryfile
             filemap[lfa.filename] = lfa.content.sha1
             if not private:
-                self._builder.cacheFileOnSlave(
-                    logger, source_file.libraryfile)
+                self._builder.slave.cacheFile(logger, source_file.libraryfile)
 
         # Generate a string which can be used to cross-check when obtaining
         # results so we know we are referring to the right database object in
         # subsequent runs.
-        buildid = "%s-%s" % (build.id, build_queue_item.id)
+        buildid = "%s-%s" % (self.build.id, build_queue_id)
         chroot_sha1 = chroot.content.sha1
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
-        try:
-            args = self._extraBuildArgs(build)
-            status, info = self._builder.slave.build(
-                buildid, "debian", chroot_sha1, filemap, args)
-            message = """%s (%s):
-            ***** RESULT *****
-            %s
-            %s
-            %s: %s
-            ******************
-            """ % (
-                self._builder.name,
-                self._builder.url,
-                filemap,
-                args,
-                status,
-                info,
-                )
-            logger.info(message)
-        except xmlrpclib.Fault, info:
-            # Mark builder as 'failed'.
-            logger.debug(
-                "Disabling builder: %s" % self._builder.url, exc_info=1)
-            self._builder.failbuilder(
-                "Exception (%s) when setting up to new job" % info)
-            raise BuildSlaveFailure
-        except socket.error, info:
-            error_message = "Exception (%s) when setting up new job" % info
-            self._builder.handleTimeout(logger, error_message)
-            raise BuildSlaveFailure
+        args = self._extraBuildArgs(self.build)
+        status, info = self._builder.slave.build(
+            buildid, "debian", chroot_sha1, filemap, args)
+        message = """%s (%s):
+        ***** RESULT *****
+        %s
+        %s
+        %s: %s
+        ******************
+        """ % (
+            self._builder.name,
+            self._builder.url,
+            filemap,
+            args,
+            status,
+            info,
+            )
+        logger.info(message)
 
-    def verifyBuildRequest(self, build_queue_item, logger):
+    def verifyBuildRequest(self, logger):
         """Assert some pre-build checks.
 
         The build request is checked:
@@ -128,7 +110,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
          * Ensure that the build pocket allows builds for the current
            distroseries state.
         """
-        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
+        build = self.build
         assert not (not self._builder.virtualized and build.is_virtualized), (
             "Attempt to build non-virtual item on a virtual builder.")
 
@@ -149,8 +131,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                 "Missing CHROOT for %s/%s/%s" % (
                     build.distroseries.distribution.name,
                     build.distroseries.name,
-                    build.distroarchseries.architecturetag)
-                )
+                    build.distroarchseries.architecturetag))
 
         # The main distribution has policies to prevent uploads to some
         # pockets (e.g. security) during different parts of the distribution
@@ -196,16 +177,9 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
 
         return extra_info
 
-    def _cachePrivateSourceOnSlave(self, build_queue_item, logger):
+    def _cachePrivateSourceOnSlave(self, logger):
         """Ask the slave to download source files for a private build.
 
-        The slave will cache the files for the source in build_queue_item
-        to its local disk in preparation for a private build.  Private builds
-        will always take the source files from the archive rather than the
-        librarian since the archive has more granular access to each
-        archive's files.
-
-        :param build_queue_item: The `IBuildQueue` being built.
         :param logger: A logger used for providing debug information.
         """
         # The URL to the file in the archive consists of these parts:
@@ -215,21 +189,20 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         # Avoid circular imports.
         from lp.soyuz.model.publishing import makePoolPath
 
-        build = getUtility(IBuildSet).getByQueueEntry(build_queue_item)
-        archive = build.archive
+        archive = self.build.archive
         archive_url = archive.archive_url
-        component_name = build.current_component.name
-        for source_file in build.sourcepackagerelease.files:
+        component_name = self.build.current_component.name
+        for source_file in self.build.sourcepackagerelease.files:
             file_name = source_file.libraryfile.filename
             sha1 = source_file.libraryfile.content.sha1
-            source_name = build.sourcepackagerelease.sourcepackagename.name
-            poolpath = makePoolPath(source_name, component_name)
+            spn = self.build.sourcepackagerelease.sourcepackagename
+            poolpath = makePoolPath(spn.name, component_name)
             url = urlappend(archive_url, poolpath)
             url = urlappend(url, file_name)
             logger.debug("Asking builder on %s to ensure it has file %s "
                          "(%s, %s)" % (
                             self._builder.url, file_name, url, sha1))
-            self._builder._sendFileToSlave(
+            self._builder.slave._sendFileToSlave(
                 url, sha1, "buildd", archive.buildd_secret)
 
     def _extraBuildArgs(self, build):

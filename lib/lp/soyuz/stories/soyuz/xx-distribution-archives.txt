@@ -14,15 +14,19 @@ First create a copy archive for us to see:
     ...     distribution=ubuntu, owner=joe,
     ...     name="intrepid-security-rebuild")
     >>> copy_archive = copy_location.archive
+    >>> copy_archive.enabled
+    True
+
     >>> package_copy_request = ubuntu.main_archive.requestPackageCopy(
     ...     copy_location, copy_archive.owner)
 
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
     >>> disabled_location = factory.makeCopyArchiveLocation(
     ...     distribution=ubuntu, owner=nopriv,
-    ...     name="disabled-security-rebuild")
+    ...     name="disabled-security-rebuild", enabled=False)
     >>> disabled_archive = disabled_location.archive
-    >>> disabled_archive.enabled = False
+    >>> disabled_archive.enabled
+    False
 
 And add some published packages so that this archive is considered
 an active one:
@@ -180,7 +184,7 @@ When a COPY archive gets enabled, No Privileges users can still access
 it and the 'disabled' styling is gone.
 
     >>> login('foo.bar@canonical.com')
-    >>> disabled_archive.enabled = True
+    >>> disabled_archive.enable()
     >>> logout()
 
     >>> nopriv_browser.reload()
