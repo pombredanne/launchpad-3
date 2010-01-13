@@ -1084,6 +1084,12 @@ class IArchiveEdit(Interface):
         :param component: An `IComponent` or textual component name.
         """
 
+    def enable():
+        """Enable the archive."""
+
+    def disable():
+        """Disable the archive."""
+
 
 class IArchive(IArchivePublic, IArchiveAppend, IArchiveEdit, IArchiveView):
     """Main Archive interface."""

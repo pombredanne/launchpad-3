@@ -860,7 +860,7 @@ If we disable Cprov's PPA, the section is not presented to anonymous
 users who cannot view the PPA, but is displayed to Celso.
 
     >>> login("admin@canonical.com")
-    >>> cprov.archive.enabled = False
+    >>> cprov.archive.disable()
 
     >>> login(ANONYMOUS)
     >>> view = create_initialized_view(cprov, "+index")
