@@ -37,6 +37,12 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
 
     def doRunSbuild(self):
         """Run the sbuild process to build the package."""
+        recipe_path = get_buildpath(self._buildid, 'work/recipe')
+        recipe_file = open(recipe_path, 'w')
+        try:
+            recipe_file.write(self.recipe_text)
+        finally:
+            recipe_file.close()
         args = ["buildrecipe.py", self._buildid, self.recipe_data,
         self.author_name, self.author_email, self.package_name, self.suite]
         self.runSubProcess(self.build_recipe_path, args)

@@ -6,8 +6,6 @@
 
 # Buildd Slave sbuild manager implementation
 
-from __future__ import with_statement
-
 __metaclass__ = type
 
 import os

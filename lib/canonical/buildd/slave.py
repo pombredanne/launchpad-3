@@ -327,8 +327,11 @@ class BuildDSlave(object):
 
     def addWaitingFile(self, path)
         fn = os.path.basename(path)
-        with open(path) as f:
+        f = open(path)
+        try:
             self.waitingfiles[fn] = self.storeFile(f.read())
+        finally:
+            f.close()
 
     def fetchFile(self, sha1sum):
         """Fetch the file of the given sha1sum."""

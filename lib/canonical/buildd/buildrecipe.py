@@ -30,11 +30,8 @@ class BuildRecipe:
         return self.chroot(['apt-get', 'install', 'pbuilder'])
 
     def buildTree(self):
-        recipe_path = os.path.join(self.work_dir, 'recipe')
         recipe_path_relative = os.path.join(self.work_dir_relative, 'recipe')
         manifest_path = os.path.join(self.work_dir_relative, 'manifest')
-        with open(recipe_path, 'w') as recipe_file:
-            recipe_file.write(self.recipe_text)
         self.tree_path_relative = os.path.join(self.work_dir_relative, 'tree')
         env = {'DEBEMAIL': self.author_email,
                'DEBFULLNAME': self.author_name}
