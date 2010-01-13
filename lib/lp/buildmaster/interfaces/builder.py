@@ -177,7 +177,7 @@ class IBuilder(IHasOwner):
     def cleanSlave():
         """Clean any temporary files from the slave."""
 
-    def failbuilder(reason):
+    def failBuilder(reason):
         """Mark builder as failed for a given reason."""
 
     def requestAbort():
@@ -251,7 +251,7 @@ class IBuilder(IHasOwner):
 
         In case of a virtualized/PPA buildd slave an attempt will be made
         to reset it first (using `resumeSlaveHost`). Only if that fails
-        will it be (marked as) failed (using `failbuilder`).
+        will it be (marked as) failed (using `failBuilder`).
 
         Conversely, a non-virtualized buildd slave will be (marked as)
         failed straightaway.

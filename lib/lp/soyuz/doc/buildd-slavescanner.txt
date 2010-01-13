@@ -237,7 +237,7 @@ Create a mock slave so the builder can operate - one with a failed package.
 Do the test execution:
 
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem3)
-    >>> buildergroup.updateBuild(bqItem3)
+    >>> a_builder.updateBuild(bqItem3)
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -267,7 +267,7 @@ Create a mock slave so the builder can operate - one with a dependency error.
 Do the test execution:
 
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem4)
-    >>> buildergroup.updateBuild(bqItem4)
+    >>> a_builder.updateBuild(bqItem4)
     CRITICAL:root:***** bob is MANUALDEPWAIT *****
     >>> build.builder is not None
     True
@@ -296,7 +296,7 @@ builder, but right state stored in Build entry:
     >>> bqItem5.builder.setSlaveForTesting(
     ...     WaitingSlave('BuildStatus.CHROOTFAIL'))
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem5)
-    >>> buildergroup.updateBuild(bqItem5)
+    >>> a_builder.updateBuild(bqItem5)
     CRITICAL:root:***** bob is CHROOTWAIT *****
     >>> build.builder is not None
     True
@@ -322,7 +322,7 @@ Create a mock slave so the builder can operate - one with a builder error.
     >>> bqItem6.builder.setSlaveForTesting(
     ...     WaitingSlave('BuildStatus.BUILDERFAIL'))
 
-    >>> buildergroup.updateBuild(bqItem6)
+    >>> a_builder.updateBuild(bqItem6)
     WARNING:root:***** bob has failed *****
 
     >>> from canonical.launchpad.ftests import sync
@@ -357,7 +357,7 @@ Create a mock slave so the builder can operate - one which is building.
 
     >>> bqItem7.builder.setSlaveForTesting(BuildingSlave())
     >>> builder_id = bqItem7.builder.id
-    >>> buildergroup.updateBuild(bqItem7)
+    >>> a_builder.updateBuild(bqItem7)
 
 Due to updateBuild doing a commit we cannot compare the object instance.
 
@@ -380,11 +380,11 @@ next build round:
     >>> last_stub_mail_count = len(stub.test_emails)
 
     >>> bqItem8.builder.setSlaveForTesting(BuildingSlave())
-    >>> buildergroup.updateBuild(bqItem8)
+    >>> a_builder.updateBuild(bqItem8)
     >>> bqItem8.builder.setSlaveForTesting(AbortedSlave())
     >>> bqItem8.builder.name
     u'bob'
-    >>> buildergroup.updateBuild(bqItem8)
+    >>> a_builder.updateBuild(bqItem8)
     >>> bqItem8.builder is None
     True
 
@@ -403,7 +403,7 @@ gets ABORTED.
     >>> bqItem9.builder.setSlaveForTesting(AbortingSlave())
     >>> bqItem9.builder.name
     u'bob'
-    >>> buildergroup.updateBuild(bqItem9)
+    >>> a_builder.updateBuild(bqItem9)
     >>> check_mail_sent(last_stub_mail_count)
     False
     >>> bqItem9.logtail
@@ -442,7 +442,7 @@ If the build record wasn't updated before/during the updateBuild
 FAILEDTOUPLOAD:
 
     >>> build = getUtility(IBuildSet).getByQueueEntry(bqItem10)
-    >>> buildergroup.updateBuild(bqItem10)
+    >>> a_builder.updateBuild(bqItem10)
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -535,7 +535,7 @@ Now the updateBuild should recognize this build record as a
 Successfully built and uploaded procedure, not sending any
 notification and updating the build information:
 
-    >>> buildergroup.updateBuild(bqItem10)
+    >>> a_builder.updateBuild(bqItem10)
     >>> build.builder is not None
     True
     >>> build.datebuilt is not None
@@ -565,7 +565,7 @@ Create a mock slave so the builder gets the right responses for this test.
 
     >>> bqItem11.builder.setSlaveForTesting(
     ...     WaitingSlave('BuildStatus.GIVENBACK'))
-    >>> buildergroup.updateBuild(bqItem11)
+    >>> a_builder.updateBuild(bqItem11)
     WARNING:root:***** 1-1 is GIVENBACK by bob *****
 
 Ensure GIVENBACK build preserves the history for future use. (we
@@ -605,7 +605,7 @@ cases, and even so should be refused when we try to upload it.)
 Create a mock slave so the builder gets the right responses for this test.
 
     >>> bqItem12.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
-    >>> buildergroup.updateBuild(bqItem12)
+    >>> a_builder.updateBuild(bqItem12)
     Traceback (most recent call last):
     ...
     AssertionError: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE (2) can not be built for pocket RELEASE: illegal status
@@ -1239,7 +1239,8 @@ the restricted librarian.
     >>> setupBuildQueue(candidate, a_builder)
     >>> build.upload_log = None
     >>> candidate.builder.setSlaveForTesting(WaitingSlave('BuildStatus.OK'))
-    >>> buildergroup.updateBuild(candidate)
+    >>> a_builder.updateBuild(candidate)
+    >>> local_transaction.commit()
 
     >>> build.archive.private
     True

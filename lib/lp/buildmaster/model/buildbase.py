@@ -86,7 +86,7 @@ class BuildBase:
         """
         logger.warning("***** %s has failed *****"
                        % self.buildqueue_record.builder.name)
-        self.buildqueue_record.builder.failbuilder(
+        self.buildqueue_record.builder.failBuilder(
             "Builder returned BUILDERFAIL when asked for its status")
         # simply reset job
         self.storeBuildInfo(librarian, slave_status)

@@ -73,7 +73,7 @@ class BuilderGroup:
         # main refactoring of this area.
         except (ValueError, TypeError, xmlrpclib.Fault,
                 BuildDaemonError), reason:
-            builder.failbuilder(str(reason))
+            builder.failBuilder(str(reason))
             self.logger.warn(
                 "%s (%s) marked as failed due to: %s",
                 builder.name, builder.url, builder.failnotes, exc_info=True)
@@ -129,18 +129,6 @@ class BuilderGroup:
                 builder.requestAbort()
             self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
                 builder.name, build_id, queue_item_id, reason))
-
-    def failBuilder(self, builder, reason):
-        """Mark builder as failed.
-
-        Set builderok as False, store the reason in failnotes.
-        """
-        # XXX cprov 2007-04-17: ideally we should be able to notify the
-        # the buildd-admins about FAILED builders. One alternative is to
-        # make the buildd_cronscript (slave-scanner, in this case) to exit
-        # with error, for those cases buildd-sequencer automatically sends
-        # an email to admins with the script output.
-        builder.failbuilder(reason)
 
     def updateBuild(self, queueItem):
         """Verify the current build job status.
