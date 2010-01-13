@@ -112,7 +112,7 @@ class CodeImportSourceDetails:
         'git'], None otherwise.
     :ivar cvs_root: The $CVSROOT if rcstype == 'cvs', None otherwise.
     :ivar cvs_module: The CVS module if rcstype == 'cvs', None otherwise.
-   """
+    """
 
     def __init__(self, branch_id, rcstype, url=None, cvs_root=None,
                  cvs_module=None):
@@ -550,7 +550,7 @@ class GitImportWorker(PullingImportWorker):
 class HgImportWorker(PullingImportWorker):
     """An import worker for Mercurial imports.
 
-    The only behaviour we add is preserving the 'hg.db' map between runs.
+    The only behaviour we add is preserving the id-sha map between runs.
     """
 
     db_file = 'hg-v2.db'
@@ -565,9 +565,9 @@ class HgImportWorker(PullingImportWorker):
     def getBazaarWorkingTree(self):
         """See `ImportWorker.getBazaarWorkingTree`.
 
-        In addition to the superclass' behaviour, we retrieve the 'hg.db'
+        In addition to the superclass' behaviour, we retrieve the 'hg-v2.db'
         map from the import data store and put it where bzr-hg will find
-        it in the Bazaar tree, that is at '.bzr/repository/hg.db'.
+        it in the Bazaar tree, that is at '.bzr/repository/hg-v2.db'.
         """
         tree = PullingImportWorker.getBazaarWorkingTree(self)
         self.import_data_store.fetch(
@@ -577,8 +577,8 @@ class HgImportWorker(PullingImportWorker):
     def pushBazaarWorkingTree(self, bazaar_tree):
         """See `ImportWorker.pushBazaarWorkingTree`.
 
-        In addition to the superclass' behaviour, we store the 'hg.db' shamap
-        that bzr-hg will have created at .bzr/repository/hg.db into the
+        In addition to the superclass' behaviour, we store the 'hg-v2.db' shamap
+        that bzr-hg will have created at .bzr/repository/hg-v2.db into the
         import data store.
         """
         PullingImportWorker.pushBazaarWorkingTree(self, bazaar_tree)

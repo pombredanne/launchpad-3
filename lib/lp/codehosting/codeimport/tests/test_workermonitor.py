@@ -502,7 +502,7 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         return self.factory.makeCodeImport(git_repo_url=self.repo_path)
 
     def makeHgCodeImport(self):
-        """Make a `CodeImport` that points to a real Git repository."""
+        """Make a `CodeImport` that points to a real Mercurial repository."""
         load_optional_plugin('hg')
         self.hg_server = MercurialServer(self.repo_path)
         self.hg_server.setUp()

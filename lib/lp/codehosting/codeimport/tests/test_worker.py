@@ -9,7 +9,6 @@ import logging
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 import time
 import unittest
@@ -897,7 +896,7 @@ class TestMercurialImport(WorkerTest, TestActualImportMixin,
         self.setUpImport()
 
     def tearDown(self):
-        """Clear bzr-hg's cache of tdb connections.
+        """Clear bzr-hg's cache of sqlite connections.
 
         This is rather obscure: different test runs tend to re-use the same
         paths on disk, which confuses bzr-hg as it keeps a cache that maps
