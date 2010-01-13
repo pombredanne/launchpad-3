@@ -33,15 +33,12 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
-        templatesbuildjob = self._findTranslationTemplatesBuildJob(
-            build_queue_item)
         chroot = self._getChroot()
         chroot_sha1 = chroot.content.sha1
-# XXX: API change in lp:~jml/launchpad/behavior-refactor
-        self._builder.cacheFileOnSlave(logger, chroot)
-        buildid = templatesbuildjob.getName()
+        self._builder.slave.cacheFile(logger, chroot)
+        buildid = self.buildfarmjob.getName()
 
-        args = { 'branch_url': templatesbuildjob.branch.url }
+        args = { 'branch_url': self.buildfarmjob.branch.url }
         filemap = {}
 
 # XXX: API change in lp:~jml/launchpad/behavior-refactor
@@ -52,16 +49,6 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return ubuntu.currentseries.nominatedarchindep.getChroot()
 
-    def _findTranslationTemplatesBuildJob(self, build_queue_item):
-        """Find the `TranslationTemplatesBuildJob` for a job.
-
-        :param build_queue_item: A `BuildQueue` entry.
-        :return: The matching `TranslationTemplatesBuildJob`.
-        """
-        return TranslationTemplatesBuildJob.getByJob(build_queue_item.job)
-
-    def logStartBuild(self, build_queue_item, logger):
+    def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""
-        specific_job = TranslationTemplatesBuildJob.getByJob(
-            build_queue_item.job)
-        logger.info("Start templates build for %s" % specific_job.branch.name)
+        logger.info("Starting templates build.")

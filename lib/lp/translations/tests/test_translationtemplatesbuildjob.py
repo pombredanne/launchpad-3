@@ -125,14 +125,6 @@ class TestTranslationTemplatesBuildBehavior(TestCaseWithFactory):
         self.assertNotEqual(None, chroot)
         self.assertEqual(fake_chroot_file, chroot)
 
-    def test_findTranslationTemplatesBuildJob(self):
-        job = self.specific_job.job
-        job_id = removeSecurityProxy(job).id
-        buildqueue = getUtility(IBuildQueueSet).get(job_id)
-        specific_job_for_buildqueue = removeSecurityProxy(
-            self.behavior._findTranslationTemplatesBuildJob(buildqueue))
-        self.assertEqual(self.specific_job, specific_job_for_buildqueue)
-
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
