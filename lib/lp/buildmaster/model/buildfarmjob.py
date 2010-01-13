@@ -5,6 +5,7 @@ __metaclass__ = type
 __all__ = ['BuildFarmJob']
 
 
+from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.launchpad.webapp.interfaces import (
