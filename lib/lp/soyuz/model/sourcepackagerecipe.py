@@ -46,13 +46,14 @@ class SourcePackageRecipe(Storm):
 
     name = Unicode(allow_none=True)
 
-    _recipe_data = Reference(
-        "SourcePackageRecipe.id",
-        "_SourcePackageRecipeData.sourcepackage_recipe_id", on_remote=True)
+    @property
+    def _recipe_data(self):
+        return Store.of(self).find(
+            _SourcePackageRecipeData,
+            _SourcePackageRecipeData.sourcepackage_recipe == self).one()
 
     def _get_builder_recipe(self):
         """Accesses of the recipe go to the _SourcePackageRecipeData."""
-        Store.of(self).flush()
         return self._recipe_data.getRecipe()
 
     def _set_builder_recipe(self, value):
@@ -63,7 +64,6 @@ class SourcePackageRecipe(Storm):
 
     def getReferencedBranches(self):
         """See `ISourcePackageRecipe.getReferencedBranches`."""
-        Store.of(self).flush()
         return self._recipe_data.getReferencedBranches()
 
     @staticmethod
