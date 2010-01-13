@@ -81,31 +81,6 @@ class IBuildQueue(Interface):
     def reset():
         """Reset this job, so it can be re-dispatched."""
 
-    def updateBuild_IDLE(build_id, build_status, logtail,
-                         filemap, dependencies, logger):
-        """Somehow the builder forgot about the build job.
-
-        Log this and reset the record.
-        """
-
-    def updateBuild_BUILDING(build_id, build_status, logtail, filemap,
-                             dependencies, logger):
-        """Build still building, collect the logtail"""
-
-    def updateBuild_ABORTING(buildid, build_status, logtail, filemap,
-                             dependencies, logger):
-        """Build was ABORTED.
-
-        Master-side should wait until the slave finish the process correctly.
-        """
-
-    def updateBuild_ABORTED(buildid, build_status, logtail, filemap,
-                            dependencies, logger):
-        """ABORTING process has successfully terminated.
-
-        Clean the builder for another jobs.
-        """
-
     specific_job = Reference(
         IBuildFarmJob, title=_("Job"),
         description=_("Data and operations common to all build farm jobs."))

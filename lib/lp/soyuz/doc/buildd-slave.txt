@@ -89,8 +89,7 @@ the Launchpad DB. (simply check if it doesn't explode)
 
     >>> bm.scanActiveBuilders()
     WARNING:...:Builder http://localhost:8221/ forgot about
-    build i386 build of mozilla-firefox 0.9 in ubuntu hoary RELEASE --
-    resetting buildqueue record
+    buildqueue 1 -- resetting buildqueue record
 
 Tested, time to shutdown.
 

@@ -20,9 +20,11 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
+from canonical import encoding
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch, IBuildFarmJobBehavior)
+from lp.services.job.interfaces.job import JobStatus
 
 
 class BuildFarmJobBehaviorBase:
@@ -72,10 +74,10 @@ class BuildFarmJobBehaviorBase:
             return
 
         builder_status_handlers = {
-            'BuilderStatus.IDLE': queueItem.updateBuild_IDLE,
-            'BuilderStatus.BUILDING': queueItem.updateBuild_BUILDING,
-            'BuilderStatus.ABORTING': queueItem.updateBuild_ABORTING,
-            'BuilderStatus.ABORTED': queueItem.updateBuild_ABORTED,
+            'BuilderStatus.IDLE': self.updateBuild_IDLE,
+            'BuilderStatus.BUILDING': self.updateBuild_BUILDING,
+            'BuilderStatus.ABORTING': self.updateBuild_ABORTING,
+            'BuilderStatus.ABORTED': self.updateBuild_ABORTED,
             'BuilderStatus.WAITING': self.updateBuild_WAITING,
             }
 
@@ -99,24 +101,47 @@ class BuildFarmJobBehaviorBase:
         # Security Proxy, which is not declared, thus empty. Before passing
         # it to the status handlers we will simply remove the proxy.
         logtail = removeSecurityProxy(slave_status.get('logtail'))
-        build_id = slave_status.get('build_id')
-        build_status = slave_status.get('build_status')
-        filemap = slave_status.get('filemap')
-        dependencies = slave_status.get('dependencies')
 
         method = builder_status_handlers[builder_status]
         try:
-            # XXX cprov 2007-05-25: We need this code for WAITING status
-            # handler only until we are able to also move it to
-            # BuildQueue content class and avoid to pass 'queueItem'.
-            if builder_status == 'BuilderStatus.WAITING':
-                method(queueItem, slave_status, logtail, logger)
-            else:
-                method(build_id, build_status, logtail,
-                       filemap, dependencies, logger)
+            method(queueItem, slave_status, logtail, logger)
         except TypeError, e:
             logger.critical("Received wrong number of args in response.")
             logger.exception(e)
+
+    def updateBuild_IDLE(self, queueItem, slave_status, logtail, logger):
+        """Somehow the builder forgot about the build job.
+
+        Log this and reset the record.
+        """
+        logger.warn(
+            "Builder %s forgot about buildqueue %d -- resetting buildqueue "
+            "record" % (queueItem.builder.url, queueItem.id))
+        queueItem.reset()
+
+    def updateBuild_BUILDING(self, queueItem, slave_status, logtail, logger):
+        """Build still building, collect the logtail"""
+        if queueItem.job.status != JobStatus.RUNNING:
+            queueItem.job.start()
+        queueItem.logtail = encoding.guess(str(logtail))
+
+    def updateBuild_ABORTING(self, queueItem, slave_status, logtail, logger):
+        """Build was ABORTED.
+
+        Master-side should wait until the slave finish the process correctly.
+        """
+        queueItem.logtail = "Waiting for slave process to be terminated"
+
+    def updateBuild_ABORTED(self, queueItem, slave_status, logtail, logger):
+        """ABORTING process has successfully terminated.
+
+        Clean the builder for another jobs.
+        """
+        queueItem.builder.cleanSlave()
+        queueItem.builder = None
+        if queueItem.job.status != JobStatus.FAILED:
+            queueItem.job.fail()
+        queueItem.specific_job.jobAborted()
 
     def updateBuild_WAITING(self, queueItem, slave_status, logtail, logger):
         """Perform the actions needed for a slave in a WAITING state
