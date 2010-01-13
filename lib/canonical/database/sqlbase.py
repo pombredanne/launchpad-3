@@ -269,8 +269,8 @@ class ZopelessTransactionManager(object):
     def _get_zopeless_connection_config(self, dbname, dbhost):
         # This method exists for testability.
 
-        # We must connect to the read-write DB here, so we use rw_main_master
-        # directly.
+        # This is only used by scripts, so we must connect to the read-write
+        # DB here -- that's why we use rw_main_master directly.
         main_connection_string = dbconfig.rw_main_master
         auth_connection_string = dbconfig.auth_master
 
@@ -357,8 +357,6 @@ class ZopelessTransactionManager(object):
         for name, store in getUtility(IZStorm).iterstores():
             connection = store._connection
             if connection._state == storm.database.STATE_CONNECTED:
-                # XXX: Instead of all this we could probably just remove the
-                # store from ZStorm (zstorm.remove(store)).
                 if connection._raw_connection is not None:
                     connection._raw_connection.close()
 

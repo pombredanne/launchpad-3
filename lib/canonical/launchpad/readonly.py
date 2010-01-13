@@ -1,25 +1,33 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+from __future__ import with_statement
 
 """Helpers for running Launchpad in read-only mode.
 
 To switch an app server to read-only mode, all you need to do is create a file
-named read-only.txt under the root of the Launchpad tree.
+named read-only.txt in the root of the Launchpad tree.
 """
+
+__metaclass__ = type
+__all__ = [
+    'IIsReadOnly',
+    'IsReadOnlyUtility'
+    'read_only_file_exists',
+    'read_only_file_path',
+    ]
 
 import logging
 import os
 import threading
 
 from zope.interface import implements, Interface
-from zope.schema import Bool
 from zope.security.management import queryInteraction
 
 from lazr.restful.utils import get_current_browser_request
 
 
-root = os.path.join(
-    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir)
+root = os.path.abspath(os.path.join(
+    os.path.dirname(__file__), os.pardir, os.pardir, os.pardir))
 read_only_file_path = os.path.join(root, 'read-only.txt')
 READ_ONLY_MODE_ANNOTATIONS_KEY = 'launchpad.read_only_mode'
 
@@ -33,31 +41,12 @@ def read_only_file_exists():
     return os.path.isfile(read_only_file_path)
 
 
-def _touch_read_only_file():
-    """Create an empty file named read-only.txt under the root of the tree.
-
-    This function must not be called if a file with that name already exists.
-    """
-    assert not read_only_file_exists(), (
-        "This function must not be called when a read-only.txt file "
-        "already exists.")
-    f = open(read_only_file_path, 'w')
-    f.close()
-
-
-def _remove_read_only_file():
-    """Remove the file named read-only.txt from the root of the tree."""
-    os.remove(read_only_file_path)
-
-
 class IIsReadOnly(Interface):
     """A utility which tells us whether or not in read-only mode.
 
     Implemented as a utility because we need a global register of the mode
     we're on, so that we can log mode changes.
     """
-
-    _currently_in_read_only = Bool()
 
     # pylint: disable-msg=E0211
     def isReadOnly():
@@ -101,13 +90,10 @@ class IsReadOnlyUtility:
             request.annotations[READ_ONLY_MODE_ANNOTATIONS_KEY] = read_only
 
         log_change = False
-        try:
-            self._lock.acquire()
+        with self._lock:
             if self._currently_in_read_only != read_only:
                 self._currently_in_read_only = read_only
                 log_change = True
-        finally:
-            self._lock.release()
 
         if log_change:
             logging.warning(

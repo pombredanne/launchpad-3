@@ -21,8 +21,8 @@ from canonical.config import dbconfig
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.ftests import ANONYMOUS, login
-from canonical.launchpad.readonly import (
-    _remove_read_only_file, _touch_read_only_file)
+from canonical.launchpad.tests.readonly import (
+    remove_read_only_file, touch_read_only_file)
 from lp.testing import TestCase, TestCaseWithFactory
 import canonical.launchpad.webapp.adapter as da
 from canonical.launchpad.webapp.interfaces import (
@@ -116,10 +116,10 @@ class TestReadOnlyModeSwitches(TestCase):
         self.assertIn('launchpad-main-slave', self.zstorm_stores)
 
         try:
-            _touch_read_only_file()
+            touch_read_only_file()
             self.publication.beforeTraversal(self.request)
         finally:
-            _remove_read_only_file()
+            remove_read_only_file()
 
         # Here the mode has changed to read-only, so the stores were removed
         # from zstorm.

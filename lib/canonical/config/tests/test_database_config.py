@@ -7,8 +7,9 @@ from lp.testing import TestCase
 
 from canonical.config import config, dbconfig
 
-from canonical.launchpad.readonly import (
-    read_only_file_exists, _remove_read_only_file, _touch_read_only_file)
+from canonical.launchpad.readonly import read_only_file_exists
+from canonical.launchpad.tests.readonly import (
+    remove_read_only_file, touch_read_only_file)
 
 
 class TestDatabaseConfig(TestCase):
@@ -49,7 +50,7 @@ class TestDatabaseConfig(TestCase):
         self.assertEquals(dbconfig.rw_main_master, dbconfig.main_master)
         self.assertEquals(dbconfig.rw_main_slave, dbconfig.main_slave)
 
-        _touch_read_only_file()
+        touch_read_only_file()
         try:
             self.assertTrue(read_only_file_exists())
             self.assertEquals(
@@ -57,4 +58,4 @@ class TestDatabaseConfig(TestCase):
             self.assertEquals(
                 dbconfig.ro_main_slave, dbconfig.main_slave)
         finally:
-            _remove_read_only_file()
+            remove_read_only_file()

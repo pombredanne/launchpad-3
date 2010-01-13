@@ -11,8 +11,9 @@ from lp.testing import TestCase
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.readonly import (
-    IIsReadOnly, read_only_file_exists, _remove_read_only_file,
-    _touch_read_only_file, READ_ONLY_MODE_ANNOTATIONS_KEY)
+    IIsReadOnly, read_only_file_exists, READ_ONLY_MODE_ANNOTATIONS_KEY)
+from canonical.launchpad.tests.readonly import (
+    remove_read_only_file, touch_read_only_file)
 from canonical.testing.layers import FunctionalLayer
 
 
@@ -24,11 +25,11 @@ class TestReadOnlyModeDetection(TestCase):
 
         # When a file named 'read-only.txt' exists under the root of the tree,
         # we run in read-only mode.
-        _touch_read_only_file()
+        touch_read_only_file()
         try:
             self.assertTrue(read_only_file_exists())
         finally:
-            _remove_read_only_file()
+            remove_read_only_file()
 
         # Once the file is removed, we're back into read-write mode.
         self.assertFalse(read_only_file_exists())
@@ -40,7 +41,7 @@ class TestIsReadOnlyUtility(TestCase):
     def tearDown(self):
         # Safety net just in case a test leaves the read-only.txt file behind.
         if read_only_file_exists():
-            _remove_read_only_file()
+            remove_read_only_file()
 
     def test_isReadOnly(self):
         # By default we run in read-write mode.
@@ -50,11 +51,11 @@ class TestIsReadOnlyUtility(TestCase):
 
         # When a file named 'read-only.txt' exists under the root of the tree,
         # we run in read-only mode.
-        _touch_read_only_file()
+        touch_read_only_file()
         try:
             self.assertTrue(utility.isReadOnly())
         finally:
-            _remove_read_only_file()
+            remove_read_only_file()
 
     def test_caching_in_request(self):
         # When called as part of a request processing,
