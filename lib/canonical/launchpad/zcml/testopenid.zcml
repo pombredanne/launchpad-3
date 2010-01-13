@@ -32,13 +32,13 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.launchpad.ITestOpenIDApplication"
-        class="canonical.launchpad.webapp.fake_openid.FakeOpenIDAuthView"
+        class="canonical.launchpad.webapp.testopenid.TestOpenIDAuthView"
         permission="zope.Public"
         name="+openid-auth"
         />
     <browser:page
         for="canonical.launchpad.interfaces.launchpad.ITestOpenIDApplication"
-        class="canonical.launchpad.webapp.fake_openid.FakeOpenIDIndexView"
+        class="canonical.launchpad.webapp.testopenid.TestOpenIDIndexView"
         permission="zope.Public"
         name="+index"
         />

@@ -6,7 +6,7 @@ from lp.services.openid.browser.openiddiscovery import (
 from canonical.launchpad.webapp import LaunchpadView
 
 
-class FakeOpenIDIndexView(XRDSContentNegotiationMixin, LaunchpadView):
+class TestOpenIDIndexView(XRDSContentNegotiationMixin, LaunchpadView):
     template = ViewPageTemplateFile(
         "../templates/null.pt")
     xrds_template = ViewPageTemplateFile(
@@ -18,7 +18,7 @@ class FakeOpenIDIndexView(XRDSContentNegotiationMixin, LaunchpadView):
         return 'https://launchpad.dev/testopenid/+openid-auth'
 
 
-class FakeOpenIDAuthView(LaunchpadView):
+class TestOpenIDAuthView(LaunchpadView):
     server_url = 'https://launchpad.dev/testopenid'
 
     def render(self):
