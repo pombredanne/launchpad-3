@@ -17,10 +17,11 @@ from lp.code.interfaces.branchmergeproposal import (
     IBranchMergeProposal)
 from lp.code.interfaces.codereviewcomment import (
     ICodeReviewComment)
+from lp.registry.interfaces.person import IPerson
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
     call_with, export_as_webservice_entry, export_destructor_operation,
-    export_write_operation, exported, REQUEST_USER)
+    export_write_operation, exported, operation_parameters, REQUEST_USER)
 
 
 class ICodeReviewVoteReferencePublic(Interface):
@@ -70,6 +71,15 @@ class ICodeReviewVoteReferencePublic(Interface):
 class ICodeReviewVoteReferenceEdit(Interface):
     """Method that require edit permissions."""
 
+    def validateClaimReview(claimant):
+        """Implements the validation for claiming a review.
+
+        :raises ClaimReviewFailed: If the claimant already has a
+            personal review, if the reviewer is not a team, if the
+            claimant is not in the reviewer team, or if the review is
+            not pending.
+        """
+
     @call_with(claimant=REQUEST_USER)
     @export_write_operation()
     def claimReview(claimant):
@@ -84,6 +94,30 @@ class ICodeReviewVoteReferenceEdit(Interface):
             personal review, if the reviewer is not a team, if the
             claimant is not in the reviewer team, or if the review is
             not pending.
+        """
+
+    def validateReasignReview(reviewer):
+        """Implements the validation for reassignment.
+
+        :raises ReviewNotPending: If the review is not pending.
+        :raises ReassignReviewFailed: If the reviewer is an individual and
+            already has a personal review.
+        """
+
+    @operation_parameters(
+        reviewer=Reference(
+            title=_("The person or team to assign to do the review."),
+            schema=IPerson))
+    @export_write_operation()
+    def reassignReview(reviewer):
+        """Reassign a pending review to someone else.
+
+        Pending reviews can be reassigned to someone else.
+
+        :param reviewer: The person to assign the pending review to.
+        :raises ReviewNotPending: If the review is not pending.
+        :raises ReassignReviewFailed: If the reviewer is an individual and
+            already has a personal review.
         """
 
     @export_destructor_operation()

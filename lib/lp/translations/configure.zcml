@@ -572,6 +572,35 @@
             interface="lp.translations.interfaces.poexportrequest.IPOExportRequestSet"/>
     </securedutility>
 
+    <!-- TranslationTemplateBuildJob -->
+    <class
+        class="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob">
+        <allow
+            interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJob"/>
+    </class>
+    <securedutility
+        component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
+        provides="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource">
+        <allow interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJobSource"/>
+    </securedutility>
+    <utility
+        component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
+        provides="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJob"
+        name="TRANSLATIONTEMPLATESBUILD"/>
+
+    <!-- TranslationTemplateBuildBehavior -->
+    <class
+        class="lp.translations.model.translationtemplatesbuildbehavior.TranslationTemplatesBuildBehavior">
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"/>
+    </class>
+
+    <adapter
+        provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
+        for="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
+        factory="lp.translations.model.translationtemplatesbuildbehavior.TranslationTemplatesBuildBehavior"
+        />
+
   <webservice:register module="lp.translations.interfaces.webservice" />
 
 </configure>

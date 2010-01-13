@@ -9,7 +9,6 @@ import logging
 import os
 import shutil
 import subprocess
-import sys
 import tempfile
 import time
 import unittest
@@ -32,10 +31,10 @@ from canonical.testing import BaseLayer
 from lp.codehosting import load_optional_plugin
 from lp.codehosting.codeimport.worker import (
     BazaarBranchStore, BzrSvnImportWorker, CSCVSImportWorker,
-    ForeignTreeStore, GitImportWorker, ImportDataStore, ImportWorker,
-    get_default_bazaar_branch_store)
+    ForeignTreeStore, GitImportWorker, HgImportWorker, ImportDataStore,
+    ImportWorker, get_default_bazaar_branch_store)
 from lp.codehosting.codeimport.tests.servers import (
-    CVSServer, GitServer, SubversionServer)
+    CVSServer, GitServer, MercurialServer, SubversionServer)
 from lp.codehosting.tests.helpers import (
     create_branch_with_one_revision)
 from lp.testing.factory import LaunchpadObjectFactory
@@ -403,7 +402,7 @@ class TestForeignTreeStore(WorkerTest):
         working_tree = store._getForeignTree('path')
         self.assertIsSameRealPath(working_tree.local_path, 'path')
         self.assertEqual(
-            working_tree.remote_url, source_details.svn_branch_url)
+            working_tree.remote_url, source_details.url)
 
     def test_getForeignTreeCVS(self):
         # _getForeignTree() returns a CVS working tree for CVS code imports.
@@ -770,7 +769,7 @@ class SubversionImportHelpers:
     def makeForeignCommit(self, source_details):
         """Change the foreign tree."""
         client = pysvn.Client()
-        client.checkout(source_details.svn_branch_url, 'working_tree')
+        client.checkout(source_details.url, 'working_tree')
         file = open('working_tree/newfile', 'w')
         file.write('No real content\n')
         file.close()
@@ -790,7 +789,7 @@ class SubversionImportHelpers:
         svn_branch_url = svn_branch_url.replace('://localhost/', ':///')
         self.foreign_commit_count = 2
         return self.factory.makeCodeImportSourceDetails(
-            rcstype=self.rcstype, svn_branch_url=svn_branch_url)
+            rcstype=self.rcstype, url=svn_branch_url)
 
 
 class TestSubversionImport(WorkerTest, SubversionImportHelpers,
@@ -822,14 +821,11 @@ class PullingImportWorkerTests:
         # import should be rejected.
         args = {'rcstype': self.rcstype}
         reference_url = self.createBranchReference()
-        if self.rcstype == 'git':
-            args['git_repo_url'] = reference_url
-        elif self.rcstype == 'bzr-svn':
-            args['svn_branch_url'] = reference_url
+        if self.rcstype in ('git', 'bzr-svn', 'hg'):
+            args['url'] = reference_url
         else:
             raise AssertionError("unexpected rcs_type %r" % self.rcs_type)
         source_details = self.factory.makeCodeImportSourceDetails(**args)
-
         worker = self.makeImportWorker(source_details)
         self.assertRaises(NotBranchError, worker.run)
 
@@ -866,7 +862,7 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         """Change the foreign tree, generating exactly one commit."""
         from bzrlib.plugins.git.tests import run_git
         wd = os.getcwd()
-        os.chdir(source_details.git_repo_url)
+        os.chdir(source_details.url)
         try:
             run_git('config', 'user.name', 'Joe Random Hacker')
             run_git('commit', '-m', 'dsadas')
@@ -886,7 +882,58 @@ class TestGitImport(WorkerTest, TestActualImportMixin,
         self.foreign_commit_count = 1
 
         return self.factory.makeCodeImportSourceDetails(
-            rcstype='git', git_repo_url=repository_path)
+            rcstype='git', url=repository_path)
+
+
+class TestMercurialImport(WorkerTest, TestActualImportMixin,
+                          PullingImportWorkerTests):
+
+    rcstype = 'hg'
+
+    def setUp(self):
+        super(TestMercurialImport, self).setUp()
+        load_optional_plugin('hg')
+        self.setUpImport()
+
+    def tearDown(self):
+        """Clear bzr-hg's cache of sqlite connections.
+
+        This is rather obscure: different test runs tend to re-use the same
+        paths on disk, which confuses bzr-hg as it keeps a cache that maps
+        paths to database connections, which happily returns the connection
+        that corresponds to a path that no longer exists.
+        """
+        from bzrlib.plugins.hg.idmap import mapdbs
+        mapdbs().clear()
+        WorkerTest.tearDown(self)
+
+    def makeImportWorker(self, source_details):
+        """Make a new `ImportWorker`."""
+        return HgImportWorker(
+            source_details, self.get_transport('import_data'),
+            self.bazaar_store, logging.getLogger())
+
+    def makeForeignCommit(self, source_details):
+        """Change the foreign tree, generating exactly one commit."""
+        from mercurial.ui import ui
+        from mercurial.localrepo import localrepository
+        repo = localrepository(ui(), source_details.url)
+        repo.commit(text="hello world!", user="Jane Random Hacker", force=1)
+        self.foreign_commit_count += 1
+
+    def makeSourceDetails(self, branch_name, files):
+        """Make a Mercurial `CodeImportSourceDetails` pointing at a real repo.
+        """
+        repository_path = self.makeTemporaryDirectory()
+        hg_server = MercurialServer(repository_path)
+        hg_server.setUp()
+        self.addCleanup(hg_server.tearDown)
+
+        hg_server.makeRepo(files)
+        self.foreign_commit_count = 1
+
+        return self.factory.makeCodeImportSourceDetails(
+            rcstype='hg', url=repository_path)
 
 
 class TestBzrSvnImport(WorkerTest, SubversionImportHelpers,
