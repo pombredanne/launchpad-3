@@ -13,8 +13,8 @@ __all__ = [
 
 from lazr.restful.fields import Reference
 
-from zope.interface import Interface
-from zope.schema import Datetime, Text, TextLine
+from zope.interface import Attribute, Interface
+from zope.schema import Datetime, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.validators.name import name_validator
@@ -26,7 +26,7 @@ from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 
 
 class ForbiddenInstruction(Exception):
-    """An unsupported instruction was found in the recipe."""
+    """A forbidden instruction was found in the recipe."""
 
     def __init__(self, instruction_name):
         self.instruction_name = instruction_name
@@ -69,10 +69,10 @@ class ISourcePackageRecipe(IHasOwner):
             constraint=name_validator,
             description=_("The name of this recipe."))
 
-    builder_recipe = Text(
-        title=_("The XXX of the recipe."), required=True, readonly=False)
-
     # XXX: JRV 2010-01-13. This seems to be missing a 'pocket' property.
+
+    builder_recipe = Attribute(
+        _("The bzr-builder data structure for the recipe."))
 
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
@@ -82,5 +82,6 @@ class ISourcePackageRecipeSource(Interface):
     """A utility of this interface can be used to create and access recipes.
     """
 
-    def new(registrant, owner, distroseries, sourcepackagename, name, builder_recipe):
+    def new(registrant, owner, distroseries, sourcepackagename, name,
+            builder_recipe):
         """Create an `ISourcePackageRecipe`."""

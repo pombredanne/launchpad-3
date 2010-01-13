@@ -41,7 +41,9 @@ from canonical.database.sqlbase import flush_database_updates
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
-from lp.soyuz.interfaces.sourcepackagebuild import ISourcePackageBuildSource
+from lp.soyuz.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource,
+    )
 from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
@@ -1599,14 +1601,14 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeSourcePackageBuild(self, sourcepackage=None, recipe=None,
                                requester=None):
-        """Make a new SourcePackageBuild."""
+        """Make a new SourcePackageRecipeBuild."""
         if sourcepackage is None:
             sourcepackage = self.makeSourcePackage()
         if recipe is None:
             recipe = self.makeSourcePackageRecipe()
         if requester is None:
             requester = self.makePerson()
-        return getUtility(ISourcePackageBuildSource).new(
+        return getUtility(ISourcePackageRecipeBuildSource).new(
             sourcepackage=sourcepackage,
             recipe=recipe,
             requester=requester)

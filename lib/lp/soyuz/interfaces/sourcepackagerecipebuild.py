@@ -5,14 +5,14 @@
 
 __metaclass__ = type
 __all__ = [
-    'ISourcePackageBuild',
-    'ISourcePackageBuildSource',
-    'IBuildSourcePackageFromRecipeJob',
+    'ISourcePackageRecipeBuild',
+    'ISourcePackageRecipeBuildSource',
+    'ISourcePackageRecipeBuildJob',
     ]
 
 from lazr.restful.fields import Reference
 
-from zope.interface import Attribute, Interface
+from zope.interface import Interface
 from zope.schema import Choice, Datetime, Object, Timedelta
 
 from canonical.launchpad import _
@@ -28,7 +28,7 @@ from lp.soyuz.interfaces.builder import IBuilder
 from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 
 
-class ISourcePackageBuild(Interface):
+class ISourcePackageRecipeBuild(Interface):
     """A build of a source package."""
 
     date_created = Datetime(required=True, readonly=True)
@@ -79,7 +79,7 @@ class ISourcePackageBuild(Interface):
         schema=ISourcePackageRecipe, required=True,
         title=_("The recipe being built."))
 
-    manifest = Attribute(_("The manifest of the built package."))
+    #manifest = Attribute(_("The manifest of the built package."))
 
     def makeJob():
         """Make an `IBuildSourcePackageFromRecipeJob`.
@@ -88,11 +88,11 @@ class ISourcePackageBuild(Interface):
         """
 
 
-class ISourcePackageBuildSource(Interface):
-    """A utility of this interface used to create source package builds."""
+class ISourcePackageRecipeBuildSource(Interface):
+    """A utility of this interface be used to create source package builds."""
 
     def new(sourcepackage, recipe, requester, date_created=None):
-        """Create an `ISourcePackageBuild`.
+        """Create an `ISourcePackageRecipeBuild`.
 
         :param sourcepackage: The `ISourcePackage` that this is building.
         :param recipe: The `ISourcePackageRecipe` that this is building.
@@ -103,7 +103,7 @@ class ISourcePackageBuildSource(Interface):
         """
 
 
-class IBuildSourcePackageFromRecipeJob(IBuildFarmJob):
+class ISourcePackageRecipeBuildJob(IBuildFarmJob):
     """A read-only interface for recipe build jobs."""
 
     job = Reference(
@@ -111,18 +111,18 @@ class IBuildSourcePackageFromRecipeJob(IBuildFarmJob):
         description=_("Data common to all job types."))
 
     build = Reference(
-        ISourcePackageBuild, title=_("Build"),
+        ISourcePackageRecipeBuild, title=_("Build"),
         required=True, readonly=True,
         description=_("Build record associated with this job."))
 
 
-class IBuildSourcePackageFromRecipeJobSource(Interface):
+class ISourcePackageRecipeBuildJobSource(Interface):
     """A utility of this interface used to create _things_."""
 
     def new(build, job):
-        """Create a new `IBuildSourcePackageFromRecipeJob`.
+        """Create a new `ISourcePackageRecipeBuildJob`.
 
-        :param build: An `ISourcePackageBuild`.
+        :param build: An `ISourcePackageRecipeBuild`.
         :param job: An `IJob`.
-        :return: `IBuildSourcePackageFromRecipeJob`.
+        :return: `ISourcePackageRecipeBuildJob`.
         """

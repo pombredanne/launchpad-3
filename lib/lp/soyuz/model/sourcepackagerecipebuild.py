@@ -5,7 +5,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'SourcePackageBuild',
+    'SourcePackageRecipeBuild',
     ]
 
 from canonical.database.constants import UTC_NOW
@@ -21,18 +21,17 @@ from zope.interface import classProvides, implements
 
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.sourcepackagebuild import (
-    IBuildSourcePackageFromRecipeJob,
-    IBuildSourcePackageFromRecipeJobSource,
-    ISourcePackageBuild, ISourcePackageBuildSource)
+from lp.soyuz.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
+    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 
 
-class SourcePackageBuild(Storm):
+class SourcePackageRecipeBuild(Storm):
 
-    __storm_table__ = 'SourcePackageBuild'
+    __storm_table__ = 'SourcePackageRecipeBuild'
 
-    implements(ISourcePackageBuild)
-    classProvides(ISourcePackageBuildSource)
+    implements(ISourcePackageRecipeBuild)
+    classProvides(ISourcePackageRecipeBuildSource)
 
     id = Int(primary=True)
 
@@ -63,16 +62,16 @@ class SourcePackageBuild(Storm):
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
-    manifest_id = Int(name='manifest', allow_none=True)
-    manifest = Reference(manifest_id, '_SourcePackageRecipeData.id')
+    #manifest_id = Int(name='manifest', allow_none=True)
+    #manifest = Reference(manifest_id, '_SourcePackageRecipeData.id')
 
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
                  date_created=None, date_first_dispatched=None,
                  date_built=None, manifest=None, builder=None,
                  build_state=BuildStatus.NEEDSBUILD, build_log=None,
                  build_duration=None):
-        """Construct a SourcePackageBuild."""
-        super(SourcePackageBuild, self).__init__()
+        """Construct a SourcePackageRecipeBuild."""
+        super(SourcePackageRecipeBuild, self).__init__()
         self.build_duration = build_duration
         self.build_log = build_log
         self.builder = builder
@@ -81,15 +80,15 @@ class SourcePackageBuild(Storm):
         self.date_created = date_created
         self.date_first_dispatched = date_first_dispatched
         self.distroseries = distroseries
-        self.manifest = manifest
+        #self.manifest = manifest
         self.recipe = recipe
         self.requester = requester
         self.sourcepackagename = sourcepackagename
 
     @classmethod
     def new(cls, sourcepackage, recipe, requester, date_created=None):
-        """See `ISourcePackageBuildSource`."""
-        store = IMasterStore(SourcePackageBuild)
+        """See `ISourcePackageRecipeBuildSource`."""
+        store = IMasterStore(SourcePackageRecipeBuild)
         if date_created is None:
             date_created = UTC_NOW
         spbuild = cls(
@@ -102,21 +101,21 @@ class SourcePackageBuild(Storm):
         return spbuild
 
     def makeJob(self):
-        """See `ISourcePackageBuild`."""
+        """See `ISourcePackageRecipeBuildJob`."""
         store = Store.of(self)
         job = Job()
         store.add(job)
         specific_job = getUtility(
-            IBuildSourcePackageFromRecipeJobSource).new(self, job)
+            ISourcePackageRecipeBuildJobSource).new(self, job)
         return specific_job
 
 
-class BuildSourcePackageFromRecipeJob(Storm):
+class SourcePackageRecipeBuildJob(Storm):
 
-    classProvides(IBuildSourcePackageFromRecipeJobSource)
-    implements(IBuildSourcePackageFromRecipeJob)
+    classProvides(ISourcePackageRecipeBuildJobSource)
+    implements(ISourcePackageRecipeBuildJob)
 
-    __storm_table__ = 'buildsourcepackagefromrecipejob'
+    __storm_table__ = 'sourcepackagerecipebuildjob'
 
     id = Int(primary=True)
 
@@ -125,13 +124,13 @@ class BuildSourcePackageFromRecipeJob(Storm):
 
     source_package_build_id = Int(name='build', allow_none=False)
     source_package_build = Reference(
-        source_package_build_id, 'SourcePackageBuild.id')
+        source_package_build_id, 'SourcePackageRecipeBuild.id')
 
     processor = None
     virtualized = False
 
     def __init__(self, build, job):
-        super(BuildSourcePackageFromRecipeJob, self).__init__()
+        super(SourcePackageRecipeBuildJob, self).__init__()
         self.build = build
         self.job = job
 
@@ -161,8 +160,8 @@ class BuildSourcePackageFromRecipeJob(Storm):
 
     @classmethod
     def new(cls, build, job):
-        """See `IBuildSourcePackageFromRecipeJobSource`."""
+        """See `ISourcePackageRecipeBuildJobSource`."""
         specific_job = cls(build, job)
-        store = IMasterStore(BuildSourcePackageFromRecipeJob)
+        store = IMasterStore(SourcePackageRecipeBuildJob)
         store.add(specific_job)
         return specific_job
