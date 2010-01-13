@@ -24,6 +24,7 @@ from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.interfaces.lpstorm import IMasterObject, IMasterStore
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lp.bugs.interfaces.bugtarget import IOfficialBugTag
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.product import IProduct
 from lp.bugs.interfaces.bugtask import (
@@ -162,7 +163,7 @@ class HasBugsBase:
         lst = []
         for bugtask in self.all_bugtasks:
             for attachment in bugtask.bug.attachments:
-                if attachment.is_patch:
+                if attachment.type == BugAttachmentType.PATCH:
                     lst.append(attachment)
         return lst
 
