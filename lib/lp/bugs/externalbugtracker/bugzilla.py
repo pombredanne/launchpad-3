@@ -70,7 +70,7 @@ class Bugzilla(ExternalBugTracker):
         try:
             # We try calling Bugzilla.version() on the remote
             # server because it's the most lightweight method there is.
-            remote_version_dict = proxy.Bugzilla.version()
+            remote_version = proxy.Bugzilla.version()
         except xmlrpclib.Fault, fault:
             if fault.faultCode == 'Client':
                 return False
@@ -91,8 +91,8 @@ class Bugzilla(ExternalBugTracker):
         else:
             # Older versions of the Bugzilla API return tuples. We
             # consider anything other than a mapping to be unsupported.
-            if isinstance(remote_version_dict, dict):
-                if remote_version_dict['version'] >= '3.4':
+            if isinstance(remote_version, dict):
+                if remote_version['version'] >= '3.4':
                     return True
             return False
 
