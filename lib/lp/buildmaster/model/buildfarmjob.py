@@ -51,7 +51,7 @@ class BuildFarmJob:
         return None
 
     @staticmethod
-    def extraCandidateSelectionCriteria():
+    def extraCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmCandidateJobSelection`."""
         return ([], '')
 

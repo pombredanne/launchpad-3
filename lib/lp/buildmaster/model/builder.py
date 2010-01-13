@@ -43,21 +43,17 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 # is completed.
 from lp.soyuz.model.buildqueue import BuildQueue, specific_job_classes
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.helpers import filenameToContentType
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
     CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingStatus)
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.interfaces import (
@@ -467,7 +463,8 @@ class Builder(SQLBase):
         extra_queries = []
         job_classes = specific_job_classes()
         for job_class in job_classes.values():
-            tables, query = job_class.extraCandidateSelectionCriteria()
+            tables, query = job_class.extraCandidateSelectionCriteria(
+                self.processor, self.virtualized)
             if query == '':
                 # This job class does not need to refine candidate jobs
                 # further.

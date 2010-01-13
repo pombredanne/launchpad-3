@@ -16,7 +16,6 @@ from zope.schema import Int
 
 from canonical.launchpad import _
 from lazr.restful.fields import Reference
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.build import IBuild
 

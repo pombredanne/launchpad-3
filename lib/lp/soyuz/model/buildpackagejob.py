@@ -25,6 +25,7 @@ from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
 class BuildPackageJob(Storm, BuildFarmJob):
@@ -213,7 +214,7 @@ class BuildPackageJob(Storm, BuildFarmJob):
         return self.build.is_virtualized
 
     @staticmethod
-    def extraCandidateSelectionCriteria():
+    def extraCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmCandidateJobSelection`."""
         private_statuses = (
             PackagePublishingStatus.PUBLISHED,
@@ -257,7 +258,7 @@ class BuildPackageJob(Storm, BuildFarmJob):
         # builders is greater than one, or nothing would get dispatched
         # at all.
         num_arch_builders = Builder.selectBy(
-            processor=self.processor, manual=False, builderok=True).count()
+            processor=processor, manual=False, builderok=True).count()
         if num_arch_builders > 1:
             extra_clauses += """
                 EXISTS (SELECT true
@@ -274,7 +275,7 @@ class BuildPackageJob(Storm, BuildFarmJob):
                     *100 / %s
                     < 80)
             """ % sqlvalues(
-                ArchivePurpose.PPA, self.processor.family,
+                ArchivePurpose.PPA, processor.family,
                 BuildStatus.BUILDING, num_arch_builders)
 
         return(extra_tables, extra_clauses)
