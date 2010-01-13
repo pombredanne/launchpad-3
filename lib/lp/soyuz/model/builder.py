@@ -20,8 +20,6 @@ import tempfile
 import urllib2
 import xmlrpclib
 
-from lazr.delegates import delegates
-
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -34,7 +32,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch, IBuildFarmJobBehavior)
+    BuildBehaviorMismatch)
 from lp.buildmaster.master import BuilddMaster
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -373,6 +371,10 @@ class Builder(SQLBase):
     def slaveStatusSentence(self):
         """See IBuilder."""
         return self.slave.status()
+
+    def updateBuild(self, queueItem):
+        """See `IBuilder`."""
+        self.current_build_behavior.updateBuild(queueItem)
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """See IBuilder."""

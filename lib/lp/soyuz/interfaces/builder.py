@@ -25,8 +25,6 @@ from zope.schema import Bool, Choice, Field, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
 from lp.registry.interfaces.role import IHasOwner
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
 
@@ -218,6 +216,12 @@ class IBuilder(IHasOwner):
         :return: A tuple with the first element containing the slave status,
             build_id-queue-id and then optionally more elements depending on
             the status.
+        """
+
+    def updateBuild(queueItem):
+        """Verify the current build job status.
+
+        Perform the required actions for each state.
         """
 
     def startBuild(build_queue_item, logger):
