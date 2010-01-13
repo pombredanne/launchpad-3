@@ -140,9 +140,6 @@ class BuildFarmJobBehaviorBase:
             'Malformed status string: %s' % build_status)
 
         build_status = build_status[len('BuildStatus.'):]
-        # XXX: wgrant 2009-01-13: build is not part of IBuildFarmJob,
-        # but this method will move and be fixed before any other job
-        # types come into use.
         queueItem.specific_job.build.handleStatus(
             build_status, librarian, slave_status)
 
