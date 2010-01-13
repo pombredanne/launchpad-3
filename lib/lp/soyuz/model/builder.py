@@ -288,16 +288,16 @@ class Builder(SQLBase):
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
-        # Set the build behavior depending on the provided build queue item.
-        if not self.builderok:
-            raise BuildDaemonError(
-                "Attempted to start a build on a known-bad builder.")
-
         self.current_build_behavior = build_queue_item.required_build_behavior
         self.current_build_behavior.logStartBuild(logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
         self.current_build_behavior.verifyBuildRequest(logger)
+
+        # Set the build behavior depending on the provided build queue item.
+        if not self.builderok:
+            raise BuildDaemonError(
+                "Attempted to start a build on a known-bad builder.")
 
         # If we are building a virtual build, resume the virtual machine.
         if self.virtualized:
