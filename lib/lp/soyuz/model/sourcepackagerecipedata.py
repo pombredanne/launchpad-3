@@ -16,7 +16,7 @@ from bzrlib.plugins.builder.recipe import (
 
 from lazr.enum import DBEnumeratedType, DBItem
 
-from storm.locals import Int, Reference, ReferenceSet, Storm, Unicode
+from storm.locals import Int, Reference, ReferenceSet, Store, Storm, Unicode
 
 from zope.component import getUtility
 
@@ -30,6 +30,7 @@ from lp.soyuz.interfaces.sourcepackagerecipe import (
 
 
 class InstructionType(DBEnumeratedType):
+    """The instruction type, for _SourcePackageRecipeDataInstruction.type."""
 
     MERGE = DBItem(1, """
         Merge instruction
@@ -43,7 +44,7 @@ class InstructionType(DBEnumeratedType):
 
 
 class _SourcePackageRecipeDataInstruction(Storm):
-    """XXX."""
+    """A single line from a recipe."""
 
     __storm_table__ = "SourcePackageRecipeDataInstruction"
 
@@ -83,7 +84,8 @@ class _SourcePackageRecipeDataInstruction(Storm):
     parent_instruction = Reference(
         parent_instruction_id, '_SourcePackageRecipeDataInstruction.id')
 
-    def append_to_recipe(self, recipe_branch):
+    def appendToRecipe(self, recipe_branch):
+        """Append a bzr-builder instruction to the recipe_branch object."""
         branch = RecipeBranch(
             self.name, self.branch.bzr_identity, self.revspec)
         if self.type == InstructionType.MERGE:
@@ -96,7 +98,12 @@ class _SourcePackageRecipeDataInstruction(Storm):
 
 
 class _SourcePackageRecipeData(Storm):
-    """XXX."""
+    """The database representation of a BaseRecipeBranch from bzr-builder.
+
+    This is referenced from the SourcePackageRecipe table as the 'recipe_data'
+    column and from the SourcePackageRecipeBuild table as the 'manifest'
+    column.
+    """
 
     __storm_table__ = "SourcePackageRecipeData"
 
@@ -113,6 +120,16 @@ class _SourcePackageRecipeData(Storm):
         id, _SourcePackageRecipeDataInstruction.recipe_data_id,
         order_by=_SourcePackageRecipeDataInstruction.line_number)
 
+    sourcepackage_recipe_id = Int(
+        name='sourcepackage_recipe', allow_none=True)
+    sourcepackage_recipe = Reference(
+        sourcepackage_recipe_id, 'SourcePackageRecipe.id')
+
+    sourcepackage_recipe_build_id = Int(
+        name='sourcepackage_recipe_build', allow_none=True)
+    #sourcepackage_recipe_build = Reference(
+    #    sourcepackage_recipe_build_id, 'SourcePackageRecipeBuild.id')
+
     def getRecipe(self):
         """The BaseRecipeBranch version of the recipe."""
         base_branch = BaseRecipeBranch(
@@ -120,67 +137,86 @@ class _SourcePackageRecipeData(Storm):
             self.recipe_format, self.revspec)
         insn_stack = []
         for insn in self.instructions:
-            while insn_stack and insn_stack[-1]['insn'] != insn.parent_instruction:
+            while insn_stack and \
+                      insn_stack[-1]['insn'] != insn.parent_instruction:
                 insn_stack.pop()
             if insn_stack:
                 target_branch = insn_stack[-1]['recipe_branch']
             else:
                 target_branch = base_branch
-            recipe_branch = insn.append_to_recipe(target_branch)
+            recipe_branch = insn.appendToRecipe(target_branch)
             insn_stack.append(
                 dict(insn=insn, recipe_branch=recipe_branch))
         return base_branch
 
-    def _scan_instructions(self, branch, parent_insn, record=False,
-                             line_number=0):
-        """XXX."""
-        for instruction in branch.child_branches:
+    def _scanInstructions(self, recipe_branch):
+        """Check the recipe_branch doesn't use 'run' and look up the branches.
+
+        We do all the lookups before we start constructing database objects to
+        avoid flushing half-constructed objects to the database.
+
+        :return: A map ``{branch_url: db_branch}``.
+        """
+        r = {}
+        for instruction in recipe_branch.child_branches:
+            if not (isinstance(instruction, MergeInstruction) or
+                    isinstance(instruction, NestInstruction)):
+                raise ForbiddenInstruction(str(instruction))
+            db_branch = getUtility(IBranchLookup).getByUrl(
+                instruction.recipe_branch.url)
+            r[instruction.recipe_branch.url] = db_branch
+            r.update(self._scanInstructions(instruction.recipe_branch))
+        return r
+
+    def _recordInstructions(self, recipe_branch, parent_insn, branch_map,
+                            line_number=0):
+        """Build _SourcePackageRecipeDataInstructions for the recipe_branch.
+        """
+        for instruction in recipe_branch.child_branches:
             if isinstance(instruction, MergeInstruction):
                 type = InstructionType.MERGE
             elif isinstance(instruction, NestInstruction):
                 type = InstructionType.NEST
-            elif not record:
-                raise ForbiddenInstruction(str(instruction))
             else:
+                # Unsupported instructions should have been filtered out by
+                # _scanInstructions; if we get surprised here, that's a bug.
                 raise AssertionError(
                     "Unsupported instruction %r" % instruction)
             line_number += 1
-            if record:
-                comment = None
-                db_branch = getUtility(IBranchLookup).getByUrl(
-                    instruction.recipe_branch.url)
-                insn = _SourcePackageRecipeDataInstruction(
-                    instruction.recipe_branch.name, type, comment,
-                    line_number, db_branch, instruction.recipe_branch.revspec,
-                    instruction.nest_path, self, parent_insn)
-            else:
-                insn = None
-            line_number = self._scan_instructions(
-                instruction.recipe_branch, insn, record, line_number)
+            comment = None
+            db_branch = branch_map[instruction.recipe_branch.url]
+            insn = _SourcePackageRecipeDataInstruction(
+                instruction.recipe_branch.name, type, comment,
+                line_number, db_branch, instruction.recipe_branch.revspec,
+                instruction.nest_path, self, parent_insn)
+            line_number = self._recordInstructions(
+                instruction.recipe_branch, insn, branch_map, line_number)
         return line_number
 
     def setRecipe(self, builder_recipe):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
         if builder_recipe.format > 0.2:
             raise TooNewRecipeFormat(builder_recipe.format, 0.2)
-        self._scan_instructions(
-            builder_recipe, parent_insn=None)
-        # XXX Why doesn't self.instructions.clear() work?
-        IStore(self).find(
-            _SourcePackageRecipeDataInstruction,
-            _SourcePackageRecipeDataInstruction.recipe_data == self).remove()
+        branch_map = self._scanInstructions(builder_recipe)
+        # If this object hasn't been added to a store yet, there can't be any
+        # instructions linking to us yet.
+        if Store.of(self) is not None:
+            self.instructions.find().remove()
         branch_lookup = getUtility(IBranchLookup)
-        self.base_branch = branch_lookup.getByUrl(builder_recipe.url)
-        self.deb_version_template = unicode(builder_recipe.deb_version)
-        self.recipe_format = unicode(builder_recipe.format)
+        base_branch = branch_lookup.getByUrl(builder_recipe.url)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
-        self._scan_instructions(
-            builder_recipe, parent_insn=None, record=True)
+        self._recordInstructions(
+            builder_recipe, parent_insn=None, branch_map=branch_map)
+        self.base_branch = base_branch
+        self.deb_version_template = unicode(builder_recipe.deb_version)
+        self.recipe_format = unicode(builder_recipe.format)
 
-    def __init__(self, recipe):
-        """Initialize the object from the BaseRecipeBranch."""
+    def __init__(self, recipe, sourcepackage_recipe):
+        """Initialize from the bzr-builder recipe and link it to a db recipe.
+        """
         self.setRecipe(recipe)
+        self.sourcepackage_recipe = sourcepackage_recipe
 
     def getReferencedBranches(self):
         """Return an iterator of the Branch objects referenced by this recipe.

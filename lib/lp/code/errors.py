@@ -11,6 +11,7 @@ __all__ = [
     'ClaimReviewFailed',
     'InvalidBranchMergeProposal',
     'ReviewNotPending',
+    'UserHasExistingReview',
     'UserNotBranchReviewer',
     'WrongBranchMergeProposal',
 ]
@@ -41,6 +42,10 @@ class BranchMergeProposalExists(InvalidBranchMergeProposal):
 
 class ReviewNotPending(Exception):
     """The requested review is not in a pending state."""
+
+
+class UserHasExistingReview(Exception):
+    """The user has an existing review."""
 
 
 class UserNotBranchReviewer(Exception):

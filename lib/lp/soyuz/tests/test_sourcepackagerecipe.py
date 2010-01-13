@@ -27,7 +27,7 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def makeSourcePackageRecipeFromBuilderRecipe(self, builder_recipe):
-        """Make a SourcePackageRecipe from `builder_recipe` and arbitrary other fields.
+        """Make a SourcePackageRecipe from a recipe with arbitrary other data.
         """
         registrant = self.factory.makePerson()
         owner = self.factory.makeTeam(owner=registrant)

@@ -8,7 +8,7 @@ __all__ = [
     'SourcePackageRecipe',
     ]
 
-from storm.locals import Int, Reference, Storm, Unicode
+from storm.locals import Int, Reference, Store, Storm, Unicode
 
 from zope.interface import classProvides, implements
 
@@ -43,12 +43,16 @@ class SourcePackageRecipe(Storm):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
-    sourcepackagename = Reference(sourcepackagename_id, 'SourcePackageName.id')
+    sourcepackagename = Reference(
+        sourcepackagename_id, 'SourcePackageName.id')
 
     name = Unicode(allow_none=True)
 
-    _recipe_data_id = Int(name='recipe_data', allow_none=True)
-    _recipe_data = Reference(_recipe_data_id, '_SourcePackageRecipeData.id')
+    @property
+    def _recipe_data(self):
+        return Store.of(self).find(
+            _SourcePackageRecipeData,
+            _SourcePackageRecipeData.sourcepackage_recipe == self).one()
 
     def _get_builder_recipe(self):
         """Accesses of the recipe go to the _SourcePackageRecipeData."""
@@ -64,13 +68,13 @@ class SourcePackageRecipe(Storm):
         """See `ISourcePackageRecipe.getReferencedBranches`."""
         return self._recipe_data.getReferencedBranches()
 
-    @classmethod
-    def new(self, registrant, owner, distroseries, sourcepackagename, name,
+    @staticmethod
+    def new(registrant, owner, distroseries, sourcepackagename, name,
             builder_recipe):
         """See `ISourcePackageRecipeSource.new`."""
         store = IMasterStore(SourcePackageRecipe)
         sprecipe = SourcePackageRecipe()
-        sprecipe._recipe_data = _SourcePackageRecipeData(builder_recipe)
+        _SourcePackageRecipeData(builder_recipe, sprecipe)
         sprecipe.registrant = registrant
         sprecipe.owner = owner
         sprecipe.distroseries = distroseries
