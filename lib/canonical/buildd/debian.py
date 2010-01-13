@@ -43,6 +43,10 @@ class DebianBuildManager(BuildManager):
         slave.emptyLog()
         self.alreadyfailed = False
 
+    @property
+    def initial_build_state(self):
+        raise NotImplementedError()
+
     def initiate(self, files, chroot, extra_args):
         """Initiate a build with a given set of files and chroot."""
 
