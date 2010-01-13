@@ -23,7 +23,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
-from lp.soyuz.interfaces.builder import BuildSlaveFailure
+from lp.buildmaster.interfaces.builder import BuildSlaveFailure
 from lp.translations.interfaces.translationtemplatesbuildjob import (
     ITranslationTemplatesBuildJobSource)
 

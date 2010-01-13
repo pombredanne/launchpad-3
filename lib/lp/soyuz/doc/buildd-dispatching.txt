@@ -48,7 +48,7 @@ member of launchpad-buildd-admin:
 
 Set IBuilder.builderok of all present builders:
 
-    >>> from lp.soyuz.interfaces.builder import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> builder_set = getUtility(IBuilderSet)
 
     >>> builder_set.count()

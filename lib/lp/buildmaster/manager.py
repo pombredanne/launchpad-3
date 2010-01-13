@@ -165,7 +165,7 @@ class FailDispatchResult(BaseDispatchResult):
     @write_transaction
     def __call__(self):
         # Avoiding circular imports.
-        from lp.soyuz.interfaces.builder import IBuilderSet
+        from lp.buildmaster.interfaces.builder import IBuilderSet
 
         builder = getUtility(IBuilderSet)[self.slave.name]
         builder.failbuilder(self.info)
@@ -185,7 +185,7 @@ class ResetDispatchResult(BaseDispatchResult):
     @write_transaction
     def __call__(self):
         # Avoiding circular imports.
-        from lp.soyuz.interfaces.builder import IBuilderSet
+        from lp.buildmaster.interfaces.builder import IBuilderSet
 
         builder = getUtility(IBuilderSet)[self.slave.name]
         self._cleanJob(builder.currentjob)
@@ -320,7 +320,7 @@ class BuilddManager(service.Service):
         handled in an asynchronous and parallel fashion.
         """
         # Avoiding circular imports.
-        from lp.soyuz.interfaces.builder import IBuilderSet
+        from lp.buildmaster.interfaces.builder import IBuilderSet
 
         recording_slaves = []
         builder_set = getUtility(IBuilderSet)
