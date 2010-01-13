@@ -109,7 +109,8 @@ from lp.translations.interfaces.translator import (
     ITranslator, IEditTranslator)
 
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import IAuthorization
+from canonical.launchpad.webapp.interfaces import (
+    IAuthorization, ILaunchpadRoot)
 
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -187,6 +188,15 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
         celebrities = getUtility(ILaunchpadCelebrities)
         return (user.inTeam(celebrities.commercial_admin)
                 or user.inTeam(celebrities.admin))
+
+
+class EditByRegistryExpertsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ILaunchpadRoot
+
+    def checkAuthenticated(self, user):
+        user = IPersonRoles(user)
+        return user.in_admin or user.in_registry_experts
 
 
 class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
