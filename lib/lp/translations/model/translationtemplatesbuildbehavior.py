@@ -57,7 +57,7 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
             # Mark builder as 'failed'.
             logger.debug(
                 "Disabling builder: %s" % self._builder.url, exc_info=1)
-            self._builder.failbuilder(
+            self._builder.failBuilder(
                 "Exception (%s) when setting up to new job" % info)
             raise BuildSlaveFailure
         except socket.error, info:

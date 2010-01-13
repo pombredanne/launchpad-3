@@ -84,7 +84,7 @@ class BuildFarmJobBehaviorBase:
             logger.critical(
                 "Builder on %s returned unknown status %s, failing it"
                 % (self._builder.url, builder_status))
-            self._builder.failbuilder(
+            self._builder.failBuilder(
                 "Unknown status code (%s) returned from status() probe."
                 % builder_status)
             # XXX: This will leave the build and job in a bad state, but
