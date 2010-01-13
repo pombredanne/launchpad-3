@@ -121,12 +121,17 @@ class BranchJobType(DBEnumeratedType):
         from disk.
         """)
 
-    SCAN_BRANCH = DBItem(6, """
-        Scan Branch
+    TRANSLATION_TEMPLATES_BUILD = DBItem(6, """
+        Generate translation templates
 
-        This job scans a branch for new revisions.
+        This job generates translations templates from a source branch.
         """)
 
+    SCAN_BRANCH = DBItem(7, """
+
+            Scan Branch
+        This job scans a branch for new revisions.
+        """)
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
