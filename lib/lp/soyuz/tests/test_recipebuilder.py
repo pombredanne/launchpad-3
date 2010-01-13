@@ -12,9 +12,11 @@ from canonical.launchpad.scripts.logger import BufferLogger
 
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.soyuz.interfaces.builder import CannotBuild
 from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
 from lp.testing import TestCaseWithFactory
-
+from lp.soyuz.tests.soyuzbuilddhelpers import (MockBuilder,
+    SaneBuildingSlave)
 
 class TestRecipeBuilder(TestCaseWithFactory):
 
@@ -54,6 +56,13 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job.logStartBuild(logger)
         self.assertEquals(logger.buffer.getvalue(),
             "INFO: startBuild(distro/mydistro/apackage, recept)\n")
+
+    def test_verifyBuildRequest_valid(self):
+        job = self.makeJob()
+        builder = MockBuilder("bob-de-bouwer", SaneBuildingSlave())
+        job.setBuilder(builder)
+        logger = BufferLogger()
+        job.verifyBuildRequest(logger)
 
 
 def test_suite():

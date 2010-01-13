@@ -72,6 +72,8 @@ class ISourcePackageRecipe(IHasOwner):
     builder_recipe = Text(
         title=_("The XXX of the recipe."), required=True, readonly=False)
 
+    # XXX: JRV 2010-01-13. This seems to be missing a 'pocket' property.
+
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
 
