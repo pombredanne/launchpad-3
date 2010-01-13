@@ -1,4 +1,5 @@
-= Helper Functions =
+Helper Functions
+================
 
 A quick helper function to list the subscribed people.
 
@@ -19,7 +20,8 @@ Another to print the informational message.
     ...         print extract_text(message[0])
 
 
-= Subscribing to Branches =
+Subscribing to Branches
+=======================
 
 In order to subscribe to a branch, the user must be logged in.
 
@@ -128,7 +130,8 @@ Unsubscribe will give a message that we are not subscribed.
     You are not subscribed to this branch.
 
 
-== Subscribing someone else ==
+Subscribing someone else
+========================
 
 The 'Subscribe' action listed for branches is for subscribing the logged
 in user.  In order to be able to subscribe teams to branches there needs
@@ -227,7 +230,9 @@ Launchpad administrators can edit anyones branch subsription.
     Landscape Developers
     Mark Shuttleworth
 
-== Editing a team subscription ==
+
+Editing a team subscription
+===========================
 
 In order to edit a team subscription the logged in user needs to be
 a member of the team that is subscribed.  There is a link shown in
@@ -262,5 +267,5 @@ From this page the branch subscription can be altered...
     >>> browser.getControl('Unsubscribe').click()
     >>> print_informational_message(browser.contents)
     Landscape Developers has been unsubscribed from this branch.
-   >>> print_subscribers(browser.contents)
+    >>> print_subscribers(browser.contents)
     Mark Shuttleworth
