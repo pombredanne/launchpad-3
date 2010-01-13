@@ -1,0 +1,27 @@
+Reviewing a merge proposal
+==========================
+
+A frequent use case is when a team is asked to review, and a member of that
+team review the proposal on behalf of the team.
+
+    >>> login(ANONYMOUS)
+    >>> eric = factory.makePerson(
+    ...     name='eric', email='eric@example.com', password='test')
+    >>> vikings = factory.makeTeam(owner=eric, name='vikings')
+    >>> bmp = factory.makeBranchMergeProposal()
+    >>> ignored = bmp.nominateReviewer(eric, bmp.registrant)
+    >>> url = canonical_url(bmp)
+    >>> logout()
+
+When the user looks at the merge proposal page, they see their team name in
+the reviewer block with the link '[Review]'.
+
+    >>> browser = setupBrowser(auth='Basic eric@example.com:test')
+    >>> browser.open(url)
+    >>> browser.getLink('[Review]').click()
+
+The user can then add their comment.
+
+    >>> browser.getControl('Comment').value = 'Looks good'
+    >>> browser.getControl('Save Review').click()
+
