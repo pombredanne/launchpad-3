@@ -32,6 +32,12 @@ to edit the details.
     ...     git_repo_url="git://git.example.org/fooix")
     >>> git_import_location = str(canonical_url(git_import.branch))
     >>> git_import_branch_unique_name = git_import.branch.unique_name
+
+    >>> hg_import = factory.makeCodeImport(
+    ...     hg_repo_url="http://hg.example.org/bar")
+    >>> hg_import_location = str(canonical_url(hg_import.branch))
+    >>> hg_import_branch_unique_name = hg_import.branch.unique_name
+
     >>> logout()
 
     >>> import_browser = setupBrowser(
@@ -84,7 +90,7 @@ in the form.
     ...         print '%s: %s' % (tag['name'], tag['value'])
 
     >>> print_form_fields(import_browser)
-    field.svn_branch_url: svn://svn.example.com/fooix/trunk
+    field.url: svn://svn.example.com/fooix/trunk
 
     >>> import_browser.open(cvs_import_location)
     >>> import_browser.getLink('Edit import source or review import').click()
@@ -95,7 +101,13 @@ in the form.
     >>> import_browser.open(git_import_location)
     >>> import_browser.getLink('Edit import source or review import').click()
     >>> print_form_fields(import_browser)
-    field.git_repo_url: git://git.example.org/fooix
+    field.url: git://git.example.org/fooix
+
+    >>> import_browser.open(hg_import_location)
+    >>> import_browser.getLink('Edit import source or review import').click()
+    >>> print_form_fields(import_browser)
+    field.url: http://hg.example.org/bar
+
 
 Editing the import location
 +++++++++++++++++++++++++++
@@ -106,7 +118,7 @@ an import is from.
 This is true for Subversion imports,
 
     >>> import_browser.open(svn_import_location + '/+edit-import')
-    >>> import_browser.getControl('Branch URL').value = \
+    >>> import_browser.getControl('URL').value = \
     ...     'svn://svn-new.example.com/fooix/trunk'
     >>> import_browser.getControl('Update').click()
     >>> for message in get_feedback_messages(import_browser.contents):
@@ -116,7 +128,7 @@ This is true for Subversion imports,
 bzr-svn imports,
 
     >>> import_browser.open(bzr_svn_import_location + '/+edit-import')
-    >>> import_browser.getControl('Branch URL').value = \
+    >>> import_browser.getControl('URL').value = \
     ...     'svn://svn-new.example.com/bzr-svn/trunk'
     >>> import_browser.getControl('Update').click()
     >>> for message in get_feedback_messages(import_browser.contents):
@@ -135,16 +147,25 @@ CVS imports,
     ...     print extract_text(message)
     The code import has been updated.
 
-and Git imports.
+Git imports,
 
     >>> import_browser.open(git_import_location + '/+edit-import')
-    >>> import_browser.getControl('Repo URL').value = \
+    >>> import_browser.getControl('URL').value = \
     ...     'git://git-new.example.org/fooix'
     >>> import_browser.getControl('Update').click()
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)
     The code import has been updated.
 
+and Mercurial imports.
+
+    >>> import_browser.open(hg_import_location + '/+edit-import')
+    >>> import_browser.getControl('URL').value = \
+    ...     'http://metal.example.org/bar'
+    >>> import_browser.getControl('Update').click()
+    >>> for message in get_feedback_messages(import_browser.contents):
+    ...     print extract_text(message)
+    The code import has been updated.
 
 Approving an import
 +++++++++++++++++++
