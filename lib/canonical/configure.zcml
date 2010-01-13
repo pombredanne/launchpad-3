@@ -71,26 +71,6 @@
         />
 
 
-    <!-- This is an index.html view on the root object.
-        The root object is not ever published itself.  Only its views are.
-        -->
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="lp.registry.browser.root.LaunchpadRootIndexView"
-        name="index.html"
-        template="launchpad/templates/root-index.pt"
-        permission="zope.Public"
-        />
-
-    <browser:page
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        class="lp.registry.browser.featuredproject.FeaturedProjectsView"
-        name="+featuredprojects"
-        template="launchpad/templates/root-featuredprojects.pt"
-        permission="launchpad.Admin"
-        />
-
     <!-- The following directives set up root front pages for the different
          virtual host layers.  The directives come in pairs.
          The separate registration for the resources namespace (@@) is needed

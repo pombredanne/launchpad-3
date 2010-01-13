@@ -381,7 +381,7 @@ class BuildQueueSet(object):
         """See `IBuildQueueSet`."""
         # Avoid circular import problem.
         from lp.soyuz.model.build import Build
-        from lp.soyuz.model.builder import Builder
+        from lp.buildmaster.model.builder import Builder
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
 
