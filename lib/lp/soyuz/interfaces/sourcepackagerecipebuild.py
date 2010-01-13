@@ -13,7 +13,7 @@ __all__ = [
 from lazr.restful.fields import Reference
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Object, Timedelta
+from zope.schema import Choice, Datetime, Int, Object, Timedelta
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
@@ -31,6 +31,8 @@ from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 
 class ISourcePackageRecipeBuild(Interface):
     """A build of a source package."""
+
+    id = Int(title=_("Identifier for this build."))
 
     date_created = Datetime(required=True, readonly=True)
 

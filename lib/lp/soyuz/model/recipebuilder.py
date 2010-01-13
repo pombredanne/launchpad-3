@@ -16,6 +16,7 @@ from canonical.cachedproperty import cachedproperty
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
@@ -61,18 +62,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         args["author_name"] = self.build.requester.displayname
         args["author_email"] = self.build.requester.preferredemail.email
         args["recipe_text"] = str(self.build.recipe.builder_recipe)
-
-        archive_purpose = self.build.archive.purpose
-        if (archive_purpose == ArchivePurpose.PPA and
-            not self.build.archive.require_virtualized):
-            # If we're building a non-virtual PPA, override the purpose
-            # to PRIMARY and use the primary component override.
-            # This ensures that the package mangling tools will run over
-            # the built packages.
-            args['archive_purpose'] = ArchivePurpose.PRIMARY.name
-        else:
-            args['archive_purpose'] = archive_purpose.name
-
+        args['archive_purpose'] = self.build.archive.purpose.name
         return args
 
     def dispatchBuildToSlave(self, build_queue_id, logger):
@@ -80,11 +70,14 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
 
         # Start the binary package build on the slave builder. First
         # we send the chroot.
-        import pdb; pdb.set_trace()
+        # XXX JRV 2010-01-14: Use self._builder.processor rather than i386
         distroarchseries = self.build.distroseries.getDistroArchSeries(
-            self._builder.processor.family.name)
+                "i386")
 
-        chroot = self.distroarchseries.getChroot()
+        chroot = distroarchseries.getChroot()
+        if chroot is None:
+            raise CannotBuild("Unable to find a chroot for %r" % 
+                              distroarchseries.displayname)
         self._builder.slave.cacheFile(logger, chroot)
 
         # Generate a string which can be used to cross-check when obtaining
@@ -95,7 +88,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
-        args = self._extraBuildArgs(self.build)
+        args = self._extraBuildArgs()
         status, info = self._builder.slave.build(
             buildid, "sourcepackagerecipe", chroot_sha1, {}, args)
         message = """%s (%s):

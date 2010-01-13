@@ -7,20 +7,24 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.testing import DatabaseFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.scripts.logger import BufferLogger
 
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.manager import RecordingSlave
 from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import (MockBuilder,
-    SaneBuildingSlave)
+    SaneBuildingSlave,)
+from lp.soyuz.tests.test_publishing import (
+    SoyuzTestPublisher,)
 from lp.testing import TestCaseWithFactory
+
 
 class TestRecipeBuilder(TestCaseWithFactory):
 
-    layer = DatabaseFunctionalLayer
+    layer = LaunchpadFunctionalLayer
 
     def test_providesInterface(self):
         # RecipeBuildBehavior provides IBuildFarmJobBehavior.
@@ -37,6 +41,10 @@ class TestRecipeBuilder(TestCaseWithFactory):
         distro = self.factory.makeDistribution(name="distro")
         distroseries = self.factory.makeDistroSeries(name="mydistro", 
             distribution=distro)
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag='i386')
+        test_publisher = SoyuzTestPublisher()
+        test_publisher.addFakeChroots(distroseries)
         sourcepackage = self.factory.makeSourcePackage(spn, distroseries)
         requester = self.factory.makePerson(email="requester@ubuntu.com",
             name="joe", displayname="Joe User")
@@ -87,8 +95,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
 
     def test_dispatchBuildToSlave(self):
         job = self.makeJob()
-        # XXX: Use RecordingSlave
-        builder = MockBuilder("bob-de-bouwer", SaneBuildingSlave())
+        slave = RecordingSlave("i386-slave-1", "http://myurl", "vmhost")
+        builder = MockBuilder("bob-de-bouwer", slave)
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         builder.processor = processorfamily.processors[0]
         job.setBuilder(builder)
@@ -96,12 +104,15 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job.dispatchBuildToSlave("someid", logger)
         logger.buffer.seek(0)
         self.assertEquals(
-            "DEBUG: Initiating build foo-someid on %s\n" % builder.url,
+            "DEBUG: Initiating build 1-someid on http://fake:0000\n",
             logger.buffer.readline())
-        self.assertEquals(
-            """INFO: bob-de-bouwer (http://):
-            """, logger.buffer.getvalue())
-        # XXX: Check rest of logger output
+        self.assertEquals(["ensurepresent", "build"],
+                          [call[0] for call in slave.calls])
+        build_args = slave.calls[1][1]
+        self.assertEquals(build_args[0], "1-someid")
+        self.assertEquals(build_args[1], "sourcepackagerecipe")
+        self.assertEquals(build_args[3], {})
+        self.assertEquals(build_args[4], job._extraBuildArgs())
 
 
 def test_suite():
