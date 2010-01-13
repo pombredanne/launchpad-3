@@ -16,6 +16,7 @@ import warnings
 warnings.filterwarnings('ignore', category=UserWarning, append=True,
                         message=r'Module .*? is being added to sys.path')
 
+
 def text_lines_to_set(text):
     return set(line.strip() for line in text.splitlines() if line.strip())
 
@@ -59,7 +60,11 @@ valid_imports_not_in_all = {
     'cookielib': set(['domain_match']),
     'email.Utils': set(['mktime_tz']),
     'textwrap': set(['dedent']),
-    'zope.component': set(['adapter', 'provideHandler']),
+    'zope.component': set(
+        ['adapter',
+         'ComponentLookupError',
+         'provideHandler',
+         ]),
     }
 
 
@@ -279,7 +284,7 @@ def report_naughty_imports():
         sorting_map = {
             DatabaseImportPolicyViolation: database_violations,
             FromStarPolicyViolation: fromstar_violations,
-            NotInModuleAllPolicyViolation: notinall_violations
+            NotInModuleAllPolicyViolation: notinall_violations,
             }
         for error in naughty_imports:
             sorting_map[error.__class__].append(error)

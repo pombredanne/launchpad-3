@@ -121,6 +121,8 @@ The 'bob' builder is available for build jobs.
     False
     >>> bob_builder.is_available
     True
+    >>> bob_builder.builderok
+    True
 
 
 == Builder dispatching API ==
@@ -128,7 +130,8 @@ The 'bob' builder is available for build jobs.
 Now let's check the build candidates which will be considered for the
 builder 'bob':
 
-    >>> job = bob_builder.findBuildCandidate()
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> job = removeSecurityProxy(bob_builder)._findBuildCandidate()
 
 The single BuildQueue found is a non-virtual pending build:
 
@@ -157,14 +160,17 @@ Update the SourcePackageReleaseFile corresponding to this job:
     ...    'foo.dsc', len(content), StringIO(content), 'application/dsc')
 
     >>> sprf = build.sourcepackagerelease.files[0]
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_sprf = removeSecurityProxy(sprf)
     >>> naked_sprf.libraryfile = getUtility(ILibraryFileAliasSet)[alias_id]
     >>> flush_database_updates()
 
 Check the dispatching method itself:
 
-    >>> bob_builder.dispatchBuildCandidate(job)
+    >>> dispatched_job = bob_builder.findAndStartJob()
+    >>> job == dispatched_job
+    True
+    >>> bob_builder.builderok = True
+
     >>> flush_database_updates()
 
 Verify if the job (BuildQueue) was updated appropriately:
@@ -224,7 +230,7 @@ above.
     >>> bob_builder.vm_host = 'localhost.ppa'
     >>> syncUpdate(bob_builder)
 
-    >>> job = bob_builder.findBuildCandidate()
+    >>> job = removeSecurityProxy(bob_builder)._findBuildCandidate()
     >>> print job
     None
 
@@ -245,11 +251,11 @@ do this by copying the existing publication in Ubuntu.
     >>> bob_builder.virtualized = True
     >>> syncUpdate(bob_builder)
 
-    >>> job = bob_builder.findBuildCandidate()
+    >>> job = removeSecurityProxy(bob_builder)._findBuildCandidate()
     >>> ppa_job.id == job.id
     True
 
-For further details regarding IBuilder.findBuildCandidate() please see
+For further details regarding IBuilder._findBuildCandidate() please see
 lib/lp/soyuz/tests/test_builder.py.
 
 Start buildd-slave to be able to dispatch jobs.
@@ -262,7 +268,7 @@ a non-virtual build.
 
     >>> bob_builder.virtualized = False
     >>> flush_database_updates()
-    >>> bob_builder.dispatchBuildCandidate(ppa_job)
+    >>> removeSecurityProxy(bob_builder)._dispatchBuildCandidate(ppa_job)
     Traceback (most recent call last):
     ...
     AssertionError: Attempt to build non-virtual item on a virtual builder.
@@ -273,7 +279,10 @@ successfully.
     >>> bob_builder.virtualized = True
     >>> flush_database_updates()
 
-    >>> bob_builder.dispatchBuildCandidate(ppa_job)
+    >>> dispatched_job = bob_builder.findAndStartJob()
+    >>> ppa_job == dispatched_job
+    True
+
     >>> flush_database_updates()
 
 PPA job is building.
@@ -328,7 +337,7 @@ accept such jobs until we have finished the EMBARGOED archive
 implementation.
 
     >>> BuilddSlaveTestSetup().setUp()
-    >>> bob_builder.dispatchBuildCandidate(sec_job)
+    >>> removeSecurityProxy(bob_builder)._dispatchBuildCandidate(sec_job)
     Traceback (most recent call last):
     ...
     AssertionError: Soyuz is not yet capable of building SECURITY uploads.
@@ -336,7 +345,7 @@ implementation.
 
 To solve this problem temporarily until we start building security
 uploads, we will mark builds targeted to the SECURITY pocket as
-FAILEDTOBUILD during the findBuildCandidate look-up.
+FAILEDTOBUILD during the _findBuildCandidate look-up.
 
 We will also create another build candidate in breezy-autotest/i386 to
 check if legitimate pending candidates will remain valid.
@@ -360,7 +369,7 @@ New we can check that the next valid candidate is the just-added
 
     >>> new_pub = old_pub.copyTo(
     ...     pending_build.distroseries, old_pub.pocket, pending_build.archive)
-    >>> candidate = bob_builder.findBuildCandidate()
+    >>> candidate = removeSecurityProxy(bob_builder)._findBuildCandidate()
     >>> flush_database_updates()
     >>> candidate.id == pending_job.id
     True
