@@ -1706,8 +1706,8 @@ ALTER TABLE buildqueue ENABLE TRIGGER ALL;
 
 ALTER TABLE codeimport DISABLE TRIGGER ALL;
 
-INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status, date_last_successful, owner, assignee, update_interval, git_repo_url) VALUES (1, 75, '2007-06-25 20:04:04.226605', 52, 2, 'http://svn.example.org/svnroot/gnome-terminal/trunk', NULL, NULL, 20, NULL, 52, NULL, NULL, NULL);
-INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status, date_last_successful, owner, assignee, update_interval, git_repo_url) VALUES (2, 76, '2007-06-25 20:04:04.379285', 52, 1, NULL, ':pserver:anonymous@anoncvs.example.org:/cvs/gnome', 'evolution', 1, NULL, 52, NULL, NULL, NULL);
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, cvs_root, cvs_module, review_status, date_last_successful, owner, assignee, update_interval, url) VALUES (1, 75, '2007-06-25 20:04:04.226605', 52, 2, NULL, NULL, 20, NULL, 52, NULL, NULL, 'http://svn.example.org/svnroot/gnome-terminal/trunk');
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, cvs_root, cvs_module, review_status, date_last_successful, owner, assignee, update_interval, url) VALUES (2, 76, '2007-06-25 20:04:04.379285', 52, 1, ':pserver:anonymous@anoncvs.example.org:/cvs/gnome', 'evolution', 1, NULL, 52, NULL, NULL, NULL);
 
 
 ALTER TABLE codeimport ENABLE TRIGGER ALL;

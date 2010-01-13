@@ -16,7 +16,7 @@ from zope.component import getUtility
 from lp.archivepublisher.debversion import Version
 from lp.buildmaster.master import BuilddMaster
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from lp.services.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
@@ -201,12 +201,10 @@ class SlaveScanner(LaunchpadCronScript):
             if not builder.is_available:
                 self.logger.warn('builder is not available. Ignored.')
                 continue
-            candidate = builder.findBuildCandidate()
+
+            candidate = builder.findAndStartJob()
             if candidate is None:
-                self.logger.debug(
-                    "No candidates available for builder.")
                 continue
-            builder.dispatchBuildCandidate(candidate)
             self.txn.commit()
 
         self.logger.info("Slave Scan Process Finished.")

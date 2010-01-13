@@ -48,6 +48,7 @@ from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
+from lp.codehosting.scanner.bzrsync import BzrSync
 from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
@@ -59,10 +60,11 @@ from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionDiffSize,
     BranchSubscriptionNotificationLevel)
 from lp.code.interfaces.branchjob import (
-    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchUpgradeJob,
-    IBranchUpgradeJobSource, IReclaimBranchSpaceJob,
-    IReclaimBranchSpaceJobSource, IRevisionsAddedJob, IRevisionMailJob,
-    IRevisionMailJobSource, IRosettaUploadJob, IRosettaUploadJobSource)
+    IBranchDiffJob, IBranchDiffJobSource, IBranchJob, IBranchScanJob,
+    IBranchScanJobSource, IBranchUpgradeJob, IBranchUpgradeJobSource,
+    IReclaimBranchSpaceJob, IReclaimBranchSpaceJobSource, IRevisionsAddedJob,
+    IRevisionMailJob, IRevisionMailJobSource, IRosettaUploadJob,
+    IRosettaUploadJobSource)
 from lp.translations.interfaces.translations import (
     TranslationsBranchImportMode)
 from lp.translations.interfaces.translationimportqueue import (
@@ -119,6 +121,17 @@ class BranchJobType(DBEnumeratedType):
         from disk.
         """)
 
+    TRANSLATION_TEMPLATES_BUILD = DBItem(6, """
+        Generate translation templates
+
+        This job generates translations templates from a source branch.
+        """)
+
+    SCAN_BRANCH = DBItem(7, """
+        Scan Branch
+
+        This job scans a branch for new revisions.
+        """)
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
@@ -241,6 +254,26 @@ class BranchDiffJob(BranchJobDerived):
         static_diff = StaticDiff.acquire(
             from_revision_id, to_revision_id, bzr_branch.repository)
         return static_diff
+
+
+class BranchScanJob(BranchJobDerived):
+    """A Job that scans a branch for new revisions."""
+
+    implements(IBranchScanJob)
+
+    classProvides(IBranchScanJobSource)
+    class_job_type = BranchJobType.SCAN_BRANCH
+
+    @classmethod
+    def create(cls, branch):
+        """See `IBranchUpgradeJobSource`."""
+        branch_job = BranchJob(branch, BranchJobType.SCAN_BRANCH, {})
+        return cls(branch_job)
+
+    def run(self):
+        """See `IBranchScanJob`."""
+        bzrsync = BzrSync(self.branch)
+        bzrsync.syncBranchAndClose()
 
 
 class BranchUpgradeJob(BranchJobDerived):

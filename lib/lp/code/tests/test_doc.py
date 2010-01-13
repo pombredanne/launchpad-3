@@ -14,8 +14,7 @@ from canonical.launchpad.testing.systemdocs import (
 from canonical.launchpad.ftests.test_system_documentation import (
     branchscannerSetUp)
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
-from canonical.testing import (
-    DatabaseFunctionalLayer, LaunchpadFunctionalLayer, LaunchpadZopelessLayer)
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 from lp.services.testing import build_test_suite
 
 
@@ -69,4 +68,4 @@ special = {
 
 
 def test_suite():
-    return build_test_suite(here, special, layer=DatabaseFunctionalLayer)
+    return build_test_suite(here, special)

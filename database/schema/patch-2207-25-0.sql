@@ -31,7 +31,8 @@ CREATE TABLE SourcePackageRecipeBuild (
     builder integer REFERENCES builder,
     date_first_dispatched timestamp without time zone,
     requester integer NOT NULL REFERENCES Person,
-    recipe integer REFERENCES SourcePackageRecipe NOT NULL
+    recipe integer REFERENCES SourcePackageRecipe NOT NULL,
+    archive integer NOT NULL REFERENCES Archive
 );
 
 CREATE TABLE SourcePackageRecipeBuildUpload (
@@ -129,6 +130,9 @@ ON SourcepackageRecipeBuild(requester);
 
 CREATE INDEX sourcepackagerecipebuild__recipe__idx
 ON SourcepackageRecipeBuild(recipe);
+
+CREATE INDEX sourcepackagerecipebuild__archive__idx
+ON SourcepackageRecipeBuild(archive);
 
 CREATE INDEX sourcepackagebuildupload__registrant__idx
 ON SourcepackageRecipeBuildUpload(registrant);
