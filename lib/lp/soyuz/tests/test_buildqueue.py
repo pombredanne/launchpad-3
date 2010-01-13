@@ -14,6 +14,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.model.builder import specific_job_classes
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.buildmaster.interfaces.builder import IBuilderSet
@@ -705,7 +706,7 @@ class TestJobClasses(TestCaseWithFactory):
 
         # The class registered for 'PACKAGEBUILD' is `BuildPackageJob`.
         self.assertEqual(
-            bq.specific_job_classes[BuildFarmJobType.PACKAGEBUILD],
+            specific_job_classes()[BuildFarmJobType.PACKAGEBUILD],
             BuildPackageJob,
             "The class registered for 'PACKAGEBUILD' is `BuildPackageJob`")
 
@@ -728,7 +729,7 @@ class TestJobClasses(TestCaseWithFactory):
         # First make sure that we don't have a job type class registered for
         # 'BRANCHBUILD' yet.
         self.assertTrue(
-            bq.specific_job_classes.get(BuildFarmJobType.BRANCHBUILD) is None)
+            specific_job_classes().get(BuildFarmJobType.BRANCHBUILD) is None)
 
         # Pretend that our `FakeBranchBuild` class implements the
         # `IBuildFarmJob` interface.
@@ -738,7 +739,7 @@ class TestJobClasses(TestCaseWithFactory):
         # Now we should see the `FakeBranchBuild` class "registered" in the
         # `specific_job_classes` dictionary under the 'BRANCHBUILD' key.
         self.assertEqual(
-            bq.specific_job_classes[BuildFarmJobType.BRANCHBUILD],
+            specific_job_classes()[BuildFarmJobType.BRANCHBUILD],
             FakeBranchBuild)
 
 
