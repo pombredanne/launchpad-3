@@ -473,6 +473,7 @@ class Builder(SQLBase):
             extra_queries.append(query)
         general_query = general_query % ', '.join(query_tables)
         query = ' AND '.join([general_query] + extra_queries) + order_clause
+        print query
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         candidate_jobs = store.execute(query).get_all()

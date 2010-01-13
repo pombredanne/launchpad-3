@@ -243,7 +243,7 @@ class BuildPackageJob(Storm, BuildFarmJob):
                       SourcePackagePublishingHistory.status IN %s))
               OR
               archive.private IS FALSE) AND
-            build.buildstate = %s AND
+            build.buildstate = %s
         """ % sqlvalues(private_statuses, BuildStatus.NEEDSBUILD)
 
         # Ensure that if BUILDING builds exist for the same
@@ -263,7 +263,7 @@ class BuildPackageJob(Storm, BuildFarmJob):
             processor=processor, manual=False, builderok=True).count()
         if num_arch_builders > 1:
             extra_clauses += """
-                EXISTS (SELECT true
+                AND EXISTS (SELECT true
                 WHERE ((
                     SELECT COUNT(build2.id)
                     FROM Build build2, DistroArchSeries distroarchseries2
