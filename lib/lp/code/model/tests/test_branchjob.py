@@ -8,6 +8,7 @@ __metaclass__ = type
 import datetime
 import os
 import shutil
+import tempfile
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
@@ -111,11 +112,16 @@ class TestBranchDiffJob(TestCaseWithFactory):
     def test_run_diff_content(self):
         """Ensure that run generates expected diff."""
         self.useBzrBranches()
-        branch, tree = self.create_branch_and_tree()
-        open('file', 'wb').write('foo\n')
+
+        tree_location = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(tree_location)) 
+
+        branch, tree = self.create_branch_and_tree(tree_location=tree_location)
+        tree_file = os.path.join(tree_location, 'file')
+        open(tree_file, 'wb').write('foo\n')
         tree.add('file')
         tree.commit('First commit')
-        open('file', 'wb').write('bar\n')
+        open(tree_file, 'wb').write('bar\n')
         tree.commit('Next commit')
         job = BranchDiffJob.create(branch, '1', '2')
         static_diff = job.run()

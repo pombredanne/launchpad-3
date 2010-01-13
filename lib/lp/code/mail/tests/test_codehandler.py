@@ -832,7 +832,7 @@ class TestCodeHandlerProcessMergeDirective(TestCaseWithFactory):
             target branch.
         """
         db_target_branch, target_tree = self.create_branch_and_tree(
-            format=format)
+            tree_location='.', format=format)
         target_tree.branch.set_public_branch(db_target_branch.bzr_identity)
         target_tree.commit('rev1')
         # Make sure that the created branch has been mirrored.
