@@ -24,6 +24,7 @@ from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
 
+
 def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
     for build in test.builds:
