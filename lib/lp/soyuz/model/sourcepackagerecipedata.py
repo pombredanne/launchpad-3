@@ -149,8 +149,28 @@ class _SourcePackageRecipeData(Storm):
                 dict(insn=insn, recipe_branch=recipe_branch))
         return base_branch
 
-    def _scanInstructions(self, branch, parent_insn, insn_args, record=False,
-                          line_number=0):
+    def _scanInstructions(self, branch):
+        """Walk over the instructions in the recipe branch.
+
+        If `record` is True, the instructions will be recorded in the
+        database.  Otherwise, we just check that no unexpected instructions
+        are present.
+        """
+        r = {}
+        for instruction in branch.child_branches:
+            if isinstance(instruction, MergeInstruction):
+                pass
+            elif isinstance(instruction, NestInstruction):
+                pass
+            else:
+                raise ForbiddenInstruction(str(instruction))
+            db_branch = getUtility(IBranchLookup).getByUrl(
+                instruction.recipe_branch.url)
+            r[instruction.recipe_branch.url] = db_branch
+            r.update(self._scanInstructions(instruction.recipe_branch))
+        return r
+
+    def _recordInstructions(self, branch, parent_insn, branch_map, line_number=0):
         """Walk over the instructions in the recipe branch.
 
         If `record` is True, the instructions will be recorded in the
@@ -162,34 +182,25 @@ class _SourcePackageRecipeData(Storm):
                 type = InstructionType.MERGE
             elif isinstance(instruction, NestInstruction):
                 type = InstructionType.NEST
-            elif not record:
-                raise ForbiddenInstruction(str(instruction))
             else:
                 raise AssertionError(
                     "Unsupported instruction %r" % instruction)
             line_number += 1
-            if record:
-                comment = None
-                db_branch = getUtility(IBranchLookup).getByUrl(
-                    instruction.recipe_branch.url)
-                insn = len(insn_args)
-                insn_args.append(
-                    (instruction.recipe_branch.name, type, comment,
-                     line_number, db_branch, instruction.recipe_branch.revspec,
-                     instruction.nest_path, self, parent_insn))
-            else:
-                insn = None
-            line_number = self._scanInstructions(
-                instruction.recipe_branch, insn, insn_args, record,
-                line_number)
+            comment = None
+            db_branch = branch_map[instruction.recipe_branch.url]
+            insn = _SourcePackageRecipeDataInstruction(
+                instruction.recipe_branch.name, type, comment,
+                line_number, db_branch, instruction.recipe_branch.revspec,
+                instruction.nest_path, self, parent_insn)
+            line_number = self._recordInstructions(
+                instruction.recipe_branch, insn, branch_map, line_number)
         return line_number
 
     def setRecipe(self, builder_recipe):
         """Convert the BaseRecipeBranch `builder_recipe` to the db form."""
         if builder_recipe.format > 0.2:
             raise TooNewRecipeFormat(builder_recipe.format, 0.2)
-        self._scanInstructions(
-            builder_recipe, parent_insn=None, insn_args=[])
+        branch_map = self._scanInstructions(builder_recipe)
         # If this object hasn't been added to a store yet, there can't be any
         # instructions linking to us yet.
         if Store.of(self) is not None:
@@ -198,19 +209,8 @@ class _SourcePackageRecipeData(Storm):
         base_branch = branch_lookup.getByUrl(builder_recipe.url)
         if builder_recipe.revspec is not None:
             self.revspec = unicode(builder_recipe.revspec)
-        insn_args = []
-        self._scanInstructions(
-            builder_recipe, parent_insn=None, insn_args=insn_args,
-            record=True)
-        insns = []
-        for args in insn_args:
-            (name, type, comment, line_number, db_branch, revspec, nest_path,
-             s, parent_insn) = args
-            if parent_insn is not None:
-                parent_insn = insns[parent_insn]
-            insns.append(_SourcePackageRecipeDataInstruction(
-                name, type, comment, line_number, db_branch, revspec,
-                nest_path, s, parent_insn))
+        self._recordInstructions(
+            builder_recipe, parent_insn=None, branch_map=branch_map)
         self.base_branch = base_branch
         self.deb_version_template = unicode(builder_recipe.deb_version)
         self.recipe_format = unicode(builder_recipe.format)
