@@ -284,22 +284,14 @@ class GettextPOExporterBase:
         """
         raise NotImplementedError
 
-    def _try_encode_file_content(
-            self, translation_file, exported_content, file_path):
+    def _encode_file_content(self, translation_file, exported_content):
         """Try to encode the file using the charset given in the header."""
         file_content = (
             self._makeExportedHeader(translation_file) +
             u'\n\n' +
             exported_content)
-        try:
-            encoded_file_content = file_content.encode(
-                translation_file.header.charset)
-        except UnicodeEncodeError, error:
-            if translation_file.header.charset.upper() == 'UTF-8':
-                # It's already UTF-8, we cannot do anything.
-                raise UnicodeEncodeError(
-                    '%s:\n%s' % (file_path, str(error)))
-            encoded_file_content = None
+        encoded_file_content = file_content.encode(
+            translation_file.header.charset)
         return encoded_file_content
 
     def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
@@ -359,9 +351,10 @@ class GettextPOExporterBase:
             # Try to encode the file
             if force_utf8:
                 translation_file.header.charset = 'UTF-8'
-            encoded_file_content = self._try_encode_file_content(
-                translation_file, exported_file_content, file_path)
-            if encoded_file_content is None:
+            try:
+                encoded_file_content = self._encode_file_content(
+                    translation_file, exported_file_content)
+            except UnicodeEncodeError:
                 # This file content cannot be represented in the current
                 # encoding.
                 if translation_file.path:
@@ -378,8 +371,8 @@ class GettextPOExporterBase:
                 # Use UTF-8 instead.
                 translation_file.header.charset = 'UTF-8'
                 # This either succeeds or raises UnicodeError.
-                encoded_file_content = self._try_encode_file_content(
-                    translation_file, exported_file_content, file_path)
+                encoded_file_content = self._encode_file_content(
+                    translation_file, exported_file_content)
 
             storage.addFile(file_path, file_extension, encoded_file_content)
 
