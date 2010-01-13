@@ -11,8 +11,8 @@ Need auxiliar methods from zope toolchain:
 
 Importing Builder content class and its interface:
 
-    >>> from lp.soyuz.model.builder import Builder
-    >>> from lp.soyuz.interfaces.builder import IBuilder
+    >>> from lp.buildmaster.model.builder import Builder
+    >>> from lp.buildmaster.interfaces.builder import IBuilder
 
 Get an instance of Builder from the current sampledata:
 
@@ -60,7 +60,7 @@ Now perform the tests for the Builder ContentSet class, BuilderSet.
 
 Check if it can be imported:
 
-    >>> from lp.soyuz.interfaces.builder import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
 
 Check we can use the set as a utility:
 
@@ -151,7 +151,7 @@ We will temporarily disable the ubuntu primary archive.
     >>> login('foo.bar@canonical.com')
     >>> from lp.registry.interfaces.distribution import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu.main_archive.enabled = False
+    >>> ubuntu.main_archive.disable()
     >>> login(ANONYMOUS)
 
 That done, the non-virtualized queue for i386 becomes empty.
@@ -162,7 +162,7 @@ That done, the non-virtualized queue for i386 becomes empty.
 Let's re-enable the ubuntu primary archive.
 
     >>> login('foo.bar@canonical.com')
-    >>> ubuntu.main_archive.enabled = True
+    >>> ubuntu.main_archive.enable()
     >>> login(ANONYMOUS)
 
 The build for the ubuntu primary archive shows up again.

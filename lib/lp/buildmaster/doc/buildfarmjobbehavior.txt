@@ -31,7 +31,7 @@ methods as well.
     ...     """A custom build behavior for building blah."""
     ...     implements(IBuildFarmJobBehavior)
     ...
-    ...     def dispatchBuildToSlave(self, build_queue_item, logger):
+    ...     def dispatchBuildToSlave(self, build_queue_item_id, logger):
     ...         print "Did something special to dispatch MySpecialBuild."
 
 For this documentation, we'll also need a dummy new build farm job.
@@ -64,7 +64,7 @@ the current job. Bob the builder currently has a binary package job and so
 finds itself with a binary package build behavior which defines binary-build
 specific information.
 
-    >>> from lp.soyuz.model.builder import Builder
+    >>> from lp.buildmaster.model.builder import Builder
     >>> from canonical.launchpad.webapp.interfaces import (
     ...     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
     >>> store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
@@ -106,7 +106,7 @@ Attempting to use any other build-related functionality when a builder is
 idle, such as making a call to log the start of a build, will raise an
 appropriate exception.
 
-    >>> bob.logStartBuild(None, None)
+    >>> bob.current_build_behavior.logStartBuild(None)
     Traceback (most recent call last):
      ...
     BuildBehaviorMismatch: Builder was idle when asked to log the start of a

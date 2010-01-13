@@ -20,8 +20,6 @@ import tempfile
 import urllib2
 import xmlrpclib
 
-from lazr.delegates import delegates
-
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -34,10 +32,15 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.buildd.slave import BuilderStatus
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    BuildBehaviorMismatch, IBuildFarmJobBehavior)
+    BuildBehaviorMismatch)
 from lp.buildmaster.master import BuilddMaster
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from canonical.database.sqlbase import SQLBase, sqlvalues
+
+# XXX Michael Nelson 2010-01-13 bug=491330,506617
+# These dependencies on soyuz will be removed when getBuildRecords()
+# is moved, as well as when the generalisation of findBuildCandidate()
+# is completed.
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -48,9 +51,9 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.soyuz.interfaces.builder import (
-    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotResumeHost,
-    IBuilder, IBuilderSet, ProtocolVersionMismatch)
+from lp.buildmaster.interfaces.builder import (
+    BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
+    CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.interfaces.publishing import (
     PackagePublishingStatus)
@@ -61,6 +64,7 @@ from canonical.librarian.utils import copy_and_close
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):
+
     def connect(self):
         """Override the standard connect() methods to set a timeout"""
         ret = httplib.HTTPConnection.connect(self)
@@ -74,12 +78,13 @@ class TimeoutHTTP(httplib.HTTP):
 
 class TimeoutTransport(xmlrpclib.Transport):
     """XMLRPC Transport to setup a socket with defined timeout"""
+
     def make_connection(self, host):
         host, extra_headers, x509 = self.get_host_info(host)
         return TimeoutHTTP(host)
 
 
-class BuilderSlave(xmlrpclib.Server):
+class BuilderSlave(xmlrpclib.ServerProxy):
     """Add in a few useful methods for the XMLRPC slave."""
 
     def __init__(self, urlbase, vm_host):
@@ -114,11 +119,48 @@ class BuilderSlave(xmlrpclib.Server):
 
         return (stdout, stderr, resume_process.returncode)
 
+    def cacheFile(self, logger, libraryfilealias):
+        """Make sure that the file at 'libraryfilealias' is on the slave.
+
+        :param logger: A python `Logger` object.
+        :param libraryfilealias: An `ILibraryFileAlias`.
+        """
+        url = libraryfilealias.http_url
+        logger.debug("Asking builder on %s to ensure it has file %s "
+                     "(%s, %s)" % (self.urlbase, libraryfilealias.filename,
+                                   url, libraryfilealias.content.sha1))
+        self._sendFileToSlave(url, libraryfilealias.content.sha1)
+
+    def _sendFileToSlave(self, url, sha1, username="", password=""):
+        """Helper to send the file at 'url' with 'sha1' to this builder."""
+        present, info = self.ensurepresent(sha1, url, username, password)
+        if not present:
+            raise CannotFetchFile(url, info)
+
+    def build(self, buildid, builder_type, chroot_sha1, filemap, args):
+        """Build a thing on this build slave.
+
+        :param buildid: A string identifying this build.
+        :param builder_type: The type of builder needed.
+        :param chroot_sha1: XXX
+        :param filemap: A dictionary mapping from paths to SHA-1 hashes of
+            the file contents.
+        :param args: A dictionary of extra arguments. The contents depend on
+            the build job type.
+        """
+        # Can't upcall to xmlrpclib.ServerProxy, since it doesn't actually
+        # have a 'build' method.
+        build_method = xmlrpclib.ServerProxy.__getattr__(self, 'build')
+        try:
+            return build_method(
+                self, buildid, builder_type, chroot_sha1, filemap, args)
+        except xmlrpclib.Fault, info:
+            raise BuildSlaveFailure(info)
+
 
 class Builder(SQLBase):
 
     implements(IBuilder, IHasBuildRecords)
-    delegates(IBuildFarmJobBehavior, context="current_build_behavior")
     _table = 'Builder'
 
     _defaultOrder = ['id']
@@ -168,7 +210,6 @@ class Builder(SQLBase):
             # we just return it.
             return self._current_build_behavior
 
-
     def _setCurrentBuildBehavior(self, new_behavior):
         """Set the current build behavior."""
         self._current_build_behavior = new_behavior
@@ -177,31 +218,6 @@ class Builder(SQLBase):
 
     current_build_behavior = property(
         _getCurrentBuildBehavior, _setCurrentBuildBehavior)
-
-    def cacheFileOnSlave(self, logger, libraryfilealias):
-        """See `IBuilder`."""
-        url = libraryfilealias.http_url
-        logger.debug("Asking builder on %s to ensure it has file %s "
-                     "(%s, %s)" % (self.url, libraryfilealias.filename,
-                                   url, libraryfilealias.content.sha1))
-        self._sendFileToSlave(url, libraryfilealias.content.sha1)
-
-    def _sendFileToSlave(self, url, sha1, username="", password=""):
-        """Helper to send the file at 'url' with 'sha1' to this builder."""
-        if not self.builderok:
-            raise BuildDaemonError("Attempted to give a file to a known-bad"
-                                   " builder")
-        present, info = self.slave.ensurepresent(
-            sha1, url, username, password)
-        if not present:
-            message = """Slave '%s' (%s) was unable to fetch file.
-            ****** URL ********
-            %s
-            ****** INFO *******
-            %s
-            *******************
-            """ % (self.name, self.url, url, info)
-            raise BuildDaemonError(message)
 
     def checkCanBuildForDistroArchSeries(self, distro_arch_series):
         """See IBuilder."""
@@ -277,12 +293,16 @@ class Builder(SQLBase):
 
     def startBuild(self, build_queue_item, logger):
         """See IBuilder."""
-        # Set the build behavior depending on the provided build queue item.
         self.current_build_behavior = build_queue_item.required_build_behavior
-        self.logStartBuild(build_queue_item, logger)
+        self.current_build_behavior.logStartBuild(logger)
 
         # Make sure the request is valid; an exception is raised if it's not.
-        self.verifyBuildRequest(build_queue_item, logger)
+        self.current_build_behavior.verifyBuildRequest(logger)
+
+        # Set the build behavior depending on the provided build queue item.
+        if not self.builderok:
+            raise BuildDaemonError(
+                "Attempted to start a build on a known-bad builder.")
 
         # If we are building a virtual build, resume the virtual machine.
         if self.virtualized:
@@ -290,7 +310,26 @@ class Builder(SQLBase):
 
         # Do it.
         build_queue_item.markAsBuilding(self)
-        self.dispatchBuildToSlave(build_queue_item, logger)
+        try:
+            self.current_build_behavior.dispatchBuildToSlave(
+                build_queue_item.id, logger)
+        except BuildSlaveFailure, e:
+            logger.debug("Disabling builder: %s" % self.url, exc_info=1)
+            self.failbuilder(
+                "Exception (%s) when setting up to new job" % (e,))
+        except CannotFetchFile, e:
+            message = """Slave '%s' (%s) was unable to fetch file.
+            ****** URL ********
+            %s
+            ****** INFO *******
+            %s
+            *******************
+            """ % (self.name, self.url, e.file_url, e.error_information)
+            raise BuildDaemonError(message)
+        except socket.error, e:
+            error_message = "Exception (%s) when setting up new job" % (e,)
+            self.handleTimeout(logger, error_message)
+            raise BuildSlaveFailure
 
     def failbuilder(self, reason):
         """See IBuilder"""
@@ -301,6 +340,7 @@ class Builder(SQLBase):
     # that the builder history will display binary build records, as
     # returned by getBuildRecords() below. See the bug for a discussion
     # of the options.
+
     def getBuildRecords(self, build_state=None, name=None, arch_tag=None,
                         user=None):
         """See IHasBuildRecords."""
@@ -370,9 +410,9 @@ class Builder(SQLBase):
         return True
 
     # XXX cprov 20071116: It should become part of the public
-    # findBuildCandidate once we start to detect superseded builds
+    # _findBuildCandidate once we start to detect superseded builds
     # at build creation time.
-    def _findBuildCandidate(self):
+    def _findBinaryBuildCandidate(self):
         """Return the highest priority build candidate for this builder.
 
         Returns a pending IBuildQueue record queued for this builder
@@ -471,10 +511,21 @@ class Builder(SQLBase):
         logger = logging.getLogger('slave-scanner')
         return logger
 
-    def findBuildCandidate(self):
-        """See `IBuilder`."""
+    def _findBuildCandidate(self):
+        """Find a candidate job for dispatch to an idle buildd slave.
+
+        The pending BuildQueue item with the highest score for this builder
+        ProcessorFamily or None if no candidate is available.
+
+        For public PPA builds, subsequent builds for a given ppa and
+        architecture will not be returned until the current build for
+        the ppa and architecture is finished.
+
+        :return: A binary build candidate job.
+        """
+
         logger = self._getSlaveScannerLogger()
-        candidate = self._findBuildCandidate()
+        candidate = self._findBinaryBuildCandidate()
 
         # Mark build records targeted to old source versions as SUPERSEDED
         # and build records target to SECURITY pocket as FAILEDTOBUILD.
@@ -491,7 +542,7 @@ class Builder(SQLBase):
                     % (build.id, candidate.id))
                 build.buildstate = BuildStatus.FAILEDTOBUILD
                 candidate.destroySelf()
-                candidate = self._findBuildCandidate()
+                candidate = self._findBinaryBuildCandidate()
                 continue
 
             publication = build.current_source_publication
@@ -504,7 +555,7 @@ class Builder(SQLBase):
                     % (build.id, candidate.id))
                 build.buildstate = BuildStatus.SUPERSEDED
                 candidate.destroySelf()
-                candidate = self._findBuildCandidate()
+                candidate = self._findBinaryBuildCandidate()
                 continue
 
             return candidate
@@ -512,8 +563,14 @@ class Builder(SQLBase):
         # No candidate was found.
         return None
 
-    def dispatchBuildCandidate(self, candidate):
-        """See `IBuilder`."""
+    def _dispatchBuildCandidate(self, candidate):
+        """Dispatch the pending job to the associated buildd slave.
+
+        This method can only be executed in the builddmaster machine, since
+        it will actually issues the XMLRPC call to the buildd-slave.
+
+        :param candidate: The job to dispatch.
+        """
         logger = self._getSlaveScannerLogger()
         try:
             self.startBuild(candidate, logger)
@@ -546,6 +603,21 @@ class Builder(SQLBase):
                 "Disabling builder: %s -- %s" % (self.url, error_message),
                 exc_info=True)
             self.failbuilder(error_message)
+
+    def findAndStartJob(self, buildd_slave=None):
+        """See IBuilder."""
+        logger = self._getSlaveScannerLogger()
+        candidate = self._findBuildCandidate()
+
+        if candidate is None:
+            logger.debug("No build candidates available for builder.")
+            return None
+
+        if buildd_slave is not None:
+            self.setSlaveForTesting(buildd_slave)
+
+        self._dispatchBuildCandidate(candidate)
+        return candidate
 
 
 class BuilderSet(object):
@@ -618,7 +690,7 @@ class BuilderSet(object):
             Build.archive == Archive.id,
             DistroArchSeries.processorfamilyID == Processor.familyID,
             Build.buildstate == BuildStatus.NEEDSBUILD,
-            Archive.enabled == True,
+            Archive._enabled == True,
             Processor.id == processor.id,
             Archive.require_virtualized == virtualized,
             )

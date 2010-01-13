@@ -16,7 +16,7 @@ constant value.
 
     >>> def fake_get_day_of_year():
     ...     return 4
-    >>> from lp.registry.browser.root import LaunchpadRootIndexView
+    >>> from lp.app.browser.root import LaunchpadRootIndexView
     >>> LaunchpadRootIndexView._get_day_of_year = staticmethod(
     ...                                                 fake_get_day_of_year)
 
