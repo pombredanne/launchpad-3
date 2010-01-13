@@ -38,10 +38,12 @@
             </p>
 
             <p>
-              Following a delay, Launchpad will make an initial import, then check regularly
-              for updates.
-              (<a tal:attributes="href context/menu:navigation/imports/url">See the import
-              queue</a>)
+              Launchpad will make an initial import and then update its data
+              every time you push a new revision to the branch. There is a
+              short delay between a push and the files appearing in the import
+              queue.
+              (<a tal:attributes="href context/menu:navigation/imports/url">See
+              the import queue</a>)
             </p>
 
             <p>
