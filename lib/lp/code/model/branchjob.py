@@ -119,6 +119,12 @@ class BranchJobType(DBEnumeratedType):
         from disk.
         """)
 
+    TRANSLATION_TEMPLATES_BUILD = DBItem(6, """
+        Generate translation templates
+
+        This job generates translations templates from a source branch.
+        """)
+
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
