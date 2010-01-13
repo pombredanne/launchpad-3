@@ -25,8 +25,6 @@ from zope.schema import Bool, Choice, Field, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
 from lp.registry.interfaces.role import IHasOwner
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
 

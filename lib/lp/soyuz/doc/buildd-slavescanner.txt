@@ -176,7 +176,8 @@ hence certain package dependencies.
 The slavescanner system also perform build-notification for the
 following states: FAILEDTOBUILD and CHROOTWAIT
 
-    >>> from canonical.launchpad.interfaces import IBuildSet, IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
+    >>> from lp.soyuz.interfaces.build import IBuildSet
     >>> import datetime, pytz
 
     >>> UTC = pytz.timezone('UTC')
