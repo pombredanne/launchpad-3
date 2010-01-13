@@ -8,44 +8,40 @@ Set up build environment.
     >>> logger.setLevel(logging.CRITICAL)
 
     >>> from lp.buildmaster.master import BuilddMaster
+    >>> from canonical.buildd.tests import BuilddSlaveTestSetup
     >>> bm = BuilddMaster(logger, transaction)
 
-    >>> from canonical.buildd.tests import BuilddSlaveTestSetup
     >>> BuilddSlaveTestSetup().setUp()
 
     >>> from canonical.librarian.interfaces import ILibrarianClient
     >>> from StringIO import StringIO
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     >>> librarian_client = getUtility(ILibrarianClient)
-
-    >>> content = 'anything'
+    >>> content = 'arbitrary chroot file content'
     >>> alias_id = librarian_client.addFile(
     ...    'foo.tar.gz', len(content), StringIO(content), 'text/plain')
-
-    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
-    >>> from lp.registry.interfaces.distribution import IDistributionSet
-
-    >>> distroseries = getUtility(IDistributionSet)['ubuntu'].currentseries
-    >>> archdistroseries = distroseries['i386']
-
+    >>> archdistroseries = ubuntu.currentseries.nominatedarchindep
     >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
     >>> pc = archdistroseries.addOrUpdateChroot(chroot=chroot)
 
-Activate builders present in sampledata, we need to be logged in as a
+Activate builders present in sampledata.  We need to be logged in as a
 member of launchpad-buildd-admin:
 
-    >>> from canonical.launchpad.ftests import login
+    >>> from canonical.launchpad.ftests import login, logout
     >>> login('celso.providelo@canonical.com')
 
     >>> bm.addDistroArchSeries(archdistroseries)
     >>> bm.setupBuilders(archdistroseries)
-
-    >>> builder = factory.makeBuilder(virtualized=False)
+    >>> processor = archdistroseries.processorfamily.processors[0]
+    >>> builder = factory.makeBuilder(virtualized=False, processor=processor)
 
     >>> from lp.translations.interfaces.translationtemplatesbuildjob import (
     ...     ITranslationTemplatesBuildJobSource)
     >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-    >>> specific_job_source = getUtility(ITranslationTemplatesBuildJobSource)
     >>> branch = factory.makeBranch()
+    >>> specific_job_source = getUtility(ITranslationTemplatesBuildJobSource)
     >>> specific_job = specific_job_source.create(branch)
     >>> buildqueue = getUtility(IBuildQueueSet).getByJob(specific_job.job)
 
@@ -56,5 +52,8 @@ member of launchpad-buildd-admin:
 
 The build is now marked as started.
 
-    >>> print buildqueue.date_started
-    2...
+    >>> buildqueue.date_started is None
+    False
+
+    >>> logout()
+    >>> BuilddSlaveTestSetup().tearDown()
