@@ -13,6 +13,8 @@ __all__ = [
     'IBranchJob',
     'IBranchDiffJob',
     'IBranchDiffJobSource',
+    'IBranchScanJob',
+    'IBranchScanJobSource',
     'IBranchUpgradeJob',
     'IBranchUpgradeJobSource',
     'IReclaimBranchSpaceJob',
