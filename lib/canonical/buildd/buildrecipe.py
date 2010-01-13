@@ -12,9 +12,8 @@ from canonical.buildd.sourcepackagerecipe import *
 
 class BuildRecipe:
 
-    def __init__(self, build_id, recipe_text, author_name, author_email,
+    def __init__(self, build_id, author_name, author_email,
                  package_name, suite):
-        self.recipe_text = recipe_text
         self.author_name = author_name
         self.author_email = author_email
         self.package_name = package_name

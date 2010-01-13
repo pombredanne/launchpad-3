@@ -43,8 +43,9 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
             recipe_file.write(self.recipe_text)
         finally:
             recipe_file.close()
-        args = ["buildrecipe.py", self._buildid, self.recipe_data,
-        self.author_name, self.author_email, self.package_name, self.suite]
+        args = [
+            "buildrecipe.py", self._buildid, self.author_name,
+            self.author_email, self.package_name, self.suite]
         self.runSubProcess(self.build_recipe_path, args)
 
     def iterate_BUILD_RECIPE(self, retcode):
