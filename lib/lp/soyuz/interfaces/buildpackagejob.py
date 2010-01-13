@@ -27,3 +27,8 @@ class IBuildPackageJob(IBuildFarmJob):
     job = Reference(
         IJob, title=_("Job"), required=True, readonly=True,
         description=_("Data common to all job types."))
+
+    build = Reference(
+        IBuild, title=_("Build"),
+        required=True,readonly=True,
+        description=_("Build record associated with this job."))
