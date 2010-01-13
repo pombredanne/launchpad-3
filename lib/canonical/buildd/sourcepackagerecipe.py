@@ -28,15 +28,27 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
 
         self.recipe_data = extra_args['recipe_data']
         self.suite = extra_args['suite']
+        self.component = extra_args['component']
         self.package_name = extra_args['package_name']
         self.author_name = extra_args['author_name']
         self.author_email = extra_args['author_email']
+        self.purpose = extra_args['purpose']
 
         super(SourcePackageRecipeBuildManager, self).initiate(
             files, chroot, extra_args)
 
     def doRunSbuild(self):
         """Run the sbuild process to build the package."""
+        currently_building = get_buildpath(
+            self._buildid, 'work/chroot-autobuild/CurrentlyBuilding')
+        currently_building.write(
+            'Package: %s\n'
+            'Suite: %s\n'
+            'Component: %s\n'
+            'Purpose: %s\n'
+            'Build-Debug-Symbols: no\n' %
+            (self.package_name, self.suite, self.component, self.purpose))
+        os.makedirs(get_buildpath(self._buildid, 'work'))
         recipe_path = get_buildpath(self._buildid, 'work/recipe')
         recipe_file = open(recipe_path, 'w')
         try:

@@ -325,7 +325,7 @@ class BuildDSlave(object):
         f.close()
         return sha1sum
 
-    def addWaitingFile(self, path)
+    def addWaitingFile(self, path):
         fn = os.path.basename(path)
         f = open(path)
         try:
