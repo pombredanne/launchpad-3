@@ -128,8 +128,8 @@ class BranchJobType(DBEnumeratedType):
         """)
 
     SCAN_BRANCH = DBItem(7, """
+        Scan Branch
 
-            Scan Branch
         This job scans a branch for new revisions.
         """)
 
