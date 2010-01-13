@@ -7,7 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'BaseDispatchResult',
-    'BuilddManager'
+    'BuilddManager',
     'FailDispatchResult',
     'RecordingSlave',
     'ResetDispatchResult',
@@ -70,6 +70,7 @@ class RecordingSlave:
     major slave-scanner throughput issue while avoiding large-scale changes to
     its code base.
     """
+
     def __init__(self, name, url, vm_host):
         self.name = name
         self.url = url
@@ -80,6 +81,11 @@ class RecordingSlave:
 
     def __repr__(self):
         return '<%s:%s>' % (self.name, self.url)
+
+    def cacheFile(self, logger, libraryfilealias):
+        """Cache the file on the server."""
+        self.ensurepresent(
+            libraryfilealias.content.sha1, libraryfilealias.http_url, '', '')
 
     def ensurepresent(self, *args):
         """Download files needed for the build."""
