@@ -357,6 +357,8 @@ class ZopelessTransactionManager(object):
         for name, store in getUtility(IZStorm).iterstores():
             connection = store._connection
             if connection._state == storm.database.STATE_CONNECTED:
+                # XXX: Instead of all this we could probably just remove the
+                # store from ZStorm (zstorm.remove(store)).
                 if connection._raw_connection is not None:
                     connection._raw_connection.close()
 

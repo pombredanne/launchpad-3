@@ -46,7 +46,7 @@ from zope.security.management import newInteraction
 import canonical.launchpad.layers as layers
 import canonical.launchpad.webapp.adapter as da
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.mem import (
     countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
     resident)
@@ -55,9 +55,9 @@ from canonical.launchpad.readonly import IIsReadOnly
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
-    IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
-    ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
-    OffsiteFormPostError, IStoreSelector, MASTER_FLAVOR)
+    IDatabasePolicy, ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
+    IPlacelessAuthUtility, IPrimaryContext, IStoreSelector, MAIN_STORE,
+    MASTER_FLAVOR, OffsiteFormPostError, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
@@ -166,6 +166,22 @@ class LaunchpadBrowserPublication(
         newInteraction(request)
 
         transaction.begin()
+
+        main_master_store = getUtility(IStoreSelector).get(
+            MAIN_STORE, MASTER_FLAVOR)
+        # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
+        # through private attributes to get to the store's database.
+        dsn = main_master_store._connection._database.dsn_without_user
+        if dsn.strip() != dbconfig.main_master.strip():
+            # Remove the stores from zstorm to force them to be re-created,
+            # thus using the correct databases for the mode we're on right
+            # now.
+            main_slave_store = getUtility(IStoreSelector).get(
+                MAIN_STORE, SLAVE_FLAVOR)
+            zstorm = getUtility(IZStorm)
+            for store in [main_master_store, main_slave_store]:
+                zstorm.remove(store)
+                store.close()
 
         # Now we are logged in, install the correct IDatabasePolicy for
         # this request.

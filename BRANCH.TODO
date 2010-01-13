@@ -31,3 +31,20 @@ dbconfig.main_master/slave, we remove these stores from ZStorm, forcing them
 to be created again the next time they are needed.  When they're created again
 they get a new connection, which uses dbconfig.main_master/slave and thus will
 go to the correct db.
+
+After removing the stores from ZStorm, this is what happens when the store is
+needed again:
+
+   - ZStorm.get('main-master', 'launchpad:main-master') is called
+   - ZStorm finds a Database object for that uri
+   - ZStorm instantiates a new Store object, passing the existing Database
+   - Store calls Database.connect(), which instantiates and returns a
+     Connection
+   - The Connection's __init__() calls Database.raw_connect(), which finally
+     reads dbconfig.main_master/slave and creates a new psycopg2 connection
+     using that.
+
+The above only works because our custom Database class (LaunchpadDatabase)
+sets self._dsn inside raw_connect(), instead of inside __init__() (like its
+parent class does).  That's needed because the Database objects are reused
+across threads/stores by ZStorm.

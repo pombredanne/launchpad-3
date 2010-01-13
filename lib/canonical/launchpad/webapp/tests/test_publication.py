@@ -11,16 +11,22 @@ import unittest
 from contrib.oauth import OAuthRequest, OAuthSignatureMethod_PLAINTEXT
 
 from storm.exceptions import DisconnectionError
+from storm.zope.interfaces import IZStorm
+
 from zope.component import getUtility
 from zope.error.interfaces import IErrorReportingUtility
 from zope.publisher.interfaces import Retry
 
+from canonical.config import dbconfig
 from canonical.testing import DatabaseFunctionalLayer
 from canonical.launchpad.interfaces.oauth import IOAuthConsumerSet
 from canonical.launchpad.ftests import ANONYMOUS, login
+from canonical.launchpad.readonly import (
+    _remove_read_only_file, _touch_read_only_file)
 from lp.testing import TestCase, TestCaseWithFactory
 import canonical.launchpad.webapp.adapter as da
-from canonical.launchpad.webapp.interfaces import OAuthPermission
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, MASTER_FLAVOR, OAuthPermission, SLAVE_FLAVOR)
 from canonical.launchpad.webapp.publication import (
     is_browser, LaunchpadBrowserPublication)
 from canonical.launchpad.webapp.servers import (
@@ -50,6 +56,84 @@ class TestLaunchpadBrowserPublication(TestCase):
         publication.callTraversalHooks(request, obj1)
         publication.callTraversalHooks(request, obj2)
         self.assertEquals(request.traversed_objects, [obj1])
+
+class TestReadOnlyModeSwitches(TestCase):
+    # At the beginning of every request (in publication.beforeTraversal()), we
+    # check to see if we've changed from/to read-only/read-write and if there
+    # was a change we remove the main_master/slave stores from ZStorm, forcing
+    # them to be recreated the next time they're needed, thus causing them to
+    # point to the correct databases.
+    layer = DatabaseFunctionalLayer
+
+    def tearDown(self):
+        TestCase.tearDown(self)
+        # If a DB policy was installed (e.g. by publication.beforeTraversal),
+        # uninstall it.
+        try:
+            getUtility(IStoreSelector).pop()
+        except IndexError:
+            pass
+        # Cleanup needed so that further tests can start processing other
+        # requests (e.g. calling beforeTraversal).
+        self.publication.endRequest(self.request, None)
+
+    def setUp(self):
+        TestCase.setUp(self)
+        # Get the main_master/slave stores just to make sure they're added to
+        # ZStorm.
+        master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        slave = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        self.zstorm = getUtility(IZStorm)
+        self.publication = LaunchpadBrowserPublication(None)
+        self.request = LaunchpadTestRequest()
+
+    @property
+    def zstorm_stores(self):
+        return [name for (name, store) in self.zstorm.iterstores()]
+
+    def test_no_mode_changes(self):
+        # Make sure the master/slave stores are present in zstorm.
+        self.assertIn('launchpad-main-master', self.zstorm_stores)
+        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+
+        self.publication.beforeTraversal(self.request)
+
+        # Since the mode didn't change, the stores were left in zstorm.
+        self.assertIn('launchpad-main-master', self.zstorm_stores)
+        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+
+        # And they still point to the read-write databases.
+        master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
+        self.assertEquals(
+            dbconfig.rw_main_master.strip(),
+            # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
+            # through private attributes to get to the store's database.
+            master._connection._database.dsn_without_user.strip())
+
+    def test_changing_modes(self):
+        # Make sure the master/slave stores are present in zstorm.
+        self.assertIn('launchpad-main-master', self.zstorm_stores)
+        self.assertIn('launchpad-main-slave', self.zstorm_stores)
+
+        try:
+            _touch_read_only_file()
+            self.publication.beforeTraversal(self.request)
+        finally:
+            _remove_read_only_file()
+
+        # Here the mode has changed to read-only, so the stores were removed
+        # from zstorm.
+        self.assertNotIn('launchpad-main-master', self.zstorm_stores)
+        self.assertNotIn('launchpad-main-slave', self.zstorm_stores)
+
+        # If they're needed again, they'll be re-created by ZStorm, and when
+        # that happens they will point to the read-only databases.
+        master = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        self.assertEquals(
+            dbconfig.ro_main_master.strip(),
+            # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
+            # through private attributes to get to the store's database.
+            master._connection._database.dsn_without_user.strip())
 
 
 class TestWebServicePublication(TestCaseWithFactory):
