@@ -20,7 +20,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.cachedproperty import cachedproperty
 from canonical.librarian.interfaces import ILibrarianClient
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch, IBuildFarmJobBehavior)
@@ -37,7 +36,7 @@ class BuildFarmJobBehaviorBase:
         self.buildfarmjob = buildfarmjob
         self._builder = None
 
-    @cachedproperty
+    @property
     def build(self):
         return self.buildfarmjob.build
 
