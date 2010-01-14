@@ -2215,11 +2215,10 @@ class ViewEmailAddress(AuthorizationBase):
                 self.obj.person.hide_email_addresses):
             return True
 
-        person = IPerson(account, None)
-        if person is None:
+        user = IPersonRoles(IPerson(account, None), None)
+        if user is None:
             return False
 
-        user = IPersonRoles(person)
         return (self.obj.person is not None and user.inTeam(self.obj.person)
                 or user.in_commercial_admin
                 or user.in_registry_experts

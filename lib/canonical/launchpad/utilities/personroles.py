@@ -26,7 +26,7 @@ class PersonRoles:
     def __getattr__(self, name):
         """Handle all in_* attributes."""
         prefix = 'in_'
-        errortext = "'PersonRoles' instance has no attribute '%s'" % name
+        errortext = "'PersonRoles' object has no attribute '%s'" % name
         if not name.startswith(prefix):
             raise AttributeError(errortext)
         attribute = name[len(prefix):]

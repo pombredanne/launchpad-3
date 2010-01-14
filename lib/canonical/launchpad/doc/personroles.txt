@@ -1,6 +1,6 @@
 = PersonRoles =
 
-To make the checking for certain roles that a person can have more convenient
+To make it more convenient to check which roles a person has,
 the IPersonRoles adapter is provided. It's main use is to easily check if a
 person is the member of a celebrity team or is a celebrity person. In
 addition, methods for common checks are provided, too.
@@ -8,14 +8,13 @@ addition, methods for common checks are provided, too.
 The IPersonRoles interface is closely tight to the ILaunchpadCelebrities
 interface. Any addition or removal of a person celebrity must be reflected in
 adding or removing the corresponding property in IPersonRoles. Luckily the
-celbrities.txt doctest includes a check for this and will give a useful
-information of which attribute needs to be added or removed. Both interfaces
+celebrities.txt doctest includes a check for this and will give useful
+information on which attribute needs to be added or removed. Both interfaces
 are found in the same file. There is no need to adapt the implementation
 class PersonRoles, though (thanks to __getattr__).
 
 PersonRoles is most prominent in AuthenticationBase in security.py. The user
-parameter to checkAuthenticated is a PersonRoles object (used to be a Person
-object).
+parameter to checkAuthenticated is a PersonRoles object (was a Person object).
 
 
 == The person object and the adapter ==
@@ -60,8 +59,8 @@ admin to do that.
     True
 
 To stay consistent, all attributes are prefixed with "in_" although the
-attributes names of ILaunchpadCelebrities are not all lexically correct
-plurals nor are all the attributes teams. This makes for odd sounding
+attribute names of ILaunchpadCelebrities are not all lexically correct
+plurals, nor are all the attributes teams. This makes for odd sounding
 attribute names in IPersonRoles.
 
     >>> print roles.in_admin
