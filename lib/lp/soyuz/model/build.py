@@ -69,6 +69,8 @@ class Build(BuildBase, SQLBase):
     _table = 'Build'
     _defaultOrder = 'id'
 
+    build_farm_job_type = BuildFarmJobType.PACKAGEBUILD
+
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
         notNull=True)
@@ -329,6 +331,17 @@ class Build(BuildBase, SQLBase):
             raise CannotBeRescored("Build cannot be rescored.")
 
         self.buildqueue_record.manualScore(score)
+
+    def makeJob(self):
+        """See `IBuildBase`."""
+        store = Store.of(self)
+        job = Job()
+        store.add(job)
+        specific_job = BuildPackageJob()
+        specific_job.build = self.id
+        specific_job.job = job.id
+        store.add(specific_job)
+        return specific_job
 
     def getEstimatedBuildStartTime(self):
         """See `IBuild`.
@@ -623,8 +636,8 @@ class Build(BuildBase, SQLBase):
             breaks=breaks, essential=essential, installedsize=installedsize,
             architecturespecific=architecturespecific)
 
-    def _estimateDuration(self):
-        """Estimate the build duration."""
+    def estimateDuration(self):
+        """See `IBuildBase`."""
         # Always include the primary archive when looking for
         # past build times (just in case that none can be found
         # in a PPA or copy archive).
@@ -673,24 +686,6 @@ class Build(BuildBase, SQLBase):
             estimated_duration = datetime.timedelta(minutes=estimate)
 
         return estimated_duration
-
-    def createBuildQueueEntry(self):
-        """See `IBuild`"""
-        store = Store.of(self)
-        job = Job()
-        store.add(job)
-        specific_job = BuildPackageJob()
-        specific_job.build = self.id
-        specific_job.job = job.id
-        store.add(specific_job)
-        duration_estimate = self._estimateDuration()
-        queue_entry = BuildQueue(
-            estimated_duration=duration_estimate,
-            job_type=BuildFarmJobType.PACKAGEBUILD,
-            job=job.id, processor=self.processor,
-            virtualized=self.is_virtualized)
-        store.add(queue_entry)
-        return queue_entry
 
     def notify(self, extra_info=None):
         """See `IBuildBase`.

@@ -79,6 +79,12 @@ class IBuildBase(Interface):
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
 
+    def createBuildQueueEntry():
+        """Create a BuildQueue entry for this build."""
+
+    def estimateDuration():
+        """Estimate the build duration."""
+
     def storeBuildInfo(librarian, slave_status):
         """Store available information for the build job.
 
@@ -88,3 +94,6 @@ class IBuildBase(Interface):
 
     def notify(extra_info=None):
         """Notify current build state to related people via email."""
+
+    def makeJob():
+        """Construct and return an `IBuildFarmJob` for this build."""

@@ -263,9 +263,6 @@ class IBuildView(IBuildBase):
         The binarypackagerelease will be attached to this specific build.
         """
 
-    def createBuildQueueEntry():
-        """Create a BuildQueue entry for this build record."""
-
     def getEstimatedBuildStartTime():
         """Get the estimated build start time for a pending build job.
 

@@ -8,6 +8,8 @@ __all__ = [
     'SourcePackageRecipeBuild',
     ]
 
+import datetime
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -20,6 +22,7 @@ from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 #
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.build import BuildStatus
@@ -34,6 +37,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
+
+    build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
 
     id = Int(primary=True)
 
@@ -119,6 +124,11 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         specific_job = getUtility(
             ISourcePackageRecipeBuildJobSource).new(self, job)
         return specific_job
+
+    def estimateDuration(self):
+        """See `IBuildBase`."""
+        # XXX: Do this properly.
+        return datetime.timedelta(minutes=2)
 
     def storeBuildInfo(self, librarian, slave_status):
         """See `IBuildBase`."""

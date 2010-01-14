@@ -19,6 +19,7 @@ from zope.schema import Choice, Datetime, Int, Object, Timedelta
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.person import IPerson
@@ -30,7 +31,7 @@ from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 
 
-class ISourcePackageRecipeBuild(Interface):
+class ISourcePackageRecipeBuild(IBuildBase):
     """A build of a source package."""
 
     id = Int(title=_("Identifier for this build."))
@@ -88,12 +89,6 @@ class ISourcePackageRecipeBuild(Interface):
         title=_("The recipe being built."))
 
     #manifest = Attribute(_("The manifest of the built package."))
-
-    def makeJob():
-        """Make an `IBuildSourcePackageFromRecipeJob`.
-
-        :return: An `IBuildSourcePackageFromRecipeJob`.
-        """
 
 
 class ISourcePackageRecipeBuildSource(Interface):

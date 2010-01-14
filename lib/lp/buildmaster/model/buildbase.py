@@ -16,6 +16,7 @@ import pytz
 import subprocess
 import time
 
+from storm.store import Store
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -25,6 +26,7 @@ from canonical.database.sqlbase import (
 from canonical.librarian.utils import copy_and_close
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.model.buildqueue import BuildQueue
 
 
 class BuildBase:
@@ -305,3 +307,16 @@ class BuildBase:
         # the time operations for duration.
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
+
+    def createBuildQueueEntry(self):
+        """See `IBuildBase`"""
+        specific_job = self.makeJob()
+        duration_estimate = self.estimateDuration()
+        queue_entry = BuildQueue(
+            estimated_duration=duration_estimate,
+            job_type=self.job_type,
+            job=specific_job.job, processor=specific_job.processor,
+            virtualized=specific_job.virtualized)
+        Store.of(self).add(queue_entry)
+        return queue_entry
+
