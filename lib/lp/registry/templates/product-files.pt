@@ -7,9 +7,7 @@
   i18n:domain="launchpad"
 >
 
-<h1 metal:fill-slot="heading">
-  Download project files
-</h1>
+<h1 metal:fill-slot="heading">Download project files</h1>
 
 <body>
 
@@ -148,7 +146,7 @@
         </p>
       </tal:releases>
 
-    </div>
+    </div> <!-- series -->
     <input tal:condition="python: has_edit and view.has_download_files"
         type="submit"
         name="delete_files"

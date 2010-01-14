@@ -1003,6 +1003,18 @@ class ProductDownloadFilesView(LaunchpadView,
         return releases
 
     @cachedproperty
+    def series_and_releases_batched(self):
+        """Get a batch of series and release
+
+        Each entry returned is a tuple of (series, release).
+        """
+        series_and_releases = set()
+        for series in self.product.series:
+            for release in series.releases:
+                series_and_releases.update((series, release))
+        return BatchNavigator(series_and_releases, self.request, size=5)
+
+    @cachedproperty
     def has_download_files(self):
         """Across series and releases do any download files exist?"""
         for series in self.product.series:
