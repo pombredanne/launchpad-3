@@ -62,7 +62,7 @@ class IBuildBase(Interface):
             description=_("A URL for the build log. None if there is no "
                           "log available.")))
 
-    buildqueue_record = Attribute("Corespondent BuildQueue record")
+    buildqueue_record = Attribute("Corresponding BuildQueue record")
 
     is_private = Attribute("Whether the build should be treated as private.")
 
