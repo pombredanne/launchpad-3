@@ -14,21 +14,18 @@ recipe_text = """# bzr-builder format 0.2 deb-version something
 http://bazaar.launchpad.net/~james-w/bzr-builder/trunk/
 merge packaging http://bazaar.launchpad.net/~james-w/bzr-builder/packaging"""
 
-try:
-    print proxy.build(
-        '1-2', 'sourcepackagerecipe', 'f2afc3c0507dffba181638d70ae55ac675679460',
-        {}, {'author_name': 'Steve',
-             'author_email': 'stevea@example.org',
-             'package_name': 'bzr-builder',
-             'suite': 'lucid',
-             'ogrecomponent': 'universe',
-             'purpose': 'puppies',
-             'recipe_data': recipe_text,
-             'archives': [
-                'deb http://nz.archive.ubuntu.com/ubuntu lucid main universe']})
-    status = proxy.status()
-    for filename, sha1 in status[3].iteritems():
-        print filename
-    proxy.clean()
-except Exception, e:
-    import pdb; pdb.set_trace()
+print proxy.build(
+    '1-2', 'sourcepackagerecipe', 'f2afc3c0507dffba181638d70ae55ac675679460',
+    {}, {'author_name': 'Steve',
+         'author_email': 'stevea@example.org',
+         'package_name': 'bzr-builder',
+         'suite': 'lucid',
+         'ogrecomponent': 'universe',
+         'purpose': 'puppies',
+         'recipe_data': recipe_text,
+         'archives': [
+            'deb http://nz.archive.ubuntu.com/ubuntu lucid main universe']})
+status = proxy.status()
+#for filename, sha1 in status[3].iteritems():
+#    print filename
+#proxy.clean()

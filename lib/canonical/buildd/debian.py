@@ -267,5 +267,11 @@ class DebianBuildManager(BuildManager):
 
 
 def get_build_path(build_id, *extra):
+    """Generate a path within the build directory.
+
+    :param build_id: the build id to use.
+    :param extra: the extra path segments within the build directory.
+    :return: the generated path.
+    """
     return os.path.join(
         os.environ["HOME"], "build-" + build_id, *extra)

@@ -1,6 +1,8 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""The manager class for building packages from recipes."""
+
 import os
 import re
 
@@ -17,6 +19,11 @@ RETCODE_FAILURE_BUILD_SOURCE_PACKAGE = 203
 
 
 def splat_file(path, contents):
+    """Write a string to the specified path.
+
+    :param path: The path to store the string in.
+    :param contents: The string to write to the file.
+    """
     file_obj = open(path, 'w')
     try:
         file_obj.write(contents)
@@ -25,11 +32,17 @@ def splat_file(path, contents):
 
 
 def get_chroot_path(build_id, *extra):
+    """Return a path within the chroot.
+
+    :param build_id: The build_id of the build.
+    :param extra: Additional path elements.
+    """
     return get_build_path(
         build_id, 'chroot-autobuild', os.environ['HOME'][1:], *extra)
 
 
 class SourcePackageRecipeBuildState(DebianBuildState):
+    """The set of states that a recipe build can be in."""
     BUILD_RECIPE = "BUILD_RECIPE"
 
 
@@ -39,13 +52,22 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
     initial_build_state = SourcePackageRecipeBuildState.BUILD_RECIPE
 
     def __init__(self, slave, buildid):
+        """Constructor.
+
+        :param slave: A build slave device.
+        :param buildid: The id of the build (a str).
+        """
         DebianBuildManager.__init__(self, slave, buildid)
         self.build_recipe_path = slave._config.get(
             "sourcepackagerecipemanager", "buildrecipepath")
 
     def initiate(self, files, chroot, extra_args):
-        """Initiate a build with a given set of files and chroot."""
+        """Initiate a build with a given set of files and chroot.
 
+        :param files: The files sent by the manager with the request.
+        :param chroot: The sha1sum of the chroot to use.
+        :param extra_args: A dict of extra arguments.
+        """
         self.recipe_data = extra_args['recipe_data']
         self.suite = extra_args['suite']
         self.component = extra_args['ogrecomponent']
@@ -57,8 +79,8 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
         super(SourcePackageRecipeBuildManager, self).initiate(
             files, chroot, extra_args)
 
-    def doRunSbuild(self):
-        """Run the sbuild process to build the package."""
+    def doRunBuild(self):
+        """Run the build process to build the source package."""
         currently_building = get_build_path(
             self._buildid, 'chroot-autobuild/CurrentlyBuilding')
         splat_file(currently_building,
@@ -110,11 +132,17 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
         self.doReapProcesses()
 
     def getChangesFilename(self):
+        """Return the path to the changes file."""
         work_path = get_build_path(self._buildid)
         for name in os.listdir(work_path):
             if name.endswith('_source.changes'):
                 return os.path.join(work_path, name)
 
     def gatherResults(self):
+        """Gather the results of the build and add them to the file cache.
+
+        The primary file we care about is the .changes file.
+        The manifest is also a useful record.
+        """
         DebianBuildManager.gatherResults(self)
         self._slave.addWaitingFile(get_build_path(self._buildid, 'manifest'))
