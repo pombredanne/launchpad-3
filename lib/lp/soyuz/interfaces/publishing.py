@@ -29,7 +29,7 @@ __all__ = [
     'name_priority_map',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, List, TextLine, Text
+from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -534,20 +534,6 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             title=_("Source Package Version"),
             required=False, readonly=True))
 
-    source_file_urls = exported(
-        List(
-            value_type=Text(),
-            title=_("Source File URLs"),
-            description=_("URL list for this source publication's "
-                          "files from the source upload.")))
-
-    binary_file_urls = exported(
-        List(
-            value_type=Text(),
-            title=_("Binary File URLs"),
-            description=_("URL list for this source publication's "
-                          "files resulting from the build.")))
-
     package_creator = exported(
         Reference(
             IPerson,
@@ -689,6 +675,21 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
                     'builds': [build1, build2]
                 }
         """
+
+    @export_read_operation()
+    def sourceFileUrls():
+        """URLs for this source publication's uploaded source files.
+
+        :return: A collection of URLs for this source.
+        """
+
+    @export_read_operation()
+    def binaryFileUrls():
+        """URLs for this source publication's binary files.
+
+        :return: A collection of URLs for this source.
+        """
+
 
 #
 # Binary package publishing
