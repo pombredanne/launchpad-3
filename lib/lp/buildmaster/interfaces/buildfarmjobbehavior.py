@@ -12,7 +12,7 @@ __all__ = [
     'IBuildFarmJobBehavior',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import Interface
 
 
 class BuildBehaviorMismatch(Exception):
@@ -23,9 +23,6 @@ class BuildBehaviorMismatch(Exception):
 
 
 class IBuildFarmJobBehavior(Interface):
-
-    status = Attribute(
-        "Generated status information for this particular job.")
 
     def setBuilder(builder):
         """Sets the associated builder reference for this instance."""
