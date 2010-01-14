@@ -448,15 +448,17 @@ class Builder(SQLBase):
 
         query_tables = set(('buildqueue', 'job'))
         general_query = """
-            SELECT buildqueue.id FROM %%s WHERE
-            buildqueue.job = job.id
+            SELECT buildqueue.id FROM %%s
+            WHERE
+                buildqueue.job = job.id
                 AND job.status = %s
-            AND (
-                (buildqueue.processor = %s
-                 AND buildqueue.virtualized = %s)
-             OR (buildqueue.processor IS NULL
-                 AND buildqueue.virtualized IS NULL))
-            AND buildqueue.builder IS NULL
+                AND (
+                    (buildqueue.processor = %s
+                     AND buildqueue.virtualized = %s)
+                   OR
+                    (buildqueue.processor IS NULL
+                     AND buildqueue.virtualized IS NULL))
+                AND buildqueue.builder IS NULL
         """ % sqlvalues(JobStatus.WAITING, self.processor, self.virtualized)
         order_clause = " ORDER BY buildqueue.lastscore DESC, buildqueue.id"
 
@@ -464,13 +466,17 @@ class Builder(SQLBase):
         extra_queries = []
         job_classes = specific_job_classes()
         for job_class in job_classes.values():
-            tables, query = job_class.extraCandidateSelectionCriteria(
+            tables, query = job_class.addCandidateSelectionCriteria(
                 self.processor, self.virtualized)
             if query == '':
                 # This job class does not need to refine candidate jobs
                 # further.
                 continue
-            query_tables = query_tables.union(set(tables))
+
+            # Table names are case-insensitive in SQL. All table names are in
+            # lower case in order to avoid duplicates in the FROM clause.
+            query_tables = query_tables.union(
+                set(table.lower() for table in tables))
             extra_queries.append(query)
         general_query = general_query % ', '.join(query_tables)
         query = ' AND '.join([general_query] + extra_queries) + order_clause
@@ -481,7 +487,9 @@ class Builder(SQLBase):
         for (candidate_id,) in candidate_jobs:
             candidate = getUtility(IBuildQueueSet).get(candidate_id)
             job_class = job_classes[candidate.job_type]
-            if job_class.checkCandidate(candidate, logger) == True:
+            candidate_approved = job_class.postprocessCandidate(
+                candidate, logger)
+            if candidate_approved:
                 return candidate
 
         return None

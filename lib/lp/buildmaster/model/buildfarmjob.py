@@ -51,11 +51,11 @@ class BuildFarmJob:
         return None
 
     @staticmethod
-    def extraCandidateSelectionCriteria(processor, virtualized):
+    def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmCandidateJobSelection`."""
         return ([], '')
 
     @staticmethod
-    def checkCandidate(job, logger):
+    def postprocessCandidate(job, logger):
         """See `IBuildFarmCandidateJobSelection`."""
         return True

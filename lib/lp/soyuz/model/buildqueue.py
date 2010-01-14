@@ -8,7 +8,7 @@ __metaclass__ = type
 __all__ = [
     'BuildQueue',
     'BuildQueueSet',
-    'specific_job_classes'
+    'specific_job_classes',
     ]
 
 import logging

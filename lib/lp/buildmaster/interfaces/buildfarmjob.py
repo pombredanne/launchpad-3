@@ -144,9 +144,11 @@ class IBuildFarmCandidateJobSelection(Interface):
     this interface.
     """
 
-    def extraCandidateSelectionCriteria(processor, virtualized):
-        """A 2-tuple with extra tables and clauses to be used to narrow down
-        the list of candidate jobs.
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """Provide extra clauses that will refine the candidate job selection.
+
+        Return a 2-tuple with extra tables and clauses to be used to
+        narrow down the list of candidate jobs.
 
         Example:
             (('Build', 'BuildPackageJob'),
@@ -161,7 +163,7 @@ class IBuildFarmCandidateJobSelection(Interface):
             the combined query for `extra_query` to work. 
         """
 
-    def checkCandidate(job, logger):
+    def postprocessCandidate(job, logger):
         """True if the candidate job is fine and should be dispatched
         to a builder, False otherwise.
         

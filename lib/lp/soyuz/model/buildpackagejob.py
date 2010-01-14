@@ -214,7 +214,7 @@ class BuildPackageJob(Storm, BuildFarmJob):
         return self.build.is_virtualized
 
     @staticmethod
-    def extraCandidateSelectionCriteria(processor, virtualized):
+    def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmCandidateJobSelection`."""
         # Avoiding circular import.
         from lp.buildmaster.model.builder import Builder
@@ -284,7 +284,7 @@ class BuildPackageJob(Storm, BuildFarmJob):
         return(extra_tables, extra_clauses)
 
     @staticmethod
-    def checkCandidate(job, logger):
+    def postprocessCandidate(job, logger):
         """See `IBuildFarmCandidateJobSelection`."""
         # Mark build records targeted to old source versions as SUPERSEDED
         # and build records target to SECURITY pocket as FAILEDTOBUILD.
