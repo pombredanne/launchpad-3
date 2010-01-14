@@ -72,7 +72,7 @@ class BinaryPackageBuildManager(DebianBuildManager):
         super(BinaryPackageBuildManager, self).initiate(
             files, chroot, extra_args)
 
-    def doRunSbuild(self):
+    def doRunBuild(self):
         """Run the sbuild process to build the package."""
         args = ["sbuild-package", self._buildid ]
         if self.suite:

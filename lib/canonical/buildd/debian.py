@@ -43,6 +43,10 @@ class DebianBuildManager(BuildManager):
         slave.emptyLog()
         self.alreadyfailed = False
 
+    @property
+    def initial_build_state(self):
+        raise NotImplementedError()
+
     def initiate(self, files, chroot, extra_args):
         """Initiate a build with a given set of files and chroot."""
 
@@ -80,6 +84,13 @@ class DebianBuildManager(BuildManager):
         """Perform the chroot upgrade."""
         self.runSubProcess(self._updatepath,
                            ["update-debian-chroot", self._buildid])
+
+    def doRunBuild(self):
+        """Run the main build process.
+
+        Subclasses must override this.
+        """
+        raise NotImplementedError()
 
     def doReapProcesses(self):
         """Reap any processes left lying around in the chroot."""
@@ -226,7 +237,7 @@ class DebianBuildManager(BuildManager):
             self.doReapProcesses()
         else:
             self._state = self.initial_build_state
-            self.doRunSbuild()
+            self.doRunBuild()
 
     def iterate_REAP(self, success):
         """Finished reaping processes; ignore error returns."""
