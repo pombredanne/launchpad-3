@@ -1,3 +1,9 @@
+launchpad-buildd (58~1) karmic; urgency=low
+
+  * Misc fixes to match APIs.
+
+ -- Aaron Bentley <aaron@aaronbentley.com>  Fri, 15 Jan 2010 10:03:07 +1300
+
 launchpad-buildd (58~0) karmic; urgency=low
 
   * Include buildrecipe.py.
