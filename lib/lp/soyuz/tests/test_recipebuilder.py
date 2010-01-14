@@ -89,6 +89,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
         # _extraBuildArgs will return a sane set of additional arguments
         job = self.makeJob()
         distroarchseries = job.build.distroseries.architectures[0]
+        distroname = job.build.archive.distribution.name
         self.assertEquals({
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
@@ -99,9 +100,9 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
                           'lp://dev/~joe/someapp/pkg\n',
            'archives': [
-                u'deb http://ftpmaster.internal/generic-string24 mydistro%s '
-                u'main restricted universe multiverse' % suite for suite in 
-                    ("", "-security", "-updates")
+                u'deb http://ftpmaster.internal/%s mydistro%s '
+                u'main restricted universe multiverse' % (distroname, suite)
+                    for suite in ("", "-security", "-updates")
                 ]
             }, job._extraBuildArgs(distroarchseries))
 
