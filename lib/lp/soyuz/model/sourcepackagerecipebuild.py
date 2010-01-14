@@ -8,6 +8,8 @@ __all__ = [
     'SourcePackageRecipeBuild',
     ]
 
+import datetime
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -19,6 +21,8 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.model.buildbase import BuildBase
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
@@ -26,12 +30,14 @@ from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 
 
-class SourcePackageRecipeBuild(Storm):
+class SourcePackageRecipeBuild(BuildBase, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
 
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
+
+    build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
 
     id = Int(primary=True)
 
@@ -57,7 +63,8 @@ class SourcePackageRecipeBuild(Storm):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
-    sourcepackagename = Reference(sourcepackagename_id, 'SourcePackageName.id')
+    sourcepackagename = Reference(
+        sourcepackagename_id, 'SourcePackageName.id')
 
     recipe_id = Int(name='recipe', allow_none=False)
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
@@ -86,7 +93,8 @@ class SourcePackageRecipeBuild(Storm):
         self.sourcepackagename = sourcepackagename
 
     @classmethod
-    def new(cls, sourcepackage, recipe, requester, archive, date_created=None):
+    def new(cls, sourcepackage, recipe, requester, archive, 
+            date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         if date_created is None:
@@ -101,6 +109,12 @@ class SourcePackageRecipeBuild(Storm):
         store.add(spbuild)
         return spbuild
 
+    @classmethod
+    def getById(cls, build_id):
+        """See `ISourcePackageRecipeBuildSource`."""
+        store = IMasterStore(SourcePackageRecipeBuild)
+        return store.find(cls, cls.id == build_id).one()
+
     def makeJob(self):
         """See `ISourcePackageRecipeBuildJob`."""
         store = Store.of(self)
@@ -109,6 +123,11 @@ class SourcePackageRecipeBuild(Storm):
         specific_job = getUtility(
             ISourcePackageRecipeBuildJobSource).new(self, job)
         return specific_job
+
+    def estimateDuration(self):
+        """See `IBuildBase`."""
+        # XXX: Do this properly.
+        return datetime.timedelta(minutes=2)
 
 
 class SourcePackageRecipeBuildJob(Storm):
@@ -123,9 +142,9 @@ class SourcePackageRecipeBuildJob(Storm):
     job_id = Int(name='job', allow_none=False)
     job = Reference(job_id, 'Job.id')
 
-    source_package_build_id = Int(name='build', allow_none=False)
-    source_package_build = Reference(
-        source_package_build_id, 'SourcePackageRecipeBuild.id')
+    build_id = Int(name='sourcepackage_recipe_build', allow_none=False)
+    build = Reference(
+        build_id, 'SourcePackageRecipeBuild.id')
 
     processor = None
     virtualized = True
@@ -144,6 +163,10 @@ class SourcePackageRecipeBuildJob(Storm):
         raise NotImplementedError()
 
     def getName(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError()
+
+    def getTitle(self):
         """See `IBuildFarmJob`."""
         raise NotImplementedError()
 

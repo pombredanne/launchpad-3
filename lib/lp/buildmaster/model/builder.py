@@ -41,24 +41,23 @@ from canonical.database.sqlbase import SQLBase, sqlvalues
 # These dependencies on soyuz will be removed when getBuildRecords()
 # is moved, as well as when the generalisation of findBuildCandidate()
 # is completed.
-from lp.soyuz.model.buildqueue import BuildQueue
+from lp.soyuz.model.buildqueue import BuildQueue, specific_job_classes
 from lp.registry.interfaces.person import validate_public_person
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.helpers import filenameToContentType
+from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.distroarchseries import IDistroArchSeriesSet
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
-from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
     CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from lp.soyuz.interfaces.publishing import (
-    PackagePublishingStatus)
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp import urlappend
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.lazr.utils import safe_hasattr
 from canonical.librarian.utils import copy_and_close
 
@@ -315,7 +314,7 @@ class Builder(SQLBase):
                 build_queue_item.id, logger)
         except BuildSlaveFailure, e:
             logger.debug("Disabling builder: %s" % self.url, exc_info=1)
-            self.failbuilder(
+            self.failBuilder(
                 "Exception (%s) when setting up to new job" % (e,))
         except CannotFetchFile, e:
             message = """Slave '%s' (%s) was unable to fetch file.
@@ -331,26 +330,13 @@ class Builder(SQLBase):
             self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
-
-    # XXX cprov 2009-06-24: This code does not belong to the content
-    # class domain. Here we cannot make sensible decisions about what
-    # we are allowed to present according to the request user. Then
-    # bad things happens, see bug #391721.
-
-    @property
-    def status(self):
+    def failBuilder(self, reason):
         """See IBuilder"""
-        if not self.builderok:
-            if self.failnotes is not None:
-                return self.failnotes
-            return 'Disabled'
-
-        # If the builder is OK then we delegate the status
-        # to our current behavior.
-        return self.current_build_behavior.status
-
-    def failbuilder(self, reason):
-        """See IBuilder"""
+        # XXX cprov 2007-04-17: ideally we should be able to notify the
+        # the buildd-admins about FAILED builders. One alternative is to
+        # make the buildd_cronscript (slave-scanner, in this case) to exit
+        # with error, for those cases buildd-sequencer automatically sends
+        # an email to admins with the script output.
         self.builderok = False
         self.failnotes = reason
 
@@ -378,6 +364,10 @@ class Builder(SQLBase):
     def slaveStatusSentence(self):
         """See IBuilder."""
         return self.slave.status()
+
+    def updateBuild(self, queueItem):
+        """See `IBuilder`."""
+        self.current_build_behavior.updateBuild(queueItem)
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """See IBuilder."""
@@ -427,99 +417,6 @@ class Builder(SQLBase):
             return False
         return True
 
-    # XXX cprov 20071116: It should become part of the public
-    # _findBuildCandidate once we start to detect superseded builds
-    # at build creation time.
-    def _findBinaryBuildCandidate(self):
-        """Return the highest priority build candidate for this builder.
-
-        Returns a pending IBuildQueue record queued for this builder
-        processorfamily with the highest lastscore or None if there
-        is no one available.
-        """
-        # If a private build does not yet have its source published then
-        # we temporarily skip it because we want to wait for the publisher
-        # to place the source in the archive, which is where builders
-        # download the source from in the case of private builds (because
-        # it's a secure location).
-        private_statuses = (
-            PackagePublishingStatus.PUBLISHED,
-            PackagePublishingStatus.SUPERSEDED,
-            PackagePublishingStatus.DELETED,
-            )
-        clauses = ["""
-            ((archive.private IS TRUE AND
-              EXISTS (
-                  SELECT SourcePackagePublishingHistory.id
-                  FROM SourcePackagePublishingHistory
-                  WHERE
-                      SourcePackagePublishingHistory.distroseries =
-                         DistroArchSeries.distroseries AND
-                      SourcePackagePublishingHistory.sourcepackagerelease =
-                         Build.sourcepackagerelease AND
-                      SourcePackagePublishingHistory.archive = Archive.id AND
-                      SourcePackagePublishingHistory.status IN %s))
-              OR
-              archive.private IS FALSE) AND
-            buildqueue.job = buildpackagejob.job AND
-            buildpackagejob.build = build.id AND
-            build.distroarchseries = distroarchseries.id AND
-            build.archive = archive.id AND
-            archive.enabled = TRUE AND
-            build.buildstate = %s AND
-            distroarchseries.processorfamily = %s AND
-            buildqueue.builder IS NULL
-        """ % sqlvalues(
-            private_statuses, BuildStatus.NEEDSBUILD, self.processor.family)]
-
-        clauseTables = [
-            'Build', 'BuildPackageJob', 'DistroArchSeries', 'Archive']
-
-        clauses.append("""
-            archive.require_virtualized = %s
-        """ % sqlvalues(self.virtualized))
-
-        # Ensure that if BUILDING builds exist for the same
-        # public ppa archive and architecture and another would not
-        # leave at least 20% of them free, then we don't consider
-        # another as a candidate.
-        #
-        # This clause selects the count of currently building builds on
-        # the arch in question, then adds one to that total before
-        # deriving a percentage of the total available builders on that
-        # arch.  It then makes sure that percentage is under 80.
-        #
-        # The extra clause is only used if the number of available
-        # builders is greater than one, or nothing would get dispatched
-        # at all.
-        num_arch_builders = Builder.selectBy(
-            processor=self.processor, manual=False, builderok=True).count()
-        if num_arch_builders > 1:
-            clauses.append("""
-                EXISTS (SELECT true
-                WHERE ((
-                    SELECT COUNT(build2.id)
-                    FROM Build build2, DistroArchSeries distroarchseries2
-                    WHERE
-                        build2.archive = build.archive AND
-                        archive.purpose = %s AND
-                        archive.private IS FALSE AND
-                        build2.distroarchseries = distroarchseries2.id AND
-                        distroarchseries2.processorfamily = %s AND
-                        build2.buildstate = %s) + 1::numeric)
-                    *100 / %s
-                    < 80)
-            """ % sqlvalues(
-                ArchivePurpose.PPA, self.processor.family,
-                BuildStatus.BUILDING, num_arch_builders))
-
-        query = " AND ".join(clauses)
-        candidate = BuildQueue.selectFirst(
-            query, clauseTables=clauseTables,
-            orderBy=['-buildqueue.lastscore', 'build.id'])
-
-        return candidate
-
     def _getSlaveScannerLogger(self):
         """Return the logger instance from buildd-slave-scanner.py."""
         # XXX cprov 20071120: Ideally the Launchpad logging system
@@ -533,52 +430,59 @@ class Builder(SQLBase):
         """Find a candidate job for dispatch to an idle buildd slave.
 
         The pending BuildQueue item with the highest score for this builder
-        ProcessorFamily or None if no candidate is available.
+        or None if no candidate is available.
 
-        For public PPA builds, subsequent builds for a given ppa and
-        architecture will not be returned until the current build for
-        the ppa and architecture is finished.
-
-        :return: A binary build candidate job.
+        :return: A candidate job.
         """
-
         logger = self._getSlaveScannerLogger()
-        candidate = self._findBinaryBuildCandidate()
+        candidate = None
 
-        # Mark build records targeted to old source versions as SUPERSEDED
-        # and build records target to SECURITY pocket as FAILEDTOBUILD.
-        # Builds in those situation should not be built because they will
-        # be wasting build-time, the former case already has a newer source
-        # and the latter could not be built in DAK.
-        build_set = getUtility(IBuildSet)
-        while candidate is not None:
-            build = build_set.getByQueueEntry(candidate)
-            if build.pocket == PackagePublishingPocket.SECURITY:
-                # We never build anything in the security pocket.
-                logger.debug(
-                    "Build %s FAILEDTOBUILD, queue item %s REMOVED"
-                    % (build.id, candidate.id))
-                build.buildstate = BuildStatus.FAILEDTOBUILD
-                candidate.destroySelf()
-                candidate = self._findBinaryBuildCandidate()
+        query_tables = set(('buildqueue', 'job'))
+        general_query = """
+            SELECT buildqueue.id FROM %%s
+            WHERE
+                buildqueue.job = job.id
+                AND job.status = %s
+                AND (
+                    (buildqueue.processor = %s
+                     AND buildqueue.virtualized = %s)
+                   OR
+                    (buildqueue.processor IS NULL
+                     AND buildqueue.virtualized IS NULL))
+                AND buildqueue.builder IS NULL
+        """ % sqlvalues(JobStatus.WAITING, self.processor, self.virtualized)
+        order_clause = " ORDER BY buildqueue.lastscore DESC, buildqueue.id"
+
+        extra_tables = set()
+        extra_queries = []
+        job_classes = specific_job_classes()
+        for job_class in job_classes.values():
+            tables, query = job_class.addCandidateSelectionCriteria(
+                self.processor, self.virtualized)
+            if query == '':
+                # This job class does not need to refine candidate jobs
+                # further.
                 continue
 
-            publication = build.current_source_publication
+            # Table names are case-insensitive in SQL. All table names are in
+            # lower case in order to avoid duplicates in the FROM clause.
+            query_tables = query_tables.union(
+                set(table.lower() for table in tables))
+            extra_queries.append(query)
+        general_query = general_query % ', '.join(query_tables)
+        query = ' AND '.join([general_query] + extra_queries) + order_clause
 
-            if publication is None:
-                # The build should be superseded if it no longer has a
-                # current publishing record.
-                logger.debug(
-                    "Build %s SUPERSEDED, queue item %s REMOVED"
-                    % (build.id, candidate.id))
-                build.buildstate = BuildStatus.SUPERSEDED
-                candidate.destroySelf()
-                candidate = self._findBinaryBuildCandidate()
-                continue
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        candidate_jobs = store.execute(query).get_all()
 
-            return candidate
+        for (candidate_id,) in candidate_jobs:
+            candidate = getUtility(IBuildQueueSet).get(candidate_id)
+            job_class = job_classes[candidate.job_type]
+            candidate_approved = job_class.postprocessCandidate(
+                candidate, logger)
+            if candidate_approved:
+                return candidate
 
-        # No candidate was found.
         return None
 
     def _dispatchBuildCandidate(self, candidate):
@@ -620,7 +524,7 @@ class Builder(SQLBase):
             logger.warn(
                 "Disabling builder: %s -- %s" % (self.url, error_message),
                 exc_info=True)
-            self.failbuilder(error_message)
+            self.failBuilder(error_message)
 
     def findAndStartJob(self, buildd_slave=None):
         """See IBuilder."""

@@ -12,6 +12,7 @@ from zope.component import getUtility
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.soyuz.interfaces.buildqueue import IBuildQueue
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuild,
     ISourcePackageRecipeBuildSource)
@@ -47,6 +48,14 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         spb = self.makeSourcePackageRecipeBuild()
         job = spb.makeJob()
         self.assertProvides(job, ISourcePackageRecipeBuildJob)
+
+    def test_createBuildQueueEntry(self):
+        spb = self.makeSourcePackageRecipeBuild()
+        bq = spb.createBuildQueueEntry()
+        self.assertProvides(bq, IBuildQueue)
+        self.assertProvides(bq.specific_job, ISourcePackageRecipeBuildJob)
+        self.assertEqual(True, bq.virtualized)
+        self.assertIs(None, bq.processor)
 
 
 def test_suite():

@@ -68,10 +68,6 @@ class IBuildQueue(Interface):
         title=_('The builder behavior required to run this job.'),
         required=False, readonly=True)
 
-    specific_job_classes = Field(
-        title=_('Job classes that may run on the build farm.'),
-        required=True, readonly=True)
-
     estimated_duration = Timedelta(
         title=_("Estimated Job Duration"), required=True,
         description=_("Estimated job duration interval."))
@@ -93,31 +89,6 @@ class IBuildQueue(Interface):
 
     def reset():
         """Reset this job, so it can be re-dispatched."""
-
-    def updateBuild_IDLE(build_id, build_status, logtail,
-                         filemap, dependencies, logger):
-        """Somehow the builder forgot about the build job.
-
-        Log this and reset the record.
-        """
-
-    def updateBuild_BUILDING(build_id, build_status, logtail, filemap,
-                             dependencies, logger):
-        """Build still building, collect the logtail"""
-
-    def updateBuild_ABORTING(buildid, build_status, logtail, filemap,
-                             dependencies, logger):
-        """Build was ABORTED.
-
-        Master-side should wait until the slave finish the process correctly.
-        """
-
-    def updateBuild_ABORTED(buildid, build_status, logtail, filemap,
-                            dependencies, logger):
-        """ABORTING process has successfully terminated.
-
-        Clean the builder for another jobs.
-        """
 
     specific_job = Reference(
         IBuildFarmJob, title=_("Job"),

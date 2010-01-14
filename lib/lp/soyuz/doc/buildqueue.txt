@@ -113,7 +113,7 @@ for the item.
 The sampledata contains an active job, being built by the 'bob'
 builder.
 
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
 
     >>> bob = getUtility(IBuilderSet)['bob']
     >>> job = bob.currentjob

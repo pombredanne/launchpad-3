@@ -19,6 +19,7 @@ from zope.schema import Choice, Datetime, Int, Object, Timedelta
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.person import IPerson
@@ -30,7 +31,7 @@ from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 
 
-class ISourcePackageRecipeBuild(Interface):
+class ISourcePackageRecipeBuild(IBuildBase):
     """A build of a source package."""
 
     id = Int(title=_("Identifier for this build."))
@@ -87,13 +88,6 @@ class ISourcePackageRecipeBuild(Interface):
         schema=ISourcePackageRecipe, required=True,
         title=_("The recipe being built."))
 
-    def makeJob():
-        """Make an `IBuildSourcePackageFromRecipeJob`.
-
-        :return: An `IBuildSourcePackageFromRecipeJob`.
-        """
-
-
 class ISourcePackageRecipeBuildSource(Interface):
     """A utility of this interface be used to create source package builds."""
 
@@ -105,7 +99,14 @@ class ISourcePackageRecipeBuildSource(Interface):
         :param requester: The `IPerson` who wants to build it.
         :param date_created: The date this build record was created. If not
             provided, defaults to now.
-        :return: `ISourcePackageBuild`.
+        :return: `ISourcePackageRecipeBuild`.
+        """
+
+    def getById(build_id):
+        """Return the `ISourcePackageRecipeBuild` for the given build id.
+
+        :param build_id: The id of the build to return.
+        :return: `ISourcePackageRecipeBuild`
         """
 
 
