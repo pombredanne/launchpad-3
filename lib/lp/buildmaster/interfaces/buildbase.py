@@ -51,6 +51,7 @@ class IBuildBase(Interface):
         description=_("Build duration interval, calculated when the "
                       "build result gets collected."))
 
+    # XXX: jml 2010-01-12: Rename to build_log.
     buildlog = Object(
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the entire buildlog."))

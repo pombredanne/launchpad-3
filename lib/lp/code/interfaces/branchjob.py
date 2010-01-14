@@ -13,6 +13,8 @@ __all__ = [
     'IBranchJob',
     'IBranchDiffJob',
     'IBranchDiffJobSource',
+    'IBranchScanJob',
+    'IBranchScanJobSource',
     'IBranchUpgradeJob',
     'IBranchUpgradeJobSource',
     'IReclaimBranchSpaceJob',
@@ -72,6 +74,25 @@ class IBranchDiffJobSource(Interface):
         :param from_revision_spec: The revision spec to diff from.
         :param to_revision_spec: The revision spec to diff to.
         """
+
+
+class IBranchScanJob(Interface):
+    """ A job to scan branches."""
+
+    def run():
+        """Scan a branch for new revisions."""
+
+
+class IBranchScanJobSource(Interface):
+
+    def create(branch):
+        """Scan a branch for new revisions.
+
+        :param branch: The database branch to upgrade.
+        """
+
+    def iterReady():
+        """Iterate through all IBranchScanJobs."""
 
 
 class IBranchUpgradeJob(IRunnableJob):

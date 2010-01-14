@@ -22,6 +22,7 @@ from email.MIMEMultipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
 import os.path
+from textwrap import dedent
 
 import pytz
 from storm.store import Store
@@ -40,6 +41,10 @@ from canonical.database.sqlbase import flush_database_updates
 from lp.soyuz.adapters.packagelocation import PackageLocation
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.interfaces.section import ISectionSet
+from lp.soyuz.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource,
+    )
+from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipeSource
 from canonical.launchpad.database.account import Account
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.message import Message, MessageChunk
@@ -76,7 +81,7 @@ from lp.blueprints.interfaces.specification import (
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translator import ITranslatorSet
-from lp.translations.interfaces.translationsperson import ITranslationsPerson 
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -224,6 +229,12 @@ class LaunchpadObjectFactory(ObjectFactory):
     When this is done, the returned object should have unique references
     for any other required objects.
     """
+
+    # Used for makeBuilderRecipe.
+    MINIMAL_RECIPE_TEXT = dedent(u'''\
+        # bzr-builder format 0.2 deb-version 1.0
+        %s
+        ''')
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
         name=None, enabled=True):
@@ -511,7 +522,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             group = self.makeTranslationGroup()
         if person is None:
             person = self.makePerson()
-        ITranslationsPerson(person).translations_relicensing_agreement = license
+        tx_person = ITranslationsPerson(person)
+        tx_person.translations_relicensing_agreement = license
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(
@@ -946,7 +958,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             author = self.getUniqueString('author')
         for index in range(count):
             revision = revision_set.new(
-                revision_id = self.getUniqueString('revision-id'),
+                revision_id=self.getUniqueString('revision-id'),
                 log_body=self.getUniqueString('log-body'),
                 revision_date=date_generator.next(),
                 revision_author=author,
@@ -1216,14 +1228,16 @@ class LaunchpadObjectFactory(ObjectFactory):
 
     def makeCodeImport(self, svn_branch_url=None, cvs_root=None,
                        cvs_module=None, product=None, branch_name=None,
-                       git_repo_url=None, registrant=None, rcs_type=None):
+                       git_repo_url=None, hg_repo_url=None, registrant=None,
+                       rcs_type=None):
         """Create and return a new, arbitrary code import.
 
         The type of code import will be inferred from the source details
         passed in, but defaults to a Subversion import from an arbitrary
         unique URL.
         """
-        if svn_branch_url is cvs_root is cvs_module is git_repo_url is None:
+        if (svn_branch_url is cvs_root is cvs_module is git_repo_url is hg_repo_url
+            is None):
             svn_branch_url = self.getUniqueURL()
 
         if product is None:
@@ -1242,13 +1256,18 @@ class LaunchpadObjectFactory(ObjectFactory):
                                     RevisionControlSystems.BZR_SVN)
             return code_import_set.new(
                 registrant, product, branch_name, rcs_type=rcs_type,
-                svn_branch_url=svn_branch_url)
+                url=svn_branch_url)
         elif git_repo_url is not None:
             assert rcs_type in (None, RevisionControlSystems.GIT)
             return code_import_set.new(
                 registrant, product, branch_name,
                 rcs_type=RevisionControlSystems.GIT,
-                git_repo_url=git_repo_url)
+                url=git_repo_url)
+        elif hg_repo_url is not None:
+            return code_import_set.new(
+                registrant, product, branch_name,
+                rcs_type=RevisionControlSystems.HG,
+                url=hg_repo_url)
         else:
             assert rcs_type in (None, RevisionControlSystems.CVS)
             return code_import_set.new(
@@ -1317,31 +1336,29 @@ class LaunchpadObjectFactory(ObjectFactory):
             result_status, date_started, date_finished)
 
     def makeCodeImportSourceDetails(self, branch_id=None, rcstype=None,
-                                    svn_branch_url=None, cvs_root=None,
-                                    cvs_module=None, git_repo_url=None):
+                                    url=None, cvs_root=None, cvs_module=None):
         if branch_id is None:
             branch_id = self.getUniqueInteger()
         if rcstype is None:
             rcstype = 'svn'
-        if rcstype in ['svn', 'bzr-svn']:
-            assert cvs_root is cvs_module is git_repo_url is None
-            if svn_branch_url is None:
-                svn_branch_url = self.getUniqueURL()
+        if rcstype in ['svn', 'bzr-svn', 'hg']:
+            assert cvs_root is cvs_module is None
+            if url is None:
+                url = self.getUniqueURL()
         elif rcstype == 'cvs':
-            assert svn_branch_url is git_repo_url is None
+            assert url is None
             if cvs_root is None:
                 cvs_root = self.getUniqueString()
             if cvs_module is None:
                 cvs_module = self.getUniqueString()
         elif rcstype == 'git':
-            assert cvs_root is cvs_module is svn_branch_url is None
-            if git_repo_url is None:
-                git_repo_url = self.getUniqueURL(scheme='git')
+            assert cvs_root is cvs_module is None
+            if url is None:
+                url = self.getUniqueURL(scheme='git')
         else:
             raise AssertionError("Unknown rcstype %r." % rcstype)
         return CodeImportSourceDetails(
-            branch_id, rcstype, svn_branch_url, cvs_root, cvs_module,
-            git_repo_url)
+            branch_id, rcstype, url, cvs_root, cvs_module)
 
     def makeCodeReviewComment(self, sender=None, subject=None, body=None,
                               vote=None, vote_tag=None, parent=None,
@@ -1551,6 +1568,58 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IBuilderSet).new(
             processor, url, name, title, description, owner, active,
             virtualized, vm_host)
+
+    def makeRecipe(self, *branches):
+        """Make a builder recipe that references `branches`.
+
+        If no branches are passed, return a recipe text that references an
+        arbitrary branch.
+        """
+        from bzrlib.plugins.builder.recipe import RecipeParser
+        if len(branches) == 0:
+            branches = (self.makeAnyBranch(),)
+        base_branch = branches[0]
+        other_branches = branches[1:]
+        text = self.MINIMAL_RECIPE_TEXT % base_branch.bzr_identity
+        for i, branch in enumerate(other_branches):
+            text += 'merge dummy-%s %s\n' % (i, branch.bzr_identity)
+        parser = RecipeParser(text)
+        return parser.parse()
+
+    def makeSourcePackageRecipe(self, registrant=None, owner=None,
+                                distroseries=None, sourcepackagename=None,
+                                name=None, *branches):
+        """Make a `SourcePackageRecipe`."""
+        if registrant is None:
+            registrant = self.makePerson()
+        if owner is None:
+            owner = self.makePerson()
+        if distroseries is None:
+            distroseries = self.makeDistroSeries()
+        if sourcepackagename is None:
+            sourcepackagename = self.makeSourcePackageName()
+        if name is None:
+            name = self.getUniqueString().decode('utf8')
+        recipe = self.makeRecipe(*branches)
+        return getUtility(ISourcePackageRecipeSource).new(
+            registrant, owner, distroseries, sourcepackagename, name, recipe)
+
+    def makeSourcePackageRecipeBuild(self, sourcepackage=None, recipe=None,
+                                     requester=None, archive=None):
+        """Make a new SourcePackageRecipeBuild."""
+        if sourcepackage is None:
+            sourcepackage = self.makeSourcePackage()
+        if recipe is None:
+            recipe = self.makeSourcePackageRecipe()
+        if requester is None:
+            requester = self.makePerson()
+        if archive is None:
+            archive = self.makeArchive()
+        return getUtility(ISourcePackageRecipeBuildSource).new(
+            sourcepackage=sourcepackage,
+            recipe=recipe,
+            archive=archive,
+            requester=requester)
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
