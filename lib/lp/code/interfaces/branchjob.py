@@ -76,7 +76,7 @@ class IBranchDiffJobSource(Interface):
         """
 
 
-class IBranchScanJob(Interface):
+class IBranchScanJob(IRunnableJob):
     """ A job to scan branches."""
 
     def run():
