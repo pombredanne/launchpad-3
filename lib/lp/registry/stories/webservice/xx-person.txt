@@ -558,6 +558,7 @@ mentoring process (Bug 498181).
     >>> logout()
     >>> owner_webservice = webservice_for_person(
     ...     owner, permission=OAuthPermission.WRITE_PRIVATE)
+
     # The sample user (name12) is used to verify that it works when
     # the new member's email address is hidden.
     >>> print owner_webservice.named_post(
