@@ -7,7 +7,8 @@ __metaclass__ = type
 
 __all__ = [
     'BuildQueue',
-    'BuildQueueSet'
+    'BuildQueueSet',
+    'specific_job_classes',
     ]
 
 import logging
@@ -21,7 +22,6 @@ from sqlobject import (
 from storm.expr import In, Join, LeftJoin
 from storm.store import Store
 
-from canonical import encoding
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.webapp.interfaces import NotFoundError
@@ -31,11 +31,27 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
+from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildqueue import IBuildQueue, IBuildQueueSet
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
+
+
+def specific_job_classes():
+    """Job classes that may run on the build farm."""
+    job_classes = dict()
+    # Get all components that implement the `IBuildFarmJob` interface.
+    components = getSiteManager()
+    implementations = sorted(components.getUtilitiesFor(IBuildFarmJob))
+    # The above yields a collection of 2-tuples where the first element
+    # is the name of the `BuildFarmJobType` enum and the second element
+    # is the implementing class respectively.
+    for job_enum_name, job_class in implementations:
+        job_enum = getattr(BuildFarmJobType, job_enum_name)
+        job_classes[job_enum] = job_class
+
+    return job_classes
 
 
 class BuildQueue(SQLBase):
@@ -62,25 +78,9 @@ class BuildQueue(SQLBase):
         return IBuildFarmJobBehavior(self.specific_job)
 
     @property
-    def specific_job_classes(self):
-        """See `IBuildQueue`."""
-        job_classes = dict()
-        # Get all components that implement the `IBuildFarmJob` interface.
-        components = getSiteManager()
-        implementations = sorted(components.getUtilitiesFor(IBuildFarmJob))
-        # The above yields a collection of 2-tuples where the first element
-        # is the name of the `BuildFarmJobType` enum and the second element
-        # is the implementing class respectively.
-        for job_enum_name, job_class in implementations:
-            job_enum = getattr(BuildFarmJobType, job_enum_name)
-            job_classes[job_enum] = job_class
-
-        return job_classes
-
-    @property
     def specific_job(self):
         """See `IBuildQueue`."""
-        specific_class = self.specific_job_classes[self.job_type]
+        specific_class = specific_job_classes()[self.job_type]
         store = Store.of(self)
         result_set = store.find(
             specific_class, specific_class.job == self.job)
@@ -141,38 +141,6 @@ class BuildQueue(SQLBase):
         self.job.date_finished = None
         self.logtail = None
         self.specific_job.jobReset()
-
-    def updateBuild_IDLE(self, build_id, build_status, logtail,
-                         filemap, dependencies, logger):
-        """See `IBuildQueue`."""
-        build = getUtility(IBuildSet).getByQueueEntry(self)
-        logger.warn(
-            "Builder %s forgot about build %s -- resetting buildqueue record"
-            % (self.builder.url, build.title))
-        self.reset()
-
-    def updateBuild_BUILDING(self, build_id, build_status,
-                             logtail, filemap, dependencies, logger):
-        """See `IBuildQueue`."""
-        if self.job.status != JobStatus.RUNNING:
-            self.job.start()
-        self.logtail = encoding.guess(str(logtail))
-
-    def updateBuild_ABORTING(self, buildid, build_status,
-                             logtail, filemap, dependencies, logger):
-        """See `IBuildQueue`."""
-        self.logtail = "Waiting for slave process to be terminated"
-
-    def updateBuild_ABORTED(self, buildid, build_status,
-                            logtail, filemap, dependencies, logger):
-        """See `IBuildQueue`."""
-        self.builder.cleanSlave()
-        self.builder = None
-        if self.job.status != JobStatus.FAILED:
-            self.job.fail()
-        self.job.date_started = None
-        self.job.date_finished = None
-        self.specific_job.jobAborted()
 
     def setDateStarted(self, timestamp):
         """See `IBuildQueue`."""
@@ -352,6 +320,8 @@ class BuildQueueSet(object):
         result_set = store.find(
             BuildQueue,
             BuildQueue.job == Job.id,
+            # status is a property. Let's use _status.
+            Job._status == JobStatus.RUNNING,
             Job.date_started != None)
         return result_set
 

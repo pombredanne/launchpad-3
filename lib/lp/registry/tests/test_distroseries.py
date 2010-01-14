@@ -20,6 +20,7 @@ from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease)
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import TestCase, TestCaseWithFactory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from canonical.testing import (
@@ -168,6 +169,26 @@ class TestDistroSeries(TestCaseWithFactory):
         pocket = PackagePublishingPocket.PROPOSED
         suite = '%s-%s' % (distroseries.name, pocket.name.lower())
         self.assertEqual(suite, distroseries.getSuite(pocket))
+
+    def test_getDistroArchSeriesByProcessor(self):
+        # A IDistroArchSeries can be retrieved by processor
+        distroseries = self.factory.makeDistroRelease()
+        processorfamily = ProcessorFamilySet().getByName('x86')
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag='i386',
+            processorfamily=processorfamily)
+        self.assertEquals(distroarchseries,
+            distroseries.getDistroArchSeriesByProcessor(
+                processorfamily.processors[0]))
+
+    def test_getDistroArchSeriesByProcessor_none(self):
+        # getDistroArchSeriesByProcessor returns None when no distroarchseries
+        # is found
+        distroseries = self.factory.makeDistroRelease()
+        processorfamily = ProcessorFamilySet().getByName('x86')
+        self.assertEquals(None,
+            distroseries.getDistroArchSeriesByProcessor(
+                processorfamily.processors[0]))
 
 
 class TestDistroSeriesSet(TestCaseWithFactory):

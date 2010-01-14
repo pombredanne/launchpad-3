@@ -41,7 +41,7 @@ class MockBuilder:
         self.name = name
         self.virtualized = True
 
-    def failbuilder(self, reason):
+    def failBuilder(self, reason):
         self.builderok = False
         self.failnotes = reason
 
@@ -78,6 +78,10 @@ class SaneBuildingSlave:
 
     def info(self):
         return ['1.0', 'i386', ['debian']]
+
+    def build(self, buildid, builder_type, chroot_sha1, filemap, args):
+        return ('BuildStatus.Building', buildid)
+
 
 class SaneWaitingSlave:
     """A mock slave that is currently waiting.

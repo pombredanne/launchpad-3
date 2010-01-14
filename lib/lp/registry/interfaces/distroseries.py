@@ -453,6 +453,14 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         given architecturetag.
         """
 
+    def getDistroArchSeriesByProcessor(processor):
+        """Return the distroarchseries for this distroseries with the
+        given architecturetag from a `IProcessor`.
+        
+        :param processor: An `IProcessor`
+        :return: An `IDistroArchSeries` or None when none was found.
+        """
+
     @operation_parameters(
         archtag=TextLine(
             title=_("The architecture tag"), required=True))

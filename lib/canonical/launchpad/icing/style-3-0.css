@@ -893,7 +893,7 @@ body.tab-bugs #portlet-subscribers .sprite {
 .person-inactive-badge {background:url(icon-sprites-2) 0 -64px no-repeat;}
 .mentoring {background:url(icon-sprites-2) 0 -96px no-repeat;}
 .undecided {background:url(icon-sprites-2) 0 -128px no-repeat;}
-.error {background:url(icon-sprites-2) 0 -160px no-repeat;}
+.error-icon {background:url(icon-sprites-2) 0 -160px no-repeat;}
 .cancel {background:url(icon-sprites-2) 0 -192px no-repeat;}
 .confirm {background:url(icon-sprites-2) 0 -224px no-repeat;}
 .flame {background:url(icon-sprites-2) 0 -256px no-repeat;}

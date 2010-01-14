@@ -6,7 +6,6 @@
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
-
 import apt_pkg
 from cStringIO import StringIO
 import datetime
@@ -46,6 +45,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.model.buildbase import BuildBase
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
@@ -64,7 +64,7 @@ from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
 
 
-class Build(SQLBase):
+class Build(BuildBase, SQLBase):
     implements(IBuild)
     _table = 'Build'
     _defaultOrder = 'id'
@@ -217,6 +217,11 @@ class Build(SQLBase):
     def is_virtualized(self):
         """See `IBuild`"""
         return self.archive.require_virtualized
+
+    @property
+    def is_private(self):
+        """See `IBuildBase`"""
+        return self.archive.private
 
     @property
     def title(self):
@@ -688,7 +693,23 @@ class Build(SQLBase):
         return queue_entry
 
     def notify(self, extra_info=None):
-        """See `IBuild`"""
+        """See `IBuildBase`.
+
+        If config.buildmaster.build_notification is disable, simply
+        return.
+
+        If config.builddmaster.notify_owner is enabled and SPR.creator
+        has preferredemail it will send an email to the creator, Bcc:
+        to the config.builddmaster.default_recipient. If one of the
+        conditions was not satisfied, no preferredemail found (autosync
+        or untouched packages from debian) or config options disabled,
+        it will only send email to the specified default recipient.
+
+        This notification will contain useful information about
+        the record in question (all states are supported), see
+        doc/build-notification.txt for further information.
+        """
+
         if not config.builddmaster.send_build_notification:
             return
 

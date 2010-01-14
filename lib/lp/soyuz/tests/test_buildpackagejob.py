@@ -12,17 +12,18 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.testing import verifyObject
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.buildmaster.interfaces.buildfarmjob import (
     IBuildFarmJobDispatchEstimation)
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
 from lp.soyuz.model.buildpackagejob import BuildPackageJob
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.testing import TestCaseWithFactory
+
 
 def find_job(test, name, processor='386'):
     """Find build and queue instance for the given source and processor."""
@@ -98,6 +99,7 @@ class TestBuildPackageJob(TestBuildJobBase):
     farm job type) targetting a single processor architecture and the primary
     archive.
     """
+
     def setUp(self):
         """Set up some native x86 builds for the test archive."""
         super(TestBuildPackageJob, self).setUp()
@@ -234,7 +236,7 @@ class TestBuildPackageJob(TestBuildJobBase):
 
         # Processor == 1 -> Intel 386
         # SELECT id,name,title FROM processor
-        #  id | name  |     title      
+        #  id | name  |     title
         # ----+-------+----------------
         #   1 | 386   | Intel 386
         #   2 | amd64 | AMD 64bit
@@ -313,7 +315,7 @@ class TestBuildPackageJob(TestBuildJobBase):
 
         # Processor == 3 -> HPPA
         # SELECT id,name,title FROM processor
-        #  id | name  |     title      
+        #  id | name  |     title
         # ----+-------+----------------
         #   1 | 386   | Intel 386
         #   2 | amd64 | AMD 64bit
@@ -382,3 +384,8 @@ class TestBuildPackageJob(TestBuildJobBase):
 
     def test_provides_dispatch_estimation_interface(self):
         verifyObject(IBuildFarmJobDispatchEstimation, BuildPackageJob)
+
+    def test_getTitle(self):
+        # Test that BuildPackageJob returns the title of the build.
+        build, bq = find_job(self, 'gcc', '386')
+        self.assertEqual(bq.specific_job.getTitle(), build.title)
