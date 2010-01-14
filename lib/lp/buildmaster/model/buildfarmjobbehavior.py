@@ -68,7 +68,7 @@ class BuildFarmJobBehaviorBase:
             # disable the builder ?? or simple notice the failure
             # with a timestamp.
             info = ("Could not contact the builder %s, caught a (%s)"
-                    % (self.url, info))
+                    % (queueItem.builder.url, info))
             logger.debug(info, exc_info=True)
             # keep the job for scan
             return
