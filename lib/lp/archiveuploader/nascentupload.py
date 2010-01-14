@@ -477,11 +477,12 @@ class NascentUpload:
             return
 
         # Set up some convenient shortcut variables.
-        signer = self.changes.signer
+
+        uploader = self.policy.getUploader(self.changes)
         archive = self.policy.archive
 
         # If we have no signer, there's no ACL we can apply.
-        if signer is None:
+        if uploader is None:
             self.logger.debug("No signer, therefore ACL not processed")
             return
 
@@ -489,7 +490,7 @@ class NascentUpload:
             ISourcePackageNameSet).queryByName(self.changes.dsc.package)
 
         rejection_reason = check_upload_to_archive(
-            signer, self.policy.distroseries, source_name, archive,
+            uploader, self.policy.distroseries, source_name, archive,
             self.changes.dsc.component, self.policy.pocket, not self.is_new)
 
         if rejection_reason is not None:

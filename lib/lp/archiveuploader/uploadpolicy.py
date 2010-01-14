@@ -85,6 +85,10 @@ class AbstractUploadPolicy:
         # The earliest year we accept in a deb's file's mtime
         self.earliest_year = 1984
 
+    def getUploader(self, changes):
+        """Get the person who is doing the uploading."""
+        return changes.signer
+
     def setOptions(self, options):
         """Store the options for later."""
         self.options = options
