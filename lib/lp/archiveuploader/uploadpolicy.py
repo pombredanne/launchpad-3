@@ -312,7 +312,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
         # We permit unsigned uploads because we trust our build daemons
         self.unsigned_changes_ok = True
         self.unsigned_dsc_ok = True
-        self.can_upload_source = False
+        self.can_upload_source = True
         self.can_upload_mixed = False
 
     def setOptions(self, options):
