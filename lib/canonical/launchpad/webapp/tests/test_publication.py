@@ -121,6 +121,43 @@ class TestWebServicePublication(TestCaseWithFactory):
         # Ensure that it is different to the last logged OOPS.
         self.assertNotEqual(repr(last_oops), repr(next_oops))
 
+    def test_bug_504291_logs_oops(self):
+        # Bug #504291 was that a Store was being left in a disconnected
+        # state after a request, causing subsequent requests handled by that
+        # thread to fail. We detect this state in endRequest and log an
+        # OOPS to help track down the trigger.
+        error_reporting_utility = getUtility(IErrorReportingUtility)
+        last_oops = error_reporting_utility.getLastOopsReport()
+
+        request = LaunchpadTestRequest()
+        publication = WebServicePublication(None)
+        da.set_request_started()
+
+        # Disconnect a store
+        from canonical.launchpad.database.emailaddress import EmailAddress
+        from canonical.launchpad.interfaces.lpstorm import IMasterStore
+        from storm.database import STATE_DISCONNECTED, STATE_RECONNECT
+        store = IMasterStore(EmailAddress)
+        store._connection._state = STATE_DISCONNECTED
+
+        # Invoke the endRequest hook.
+        publication.endRequest(request, None)
+
+        next_oops = error_reporting_utility.getLastOopsReport()
+
+        # Ensure that it is different to the last logged OOPS.
+        self.assertNotEqual(repr(last_oops), repr(next_oops))
+
+        # Ensure the OOPS mentions the correct exception
+        self.assertNotEqual(repr(next_oops).find("Bug #504291"), -1)
+
+        # Ensure the OOPS is correctly marked as informational only.
+        self.assertEqual(next_oops.informational, 'True')
+
+        # Ensure the store has been rolled back and in a usable state.
+        self.assertEqual(store._connection._state, STATE_RECONNECT)
+        store.find(EmailAddress).first()
+
     def test_is_browser(self):
         # No User-Agent: header.
         request = LaunchpadTestRequest()

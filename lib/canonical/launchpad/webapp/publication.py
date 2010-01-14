@@ -11,6 +11,7 @@ __all__ = [
 import gc
 import os
 import re
+import sys
 import thread
 import threading
 import traceback
@@ -24,6 +25,7 @@ import tickcount
 import transaction
 
 from psycopg2.extensions import TransactionRollbackError
+from storm.database import STATE_DISCONNECTED
 from storm.exceptions import DisconnectionError, IntegrityError
 from storm.zope.interfaces import IZStorm
 
@@ -609,12 +611,26 @@ class LaunchpadBrowserPublication(
                 if is_browser(request) and status_group == '5XXs':
                     OpStats.stats['5XXs_b'] += 1
 
-        # Reset all Storm stores when not running the test suite. We could
-        # reset them when running the test suite but that'd make writing tests
-        # a much more painful task. We still reset the slave stores though
-        # to minimize stale cache issues.
+        # Make sure our databases are in a sane state for the next request.
         thread_name = threading.currentThread().getName()
         for name, store in getUtility(IZStorm).iterstores():
+            try:
+                assert store._connection._state != STATE_DISCONNECTED, (
+                    "Bug #504291: Store left in a disconnected state.")
+            except AssertionError:
+                # The Store is in a disconnected state. This should
+                # not happen, as store.rollback() should have been called
+                # by now. Log an OOPS so we know about this. This
+                # is Bug #504291 happening.
+                getUtility(IErrorReportingUtility).handling(
+                    sys.exc_info(), request)
+                # Repair things so the server can remain operational.
+                store.rollback()
+            # Reset all Storm stores when not running the test suite.
+            # We could reset them when running the test suite but
+            # that'd make writing tests a much more painful task. We
+            # still reset the slave stores though to minimize stale
+            # cache issues.
             if thread_name != 'MainThread' or name.endswith('-slave'):
                 store.reset()
 
