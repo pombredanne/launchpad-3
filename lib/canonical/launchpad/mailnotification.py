@@ -953,8 +953,8 @@ def notify_team_join(event):
             'new-member-notification-for-admins.txt')
         subject = '%s joined %s' % (person.name, team.name)
     elif membership.status == proposed:
-        # In the UI, a user can only propose themself or a team they
-        # admin. Some users of the REST API have a workflow, where
+        # In the UI, a user can only propose himself or a team he
+        # admins. Some users of the REST API have a workflow, where
         # they propose users that are designated as mentees (Bug 498181).
         if reviewer != person:
             headers = {"Reply-To": reviewer.preferredemail.email}
