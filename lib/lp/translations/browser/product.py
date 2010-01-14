@@ -83,13 +83,13 @@ class ProductView(LaunchpadView):
     label = "Translation overview"
 
     @cachedproperty
-    def uses_translations(self):
+    def has_translations(self):
         """Whether this product has translatable templates."""
         return (self.context.official_rosetta and self.primary_translatable)
 
     @cachedproperty
     def primary_translatable(self):
-        """Return the context's primary translatable if it's a product series
+        """Return the context's primary translatable if it's a product series.
         """
         translatable = self.context.primary_translatable
 

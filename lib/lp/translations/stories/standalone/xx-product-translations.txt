@@ -221,3 +221,9 @@ through some hoops to create that situation.
     >>> admin_browser.open(product_url)
     >>> print find_translation_recommendation(admin_browser)
     None
+
+Instead a notice is displayed that the product has no translations.
+
+    >>> notice = first_tag_by_class(admin_browser.contents, 'notice')
+    >>> print extract_text(notice)
+    There are no translations for this project.
