@@ -284,19 +284,14 @@ class GettextPOExporterBase:
         """
         raise NotImplementedError
 
-    def _encode_file_content(self,
-            translation_file, exported_content, file_path):
+    def _encode_file_content(self, translation_file, exported_content):
         """Try to encode the file using the charset given in the header."""
         file_content = (
             self._makeExportedHeader(translation_file) +
             u'\n\n' +
             exported_content)
-        try:
-            encoded_file_content = file_content.encode(
-                translation_file.header.charset)
-        except UnicodeEncodeError, error:
-            # Add file name information.
-            raise UnicodeEncodeError('%s:\n%s' % (file_path, str(error)))
+        encoded_file_content = file_content.encode(
+            translation_file.header.charset)
         return encoded_file_content
 
     def exportTranslationFiles(self, translation_files, ignore_obsolete=False,
@@ -358,7 +353,7 @@ class GettextPOExporterBase:
                 translation_file.header.charset = 'UTF-8'
             try:
                 encoded_file_content = self._encode_file_content(
-                    translation_file, exported_file_content, file_path)
+                    translation_file, exported_file_content)
             except UnicodeEncodeError:
                 if translation_file.header.charset.upper() == 'UTF-8':
                     # It's already UTF-8, we cannot do anything.
@@ -380,7 +375,7 @@ class GettextPOExporterBase:
                 translation_file.header.charset = 'UTF-8'
                 # This either succeeds or raises UnicodeError.
                 encoded_file_content = self._encode_file_content(
-                    translation_file, exported_file_content, file_path)
+                    translation_file, exported_file_content)
 
             storage.addFile(file_path, file_extension, encoded_file_content)
 
