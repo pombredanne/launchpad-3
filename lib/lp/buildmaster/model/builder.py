@@ -331,24 +331,6 @@ class Builder(SQLBase):
             self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
-
-    # XXX cprov 2009-06-24: This code does not belong to the content
-    # class domain. Here we cannot make sensible decisions about what
-    # we are allowed to present according to the request user. Then
-    # bad things happens, see bug #391721.
-
-    @property
-    def status(self):
-        """See IBuilder"""
-        if not self.builderok:
-            if self.failnotes is not None:
-                return self.failnotes
-            return 'Disabled'
-
-        # If the builder is OK then we delegate the status
-        # to our current behavior.
-        return self.current_build_behavior.status
-
     def failBuilder(self, reason):
         """See IBuilder"""
         # XXX cprov 2007-04-17: ideally we should be able to notify the
