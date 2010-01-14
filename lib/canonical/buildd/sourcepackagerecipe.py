@@ -25,7 +25,8 @@ def splat_file(path, contents):
 
 
 def get_chroot_path(build_id, *extra):
-    return get_build_path(build_id, 'chroot-autobuild/home/buildd', *extra)
+    return get_build_path(
+        build_id, 'chroot-autobuild', os.environ['HOME'][1:], *extra)
 
 
 class SourcePackageRecipeBuildState(DebianBuildState):
