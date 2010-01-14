@@ -32,18 +32,22 @@ class TestRecipeBuilder(TestCaseWithFactory):
         recipe_builder = RecipeBuildBehavior(None)
         self.assertProvides(recipe_builder, IBuildFarmJobBehavior)
 
-    def test_adapts_IBuildSourcePackageFromRecipeJob(self):
+    def test_adapts_ISourcePackageRecipeBuildJob(self):
+        # IBuildFarmJobBehavior adapts a ISourcePackageRecipeBuildJob
         job = self.factory.makeSourcePackageRecipeBuild().makeJob()
         job = IBuildFarmJobBehavior(job)
         self.assertProvides(job, IBuildFarmJobBehavior)
 
     def makeJob(self):
+        """Create a sample `ISourcePackageRecipeBuildJob`."""
         spn = self.factory.makeSourcePackageName("apackage")
         distro = self.factory.makeDistribution(name="distro")
         distroseries = self.factory.makeDistroSeries(name="mydistro", 
             distribution=distro)
+        processorfamily = ProcessorFamilySet().getByName('x86')
         distroarchseries = self.factory.makeDistroArchSeries(
-            distroseries=distroseries, architecturetag='i386')
+            distroseries=distroseries, architecturetag='i386',
+            processorfamily=processorfamily)
         sourcepackage = self.factory.makeSourcePackage(spn, distroseries)
         requester = self.factory.makePerson(email="requester@ubuntu.com",
             name="joe", displayname="Joe User")
@@ -57,12 +61,14 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job = IBuildFarmJobBehavior(job)
         return job
 
-    def test_displayName(self):
+    def test_display_name(self):
+        # display_name contains a sane description of the job
         job = self.makeJob()
-        self.assertEquals(job.displayName,
+        self.assertEquals(job.display_name,
             "distro/mydistro/apackage, recept")
 
     def test_logStartBuild(self):
+        # logStartBuild will properly report the package that's being built
         job = self.makeJob()
         logger = BufferLogger()
         job.logStartBuild(logger)
@@ -70,6 +76,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
             "INFO: startBuild(distro/mydistro/apackage, recept)\n")
 
     def test_verifyBuildRequest_valid(self):
+        # VerifyBuildRequest won't raise any exceptions when called with a
+        # valid builder set.
         job = self.makeJob()
         builder = MockBuilder("bob-de-bouwer", SaneBuildingSlave())
         job.setBuilder(builder)
@@ -77,10 +85,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         job.verifyBuildRequest(logger)
         self.assertEquals("", logger.buffer.getvalue())
 
-    # XXX: Make sure that a verifyBuildRequest() for a recipe upload to an
-    # archive that the user doesn't have access to fails.
-
     def test__extraBuildArgs(self):
+        # _extraBuildArgs will return a sane set of additional arguments
         job = self.makeJob()
         self.assertEquals({
            'author_email': u'requester@ubuntu.com',
@@ -93,6 +99,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
             }, job._extraBuildArgs())
 
     def test_dispatchBuildToSlave(self):
+        # Ensure dispatchBuildToSlave will make the right calls to the slave
         job = self.makeJob()
         test_publisher = SoyuzTestPublisher()
         test_publisher.addFakeChroots(job.build.distroseries)
@@ -116,6 +123,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertEquals(build_args[4], job._extraBuildArgs())
 
     def test_dispatchBuildToSlave_nochroot(self):
+        # dispatchBuildToSlave will fail when there is not chroot tarball 
+        # available for the distroseries to build for.
         job = self.makeJob()
         builder = MockBuilder("bob-de-bouwer", SaneBuildingSlave())
         processorfamily = ProcessorFamilySet().getByProcessorName('386')

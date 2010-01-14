@@ -11,8 +11,6 @@ __all__ = [
 from zope.component import adapts
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
-
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
@@ -31,12 +29,12 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
 
     status = None
 
-    @cachedproperty
+    @property
     def build(self):
         return self.buildfarmjob.build
 
     @property
-    def displayName(self):
+    def display_name(self):
         sp = self.build.distroseries.getSourcePackage(
             self.build.sourcepackagename)
         ret = "%s, %s" % (
@@ -47,7 +45,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
 
     def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""
-        logger.info("startBuild(%s)", self.displayName)
+        logger.info("startBuild(%s)", self.display_name)
 
     def _extraBuildArgs(self):
         """
@@ -56,7 +54,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         # Build extra arguments.
         args = {}
         # XXX: JRV 2010-01-13: When build gets a pocket property, it should 
-        # be appended to suite here.
+        # be appended to suite here. (bug 507307)
         args['suite'] = self.build.distroseries.name
         args["package_name"] = self.build.sourcepackagename.name
         args["author_name"] = self.build.requester.displayname
@@ -68,15 +66,19 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     def dispatchBuildToSlave(self, build_queue_id, logger):
         """See `IBuildFarmJobBehavior`."""
 
+        distroseries = self.build.distroseries
         # Start the binary package build on the slave builder. First
         # we send the chroot.
-        # XXX JRV 2010-01-14: Use self._builder.processor rather than i386
-        distroarchseries = self.build.distroseries.getDistroArchSeries(
-                "i386")
+        distroarchseries = distroseries.getDistroArchSeriesByProcessor(
+            self._builder.processor)
+        if distroarchseries is None:
+            raise CannotBuild("Unable to find distroarchseries for %s in %s" %
+                (self._builder.processor.name,
+                self.build.distroseries.displayname))
 
         chroot = distroarchseries.getChroot()
         if chroot is None:
-            raise CannotBuild("Unable to find a chroot for %r" % 
+            raise CannotBuild("Unable to find a chroot for %s" % 
                               distroarchseries.displayname)
         self._builder.slave.cacheFile(logger, chroot)
 
