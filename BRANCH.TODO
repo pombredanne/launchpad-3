@@ -2,3 +2,25 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
+
+Waiting for:
+  - recipe model code to land
+
+Todo:
+  - Consistent property 'build_state' instead of buildstate
+  - Job trigger (abentley & james_w)
+  - ZCML for SourcePackageRecipeBuildJob for findBuildCandidate
+  - create branch queue entry when creating SourcePackageRecipeBuildJob
+  - rescue builder if lost checks build id (bug 507363)
+
+jml doesn't understand:
+  - process-upload policy
+  - build behaviour dispatch
+
+Nice to have
+  - Refactor a base class out of BuildJob
+  - sources.list changes
+    - what for? why?
+  - PPA for chroot dependencies
+    - what for? why?
+  - buildd-manager has about robustness
