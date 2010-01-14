@@ -118,6 +118,7 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
                 else:
                     print("Returning build status: Build failed")
                     self._slave.buildFail()
+            self.alreadyfailed = True
         elif (
             retcode >= RETCODE_FAILURE_INSTALL and
             retcode <= RETCODE_FAILURE_BUILD_SOURCE_PACKAGE):
@@ -125,10 +126,12 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
             if not self.alreadyfailed:
                 self._slave.buildFail()
                 print("Returning build status: Build failed.")
+            self.alreadyfailed = True
         else:
             if not self.alreadyfailed:
                 self._slave.builderFail()
                 print("Returning build status: Builder failed.")
+            self.alreadyfailed = True
         self._state = DebianBuildState.REAP
         self.doReapProcesses()
 
