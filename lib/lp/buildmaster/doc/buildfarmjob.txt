@@ -8,6 +8,7 @@ specific build farm job classes should inherit from it.
 
     >>> buildfarmjob = BuildFarmJob()
     >>> verifyObject(IBuildFarmJob, buildfarmjob) 
+    True
 
 As a class, it also provides ISpecificBuildFarmJobClass so that
 BuildQueue can find the instance of a specific build-farm job
@@ -16,3 +17,4 @@ implementation associated with a given Job instance.
     >>> from lp.buildmaster.interfaces.buildfarmjob import (
     ...     ISpecificBuildFarmJobClass)
     >>> verifyObject(ISpecificBuildFarmJobClass, BuildFarmJob)
+    True
