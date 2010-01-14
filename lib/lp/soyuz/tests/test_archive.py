@@ -15,8 +15,11 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.archiveuploader.permission import (InvalidPocketForPartnerArchive,
+    InvalidPocketForPPA)
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.person import IPersonSet
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import IArchiveSet, ArchivePurpose
 from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFormat
@@ -513,6 +516,56 @@ class TestArchiveEnableDisable(TestCaseWithFactory):
         self.archive.disable()
         self.assertRaises(AssertionError, self.archive.disable)
 
+
+class TestArchiveCanUpload(TestCaseWithFactory):
+    """Test the various methods that verify whether uploads are allowed to 
+    happen."""
+
+    layer = LaunchpadZopelessLayer
+
+    def test_canUpload_by_PPA_owner(self):
+        # Uploading to a PPA should be allowed for a user that is the owner 
+        owner = self.factory.makePerson(name="somebody")
+        archive = self.factory.makeArchive(owner=owner)
+        self.assertEquals(True, archive.canUpload(owner))
+        someone_unrelated = self.factory.makePerson(name="somebody-unrelated")
+        self.assertEquals(False, archive.canUpload(someone_unrelated))
+
+    def test_canUpload_distro_archive_regular_user(self):
+        # Regular users can not upload to ubuntu
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY, 
+                                           distribution=ubuntu)
+        somebody = self.factory.makePerson(name="somebody")
+        self.assertEquals(False, archive.canUpload(somebody))
+
+    def test_canUpload_distro_archive_core_dev(self):
+        # Core developers can upload to ubuntu
+        ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY, 
+                                           distribution=ubuntu)
+        kamion = getUtility(IPersonSet).getByName('kamion')
+        self.assertEquals(True, archive.canUpload(kamion))
+
+    def test_checkUpload_partner_invalid_pocket(self):
+        # Partner archives only have release and proposed pockets
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PARTNER)
+        self.assertRaises(InvalidPocketForPartnerArchive, 
+            archive.checkUpload(self.factory.makePerson(), 
+                                self.factory.makeDistroSeries(),
+                                self.factory.makeSourcePackageName(),
+                                self.factory.makeComponent(),
+                                PackagePublishingPocket.UPDATES))
+ 
+    def test_checkUpload_ppa_invalid_pocket(self):
+        # PPA archives only have release pockets
+        archive = self.factory.makeArchive(purpose=ArchivePurpose.PPA)
+        self.assertRaises(InvalidPocketForPPA, 
+            archive.checkUpload(self.factory.makePerson(), 
+                                self.factory.makeDistroSeries(),
+                                self.factory.makeSourcePackageName(),
+                                self.factory.makeComponent(),
+                                PackagePublishingPocket.PROPOSED))
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

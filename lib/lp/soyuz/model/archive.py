@@ -927,7 +927,7 @@ class Archive(SQLBase):
         # strict_component is True because the source package already exists
         # (otherwise we couldn't have a suitesourcepackage object) and
         # nascentupload passes True as a matter of policy when the package exists.
-        reason = check_upload_to_archive(
+        reason = self.checkUpload(
             person, distroseries, sourcepackagename, self, component, pocket,
             strict_component=True)
         return reason is None

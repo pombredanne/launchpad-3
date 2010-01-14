@@ -87,7 +87,7 @@ from lp.registry.interfaces.project import IProject, IProjectSet
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
 from lp.registry.interfaces.sourcepackage import (
-    ISourcePackage, get_default_archive,)
+    ISourcePackage,)
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from lp.blueprints.interfaces.specification import ISpecification
@@ -1685,7 +1685,7 @@ def can_upload_linked_package(person, branch):
     # around this by assuming that things are fine as long as we find at least
     # one combination that allows us to upload the corresponding source
     # package.
-    archive = get_default_archive()
+    archive = ISourcePackage.get_default_archive()
     for ssp in ssp_list:
         if archive.canUploadSuiteSourcePackage(person, ssp):
             return True
