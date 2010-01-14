@@ -153,7 +153,7 @@ class SourcePackageRecipeBuildJob(Storm):
         build_id, 'SourcePackageRecipeBuild.id')
 
     processor = None
-    virtualized = False
+    virtualized = True
 
     def __init__(self, build, job):
         super(SourcePackageRecipeBuildJob, self).__init__()
