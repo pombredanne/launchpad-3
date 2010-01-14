@@ -24,6 +24,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def makeSourcePackageRecipeBuild(self):
+        """Create a `SourcePackageRecipeBuild` for testing."""
         return getUtility(ISourcePackageRecipeBuildSource).new(
             sourcepackage=self.factory.makeSourcePackage(),
             recipe=self.factory.makeSourcePackageRecipe(),
@@ -36,11 +37,13 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertProvides(spb, ISourcePackageRecipeBuild)
 
     def test_saves_record(self):
+        # A source package recipe build can be stored in the database
         spb = self.makeSourcePackageRecipeBuild()
         transaction.commit()
         self.assertProvides(spb, ISourcePackageRecipeBuild)
 
     def test_makeJob(self):
+        # A build farm job can be obtained from a SourcePackageRecipeBuild
         spb = self.makeSourcePackageRecipeBuild()
         job = spb.makeJob()
         self.assertProvides(job, ISourcePackageRecipeBuildJob)
