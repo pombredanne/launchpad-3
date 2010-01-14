@@ -425,6 +425,13 @@ class Builder(SQLBase):
 
         :return: A candidate job.
         """
+        def qualify_subquery(job_type, sub_query):
+            """Put the sub-query into a job type context."""
+            qualified_query = """
+                ((BuildQueue.job_type != %s) OR (%s))
+            """ % sqlvalues(job_type, sub_query)
+            return qualify_subquery
+
         logger = self._getSlaveScannerLogger()
         candidate = None
 
@@ -447,7 +454,7 @@ class Builder(SQLBase):
         extra_tables = set()
         extra_queries = []
         job_classes = specific_job_classes()
-        for job_class in job_classes.values():
+        for job_type, job_class in job_classes.iteritems():
             tables, query = job_class.addCandidateSelectionCriteria(
                 self.processor, self.virtualized)
             if query == '':
@@ -459,7 +466,8 @@ class Builder(SQLBase):
             # lower case in order to avoid duplicates in the FROM clause.
             query_tables = query_tables.union(
                 set(table.lower() for table in tables))
-            extra_queries.append(query)
+            # The sub-query should only apply to jobs of the right type.
+            extra_queries.append(qualify_subquery(job_type, query))
         general_query = general_query % ', '.join(query_tables)
         query = ' AND '.join([general_query] + extra_queries) + order_clause
 
