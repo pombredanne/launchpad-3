@@ -23,6 +23,7 @@ from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.archive import IArchive
@@ -78,6 +79,11 @@ class ISourcePackageRecipeBuild(Interface):
         description=_("The actual build start time. Set when the build "
                       "is dispatched the first time and not changed in "
                       "subsequent build attempts."))
+
+    pocket = Choice(
+            title=_('Pocket'), required=True,
+            vocabulary=PackagePublishingPocket,
+            description=_("The build targeted pocket."))
 
     requester = Object(
         schema=IPerson, required=False,

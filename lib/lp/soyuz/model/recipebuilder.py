@@ -17,6 +17,7 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
     get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
@@ -55,9 +56,10 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         """
         # Build extra arguments.
         args = {}
-        # XXX: JRV 2010-01-13: When build gets a pocket property, it should 
-        # be appended to suite here. (bug 507307)
-        args['suite'] = self.build.distroseries.name
+        suite = self.build.distroseries.name
+        if self.build.pocket != PackagePublishingPocket.RELEASE:
+            suite += "-%s" % (self.build.pocket.name.lower())
+        args['suite'] = suite
         args["package_name"] = self.build.sourcepackagename.name
         args["author_name"] = self.build.requester.displayname
         args["author_email"] = self.build.requester.preferredemail.email
