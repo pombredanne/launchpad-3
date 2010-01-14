@@ -12,6 +12,7 @@ __all__ = [
     'BuildJobMismatch',
     'BuildSlaveFailure',
     'CannotBuild',
+    'CannotFetchFile',
     'CannotResumeHost',
     'IBuilder',
     'IBuilderSet',
@@ -32,6 +33,15 @@ from canonical.launchpad.validators.url import builder_url_validator
 
 class BuildDaemonError(Exception):
     """The class of errors raised by the buildd classes"""
+
+
+class CannotFetchFile(BuildDaemonError):
+    """The slave was unable to fetch the file."""
+
+    def __init__(self, file_url, error_information):
+        super(CannotFetchFile, self).__init__()
+        self.file_url = file_url
+        self.error_information = error_information
 
 
 class ProtocolVersionMismatch(BuildDaemonError):
@@ -59,7 +69,7 @@ class BuildSlaveFailure(BuildDaemonError):
     """The build slave has suffered an error and cannot be used."""
 
 
-class IBuilder(IHasOwner, IBuildFarmJobBehavior):
+class IBuilder(IHasOwner):
     """Build-slave information and state.
 
     Builder instance represents a single builder slave machine within the
@@ -133,8 +143,6 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
 
     currentjob = Attribute("BuildQueue instance for job being processed.")
 
-    status = Attribute("Generated status information")
-
     is_available = Bool(
         title=_("Whether or not a builder is available for building "
                 "new jobs. "),
@@ -143,16 +151,6 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
     current_build_behavior = Field(
         title=u"The current behavior of the builder for the current job.",
         required=False)
-
-    def cacheFileOnSlave(logger, libraryfilealias):
-        """Ask the slave to cache a librarian file to its local disk.
-
-        This is used in preparation for a build.
-
-        :param logger: A logger used for providing debug information.
-        :param libraryfilealias: A library file alias representing the needed
-            file.
-        """
 
     def checkCanBuildForDistroArchSeries(distro_arch_series):
         """Check that the slave can compile for the given distro_arch_release.

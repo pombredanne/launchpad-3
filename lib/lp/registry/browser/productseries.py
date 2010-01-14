@@ -33,6 +33,9 @@ from bzrlib.revision import NULL_REVISION
 
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget, TextWidget
+from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from z3c.ptcompat import ViewPageTemplateFile
 
@@ -366,7 +369,7 @@ class ProductSeriesView(LaunchpadView, MilestoneOverlayMixin):
 
 class ProductSeriesUbuntuPackagingView(PackagingAddView):
 
-    field_names = ['sourcepackagename']
+    field_names = ['sourcepackagename', 'distroseries']
     page_title = 'Ubuntu source packaging'
     label = page_title
 
@@ -374,14 +377,35 @@ class ProductSeriesUbuntuPackagingView(PackagingAddView):
         """Set the static packaging information for this series."""
         super(ProductSeriesUbuntuPackagingView, self).__init__(
             context, request)
-        ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self._ubuntu_series = ubuntu.currentseries
+        self._ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+        self._ubuntu_series = self._ubuntu.currentseries
         try:
             package = self.context.getPackage(self._ubuntu_series)
             self.default_sourcepackagename = package.sourcepackagename
         except NotFoundError:
             # The package has never been set.
             self.default_sourcepackagename = None
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        The packaging is restricted to ubuntu series and the default value
+        is the current development series.
+        """
+        super(ProductSeriesUbuntuPackagingView, self).setUpFields()
+        series_vocabulary = SimpleVocabulary(
+            [SimpleTerm(series, series.name, series.named_version)
+             for series in self._ubuntu.series])
+        choice = Choice(__name__='distroseries',
+            title=_('Series'),
+            default=self._ubuntu_series,
+            vocabulary=series_vocabulary,
+            description=_(
+                "Series where this package is published. The current series "
+                "is most important to the Ubuntu community."),
+            required=True)
+        field = form.Fields(choice, render_context=self.render_context)
+        self.form_fields = self.form_fields.omit(choice.__name__) + field
 
     def setUpWidgets(self):
         """See `LaunchpadFormView`.

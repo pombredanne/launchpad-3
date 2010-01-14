@@ -22,6 +22,7 @@ class TestNewProjectStep2(TestCaseWithFactory):
     layer = RegistryWindmillLayer
 
     def setUp(self):
+        super(TestNewProjectStep2, self).setUp()
         self.client = WindmillTestClient('TestNewProjectStep2')
 
     def test_projects_plusnew_step_two(self):

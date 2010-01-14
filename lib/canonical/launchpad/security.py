@@ -31,7 +31,7 @@ from lp.bugs.interfaces.bugbranch import IBugBranch
 from lp.bugs.interfaces.bugnomination import IBugNomination
 from lp.bugs.interfaces.bugtracker import IBugTracker
 from lp.soyuz.interfaces.build import IBuild
-from lp.soyuz.interfaces.builder import IBuilder, IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilder, IBuilderSet
 from lp.code.interfaces.codeimport import ICodeImport
 from lp.code.interfaces.codeimportjob import (
     ICodeImportJobSet, ICodeImportJobWorkflow)
@@ -109,7 +109,8 @@ from lp.translations.interfaces.translator import (
     ITranslator, IEditTranslator)
 
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import IAuthorization
+from canonical.launchpad.webapp.interfaces import (
+    IAuthorization, ILaunchpadRoot)
 
 from lp.answers.interfaces.faq import IFAQ
 from lp.answers.interfaces.faqtarget import IFAQTarget
@@ -184,6 +185,14 @@ class AdminByCommercialTeamOrAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         return user.in_commercial_admin or user.in_admin
+
+
+class EditByRegistryExpertsOrAdmins(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = ILaunchpadRoot
+
+    def checkAuthenticated(self, user):
+        return user.in_admin or user.in_registry_experts
 
 
 class ReviewByRegistryExpertsOrAdmins(AuthorizationBase):
