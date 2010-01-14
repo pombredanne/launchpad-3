@@ -7,16 +7,13 @@ __metaclass__ = type
 __all__ = [
     'CannotUploadToArchive',
     'CannotUploadToPPA',
-    'check_upload_to_archive',
     'components_valid_for',
     'verify_upload',
     ]
 
 from zope.component import getUtility
 
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
-from lp.soyuz.interfaces.archive import ArchivePurpose
 
 
 class CannotUploadToArchive:
@@ -96,42 +93,6 @@ def components_valid_for(archive, person):
     permission_set = getUtility(IArchivePermissionSet)
     permissions = permission_set.componentsForUploader(archive, person)
     return set(permission.component for permission in permissions)
-
-
-def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
-                            component, pocket, strict_component=True):
-    """Check if 'person' upload 'suitesourcepackage' to 'archive'.
-
-    :param person: An `IPerson` who might be uploading.
-    :param distroseries: The `IDistroSeries` being uploaded to.
-    :param sourcepackagename: The `ISourcePackageName` being uploaded.
-    :param archive: The `IArchive` to upload to. If not provided, defaults
-        to the default archive for the source package. (See
-        `ISourcePackage.get_default_archive`).
-    :param component: The `Component` being uploaded to.
-    :param pocket: The `PackagePublishingPocket` of 'distroseries' being
-        uploaded to.
-    :return: The reason for not being able to upload, None otherwise.
-    """
-    if archive.purpose == ArchivePurpose.PARTNER:
-        if pocket not in (
-            PackagePublishingPocket.RELEASE,
-            PackagePublishingPocket.PROPOSED):
-            return InvalidPocketForPartnerArchive()
-    elif archive.is_ppa:
-        if pocket != PackagePublishingPocket.RELEASE:
-            return InvalidPocketForPPA()
-    else:
-        # Uploads to the partner archive are allowed in any distroseries
-        # state.
-        # XXX julian 2005-05-29 bug=117557:
-        # This is a greasy hack until bug #117557 is fixed.
-        if not distroseries.canUploadToPocket(pocket):
-            return CannotUploadToPocket(distroseries, pocket)
-
-    return verify_upload(
-        person, sourcepackagename, archive, component, distroseries,
-        strict_component)
 
 
 def packagesets_valid_for(archive, person):

@@ -24,6 +24,8 @@ from zope.interface import alsoProvides, implements
 from zope.security.interfaces import Unauthorized
 
 from lp.archivepublisher.debversion import Version
+from lp.archiveupload.permission import (CannotUploadToPocket,
+    InvalidPocketForPartnerArchive, InvalidPocketForPPA, verify_upload)
 from lp.archiveuploader.utils import re_issource, re_isadeb
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
@@ -929,6 +931,29 @@ class Archive(SQLBase):
             person, distroseries, sourcepackagename, self, component, pocket,
             strict_component=True)
         return reason is None
+
+    def checkUpload(self, person, distroseries, sourcepackagename, component, 
+                    pocket, strict_component=True):
+        """See `IArchive`."""
+        if self.purpose == ArchivePurpose.PARTNER:
+            if pocket not in (
+                PackagePublishingPocket.RELEASE,
+                PackagePublishingPocket.PROPOSED):
+                return InvalidPocketForPartnerArchive()
+        elif self.is_ppa:
+            if pocket != PackagePublishingPocket.RELEASE:
+                return InvalidPocketForPPA()
+        else:
+            # Uploads to the partner archive are allowed in any distroseries
+            # state.
+            # XXX julian 2005-05-29 bug=117557:
+            # This is a greasy hack until bug #117557 is fixed.
+            if not distroseries.canUploadToPocket(pocket):
+                return CannotUploadToPocket(distroseries, pocket)
+
+        return verify_upload(
+            person, sourcepackagename, self, component, distroseries,
+            strict_component)
 
     def canAdministerQueue(self, user, component):
         """See `IArchive`."""

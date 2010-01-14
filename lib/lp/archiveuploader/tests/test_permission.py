@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.testing import DatabaseFunctionalLayer
 
 from lp.archiveuploader.permission import (
-    check_upload_to_archive, components_valid_for)
+    components_valid_for)
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -69,8 +69,8 @@ class TestPermission(TestCaseWithFactory):
         pocket = PackagePublishingPocket.RELEASE
         self.assertIs(
             None,
-            check_upload_to_archive(
-                person, distroseries, spn, archive, component, pocket,
+            archive.checkUpload(
+                person, distroseries, spn, component, pocket,
                 strict_component))
 
     def assertCannotUpload(self, reason, person, spn, archive, component,
@@ -91,8 +91,8 @@ class TestPermission(TestCaseWithFactory):
         if distroseries is None:
             distroseries = self.factory.makeDistroSeries()
         pocket = PackagePublishingPocket.RELEASE
-        exception = check_upload_to_archive(
-            person, distroseries, spn, archive, component, pocket)
+        exception = archive.checkUpload(
+            person, distroseries, spn, component, pocket)
         self.assertEqual(reason, str(exception))
 
     def test_random_person_cannot_upload_to_ppa(self):

@@ -382,6 +382,19 @@ class IArchivePublic(IHasOwner, IPrivacy):
         :return: True if they can, False if they cannot.
         """
 
+    def checkUpload(person, distroseries, sourcepackagename, component, 
+                    pocket, strict_component=True):
+        """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+
+        :param person: An `IPerson` who might be uploading.
+        :param distroseries: The `IDistroSeries` being uploaded to.
+        :param sourcepackagename: The `ISourcePackageName` being uploaded.
+        :param component: The `Component` being uploaded to.
+        :param pocket: The `PackagePublishingPocket` of 'distroseries' being
+            uploaded to.
+        :return: The reason for not being able to upload, None otherwise.
+        """
+
     def canAdministerQueue(person, component):
         """Check to see if person is allowed to administer queue items.
 
