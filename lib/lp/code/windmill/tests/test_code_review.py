@@ -34,7 +34,7 @@ class TestCodeReview(TestCaseWithFactory):
             '/~name12/gnome-terminal/klingon/']))
         client.waits.forPageLoad(timeout=u'10000')
 
-        link = u'//a[@class="menu-link-register_merge sprite merge-proposal"]'
+        link = u'//a[@class="menu-link-register_merge sprite add"]'
         client.click(xpath=link)
         client.type(text=u'~name12/gnome-terminal/main',
             id=u'field.target_branch.target_branch')

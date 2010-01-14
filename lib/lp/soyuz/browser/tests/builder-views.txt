@@ -172,7 +172,6 @@ is widely available:
  * Frog is OK;
  * Frog 'currentjob' exists;
  * Frog has no 'failnotes';
- * Frog status exposes its 'currentjob'.
 
     >>> print frog.builderok
     True
@@ -184,10 +183,6 @@ is widely available:
 
     >>> print frog.failnotes
     None
-
-    >>> print frog.status
-    Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
-        RELEASE [cprov/ppa]
 
 Accessing the view for $builder/+index as a Foo Bar, which has
 launchpad.View permission on the target archive of the 'currentjob',
@@ -210,10 +205,6 @@ all the 'private' information is exposed.
     >>> print admin_view.context.failnotes
     None
 
-    >>> print admin_view.context.status
-    Building i386 build of privacy-test 666 in ubuntutest breezy-autotest
-        RELEASE [cprov/ppa]
-
     >>> import datetime
     >>> import pytz
     >>> private_job.setDateStarted(
@@ -233,9 +224,6 @@ again.
 
     >>> login('no-priv@canonical.com')
     >>> nopriv_view = getMultiAdapter((frog, empty_request), name="+index")
-
-    >>> print nopriv_view.context.status
-    Idle
 
     >>> login(ANONYMOUS)
 
