@@ -27,7 +27,7 @@
         <tal:official_use replace="
             structure
             context/@@+portlet-not-using-launchpad"/>
-        <div tal:condition="not:view/has_translations">
+        <div tal:condition="python:not view.has_translations and official_rosetta">
         There are no translations for this project.
         </div>
       </div>
