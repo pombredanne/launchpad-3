@@ -2,6 +2,7 @@
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 import os
+import re
 
 from canonical.buildd.debian import (
     DebianBuildManager,
@@ -79,6 +80,20 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
         if retcode == RETCODE_SUCCESS:
             self.gatherResults()
             print("Returning build status: OK")
+        elif retcode == RETCODE_FAILURE_INSTALL_BUILD_DEPS:
+            if not self.alreadyfailed:
+                tmpLog = self.getTmpLogContents()
+                rx = (
+                    'The following packages have unmet dependencies:\n'
+                    '.*: Depends: ([^ ]*( \([^)]*\))?)')
+                mo = re.search(rx, tmpLog, re.M)
+                if mo:
+                    self._slave.depFail(mo.group(1))
+                    print("Returning build status: DEPFAIL")
+                    print("Dependencies: " + mo.group(1))
+                else:
+                    print("Returning build status: Build failed")
+                    self._slave.buildFail()
         elif (
             retcode >= RETCODE_FAILURE_INSTALL and
             retcode <= RETCODE_FAILURE_BUILD_SOURCE_PACKAGE):

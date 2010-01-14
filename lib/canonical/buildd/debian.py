@@ -197,6 +197,13 @@ class DebianBuildManager(BuildManager):
                 self._state = DebianBuildState.UPDATE
                 self.doUpdateChroot()
 
+    def getTmpLogContents(self):
+        try:
+            tmpLogHandle = open(os.path.join(self._cachepath, "buildlog"))
+            return tmpLogHandle.read()
+        finally:
+            tmpLogHandle.close()
+
     def iterate_SOURCES(self, success):
         """Just finished overwriting sources.list."""
         if success != 0:

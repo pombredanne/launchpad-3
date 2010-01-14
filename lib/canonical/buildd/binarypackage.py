@@ -95,10 +95,8 @@ class BinaryPackageBuildManager(DebianBuildManager):
 
     def iterate_SBUILD(self, success):
         """Finished the sbuild run."""
+        tmpLog = self.getTmpLogContents()
         if success != SBuildExitCodes.OK:
-            tmpLogHandle = open(os.path.join(self._cachepath, "buildlog"))
-            tmpLog = tmpLogHandle.read()
-            tmpLogHandle.close()
             if (success == SBuildExitCodes.DEPFAIL or
                 success == SBuildExitCodes.PACKAGEFAIL):
                 for rx in BuildLogRegexes.GIVENBACK:
