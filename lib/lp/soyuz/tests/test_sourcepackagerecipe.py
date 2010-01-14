@@ -199,9 +199,8 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe()
         not_ppa = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
         distroseries = self.factory.makeDistroSeries()
-        requester = self.factory.makePerson()
         self.assertRaises(NonPPABuildRequest, recipe.requestBuild, not_ppa,
-                distroseries, requester, PackagePublishingPocket.RELEASE)
+                distroseries, not_ppa.owner, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildRejectsNoPermission(self):
         recipe = self.factory.makeSourcePackageRecipe()
@@ -211,7 +210,12 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertRaises(Exception, recipe.requestBuild, ppa,
                 distroseries, requester, PackagePublishingPocket.RELEASE)
 
-    # TODO: check pocket in archive
+    def test_requestBuildRejectsInvalidPocket(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries()
+        self.assertRaises(Exception, recipe.requestBuild, ppa,
+                distroseries, ppa.owner, PackagePublishingPocket.BACKPORTS)
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
