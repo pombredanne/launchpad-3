@@ -3,6 +3,8 @@
 
 __all__ = [
     'BranchJob',
+    'BranchJobDerived',
+    'BranchJobType',
     'BranchUpgradeJob',
     'RevisionsAddedJob',
     'RevisionMailJob',
