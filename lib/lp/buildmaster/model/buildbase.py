@@ -33,7 +33,7 @@ class BuildBase:
 
     implements(IBuildBase)
 
-    # XXX: Add a method to be overridden to specify policy to use.
+    policy_name = 'buildd'
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
@@ -101,8 +101,6 @@ class BuildBase:
                      % uploader_logfilename)
 
         # add extra arguments for processing a binary upload
-
-        # XXX: Get the policy from a function, rather than hard-coding it.
         extra_args = [
             "--log-file", "%s" % uploader_logfilename,
             "-d", "%s" % self.distribution.name,
@@ -110,7 +108,7 @@ class BuildBase:
                           pocketsuffix[self.pocket]),
             "-b", "%s" % self.id,
             "-J", "%s" % upload_leaf,
-            '--policy=buildd',
+            '--policy=%s' % self.policy_name,
             "%s" % root,
             ]
 

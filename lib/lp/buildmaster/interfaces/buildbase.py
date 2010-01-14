@@ -69,6 +69,9 @@ class IBuildBase(Interface):
 
     is_private = Attribute("Whether the build should be treated as private.")
 
+    policy_name = Attribute(
+        "The upload policy to use for handling these builds.")
+
     def handleStatus(status, queueItem, librarian, slave_status):
         """Handle a finished build status from a slave.
 
