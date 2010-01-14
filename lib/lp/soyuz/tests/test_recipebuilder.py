@@ -1,3 +1,4 @@
+import pdb
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -14,6 +15,8 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.manager import RecordingSlave
+from lp.soyuz.model.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuild)
 from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import (MockBuilder,
@@ -124,6 +127,12 @@ class TestRecipeBuilder(TestCaseWithFactory):
         logger = BufferLogger()
         self.assertRaises(CannotBuild, job.dispatchBuildToSlave, 
             "someid", logger)
+
+    def test_getById(self):
+        job = self.makeJob()
+        build_id = job.build.id
+        self.assertEquals(
+            job.build, SourcePackageRecipeBuild.getById(build_id))
 
 
 def test_suite():

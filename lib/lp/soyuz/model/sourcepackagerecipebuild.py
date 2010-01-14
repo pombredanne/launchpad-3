@@ -1,3 +1,4 @@
+import pdb
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -27,7 +28,7 @@ from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
 
 
-class SourcePackageRecipeBuild(BuildBase):
+class SourcePackageRecipeBuild(BuildBase, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
 
@@ -101,6 +102,12 @@ class SourcePackageRecipeBuild(BuildBase):
             date_created=date_created)
         store.add(spbuild)
         return spbuild
+
+    @classmethod
+    def getById(cls, build_id):
+        """See `ISourcePackageRecipeBuildSource`."""
+        store = IMasterStore(SourcePackageRecipeBuild)
+        return store.find(cls, cls.id == build_id).one()
 
     def makeJob(self):
         """See `ISourcePackageRecipeBuildJob`."""

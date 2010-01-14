@@ -107,7 +107,14 @@ class ISourcePackageRecipeBuildSource(Interface):
         :param requester: The `IPerson` who wants to build it.
         :param date_created: The date this build record was created. If not
             provided, defaults to now.
-        :return: `ISourcePackageBuild`.
+        :return: `ISourcePackageRecipeBuild`.
+        """
+
+    def getById(build_id):
+        """Return the `ISourcePackageRecipeBuild` for the given build id.
+
+        :param build_id: The id of the build to return.
+        :return: `ISourcePackageRecipeBuild`
         """
 
 
