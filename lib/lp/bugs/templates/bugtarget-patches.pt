@@ -11,7 +11,29 @@
 >
   <body>
     <div metal:fill-slot="main" class="tab-bugs">
-    <table><tr tal:repeat="patch context/patches"><td tal:content="patch/title">Hello, world!</td></tr></table>
+    <table><thead>
+             <tr>
+               <th>Patch</th>
+               <th>Bug</th>
+               <th>Importance</th>
+               <th>Status</th>
+               <th>Package</th>
+               <th>Patch Age</th>
+             </tr>
+           </thead>
+           <!-- What we have is a list of patch attachments.  We would
+                somehow need to go from attachment->bug->bugtask in
+                order to get the importance, status, etc...  But before
+                doing that, we need feedback from stakeholders about
+                exactly how the listing should look and behave.  What's
+                here now is just a very rough sketch. -->
+           <tr tal:repeat="patch context/patches">
+             <td tal:content="patch/title"></td>
+             <td><a tal:replace="structure patch/bug/fmt:link" /></td>
+             <td>TBD</td>
+             <td>TBD</td>
+             <td>TBD</td>
+             <td>TBD</td></tr></table>
     </div><!-- main -->
   </body>
 </html>

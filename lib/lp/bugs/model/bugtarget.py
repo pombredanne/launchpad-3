@@ -161,8 +161,12 @@ class HasBugsBase:
     def patches(self):
         """See `IHasBugs`."""
         lst = []
-        for bugtask in self.all_bugtasks:
-            for attachment in bugtask.bug.attachments:
+        tasks_with_patches_query = BugTaskSearchParams(
+            user=getUtility(ILaunchBag).user,
+            omit_dupes=True)
+        tasks = self.searchTasks(tasks_with_patches_query, has_patch=True)
+        for task in tasks:
+            for attachment in task.bug.attachments:
                 if attachment.type == BugAttachmentType.PATCH:
                     lst.append(attachment)
         return lst
