@@ -176,14 +176,13 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_requestBuild(self):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
-        distroseries = self.factory.makeDistroSeries()
-        build = recipe.requestBuild(ppa, distroseries, ppa.owner,
+        build = recipe.requestBuild(ppa, ppa.owner,
                 PackagePublishingPocket.RELEASE)
         # TODO: Fails as SourcePackageRecipeBuild doesn't correctly
         # implement the interface currently.
         #self.assertProvides(build, ISourcePackageRecipeBuild)
         self.assertEqual(build.archive, ppa)
-        self.assertEqual(build.distroseries, distroseries)
+        self.assertEqual(build.distroseries, recipe.distroseries)
         self.assertEqual(build.requester, ppa.owner)
         store = Store.of(build)
         store.flush()
@@ -201,32 +200,28 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
     def test_requestBuildRejectsNotPPA(self):
         recipe = self.factory.makeSourcePackageRecipe()
         not_ppa = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-        distroseries = self.factory.makeDistroSeries()
         self.assertRaises(NonPPABuildRequest, recipe.requestBuild, not_ppa,
-                distroseries, not_ppa.owner, PackagePublishingPocket.RELEASE)
+                not_ppa.owner, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildRejectsNoPermission(self):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
-        distroseries = self.factory.makeDistroSeries()
         requester = self.factory.makePerson()
         self.assertRaises(CannotUploadToArchive, recipe.requestBuild, ppa,
-                distroseries, requester, PackagePublishingPocket.RELEASE)
+                requester, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildRejectsInvalidPocket(self):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
-        distroseries = self.factory.makeDistroSeries()
         self.assertRaises(InvalidPocketForPPA, recipe.requestBuild, ppa,
-                distroseries, ppa.owner, PackagePublishingPocket.BACKPORTS)
+                ppa.owner, PackagePublishingPocket.BACKPORTS)
 
     def test_requestBuildRejectsDisabledArchive(self):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
         removeSecurityProxy(ppa).disable()
-        distroseries = self.factory.makeDistroSeries()
         self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
-                distroseries, ppa.owner, PackagePublishingPocket.RELEASE)
+                ppa.owner, PackagePublishingPocket.RELEASE)
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
