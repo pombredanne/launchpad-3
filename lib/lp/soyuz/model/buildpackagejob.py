@@ -11,21 +11,24 @@ import pytz
 from storm.locals import Int, Reference, Storm
 
 from zope.interface import classProvides, implements
+from zope.component import getUtility
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJobDispatchEstimation)
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
 from lp.soyuz.interfaces.archive import ArchivePurpose
-from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
+from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 
 
-class BuildPackageJob(Storm):
+class BuildPackageJob(Storm, BuildFarmJob):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
     classProvides(IBuildFarmJobDispatchEstimation)
@@ -209,3 +212,106 @@ class BuildPackageJob(Storm):
     def virtualized(self):
         """See `IBuildFarmJob`."""
         return self.build.is_virtualized
+
+    @staticmethod
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """See `IBuildFarmCandidateJobSelection`."""
+        # Avoiding circular import.
+        from lp.buildmaster.model.builder import Builder
+
+        private_statuses = (
+            PackagePublishingStatus.PUBLISHED,
+            PackagePublishingStatus.SUPERSEDED,
+            PackagePublishingStatus.DELETED,
+            )
+        extra_tables = [
+            'Archive', 'Build', 'BuildPackageJob', 'DistroArchSeries']
+        extra_clauses = """
+            BuildPackageJob.job = Job.id AND 
+            BuildPackageJob.build = Build.id AND 
+            Build.distroarchseries = DistroArchSeries.id AND
+            Build.archive = Archive.id AND
+            ((Archive.private IS TRUE AND
+              EXISTS (
+                  SELECT SourcePackagePublishingHistory.id
+                  FROM SourcePackagePublishingHistory
+                  WHERE
+                      SourcePackagePublishingHistory.distroseries =
+                         DistroArchSeries.distroseries AND
+                      SourcePackagePublishingHistory.sourcepackagerelease =
+                         Build.sourcepackagerelease AND
+                      SourcePackagePublishingHistory.archive = Archive.id AND
+                      SourcePackagePublishingHistory.status IN %s))
+              OR
+              archive.private IS FALSE) AND
+            build.buildstate = %s
+        """ % sqlvalues(private_statuses, BuildStatus.NEEDSBUILD)
+
+        # Ensure that if BUILDING builds exist for the same
+        # public ppa archive and architecture and another would not
+        # leave at least 20% of them free, then we don't consider
+        # another as a candidate.
+        #
+        # This clause selects the count of currently building builds on
+        # the arch in question, then adds one to that total before
+        # deriving a percentage of the total available builders on that
+        # arch.  It then makes sure that percentage is under 80.
+        #
+        # The extra clause is only used if the number of available
+        # builders is greater than one, or nothing would get dispatched
+        # at all.
+        num_arch_builders = Builder.selectBy(
+            processor=processor, manual=False, builderok=True).count()
+        if num_arch_builders > 1:
+            extra_clauses += """
+                AND EXISTS (SELECT true
+                WHERE ((
+                    SELECT COUNT(build2.id)
+                    FROM Build build2, DistroArchSeries distroarchseries2
+                    WHERE
+                        build2.archive = build.archive AND
+                        archive.purpose = %s AND
+                        archive.private IS FALSE AND
+                        build2.distroarchseries = distroarchseries2.id AND
+                        distroarchseries2.processorfamily = %s AND
+                        build2.buildstate = %s) + 1::numeric)
+                    *100 / %s
+                    < 80)
+            """ % sqlvalues(
+                ArchivePurpose.PPA, processor.family,
+                BuildStatus.BUILDING, num_arch_builders)
+
+        return(extra_tables, extra_clauses)
+
+    @staticmethod
+    def postprocessCandidate(job, logger):
+        """See `IBuildFarmCandidateJobSelection`."""
+        # Mark build records targeted to old source versions as SUPERSEDED
+        # and build records target to SECURITY pocket as FAILEDTOBUILD.
+        # Builds in those situation should not be built because they will
+        # be wasting build-time, the former case already has a newer source
+        # and the latter could not be built in DAK.
+        build_set = getUtility(IBuildSet)
+
+        build = build_set.getByQueueEntry(job)
+        if build.pocket == PackagePublishingPocket.SECURITY:
+            # We never build anything in the security pocket.
+            logger.debug(
+                "Build %s FAILEDTOBUILD, queue item %s REMOVED"
+                % (build.id, job.id))
+            build.buildstate = BuildStatus.FAILEDTOBUILD
+            job.destroySelf()
+            return False
+
+        publication = build.current_source_publication
+        if publication is None:
+            # The build should be superseded if it no longer has a
+            # current publishing record.
+            logger.debug(
+                "Build %s SUPERSEDED, queue item %s REMOVED"
+                % (build.id, job.id))
+            build.buildstate = BuildStatus.SUPERSEDED
+            job.destroySelf()
+            return False
+
+        return True

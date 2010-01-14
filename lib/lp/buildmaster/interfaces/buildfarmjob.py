@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IBuildFarmJob',
+    'IBuildFarmCandidateJobSelection',
     'IBuildFarmJobDispatchEstimation',
     'BuildFarmJobType',
     ]
@@ -134,3 +135,41 @@ class IBuildFarmJobDispatchEstimation(Interface):
             the pending jobs of the appropriate type.
         """
 
+
+class IBuildFarmCandidateJobSelection(Interface):
+    """Operations for refining candidate job selection (optional).
+    
+    Job type classes that do *not* need to refine candidate job selection may
+    be derived from `BuildFarmJob` which provides a base implementation of
+    this interface.
+    """
+
+    def addCandidateSelectionCriteria(processor, virtualized):
+        """Provide extra clauses that will refine the candidate job selection.
+
+        Return a 2-tuple with extra tables and clauses to be used to
+        narrow down the list of candidate jobs.
+
+        Example:
+            (('Build', 'BuildPackageJob'),
+             "BuildPackageJob.build = Build.id AND ..")
+
+        :param processor: the type of processor that the candidate jobs are
+            expected to run on.
+        :param virtualized: whether the candidate jobs are expected to run on
+            the `processor` natively or inside a virtual machine.
+        :return: an (extra_tables, extra_query) tuple where `extra_tables` is
+            a collection of tables that need to appear in the FROM clause of
+            the combined query for `extra_query` to work. 
+        """
+
+    def postprocessCandidate(job, logger):
+        """True if the candidate job is fine and should be dispatched
+        to a builder, False otherwise.
+        
+        :param job: The `BuildQueue` instance to be scrutinized.
+        :param logger: The logger to use.
+
+        :return: True if the candidate job should be dispatched
+            to a builder, False otherwise.
+        """

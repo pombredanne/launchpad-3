@@ -682,7 +682,8 @@ class Build(SQLBase):
         queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
             job_type=BuildFarmJobType.PACKAGEBUILD,
-            job=job.id)
+            job=job.id, processor=self.processor,
+            virtualized=self.is_virtualized)
         store.add(queue_entry)
         return queue_entry
 

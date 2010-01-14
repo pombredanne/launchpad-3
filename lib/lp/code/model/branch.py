@@ -613,6 +613,7 @@ class Branch(SQLBase):
         series_set = getUtility(IFindOfficialBranchLinks)
         alteration_operations.extend(
             map(ClearOfficialPackageBranch, series_set.findForBranch(self)))
+        # XXX MichaelHudson 2010-01-13: Handle sourcepackagerecipes here.
         return (alteration_operations, deletion_operations)
 
     def deletionRequirements(self):
