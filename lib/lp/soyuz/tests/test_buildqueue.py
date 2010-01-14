@@ -18,7 +18,7 @@ from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.processor import ProcessorFamilySet
