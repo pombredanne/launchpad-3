@@ -40,6 +40,7 @@ class Test_is_read_only(TestCase):
         # Safety net just in case a test leaves the read-only.txt file behind.
         if read_only_file_exists():
             remove_read_only_file()
+        super(Test_is_read_only, self).tearDown()
 
     def test_is_read_only(self):
         # By default we run in read-write mode.
