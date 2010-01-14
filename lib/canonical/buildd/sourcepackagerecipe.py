@@ -74,7 +74,7 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
         self.package_name = extra_args['package_name']
         self.author_name = extra_args['author_name']
         self.author_email = extra_args['author_email']
-        self.purpose = extra_args['purpose']
+        self.archive_purpose = extra_args['archive_purpose']
 
         super(SourcePackageRecipeBuildManager, self).initiate(
             files, chroot, extra_args)
@@ -89,7 +89,8 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
             'Component: %s\n'
             'Purpose: %s\n'
             'Build-Debug-Symbols: no\n' %
-            (self.package_name, self.suite, self.component, self.purpose))
+            (self.package_name, self.suite, self.component,
+             self.archive_purpose))
         os.makedirs(get_chroot_path(self._buildid, 'work'))
         recipe_path = get_chroot_path(self._buildid, 'work/recipe')
         splat_file(recipe_path, self.recipe_text)

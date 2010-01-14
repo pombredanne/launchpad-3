@@ -20,7 +20,7 @@ print proxy.build(
          'package_name': 'bzr-builder',
          'suite': 'lucid',
          'ogrecomponent': 'universe',
-         'purpose': 'puppies',
+         'archive_purpose': 'puppies',
          'recipe_text': recipe_text,
          'archives': [
             'deb http://nz.archive.ubuntu.com/ubuntu lucid main universe']})
