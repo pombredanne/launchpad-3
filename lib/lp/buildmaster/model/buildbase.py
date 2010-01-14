@@ -28,6 +28,9 @@ from lp.soyuz.interfaces.build import BuildStatus
 
 
 class BuildBase:
+
+    # XXX: Add a method to be overridden to specify policy to use.
+
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
         logger = logging.getLogger()
@@ -94,6 +97,8 @@ class BuildBase:
                      % uploader_logfilename)
 
         # add extra arguments for processing a binary upload
+
+        # XXX: Pass the policy in here, rather than in the config.
         extra_args = [
             "--log-file", "%s" %  uploader_logfilename,
             "-d", "%s" % self.distribution.name,
