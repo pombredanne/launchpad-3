@@ -138,9 +138,9 @@ class SourcePackageRecipeBuildJob(Storm):
     job_id = Int(name='job', allow_none=False)
     job = Reference(job_id, 'Job.id')
 
-    source_package_build_id = Int(name='build', allow_none=False)
-    source_package_build = Reference(
-        source_package_build_id, 'SourcePackageRecipeBuild.id')
+    build_id = Int(name='sourcepackage_recipe_build', allow_none=False)
+    build = Reference(
+        build_id, 'SourcePackageRecipeBuild.id')
 
     processor = None
     virtualized = False
