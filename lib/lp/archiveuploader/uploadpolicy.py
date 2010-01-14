@@ -13,7 +13,6 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
-from lp.soyuz.interfaces.archive import ArchivePurpose
 
 
 # Number of seconds in an hour (used later)
@@ -188,6 +187,7 @@ class AbstractUploadPolicy:
 # Nice shiny top-level policy finder
 findPolicyByName = AbstractUploadPolicy.findPolicyByName
 findPolicyByOptions = AbstractUploadPolicy.findPolicyByOptions
+
 
 class InsecureUploadPolicy(AbstractUploadPolicy):
     """The insecure upload policy is used by the poppy interface."""
