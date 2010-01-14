@@ -91,15 +91,23 @@ class TestRecipeBuilder(TestCaseWithFactory):
     def test__extraBuildArgs(self):
         # _extraBuildArgs will return a sane set of additional arguments
         job = self.makeJob()
+        distroarchseries = job.build.distroseries.architectures[0]
+        distroname = job.build.archive.distribution.name
         self.assertEquals({
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
            'author_name': u'Joe User',
            'package_name': u'apackage',
            'archive_purpose': 'PPA',
+           'ogrecomponent': 'universe',
            'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
                           'lp://dev/~joe/someapp/pkg\n',
-            }, job._extraBuildArgs())
+           'archives': [
+                u'deb http://ftpmaster.internal/%s mydistro%s '
+                u'main restricted universe multiverse' % (distroname, suite)
+                    for suite in ("", "-security", "-updates")
+                ]
+            }, job._extraBuildArgs(distroarchseries))
 
     def test_dispatchBuildToSlave(self):
         # Ensure dispatchBuildToSlave will make the right calls to the slave
@@ -123,7 +131,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertEquals(build_args[0], "1-someid")
         self.assertEquals(build_args[1], "sourcepackagerecipe")
         self.assertEquals(build_args[3], {})
-        self.assertEquals(build_args[4], job._extraBuildArgs())
+        distroarchseries = job.build.distroseries.architectures[0]
+        self.assertEquals(build_args[4], job._extraBuildArgs(distroarchseries))
 
     def test_dispatchBuildToSlave_nochroot(self):
         # dispatchBuildToSlave will fail when there is not chroot tarball 

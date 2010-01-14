@@ -24,7 +24,11 @@ from zope.interface import classProvides, implements
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.services.job.model.job import Job
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.adapters.archivedependencies import (
+    default_component_dependency_name,)
 from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
@@ -55,6 +59,10 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     build_state = EnumCol(
         dbName='build_state', notNull=True, schema=BuildStatus)
 
+    @property
+    def current_component(self):
+        return getUtility(IComponentSet)[default_component_dependency_name]
+
     date_created = UtcDateTimeCol(notNull=True)
     date_built = UtcDateTimeCol(notNull=False)
     date_first_dispatched = UtcDateTimeCol(notNull=False)
@@ -65,6 +73,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
     sourcepackagename = Reference(
         sourcepackagename_id, 'SourcePackageName.id')
+
+    @property
+    def pocket(self):
+        # JRV 2010-01-15: The database table really should have a pocket 
+        # column, although this is not a big problem at the moment 
+        # as recipe builds only happen for PPA's (so far). (bug 507307)
+        return PackagePublishingPocket.RELEASE
 
     recipe_id = Int(name='recipe', allow_none=False)
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')

@@ -98,15 +98,15 @@ def get_components_for_building(build):
     return component_dependencies[build.current_component.name]
 
 
-def get_primary_current_component(build):
+def get_primary_current_component(archive, sourcepackagename, distroseries):
     """Return the component name of the primary archive ancestry.
 
     If no ancestry could be found, default to 'universe'.
     """
-    primary_archive = build.archive.distribution.main_archive
+    primary_archive = archive.distribution.main_archive
     ancestries = primary_archive.getPublishedSources(
-        name=build.sourcepackagerelease.name,
-        distroseries=build.distroseries, exact_match=True)
+        name=sourcepackagename,
+        distroseries=distroseries, exact_match=True)
 
     # XXX cprov 20080923 bug=246200: This count should be replaced
     # by bool() (__non_zero__) when storm implementation gets fixed.
@@ -116,10 +116,11 @@ def get_primary_current_component(build):
     return 'universe'
 
 
-def get_sources_list_for_building(build):
+def get_sources_list_for_building(build, sourcepackagename, distroarchseries):
     """Return the sources_list entries required to build the given item.
 
     :param build: a context `IBuild`.
+    :param sourcepackagename: A source package name (as text)
     :return: a deb sources_list entries (lines).
     """
     deps = []
@@ -127,12 +128,13 @@ def get_sources_list_for_building(build):
     # Consider primary archive dependency override. Add the default
     # primary archive dependencies if it's not present.
     if build.archive.getArchiveDependency(
-        build.distribution.main_archive) is None:
+        build.archive.distribution.main_archive) is None:
         primary_dependencies = _get_default_primary_dependencies(build)
         deps.extend(primary_dependencies)
 
     # Consider user-selected archive dependencies.
-    primary_component = get_primary_current_component(build)
+    primary_component = get_primary_current_component(build.archive, 
+        sourcepackagename, build.distroseries)
     for archive_dependency in build.archive.dependencies:
         # When the dependency component is undefined, we should use
         # the component where the source is published in the primary
@@ -156,7 +158,7 @@ def get_sources_list_for_building(build):
             )
 
     sources_list_lines = _get_sources_list_for_dependencies(
-        deps, build.distroarchseries)
+        deps, distroarchseries)
 
     # Append external sources_list lines for this archive if it's
     # specified in the configuration.
@@ -246,7 +248,7 @@ def _get_default_primary_dependencies(build):
     primary_dependencies = []
     for pocket in primary_pockets:
         primary_dependencies.append(
-            (build.distribution.main_archive, pocket, primary_components)
-            )
+            (build.archive.distribution.main_archive, pocket,
+             primary_components))
 
     return primary_dependencies

@@ -343,7 +343,8 @@ the primary archive.
     >>> from lp.soyuz.adapters.archivedependencies import (
     ...     get_primary_current_component)
 
-    >>> print get_primary_current_component(a_build)
+    >>> print get_primary_current_component(a_build.archive,
+		a_build.sourcepackagerelease.name, a_build.distroseries)
     universe
 
     >>> print_building_sources_list(a_build)
