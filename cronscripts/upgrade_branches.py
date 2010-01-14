@@ -14,7 +14,7 @@ from lp.code.interfaces.branchjob import IBranchUpgradeJobSource
 
 
 class RunUpgradeBranches(JobCronScript):
-    """Run UpdatePreviewDiff jobs."""
+    """Run UpdateBranches jobs."""
 
     config_name = 'upgrade_branches'
     source_interface = IBranchUpgradeJobSource
