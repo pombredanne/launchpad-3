@@ -55,8 +55,7 @@ from lp.code.model.branch import (
     DeleteCodeImport, DeletionCallable, DeletionOperation,
     update_trigger_modified_fields)
 from lp.code.model.branchjob import (
-    BranchDiffJob, BranchJob, BranchJobType, BranchScanJob,
-    ReclaimBranchSpaceJob)
+    BranchDiffJob, BranchJob, BranchJobType, ReclaimBranchSpaceJob)
 from lp.code.model.branchmergeproposal import (
     BranchMergeProposal)
 from lp.code.model.codeimport import CodeImport, CodeImportSet
