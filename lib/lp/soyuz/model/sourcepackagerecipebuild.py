@@ -1,4 +1,3 @@
-import pdb
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
@@ -20,6 +19,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+#
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.build import BuildStatus
@@ -59,7 +59,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
-    sourcepackagename = Reference(sourcepackagename_id, 'SourcePackageName.id')
+    sourcepackagename = Reference(
+        sourcepackagename_id, 'SourcePackageName.id')
 
     recipe_id = Int(name='recipe', allow_none=False)
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
@@ -88,7 +89,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         self.sourcepackagename = sourcepackagename
 
     @classmethod
-    def new(cls, sourcepackage, recipe, requester, archive, date_created=None):
+    def new(cls, sourcepackage, recipe, requester, archive, 
+            date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         if date_created is None:
@@ -120,7 +122,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def storeBuildInfo(self, librarian, slave_status):
         """See `IBuildBase`."""
-        super(Build, self).storeBuildInfo(librarian, slave_status)
+        super(SourcePackageRecipeBuild, self).storeBuildInfo(
+            librarian, slave_status)
         self.dependencies = slave_status.get('dependencies')
 
 class SourcePackageRecipeBuildJob(Storm):

@@ -6,15 +6,11 @@
 __metaclass__ = type
 __all__ = ['Build', 'BuildSet']
 
-
 import apt_pkg
 from cStringIO import StringIO
 import datetime
 import logging
 import operator
-import os
-import subprocess
-import time
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -31,8 +27,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    clear_current_connection_cache, flush_database_updates, cursor,
-    quote_like, SQLBase, sqlvalues)
+    cursor, quote_like, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.librarian import (
@@ -48,12 +43,10 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-from canonical.librarian.utils import copy_and_close
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
-from lp.registry.interfaces.pocket import (PackagePublishingPocket,
-    pocketsuffix)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
