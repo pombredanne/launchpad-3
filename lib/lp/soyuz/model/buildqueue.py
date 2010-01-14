@@ -51,8 +51,7 @@ class BuildQueue(SQLBase):
     lastscore = IntCol(dbName='lastscore', default=0)
     manual = BoolCol(dbName='manual', default=False)
     estimated_duration = IntervalCol()
-    processor = ForeignKey(
-        dbName='processor', foreignKey='Processor', notNull=True)
+    processor = ForeignKey(dbName='processor', foreignKey='Processor')
     virtualized = BoolCol(dbName='virtualized')
 
     @property
