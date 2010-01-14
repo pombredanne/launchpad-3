@@ -143,8 +143,6 @@ class IBuilder(IHasOwner):
 
     currentjob = Attribute("BuildQueue instance for job being processed.")
 
-    status = Attribute("Generated status information")
-
     is_available = Bool(
         title=_("Whether or not a builder is available for building "
                 "new jobs. "),
