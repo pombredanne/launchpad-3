@@ -26,10 +26,14 @@ class PersonRoles:
     def __getattr__(self, name):
         """Handle all in_* attributes."""
         prefix = 'in_'
+        errortext = "'PersonRoles' instance has no attribute '%s'" % name
         if not name.startswith(prefix):
-            raise AttributeError
+            raise AttributeError(errortext)
         attribute = name[len(prefix):]
-        return self.person.inTeam(getattr(self._celebrities, attribute))
+        try:
+            return self.person.inTeam(getattr(self._celebrities, attribute))
+        except AttributeError:
+            raise AttributeError(errortext)
 
     def isOwner(self, obj):
         """See IPersonRoles."""
