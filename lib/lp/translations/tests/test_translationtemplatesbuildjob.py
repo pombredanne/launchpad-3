@@ -78,6 +78,12 @@ class TestTranslationTemplatesBuildJob(TestCaseWithFactory):
         other_job = self.jobset.create(self.branch)
         self.assertNotEqual(self.specific_job.getName(), other_job.getName())
 
+    def test_getTitle(self):
+        other_job = self.jobset.create(self.branch)
+        self.assertEqual(
+            '%s translation templates build' % self.branch.bzr_identity,
+            self.specific_job.getTitle())
+
     def test_getLogFileName(self):
         # Each job has a unique log file name.
         other_job = self.jobset.create(self.branch)
