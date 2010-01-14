@@ -428,8 +428,9 @@ class Builder(SQLBase):
         def qualify_subquery(job_type, sub_query):
             """Put the sub-query into a job type context."""
             qualified_query = """
-                ((BuildQueue.job_type != %s) OR (%s))
-            """ % (sqlvalues(job_type) + (sub_query,))
+                ((BuildQueue.job_type != %s) OR (%%s))
+            """ % sqlvalues(job_type)
+            qualified_query %= sub_query
             return qualified_query
 
         logger = self._getSlaveScannerLogger()
