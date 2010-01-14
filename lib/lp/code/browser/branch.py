@@ -41,7 +41,7 @@ from zope.event import notify
 from zope.formlib import form
 from zope.interface import Interface, implements, providedBy
 from zope.publisher.interfaces import NotFound
-from zope.schema import Choice, Text
+from zope.schema import Bool, Choice, Text
 from lazr.delegates import delegates
 from lazr.enum import EnumeratedType, Item
 from lazr.lifecycle.event import ObjectModifiedEvent
@@ -85,6 +85,7 @@ from lp.code.errors import InvalidBranchMergeProposal
 from lp.code.interfaces.branch import (
     BranchCreationForbidden, BranchExists, IBranch,
     user_has_special_branch_access)
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchtarget import IBranchTarget
 from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.branchnamespace import IBranchNamespacePolicy
@@ -1156,6 +1157,13 @@ class RegisterProposalSchema(Interface):
         description=u'Lowercase keywords describing the type of review you '
                      'would like to be performed.')
 
+    commit_message = IBranchMergeProposal['commit_message']
+
+    needs_review = Bool(
+        title=_("Needs review"), required=True, default=True,
+        description=_(
+            "Is the proposal ready for review now?"))
+
 
 class RegisterBranchMergeProposalView(LaunchpadFormView):
     """The view to register new branch merge proposals."""
@@ -1209,10 +1217,11 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             # and an advanced expandable section.
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
-                prerequisite_branch=prerequisite_branch, needs_review=True,
+                prerequisite_branch=prerequisite_branch,
+                needs_review=data['needs_review'],
                 initial_comment=data.get('comment'),
-                review_requests=review_requests)
-
+                review_requests=review_requests,
+                commit_message=data.get('commit_message'))
             self.next_url = canonical_url(proposal)
         except InvalidBranchMergeProposal, error:
             self.addError(str(error))
