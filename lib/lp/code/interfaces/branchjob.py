@@ -94,6 +94,9 @@ class IBranchScanJobSource(Interface):
     def iterReady():
         """Iterate through all IBranchScanJobs."""
 
+    def contextManager():
+        """Get a context for running this kind of job in."""
+
 
 class IBranchUpgradeJob(IRunnableJob):
     """A job to upgrade branches with out-of-date formats."""
