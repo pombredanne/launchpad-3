@@ -1855,7 +1855,7 @@ class BaseWindmillLayer(AppServerLayer):
         if cls.config_file is not None:
             # Close the file so that it gets deleted.
             cls.config_file.close()
-        config.pop('windmillsettings')
+        config.reloadConfig()
 
     @classmethod
     @profiled
