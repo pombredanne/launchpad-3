@@ -121,6 +121,7 @@ def get_sources_list_for_building(build, sourcepackagename, distroarchseries):
 
     :param build: a context `IBuild`.
     :param sourcepackagename: A source package name (as text)
+    :param distroarchseries: A `IDistroArchSeries`
     :return: a deb sources_list entries (lines).
     """
     deps = []
@@ -211,7 +212,7 @@ def _get_sources_list_for_dependencies(dependencies, distroarchseries):
 
     :param dependencies: list of 3 elements tuples as:
         (`IArchive`, `PackagePublishingPocket`, list of `IComponent` names)
-    :param distroseries: target `IDistroSeries`;
+    :param distroarchseries: target `IDistroArchSeries`;
 
     :return: a list of sources_list formatted lines.
     """
