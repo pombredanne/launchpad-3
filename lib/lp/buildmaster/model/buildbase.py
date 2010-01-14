@@ -16,6 +16,7 @@ import pytz
 import subprocess
 import time
 
+from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
@@ -23,11 +24,14 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     clear_current_connection_cache, cursor, flush_database_updates)
 from canonical.librarian.utils import copy_and_close
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.interfaces.build import BuildStatus
 
 
 class BuildBase:
+
+    implements(IBuildBase)
 
     # XXX: Add a method to be overridden to specify policy to use.
 

@@ -18,7 +18,10 @@ from lp.buildmaster.interfaces.builder import IBuilder
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad import _
 
+
 class IBuildBase(Interface):
+    """Common interface shared by farm jobs that build a package."""
+
     datecreated = exported(
         Datetime(
             title=_('Date created'), required=True, readonly=True,
