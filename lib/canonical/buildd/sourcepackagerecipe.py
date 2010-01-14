@@ -68,7 +68,7 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
         :param chroot: The sha1sum of the chroot to use.
         :param extra_args: A dict of extra arguments.
         """
-        self.recipe_data = extra_args['recipe_data']
+        self.recipe_text = extra_args['recipe_text']
         self.suite = extra_args['suite']
         self.component = extra_args['ogrecomponent']
         self.package_name = extra_args['package_name']
@@ -92,7 +92,7 @@ class SourcePackageRecipeBuildManager(DebianBuildManager):
             (self.package_name, self.suite, self.component, self.purpose))
         os.makedirs(get_chroot_path(self._buildid, 'work'))
         recipe_path = get_chroot_path(self._buildid, 'work/recipe')
-        splat_file(recipe_path, self.recipe_data)
+        splat_file(recipe_path, self.recipe_text)
         args = [
             "buildrecipe.py", self._buildid, self.author_name,
             self.author_email, self.package_name, self.suite]

@@ -21,7 +21,7 @@ print proxy.build(
          'suite': 'lucid',
          'ogrecomponent': 'universe',
          'purpose': 'puppies',
-         'recipe_data': recipe_text,
+         'recipe_text': recipe_text,
          'archives': [
             'deb http://nz.archive.ubuntu.com/ubuntu lucid main universe']})
 #status = proxy.status()

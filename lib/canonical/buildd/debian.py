@@ -124,9 +124,9 @@ class DebianBuildManager(BuildManager):
         The primary file we care about is the .changes file. We key from there.
         """
         path = self.getChangesFilename()
+        name = os.path.basename(path)
         chfile = open(path, "r")
-        self._slave.waitingfiles['changes'] = self._slave.storeFile(
-            chfile.read())
+        self._slave.waitingfiles[name] = self._slave.storeFile(chfile.read())
         chfile.seek(0)
         seenfiles = False
 
