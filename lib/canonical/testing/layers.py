@@ -342,6 +342,7 @@ class BaseLayer:
         # Fail tests with memory leaks now rather than when Launchpad crashes
         # due to a leak because someone ignored the warnings.
         if gc.garbage:
+            del gc.garbage[:]
             gc.collect() # Expensive, so only do if there might be garbage.
             if gc.garbage:
                 BaseLayer.flagTestIsolationFailure(
