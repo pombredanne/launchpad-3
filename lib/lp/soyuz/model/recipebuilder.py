@@ -11,8 +11,6 @@ __all__ = [
 from zope.component import adapts
 from zope.interface import implements
 
-from canonical.cachedproperty import cachedproperty
-
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
@@ -31,7 +29,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
 
     status = None
 
-    @cachedproperty
+    @property
     def build(self):
         return self.buildfarmjob.build
 
@@ -134,3 +132,33 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
                 "to the series status of %s."
                 % (build.title, build.id, build.pocket.name,
                    build.distroseries.name))
+
+    def slaveStatus(self, raw_slave_status):
+        """Parse and return the binary build specific status info.
+
+        This includes:
+        * build_id => string
+        * build_status => string or None
+        * logtail => string or None
+        * filemap => dictionary or None
+        * dependencies => string or None
+        """
+        builder_status = raw_slave_status[0]
+        extra_info = {}
+        if builder_status == 'BuilderStatus.WAITING':
+            extra_info['build_status'] = raw_slave_status[1]
+            extra_info['build_id'] = raw_slave_status[2]
+            build_status_with_files = [
+                'BuildStatus.OK',
+                'BuildStatus.PACKAGEFAIL',
+                'BuildStatus.DEPFAIL',
+                ]
+            if extra_info['build_status'] in build_status_with_files:
+                extra_info['filemap'] = raw_slave_status[3]
+                extra_info['dependencies'] = raw_slave_status[4]
+        else:
+            extra_info['build_id'] = raw_slave_status[1]
+            if builder_status == 'BuilderStatus.BUILDING':
+                extra_info['logtail'] = raw_slave_status[2]
+
+        return extra_info

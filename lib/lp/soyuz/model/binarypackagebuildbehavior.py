@@ -149,7 +149,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
         * build_id => string
         * build_status => string or None
         * logtail => string or None
-        * filename => dictionary or None
+        * filemap => dictionary or None
         * dependencies => string or None
         """
         builder_status = raw_slave_status[0]
