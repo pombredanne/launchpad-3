@@ -10,7 +10,6 @@ from zope.interface import implements, Interface
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces.account import IAccount
-from lp.archiveuploader.permission import can_upload_to_archive
 from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from lp.registry.interfaces.announcement import IAnnouncement
 from lp.soyuz.interfaces.archive import IArchive
@@ -87,7 +86,8 @@ from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.interfaces.project import IProject, IProjectSet
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks, ISeriesSourcePackageBranch)
-from lp.registry.interfaces.sourcepackage import ISourcePackage
+from lp.registry.interfaces.sourcepackage import (
+    ISourcePackage, get_default_archive,)
 from lp.soyuz.interfaces.sourcepackagerelease import (
     ISourcePackageRelease)
 from lp.blueprints.interfaces.specification import ISpecification
@@ -1685,8 +1685,9 @@ def can_upload_linked_package(person, branch):
     # around this by assuming that things are fine as long as we find at least
     # one combination that allows us to upload the corresponding source
     # package.
+    archive = get_default_archive()
     for ssp in ssp_list:
-        if can_upload_to_archive(person, ssp):
+        if archive.canUploadSuiteSourcePackage(person, ssp):
             return True
     return False
 

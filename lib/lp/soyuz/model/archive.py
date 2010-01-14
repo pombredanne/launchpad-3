@@ -915,6 +915,21 @@ class Archive(SQLBase):
         return self._authenticate(
             user, component_or_package, ArchivePermissionType.UPLOAD)
 
+    def canUploadSuiteSourcePackage(self, person, suitesourcepackage):
+        """See `IArchive`."""
+        sourcepackage = suitesourcepackage.sourcepackage
+        pocket = suitesourcepackage.pocket
+        distroseries = sourcepackage.distroseries
+        sourcepackagename = sourcepackage.sourcepackagename
+        component = sourcepackage.latest_published_component
+        # strict_component is True because the source package already exists
+        # (otherwise we couldn't have a suitesourcepackage object) and
+        # nascentupload passes True as a matter of policy when the package exists.
+        reason = check_upload_to_archive(
+            person, distroseries, sourcepackagename, self, component, pocket,
+            strict_component=True)
+        return reason is None
+
     def canAdministerQueue(self, user, component):
         """See `IArchive`."""
         return self._authenticate(

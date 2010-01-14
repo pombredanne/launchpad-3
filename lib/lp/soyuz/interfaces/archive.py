@@ -374,6 +374,14 @@ class IArchivePublic(IHasOwner, IPrivacy):
 
         """
 
+    def canUploadSuiteSourcePackage(person, suitesourcepackage):
+        """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+
+        :param person: An `IPerson` who might be uploading.
+        :param suitesourcepackage: An `ISuiteSourcePackage` to be uploaded.
+        :return: True if they can, False if they cannot.
+        """
+
     def canAdministerQueue(person, component):
         """Check to see if person is allowed to administer queue items.
 
