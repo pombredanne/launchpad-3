@@ -98,7 +98,7 @@ class BuildBase:
 
         # add extra arguments for processing a binary upload
 
-        # XXX: Pass the policy in here, rather than in the config.
+        # XXX: Get the policy from a function, rather than hard-coding it.
         extra_args = [
             "--log-file", "%s" % uploader_logfilename,
             "-d", "%s" % self.distribution.name,
@@ -106,6 +106,7 @@ class BuildBase:
                           pocketsuffix[self.pocket]),
             "-b", "%s" % self.id,
             "-J", "%s" % upload_leaf,
+            '--policy=buildd',
             "%s" % root,
             ]
 
