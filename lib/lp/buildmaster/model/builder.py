@@ -430,7 +430,7 @@ class Builder(SQLBase):
             qualified_query = """
                 ((BuildQueue.job_type != %s) OR (%s))
             """ % sqlvalues(job_type, sub_query)
-            return qualify_subquery
+            return qualified_query
 
         logger = self._getSlaveScannerLogger()
         candidate = None
