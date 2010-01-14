@@ -13,19 +13,23 @@ from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Object, TextLine, Timedelta
 from lazr.enum import DBEnumeratedType
 from lazr.restful.declarations import exported
+from lazr.restful.fields import Reference
 
 from lp.buildmaster.interfaces.builder import IBuilder
+from lp.registry.interfaces.distribution import IDistribution
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad import _
 
 class IBuildBase(Interface):
-    datecreated = exported(
+    date_created = exported(
         Datetime(
             title=_('Date created'), required=True, readonly=True,
             description=_("The time when the build request was created.")))
 
     # Really BuildStatus. Patched in _schema_circular_imports.
-    buildstate = exported(
+    build_state = exported(
         Choice(
             title=_('State'), required=True, vocabulary=DBEnumeratedType,
             description=_("The current build state.")))
@@ -41,18 +45,17 @@ class IBuildBase(Interface):
         title=_("Builder"), schema=IBuilder, required=False,
         description=_("The Builder which address this build request."))
 
-    datebuilt = exported(
+    date_built = exported(
         Datetime(
             title=_('Date built'), required=False,
             description=_("The time when the build result got collected.")))
 
-    buildduration = Timedelta(
+    build_duration = Timedelta(
         title=_("Build Duration"), required=False,
         description=_("Build duration interval, calculated when the "
                       "build result gets collected."))
 
-    # XXX: jml 2010-01-12: Rename to build_log.
-    buildlog = Object(
+    build_log = Object(
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the entire buildlog."))
 
@@ -65,6 +68,34 @@ class IBuildBase(Interface):
     buildqueue_record = Attribute("Corespondent BuildQueue record")
 
     is_private = Attribute("Whether the build should be treated as private.")
+
+    archive = exported(
+        Reference(
+            title=_("Archive"), schema=IArchive,
+            required=True, readonly=True,
+            description=_("The Archive context for this build.")))
+
+    current_component = Attribute(
+        "Component where the source related to this build was last "
+        "published.")
+
+    pocket = exported(
+        Choice(
+            title=_('Pocket'), required=True,
+            vocabulary=PackagePublishingPocket,
+            description=_("The build targeted pocket.")))
+
+    dependencies = exported(
+        TextLine(
+            title=_("Dependencies"), required=False,
+            description=_("Debian-like dependency line that must be satisfied"
+                          " before attempting to build this request.")))
+
+    distribution = exported(
+        Reference(
+            schema=IDistribution,
+            title=_("Distribution"), required=True,
+            description=_("Shortcut for its distribution.")))
 
     def handleStatus(status, queueItem, librarian, slave_status):
         """Handle a finished build status from a slave.
@@ -90,6 +121,13 @@ class IBuildBase(Interface):
 
         Subclasses can override this as needed, and call it from custom status
         handlers, but it should not be called externally.
+        """
+
+    def storeUploadLog(content):
+        """Store the given content as the build upload_log.
+
+        :param content: string containing the upload-processor log output for
+            the binaries created in this build.
         """
 
     def notify(extra_info=None):

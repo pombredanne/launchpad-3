@@ -32,6 +32,7 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+from lp.soyuz.model.buildqueue import BuildQueue
 
 
 class SourcePackageRecipeBuild(BuildBase, Storm):
@@ -44,6 +45,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
 
     id = Int(primary=True)
+
+    is_private = False
 
     archive_id = Int(name='archive', allow_none=False)
     archive = Reference(archive_id, 'Archive.id')
@@ -70,9 +73,17 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
+    # XXX: Need a DB field for this.
+    dependencies = None
+
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
     sourcepackagename = Reference(
         sourcepackagename_id, 'SourcePackageName.id')
+
+    @property
+    def distribution(self):
+        """See `IBuildBase`."""
+        return self.distroseries.distribution
 
     @property
     def pocket(self):
@@ -86,6 +97,16 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
+
+    @property
+    def buildqueue_record(self):
+        """See `IBuildBase`."""
+        store = Store.of(self)
+        results = store.find(
+            BuildQueue,
+            SourcePackageRecipeBuildJob.job == BuildQueue.jobID,
+            SourcePackageRecipeBuildJob.build == self.id)
+        return results.one()
 
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
                  archive, date_created=None, date_first_dispatched=None,
@@ -144,6 +165,12 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         # XXX: Do this properly.
         return datetime.timedelta(minutes=2)
 
+
+    def storeUploadLog(self, content):
+        return
+
+    def notify(self, extra_info=None):
+        return
 
 class SourcePackageRecipeBuildJob(Storm):
 

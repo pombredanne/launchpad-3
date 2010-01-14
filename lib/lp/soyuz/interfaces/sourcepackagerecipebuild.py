@@ -13,22 +13,17 @@ __all__ = [
 
 from lazr.restful.fields import Reference
 
-from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int, Object, Timedelta
+from zope.interface import Interface
+from zope.schema import Int, Object
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 
 from lp.buildmaster.interfaces.buildbase import IBuildBase
-from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.distroseries import IDistroSeries
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.job.interfaces.job import IJob
-from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.sourcepackagerecipe import ISourcePackageRecipe
 
 
@@ -36,12 +31,6 @@ class ISourcePackageRecipeBuild(IBuildBase):
     """A build of a source package."""
 
     id = Int(title=_("Identifier for this build."))
-
-    current_component = Attribute(
-        "Component where the source related to this build was last "
-        "published.")
-
-    date_created = Datetime(required=True, readonly=True)
 
     distroseries = Reference(
         IDistroSeries, title=_("The distroseries being built for"),
@@ -51,44 +40,6 @@ class ISourcePackageRecipeBuild(IBuildBase):
         ISourcePackageName,
         title=_("The name of the source package being built"),
         readonly=True)
-
-    archive = Object(
-        schema=IArchive, required=True,
-        title=_("The archive the recipe build is in."))
-
-    # XXX: JonathanLange 2010-01-12: Move build_state, date_built,
-    # build_duration, build_log, builder and maybe date_first_dispatched to a
-    # separate base interface shared by this and IBuild. Additionally, change
-    # IBuild to IBinaryPackageBuild. (bug 506239)
-    build_state = Choice(
-        title=_('State'), required=True, vocabulary=BuildStatus,
-        description=_("The current build state."))
-
-    date_built = Datetime(required=False)
-
-    build_duration = Timedelta(
-        title=_("Build Duration"), required=False,
-        description=_("Build duration interval, calculated when the "
-                      "build result gets collected."))
-
-    build_log = Object(
-        schema=ILibraryFileAlias, required=False,
-        title=_("The LibraryFileAlias containing the entire build log."))
-
-    builder = Object(
-        title=_("Builder"), schema=IBuilder, required=False,
-        description=_("The builder handling this build request."))
-
-    date_first_dispatched = Datetime(
-        title=_('Date first dispatched'), required=False,
-        description=_("The actual build start time. Set when the build "
-                      "is dispatched the first time and not changed in "
-                      "subsequent build attempts."))
-
-    pocket = Choice(
-            title=_('Pocket'), required=True,
-            vocabulary=PackagePublishingPocket,
-            description=_("The build targeted pocket."))
 
     requester = Object(
         schema=IPerson, required=False,

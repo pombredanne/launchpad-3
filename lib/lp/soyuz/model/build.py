@@ -96,15 +96,6 @@ class Build(BuildBase, SQLBase):
     upload_log = ForeignKey(
         dbName='upload_log', foreignKey='LibraryFileAlias', default=None)
 
-    def _getProxiedFileURL(self, library_file):
-        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
-        # Avoiding circular imports.
-        from canonical.launchpad.browser.librarian import (
-            ProxiedLibraryFileAlias)
-
-        proxied_file = ProxiedLibraryFileAlias(library_file, self)
-        return proxied_file.http_url
-
     @property
     def buildqueue_record(self):
         """See `IBuild`."""
@@ -121,13 +112,6 @@ class Build(BuildBase, SQLBase):
         if self.upload_log is None:
             return None
         return self._getProxiedFileURL(self.upload_log)
-
-    @property
-    def build_log_url(self):
-        """See `IBuild`."""
-        if self.buildlog is None:
-            return None
-        return self._getProxiedFileURL(self.buildlog)
 
     def _getLatestPublication(self):
         store = Store.of(self)
@@ -839,7 +823,12 @@ class Build(BuildBase, SQLBase):
                 headers=extra_headers)
 
     def storeUploadLog(self, content):
-        """See `IBuild`."""
+        """See `IBuildBase`."""
+        # The given content is stored in the librarian, restricted as
+        # necessary according to the targeted archive's privacy.  The content
+        # object's 'upload_log' attribute will point to the
+        # `LibrarianFileAlias`.
+
         assert self.upload_log is None, (
             "Upload log information already exist and cannot be overridden.")
 

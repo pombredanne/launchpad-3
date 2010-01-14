@@ -19,14 +19,11 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Int, Object, TextLine, Text)
+    Bool, Int, Object, TextLine, Text)
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
 from lp.buildmaster.interfaces.buildbase import IBuildBase
-from lp.soyuz.interfaces.archive import IArchive
-from lp.registry.interfaces.distribution import IDistribution
-from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from lp.soyuz.interfaces.processor import IProcessor
 from lp.soyuz.interfaces.publishing import (
@@ -152,24 +149,6 @@ class IBuildView(IBuildBase):
         required=True, readonly=True,
         description=_("The DistroArchSeries context for this build."))
 
-    archive = exported(
-        Reference(
-            title=_("Archive"), schema=IArchive,
-            required=True, readonly=True,
-            description=_("The Archive context for this build.")))
-
-    pocket = exported(
-        Choice(
-            title=_('Pocket'), required=True,
-            vocabulary=PackagePublishingPocket,
-            description=_("The build targeted pocket.")))
-
-    dependencies = exported(
-        TextLine(
-            title=_("Dependencies"), required=False,
-            description=_("Debian-like dependency line that must be satisfied"
-                          " before attempting to build this request.")))
-
     upload_log = Object(
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the upload log for "
@@ -190,19 +169,10 @@ class IBuildView(IBuildBase):
             required=False, readonly=True,
             description=_("The current source publication for this build.")))
 
-    current_component = Attribute(
-        "Component where the source related to this build was last "
-        "published.")
     title = exported(Text(title=_("Build Title"), required=False))
-    distroseries = Attribute("Direct parent needed by CanonicalURL")
     was_built = Attribute("Whether or not modified by the builddfarm.")
     arch_tag = exported(
         Text(title=_("Architecture tag"), required=False))
-    distribution = exported(
-        Reference(
-            schema=IDistribution,
-            title=_("Distribution"), required=True,
-            description=_("Shortcut for its distribution.")))
     distributionsourcepackagerelease = Attribute("The page showing the "
         "details for this sourcepackagerelease in this distribution.")
     binarypackages = Attribute(
@@ -270,17 +240,6 @@ class IBuildView(IBuildBase):
             indicates that an estimated start time is not available.
         :raise: AssertionError when the build job is not in the
             `BuildStatus.NEEDSBUILD` state.
-        """
-
-    def storeUploadLog(content):
-        """Store the given content as the build upload_log.
-
-        The given content is stored in the librarian, restricted as necessary
-        according to the targeted archive's privacy.  The content object's
-        'upload_log' attribute will point to the `LibrarianFileAlias`.
-
-        :param content: string containing the upload-processor log output for
-            the binaries created in this build.
         """
 
     def getFileByName(filename):

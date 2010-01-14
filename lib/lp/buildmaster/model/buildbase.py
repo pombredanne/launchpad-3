@@ -30,6 +30,22 @@ from lp.soyuz.model.buildqueue import BuildQueue
 
 
 class BuildBase:
+    def _getProxiedFileURL(self, library_file):
+        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
+        # Avoiding circular imports.
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+
+        proxied_file = ProxiedLibraryFileAlias(library_file, self)
+        return proxied_file.http_url
+
+    @property
+    def build_log_url(self):
+        """See `IBuildBase`."""
+        if self.build_log is None:
+            return None
+        return self._getProxiedFileURL(self.build_log)
+
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
         logger = logging.getLogger()
