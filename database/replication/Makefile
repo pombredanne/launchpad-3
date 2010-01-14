@@ -110,6 +110,7 @@ stagingsetup:
 		--no-acl --no-owner --disable-triggers --data-only \
 		--table=$$table ${STAGING_DUMP}; \
 	done
+	psql -q -d lpmain_staging_new -f authdb_sequences.sql
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py
