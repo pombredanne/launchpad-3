@@ -250,7 +250,7 @@ delete them.
 
     >>> response = webservice.delete('/~eric/fooix/feature-branch')
     >>> print response
-    HTTP/1.1 500 Internal Server Error
+    HTTP/1.1 200 Ok
     ...
 
     >>> response = webservice.delete('/~mary/blob/bar')
@@ -260,5 +260,4 @@ delete them.
 
     >>> print_branches(webservice, '/widgets')
     ~eric/fooix/trunk - Development
-    ~eric/fooix/feature-branch - Experimental
 

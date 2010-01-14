@@ -491,7 +491,8 @@
                     "/>
     <require
         permission="launchpad.Edit"
-        attributes="destroySelf setPrivate setOwner setTarget"
+        attributes="destroySelf _destroySelfBreakReferences setPrivate 
+		            setOwner setTarget"
         set_attributes="name url mirror_status_message
                         description lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt

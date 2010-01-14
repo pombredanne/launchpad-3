@@ -943,6 +943,10 @@ class Branch(SQLBase):
                 datetime.now(pytz.timezone('UTC'))
                 + increment * 2 ** (self.mirror_failures - 1))
 
+    def _destroySelfBreakReferences(self):
+        """See `IBranch`."""
+        return self.destroySelf(break_references=True)
+
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
         from lp.code.model.branchjob import BranchJob
