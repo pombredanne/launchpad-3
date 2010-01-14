@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import transaction
 import unittest
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -129,9 +130,9 @@ class TestRecipeBuilder(TestCaseWithFactory):
 
     def test_getById(self):
         job = self.makeJob()
-        build_id = job.build.id
+        transaction.commit()
         self.assertEquals(
-            job.build, SourcePackageRecipeBuild.getById(build_id))
+            job.build, SourcePackageRecipeBuild.getById(job.build.id))
 
 
 def test_suite():
