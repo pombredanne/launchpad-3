@@ -51,7 +51,7 @@ from lazr.restful.declarations import (
     export_as_webservice_entry, export_factory_operation,
     export_operation_as, export_read_operation, export_write_operation,
     export_destructor_operation, exported, operation_parameters,
-    operation_returns_collection_of, operation_returns_entry, REQUEST_USER)
+    operation_returns_entry, REQUEST_USER)
 
 from canonical.config import config
 

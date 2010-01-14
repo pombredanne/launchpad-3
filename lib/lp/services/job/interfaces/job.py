@@ -9,6 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'IJob',
+    'IRunnableJob',
     'JobStatus',
     'LeaseHeld',
     ]
@@ -55,6 +56,12 @@ class JobStatus(DBEnumeratedType):
         The job was run, but failed.  Will not be run again.
         """)
 
+    SUSPENDED = DBItem(4, """
+        Suspended
+
+        The job is suspended, so should not be run.
+        """)
+
 
 class IJob(Interface):
     """Basic attributes of a job."""
@@ -82,6 +89,9 @@ class IJob(Interface):
     def acquireLease(duration=300):
         """Acquire the lease for this Job, or raise LeaseHeld."""
 
+    def getTimeout():
+        """Determine how long this job can run before timing out."""
+
     def start():
         """Mark the job as started."""
 
@@ -96,6 +106,16 @@ class IJob(Interface):
 
     def queue():
         """Mark the job as queued for processing."""
+
+    def suspend():
+        """Mark the job as suspended.
+
+        Only waiting jobs can be suspended."""
+
+    def resume():
+        """Mark the job as waiting.
+
+        Only suspended jobs can be resumed."""
 
 
 class IRunnableJob(IJob):

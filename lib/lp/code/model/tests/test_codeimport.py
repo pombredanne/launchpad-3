@@ -534,7 +534,7 @@ class TestTryFailingImportAgain(TestCaseWithFactory):
 def make_active_import(factory, project_name=None, product_name=None,
                        branch_name=None, svn_branch_url=None,
                        cvs_root=None, cvs_module=None, git_repo_url=None,
-                       last_update=None):
+                       last_update=None, rcs_type=None):
     """Make a new CodeImport for a new Product, maybe in a new Project.
 
     The import will be 'active' in the sense used by
@@ -549,7 +549,7 @@ def make_active_import(factory, project_name=None, product_name=None,
     code_import = factory.makeCodeImport(
         product=product, branch_name=branch_name,
         svn_branch_url=svn_branch_url, cvs_root=cvs_root,
-        cvs_module=cvs_module, git_repo_url=git_repo_url)
+        cvs_module=cvs_module, git_repo_url=git_repo_url, rcs_type=rcs_type)
     make_import_active(factory, code_import, last_update)
     return code_import
 

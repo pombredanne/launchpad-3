@@ -31,7 +31,7 @@ from lazr.enum import DBEnumeratedType, DBItem
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PublicPersonChoice
-from lp.registry.interfaces.person import IEmailAddress
+from canonical.launchpad.interfaces.emailaddress import IEmailAddress
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad.interfaces.message import IMessage
 from lp.registry.interfaces.person import IPerson

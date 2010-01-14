@@ -38,9 +38,12 @@ from canonical.testing.layers import (
     DatabaseLayer, LaunchpadScriptLayer, LaunchpadZopelessLayer)
 from lp.bugs.model.bugnotification import (
     BugNotification, BugNotificationRecipient)
+from lp.code.bzr import BranchFormat, RepositoryFormat
+from lp.code.model.branchjob import BranchJob, BranchUpgradeJob
 from lp.code.model.codeimportresult import CodeImportResult
 from lp.registry.interfaces.person import IPersonSet, PersonCreationRationale
 from lp.registry.model.person import Person
+from lp.services.job.model.job import Job
 
 
 class TestGarboScript(TestCase):
@@ -509,6 +512,63 @@ class TestGarbo(TestCaseWithFactory):
             "ERROR Corruption - "
             "'mark@example.com' and 'mark' reference different Accounts")
         self.assertNotEqual(log_output.find(error_message_2), -1)
+
+    def test_BranchJobPruner(self):
+        # Garbo should remove jobs completed over 30 days ago.
+        self.useBzrBranches()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(Job)
+
+        db_branch = self.factory.makeAnyBranch()
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+
+        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job.job.date_finished = THIRTY_DAYS_AGO
+        job_id = branch_job.job.id
+
+        self.assertEqual(
+            store.find(
+                BranchJob,
+                BranchJob.branch == db_branch.id).count(),
+                1)
+        transaction.commit()
+
+        collector = self.runDaily()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(
+            store.find(
+                BranchJob,
+                BranchJob.branch == db_branch.id).count(),
+                0)
+
+    def test_BranchJobPruner_doesnt_prune_recent_jobs(self):
+        # Check to make sure the garbo doesn't remove jobs that aren't more
+        # than thirty days old.
+        self.useBzrBranches()
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        store = IMasterStore(Job)
+
+        db_branch = self.factory.makeAnyBranch()
+        db_branch.branch_format = BranchFormat.BZR_BRANCH_5
+        db_branch.repository_format = RepositoryFormat.BZR_KNIT_1
+
+        branch_job = BranchUpgradeJob.create(db_branch)
+        branch_job.job.date_finished = THIRTY_DAYS_AGO
+        job_id = branch_job.job.id
+
+        branch_job_newer = BranchUpgradeJob.create(db_branch)
+        job_id_newer = branch_job_newer.job.id
+        transaction.commit()
+
+        collector = self.runDaily()
+
+        LaunchpadZopelessLayer.switchDbUser('testadmin')
+        self.assertEqual(
+            store.find(
+                BranchJob).count(),
+            1)
 
 
 def test_suite():

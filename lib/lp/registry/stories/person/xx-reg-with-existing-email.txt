@@ -134,9 +134,11 @@ Bad User has a suspended account. He discovers that his account is disabled
 when he visits his profile page.
 
     >>> browser = setupBrowser()
+    >>> browser.handleErrors = True
+    >>> browser.raiseHttpErrors = False
     >>> browser.open('http://launchpad.dev/~bad-user')
     >>> browser.title
-    'Bad-user does not use Launchpad'
+    'Error: Page gone'
 
 He believes he can reactivate his account by re-registering with his
 email address.
@@ -177,6 +179,9 @@ suspended, and that he is instructed to contact an admin.
     >>> browser.getControl(name='field.password').value = 'test'
     >>> browser.getControl(name='field.password_dupe').value = 'test'
     >>> browser.getControl('Continue').click()
+    Traceback (most recent call last):
+     ...
+    HTTPError: HTTP Error 410: Gone
 
     >>> for tag in find_tags_by_class(
     ...     browser.contents, 'warning'):

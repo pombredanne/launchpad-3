@@ -26,7 +26,7 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.soyuz.interfaces.builder import (
+from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildJobMismatch, IBuilderSet)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from canonical.launchpad.interfaces import NotFoundError
@@ -521,10 +521,8 @@ class BuilderGroup:
                           "for its status"))
         # simply reset job
         build = getUtility(IBuildSet).getByQueueEntry(queueItem)
-        build.buildstate = BuildStatus.NEEDSBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
-        queueItem.builder = None
-        queueItem.setDateStarted(None)
+        queueItem.reset()
 
     def buildStatus_GIVENBACK(self, queueItem, librarian, buildid,
                               filemap=None, dependencies=None):
@@ -537,16 +535,12 @@ class BuilderGroup:
         self.logger.warning("***** %s is GIVENBACK by %s *****"
                             % (buildid, queueItem.builder.name))
         build = getUtility(IBuildSet).getByQueueEntry(queueItem)
-        build.buildstate = BuildStatus.NEEDSBUILD
         self.storeBuildInfo(queueItem, librarian, buildid, dependencies)
         # XXX cprov 2006-05-30: Currently this information is not
         # properly presented in the Web UI. We will discuss it in
         # the next Paris Summit, infinity has some ideas about how
         # to use this content. For now we just ensure it's stored.
         queueItem.builder.cleanSlave()
-        queueItem.builder = None
-        queueItem.setDateStarted(None)
-        queueItem.logtail = None
-        queueItem.lastscore = 0
+        queueItem.reset()
 
 
