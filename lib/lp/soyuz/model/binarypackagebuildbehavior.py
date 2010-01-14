@@ -223,14 +223,14 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             args['archive_purpose'] = ArchivePurpose.PRIMARY.name
             args["ogrecomponent"] = (
                 get_primary_current_component(build.archive, 
-                    build.sourcepackagerelease.name, build.distroseries))
+                    build.distroseries, build.sourcepackagerelease.name))
         else:
             args['archive_purpose'] = archive_purpose.name
             args["ogrecomponent"] = (
                 build.current_component.name)
 
         args['archives'] = get_sources_list_for_building(build, 
-            build.sourcepackagerelease.name, build.distroarchseries)
+            build.distroarchseries, build.sourcepackagerelease.name)
 
         # Let the build slave know whether this is a build in a private
         # archive.

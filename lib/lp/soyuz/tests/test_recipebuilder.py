@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Module docstring goes here."""
+"""Test RecipeBuildBehavior."""
 
 __metaclass__ = type
 
@@ -101,7 +101,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
                           'lp://dev/~joe/someapp/pkg\n',
            'archives': get_sources_list_for_building(job.build, 
-                job.build.sourcepackagename.name, distroarchseries)
+                distroarchseries, job.build.sourcepackagename.name)
             }, job._extraBuildArgs(distroarchseries))
 
     def test_dispatchBuildToSlave(self):

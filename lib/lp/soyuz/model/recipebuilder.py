@@ -66,11 +66,10 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         args["recipe_text"] = str(self.build.recipe.builder_recipe)
         args['archive_purpose'] = self.build.archive.purpose.name
         args["ogrecomponent"] = get_primary_current_component(
-            self.build.archive, self.build.sourcepackagename.name, 
-            self.build.distroseries)
+            self.build.archive, self.build.distroseries,
+            self.build.sourcepackagename.name)
         args['archives'] = get_sources_list_for_building(self.build, 
-            self.build.sourcepackagename.name, 
-            distroarchseries)
+            distroarchseries, self.build.sourcepackagename.name)
         return args
 
     def dispatchBuildToSlave(self, build_queue_id, logger):

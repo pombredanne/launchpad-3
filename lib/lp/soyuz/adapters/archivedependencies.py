@@ -98,7 +98,7 @@ def get_components_for_building(build):
     return component_dependencies[build.current_component.name]
 
 
-def get_primary_current_component(archive, sourcepackagename, distroseries):
+def get_primary_current_component(archive, distroseries, sourcepackagename):
     """Return the component name of the primary archive ancestry.
 
     If no ancestry could be found, default to 'universe'.
@@ -116,12 +116,12 @@ def get_primary_current_component(archive, sourcepackagename, distroseries):
     return 'universe'
 
 
-def get_sources_list_for_building(build, sourcepackagename, distroarchseries):
+def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
     """Return the sources_list entries required to build the given item.
 
     :param build: a context `IBuild`.
-    :param sourcepackagename: A source package name (as text)
     :param distroarchseries: A `IDistroArchSeries`
+    :param sourcepackagename: A source package name (as text)
     :return: a deb sources_list entries (lines).
     """
     deps = []
@@ -135,7 +135,7 @@ def get_sources_list_for_building(build, sourcepackagename, distroarchseries):
 
     # Consider user-selected archive dependencies.
     primary_component = get_primary_current_component(build.archive, 
-        sourcepackagename, build.distroseries)
+        build.distroseries, sourcepackagename)
     for archive_dependency in build.archive.dependencies:
         # When the dependency component is undefined, we should use
         # the component where the source is published in the primary
