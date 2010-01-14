@@ -1,6 +1,9 @@
 # Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+
+import re
+
 from canonical.buildd.debian import DebianBuildManager, DebianBuildState
 
 
@@ -100,13 +103,13 @@ class BinaryPackageBuildManager(DebianBuildManager):
             if (success == SBuildExitCodes.DEPFAIL or
                 success == SBuildExitCodes.PACKAGEFAIL):
                 for rx in BuildLogRegexes.GIVENBACK:
-                    mo=re.search(rx, tmpLog, re.M)
+                    mo = re.search(rx, tmpLog, re.M)
                     if mo:
                         success = SBuildExitCodes.GIVENBACK
 
             if success == SBuildExitCodes.DEPFAIL:
                 for rx, dep in BuildLogRegexes.DEPFAIL:
-                    mo=re.search(rx, tmpLog, re.M)
+                    mo = re.search(rx, tmpLog, re.M)
                     if mo:
                         if not self.alreadyfailed:
                             print("Returning build status: DEPFAIL")

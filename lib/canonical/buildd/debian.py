@@ -9,10 +9,9 @@
 __metaclass__ = type
 
 import os
-import re
 
 from canonical.buildd.slave import (
-    BuildManager, RunCapture
+    BuildManager,
     )
 
 
@@ -33,7 +32,7 @@ class DebianBuildManager(BuildManager):
     """Base behaviour for Debian chrooted builds."""
 
     def __init__(self, slave, buildid):
-        BuildManager.__init__(self,slave,buildid)
+        BuildManager.__init__(self, slave, buildid)
         self._updatepath = slave._config.get("debianmanager", "updatepath")
         self._scanpath = slave._config.get("debianmanager", "processscanpath")
         self._ogrepath = slave._config.get("debianmanager", "ogrepath")
@@ -115,7 +114,8 @@ class DebianBuildManager(BuildManager):
                 yield filename
 
     def getChangesFilename(self):
-        changes = self._dscfile[:-4] + "_" + self._slave.getArch() + ".changes"
+        changes = (
+            self._dscfile[:-4] + "_" + self._slave.getArch() + ".changes")
         return get_build_path(self._buildid, changes)
 
     def gatherResults(self):
