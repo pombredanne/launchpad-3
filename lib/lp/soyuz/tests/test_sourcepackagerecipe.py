@@ -17,6 +17,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.archiveuploader.permission import (
+    CannotUploadToArchive, InvalidPocketForPPA)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
@@ -207,14 +209,14 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         ppa = self.factory.makeArchive()
         distroseries = self.factory.makeDistroSeries()
         requester = self.factory.makePerson()
-        self.assertRaises(Exception, recipe.requestBuild, ppa,
+        self.assertRaises(CannotUploadToArchive, recipe.requestBuild, ppa,
                 distroseries, requester, PackagePublishingPocket.RELEASE)
 
     def test_requestBuildRejectsInvalidPocket(self):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
         distroseries = self.factory.makeDistroSeries()
-        self.assertRaises(Exception, recipe.requestBuild, ppa,
+        self.assertRaises(InvalidPocketForPPA, recipe.requestBuild, ppa,
                 distroseries, ppa.owner, PackagePublishingPocket.BACKPORTS)
 
 

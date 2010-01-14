@@ -100,7 +100,7 @@ class SourcePackageRecipe(Storm):
         reject_reason = check_upload_to_archive(requester, distroseries,
                 self.sourcepackagename, archive, component, pocket)
         if reject_reason is not None:
-            raise Exception(str(reject_reason))
+            raise reject_reason
         sourcepackage = distroseries.getSourcePackage(self.sourcepackagename)
         build = getUtility(ISourcePackageRecipeBuildSource).new(sourcepackage,
                 self, requester, archive)
