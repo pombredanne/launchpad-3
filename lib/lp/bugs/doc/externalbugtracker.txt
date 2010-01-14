@@ -401,6 +401,9 @@ logged saying that comments won't be imported.
 
 === Limiting which bug watches to update ===
 
+XXX: GavinPanella 2010-01-13 bug=507205: Move this section to
+checkwatches-batching.txt.
+
 In order to reduce the amount of data we have to transfer over the
 network, each IExternalBugTracker has the ability to filter out bugs
 that haven't been modified. The method responsible for this is
