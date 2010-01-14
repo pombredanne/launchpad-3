@@ -2,8 +2,3 @@
 # landing. There is a test to ensure it is empty in trunk. If there is
 # stuff still here when you are ready to land, the items should probably
 # be converted to bugs so they can be scheduled.
-
-Need to fix read-only tests in c-i-p as well.
-
-Need to add ro_* configs to all production configs; basically collapsing the
-*-db-update configs into the regular ones.
