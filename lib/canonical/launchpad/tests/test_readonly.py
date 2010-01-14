@@ -3,15 +3,13 @@
 
 __metaclass__ = type
 
-from zope.component import getUtility
-
 from lazr.restful.utils import get_current_browser_request
 
 from lp.testing import TestCase
 
 from canonical.launchpad.ftests import ANONYMOUS, login, logout
 from canonical.launchpad.readonly import (
-    IIsReadOnly, read_only_file_exists, READ_ONLY_MODE_ANNOTATIONS_KEY)
+    is_read_only, read_only_file_exists, READ_ONLY_MODE_ANNOTATIONS_KEY)
 from canonical.launchpad.tests.readonly import (
     remove_read_only_file, touch_read_only_file)
 from canonical.testing.layers import FunctionalLayer
@@ -35,7 +33,7 @@ class TestReadOnlyModeDetection(TestCase):
         self.assertFalse(read_only_file_exists())
 
 
-class TestIsReadOnlyUtility(TestCase):
+class Test_is_read_only(TestCase):
     layer = FunctionalLayer
 
     def tearDown(self):
@@ -43,30 +41,28 @@ class TestIsReadOnlyUtility(TestCase):
         if read_only_file_exists():
             remove_read_only_file()
 
-    def test_isReadOnly(self):
+    def test_is_read_only(self):
         # By default we run in read-write mode.
         logout()
-        utility = getUtility(IIsReadOnly)
-        self.assertFalse(utility.isReadOnly())
+        self.assertFalse(is_read_only())
 
         # When a file named 'read-only.txt' exists under the root of the tree,
         # we run in read-only mode.
         touch_read_only_file()
         try:
-            self.assertTrue(utility.isReadOnly())
+            self.assertTrue(is_read_only())
         finally:
             remove_read_only_file()
 
     def test_caching_in_request(self):
-        # When called as part of a request processing,
-        # IIsReadOnly.isReadOnly() will stash the read-only flag in the
-        # request's annotations.
+        # When called as part of a request processing, is_read_only() will
+        # stash the read-only flag in the request's annotations.
         login(ANONYMOUS)
         request = get_current_browser_request()
         self.assertIs(
             None,
             request.annotations.get(READ_ONLY_MODE_ANNOTATIONS_KEY))
-        self.assertFalse(getUtility(IIsReadOnly).isReadOnly())
+        self.assertFalse(is_read_only())
         self.assertFalse(
             request.annotations.get(READ_ONLY_MODE_ANNOTATIONS_KEY))
 
@@ -77,5 +73,5 @@ class TestIsReadOnlyUtility(TestCase):
         login(ANONYMOUS)
         request = get_current_browser_request()
         request.annotations[READ_ONLY_MODE_ANNOTATIONS_KEY] = True
-        self.assertTrue(getUtility(IIsReadOnly).isReadOnly())
+        self.assertTrue(is_read_only())
         self.assertFalse(read_only_file_exists())

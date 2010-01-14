@@ -37,7 +37,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config, dbconfig, DatabaseConfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore
-from canonical.launchpad.readonly import IIsReadOnly
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
@@ -370,7 +370,7 @@ class LaunchpadDatabase(Postgres):
         If we are running in read-only mode, returns a
         ReadOnlyModeConnection. Otherwise it returns the Storm default.
         """
-        if getUtility(IIsReadOnly).isReadOnly():
+        if is_read_only():
             return ReadOnlyModeConnection
         return super(LaunchpadDatabase, self).connection_factory
 

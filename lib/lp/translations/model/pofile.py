@@ -29,7 +29,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, quote_like, sqlvalues)
 from canonical.launchpad import helpers
-from canonical.launchpad.readonly import IIsReadOnly
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
@@ -146,7 +146,7 @@ def _can_edit_translations(pofile, person):
     translation team for the given `IPOFile`.translationpermission and the
     language associated with this `IPOFile`.
     """
-    if getUtility(IIsReadOnly).isReadOnly():
+    if is_read_only():
         # Nothing can be edited in read-only mode.
         return False
 
@@ -191,7 +191,7 @@ def _can_add_suggestions(pofile, person):
     any logged-in user for translations in RESTRICTED mode that have a
     translation team assigned.
     """
-    if getUtility(IIsReadOnly).isReadOnly():
+    if is_read_only():
         # No suggestions can be added in read-only mode.
         return False
 

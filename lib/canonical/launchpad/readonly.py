@@ -11,8 +11,7 @@ from __future__ import with_statement
 
 __metaclass__ = type
 __all__ = [
-    'IIsReadOnly',
-    'IsReadOnlyUtility'
+    'is_read_only',
     'read_only_file_exists',
     'read_only_file_path',
     ]
@@ -21,7 +20,6 @@ import logging
 import os
 import threading
 
-from zope.interface import implements, Interface
 from zope.security.management import queryInteraction
 
 from lazr.restful.utils import get_current_browser_request
@@ -34,72 +32,55 @@ READ_ONLY_MODE_ANNOTATIONS_KEY = 'launchpad.read_only_mode'
 
 
 def read_only_file_exists():
-    """Are we in read-only mode?
-
-    Use with caution as this function will hit the filesystem to check for the
-    presence of a file.
-    """
+    """Does a read-only.txt file exists in the root of our tree?"""
     return os.path.isfile(read_only_file_path)
 
 
-class IIsReadOnly(Interface):
-    """A utility which tells us whether or not in read-only mode.
+_lock = threading.Lock()
+_currently_in_read_only = False
 
-    Implemented as a utility because we need a global register of the mode
-    we're on, so that we can log mode changes.
+
+def is_read_only():
+    """Are we in read-only mode?
+
+    If called as part of the processing of a request, we'll look in the
+    request's annotations for a read-only key
+    (READ_ONLY_MODE_ANNOTATIONS_KEY), and if it exists we'll just return its
+    value.
+    
+    If there's no request or the key doesn't exist, we check for the presence
+    of a read-only.txt file in the root of our tree, set the read-only key in
+    the request's annotations (when there is a request), update
+    _currently_in_read_only (in case it changed, also logging the change)
+    and return it.
     """
+    # pylint: disable-msg=W0603
+    global _currently_in_read_only
+    request = None
+    # XXX: salgado, 2010-01-14, bug=507447: Only call
+    # get_current_browser_request() when we have an interaction, or else
+    # it will raise an AttributeError.
+    if queryInteraction() is not None:
+        request = get_current_browser_request()
+    if request is not None:
+        if READ_ONLY_MODE_ANNOTATIONS_KEY in request.annotations:
+            return request.annotations[READ_ONLY_MODE_ANNOTATIONS_KEY]
 
-    # pylint: disable-msg=E0211
-    def isReadOnly():
-        """Are we in read-only mode?
+    read_only = read_only_file_exists()
+    if request is not None:
+        request.annotations[READ_ONLY_MODE_ANNOTATIONS_KEY] = read_only
 
-        If called as part of the processing of a request, we'll look in the
-        request's annotations for a read-only key
-        (READ_ONLY_MODE_ANNOTATIONS_KEY), and if it exists we'll just return
-        its value.
-        
-        If there's no request or the key doesn't exist, we check for the
-        presence of a read-only.txt file in the root of our tree, set the
-        read-only key in the request's annotations (when there is a request),
-        update self._currently_in_read_only (in case it changed, also logging
-        the change) and return it.
-        """
+    log_change = False
+    with _lock:
+        if _currently_in_read_only != read_only:
+            _currently_in_read_only = read_only
+            log_change = True
+
+    if log_change:
+        logging.warning(
+            'Read-only mode change detected; now read-only is %s' % read_only)
+
+    return read_only
 
 
-class IsReadOnlyUtility:
-
-    implements(IIsReadOnly)
-    _currently_in_read_only = False
-
-    def __init__(self):
-        self._lock = threading.Lock()
-        self._currently_in_read_only = self.isReadOnly()
-
-    def isReadOnly(self):
-        """See `IIsReadOnly`."""
-        request = None
-        # XXX: salgado, 2010-01-14, bug=507447: Only call
-        # get_current_browser_request() when we have an interaction, or else
-        # it will raise an AttributeError.
-        if queryInteraction() is not None:
-            request = get_current_browser_request()
-        if request is not None:
-            if READ_ONLY_MODE_ANNOTATIONS_KEY in request.annotations:
-                return request.annotations[READ_ONLY_MODE_ANNOTATIONS_KEY]
-
-        read_only = read_only_file_exists()
-        if request is not None:
-            request.annotations[READ_ONLY_MODE_ANNOTATIONS_KEY] = read_only
-
-        log_change = False
-        with self._lock:
-            if self._currently_in_read_only != read_only:
-                self._currently_in_read_only = read_only
-                log_change = True
-
-        if log_change:
-            logging.warning(
-                'Read-only mode change detected; now read-only is %s'
-                % read_only)
-
-        return read_only
+_currently_in_read_only = is_read_only()

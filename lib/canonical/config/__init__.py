@@ -19,13 +19,10 @@ from urlparse import urlparse, urlunparse
 import pkg_resources
 import ZConfig
 
-from zope.component import getUtility
-from zope.component.interfaces import ComponentLookupError
-
 from lazr.config import ImplicitTypeSchema
 from lazr.config.interfaces import ConfigErrors
 
-from canonical.launchpad.readonly import IIsReadOnly, read_only_file_exists
+from canonical.launchpad.readonly import is_read_only
 
 
 __all__ = [
@@ -217,14 +214,15 @@ class CanonicalConfig:
         self.threads = root_options.threads
 
     def generate_overrides(self):
-        """Ensure correct config .zcml overrides will be called.
+        """Ensure correct config.zcml overrides will be called.
 
         Call this method before letting any ZCML processing occur.
         """
         loader_file = os.path.join(self.root, '+config-overrides.zcml')
         loader = open(loader_file, 'w')
 
-        print >> loader, """<configure xmlns="http://namespaces.zope.org/zope">
+        print >> loader, """
+            <configure xmlns="http://namespaces.zope.org/zope">
                 <!-- This file automatically generated using
                      canonical.config.CanonicalConfig.generate_overrides.
                      DO NOT EDIT. -->
@@ -377,30 +375,14 @@ class DatabaseConfig:
 
     @property
     def main_master(self):
-        try:
-            is_read_only = getUtility(IIsReadOnly).isReadOnly()
-        except ComponentLookupError:
-            # The zcml has not been executed yet, so we have to use the lower
-            # level API instead of the utility. This is needed because this
-            # property is (indirectly) called by execute_zcml_for_scripts()
-            is_read_only = read_only_file_exists()
-
-        if is_read_only:
+        if is_read_only():
             return self.ro_main_master
         else:
             return self.rw_main_master
 
     @property
     def main_slave(self):
-        try:
-            is_read_only = getUtility(IIsReadOnly).isReadOnly()
-        except ComponentLookupError:
-            # The zcml has not been executed yet, so we have to use the lower
-            # level API instead of the utility. This is needed because this
-            # property is (indirectly) called by execute_zcml_for_scripts()
-            is_read_only = read_only_file_exists()
-
-        if is_read_only:
+        if is_read_only():
             return self.ro_main_slave
         else:
             return self.rw_main_slave

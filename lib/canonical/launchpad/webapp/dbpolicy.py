@@ -24,7 +24,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from canonical.config import config, dbconfig
 from canonical.database.sqlbase import StupidCache
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
-from canonical.launchpad.readonly import IIsReadOnly
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy, IStoreSelector,
@@ -159,7 +159,7 @@ def LaunchpadDatabasePolicyFactory(request):
     # of test requests in our automated tests.
     if request.get('PATH_INFO') == u'/+opstats':
         return DatabaseBlockedPolicy(request)
-    elif getUtility(IIsReadOnly).isReadOnly():
+    elif is_read_only():
         return ReadOnlyLaunchpadDatabasePolicy(request)
     else:
         return LaunchpadDatabasePolicy(request)
@@ -295,7 +295,7 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 def WebServiceDatabasePolicyFactory(request):
     """Return the Launchpad IDatabasePolicy for the current appserver state.
     """
-    if getUtility(IIsReadOnly).isReadOnly():
+    if is_read_only():
         return ReadOnlyLaunchpadDatabasePolicy(request)
     else:
         # If a session cookie was sent with the request, use the
