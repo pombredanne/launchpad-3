@@ -66,15 +66,12 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
     def dispatchBuildToSlave(self, build_queue_id, logger):
         """See `IBuildFarmJobBehavior`."""
 
+        distroseries = self.build.distroseries
         # Start the binary package build on the slave builder. First
         # we send the chroot.
-        # XXX: JRV 2010-01-14: This should ideally use storm to find the 
-        # distroarchseries rather than iterating over all of them.
-        for architecture in self.build.distroseries.enabled_architectures:
-            if architecture.processorfamily == self._builder.processor.family:
-                distroarchseries = architecture
-                break
-        else:
+        distroarchseries = distroseries.getDistroArchSeriesByProcessor(
+            self._builder.processor)
+        if distroarchseries is None:
             raise CannotBuild("Unable to find distroarchseries for %s in %s" %
                 (self._builder.processor.name,
                 self.build.distroseries.displayname))
