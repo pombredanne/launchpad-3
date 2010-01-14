@@ -105,10 +105,10 @@ class TestReadOnlyModeSwitches(TestCase):
         self.assertIn('launchpad-main-slave', self.zstorm_stores)
 
         # With the store's connection being the same as before.
+        master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self.assertIs(self.master_connection, master._connection)
 
         # And they still point to the read-write databases.
-        master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         self.assertEquals(
             dbconfig.rw_main_master.strip(),
             # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
