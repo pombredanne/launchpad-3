@@ -19,7 +19,6 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-#
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.build import BuildStatus
@@ -120,11 +119,6 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             ISourcePackageRecipeBuildJobSource).new(self, job)
         return specific_job
 
-    def storeBuildInfo(self, librarian, slave_status):
-        """See `IBuildBase`."""
-        super(SourcePackageRecipeBuild, self).storeBuildInfo(
-            librarian, slave_status)
-        self.dependencies = slave_status.get('dependencies')
 
 class SourcePackageRecipeBuildJob(Storm):
 
