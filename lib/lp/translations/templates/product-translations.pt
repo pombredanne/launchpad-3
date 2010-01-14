@@ -37,12 +37,11 @@
             <div class="yui-u first">
               <div class="portlet">
                 <h3>Translation details</h3>
-                <p tal:condition="target">
+                <p tal:condition="target" id="translation-recommendation">
                   Launchpad currently recommends translating
                   <tal:target replace="structure target/fmt:link"
                               >trunk</tal:target>.
-                  <span id="downloadupload"
-                       tal:condition="context/required:launchpad.AnyPerson">
+                  <span tal:condition="context/required:launchpad.AnyPerson">
                     You can also
                     <a tal:attributes="href target/fmt:url/+export"
                        >download</a>

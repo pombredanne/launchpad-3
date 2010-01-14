@@ -168,32 +168,56 @@ Also, we will get some translation status for network applet.
     Language                   Untranslated    Unreviewed       Changed
 
 
-== Download and upload links ==
+== Translation recommendation ==
 
-A logged-in user is invited to download translations.
+The page mentions which product series should be translated.
 
-    >>> def find_download_upload_invitation(browser):
-    ...     """Find the text inviting the user to upload or download."""
-    ...     tag = find_tag_by_id(browser.contents, 'downloadupload')
+    >>> def find_translation_recommendation(browser):
+    ...     """Find the text recommending to translate."""
+    ...     tag = find_tag_by_id(
+    ...         browser.contents, 'translation-recommendation')
     ...     if tag is None:
     ...         return None
     ...     return extract_text(tag.renderContents())
 
     >>> product_url = 'http://translations.launchpad.dev/evolution'
 
-    >>> user_browser.open(product_url)
-    >>> print find_download_upload_invitation(user_browser)
-    You can also download translations for trunk.
-
-An anonymous user does not see this invitation.
+That's all an anonymous user will see.
 
     >>> anon_browser.open(product_url)
-    >>> print find_download_upload_invitation(anon_browser)
-    None
+    >>> print find_translation_recommendation(anon_browser)
+    Launchpad currently recommends translating Evolution trunk series.
+
+A logged-in user is also invited to download translations.
+
+    >>> user_browser.open(product_url)
+    >>> print find_translation_recommendation(user_browser)
+    Launchpad currently recommends translating Evolution trunk series.
+    You can also download translations for trunk.
 
 A user with upload rights sees the invitation not just to download but
 to upload as well.
 
     >>> admin_browser.open(product_url)
-    >>> print find_download_upload_invitation(admin_browser)
+    >>> print find_translation_recommendation(admin_browser)
+    Launchpad currently recommends translating Evolution trunk series.
     You can also download or upload translations for trunk.
+
+If there is no translatable series, no such recommendation is displayed.
+A series is not translatable if all templates are disabled. We need to jump
+through some hoops to create that situation.
+
+    >>> login('foo.bar@canonical.com')
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.product import IProductSet
+    >>> evotrunk = getUtility(IProductSet).getByName(
+    ...     'evolution').getSeries('trunk')
+    >>> from lp.translations.interfaces.potemplate import IPOTemplateSet
+    >>> potemplates = getUtility(IPOTemplateSet).getSubset(
+    ...     productseries=evotrunk, iscurrent=True)
+    >>> for potemplate in potemplates:
+    ...     potemplate.iscurrent = False
+    >>> logout()
+    >>> admin_browser.open(product_url)
+    >>> print find_translation_recommendation(admin_browser)
+    None
