@@ -429,7 +429,7 @@ class Builder(SQLBase):
             """Put the sub-query into a job type context."""
             qualified_query = """
                 ((BuildQueue.job_type != %s) OR (%s))
-            """ % sqlvalues(job_type, sub_query)
+            """ % (sqlvalues(job_type) + (sub_query,))
             return qualified_query
 
         logger = self._getSlaveScannerLogger()
