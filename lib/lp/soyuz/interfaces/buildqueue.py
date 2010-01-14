@@ -126,14 +126,21 @@ class IBuildQueueSet(Interface):
     def __iter__():
         """Iterate over current build jobs."""
 
-    def __getitem__(job_id):
+    def __getitem__(buildqueue_id):
         """Retrieve a build job by id."""
 
     def count():
         """Return the number of build jobs in the queue."""
 
-    def get(job_id):
-        """Return the IBuildQueue with the given job_id."""
+    def get(buildqueue_id):
+        """Return the `IBuildQueue` with the given id."""
+
+    def getByJob(job):
+        """Find the `IBuildQueue` to which `job` belongs.
+
+        :param job: A `Job`.
+        :return: The matching `IBuildQueue`, or None.
+        """
 
     def getByBuilder(builder):
         """Return an IBuildQueue instance for a builder.
