@@ -242,6 +242,12 @@ class TestCase(unittest.TestCase):
         fixture.setUp()
         self.addCleanup(fixture.tearDown)
 
+    def makeTemporaryDirectory(self):
+        """Create a temporary directory, and return its path."""
+        tempdir = tempfile.mkdtemp()
+        self.addCleanup(lambda: shutil.rmtree(tempdir))
+        return tempdir
+
     def assertProvides(self, obj, interface):
         """Assert 'obj' correctly provides 'interface'."""
         self.assertTrue(
@@ -498,9 +504,8 @@ class TestCaseWithFactory(TestCase):
 
     def useTempDir(self):
         """Use a temporary directory for this test."""
-        tempdir = tempfile.mkdtemp()
-        self.addCleanup(lambda: shutil.rmtree(tempdir))
         cwd = os.getcwd()
+        tempdir = self.makeTemporaryDirectory()
         os.chdir(tempdir)
         self.addCleanup(lambda: os.chdir(cwd))
 
