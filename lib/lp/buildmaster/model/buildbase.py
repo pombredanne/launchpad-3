@@ -314,7 +314,7 @@ class BuildBase:
         duration_estimate = self.estimateDuration()
         queue_entry = BuildQueue(
             estimated_duration=duration_estimate,
-            job_type=self.job_type,
+            job_type=self.build_farm_job_type,
             job=specific_job.job, processor=specific_job.processor,
             virtualized=specific_job.virtualized)
         Store.of(self).add(queue_entry)
