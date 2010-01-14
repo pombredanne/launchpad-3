@@ -20,8 +20,8 @@ simply mimics the `DistributionSourcePackageRelease.title`.
     >>> print dspr.title
     "testing-dspr" 1.0 source package in ubuntutest
 
-    >>> print dspr_view.page_title
-    “testing-dspr” 1.0 source package in ubuntutest
+    >>> dspr_view.page_title
+    u'\u201ctesting-dspr\u201d 1.0 source package in ubuntutest'
 
 The 'files' property returns a list of files included in the source
 upload encapsulated as `ProxiedLibraryFileAlias` objects. Their
