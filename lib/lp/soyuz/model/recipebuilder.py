@@ -17,6 +17,8 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
+from lp.soyuz.adapters.archivedependencies import (
+    get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob)
 
@@ -61,6 +63,10 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         args["author_email"] = self.build.requester.preferredemail.email
         args["recipe_text"] = str(self.build.recipe.builder_recipe)
         args['archive_purpose'] = self.build.archive.purpose.name
+        args["ogrecomponent"] = get_primary_current_component(
+            self.build.archive, self.build.sourcepackagename.name, 
+            self.build.distroseries)
+        #args['archives'] = get_sources_list_for_building(self.build)
         return args
 
     def dispatchBuildToSlave(self, build_queue_id, logger):

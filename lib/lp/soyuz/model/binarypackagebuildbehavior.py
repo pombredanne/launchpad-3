@@ -230,7 +230,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             # the built packages.
             args['archive_purpose'] = ArchivePurpose.PRIMARY.name
             args["ogrecomponent"] = (
-                get_primary_current_component(build))
+                get_primary_current_component(build.archive, 
+                    build.sourcepackagerelease.name, build.distroseries))
         else:
             args['archive_purpose'] = archive_purpose.name
             args["ogrecomponent"] = (
