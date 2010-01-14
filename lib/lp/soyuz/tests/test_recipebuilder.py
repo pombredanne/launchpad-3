@@ -14,6 +14,7 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.manager import RecordingSlave
+from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
 from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import (MockBuilder,
@@ -99,11 +100,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
            'ogrecomponent': 'universe',
            'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
                           'lp://dev/~joe/someapp/pkg\n',
-           'archives': [
-                u'deb http://ftpmaster.internal/%s mydistro%s '
-                u'main restricted universe multiverse' % (distroname, suite)
-                    for suite in ("", "-security", "-updates")
-                ]
+           'archives': get_sources_list_for_building(job.build, 
+                job.build.sourcepackagename.name, distroarchseries)
             }, job._extraBuildArgs(distroarchseries))
 
     def test_dispatchBuildToSlave(self):
