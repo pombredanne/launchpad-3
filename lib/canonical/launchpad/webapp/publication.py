@@ -4,9 +4,8 @@
 __metaclass__ = type
 __all__ = [
     'LoginRoot',
-    'LaunchpadBrowserPublication'
+    'LaunchpadBrowserPublication',
     ]
-
 
 import gc
 import os
@@ -577,6 +576,7 @@ class LaunchpadBrowserPublication(
         We must restart the request timer.  Otherwise we can get OOPS errors
         from our exception views inappropriately.
         """
+        # pylint: disable-msg=E1002
         super(LaunchpadBrowserPublication,
               self).beginErrorHandlingTransaction(request, ob, note)
         # XXX: gary 2008-11-04 bug=293614: As the bug describes, we want to

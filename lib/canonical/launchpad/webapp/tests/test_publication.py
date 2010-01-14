@@ -83,6 +83,8 @@ class TestReadOnlyModeSwitches(TestCase):
         # ZStorm.
         master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         slave = getUtility(IStoreSelector).get(MAIN_STORE, SLAVE_FLAVOR)
+        self.master_connection = master._connection
+        self.slave_connection = slave._connection
         self.zstorm = getUtility(IZStorm)
         self.publication = LaunchpadBrowserPublication(None)
         self.request = LaunchpadTestRequest()
@@ -101,6 +103,9 @@ class TestReadOnlyModeSwitches(TestCase):
         # Since the mode didn't change, the stores were left in zstorm.
         self.assertIn('launchpad-main-master', self.zstorm_stores)
         self.assertIn('launchpad-main-slave', self.zstorm_stores)
+
+        # With the store's connection being the same as before.
+        self.assertIs(self.master_connection, master._connection)
 
         # And they still point to the read-write databases.
         master = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)

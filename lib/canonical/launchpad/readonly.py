@@ -1,12 +1,13 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
-from __future__ import with_statement
 
 """Helpers for running Launchpad in read-only mode.
 
 To switch an app server to read-only mode, all you need to do is create a file
 named read-only.txt in the root of the Launchpad tree.
 """
+
+from __future__ import with_statement
 
 __metaclass__ = type
 __all__ = [
@@ -77,8 +78,9 @@ class IsReadOnlyUtility:
     def isReadOnly(self):
         """See `IIsReadOnly`."""
         request = None
-        # Only call get_current_browser_request() when we have an interaction,
-        # or else it will choke.
+        # XXX: salgado, 2010-01-14, bug=507447: Only call
+        # get_current_browser_request() when we have an interaction, or else
+        # it will raise an AttributeError.
         if queryInteraction() is not None:
             request = get_current_browser_request()
         if request is not None:

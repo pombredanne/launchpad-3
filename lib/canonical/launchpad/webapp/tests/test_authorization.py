@@ -10,8 +10,7 @@ import unittest
 
 import transaction
 
-from zope.app.testing import ztapi
-from zope.component import provideAdapter
+from zope.component import provideAdapter, provideUtility
 from zope.interface import classProvides, implements, Interface
 from zope.testing.cleanup import CleanUp
 
@@ -142,10 +141,10 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
         """Register a new permission and a fake store selector."""
         super(TestCheckPermissionCaching, self).setUp()
         self.factory = ObjectFactory()
-        ztapi.provideUtility(IStoreSelector, FakeStoreSelector)
+        provideUtility(FakeStoreSelector, IStoreSelector)
         # LaunchpadSecurityPolicy.checkPermission() needs an IIsReadOnly
         # utility, so we provide a fake one to please it.
-        ztapi.provideUtility(IIsReadOnly, FakeIsReadOnlyUtility())
+        provideUtility(FakeIsReadOnlyUtility(), IIsReadOnly)
 
     def makeRequest(self):
         """Construct an arbitrary `LaunchpadBrowserRequest` object."""
@@ -161,11 +160,11 @@ class TestCheckPermissionCaching(CleanUp, unittest.TestCase):
             `Checker` created by ``checker_factory``.
         """
         permission = self.factory.getUniqueString()
-        ztapi.provideUtility(
-            ILaunchpadPermission, PermissionAccessLevel(), permission)
+        provideUtility(
+            PermissionAccessLevel(), ILaunchpadPermission, permission)
         checker_factory = CheckerFactory()
-        ztapi.provideAdapter(
-            Object, IAuthorization, checker_factory, name=permission)
+        provideAdapter(
+            checker_factory, [Object], IAuthorization, name=permission)
         return Object(), permission, checker_factory
 
     def test_checkPermission_cache_unauthenticated(self):
