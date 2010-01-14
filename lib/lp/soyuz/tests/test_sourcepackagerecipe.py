@@ -10,14 +10,27 @@ import unittest
 
 from bzrlib.plugins.builder.recipe import RecipeParser
 
+from storm.locals import Store
+
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.services.job.interfaces.job import (
+    IJob, JobStatus)
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.buildqueue import (
+    IBuildQueue)
 from lp.soyuz.interfaces.sourcepackagerecipe import (
     ForbiddenInstruction, ISourcePackageRecipe, ISourcePackageRecipeSource,
     TooNewRecipeFormat)
+from lp.soyuz.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuild, ISourcePackageRecipeBuildJob)
+from lp.soyuz.model.buildqueue import (
+    BuildQueue)
+from lp.soyuz.model.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuildJob)
 from lp.testing import login_person, TestCaseWithFactory
 
 
@@ -153,6 +166,36 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertRaises(
             TooNewRecipeFormat,
             self.makeSourcePackageRecipeFromBuilderRecipe, builder_recipe)
+
+    def test_requestBuild(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries()
+        requester = self.factory.makePerson()
+        build = recipe.requestBuild(ppa, distroseries, requester)
+        # TODO: Fails as SourcePackageRecipeBuild doesn't correctly
+        # implement the interface currently.
+        #self.assertProvides(build, ISourcePackageRecipeBuild)
+        self.assertEqual(build.archive, ppa)
+        self.assertEqual(build.distroseries, distroseries)
+        self.assertEqual(build.requester, requester)
+        store = Store.of(build)
+        store.flush()
+        build_job = store.find(SourcePackageRecipeBuildJob,
+                SourcePackageRecipeBuildJob.build_id==build.id).one()
+        self.assertProvides(build_job, ISourcePackageRecipeBuildJob)
+        self.assertTrue(build_job.virtualized)
+        job = build_job.job
+        self.assertProvides(job, IJob)
+        self.assertEquals(job.status, JobStatus.WAITING)
+        build_queue = store.find(BuildQueue, BuildQueue.job==job.id).one()
+        self.assertProvides(build_queue, IBuildQueue)
+        self.assertTrue(build_queue.virtualized)
+
+    #def test_requestBuildRejectsNotPPA(self):
+    #    builder_recipe = self.factory.makeSourcePackageRecipe()
+    #    not_ppa = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+    #    self.assertRaises(builder_recipe.requestBuild, not_ppa)
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):

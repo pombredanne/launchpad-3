@@ -77,6 +77,9 @@ class ISourcePackageRecipe(IHasOwner):
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
 
+    def requestBuild(self, archive):
+        """Request that the recipe be built in to the specified archive."""
+
 
 class ISourcePackageRecipeSource(Interface):
     """A utility of this interface can be used to create and access recipes.

@@ -10,6 +10,7 @@ __all__ = [
 
 from storm.locals import Int, Reference, Store, Storm, Unicode
 
+from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -17,6 +18,8 @@ from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
 from lp.soyuz.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource)
+from lp.soyuz.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource)
 from lp.soyuz.model.sourcepackagerecipedata import _SourcePackageRecipeData
 
 
@@ -82,3 +85,10 @@ class SourcePackageRecipe(Storm):
         sprecipe.name = name
         store.add(sprecipe)
         return sprecipe
+
+    def requestBuild(self, archive, distroseries, requester):
+        sourcepackage = distroseries.getSourcePackage(self.sourcepackagename)
+        build = getUtility(ISourcePackageRecipeBuildSource).new(sourcepackage,
+                self, requester, archive)
+        build.createBuildQueueEntry()
+        return build
