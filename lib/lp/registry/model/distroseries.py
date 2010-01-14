@@ -239,6 +239,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 archtag, self.distribution.name, self.name))
         return item
 
+    def getDistroArchSeriesByProcessor(self, processor):
+        """See `IDistroSeries`."""
+        # XXX: JRV 2010-01-14: This should ideally use storm to find the
+        # distroarchseries rather than iterating over all of them, but
+        # I couldn't figure out how to do that - and a trivial for loop
+        # isn't expensive given there's generally less than a dozen
+        # architectures.
+        for architecture in self.architectures:
+            if architecture.processorfamily == processor.family:
+                return architecture
+        return None
+
     @property
     def enabled_architectures(self):
         store = Store.of(self)

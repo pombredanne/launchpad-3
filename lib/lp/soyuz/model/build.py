@@ -883,11 +883,6 @@ class Build(BuildBase, SQLBase):
 
         raise NotFoundError(filename)
 
-    def storeBuildInfo(self, librarian, slave_status):
-        """See `IBuildBase`."""
-        super(Build, self).storeBuildInfo(librarian, slave_status)
-        self.dependencies = slave_status.get('dependencies')
-
 
 class BuildSet:
     implements(IBuildSet)

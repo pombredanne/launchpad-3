@@ -307,6 +307,7 @@ class BuildBase:
         # the time operations for duration.
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
+        self.dependencies = slave_status.get('dependencies')
 
     def createBuildQueueEntry(self):
         """See `IBuildBase`"""
