@@ -41,7 +41,6 @@ class GenerateTranslationTemplates:
 
     def generate(self):
         """Do It.  Generate templates."""
-        print "GENERATE\n"*10
 # XXX: Actual payload goes here.
         return 0
 
