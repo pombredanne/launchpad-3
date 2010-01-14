@@ -316,6 +316,8 @@ class BuildQueueSet(object):
         result_set = store.find(
             BuildQueue,
             BuildQueue.job == Job.id,
+            # status is a property. Let's use _status.
+            Job._status == JobStatus.RUNNING,
             Job.date_started != None)
         return result_set
 
