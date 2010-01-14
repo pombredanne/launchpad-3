@@ -100,7 +100,7 @@ class BuildBase:
 
         # XXX: Pass the policy in here, rather than in the config.
         extra_args = [
-            "--log-file", "%s" %  uploader_logfilename,
+            "--log-file", "%s" % uploader_logfilename,
             "-d", "%s" % self.distribution.name,
             "-s", "%s" % (self.distroseries.name +
                           pocketsuffix[self.pocket]),
@@ -311,4 +311,3 @@ class BuildBase:
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
         self.dependencies = slave_status.get('dependencies')
-
