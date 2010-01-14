@@ -587,9 +587,6 @@ def parse_upload_path(relative_path):
         # Upload path does not match anything we support.
         raise UploadPathError("Path format mismatch.")
 
-    if not archive.enabled:
-        raise PPAUploadPathError("%s is disabled." % archive.displayname)
-
     if archive.distribution != distribution:
         raise PPAUploadPathError(
             "%s only supports uploads to '%s' distribution."

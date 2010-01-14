@@ -14,11 +14,12 @@ from storm.locals import Store
 
 from zope.component import getUtility
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
 from lp.archiveuploader.permission import (
-    CannotUploadToArchive, InvalidPocketForPPA)
+    ArchiveDisabled, CannotUploadToArchive, InvalidPocketForPPA)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
@@ -218,6 +219,14 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         distroseries = self.factory.makeDistroSeries()
         self.assertRaises(InvalidPocketForPPA, recipe.requestBuild, ppa,
                 distroseries, ppa.owner, PackagePublishingPocket.BACKPORTS)
+
+    def test_requestBuildRejectsDisabledArchive(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa = self.factory.makeArchive()
+        removeSecurityProxy(ppa).disable()
+        distroseries = self.factory.makeDistroSeries()
+        self.assertRaises(ArchiveDisabled, recipe.requestBuild, ppa,
+                distroseries, ppa.owner, PackagePublishingPocket.RELEASE)
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):

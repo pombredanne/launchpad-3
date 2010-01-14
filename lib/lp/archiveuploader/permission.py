@@ -84,6 +84,15 @@ class InvalidPocketForPartnerArchive(CannotUploadToArchive):
     _fmt = "Partner uploads must be for the RELEASE or PROPOSED pocket."
 
 
+class ArchiveDisabled(CannotUploadToArchive):
+    """Uploading to a disabled archive is not allowed."""
+
+    _fmt = ("%(archive_name)s is disabled.")
+
+    def __init__(self, archive_name):
+        CannotUploadToArchive.__init__(self, archive_name=archive_name)
+
+
 def components_valid_for(archive, person):
     """Return the components that 'person' can upload to 'archive'.
 
@@ -187,6 +196,9 @@ def verify_upload(person, sourcepackagename, archive, component,
     :return: CannotUploadToArchive if 'person' cannot upload to the archive,
         None otherwise.
     """
+    if not archive.enabled:
+        return ArchiveDisabled(archive.displayname)
+
     # For PPAs...
     if archive.is_ppa:
         if not archive.canUpload(person):
