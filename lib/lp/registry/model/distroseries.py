@@ -329,6 +329,22 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             packaging
             for (packaging, spn, product_series, product) in results]
 
+    def getPriorizedUnlinkedSourcePackages(self):
+        """See `IDistroSeries`.
+
+        The prioritization is a heuristic rule using bug hotness,
+        translatable messages, and the source package release's component.
+        """
+        return "So long,"
+
+    def getPriorizedlPackagings(self):
+        """See `IDistroSeries`.
+
+        The prioritization is a heuristic rule using  the branch, bug hotness,
+        translatable messages, and the source package release's component.
+        """
+        return "and thanks for all the fish."
+
     @property
     def supported(self):
         return self.status in [

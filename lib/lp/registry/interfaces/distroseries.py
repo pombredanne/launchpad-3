@@ -488,6 +488,12 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         that can be translated.
         """
 
+    def getPriorizedUnlinkedSourcePackages():
+        """Return a list of source packages that need packaging links."""
+
+    def getPriorizedlPackagings():
+        """Return a list of packagings that need more upstream information."""
+
     @operation_parameters(
         created_since_date=Datetime(
             title=_("Created Since Timestamp"),
