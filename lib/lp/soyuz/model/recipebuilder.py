@@ -50,7 +50,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         logger.info("startBuild(%s)", self.display_name)
 
-    def _extraBuildArgs(self):
+    def _extraBuildArgs(self, distroarchseries):
         """
         Return the extra arguments required by the slave for the given build.
         """
@@ -68,7 +68,9 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         args["ogrecomponent"] = get_primary_current_component(
             self.build.archive, self.build.sourcepackagename.name, 
             self.build.distroseries)
-        #args['archives'] = get_sources_list_for_building(self.build)
+        args['archives'] = get_sources_list_for_building(self.build, 
+            self.build.sourcepackagename.name, 
+            distroarchseries)
         return args
 
     def dispatchBuildToSlave(self, build_queue_id, logger):
@@ -98,7 +100,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
-        args = self._extraBuildArgs()
+        args = self._extraBuildArgs(distroarchseries)
         status, info = self._builder.slave.build(
             buildid, "sourcepackagerecipe", chroot_sha1, {}, args)
         message = """%s (%s):

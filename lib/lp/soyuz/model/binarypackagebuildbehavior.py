@@ -237,7 +237,8 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             args["ogrecomponent"] = (
                 build.current_component.name)
 
-        args['archives'] = get_sources_list_for_building(build)
+        args['archives'] = get_sources_list_for_building(build, 
+            build.sourcepackagerelease.name, build.distroarchseries)
 
         # Let the build slave know whether this is a build in a private
         # archive.

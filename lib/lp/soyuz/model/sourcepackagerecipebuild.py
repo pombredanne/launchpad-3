@@ -21,7 +21,10 @@ from zope.interface import classProvides, implements
 
 from lp.services.job.model.job import Job
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.adapters.archivedependencies import (
+    default_component_dependency_name,)
 from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
@@ -49,6 +52,10 @@ class SourcePackageRecipeBuild(Storm):
 
     build_state = EnumCol(
         dbName='build_state', notNull=True, schema=BuildStatus)
+
+    @property
+    def current_component(self):
+        return getUtility(IComponentSet)[default_component_dependency_name]
 
     date_created = UtcDateTimeCol(notNull=True)
     date_built = UtcDateTimeCol(notNull=False)
