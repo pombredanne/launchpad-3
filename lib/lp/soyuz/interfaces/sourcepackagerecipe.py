@@ -77,8 +77,15 @@ class ISourcePackageRecipe(IHasOwner):
     def getReferencedBranches():
         """An iterator of the branches referenced by this recipe."""
 
-    def requestBuild(self, archive):
-        """Request that the recipe be built in to the specified archive."""
+    def requestBuild(self, archive, distroseries, requester, pocket):
+        """Request that the recipe be built in to the specified archive.
+
+        :param archive: The IArchive which you want the build to end up in.
+        :param distroseries: The DistroSeries that the package should be
+            targetted to.
+        :param requester: the person requesting the build.
+        :param pocket: the pocket that should be targetted.
+        """
 
 
 class ISourcePackageRecipeSource(Interface):

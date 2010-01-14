@@ -16,11 +16,18 @@ from zope.interface import classProvides, implements
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
+from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.soyuz.interfaces.component import IComponentSet
+from lp.archiveuploader.permission import check_upload_to_archive
 from lp.soyuz.interfaces.sourcepackagerecipe import (
     ISourcePackageRecipe, ISourcePackageRecipeSource)
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildSource)
 from lp.soyuz.model.sourcepackagerecipedata import _SourcePackageRecipeData
+
+
+class NonPPABuildRequest(Exception):
+    """A build was requested to a non-PPA and this is currently unsupported."""
 
 
 class SourcePackageRecipe(Storm):
@@ -86,7 +93,14 @@ class SourcePackageRecipe(Storm):
         store.add(sprecipe)
         return sprecipe
 
-    def requestBuild(self, archive, distroseries, requester):
+    def requestBuild(self, archive, distroseries, requester, pocket):
+        if archive.purpose != ArchivePurpose.PPA:
+            raise NonPPABuildRequest
+        component = getUtility(IComponentSet)["multiverse"]
+        reject_reason = check_upload_to_archive(requester, distroseries,
+                self.sourcepackagename, archive, component, pocket)
+        if reject_reason is not None:
+            raise Exception(str(reject_reason))
         sourcepackage = distroseries.getSourcePackage(self.sourcepackagename)
         build = getUtility(ISourcePackageRecipeBuildSource).new(sourcepackage,
                 self, requester, archive)

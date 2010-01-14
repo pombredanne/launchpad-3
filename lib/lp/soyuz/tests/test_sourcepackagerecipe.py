@@ -17,6 +17,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.testing.layers import DatabaseFunctionalLayer
 
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import (
     IJob, JobStatus)
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -31,6 +32,8 @@ from lp.soyuz.model.buildqueue import (
     BuildQueue)
 from lp.soyuz.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuildJob)
+from lp.soyuz.model.sourcepackagerecipe import (
+    NonPPABuildRequest)
 from lp.testing import login_person, TestCaseWithFactory
 
 
@@ -171,14 +174,14 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         recipe = self.factory.makeSourcePackageRecipe()
         ppa = self.factory.makeArchive()
         distroseries = self.factory.makeDistroSeries()
-        requester = self.factory.makePerson()
-        build = recipe.requestBuild(ppa, distroseries, requester)
+        build = recipe.requestBuild(ppa, distroseries, ppa.owner,
+                PackagePublishingPocket.RELEASE)
         # TODO: Fails as SourcePackageRecipeBuild doesn't correctly
         # implement the interface currently.
         #self.assertProvides(build, ISourcePackageRecipeBuild)
         self.assertEqual(build.archive, ppa)
         self.assertEqual(build.distroseries, distroseries)
-        self.assertEqual(build.requester, requester)
+        self.assertEqual(build.requester, ppa.owner)
         store = Store.of(build)
         store.flush()
         build_job = store.find(SourcePackageRecipeBuildJob,
@@ -192,10 +195,23 @@ class TestSourcePackageRecipe(TestCaseWithFactory):
         self.assertProvides(build_queue, IBuildQueue)
         self.assertTrue(build_queue.virtualized)
 
-    #def test_requestBuildRejectsNotPPA(self):
-    #    builder_recipe = self.factory.makeSourcePackageRecipe()
-    #    not_ppa = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
-    #    self.assertRaises(builder_recipe.requestBuild, not_ppa)
+    def test_requestBuildRejectsNotPPA(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        not_ppa = self.factory.makeArchive(purpose=ArchivePurpose.PRIMARY)
+        distroseries = self.factory.makeDistroSeries()
+        requester = self.factory.makePerson()
+        self.assertRaises(NonPPABuildRequest, recipe.requestBuild, not_ppa,
+                distroseries, requester, PackagePublishingPocket.RELEASE)
+
+    def test_requestBuildRejectsNoPermission(self):
+        recipe = self.factory.makeSourcePackageRecipe()
+        ppa = self.factory.makeArchive()
+        distroseries = self.factory.makeDistroSeries()
+        requester = self.factory.makePerson()
+        self.assertRaises(Exception, recipe.requestBuild, ppa,
+                distroseries, requester, PackagePublishingPocket.RELEASE)
+
+    # TODO: check pocket in archive
 
 
 class TestRecipeBranchRoundTripping(TestCaseWithFactory):
