@@ -143,7 +143,16 @@ class CanonicalConfig:
         self._instance_name = instance_name
         os.environ[LPCONFIG] = instance_name
         # Need to reload the config.
+        self._invalidateConfig()
+
+    def _invalidateConfig(self):
+        """Invalidate the config, causing the config to be regenerated."""
         self._config = None
+
+    def reloadConfig(self):
+        """Reload the config."""
+        self._invalidateConfig()
+        self._getConfig()
 
     @property
     def process_name(self):
@@ -164,7 +173,7 @@ class CanonicalConfig:
         """
         self._process_name = process_name
         # Need to reload the config.
-        self._config = None
+        self._invalidateConfig()
 
     def _getConfig(self):
         """Get the schema and config for this environment.
