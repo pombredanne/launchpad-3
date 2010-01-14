@@ -1009,7 +1009,7 @@ class ProductDownloadFilesView(LaunchpadView,
         Each entry returned is a tuple of (series, release).
         """
         series_and_releases = set()
-        for series in self.product.series:
+        for series in self.sorted_series_list:
             for release in series.releases:
                 series_and_releases.update((series, release))
         return BatchNavigator(series_and_releases, self.request, size=5)
