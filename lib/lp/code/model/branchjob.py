@@ -281,7 +281,7 @@ class BranchScanJob(BranchJobDerived):
     def contextManager():
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
-        server = get_multi_server(write_hosted=True)
+        server = get_multi_server()
         server.setUp()
         yield
         server.tearDown()
