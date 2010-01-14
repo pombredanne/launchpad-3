@@ -915,6 +915,7 @@ class Branch(SQLBase):
 
     def mirrorComplete(self, last_revision_id):
         """See `IBranch`."""
+        from lp.code.model.branchjob import BranchScanJob
         if self.branch_type == BranchType.REMOTE:
             raise BranchTypeError(self.unique_name)
         assert self.last_mirror_attempt != None, (
@@ -929,6 +930,7 @@ class Branch(SQLBase):
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC')) + increment)
         self.last_mirrored_id = last_revision_id
+        BranchScanJob.create(self)
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
