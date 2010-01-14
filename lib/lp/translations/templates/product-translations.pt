@@ -31,7 +31,7 @@
 
       <tal:uses-translations
          condition="python:uses_translations or admin_user">
-        <tal:translatable define="target context/primary_translatable">
+        <tal:translatable define="target view/primary_translatable">
 
           <div class="yui-g">
             <div class="yui-u first">

@@ -89,28 +89,14 @@ class ProductView(LaunchpadView):
 
     @cachedproperty
     def primary_translatable(self):
-        """Return a dictionary with the info for a primary translatable.
-
-        If there is no primary translatable object, returns an empty
-        dictionary.
-
-        The dictionary has the keys:
-         * 'title': The title of the translatable object.
-         * 'potemplates': a set of PO Templates for this object.
-         * 'base_url': The base URL to reach the base URL for this object.
+        """Return the context's primary translatable if it's a product series
         """
         translatable = self.context.primary_translatable
-        naked_translatable = removeSecurityProxy(translatable)
 
-        if (translatable is None or
-            not isinstance(naked_translatable, ProductSeries)):
-            return {}
+        if not isinstance(removeSecurityProxy(translatable), ProductSeries):
+            return None
 
-        return {
-            'title': translatable.title,
-            'potemplates': translatable.getCurrentTranslationTemplates(),
-            'base_url': canonical_url(translatable)
-            }
+        return translatable
 
     @cachedproperty
     def untranslatable_series(self):
