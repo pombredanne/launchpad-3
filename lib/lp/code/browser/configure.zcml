@@ -565,6 +565,7 @@
         class="lp.code.browser.branchmergeproposallisting.BranchActiveReviewsView"
         permission="zope.Public"
         name="+activereviews"
+        facet="branches"
         template="../templates/active-reviews.pt"/>
     <browser:page
         for="lp.code.interfaces.branch.IBranchBatchNavigator"
