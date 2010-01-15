@@ -346,7 +346,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         condition = SQL(conditions + "AND packaging.id IS NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC')
-        return [spn for (spn, score) in results]
+        return [SourcePackage(sourcepackagename=spn, distroseries=self)
+                for (spn, score) in results]
 
     def getPriorizedlPackagings(self):
         """See `IDistroSeries`.
