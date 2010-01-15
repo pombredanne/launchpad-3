@@ -3,6 +3,9 @@
 
 __metaclass__ = type
 
+import os
+import pwd
+
 from canonical.buildd.slave import BuildManager
 
 
@@ -26,6 +29,7 @@ class TranslationTemplatesBuildManager(BuildManager):
     """
     def __init__(self, slave, buildid):
         super(TranslationTemplatesBuildManager, self).__init__(slave, buildid)
+        self.build_id = buildid
         self._state = TranslationTemplatesBuildState.INIT
         self.alreadyfailed = False
 
@@ -36,10 +40,10 @@ class TranslationTemplatesBuildManager(BuildManager):
         self.username = pwd.getpwuid(os.getuid())[0]
 
         super(TranslationTemplatesBuildManager, self).initiate(
-            self, files, chroot, extra_args)
+            files, chroot, extra_args)
 
         self.chroot_path = os.path.join(
-            self.home, 'build-' + build_id, 'chroot-autobuild')
+            self.home, 'build-' + self.build_id, 'chroot-autobuild')
 
     def iterate(self, success):
         func = getattr(self, 'iterate_' + self._state, None)
@@ -106,7 +110,7 @@ class TranslationTemplatesBuildManager(BuildManager):
 
     def iterate_GENERATE(self, success):
         if success == 0:
-            self._state = TranslationTem,platesBuildState.CLEANUP
+            self._state = TranslationTemplatesBuildState.CLEANUP
             self.doCleanup()
         else:
             if not self.alreadyfailed:
@@ -115,7 +119,7 @@ class TranslationTemplatesBuildManager(BuildManager):
             self._state = TranslationTemplatesBuildState.CLEANUP
             self.doCleanup()
 
-    def iterage_CLEANUP(self, success):
+    def iterate_CLEANUP(self, success):
         if success == 0:
             if not self.alreadyfailed:
                 self._slave.buildOK()
