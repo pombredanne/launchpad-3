@@ -39,8 +39,5 @@
     <li>
       <a tal:replace="structure context/menu:overview/ubuntupkg/fmt:icon-link" />
     </li>
-    <li>
-      <a tal:replace="structure context/menu:overview/add_package/fmt:icon-link" />
-    </li>
   </ul>
 </div>
