@@ -500,7 +500,7 @@ From the results above you can notice that neither mozilla-firefox nor
 netapplet are translatable in Hoary.
 
 
-Packages that need linking and packgings that need upstream information
+Packages that need linking and packagings that need upstream information
 -----------------------------------------------------------------------
 
 A distroseries a getPriorizedUnlinkedSourcePackages() method that returns
@@ -508,8 +508,14 @@ a prioritized list of `ISourcePackage` that need a packaging link to an
 `IProductSeries` to provide the the upstream information to share bugs,
 translations, and code.
 
-    >>> hoary.getPriorizedUnlinkedSourcePackages()
-    'So long,'
+    >>> for spn in hoary.getPriorizedUnlinkedSourcePackages():
+    ...     print spn.name
+    pmount
+    alsa-utils
+    cnews
+    libstdc++
+    linux-source-2.6.15
+
 
 A distroseries a getPriorizedlPackagings() method that returns a prioritized
 list of `IPackaging` that need more information about the upstream project to
