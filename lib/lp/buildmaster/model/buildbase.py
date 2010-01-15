@@ -65,7 +65,7 @@ class BuildBase:
                           pocketsuffix[self.pocket]),
             "-b", "%s" % self.id,
             "-J", "%s" % upload_leaf,
-            '--policy=%s' % self.policy_name,
+            '--context=%s' % self.policy_name,
             "%s" % root,
             ]
 

@@ -70,7 +70,7 @@ class TestBuildBaseHarder(TestCaseWithFactory):
                     + pocketsuffix[build_base.pocket]),
              '-b', str(build_base.id),
              '-J', upload_leaf,
-             '--policy=%s' % build_base.policy_name,
+             '--context=%s' % build_base.policy_name,
              os.path.abspath(config.builddmaster.root),
              ])
         uploader_command = build_base.getUploaderCommand(upload_leaf)
