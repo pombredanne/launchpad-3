@@ -56,3 +56,10 @@ class IBuildFarmJobBehavior(Interface):
         :return: a dict of extra key/values to be included in the result
             of IBuilder.slaveStatus().
         """
+
+    def updateBuild(queueItem):
+        """Verify the current build job status.
+
+        Perform the required actions for each state.
+        """
+
