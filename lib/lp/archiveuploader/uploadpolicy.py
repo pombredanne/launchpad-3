@@ -311,7 +311,7 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
     """The build daemon upload policy is invoked by the slave scanner."""
 
     def __init__(self):
-        AbstractUploadPolicy.__init__(self)
+        super(BuildDaemonUploadPolicy, self).__init__()
         self.name = 'buildd'
         # We permit unsigned uploads because we trust our build daemons
         self.unsigned_changes_ok = True
@@ -337,6 +337,26 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
 
 
 AbstractUploadPolicy._registerPolicy(BuildDaemonUploadPolicy)
+
+
+class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
+    """Policy for uploading the results of a source package recipe build."""
+
+    def __init__(self):
+        super(SourcePackageRecipeUploadPolicy, self).__init__()
+        # XXX: This has to be exactly the same string as the one in
+        # SourcePackageRecipeBuild.policy_name.
+        self.name = 'recipe'
+        self.can_upload_source = True
+        self.can_upload_binaries = False
+
+    def getUploader(self, changes):
+        """Return the person doing the upload."""
+        # XXX: This should return the requester of the recipe build.
+        raise NotImplementedError(self.getUploader)
+
+
+AbstractUploadPolicy._registerPolicy(SourcePackageRecipeUploadPolicy)
 
 
 class SyncUploadPolicy(AbstractUploadPolicy):
