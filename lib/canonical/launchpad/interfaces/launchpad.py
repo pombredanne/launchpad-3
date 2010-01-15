@@ -619,7 +619,7 @@ class INotificationRecipientSet(Interface):
         should be a short code that will appear in an
         X-Launchpad-Message-Rationale header for automatic filtering.
 
-        :param person_or_email: An `IPerson` or email adress that is in the
+        :param person_or_email: An `IPerson` or email address that is in the
             recipients list.
 
         :raises UnknownRecipientError: if the person or email isn't in the

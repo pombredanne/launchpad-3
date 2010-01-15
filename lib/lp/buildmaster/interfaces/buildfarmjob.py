@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'IBuildFarmJob',
     'IBuildFarmJobDispatchEstimation',
+    'ISpecificBuildFarmJobClass',
     'BuildFarmJobType',
     ]
 
@@ -65,6 +66,9 @@ class IBuildFarmJob(Interface):
     def getName():
         """An appropriate name for this job."""
 
+    def getTitle():
+        """A string to identify and describe the job to users return None."""
+
     def jobStarted():
         """'Job started' life cycle event, handle as appropriate."""
 
@@ -85,6 +89,22 @@ class IBuildFarmJob(Interface):
             "The virtualization setting required by this build farm job. "
             "For job types that do not care about virtualization please "
             "return None."))
+
+
+
+class ISpecificBuildFarmJobClass(Interface):
+    """Class interface provided by `IBuildFarmJob` classes.
+
+    Used by the `BuildQueue` to find the specific build-farm job objects
+    it needs to dispatch to builders.
+    """
+
+    def getByJob(job):
+        """Get the specific `IBuildFarmJob` for the given `Job`.
+
+        Invoked on the specific `IBuildFarmJob`-implementing class that
+        has an entry associated with `job`.
+        """
 
 
 class IBuildFarmJobDispatchEstimation(Interface):
