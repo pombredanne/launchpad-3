@@ -388,13 +388,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """The SQl joins and conditions to prioritise source packages."""
         heat_score = ("""
             LEFT JOIN (
-                SELECT 
+                SELECT
                     BugTask.sourcepackagename,
                     sum(Bug.hotness) AS heat
                 FROM BugTask
                     JOIN Bug
                         ON bugtask.bug = Bug.id
-                WHERE 
+                WHERE
                     BugTask.sourcepackagename is not NULL
                     AND BugTask.status in %s
                 GROUP BY BugTask.sourcepackagename
@@ -403,12 +403,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % sqlvalues(UNRESOLVED_BUGTASK_STATUSES))
         message_score = ("""
             LEFT JOIN (
-                SELECT 
+                SELECT
                     POTemplate.sourcepackagename,
                     POTemplate.distroseries,
                     SUM(POTemplate.messagecount) / 2 AS po_messages
                 FROM POTemplate
-                WHERE 
+                WHERE
                     POTemplate.sourcepackagename is not NULL
                     AND POTemplate.distroseries is not NULL
                 GROUP BY
