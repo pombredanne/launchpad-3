@@ -11,7 +11,8 @@ __all__ = [
     'BinaryPackageBuildBehavior',
     ]
 
-from canonical.cachedproperty import cachedproperty
+from zope.interface import implements
+
 from canonical.launchpad.webapp import urlappend
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
@@ -23,33 +24,17 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.buildmaster.interfaces.builder import CannotBuild
 
-from zope.interface import implements
-
 
 class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
     """Define the behavior of binary package builds."""
 
     implements(IBuildFarmJobBehavior)
 
-    @cachedproperty
-    def build(self):
-        return self.buildfarmjob.build
-
     def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""
         spr = self.build.sourcepackagerelease
         logger.info("startBuild(%s, %s, %s, %s)", self._builder.url,
                     spr.name, spr.version, self.build.pocket.title)
-
-    @property
-    def status(self):
-        """See `IBuildFarmJobBehavior`."""
-        msg = 'Building %s' % self.build.title
-        archive = self.build.archive
-        if not archive.owner.private and (archive.is_ppa or archive.is_copy):
-            return '%s [%s/%s]' % (msg, archive.owner.name, archive.name)
-        else:
-            return msg
 
     def dispatchBuildToSlave(self, build_queue_id, logger):
         """See `IBuildFarmJobBehavior`."""
