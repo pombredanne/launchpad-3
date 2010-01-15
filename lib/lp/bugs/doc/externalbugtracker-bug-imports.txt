@@ -76,9 +76,9 @@ preferred e-mail address, and the one that is associated with his
 account is marked as NEW, since we don't know whether it's valid.
 
     >>> from canonical.launchpad.interfaces import IEmailAddressSet
-    >>> reporter_email_adresses = getUtility(IEmailAddressSet).getByPerson(
+    >>> reporter_email_addresses = getUtility(IEmailAddressSet).getByPerson(
     ...     bug.owner)
-    >>> for email_address in reporter_email_adresses:
+    >>> for email_address in reporter_email_addresses:
     ...     print "%s: %s" % (email_address.email, email_address.status.name)
     joe.bloggs@example.com: NEW
     >>> print bug.owner.preferredemail
