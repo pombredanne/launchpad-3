@@ -9,6 +9,7 @@ __all__ = []
 import unittest
 
 from zope.component import getUtilitiesFor
+from zope.proxy import isProxy
 from zope.schema.interfaces import IVocabularyFactory
 from zope.security._proxy import _Proxy
 
@@ -23,7 +24,7 @@ class TestVocabularies(TestCase):
         """Our vocabularies should be registered with <securedutility>."""
         vocabularies = getUtilitiesFor(IVocabularyFactory)
         for name, vocab in vocabularies:
-            if type(vocab) != _Proxy and vocab.__module__[:5] != 'zope.':
+            if not isProxy(vocab) and vocab.__module__[:5] != 'zope.':
                 raise AssertionError(
                     '%s.%s vocabulary is not wrapped in a security proxy.' % (
                     vocab.__module__, name))

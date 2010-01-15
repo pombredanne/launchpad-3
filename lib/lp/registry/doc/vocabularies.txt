@@ -11,8 +11,12 @@
     >>> launchbag.clear()
 
     >>> from zope.schema.vocabulary import getVocabularyRegistry
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> vocabulary_registry = getVocabularyRegistry()
-    >>> product_vocabulary = vocabulary_registry.get(None, "Product")
+    >>> def get_naked_vocab(context, name):
+    ...     return removeSecurityProxy(
+    ...         vocabulary_registry.get(context, name))
+    >>> product_vocabulary = get_naked_vocab(None, "Product")
 
 
 == ActiveMailingList ==
@@ -20,9 +24,7 @@
 The active mailing lists vocabulary matches and returns only those mailing
 lists which are active.
 
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> list_vocabulary = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, 'ActiveMailingList'))
+    >>> list_vocabulary = get_naked_vocab(None, 'ActiveMailingList')
     >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
     >>> verifyObject(IHugeVocabulary, list_vocabulary)
@@ -183,7 +185,7 @@ Sometimes, the vocabulary search doesn't return any active lists.
 Reflects the available distribution series.  Results are ordered by
 `name`
 
-    >>> distroseries_vocabulary = vocabulary_registry.get(
+    >>> distroseries_vocabulary = get_naked_vocab(
     ...     None,"DistroSeries")
     >>> for term in distroseries_vocabulary:
     ...     print "%30s %s" % (term.token, term.title)
@@ -205,7 +207,6 @@ Reflects the available distribution series.  Results are ordered by
     u'The Hoary Hedgehog Release'
 
     >>> def getTerms(vocab, search_text):
-    ...     vocab = removeSecurityProxy(vocab)
     ...     [vocab.toTerm(item) for item in vocab.search(search_text)]
 
     >>> getTerms(distroseries_vocabulary, 'woody')
@@ -228,7 +229,7 @@ Reflects the available distribution series.  Results are ordered by
 All the teams the person is an active member of.
 
     >>> foo_bar = person_set.getByEmail('foo.bar@canonical.com')
-    >>> person_active_membership = vocabulary_registry.get(
+    >>> person_active_membership = get_naked_vocab(
     ...     foo_bar, 'PersonActiveMembership')
     >>> len(person_active_membership)
     10
@@ -323,7 +324,7 @@ through direct or indirect participations.
     [u'hwdb-team', u'landscape-developers', u'launchpad-users', u'name18',
      u'name20']
 
-    >>> sample_person_teams_vocabulary = vocabulary_registry.get(
+    >>> sample_person_teams_vocabulary = get_naked_vocab(
     ...     sample_person, 'PersonTeamParticipations')
 
     >>> for term in sample_person_teams_vocabulary:
@@ -346,13 +347,13 @@ MilestoneVolcabulary contains only those milestones that are related
 to the current context. If no context is given, or if the context does
 not have any milestones, a MilestoneVocabulary is empty...
 
-    >>> milestones = vocabulary_registry.get(None, 'Milestone')
+    >>> milestones = get_naked_vocab(None, 'Milestone')
     >>> len(milestones)
     0
 
     >>> from canonical.launchpad.interfaces import IMaloneApplication
     >>> malone = getUtility(IMaloneApplication)
-    >>> milestones = vocabulary_registry.get(malone, 'Milestone')
+    >>> milestones = get_naked_vocab(malone, 'Milestone')
     >>> len(milestones)
     0
 
@@ -361,7 +362,7 @@ milestones. IPerson related pages showing milestone lists retrieve the
 milestones from RelevantMilestonesMixin.getMilestoneWidgetValues()
 but we need the big default vocabulary for form input validation.
 
-    >>> all_milestones = vocabulary_registry.get(sample_person, 'Milestone')
+    >>> all_milestones = get_naked_vocab(sample_person, 'Milestone')
     >>> len(all_milestones)
     3
     >>> for term in all_milestones:
@@ -374,7 +375,7 @@ If the context is a product, only the product's milestones are in the
 vocabulary.
 
     >>> firefox = product_set.getByName('firefox')
-    >>> firefox_milestones = vocabulary_registry.get(firefox, 'Milestone')
+    >>> firefox_milestones = get_naked_vocab(firefox, 'Milestone')
     >>> for term in firefox_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
     firefox: 1.0
@@ -385,7 +386,7 @@ product itself are included in the vocabulary.
     >>> firefox_trunk = firefox.getSeries('trunk')
     >>> firefox_milestone = factory.makeMilestone(
     ...     product=firefox, name='firefox-milestone-no-series')
-    >>> firefox_trunk_milestones = vocabulary_registry.get(firefox_trunk,
+    >>> firefox_trunk_milestones = get_naked_vocab(firefox_trunk,
     ...                                                    'Milestone')
     >>> for term in firefox_trunk_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
@@ -400,7 +401,7 @@ in the vocabulary.
     >>> firefox_task = bug_one.bugtasks[0]
     >>> firefox_task.bugtargetdisplayname
     u'Mozilla Firefox'
-    >>> firefox_task_milestones = vocabulary_registry.get(
+    >>> firefox_task_milestones = get_naked_vocab(
     ...     firefox_task, 'Milestone')
     >>> for term in firefox_task_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
@@ -411,7 +412,7 @@ in the vocabulary.
     >>> debian_woody_task = bug_two.bugtasks[-1]
     >>> debian_woody_task.bugtargetdisplayname
     u'mozilla-firefox (Debian Woody)'
-    >>> debian_woody_milestones = vocabulary_registry.get(
+    >>> debian_woody_milestones = get_naked_vocab(
     ...     debian_woody_task, 'Milestone')
     >>> debian_woody = debian_woody_task.distroseries
     >>> len(debian_woody_milestones)
@@ -423,7 +424,7 @@ anymore.
     >>> milestone = debian_woody.milestones[0]
     >>> milestone.active = False
     >>> flush_database_updates()
-    >>> len(vocabulary_registry.get(debian_woody_task, 'Milestone'))
+    >>> len(get_naked_vocab(debian_woody_task, 'Milestone'))
     1
 
 If the milestone was used in a bugtask before it was marked inactive, though,
@@ -431,7 +432,7 @@ it'll still show up on the vocabulary so that users can change it.
 
     >>> debian_woody_task.milestone = milestone
     >>> flush_database_updates()
-    >>> len(vocabulary_registry.get(debian_woody_task, 'Milestone'))
+    >>> len(get_naked_vocab(debian_woody_task, 'Milestone'))
     2
 
 This is true for inactive milestones used in bugtasks for products and
@@ -439,7 +440,7 @@ product series as well.
 
     >>> product_bugtask = factory.makeBugTask(target=firefox)
     >>> product_bugtask.milestone = firefox_milestone
-    >>> product_target_milestones = vocabulary_registry.get(
+    >>> product_target_milestones = get_naked_vocab(
     ...     product_bugtask, 'Milestone')
     >>> for term in product_target_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
@@ -447,7 +448,7 @@ product series as well.
     firefox: firefox-milestone-no-series
 
     >>> firefox_milestone.active = False
-    >>> product_target_milestones = vocabulary_registry.get(
+    >>> product_target_milestones = get_naked_vocab(
     ...     product_bugtask, 'Milestone')
     >>> for term in product_target_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
@@ -456,7 +457,7 @@ product series as well.
 
     >>> productseries_bugtask = factory.makeBugTask(target=firefox_trunk)
     >>> productseries_bugtask.milestone = firefox_milestone
-    >>> productseries_target_milestones = vocabulary_registry.get(
+    >>> productseries_target_milestones = get_naked_vocab(
     ...     productseries_bugtask, 'Milestone')
     >>> for term in productseries_target_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
@@ -467,7 +468,7 @@ If the context is a specification, only milestones from that specification
 target are in the vocabulary.
 
     >>> canvas_spec = firefox.getSpecification('canvas')
-    >>> spec_target_milestones = vocabulary_registry.get(
+    >>> spec_target_milestones = get_naked_vocab(
     ...     canvas_spec, 'Milestone')
     >>> for term in spec_target_milestones:
     ...     print "%s: %s" % (term.value.target.name, term.value.name)
@@ -484,10 +485,10 @@ The vocabulary contains only active milestones.
     u'1.0'
     >>> one_dot_o.active = False
 
-    >>> firefox_milestones = vocabulary_registry.get(firefox, 'Milestone')
+    >>> firefox_milestones = get_naked_vocab(firefox, 'Milestone')
     >>> len(firefox_milestones)
     0
-    >>> firefox_task_milestones = vocabulary_registry.get(
+    >>> firefox_task_milestones = get_naked_vocab(
     ...     firefox_task, 'Milestone')
     >>> len(firefox_task_milestones)
     0
@@ -498,7 +499,7 @@ The vocabulary contains only active milestones.
 All the products in a project.
 
     >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
-    >>> mozilla_products_vocabulary = vocabulary_registry.get(
+    >>> mozilla_products_vocabulary = get_naked_vocab(
     ...     mozilla_project,'ProjectProducts')
 
     >>> for term in mozilla_products_vocabulary:
@@ -511,8 +512,7 @@ All the products in a project.
 
 The list of selectable projects. The results are ordered by displayname.
 
-    >>> project_vocabulary = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, "Project"))
+    >>> project_vocabulary = get_naked_vocab(None, "Project")
     >>> project_vocabulary.displayname
     'Select a project group'
 
@@ -546,8 +546,7 @@ The list of selectable projects. The results are ordered by displayname.
 
 The list of selectable products. Results are ordered by displayname.
 
-    >>> product_vocabulary = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, "Product"))
+    >>> product_vocabulary = get_naked_vocab(None, "Product")
     >>> product_vocabulary.displayname
     'Select a project'
 
@@ -588,8 +587,7 @@ The ProductVocabulary does not list inactive products.
 
 The list of selectable products releases.
 
-    >>> productrelease_vocabulary = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, "ProductRelease"))
+    >>> productrelease_vocabulary = get_naked_vocab(None, "ProductRelease")
     >>> productrelease_vocabulary.displayname
     'Select a Product Release'
 
@@ -608,8 +606,7 @@ The list of selectable products releases.
 All non-merged people with at least one email address. This vocabulary is
 meant to be used only in the people merge form.
 
-    >>> vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, "PersonAccountToMerge"))
+    >>> vocab = get_naked_vocab(None, "PersonAccountToMerge")
     >>> vocab.displayname
     'Select a Person to Merge'
 
@@ -674,7 +671,6 @@ Any person that's already merged is not part of this vocabulary:
     True
 
     # Here we cheat because IPerson.merged is a readonly attribute.
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> naked_cprov = removeSecurityProxy(cprov)
     >>> naked_cprov.merged = 1
     >>> naked_cprov.syncUpdate()
@@ -699,8 +695,7 @@ INACTIVE_ACCOUNT_STATUSES is part of the vocabulary, though.
 
 The set of non-merged people.
 
-    >>> vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, "AdminMergeablePerson"))
+    >>> vocab = get_naked_vocab(None, "AdminMergeablePerson")
     >>> vocab.displayname
     'Select a Person to Merge'
 
@@ -719,8 +714,7 @@ single email address, as it's fine for admins to merge them.
 
 All non-merged people and teams.
 
-    >>> vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, "NonMergedPeopleAndTeams"))
+    >>> vocab = get_naked_vocab(None, "NonMergedPeopleAndTeams")
     >>> vocab.displayname
     'Select a Person or Team'
 
@@ -754,8 +748,7 @@ password, a preferred email address and not merged (Person.merged is
 None).  It also includes all public teams and private teams the
 user has permission to view.
 
-    >>> vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, "ValidPersonOrTeam"))
+    >>> vocab = get_naked_vocab(None, "ValidPersonOrTeam")
     >>> vocab.displayname
     'Select a Person or Team'
 
@@ -803,8 +796,7 @@ lookup still omits myteam.
 A PRIVATE team is displayed when the logged in user is a member of the team.
 
     >>> commercial = person_set.getByEmail('commercial-member@canonical.com')
-    >>> vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(commercial, "ValidPersonOrTeam"))
+    >>> vocab = get_naked_vocab(commercial, "ValidPersonOrTeam")
     >>> login('commercial-member@canonical.com')
     >>> priv_team = factory.makeTeam(
     ...     name='private-team',
@@ -871,8 +863,7 @@ as part of their name or displayname, or the beginning of
 one of its email addresses.
 
     >>> login('foo.bar@canonical.com')
-    >>> vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, "ValidPersonOrTeam"))
+    >>> vocab = get_naked_vocab(None, "ValidPersonOrTeam")
     >>> sorted(person.name for person in vocab.search('support'))
     [u'ubuntu-team']
 
@@ -943,8 +934,7 @@ ValidOwner
 All valid persons and teams are also valid owners.
 
     >>> login(ANONYMOUS)
-    >>> vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, "ValidOwner"))
+    >>> vocab = get_naked_vocab(None, "ValidOwner")
     >>> vocab.displayname
     'Select a Person or Team'
 
@@ -967,8 +957,7 @@ The valid team vocabulary is just like the ValidPersonOrTeam vocabulary,
 except that its terms are limited only to teams.  No non-team Persons will be
 returned.
 
-    >>> vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, 'ValidTeam'))
+    >>> vocab = get_naked_vocab(None, 'ValidTeam')
     >>> vocab.displayname
     'Select a Team'
     >>> sorted((team.displayname, team.teamowner.displayname)
@@ -1075,22 +1064,21 @@ team itself, all valid persons and teams are valid members.
 
 ValidTeamMember needs a context:
 
-    >>> vocab = vocabulary_registry.get(None, "ValidTeamMember")
+    >>> vocab = get_naked_vocab(None, "ValidTeamMember")
     Traceback (most recent call last):
     ...
     AssertionError: ...
 
 ValidTeamMember's context must implement ITeam:
 
-    >>> vocab = vocabulary_registry.get(person, "ValidTeamMember")
+    >>> vocab = get_naked_vocab(person, "ValidTeamMember")
     Traceback (most recent call last):
     ...
     AssertionError: ...
 
 'name16' is a valid member for 'ubuntu-team':
 
-    >>> vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(team, "ValidTeamMember"))
+    >>> vocab = get_naked_vocab(team, "ValidTeamMember")
     >>> vocab.displayname
     'Select a Person or Team'
 
@@ -1122,26 +1110,25 @@ all valid persons and teams are valid owners for the team in context.
 
 ValidTeamOwner needs a context.
 
-    >>> vocab = vocabulary_registry.get(None, "ValidTeamOwner")
+    >>> vocab = get_naked_vocab(None, "ValidTeamOwner")
     Traceback (most recent call last):
     ...
     AssertionError: ...
 
 ValidTeamOwner's context must provide IPerson or IPersonSet.
 
-    >>> vocabulary_registry.get(team, "ValidTeamOwner")
+    >>> get_naked_vocab(team, "ValidTeamOwner")
     <...ValidTeamOwnerVocabulary...
-    >>> vocabulary_registry.get(person_set, "ValidTeamOwner")
+    >>> get_naked_vocab(person_set, "ValidTeamOwner")
     <...ValidTeamOwnerVocabulary...
-    >>> vocabulary_registry.get(firefox, "ValidTeamOwner")
+    >>> get_naked_vocab(firefox, "ValidTeamOwner")
     Traceback (most recent call last):
     ...
     AssertionError: ...
 
 'ubuntu-team' is not a valid owner for itself.
 
-    >>> vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(team, "ValidTeamOwner"))
+    >>> vocab = get_naked_vocab(team, "ValidTeamOwner")
     >>> vocab.displayname
     'Select a Person or Team'
 
@@ -1162,8 +1149,7 @@ ValidTeamOwner's context must provide IPerson or IPersonSet.
 
 All 'valid' persons who are not a team.
 
-    >>> vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, "ValidPerson"))
+    >>> vocab = get_naked_vocab(None, "ValidPerson")
     >>> vocab.displayname
     'Select a Person'
     >>> people = vocab.search(None)
@@ -1188,8 +1174,7 @@ ValidPerson does not include teams.
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> carlos_team = factory.makeTeam(
     ...     owner=carlos, name='carlos-team')
-    >>> person_or_team_vocab = removeSecurityProxy(
-    ...     vocabulary_registry.get(None, "ValidPersonOrTeam"))
+    >>> person_or_team_vocab = get_naked_vocab(None, "ValidPersonOrTeam")
     >>> carlos_people_or_team = person_or_team_vocab.search('carlos')
     >>> # The people or team search yields our one Carlos person and
     >>> # the new team.
@@ -1212,7 +1197,7 @@ ValidPerson does not include teams.
 All products and distributions. Note that the value type is
 heterogeneous.
 
-    >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProduct")
     >>> for term in vocab:
     ...     if 'Ubuntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
@@ -1252,12 +1237,12 @@ Inactive projects and project groups are not available.
     True
     >>> tomcat.active = False
     >>> flush_database_updates()
-    >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProduct")
     >>> tomcat in vocab
     False
     >>> tomcat.active = True
     >>> flush_database_updates()
-    >>> vocab = vocabulary_registry.get(None, "DistributionOrProduct")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProduct")
     >>> tomcat in vocab
     True
 
@@ -1273,7 +1258,7 @@ Project groups are not contained in this vocabulary:
 All products, projects and distributions. Note that the value type is
 heterogeneous.
 
-    >>> vocab = vocabulary_registry.get(None, "DistributionOrProductOrProject")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProject")
     >>> for term in vocab:
     ...     if 'Ubuntu' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
@@ -1313,7 +1298,7 @@ Inactive projects and project groups are not available.
     >>> apache in vocab
     False
 
-    >>> vocab = vocabulary_registry.get(None, "DistributionOrProductOrProject")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProject")
     >>> for term in vocab:
     ...     if 'Apache' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
@@ -1323,7 +1308,7 @@ Inactive projects and project groups are not available.
     >>> product_set.getByName('tomcat').active = True
     >>> getUtility(IProjectSet).getByName('apache').active = True
     >>> flush_database_updates()
-    >>> vocab = vocabulary_registry.get(None, "DistributionOrProductOrProject")
+    >>> vocab = get_naked_vocab(None, "DistributionOrProductOrProject")
     >>> for term in vocab:
     ...     if 'Apache' in term.title:
     ...         print term.title, '- class', term.value.__class__.__name__
@@ -1341,7 +1326,7 @@ featured on Launchpad. It is a subset of the
 DistributionOrProductOrProjectVocabulary (defined using the
 _clauseTables).
 
-    >>> featured_project_vocabulary = vocabulary_registry.get(
+    >>> featured_project_vocabulary = get_naked_vocab(
     ...     None, 'FeaturedProject')
     >>> len(featured_project_vocabulary)
     9
@@ -1392,7 +1377,7 @@ change bzr's so we will get more interesting results.
     >>> check_permission('launchpad.Commercial', bac)
     False
 
-    >>> comm_proj_vocab = vocabulary_registry.get(bac, "CommercialProjects")
+    >>> comm_proj_vocab = get_naked_vocab(bac, "CommercialProjects")
     >>> print comm_proj_vocab.displayname
     Select a commercial project
 
@@ -1420,7 +1405,7 @@ projects are returned.
     >>> check_permission('launchpad.ProjectReview', product_set)
     True
 
-    >>> comm_proj_vocab = vocabulary_registry.get(registry_member, "CommercialProjects")
+    >>> comm_proj_vocab = get_naked_vocab(registry_member, "CommercialProjects")
     >>> print comm_proj_vocab.displayname
     Select a commercial project
 
