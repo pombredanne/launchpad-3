@@ -13,6 +13,8 @@ from canonical.launchpad.interfaces import ILaunchpadCelebrities
 from lp.registry.interfaces.distribution import IDistributionSet
 from lp.registry.interfaces.distroseries import DistroSeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.sourcepackagerecipebuild import (
+    ISourcePackageRecipeBuildSource)
 
 
 # Number of seconds in an hour (used later)
@@ -355,8 +357,9 @@ class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
 
     def getUploader(self, changes):
         """Return the person doing the upload."""
-        # XXX: This should return the requester of the recipe build.
-        raise NotImplementedError(self.getUploader)
+        build_id = int(getattr(self.options, 'buildid'))
+        sprb = getUtility(ISourcePackageRecipeBuildSource).getById(build_id)
+        return sprb.requester
 
 
 AbstractUploadPolicy._registerPolicy(SourcePackageRecipeUploadPolicy)

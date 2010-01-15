@@ -895,7 +895,6 @@ class NascentUpload:
         # Queue entries are created in the NEW state by default; at the
         # end of this method we cope with uploads that aren't new.
         self.logger.debug("Creating queue entry")
-        distroseries = self.policy.distroseries
         self.queue_root = self._createQueueEntry()
 
         # When binaryful and sourceful, we have a mixed-mode upload.
