@@ -28,6 +28,10 @@ class BuildFarmJob:
         """See `IBuildFarmJob`."""
         raise NotImplementedError
 
+    def getTitle(self):
+        """See `IBuildFarmJob`."""
+        raise NotImplementedError()
+
     def jobStarted(self):
         """See `IBuildFarmJob`."""
         pass

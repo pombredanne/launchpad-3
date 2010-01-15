@@ -23,6 +23,7 @@ from zope.interface import classProvides, implements
 
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.services.job.model.job import Job
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.archivedependencies import (
@@ -165,14 +166,14 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         # XXX: Do this properly.
         return datetime.timedelta(minutes=2)
 
-
     def storeUploadLog(self, content):
         return
 
     def notify(self, extra_info=None):
         return
 
-class SourcePackageRecipeBuildJob(Storm):
+
+class SourcePackageRecipeBuildJob(BuildFarmJob, Storm):
 
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
@@ -195,34 +196,6 @@ class SourcePackageRecipeBuildJob(Storm):
         super(SourcePackageRecipeBuildJob, self).__init__()
         self.build = build
         self.job = job
-
-    def score(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def getLogFileName(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def getName(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def getTitle(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def jobStarted(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def jobReset(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def jobAborted(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
 
     @classmethod
     def new(cls, build, job):
