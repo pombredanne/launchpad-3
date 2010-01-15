@@ -12,9 +12,11 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
+import logging
 from textwrap import dedent
 
 from storm.cache import Cache, GenerationalCache
+from storm.exceptions import TimeoutError
 from storm.zope.interfaces import IZStorm
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
@@ -291,8 +293,26 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
         # sl_status gives meaningful results only on the origin node.
         master_store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
-        return master_store.execute(
-            "SELECT replication_lag(%d)" % slave_node_id).get_one()[0]
+        # If it takes more than (by default) 0.25 seconds to query the
+        # replication lag, assume we are lagged. Normally the query
+        # takes <20ms. This can happen during heavy updates, as the
+        # Slony-I tables can get slow with lots of events. We use a
+        # SAVEPOINT to conveniently reset the statement timeout.
+        master_store.execute("""
+            SAVEPOINT lag_check; SET LOCAL statement_timeout TO %d
+            """ % config.launchpad.lag_check_timeout)
+        try:
+            try:
+                return master_store.execute(
+                    "SELECT replication_lag(%d)" % slave_node_id).get_one()[0]
+            except TimeoutError:
+                logging.warn(
+                    'Gave up querying slave lag after %d ms',
+                    (config.launchpad.lag_check_timeout))
+                return timedelta(days=999) # A long, long time.
+        finally:
+            master_store.execute("ROLLBACK TO lag_check")
+
 
 
 def WebServiceDatabasePolicyFactory(request):
