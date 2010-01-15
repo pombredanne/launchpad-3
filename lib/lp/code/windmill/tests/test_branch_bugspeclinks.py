@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test for branch links."""
+"""Test for links between branches and bugs or specs."""
 
 __metaclass__ = type
 __all__ = []
@@ -16,7 +16,8 @@ from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import TestCaseWithFactory
 
 
-class TestBranchLinks(TestCaseWithFactory):
+class TestBranchBugLinks(TestCaseWithFactory):
+    """Test the links between branches and bugs."""
 
     layer = CodeWindmillLayer
 
@@ -36,7 +37,7 @@ class TestBranchLinks(TestCaseWithFactory):
         client.asserts.assertNotNode(id=u'buglink-' + bug)
 
     def test_inline_branch_bug_link_unlink(self):
-        """Test branch bug links."""
+        """Link a bug from the branch page."""
         client = WindmillTestClient("Branch bug links")
 
         lpuser.FOO_BAR.ensure_login(client)

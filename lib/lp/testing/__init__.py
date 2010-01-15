@@ -1,24 +1,47 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=W0401,C0301
 
 __metaclass__ = type
+__all__ = [
+    'ANONYMOUS',
+    'capture_events',
+    'FakeTime',
+    'get_lsb_information',
+    'is_logged_in',
+    'login',
+    'login_person',
+    'logout',
+    'map_branch_contents',
+    'normalize_whitespace',
+    'record_statements',
+    'run_with_login',
+    'run_with_storm_debug',
+    'run_script',
+    'TestCase',
+    'TestCaseWithFactory',
+    'test_tales',
+    'time_counter',
+    # XXX: This really shouldn't be exported from here. People should import
+    # it from Zope.
+    'verifyObject',
+    'validate_mock_class',
+    'with_anonymous_login',
+    ]
 
-from datetime import datetime, timedelta
-from pprint import pformat
 import copy
+from datetime import datetime, timedelta
 from inspect import getargspec, getmembers, getmro, isclass, ismethod
 import os
+from pprint import pformat
 import shutil
 import subprocess
 import tempfile
 import time
-import unittest
 
 from bzrlib.branch import Branch as BzrBranch
 from bzrlib.bzrdir import BzrDir, format_registry
-from bzrlib.errors import InvalidURLJoin
 from bzrlib.transport import get_transport
 
 import pytz
@@ -26,7 +49,11 @@ from storm.expr import Variable
 from storm.store import Store
 from storm.tracer import install_tracer, remove_tracer_type
 
+import testtools
 import transaction
+
+from twisted.python.util import mergeFunctionMetadata
+
 from zope.component import getUtility
 import zope.event
 from zope.interface.verify import verifyClass, verifyObject
@@ -34,17 +61,16 @@ from zope.security.proxy import (
     isinstance as zope_isinstance, removeSecurityProxy)
 
 from canonical.launchpad.webapp import errorlog
-from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 from canonical.config import config
+from canonical.launchpad.webapp.interfaces import ILaunchBag
+from lp.codehosting.vfs import branch_id_to_path, get_multi_server
 # Import the login and logout functions here as it is a much better
 # place to import them from in tests.
-from canonical.launchpad.webapp.interfaces import ILaunchBag
-
 from lp.testing._login import (
     ANONYMOUS, is_logged_in, login, login_person, logout)
+# canonical.launchpad.ftests expects test_tales to be imported from here.
+# XXX: JonathanLange 2010-01-01: Why?!
 from lp.testing._tales import test_tales
-
-from twisted.python.util import mergeFunctionMetadata
 
 # zope.exception demands more of frame objects than twisted.python.failure
 # provides in its fake frames.  This is enough to make it work with them
@@ -164,71 +190,8 @@ def run_with_storm_debug(function, *args, **kwargs):
         debug(False)
 
 
-class TestCase(unittest.TestCase):
+class TestCase(testtools.TestCase):
     """Provide Launchpad-specific test facilities."""
-
-    # Python 2.4 monkeypatch:
-    if getattr(unittest.TestCase, '_exc_info', None) is None:
-        _exc_info = unittest.TestCase._TestCase__exc_info
-        # We would not expect to need to make this property writeable, but
-        # twisted.trial.unittest.TestCase.__init__ chooses to write to it in
-        # the same way that the __init__ of the standard library's
-        # unittest.TestCase.__init__ does, as part of its own method of
-        # arranging for pre-2.5 compatibility.
-        class MonkeyPatchDescriptor:
-            def __get__(self, obj, type):
-                return obj._TestCase__testMethodName
-            def __set__(self, obj, value):
-                obj._TestCase__testMethodName = value
-        _testMethodName = MonkeyPatchDescriptor()
-
-    def __init__(self, *args, **kwargs):
-        unittest.TestCase.__init__(self, *args, **kwargs)
-        self._cleanups = []
-
-    def __str__(self):
-        """Return the fully qualified Python name of the test.
-
-        Zope uses this method to determine how to print the test in the
-        runner. We use the test's id in order to make the test easier to find,
-        and also so that modifications to the id will show up. This is
-        particularly important with bzrlib-style test multiplication.
-        """
-        return self.id()
-
-    def _runCleanups(self, result):
-        """Run the cleanups that have been added with addCleanup.
-
-        See the docstring for addCleanup for more information.
-
-        Returns True if all cleanups ran without error, False otherwise.
-        """
-        ok = True
-        while self._cleanups:
-            function, arguments, keywordArguments = self._cleanups.pop()
-            try:
-                function(*arguments, **keywordArguments)
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self._exc_info())
-                ok = False
-        return ok
-
-    def addCleanup(self, function, *arguments, **keywordArguments):
-        """Add a cleanup function to be called before tearDown.
-
-        Functions added with addCleanup will be called in reverse order of
-        adding after the test method and before tearDown.
-
-        If a function added with addCleanup raises an exception, the error
-        will be recorded as a test error, and the next cleanup will then be
-        run.
-
-        Cleanup functions are always called before a test finishes running,
-        even if setUp is aborted by an exception.
-        """
-        self._cleanups.append((function, arguments, keywordArguments))
 
     def installFixture(self, fixture):
         """Install 'fixture', an object that has a `setUp` and `tearDown`.
@@ -346,26 +309,11 @@ class TestCase(unittest.TestCase):
         self.assertTrue(zope_isinstance(instance, assert_class),
             '%r is not an instance of %r' % (instance, assert_class))
 
-    def assertIs(self, expected, observed):
-        """Assert that `expected` is the same object as `observed`."""
-        self.assertTrue(expected is observed,
-                        "%r is not %r" % (expected, observed))
-
     def assertIsNot(self, expected, observed, msg=None):
         """Assert that `expected` is not the same object as `observed`."""
         if msg is None:
             msg = "%r is %r" % (expected, observed)
         self.assertTrue(expected is not observed, msg)
-
-    def assertIn(self, needle, haystack):
-        """Assert that 'needle' is in 'haystack'."""
-        self.assertTrue(
-            needle in haystack, '%r not in %r' % (needle, haystack))
-
-    def assertNotIn(self, needle, haystack):
-        """Assert that 'needle' is not in 'haystack'."""
-        self.assertFalse(
-            needle in haystack, '%r in %r' % (needle, haystack))
 
     def assertContentEqual(self, iter1, iter2):
         """Assert that 'iter1' has the same content as 'iter2'."""
@@ -374,28 +322,6 @@ class TestCase(unittest.TestCase):
         self.assertEqual(
             list1, list2, '%s != %s' % (pformat(list1), pformat(list2)))
 
-    def assertRaises(self, excClass, callableObj, *args, **kwargs):
-        """Assert that a callable raises a particular exception.
-
-        :param excClass: As for the except statement, this may be either an
-            exception class, or a tuple of classes.
-        :param callableObj: A callable, will be passed ``*args`` and
-            ``**kwargs``.
-
-        Returns the exception so that you can examine it.
-        """
-        try:
-            callableObj(*args, **kwargs)
-        except excClass, e:
-            return e
-        else:
-            if getattr(excClass, '__name__', None) is not None:
-                excName = excClass.__name__
-            else:
-                # probably a tuple
-                excName = str(excClass)
-            raise self.failureException, "%s not raised" % excName
-
     def assertRaisesWithContent(self, exception, exception_content,
                                 func, *args):
         """Check if the given exception is raised with given content.
@@ -403,15 +329,8 @@ class TestCase(unittest.TestCase):
         If the exception isn't raised or the exception_content doesn't
         match what was raised an AssertionError is raised.
         """
-        exception_name = str(exception).split('.')[-1]
-
-        try:
-            func(*args)
-        except exception, err:
-            self.assertEqual(str(err), exception_content)
-        else:
-            raise AssertionError(
-                "'%s' was not raised" % exception_name)
+        err = self.assertRaises(exception, func, *args)
+        self.assertEqual(exception_content, str(err))
 
     def assertBetween(self, lower_bound, variable, upper_bound):
         """Assert that 'variable' is strictly between two boundaries."""
@@ -425,51 +344,12 @@ class TestCase(unittest.TestCase):
         The config values will be restored during test tearDown.
         """
         name = self.factory.getUniqueString()
-        body = '\n'.join(["%s: %s"%(k, v) for k, v in kwargs.iteritems()])
+        body = '\n'.join(["%s: %s" % (k, v) for k, v in kwargs.iteritems()])
         config.push(name, "\n[%s]\n%s\n" % (section, body))
         self.addCleanup(config.pop, name)
 
-    def run(self, result=None):
-        if result is None:
-            result = self.defaultTestResult()
-        result.startTest(self)
-        testMethod = getattr(self, self._testMethodName)
-        try:
-            try:
-                self.setUp()
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self._exc_info())
-                self._runCleanups(result)
-                return
-
-            ok = False
-            try:
-                testMethod()
-                ok = True
-            except self.failureException:
-                result.addFailure(self, self._exc_info())
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self._exc_info())
-
-            cleanupsOk = self._runCleanups(result)
-            try:
-                self.tearDown()
-            except KeyboardInterrupt:
-                raise
-            except:
-                result.addError(self, self._exc_info())
-                ok = False
-            if ok and cleanupsOk:
-                result.addSuccess(self)
-        finally:
-            result.stopTest(self)
-
     def setUp(self):
-        unittest.TestCase.setUp(self)
+        testtools.TestCase.setUp(self)
         from lp.testing.factory import ObjectFactory
         self.factory = ObjectFactory()
 
@@ -673,6 +553,8 @@ def capture_events(callable_obj, *args, **kwargs):
         zope.event.subscribers[:] = old_subscribers
 
 
+# XXX: This doesn't seem like a generically-useful testing function. Perhaps
+# it should go in a sub-module or something? -- jml
 def get_lsb_information():
     """Returns a dictionary with the LSB host information.
 
@@ -770,6 +652,8 @@ def normalize_whitespace(string):
     return " ".join(string.split())
 
 
+# XXX: This doesn't seem to be a generically useful testing function. Perhaps
+# it should go into a sub-module? -- jml
 def map_branch_contents(branch_url):
     """Return all files in branch at `branch_url`.
 
@@ -793,6 +677,7 @@ def map_branch_contents(branch_url):
         tree.unlock()
 
     return contents
+
 
 def validate_mock_class(mock_class):
     """Validate method signatures in mock classes derived from real classes.
