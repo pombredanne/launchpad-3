@@ -249,7 +249,7 @@ def _get_default_primary_dependencies(build):
     primary_dependencies = []
     for pocket in primary_pockets:
         primary_dependencies.append(
-            (build.archive.distribution.main_archive, pocket,
+            (build.distroseries.distribution.main_archive, pocket,
              primary_components))
 
     return primary_dependencies
