@@ -15,12 +15,14 @@ from zope.interface import classProvides, implements
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
-from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.buildmaster.interfaces.buildfarmjob import (
+    BuildFarmJobType, IBuildFarmJob, ISpecificBuildFarmJobClass)
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
+from lp.code.interfaces.branchjob import IBranchJob
 from lp.code.model.branchjob import BranchJob, BranchJobDerived, BranchJobType
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJob, ITranslationTemplatesBuildJobSource)
+    ITranslationTemplatesBuildJobSource)
 
 
 class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
@@ -28,8 +30,9 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
 
     Implementation-wise, this is actually a `BranchJob`.
     """
-    implements(ITranslationTemplatesBuildJob)
-    classProvides(ITranslationTemplatesBuildJobSource)
+    implements(IBranchJob, IBuildFarmJob)
+    classProvides(
+        ISpecificBuildFarmJobClass, ITranslationTemplatesBuildJobSource)
 
     duration_estimate = timedelta(seconds=10)
 
@@ -75,8 +78,8 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
         return specific_job
 
     @classmethod
-    def getForJob(cls, job):
-        """See `ITranslationTemplatesBuildJobSource`."""
+    def getByJob(cls, job):
+        """See `ISpecificBuildFarmJobClass`."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
         branch_job = store.find(BranchJob, BranchJob.job == job).one()
         if branch_job is None:

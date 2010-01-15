@@ -1422,6 +1422,8 @@ class IPersonEditRestricted(Interface):
 
         :param status: `TeamMembershipStatus` value must be either
             Approved, Proposed or Admin.
+            If the new member is a team, the status will be changed to
+            Invited unless the user is also an admin of that team.
 
         :param force_team_add: If the person is actually a team and
             force_team_add is False, the team will actually be invited to
