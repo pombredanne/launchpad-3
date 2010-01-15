@@ -14,8 +14,7 @@
   </div>
 
     <div metal:fill-slot="main"
-         tal:define="official_rosetta context/official_rosetta;
-                     admin_user context/required:launchpad.TranslationsAdmin">
+         tal:define="admin_user context/required:launchpad.TranslationsAdmin">
       <div class="translation-help-links">
         <a href="https://help.launchpad.net/Translations"
            id="link-to-translations-help"
@@ -27,13 +26,12 @@
         <tal:official_use replace="
             structure
             context/@@+portlet-not-using-launchpad"/>
-        <div tal:condition="python:not view.uses_translations and official_rosetta">
+        <div tal:condition="view/no_translations_available">
         There are no translations for this project.
         </div>
       </div>
 
-      <tal:uses-translations
-         condition="python:official_rosetta or admin_user">
+      <tal:page_content condition="view/show_page_content">
         <tal:translatable define="target view/primary_translatable">
 
           <div class="yui-g">
@@ -100,7 +98,7 @@
             <div tal:replace="structure context/@@+rosetta-status-legend" />
           </div>
         </tal:translatable>
-      </tal:uses-translations>
+      </tal:page_content>
     </div>
   </body>
 </html>

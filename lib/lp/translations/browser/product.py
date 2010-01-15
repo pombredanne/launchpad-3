@@ -11,14 +11,12 @@ __all__ = [
     'ProductView',
     ]
 
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     LaunchpadView, Link, canonical_url, enabled_with_permission)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.registry.interfaces.product import IProduct
-from lp.registry.model.productseries import ProductSeries
+from lp.registry.interfaces.product import IProduct, IProductSeries
 from lp.registry.browser.product import ProductEditView
 from lp.translations.browser.translations import TranslationsMixin
 
@@ -85,7 +83,20 @@ class ProductView(LaunchpadView):
     @cachedproperty
     def uses_translations(self):
         """Whether this product has translatable templates."""
-        return (self.context.official_rosetta and self.primary_translatable)
+        return (self.context.official_rosetta and 
+                self.primary_translatable is not None)
+
+    @cachedproperty
+    def no_translations_available(self):
+        """Has no translation templates but does support translations."""
+        return (self.context.official_rosetta and
+                self.primary_translatable is None)
+
+    @cachedproperty
+    def show_page_content(self):
+        """Whether the main content of the page should be shown."""
+        return (self.context.official_rosetta or
+                check_permission("launchpad.TranslationsAdmin", self.context))
 
     @cachedproperty
     def primary_translatable(self):
@@ -93,7 +104,7 @@ class ProductView(LaunchpadView):
         """
         translatable = self.context.primary_translatable
 
-        if not isinstance(removeSecurityProxy(translatable), ProductSeries):
+        if not IProductSeries.providedBy(translatable):
             return None
 
         return translatable
