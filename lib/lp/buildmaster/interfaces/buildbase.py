@@ -59,12 +59,6 @@ class IBuildBase(Interface):
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the entire buildlog."))
 
-    build_log_url = exported(
-        TextLine(
-            title=_("Build Log URL"), required=False,
-            description=_("A URL for the build log. None if there is no "
-                          "log available.")))
-
     buildqueue_record = Attribute("Corresponding BuildQueue record")
 
     is_private = Attribute("Whether the build should be treated as private.")
@@ -72,7 +66,7 @@ class IBuildBase(Interface):
     policy_name = Attribute(
         "The upload policy to use for handling these builds.")
 
-    def handleStatus(status, queueItem, librarian, slave_status):
+    def handleStatus(status, librarian, slave_status):
         """Handle a finished build status from a slave.
 
         :param status: Slave build status string with 'BuildStatus.' stripped.
