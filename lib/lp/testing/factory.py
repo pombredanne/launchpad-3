@@ -512,7 +512,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             group = self.makeTranslationGroup()
         if person is None:
             person = self.makePerson()
-        ITranslationsPerson(person).translations_relicensing_agreement = license
+        ITranslationsPerson(person).translations_relicensing_agreement = (
+            license)
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(
