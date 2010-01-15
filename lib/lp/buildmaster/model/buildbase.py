@@ -35,6 +35,18 @@ class BuildBase:
 
     policy_name = 'buildd'
 
+    def getUploadLeaf(self, build_id, now=None):
+        """Return a directory name to store build things in.
+
+        :param build_id: The id as returned by the slave, normally
+            $BUILD_ID-$BUILDQUEUE_ID
+        :param now: The `datetime` to use. If not provided, defaults to now.
+        """
+        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD_ID>-<BUILDQUEUE_ID>
+        if now is None:
+            now = datetime.datetime.now()
+        return '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_id)
+
     def getUploaderCommand(self):
         """See `IBuildBase`."""
         return list(config.builddmaster.uploader.split())
@@ -77,8 +89,7 @@ class BuildBase:
         incoming = os.path.join(root, 'incoming')
 
         # create a single directory to store build result files
-        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD_ID>-<BUILDQUEUE_ID>
-        upload_leaf = "%s-%s" % (time.strftime("%Y%m%d-%H%M%S"), buildid)
+        upload_leaf = self.getUploadLeaf(buildid)
         upload_dir = os.path.join(incoming, upload_leaf)
         logger.debug("Storing build result at '%s'" % upload_dir)
 

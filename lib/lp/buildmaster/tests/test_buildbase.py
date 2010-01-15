@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+from datetime import datetime
 import unittest
 
 from canonical.config import config
@@ -14,7 +15,7 @@ from lp.testing import TestCase
 
 
 class TestBuildBase(TestCase):
-    """tests for `IBuildBase`."""
+    """Tests for `IBuildBase`."""
 
     def disabled_test_build_base_provides_interface(self):
         # XXX: BuildBase is supposed to implement IBuildBase, but doesn't atm.
@@ -22,13 +23,22 @@ class TestBuildBase(TestCase):
         build_base = BuildBase()
         self.assertProvides(build_base, IBuildBase)
 
-    def test_get_uploader_command_begins_with_configuration(self):
-        # get_uploader_command returns the command to execute the uploader,
+    def test_getUploaderCommand_begins_with_configuration(self):
+        # getUploaderCommand returns the command to execute the uploader,
         # which is mostly set in the Launchpad configuration.
         config_args = list(config.builddmaster.uploader.split())
         build_base = BuildBase()
         uploader_command = build_base.getUploaderCommand()
         self.assertEqual(config_args, uploader_command[:len(config_args)])
+
+    def test_getUploadLeaf(self):
+        # getUploadLeaf returns the current time, followed by the build id.
+        build_base = BuildBase()
+        now = datetime.now()
+        build_id = self.factory.getUniqueInteger()
+        upload_leaf = build_base.getUploadLeaf(build_id, now=now)
+        self.assertEqual(
+            '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_id), upload_leaf)
 
 
 def test_suite():
