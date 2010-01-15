@@ -1,4 +1,5 @@
-= Junk Branches =
+Junk Branches
+=============
 
 Create a person and team.
 
@@ -30,7 +31,14 @@ branches.
     Nearby
     Other branches owned by Eric
 
-== Team Junk Branches ==
+Junk branches do not support merge proposals, so the "Branch Merges" section of
+the page should not be shown.
+
+    >>> assert find_tag_by_id(browser.contents, 'branch-merges') is None
+
+
+Team Junk Branches
+==================
 
 Junk branches can also be associated with a team.
 
