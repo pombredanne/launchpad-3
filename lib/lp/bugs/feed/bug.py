@@ -24,11 +24,11 @@ from lp.bugs.browser.bugtask import (
     BugsBugTaskSearchListingView, BugTargetView)
 from lp.registry.browser.person import (
     PersonRelatedBugTaskSearchListingView)
-from lp.registry.interfaces.person import IPerson
 from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.malone import IMaloneApplication
+from lp.registry.interfaces.person import IPerson
 from canonical.lazr.feed import (
     FeedBase, FeedEntry, FeedPerson, FeedTypedData, MINUTES)
 
