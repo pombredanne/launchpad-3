@@ -33,9 +33,7 @@ class TestBugTagsEntry(TestCaseWithFactory):
             u'eenie', u'meenie', u'meinie', u'moe']
         bug = self.factory.makeBug(product=product)
         removeSecurityProxy(bug).tags = ['unofficial-tag']
-        # XXX Make the testing canonical_url available as a global utility
-        bug_url = canonical_url(bug).replace(
-            'https', 'http').replace('.dev/', '.dev:8085/')
+        bug_url = canonical_url(bug)
         transaction.commit()
 
 
