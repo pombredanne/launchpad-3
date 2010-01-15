@@ -69,8 +69,6 @@ class ISourcePackageRecipe(IHasOwner):
             constraint=name_validator,
             description=_("The name of this recipe."))
 
-    # XXX: JRV 2010-01-13. This seems to be missing a 'pocket' property.
-
     builder_recipe = Attribute(
         _("The bzr-builder data structure for the recipe."))
 

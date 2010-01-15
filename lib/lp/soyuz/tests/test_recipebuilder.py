@@ -1,7 +1,7 @@
 # Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Module docstring goes here."""
+"""Test RecipeBuildBehavior."""
 
 __metaclass__ = type
 
@@ -15,10 +15,11 @@ from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.manager import RecordingSlave
-from lp.soyuz.model.sourcepackagerecipebuild import (
-    SourcePackageRecipeBuild)
+from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
 from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
 from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuild)
 from lp.soyuz.tests.soyuzbuilddhelpers import (MockBuilder,
     SaneBuildingSlave,)
 from lp.soyuz.tests.test_publishing import (
@@ -91,15 +92,20 @@ class TestRecipeBuilder(TestCaseWithFactory):
     def test__extraBuildArgs(self):
         # _extraBuildArgs will return a sane set of additional arguments
         job = self.makeJob()
+        distroarchseries = job.build.distroseries.architectures[0]
+        distroname = job.build.archive.distribution.name
         self.assertEquals({
            'author_email': u'requester@ubuntu.com',
            'suite': u'mydistro',
            'author_name': u'Joe User',
            'package_name': u'apackage',
            'archive_purpose': 'PPA',
+           'ogrecomponent': 'universe',
            'recipe_text': '# bzr-builder format 0.2 deb-version 1.0\n'
                           'lp://dev/~joe/someapp/pkg\n',
-            }, job._extraBuildArgs())
+           'archives': get_sources_list_for_building(job.build, 
+                distroarchseries, job.build.sourcepackagename.name)
+            }, job._extraBuildArgs(distroarchseries))
 
     def test_dispatchBuildToSlave(self):
         # Ensure dispatchBuildToSlave will make the right calls to the slave
@@ -123,7 +129,8 @@ class TestRecipeBuilder(TestCaseWithFactory):
         self.assertEquals(build_args[0], "1-someid")
         self.assertEquals(build_args[1], "sourcepackagerecipe")
         self.assertEquals(build_args[3], {})
-        self.assertEquals(build_args[4], job._extraBuildArgs())
+        distroarchseries = job.build.distroseries.architectures[0]
+        self.assertEquals(build_args[4], job._extraBuildArgs(distroarchseries))
 
     def test_dispatchBuildToSlave_nochroot(self):
         # dispatchBuildToSlave will fail when there is not chroot tarball 

@@ -186,7 +186,7 @@ class TestDistroSeries(TestCaseWithFactory):
         # is found
         distroseries = self.factory.makeDistroRelease()
         processorfamily = ProcessorFamilySet().getByName('x86')
-        self.assertEquals(None,
+        self.assertIs(None,
             distroseries.getDistroArchSeriesByProcessor(
                 processorfamily.processors[0]))
 

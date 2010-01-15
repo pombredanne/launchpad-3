@@ -125,20 +125,12 @@ def can_upload_to_archive(person, suitesourcepackage, archive=None):
     return reason is None
 
 
-def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
-                            component, pocket, strict_component=True):
-    """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+def check_upload_to_pocket(archive, distroseries, pocket):
+    """Check if uploading to a particular pocket in an archive is possible.
 
-    :param person: An `IPerson` who might be uploading.
-    :param distroseries: The `IDistroSeries` being uploaded to.
-    :param sourcepackagename: The `ISourcePackageName` being uploaded.
-    :param archive: The `IArchive` to upload to. If not provided, defaults
-        to the default archive for the source package. (See
-        `ISourcePackage.get_default_archive`).
-    :param component: The `Component` being uploaded to.
-    :param pocket: The `PackagePublishingPocket` of 'distroseries' being
-        uploaded to.
-    :return: The reason for not being able to upload, None otherwise.
+    :param archive: A `IArchive`
+    :param distroseries: A `IDistroSeries`
+    :param pocket: A `PackagePublishingPocket`
     """
     if archive.purpose == ArchivePurpose.PARTNER:
         if pocket not in (
@@ -156,6 +148,23 @@ def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
         if not distroseries.canUploadToPocket(pocket):
             return CannotUploadToPocket(distroseries, pocket)
 
+
+def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
+                            component, pocket, strict_component=True):
+    """Check if 'person' upload 'suitesourcepackage' to 'archive'.
+
+    :param person: An `IPerson` who might be uploading.
+    :param distroseries: The `IDistroSeries` being uploaded to.
+    :param sourcepackagename: The `ISourcePackageName` being uploaded.
+    :param archive: The `IArchive` to upload to. If not provided, defaults
+        to the default archive for the source package. (See
+        `ISourcePackage.get_default_archive`).
+    :param component: The `Component` being uploaded to.
+    :param pocket: The `PackagePublishingPocket` of 'distroseries' being
+        uploaded to.
+    :return: The reason for not being able to upload, None otherwise.
+    """
+    check_upload_to_pocket(archive, distroseries, pocket)
     return verify_upload(
         person, sourcepackagename, archive, component, distroseries,
         strict_component)
