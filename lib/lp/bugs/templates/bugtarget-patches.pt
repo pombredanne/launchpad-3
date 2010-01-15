@@ -13,12 +13,11 @@
     <div metal:fill-slot="main" class="tab-bugs">
     <table><thead>
              <tr>
-               <th>Patch</th>
-               <th>Bug</th>
-               <th>Importance</th>
-               <th>Status</th>
-               <th>Package</th>
-               <th>Patch Age</th>
+               <th style="padding-right: 1em;">Bug</th>
+               <th style="padding-right: 1em;">Importance</th>
+               <th style="padding-right: 1em;">Status</th>
+               <th style="padding-right: 1em;">Package</th>
+               <th style="padding-right: 1em;">Patch Age</th>
              </tr>
            </thead>
            <!-- What we have is a list of patch attachments.  We would
@@ -27,13 +26,21 @@
                 doing that, we need feedback from stakeholders about
                 exactly how the listing should look and behave.  What's
                 here now is just a very rough sketch. -->
-           <tr tal:repeat="patch context/patches">
-             <td tal:content="patch/title"></td>
-             <td><a tal:replace="structure patch/bug/fmt:link" /></td>
-             <td>TBD</td>
-             <td>TBD</td>
-             <td>TBD</td>
-             <td>TBD</td></tr></table>
+           <tr tal:repeat="patchestuple context/patches">
+             <div tal:define="task python:patchestuple[0]; patch python:patchestuple[1]; age python:patchestuple[2]">
+             <td style="padding-right: 1em;"
+              ><a tal:replace="structure patch/bug/fmt:link" /></td>
+             <td style="padding-right: 1em;"
+                 tal:content="task/importance/title"
+                 tal:attributes="class string:importance${task/importance/name}"></td>
+             <td style="padding-right: 1em;"
+                 tal:content="task/status/title"
+                 tal:attributes="class string:status${task/status/name}"></td>
+             <td style="padding-right: 1em;">TBD</td>
+             <td style="padding-right: 1em;"
+                 tal:attributes="title string:${patch/title}"
+              ><a tal:attributes="href patch/libraryfile/http_url" tal:content="age"></a></td>
+             </div></tr></table>
     </div><!-- main -->
   </body>
 </html>

@@ -159,16 +159,41 @@ class HasBugsBase:
 
     @property
     def patches(self):
-        """See `IHasBugs`."""
+        """See `IHasBugs`.  Return a list of tuples of the form:
+        (bugtask, youngest_patch_attachment, youngest_patch_age)
+        ### FIXME: Should this return value be documented in
+        ### `lib/lp/bugs/interfaces/bugtarget.py:IHasBugs` instead?"""
         lst = []
         tasks_with_patches_query = BugTaskSearchParams(
             user=getUtility(ILaunchBag).user,
             omit_dupes=True)
         tasks = self.searchTasks(tasks_with_patches_query, has_patch=True)
+        # When we've found the youngest attachment on a bug, cache it.
+        # There's no point rediscovering that information for other
+        # tasks on the bug when we can just consult the cache, which
+        # is a dictionary mapping bugs to tuples '(patch, patch_age)'.
+        youngest_patches_by_bug = {}
+        # Loop over bugtasks, gathering youngest patch for each's bug.
         for task in tasks:
-            for attachment in task.bug.attachments:
-                if attachment.type == BugAttachmentType.PATCH:
-                    lst.append(attachment)
+            min_age = None
+            youngest_patch = None
+            if youngest_patches_by_bug.has_key(task.bug):
+                youngest_patch = youngest_patches_by_bug[task.bug][0]
+                min_age = youngest_patches_by_bug[task.bug][1]
+            else:
+                for attachment in task.bug.attachments:
+                    if attachment.type == BugAttachmentType.PATCH:
+                        t = attachment.message.datecreated
+                        this_age = 0 + (t.now(t.tzinfo) - t).days
+                        if min_age is None:
+                            min_age = this_age
+                            youngest_patch = attachment
+                        elif this_age < min_age:
+                            min_age = this_age
+                            youngest_patch = attachment
+            if youngest_patch is not None:
+                youngest_patches_by_bug[task.bug] = (youngest_patch, min_age)
+                lst.append((task, youngest_patch, min_age))
         return lst
 
     def getBugCounts(self, user, statuses=None):
