@@ -7,6 +7,7 @@ __metaclass__ = type
 
 import unittest
 
+from canonical.config import config
 from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.testing import TestCase
@@ -21,11 +22,13 @@ class TestBuildBase(TestCase):
         build_base = BuildBase()
         self.assertProvides(build_base, IBuildBase)
 
-    def test_get_uploader_command(self):
-        # get_uploader_command returns the command to execute the uploader.
-        # The command is returned as a list of arguments, popen-style.
+    def test_get_uploader_command_begins_with_configuration(self):
+        # get_uploader_command returns the command to execute the uploader,
+        # which is mostly set in the Launchpad configuration.
+        config_args = list(config.builddmaster.uploader.split())
         build_base = BuildBase()
-        self.assertEqual([], build_base.getUploaderCommand())
+        uploader_command = build_base.getUploaderCommand()
+        self.assertEqual(config_args, uploader_command[:len(config_args)])
 
 
 def test_suite():

@@ -35,6 +35,10 @@ class BuildBase:
 
     policy_name = 'buildd'
 
+    def getUploaderCommand(self):
+        """See `IBuildBase`."""
+        return list(config.builddmaster.uploader.split())
+
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
         logger = logging.getLogger()
@@ -95,7 +99,7 @@ class BuildBase:
             out_file = open(out_file_name, "wb")
             copy_and_close(slave_file, out_file)
 
-        uploader_argv = list(config.builddmaster.uploader.split())
+        uploader_argv = self.getUploaderCommand()
         uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
         logger.debug("Saving uploader log at '%s'"
                      % uploader_logfilename)
