@@ -11,12 +11,15 @@ __all__ = [
 from zope.component import adapts
 from zope.interface import implements
 
-from lp.soyuz.interfaces.archive import ArchivePurpose
+from lp.archiveuploader.permission import check_upload_to_pocket
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.interfaces.builder import CannotBuild
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
+from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.adapters.archivedependencies import (
+    get_primary_current_component, get_sources_list_for_building)
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob)
 
@@ -47,20 +50,26 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         """See `IBuildFarmJobBehavior`."""
         logger.info("startBuild(%s)", self.display_name)
 
-    def _extraBuildArgs(self):
+    def _extraBuildArgs(self, distroarchseries):
         """
         Return the extra arguments required by the slave for the given build.
         """
         # Build extra arguments.
         args = {}
-        # XXX: JRV 2010-01-13: When build gets a pocket property, it should 
-        # be appended to suite here. (bug 507307)
-        args['suite'] = self.build.distroseries.name
+        suite = self.build.distroseries.name
+        if self.build.pocket != PackagePublishingPocket.RELEASE:
+            suite += "-%s" % (self.build.pocket.name.lower())
+        args['suite'] = suite
         args["package_name"] = self.build.sourcepackagename.name
         args["author_name"] = self.build.requester.displayname
         args["author_email"] = self.build.requester.preferredemail.email
         args["recipe_text"] = str(self.build.recipe.builder_recipe)
         args['archive_purpose'] = self.build.archive.purpose.name
+        args["ogrecomponent"] = get_primary_current_component(
+            self.build.archive, self.build.distroseries,
+            self.build.sourcepackagename.name)
+        args['archives'] = get_sources_list_for_building(self.build, 
+            distroarchseries, self.build.sourcepackagename.name)
         return args
 
     def dispatchBuildToSlave(self, build_queue_id, logger):
@@ -90,7 +99,7 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         logger.debug(
             "Initiating build %s on %s" % (buildid, self._builder.url))
 
-        args = self._extraBuildArgs()
+        args = self._extraBuildArgs(distroarchseries)
         status, info = self._builder.slave.build(
             buildid, "sourcepackagerecipe", chroot_sha1, {}, args)
         message = """%s (%s):
@@ -120,22 +129,9 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
         assert not (not self._builder.virtualized and build.is_virtualized), (
             "Attempt to build non-virtual item on a virtual builder.")
 
-        # XXX: Check whether this is allowed using 
-        # lp.archiveuploader.permission.can_upload_to_archive
-
-        # The main distribution has policies to prevent uploads to some
-        # pockets (e.g. security) during different parts of the distribution
-        # series lifecycle. These do not apply to PPA builds nor any archive
-        # that allows release pocket updates.
-        if (build.archive.purpose != ArchivePurpose.PPA and
-            not build.archive.allowUpdatesToReleasePocket()):
-            # XXX Robert Collins 2007-05-26: not an explicit CannotBuild
-            # exception yet because the callers have not been audited
-            assert build.distroseries.canUploadToPocket(build.pocket), (
-                "%s (%s) can not be built for pocket %s: invalid pocket due "
-                "to the series status of %s."
-                % (build.title, build.id, build.pocket.name,
-                   build.distroseries.name))
+        # This should already have been checked earlier, but just check again
+        # here in case of programmer errors.
+        check_upload_to_pocket(build.archive, build.distroseries, build.pocket)
 
     def slaveStatus(self, raw_slave_status):
         """Parse and return the binary build specific status info.

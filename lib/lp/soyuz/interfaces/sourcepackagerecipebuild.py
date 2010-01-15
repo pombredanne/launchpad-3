@@ -13,7 +13,7 @@ __all__ = [
 
 from lazr.restful.fields import Reference
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int, Object, Timedelta
 
 from canonical.launchpad import _
@@ -24,6 +24,7 @@ from lp.buildmaster.interfaces.builder import IBuilder
 from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
 from lp.registry.interfaces.person import IPerson
 from lp.registry.interfaces.distroseries import IDistroSeries
+from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.registry.interfaces.sourcepackagename import ISourcePackageName
 from lp.services.job.interfaces.job import IJob
 from lp.soyuz.interfaces.archive import IArchive
@@ -35,6 +36,10 @@ class ISourcePackageRecipeBuild(IBuildBase):
     """A build of a source package."""
 
     id = Int(title=_("Identifier for this build."))
+
+    current_component = Attribute(
+        "Component where the source related to this build was last "
+        "published.")
 
     date_created = Datetime(required=True, readonly=True)
 
@@ -79,6 +84,11 @@ class ISourcePackageRecipeBuild(IBuildBase):
         description=_("The actual build start time. Set when the build "
                       "is dispatched the first time and not changed in "
                       "subsequent build attempts."))
+
+    pocket = Choice(
+            title=_('Pocket'), required=True,
+            vocabulary=PackagePublishingPocket,
+            description=_("The build targeted pocket."))
 
     requester = Object(
         schema=IPerson, required=False,
