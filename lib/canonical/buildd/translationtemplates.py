@@ -24,15 +24,16 @@ class TranslationTemplatesBuildManager(BuildManager):
     latter runs on the master server; TranslationTemplatesBuildManager
     runs on the build slave.
     """
-    _state = TranslationTemplatesBuildState.INIT
-    _failed = False
+    def __init__(self, slave, buildid):
+        super(TranslationTemplatesBuildManager, self).__init__(slave, buildid)
+        self._state = TranslationTemplatesBuildState.INIT
+        self.alreadyfailed = False
 
     def initiate(self, files, chroot, extra_args):
         """See `BuildManager`."""
         self.branch_url = extra_args['branch_url']
         self.home = os.environ['HOME']
         self.username = pwd.getpwuid(os.getuid())[0]
-        self.branch_dir = os.path.join(self.home, 'source_tree')
 
         super(TranslationTemplatesBuildManager, self).initiate(
             self, files, chroot, extra_args)
@@ -53,9 +54,9 @@ class TranslationTemplatesBuildManager(BuildManager):
             self._state = TranslationTemplatesBuildState.UNPACK
             self.doUnpack()
         else:
-            if not self._failed:
+            if not self.alreadyfailed:
                 self._slave.builderFail()
-                self._failed = True
+                self.alreadyfailed = True
             self._state = TranslationTemplatesBuildState.CLEANUP
             self.build_implementation.doCleanup()
 
@@ -64,9 +65,9 @@ class TranslationTemplatesBuildManager(BuildManager):
             self._state = TranslationTemplatesBuildState.INSTALL
             self.doInstall()
         else:
-            if not self._failed:
+            if not self.alreadyfailed:
                 self._slave.chrootFail()
-                self._failed = True
+                self.alreadyfailed = True
             self._state = TranslationTemplatesBuildState.CLEANUP
             self.doCleanup()
 
@@ -75,9 +76,9 @@ class TranslationTemplatesBuildManager(BuildManager):
             self._state = TranslationTemplatesBuildState.MOUNT
             self.doMount()
         else:
-            if not self._failed:
+            if not self.alreadyfailed:
                 self._slave.chrootFail()
-                self._failed = True
+                self.alreadyfailed = True
             self._state = TranslationTemplatesBuildState.CLEANUP
             self.doCleanup()
 
@@ -86,9 +87,9 @@ class TranslationTemplatesBuildManager(BuildManager):
             self._state = TranslationTemplatesBuildState.UPDATE
             self.doUpdate()
         else:
-            if not self._failed:
+            if not self.alreadyfailed:
                 self._slave.chrootFail()
-                self._failed = True
+                self.alreadyfailed = True
             self._state = TranslationTemplatesBuildState.CLEANUP
             self.doCleanup()
 
@@ -97,9 +98,9 @@ class TranslationTemplatesBuildManager(BuildManager):
             self._state = TranslationTemplatesBuildState.GENERATE
             self.doGenerate()
         else:
-            if not self._failed:
+            if not self.alreadyfailed:
                 self._slave.chrootFail()
-                self._failed = True
+                self.alreadyfailed = True
             self._state = TranslationTemplatesBuildState.CLEANUP
             self.doCleanup()
 
@@ -108,20 +109,20 @@ class TranslationTemplatesBuildManager(BuildManager):
             self._state = TranslationTem,platesBuildState.CLEANUP
             self.doCleanup()
         else:
-            if not self._failed:
+            if not self.alreadyfailed:
                 self._slave.buildFail()
-                self._failed = True
+                self.alreadyfailed = True
             self._state = TranslationTemplatesBuildState.CLEANUP
             self.doCleanup()
 
     def iterage_CLEANUP(self, success):
         if success == 0:
-            if not self._failed:
+            if not self.alreadyfailed:
                 self._slave.buildOK()
         else:
-            if not self._failed:
+            if not self.alreadyfailed:
                 self._slave.builderFail()
-                self._failed = True
+                self.alreadyfailed = True
         self._slave.buildComplete()
 
     def doInstall(self):

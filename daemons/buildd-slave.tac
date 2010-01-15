@@ -9,6 +9,7 @@
 
 from twisted.application import service, strports
 from canonical.buildd import XMLRPCBuildDSlave, DebianBuildManager
+from canonical.buildd.translationtemplates import TranslationTemplatesBuildManager
 from canonical.launchpad.daemons import tachandler
 
 from twisted.web import server, resource, static
@@ -23,6 +24,7 @@ conf.read(conffile)
 slave = XMLRPCBuildDSlave(conf)
 
 slave.registerBuilder(DebianBuildManager,"debian")
+slave.registerBuilder(TranslationTemplatesBuildManager, 'translation-templates')
 
 application = service.Application('BuildDSlave')
 builddslaveService = service.IServiceCollection(application)
