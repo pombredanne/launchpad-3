@@ -222,6 +222,15 @@ through some hoops to create that situation.
     >>> print find_translation_recommendation(admin_browser)
     None
 
+At the moment, translatable source packages are not recommended, although
+the product is linked to one.
+
+    >>> source_package = find_tag_by_id(
+    ...     admin_browser.contents, 'portlet-translatable-packages')
+    >>> print extract_text(source_package)
+    All translatable distribution packages
+    “evolution” source package in Hoary
+
 Instead a notice is displayed that the product has no translations.
 
     >>> notice = first_tag_by_class(admin_browser.contents, 'notice')
