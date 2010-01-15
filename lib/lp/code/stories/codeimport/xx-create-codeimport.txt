@@ -22,7 +22,12 @@ user back to the main code page.
     >>> browser.getLink('Cancel').click()
     >>> print browser.url
     http://code.launchpad.dev/
-    >>> browser.getLink(id="new-code-import").click()
+
+For projects that don't officially use Launchpad for code, there is also a
+link on the main branch listing page for the product.
+
+    >>> browser.open('http://code.launchpad.dev/firefox')
+    >>> browser.getLink('Import your project').click()
 
 
 Requesting a Subversion import
@@ -38,7 +43,6 @@ The default foreign VCS type is Subversion.
 The user is required to enter a project that the import is for,
 a name for the import branch, and a subversion branch location.
 
-    >>> browser.getControl('Project').value = "firefox"
     >>> browser.getControl('Branch Name').value = "imported"
     >>> browser.getControl('Branch URL').value = (
     ...     "http://svn.example.com/firefox/trunk")
@@ -54,6 +58,14 @@ When the user clicks continue, the import branch is created
     <Link text='http://svn.example.com/firefox/trunk'
            url='http://svn.example.com/firefox/trunk'>
 
+The fact that this is an import via bzr-svn is indicated in a 'title'
+attribute on the text of 'Subversion'.
+
+    >>> svn_span = find_tag_by_id(browser.contents, 'svn-import-details').span
+    >>> print extract_text(svn_span)
+    Subversion
+    >>> print svn_span['title']
+    Subversion via bzr-svn
 
 Requesting a Git import
 =======================

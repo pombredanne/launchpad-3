@@ -118,6 +118,7 @@ fi
 declare -a hostnames
 hostnames=$(cat <<EOF
     answers.launchpad.dev
+    archive.launchpad.dev
     api.launchpad.dev
     bazaar-internal.launchpad.dev
     beta.launchpad.dev

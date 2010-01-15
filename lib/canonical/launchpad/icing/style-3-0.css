@@ -5,9 +5,14 @@
 .yui-t4 .yui-b {
     width: 21%;
     }
+.yui-t4 .yui-main {
+    clear: both;
+    float: left;
+    margin-right: -25%;
+    }
 .yui-t4 .yui-main .yui-b {
     width: auto;
-    margin-right: 24%;
+    margin-right: 25%;
     }
 .footer {
     clear: both;
@@ -29,6 +34,10 @@
 .footer .lp-arcana .search-icon {
     background: url(icon-sprites) 100% -191px no-repeat;
     }
+.footer .sitemessage {
+    text-align: right;
+}
+
 .footer .colophon {
     margin: 3em 3em 1em 3em;
     text-align: center;
@@ -206,6 +215,9 @@ strong {
     font-weight: bold;
     }
 
+.unseen {display: none;}
+
+
 /* Common presentations */
 div.see-all {
     font-size: 123.1%; /* Same as a h2 */
@@ -263,6 +275,9 @@ span.see-all {
 .horizontal li {
     display: inline;
     padding: 0 1.5em 0 0;
+    }
+.pre {
+    white-space: pre;
     }
 .table-actions:nth-child(2) {
     /* text-align only works here because the <li> also has the
@@ -782,6 +797,15 @@ div.translation-help-links div {
     padding: 1em 1em 1em 0;
 }
 
+/* Timeline Graph */
+div.yui-timelinegraph-content .yui-timelinegraph-zoom-box {
+  visibility: hidden;
+}
+
+div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
+  visibility: visible;
+}
+
 /* == Sprites == */
 .sprite {
     padding: 2px 0 5px 18px;
@@ -872,7 +896,7 @@ body.tab-bugs #portlet-subscribers .sprite {
 .person-inactive-badge {background:url(icon-sprites-2) 0 -64px no-repeat;}
 .mentoring {background:url(icon-sprites-2) 0 -96px no-repeat;}
 .undecided {background:url(icon-sprites-2) 0 -128px no-repeat;}
-.error {background:url(icon-sprites-2) 0 -160px no-repeat;}
+.error-icon {background:url(icon-sprites-2) 0 -160px no-repeat;}
 .cancel {background:url(icon-sprites-2) 0 -192px no-repeat;}
 .confirm {background:url(icon-sprites-2) 0 -224px no-repeat;}
 .flame {background:url(icon-sprites-2) 0 -256px no-repeat;}

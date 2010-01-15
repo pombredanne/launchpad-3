@@ -72,8 +72,8 @@ from lp.code.browser.codereviewcomment import CodeReviewDisplayComment
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchType, CodeReviewNotificationLevel,
     CodeReviewVote)
-from lp.code.interfaces.branchmergeproposal import (
-    IBranchMergeProposal, WrongBranchMergeProposal)
+from lp.code.errors import WrongBranchMergeProposal
+from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.codereviewcomment import ICodeReviewComment
 from lp.code.interfaces.codereviewvote import (
     ICodeReviewVoteReference)
@@ -551,9 +551,8 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
     def claim_action(self, action, data):
         """Claim this proposal."""
         request = self.context.getVoteReference(data['review_id'])
-        if request.reviewer == self.user:
-            return
-        request.reviewer = self.user
+        if request is not None:
+            request.claimReview(self.user)
         self.next_url = canonical_url(self.context)
 
     @property
@@ -626,6 +625,10 @@ class BranchMergeProposalView(LaunchpadFormView, UnmergedRevisionsMixin,
             style = 'margin-left: %dem;' % (2 * depth)
             result.append(dict(style=style, comment=comment))
         return result
+
+    @property
+    def pending_diff(self):
+        return self.context.next_preview_diff_job is not None
 
     @cachedproperty
     def preview_diff(self):
@@ -1340,11 +1343,11 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
             team = getUtility(IPersonSet).getByName(claim_review)
             if team is not None and self.user.inTeam(team):
                 # If the review type is None, then don't show the field.
+                self.reviewer = team.name
                 if self.initial_values['review_type'] == '':
                     self.form_fields = self.form_fields.omit('review_type')
                 else:
                     # Disable the review_type field
-                    self.reviewer = team.name
                     self.form_fields['review_type'].for_display = True
 
     @property
@@ -1379,7 +1382,7 @@ class BranchMergeProposalAddVoteView(LaunchpadFormView):
                 # Claim this vote reference, i.e. say that the individual
                 # self. user is doing this review ond behalf of the 'reviewer'
                 # team.
-                vote_ref.reviewer = self.user
+                vote_ref.claimReview(self.user)
 
         comment = self.context.createComment(
             self.user, subject=None, content=data['comment'],

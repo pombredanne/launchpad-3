@@ -24,8 +24,8 @@ from lp.bugs.browser.bugtask import (
     BugsBugTaskSearchListingView, BugTargetView)
 from lp.registry.browser.person import (
     PersonRelatedBugTaskSearchListingView)
-from canonical.launchpad.interfaces._schema_circular_imports import IBug, IPerson
-from lp.bugs.interfaces.bug import IBugSet
+from lp.registry.interfaces.person import IPerson
+from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugtarget import IHasBugs
 from lp.bugs.interfaces.bugtask import IBugTaskSet
 from lp.bugs.interfaces.malone import IMaloneApplication

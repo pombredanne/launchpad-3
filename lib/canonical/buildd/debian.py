@@ -102,6 +102,10 @@ class DebianBuildManager(BuildManager):
             self.archive_purpose = extra_args['archive_purpose']
         else:
             self.archive_purpose = False
+        if 'build_debug_symbols' in extra_args:
+            self.build_debug_symbols = extra_args['build_debug_symbols']
+        else:
+            self.build_debug_symbols = False
 
         BuildManager.initiate(self, files, chroot, extra_args)
 
@@ -134,6 +138,8 @@ class DebianBuildManager(BuildManager):
             args.extend(["-A"])
         if self.archive_purpose:
             args.extend(["--purpose=" + self.archive_purpose])
+        if self.build_debug_symbols:
+            args.extend(["--build-debug-symbols"])
         if self.suite:
             args.extend(["--dist=" + self.suite])
         else:

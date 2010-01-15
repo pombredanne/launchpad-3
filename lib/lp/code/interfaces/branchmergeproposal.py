@@ -7,11 +7,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'BadBranchMergeProposalSearchContext',
-    'BadStateTransition',
-    'BranchMergeProposalExists',
     'BRANCH_MERGE_PROPOSAL_FINAL_STATES',
-    'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
     'IBranchMergeProposalGetter',
     'IBranchMergeProposalJob',
@@ -20,9 +16,10 @@ __all__ = [
     'ICreateMergeProposalJobSource',
     'IMergeProposalCreatedJob',
     'IMergeProposalCreatedJobSource',
-    'UserNotBranchReviewer',
-    'WrongBranchMergeProposal',
+    'IUpdatePreviewDiffJobSource',
+    'notify_modified',
     ]
+
 
 from lazr.lifecycle.event import ObjectModifiedEvent
 from zope.event import notify
@@ -45,38 +42,6 @@ from lazr.restful.declarations import (
     export_read_operation, export_write_operation, exported,
     operation_parameters, operation_returns_entry, rename_parameters_as,
     REQUEST_USER)
-
-
-class InvalidBranchMergeProposal(Exception):
-    """Raised during the creation of a new branch merge proposal.
-
-    The text of the exception is the rule violation.
-    """
-
-
-class BranchMergeProposalExists(InvalidBranchMergeProposal):
-    """Raised if there is already a matching BranchMergeProposal."""
-
-
-class UserNotBranchReviewer(Exception):
-    """The user who attempted to review the merge proposal isn't a reviewer.
-
-    A specific reviewer may be set on a branch.  If a specific reviewer
-    isn't set then any user in the team of the owner of the branch is
-    considered a reviewer.
-    """
-
-
-class BadStateTransition(Exception):
-    """The user requested a state transition that is not possible."""
-
-
-class WrongBranchMergeProposal(Exception):
-    """The comment requested is not associated with this merge proposal."""
-
-
-class BadBranchMergeProposalSearchContext(Exception):
-    """The context is not valid for a branch merge proposal search."""
 
 
 BRANCH_MERGE_PROPOSAL_FINAL_STATES = (
@@ -155,6 +120,9 @@ class IBranchMergeProposal(IPrivacy):
         IStaticDiff, title=_('The diff to be used for reviews.'),
         readonly=True)
 
+    next_preview_diff_job = Attribute(
+        'The next BranchMergeProposalJob that will update a preview diff.')
+
     preview_diff = exported(
         Reference(
             IPreviewDiff,
@@ -163,8 +131,8 @@ class IBranchMergeProposal(IPrivacy):
 
     reviewed_revision_id = exported(
         Text(
-            title=_("The revision id that has been approved by the reviewer.")
-            ),
+            title=_(
+                "The revision id that has been approved by the reviewer.")),
         exported_as='reviewed_revno')
 
     commit_message = exported(
@@ -293,7 +261,7 @@ class IBranchMergeProposal(IPrivacy):
         CollectionField(
             title=_('The votes cast or expected for this proposal'),
             value_type=Reference(schema=Interface), #ICodeReviewVoteReference
-            readonly=True
+            readonly=True,
             )
         )
 
@@ -511,6 +479,10 @@ class IBranchMergeProposal(IPrivacy):
 class IBranchMergeProposalJob(Interface):
     """A Job related to a Branch Merge Proposal."""
 
+    id = Int(
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The tracking number for this job."))
+
     branch_merge_proposal = Object(
         title=_('The BranchMergeProposal this job is about'),
         schema=IBranchMergeProposal, required=True)
@@ -624,10 +596,18 @@ class IUpdatePreviewDiffJobSource(Interface):
     def create(bmp):
         """Create a job to update the diff for this merge proposal."""
 
+    def get(id):
+        """Return the UpdatePreviewDiffJob with this id."""
+
     def iterReady():
         """Iterate through jobs ready to update preview diffs."""
 
+    def contextManager():
+        """Get a context for running this kind of job in."""
 
+
+# XXX: JonathanLange 2010-01-06: This is only used in the scanner, perhaps it
+# should be moved there.
 def notify_modified(proposal, func, *args, **kwargs):
     """Call func, then notify about the changes it made.
 

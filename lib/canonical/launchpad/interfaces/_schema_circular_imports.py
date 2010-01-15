@@ -35,6 +35,7 @@ from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.blueprints.interfaces.specification import ISpecification
 from lp.blueprints.interfaces.specificationbranch import (
     ISpecificationBranch)
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchmergeproposal import IBranchMergeProposal
 from lp.code.interfaces.branchsubscription import IBranchSubscription
@@ -306,3 +307,5 @@ patch_reference_property(
 patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
+
+IBuildBase['buildstate'].vocabulary = BuildStatus

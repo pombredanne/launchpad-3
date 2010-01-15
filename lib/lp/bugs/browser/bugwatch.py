@@ -19,11 +19,9 @@ from lp.bugs.browser.bugtask import get_comments_for_bugtask
 from lp.bugs.browser.bugcomment import (
     should_display_remote_comments)
 from canonical.launchpad.fields import URIField
-from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bug import IBugWatch
 from lp.bugs.interfaces.bugwatch import (
-    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+    IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadFormView, LaunchpadView)
@@ -54,7 +52,6 @@ class BugWatchView(LaunchpadView):
         team, no comments will be returned.
         """
         user = getUtility(ILaunchBag).user
-        lp_developers = getUtility(ILaunchpadCelebrities).launchpad_developers
         if not should_display_remote_comments(user):
             return []
 
@@ -121,7 +118,7 @@ class BugWatchEditView(LaunchpadFormView):
 
     def bugWatchIsUnlinked(self, action):
         """Return whether the bug watch is unlinked."""
-        return self.context.bugtasks.count() == 0
+        return len(self.context.bugtasks) == 0
 
     @action('Delete Bug Watch', name='delete', condition=bugWatchIsUnlinked)
     def delete_action(self, action, data):

@@ -177,3 +177,25 @@ since the last update.
     #4 Reflow problems... New    Medium     on 2006-07-14
     #1 Firefox does no... New    Low        on 2006-05-19
 
+
+Fix released bugs are not shown. We demonstrate this by setting the bugtask
+for bug 4 to be "Fix released".
+
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bug import BugTaskStatus, IBugSet
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> bug_4 = getUtility(IBugSet).get(4)
+    >>> project_owner = getUtility(IPersonSet).getByName('name12')
+    >>> bug_4.bugtasks[0].transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, project_owner)
+    >>> logout()
+
+And then reloading the page. The Fix released bug, bug 4, is no longer shown.
+
+    >>> anon_browser.reload()
+    >>> print extract_text(
+    ...     find_tag_by_id(anon_browser.contents, 'hot-bugs'))
+        Summary            Status Importance Last changed
+    #5 Firefox install... New    Critical   on 2006-07-14
+    #1 Firefox does no... New    Low        on 2006-05-19

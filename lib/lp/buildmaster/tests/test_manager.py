@@ -25,7 +25,7 @@ from lp.buildmaster.tests.harness import BuilddManagerTestSetup
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.tests.soyuzbuilddhelpers import SaneBuildingSlave
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 from lp.registry.interfaces.distribution import IDistributionSet
 from canonical.launchpad.scripts.logger import BufferLogger

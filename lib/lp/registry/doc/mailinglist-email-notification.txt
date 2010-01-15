@@ -10,7 +10,7 @@ via email.
     >>> salgado = getUtility(IPersonSet).getByName('salgado')
 
     >>> from lp.registry.tests.mailinglists_helper import (
-    ...		new_team, new_list_for_team)
+    ...     new_team, new_list_for_team)
 
     # login() as an admin so that we can call IPerson.join() on any
     # person/team we want.
@@ -33,7 +33,8 @@ all active team members.
     >>> list_one.status.name
     'ACTIVE'
 
-    >>> transaction.commit()	# Send the emails.
+    # Send the emails.
+    >>> transaction.commit()
 
 Both Anne and No Privileges Person receive the notifications, Anne as a
 newly subscribed member and No Privileges Person as the owner of the
@@ -89,7 +90,7 @@ individual team members.
 
     >>> super_team = new_team('super-team', with_list=False)
     >>> sub_team = new_team('sub-team', with_list=False)
-    >>> super_team.addMember(sub_team, salgado, force_team_add=True)
+    >>> ignored = super_team.addMember(sub_team, salgado, force_team_add=True)
     >>> anne.join(super_team)
     >>> lars = factory.makePersonByName('Lars')
     >>> lars.join(sub_team)
@@ -120,7 +121,8 @@ individual team members.
     >>> super_list.status.name
     'ACTIVE'
 
-    >>> transaction.commit()	# Send the emails.
+    # Send the emails.
+    >>> transaction.commit()
     >>> len(stub.test_emails)
     4
     >>> print_emails(include_reply_to=True)
@@ -220,6 +222,7 @@ Notification messages are not sent out when a list is reactivated.
     >>> renewed_list.status.name
     'ACTIVE'
 
-    >>> transaction.commit()	# Send any outstanding emails.
+    # Send any outstanding emails.
+    >>> transaction.commit()
     >>> len(stub.test_emails)
     0

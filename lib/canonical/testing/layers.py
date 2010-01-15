@@ -89,6 +89,7 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from zope.server.logger.pythonlogger import PythonLogger
 from zope.testing.testrunner.runner import FakeInputContinueGenerator
 
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.lazr import pidfile
 from canonical.config import CanonicalConfig, config, dbconfig
 from canonical.database.revision import (
@@ -113,6 +114,8 @@ from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
 from canonical.testing.profiled import profiled
 from canonical.testing.smtpd import SMTPController
+from lp.services.memcache.client import memcache_client_factory
+from lp.services.osutils import kill_by_pidfile
 
 
 orig__call__ = zope.app.testing.functional.HTTPCaller.__call__
@@ -242,7 +245,10 @@ class BaseLayer:
     @profiled
     def setUp(cls):
         BaseLayer.isSetUp = True
-        # Kill any Librarian left running from a previous test run.
+        # Kill any Memcached or Librarian left running from a previous
+        # test run, or from the parent test process if the current
+        # layer is being run in a subprocess.
+        kill_by_pidfile(MemcachedLayer.getPidFile())
         LibrarianTestSetup().tearDown()
         # Kill any database left lying around from a previous test run.
         try:
@@ -336,6 +342,7 @@ class BaseLayer:
         # Fail tests with memory leaks now rather than when Launchpad crashes
         # due to a leak because someone ignored the warnings.
         if gc.garbage:
+            del gc.garbage[:]
             gc.collect() # Expensive, so only do if there might be garbage.
             if gc.garbage:
                 BaseLayer.flagTestIsolationFailure(
@@ -431,6 +438,90 @@ class BaseLayer:
             return frame.f_locals['test']
         finally:
             del frame # As per no-leak stack inspection in Python reference.
+
+
+class MemcachedLayer(BaseLayer):
+    """Provides tests access to a memcached.
+
+    Most tests needing memcache access will actually need to use
+    ZopelessLayer, FunctionalLayer or sublayer as they will be accessing
+    memcached using a utility.
+    """
+    _reset_between_tests = True
+
+    # A memcache.Client instance.
+    client = None
+
+    # A subprocess.Popen instance if this process spawned the test
+    # memcached.
+    _memcached_process = None
+
+    @classmethod
+    @profiled
+    def setUp(cls):
+        # Create a client
+        MemcachedLayer.client = memcache_client_factory()
+
+        # First, check to see if there is a memcached already running.
+        # This happens when new layers are run as a subprocess.
+        test_key = "MemcachedLayer__live_test"
+        if MemcachedLayer.client.set(test_key, "live"):
+            return
+
+        cmd = [
+            'memcached',
+            '-m', str(config.memcached.memory_size),
+            '-l', str(config.memcached.address),
+            '-p', str(config.memcached.port),
+            '-U', str(config.memcached.port),
+            ]
+        if config.memcached.verbose:
+            cmd.append('-vv')
+        MemcachedLayer._memcached_process = subprocess.Popen(
+            cmd, stdin=subprocess.PIPE)
+        MemcachedLayer._memcached_process.stdin.close()
+
+        # Wait for the memcached to become operational.
+        while not MemcachedLayer.client.set(test_key, "live"):
+            if MemcachedLayer._memcached_process.returncode is not None:
+                raise LayerInvariantError(
+                    "memcached never started or has died.",
+                    MemcachedLayer._memcached_process.stdout.read())
+            MemcachedLayer.client.forget_dead_hosts()
+            time.sleep(0.1)
+
+        # Store the pidfile for other processes to kill.
+        pidfile = MemcachedLayer.getPidFile()
+        open(pidfile, 'w').write(str(MemcachedLayer._memcached_process.pid))
+
+        # Register an atexit hook just in case tearDown doesn't get
+        # invoked for some perculiar reason.
+        atexit.register(kill_by_pidfile, pidfile)
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        MemcachedLayer.client.disconnect_all()
+        MemcachedLayer.client = None
+        # Kill our memcached, and there is no reason to be nice about it.
+        kill_by_pidfile(MemcachedLayer.getPidFile())
+        MemcachedLayer._memcached_process = None
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        if MemcachedLayer._reset_between_tests:
+            MemcachedLayer.client.forget_dead_hosts()
+            MemcachedLayer.client.flush_all()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        pass
+
+    @classmethod
+    def getPidFile(cls):
+        return os.path.join(config.root, '.memcache.pid')
 
 
 class LibrarianLayer(BaseLayer):
@@ -704,7 +795,7 @@ def test_default_timeout():
     return None
 
 
-class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
+class LaunchpadLayer(DatabaseLayer, LibrarianLayer, MemcachedLayer):
     """Provides access to the Launchpad database and daemons.
 
     We need to ensure that the database setup runs before the daemon
@@ -712,6 +803,8 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     already connected to the database.
 
     This layer is mainly used by tests that call initZopeless() themselves.
+    Most tests will use a sublayer such as LaunchpadFunctionalLayer that
+    provides access to the Component Architecture.
     """
     @classmethod
     @profiled
@@ -870,7 +963,7 @@ class FunctionalLayer(BaseLayer):
 
 class ZopelessLayer(BaseLayer):
     """Layer for tests that need the Zopeless component architecture
-    loaded using execute_zcml_for_scrips()
+    loaded using execute_zcml_for_scripts().
     """
 
     # Set to True if tests in the Zopeless layer are currently being run.
@@ -1305,6 +1398,7 @@ class PageTestLayer(LaunchpadFunctionalLayer):
     def resetBetweenTests(cls, flag):
         LibrarianLayer._reset_between_tests = flag
         DatabaseLayer._reset_between_tests = flag
+        MemcachedLayer._reset_between_tests = flag
 
     @classmethod
     @profiled
@@ -1740,6 +1834,20 @@ class BaseWindmillLayer(AppServerLayer):
         os.environ['WINDMILL_CONFIG_FILE'] = cls.config_file.name
         cls.shell_objects = start_windmill()
 
+        # Patch the config to provide the port number and not use https.
+        sites = (
+            ('vhost.mainsite', 'rooturl: http://launchpad.dev:8085/'),
+            ('vhost.answers', 'rooturl: http://answers.launchpad.dev:8085/'),
+            ('vhost.blueprints',
+                'rooturl: http://blueprints.launchpad.dev:8085/'),
+            ('vhost.bugs', 'rooturl: http://bugs.launchpad.dev:8085/'),
+            ('vhost.code', 'rooturl: http://code.launchpad.dev:8085/'),
+            ('vhost.translations',
+                'rooturl: http://translations.launchpad.dev:8085/'))
+        for site in sites:
+            config.push('windmillsettings', "\n[%s]\n%s\n" % site)
+        allvhosts.reload()
+
     @classmethod
     @profiled
     def tearDown(cls):
@@ -1748,6 +1856,7 @@ class BaseWindmillLayer(AppServerLayer):
         if cls.config_file is not None:
             # Close the file so that it gets deleted.
             cls.config_file.close()
+        config.reloadConfig()
 
     @classmethod
     @profiled

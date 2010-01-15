@@ -243,6 +243,22 @@ To change its status, use setStatus(status).
     >>> print webservice.get(
     ...     salgado_landscape['self_link']).jsonBody()['status']
     Deactivated
+    
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setStatus', {},
+    ...     status='Approved', silent=True)
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print webservice.get(
+    ...     salgado_landscape['self_link']).jsonBody()['status']
+    Approved
+    
+    >>> print webservice.named_post(
+    ...     salgado_landscape['self_link'], 'setStatus', {},
+    ...     status='Deactivated', silent=True)
+    HTTP/1.1 200 Ok
+    ...
 
     # Now revert the change to salgado's membership to not break other tests
     # further down.
@@ -529,7 +545,34 @@ Joining and leaving teams:
     ...     "/~landscape-developers/+member/salgado").jsonBody()['status']
     u'Deactivated'
 
-Adding an arbitrary member to a team:
+Though it is not possible through the Launchpad UI, some users of the
+REST API propose other people (as opposed to teams) as part of a
+mentoring process (Bug 498181).
+
+    >>> from canonical.launchpad.testing.pages import webservice_for_person
+    >>> from canonical.launchpad.webapp.interfaces import OAuthPermission
+    >>> from lp.registry.interfaces.person import IPersonSet
+    >>> from zope.component import getUtility
+    >>> login(ANONYMOUS)
+    >>> owner = getUtility(IPersonSet).getByName('owner')
+    >>> logout()
+    >>> owner_webservice = webservice_for_person(
+    ...     owner, permission=OAuthPermission.WRITE_PRIVATE)
+
+    # The sample user (name12) is used to verify that it works when
+    # the new member's email address is hidden.
+    >>> print owner_webservice.named_post(
+    ...     webservice.getAbsoluteUrl('~otherteam'), 'addMember', {},
+    ...     person=webservice.getAbsoluteUrl('/~name12'),
+    ...     status='Proposed', comment='Just a test')
+    HTTP/1.1 200 Ok
+    ...
+    >>> owner_webservice.get("/~otherteam/+member/name12"
+    ...     ).jsonBody()['status']
+    u'Proposed'
+
+Adding a team as a new member will result in the membership being
+set to the Invited status.
 
     >>> print webservice.named_post(
     ...     ubuntu_team['self_link'], 'addMember', {},

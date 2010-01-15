@@ -5,14 +5,20 @@ __metaclass__ = type
 __all__ = ['BuildFarmJob']
 
 
-from zope.interface import implements
+from zope.component import getUtility
+from zope.interface import classProvides, implements
 
-from lp.buildmaster.interfaces.buildfarmjob import IBuildFarmJob
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
+
+from lp.buildmaster.interfaces.buildfarmjob import (
+    IBuildFarmJob, ISpecificBuildFarmJobClass)
 
 
 class BuildFarmJob:
     """Mix-in class for `IBuildFarmJob` implementations."""
     implements(IBuildFarmJob)
+    classProvides(ISpecificBuildFarmJobClass)
 
     def score(self):
         """See `IBuildFarmJob`."""
@@ -38,3 +44,22 @@ class BuildFarmJob:
         """See `IBuildFarmJob`."""
         pass
 
+    @property
+    def processor(self):
+        """See `IBuildFarmJob`."""
+        return None
+
+    @property
+    def virtualized(self):
+        """See `IBuildFarmJob`."""
+        return None
+
+    @classmethod
+    def getByJob(cls, job):
+        """See `ISpecificBuildFarmJobClass`.
+
+        This base implementation should work for most build farm job
+        types, but some need to override it.
+        """
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(cls, cls.job == job).one()
