@@ -106,6 +106,21 @@ class TestReviewCommenting(TestCaseWithFactory):
             xpath='//div[@id="conversation"]//div[@class="boardCommentBody"]'
             '/pre[contains(., "%s")]' % new_comment_text)
 
+    def test_merge_proposal_reviewing(self):
+        """Comment on a merge proposal."""
+        client = WindmillTestClient('Code review commenting')
+        lpuser.NO_PRIV.ensure_login(client)
+
+        proposal = self.factory.makeBranchMergeProposal()
+        self.open_proposal_page(client, proposal)
+        client.waits.forElement(xpath=ADD_COMMENT_BUTTON)
+
+        new_comment_text = generate_uuid()
+        client.type(text=new_comment_text, id="field.comment")
+        client.select(id=u'field.vote', val=u'APPROVE')
+        client.click(xpath=ADD_COMMENT_BUTTON)
+        client.waits.forElement(id=u'review-no-priv', timeout=u'40000')
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
