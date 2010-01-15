@@ -138,19 +138,21 @@
 
     </div>
     </div>
-    <div tal:repeat="series view/sorted_series_list">
-      <tal:releases condition="series/releases">
-        <p tal:condition="has_edit" class="add-files">
-          Add download file to the
-          <a tal:attributes="href series/fmt:url"
-             tal:content="series/name">name</a> series for release:
-          <tal:release repeat="release series/releases">
-            <a tal:attributes="href string:${series/name}/${release/version}/+adddownloadfile"
-               tal:content="release/version"
-               >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
-          </tal:release>
-        </p>
-      </tal:releases>
+    <div id="admin-links">
+      <div tal:repeat="series view/sorted_series_list">
+        <tal:releases condition="series/releases">
+          <p tal:condition="has_edit" class="add-files">
+            Add download file to the
+            <a tal:attributes="href series/fmt:url"
+               tal:content="series/name">name</a> series for release:
+            <tal:release repeat="release series/releases">
+              <a tal:attributes="href string:${series/name}/${release/version}/+adddownloadfile"
+                 tal:content="release/version"
+                 >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
+            </tal:release>
+          </p>
+        </tal:releases>
+      </div>
     </div>
     <input tal:condition="python: has_edit and view.has_download_files"
         type="submit"
