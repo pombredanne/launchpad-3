@@ -167,7 +167,7 @@ def get_sources_list_for_building(build, distroarchseries, sourcepackagename):
     if dependencies is not None:
         for archive_dep in dependencies.splitlines():
             line = archive_dep % (
-                {'series': build.distroarchseries.distroseries.name})
+                {'series': distroarchseries.distroseries.name})
             sources_list_lines.append(line)
 
     return sources_list_lines
