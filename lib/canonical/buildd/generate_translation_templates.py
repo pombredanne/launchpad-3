@@ -5,14 +5,13 @@
 __metaclass__ = type
 
 import os.path
-import pwd
 import sys
-
-
-"""Script to generate translation templates from a branch."""
+from subprocess import call
 
 
 class GenerateTranslationTemplates:
+    """Script to generate translation templates from a branch."""
+
     def __init__(self, branch_spec):
         """Prepare to generate templates for a branch.
 
