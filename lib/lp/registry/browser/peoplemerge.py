@@ -138,15 +138,15 @@ class AdminMergeBaseView(LaunchpadFormView):
         from zope.security.proxy import removeSecurityProxy
         for email in self.dupe_person_emails:
             email = IMasterObject(email)
-            # XXX: Guilherme Salgado 2007-10-15: Maybe this status change
-            # should be done only when merging people but not when merging
-            # teams.
-            email.status = EmailAddressStatus.NEW
             # EmailAddress.person and EmailAddress.account are readonly
             # fields, so we need to remove the security proxy here.
             naked_email = removeSecurityProxy(email)
             naked_email.personID = self.target_person.id
             naked_email.accountID = self.target_person.accountID
+            # XXX: Guilherme Salgado 2007-10-15: Maybe this status change
+            # should be done only when merging people but not when merging
+            # teams.
+            naked_email.status = EmailAddressStatus.NEW
         flush_database_updates()
         getUtility(IPersonSet).merge(self.dupe_person, self.target_person)
         self.request.response.addInfoNotification(self.merge_message)
