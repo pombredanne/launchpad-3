@@ -686,6 +686,12 @@
             name="+new"
             template="../templates/codeimport-new.pt"
             permission="launchpad.AnyPerson"/>
+        <browser:page
+            for="lp.registry.interfaces.product.IProduct"
+            class="lp.code.browser.codeimport.CodeImportNewView"
+            name="+new-import"
+            template="../templates/codeimport-new.pt"
+            permission="launchpad.AnyPerson"/>
     </facet>
     <browser:navigation
         module="lp.code.browser.codeimport"
