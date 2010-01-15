@@ -276,6 +276,9 @@ span.see-all {
     display: inline;
     padding: 0 1.5em 0 0;
     }
+.pre {
+    white-space: pre;
+    }
 .table-actions:nth-child(2) {
     /* text-align only works here because the <li> also has the
        style display:inline.
@@ -893,7 +896,7 @@ body.tab-bugs #portlet-subscribers .sprite {
 .person-inactive-badge {background:url(icon-sprites-2) 0 -64px no-repeat;}
 .mentoring {background:url(icon-sprites-2) 0 -96px no-repeat;}
 .undecided {background:url(icon-sprites-2) 0 -128px no-repeat;}
-.error {background:url(icon-sprites-2) 0 -160px no-repeat;}
+.error-icon {background:url(icon-sprites-2) 0 -160px no-repeat;}
 .cancel {background:url(icon-sprites-2) 0 -192px no-repeat;}
 .confirm {background:url(icon-sprites-2) 0 -224px no-repeat;}
 .flame {background:url(icon-sprites-2) 0 -256px no-repeat;}

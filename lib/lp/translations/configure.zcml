@@ -576,7 +576,9 @@
     <class
         class="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob">
         <allow
-            interface="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJob"/>
+            interface="lp.code.interfaces.branchjob.IBranchJob"/>
+        <allow
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
     </class>
     <securedutility
         component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
@@ -585,7 +587,7 @@
     </securedutility>
     <utility
         component="lp.translations.model.translationtemplatesbuildjob.TranslationTemplatesBuildJob"
-        provides="lp.translations.interfaces.translationtemplatesbuildjob.ITranslationTemplatesBuildJob"
+        provides="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"
         name="TRANSLATIONTEMPLATESBUILD"/>
 
     <!-- TranslationTemplateBuildBehavior -->

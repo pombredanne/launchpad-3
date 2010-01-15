@@ -119,7 +119,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.testing import run_with_login, time_counter
@@ -277,10 +277,11 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
         key_id = self.getUniqueHexString(digits=8).upper()
+        fingerprint = key_id + 'A' * 32
         return getUtility(IGPGKeySet).new(
             owner.id,
             keyid=key_id,
-            fingerprint='A' * 40,
+            fingerprint=fingerprint,
             keysize=self.getUniqueInteger(),
             algorithm=GPGKeyAlgorithm.R,
             active=True,

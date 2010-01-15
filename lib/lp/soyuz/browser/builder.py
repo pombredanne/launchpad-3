@@ -32,7 +32,7 @@ from canonical.lazr.utils import smartquote
 from canonical.launchpad import _
 from lp.soyuz.browser.build import BuildRecordsView
 from lp.soyuz.interfaces.build import IBuildSet
-from lp.soyuz.interfaces.builder import IBuilderSet, IBuilder
+from lp.buildmaster.interfaces.builder import IBuilderSet, IBuilder
 from canonical.launchpad.interfaces.launchpad import NotFoundError
 from canonical.launchpad.webapp import (
     ApplicationMenu, GetitemNavigation, LaunchpadEditFormView,

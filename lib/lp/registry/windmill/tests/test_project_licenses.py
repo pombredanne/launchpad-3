@@ -64,44 +64,44 @@ class TestProjectLicenses(TestCaseWithFactory):
             option='className|lazr-closed')
 
         # The license details box starts out hidden.
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'license-details',
-            validator='className|lazr-closed')
+            option='className|lazr-closed')
 
         # But clicking on one of the Other/* licenses exposes it.
         self.client.click(id='field.licenses.26')
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'license-details',
-            validator='className|lazr-opened')
+            option='className|lazr-opened')
 
         # Clicking on Other/Proprietary exposes the additional commercial
         # licensing details.
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'proprietary',
-            validator='className|lazr-closed')
+            option='className|lazr-closed')
 
         self.client.click(id='field.licenses.25')
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'license-details',
-            validator='className|lazr-opened')
-        self.client.asserts.assertProperty(
+            option='className|lazr-opened')
+        self.client.waits.forElementProperty(
             id=u'proprietary',
-            validator='className|lazr-opened')
+            option='className|lazr-opened')
 
         # Only when all Other/* items are unchecked does the details box get
         # hidden.
         self.client.click(id='field.licenses.26')
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'license-details',
-            validator='className|lazr-opened')
+            option='className|lazr-opened')
 
         self.client.click(id='field.licenses.25')
         self.client.waits.forElementProperty(
             id=u'license-details',
             option='className|lazr-closed')
-        self.client.asserts.assertProperty(
+        self.client.waits.forElementProperty(
             id=u'proprietary',
-            validator='className|lazr-closed')
+            option='className|lazr-closed')
 
         # Clicking on "I haven't specified..." unchecks everything and
         # closes the details box, but leaves the sections opened.

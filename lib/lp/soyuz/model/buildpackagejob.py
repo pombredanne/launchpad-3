@@ -16,7 +16,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    BuildFarmJobType, IBuildFarmJob, IBuildFarmJobDispatchEstimation)
+    BuildFarmJobType, IBuildFarmJobDispatchEstimation)
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
@@ -25,9 +26,9 @@ from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 
 
-class BuildPackageJob(Storm):
+class BuildPackageJob(Storm, BuildFarmJob):
     """See `IBuildPackageJob`."""
-    implements(IBuildFarmJob, IBuildPackageJob)
+    implements(IBuildPackageJob)
     classProvides(IBuildFarmJobDispatchEstimation)
 
     __storm_table__ = 'buildpackagejob'
@@ -54,7 +55,7 @@ class BuildPackageJob(Storm):
             'universe': 250,
             'restricted': 750,
             'main': 1000,
-            'partner' : 1250,
+            'partner': 1250,
             }
 
         score_urgency = {
@@ -146,8 +147,8 @@ class BuildPackageJob(Storm):
         # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
         # it fix request from bug # 30617
         return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
-            distroname, distroseriesname, archname, sourcename, version, state
-            ))
+            distroname, distroseriesname, archname, sourcename, version,
+            state))
 
     def getName(self):
         """See `IBuildPackageJob`."""
@@ -176,7 +177,7 @@ class BuildPackageJob(Storm):
     def composePendingJobsQuery(min_score, processor, virtualized):
         """See `IBuildFarmJob`."""
         return """
-            SELECT 
+            SELECT
                 BuildQueue.job,
                 BuildQueue.lastscore,
                 BuildQueue.estimated_duration,
@@ -209,4 +210,3 @@ class BuildPackageJob(Storm):
     def virtualized(self):
         """See `IBuildFarmJob`."""
         return self.build.is_virtualized
-
