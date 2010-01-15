@@ -340,17 +340,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SQL("""
                 coalesce(heat, 0) + coalesce(po_messages, 0) +
                 CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END AS score"""))
-        origin = SQL(
-            self._current_sourcepackagename_sql +
-            self._sourcepackagename_heat_score_sql +
-            self._sourcepackagename_message_score_sql)
-        condition = SQL("""
-            DistroSeries.id = %s
-            AND spph.status IN %s
-            AND archive.purpose = %s
-            AND packaging.id IS NULL
-            """ % sqlvalues(
-                self, active_publishing_status, ArchivePurpose.PRIMARY))
+        joins, conditions = self._current_sourcepackage_joins_and_conditions
+        origin = SQL(joins)
+        condition = SQL(conditions + "AND packaging.id IS NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC')
         return [spn for (spn, score) in results]
@@ -377,47 +369,22 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                         THEN coalesce(po_messages, 10) ELSE 0 END +
                     CASE WHEN ProductSeries.branch IS NULL THEN 500
                         ELSE 0 END AS score"""))
-        origin = SQL(
-            self._current_sourcepackagename_sql +
-            self._sourcepackagename_heat_score_sql +
-            self._sourcepackagename_message_score_sql + """
+        joins, conditions = self._current_sourcepackage_joins_and_conditions
+        origin = SQL(joins + """
             JOIN ProductSeries
                 ON Packaging.productseries = ProductSeries.id
             JOIN Product
                 ON ProductSeries.product = Product.id
             """)
-        condition = SQL("""
-            DistroSeries.id = %s
-            AND spph.status IN %s
-            AND archive.purpose = %s
-            AND packaging.id IS NOT NULL
-            """ % sqlvalues(
-                self, active_publishing_status, ArchivePurpose.PRIMARY))
+        condition = SQL(conditions + "AND packaging.id IS NOT NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC')
         return [packaging
                 for (packaging, spn, series, product, score) in results]
 
     @property
-    def _current_sourcepackagename_sql(self):
-        return """
-            SourcePackageName
-            JOIN SourcePackageRelease spr
-                ON SourcePackageName.id = spr.sourcepackagename
-            JOIN SourcePackagePublishingHistory spph
-                ON spr.id = spph.sourcepackagerelease
-            JOIN archive
-                ON spph.archive = Archive.id
-            JOIN DistroSeries
-                ON spph.distroseries = DistroSeries.id
-            LEFT JOIN Packaging
-                ON SourcePackageName.id = Packaging.sourcepackagename
-                AND Packaging.distroseries = DistroSeries.id
-            """
-
-    @property
-    def _sourcepackagename_heat_score_sql(self):
-        return """
+    def _current_sourcepackage_joins_and_conditions(self):
+        heat_score = ("""
             LEFT JOIN (
                 SELECT 
                     BugTask.sourcepackagename,
@@ -431,11 +398,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 GROUP BY BugTask.sourcepackagename
                 ) bugs
                 ON SourcePackageName.id = bugs.sourcepackagename
-            """
-
-    @property
-    def _sourcepackagename_message_score_sql(self):
-        return """
+            """)
+        message_score = ("""
             LEFT JOIN (
                 SELECT 
                     POTemplate.sourcepackagename,
@@ -451,7 +415,28 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 ) messages
                 ON SourcePackageName.id = messages.sourcepackagename
                 AND DistroSeries.id = messages.distroseries
-            """
+            """)
+        joins = ("""
+            SourcePackageName
+            JOIN SourcePackageRelease spr
+                ON SourcePackageName.id = spr.sourcepackagename
+            JOIN SourcePackagePublishingHistory spph
+                ON spr.id = spph.sourcepackagerelease
+            JOIN archive
+                ON spph.archive = Archive.id
+            JOIN DistroSeries
+                ON spph.distroseries = DistroSeries.id
+            LEFT JOIN Packaging
+                ON SourcePackageName.id = Packaging.sourcepackagename
+                AND Packaging.distroseries = DistroSeries.id
+            """ + heat_score + message_score)
+        conditions = ("""
+            DistroSeries.id = %s
+            AND spph.status IN %s
+            AND archive.purpose = %s
+            """ % sqlvalues(
+                self, active_publishing_status, ArchivePurpose.PRIMARY))
+        return (joins, conditions)
 
     @property
     def supported(self):
