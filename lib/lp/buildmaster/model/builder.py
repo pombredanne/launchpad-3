@@ -443,13 +443,22 @@ class Builder(SQLBase):
                 buildqueue.job = job.id
                 AND job.status = %s
                 AND (
-                    (buildqueue.processor = %s
-                     AND buildqueue.virtualized = %s)
-                   OR
-                    (buildqueue.processor IS NULL
-                     AND buildqueue.virtualized IS NULL))
+                    -- The processor values either match or the candidate
+                    -- job is processor-independent.
+                    buildqueue.processor = %s OR 
+                    buildqueue.processor IS NULL)
+                AND (
+                    -- The virtualized values either match or the candidate
+                    -- job does not care about virtualization and the idle
+                    -- builder *is* virtualized (the latter is a security
+                    -- precaution preventing the execution of untrusted code
+                    -- on native builders).
+                    buildqueue.virtualized = %s OR
+                    (buildqueue.virtualized IS NULL AND %s = TRUE))
                 AND buildqueue.builder IS NULL
-        """ % sqlvalues(JobStatus.WAITING, self.processor, self.virtualized)
+        """ % sqlvalues(
+            JobStatus.WAITING, self.processor, self.virtualized,
+            self.virtualized)
         order_clause = " ORDER BY buildqueue.lastscore DESC, buildqueue.id"
 
         extra_tables = set()
