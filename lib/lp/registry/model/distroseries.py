@@ -20,7 +20,7 @@ from sqlobject import (
     BoolCol, StringCol, ForeignKey, SQLMultipleJoin, IntCol,
     SQLObjectNotFound, SQLRelatedJoin)
 
-from storm.locals import And, Desc, Join, Select, SQL
+from storm.locals import And, Desc, Join, SQL
 from storm.store import Store
 
 from zope.component import getUtility
@@ -48,7 +48,6 @@ from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
-from lp.soyuz.model.archive import Archive
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries, DistroArchSeriesSet, PocketChroot)
@@ -340,68 +339,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackageName,
             SQL("""
                 coalesce(heat, 0) + coalesce(po_messages, 0) +
-                CASE WHEN SourcePackageRelease.component = 1 THEN 1000
-                    ELSE 0 END AS score"""))
-        origin = [SQL("""
-                SourcePackageName
-                JOIN SourcePackageRelease
-                    ON SourcePackageName.id = SourcePackageRelease.sourcepackagename
-                JOIN SourcePackagePublishingHistory
-                    ON SourcePackageRelease.id = SourcePackagePublishingHistory.sourcepackagerelease
-                JOIN archive
-                    ON SourcePackagePublishingHistory.archive = Archive.id
-                JOIN DistroSeries
-                    ON SourcePackagePublishingHistory.distroseries = DistroSeries.id
-                -- The count of open bugs by sourcepackagename.
-                LEFT JOIN (
-                    SELECT
-                        BugTask.sourcepackagename,
-                        sum(Bug.hotness) AS heat
-                    FROM BugTask
-                        JOIN Bug
-                            ON bugtask.bug = Bug.id
-                    WHERE
-                        BugTask.sourcepackagename is not NULL
-                        AND BugTask.status in (10, 20, 21, 22, 25)
-                    GROUP BY BugTask.sourcepackagename
-                    ) bugs
-                    ON SourcePackageName.id = bugs.sourcepackagename
-                -- The count of translatable messages by sourcepackagename.
-                LEFT JOIN (
-                    SELECT
-                        POTemplate.sourcepackagename,
-                        POTemplate.distroseries,
-                        SUM(POTemplate.messagecount) / 2 AS po_messages
-                    FROM POTemplate
-                    WHERE
-                        POTemplate.sourcepackagename is not NULL
-                        AND POTemplate.distroseries is not NULL
-                    GROUP BY
-                        POTemplate.sourcepackagename,
-                        POTemplate.distroseries
-                    ) messages
-                    ON SourcePackageName.id = messages.sourcepackagename
-                    AND DistroSeries.id = messages.distroseries
-                -- Exclude all sourcepackagenames with packaging.
-                LEFT JOIN Packaging
-                    ON SourcePackageName.id = Packaging.sourcepackagename
-                    AND Packaging.distroseries = DistroSeries.id
-                """)]
-        condition = [
-            DistroSeries.id == self.id,
-            DistroSeries.distribution == self.distribution,
-            SourcePackagePublishingHistory.status in active_publishing_status,
-            Archive.purpose == ArchivePurpose.PRIMARY,
-            Packaging.id is None,
-            ]
-        condition = [SQL("""
+                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END AS score"""))
+        origin = SQL(
+            self._current_sourcepackagename_sql +
+            self._sourcepackagename_heat_score_sql +
+            self._sourcepackagename_message_score_sql)
+        condition = SQL("""
             DistroSeries.id = %s
-            AND DistroSeries.distribution = %s
-            AND SourcePackagePublishingHistory.status IN (1, 2)
-            AND archive.purpose = 1
+            AND spph.status IN %s
+            AND archive.purpose = %s
             AND packaging.id IS NULL
-            """ % sqlvalues(self.id, self.distribution))]
-        results = IStore(self).using(*origin).find(find_spec, *condition)
+            """ % sqlvalues(
+                self, active_publishing_status, ArchivePurpose.PRIMARY))
+        results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC')
         return [spn for (spn, score) in results]
 
@@ -414,35 +364,59 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return "and thanks for all the fish."
 
     @property
-    def _sourcepackagename_heat_score(self):
-        return Select(SQL("""
-            SELECT 
-                BugTask.sourcepackagename,
-                sum(Bug.hotness) AS heat
-            FROM BugTask
-                JOIN Bug
-                    ON bugtask.bug = Bug.id
-            WHERE 
-                BugTask.sourcepackagename is not NULL
-                AND BugTask.status in (10, 20, 21, 22, 25)
-            GROUP BY BugTask.sourcepackagename
-            """))
+    def _current_sourcepackagename_sql(self):
+        return """
+            SourcePackageName
+            JOIN SourcePackageRelease spr
+                ON SourcePackageName.id = spr.sourcepackagename
+            JOIN SourcePackagePublishingHistory spph
+                ON spr.id = spph.sourcepackagerelease
+            JOIN archive
+                ON spph.archive = Archive.id
+            JOIN DistroSeries
+                ON spph.distroseries = DistroSeries.id
+            LEFT JOIN Packaging
+                ON SourcePackageName.id = Packaging.sourcepackagename
+                AND Packaging.distroseries = DistroSeries.id
+            """
 
     @property
-    def _sourcepackagename_message_score(self):
-        return Select(SQL("""
-        SELECT 
-            POTemplate.sourcepackagename,
-            POTemplate.distroseries,
-            SUM(POTemplate.messagecount) / 2 AS po_messages
-        FROM POTemplate
-        WHERE 
-            POTemplate.sourcepackagename is not NULL
-            AND POTemplate.distroseries is not NULL
-        GROUP BY
-            POTemplate.sourcepackagename,
-            POTemplate.distroseries
-        """))
+    def _sourcepackagename_heat_score_sql(self):
+        return """
+            LEFT JOIN (
+                SELECT 
+                    BugTask.sourcepackagename,
+                    sum(Bug.hotness) AS heat
+                FROM BugTask
+                    JOIN Bug
+                        ON bugtask.bug = Bug.id
+                WHERE 
+                    BugTask.sourcepackagename is not NULL
+                    AND BugTask.status in (10, 20, 21, 22, 25)
+                GROUP BY BugTask.sourcepackagename
+                ) bugs
+                ON SourcePackageName.id = bugs.sourcepackagename
+            """
+
+    @property
+    def _sourcepackagename_message_score_sql(self):
+        return """
+            LEFT JOIN (
+                SELECT 
+                    POTemplate.sourcepackagename,
+                    POTemplate.distroseries,
+                    SUM(POTemplate.messagecount) / 2 AS po_messages
+                FROM POTemplate
+                WHERE 
+                    POTemplate.sourcepackagename is not NULL
+                    AND POTemplate.distroseries is not NULL
+                GROUP BY
+                    POTemplate.sourcepackagename,
+                    POTemplate.distroseries
+                ) messages
+                ON SourcePackageName.id = messages.sourcepackagename
+                AND DistroSeries.id = messages.distroseries
+            """
 
     @property
     def supported(self):
