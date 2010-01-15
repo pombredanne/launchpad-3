@@ -48,6 +48,7 @@ from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries, DistroArchSeriesSet, PocketChroot)
@@ -384,6 +385,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):
+        """The SQl joins and conditions to prioritise source packages."""
         heat_score = ("""
             LEFT JOIN (
                 SELECT 
@@ -394,11 +396,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                         ON bugtask.bug = Bug.id
                 WHERE 
                     BugTask.sourcepackagename is not NULL
-                    AND BugTask.status in (10, 20, 21, 22, 25)
+                    AND BugTask.status in %s
                 GROUP BY BugTask.sourcepackagename
                 ) bugs
                 ON SourcePackageName.id = bugs.sourcepackagename
-            """)
+            """ % sqlvalues(UNRESOLVED_BUGTASK_STATUSES))
         message_score = ("""
             LEFT JOIN (
                 SELECT 
