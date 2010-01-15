@@ -31,6 +31,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     __storm_table__ = 'SourcePackageRecipeBuild'
 
+    policy_name = 'recipe'
+
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
 
