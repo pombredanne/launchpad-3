@@ -66,6 +66,9 @@ class IBuildFarmJob(Interface):
     def getName():
         """An appropriate name for this job."""
 
+    def getTitle():
+        """A string to identify and describe the job to users return None."""
+
     def jobStarted():
         """'Job started' life cycle event, handle as appropriate."""
 

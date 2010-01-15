@@ -56,6 +56,10 @@ class TranslationTemplatesBuildJob(BranchJobDerived, BuildFarmJob):
         """See `IBuildFarmJob`."""
         return '%s-%d' % (self.branch.name, self.job.id)
 
+    def getTitle(self):
+        """See `IBuildFarmJob`."""
+        return '%s translation templates build' % self.branch.bzr_identity
+
     @classmethod
     def create(cls, branch):
         """See `ITranslationTemplatesBuildJobSource`."""
