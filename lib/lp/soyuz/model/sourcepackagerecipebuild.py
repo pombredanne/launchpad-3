@@ -88,7 +88,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         self.sourcepackagename = sourcepackagename
 
     @classmethod
-    def new(cls, sourcepackage, recipe, requester, archive, 
+    def new(cls, sourcepackage, recipe, requester, archive,
             date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
