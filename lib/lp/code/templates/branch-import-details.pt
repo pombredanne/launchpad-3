@@ -130,6 +130,17 @@
           </tal:result>
         </div>
 
+        <div class="actions">
+          <div
+            tal:define="link context_menu/edit_import"
+            tal:condition="link/enabled"
+            >
+            <a id="linkbug"
+               class="sprite add"
+               tal:attributes="href link/url"
+               tal:content="link/text" />
+          </div>
+        </div>
       </tal:has-codeimport>
     </div>
   </tal:imported-branch>
