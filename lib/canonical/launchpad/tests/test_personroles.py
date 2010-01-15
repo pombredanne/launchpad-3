@@ -103,14 +103,20 @@ class TestPersonRoles(TestCaseWithFactory):
         roles = IPersonRoles(self.person)
         self.assertTrue(roles.isDriver(sprint))
 
-    def test_isDriver_multiple_drivers(self):
-        # The person can be one of multiple drivers of if a product and its
-        # series each has a driver.
+    def test_isOneOfDrivers(self):
+        # The person can be one of multiple drivers of if an object
+        # implements IHasDrivers.
         productseries = self.factory.makeProductSeries()
         productseries.product.driver = self.person
         productseries.driver = self.factory.makePerson()
         roles = IPersonRoles(self.person)
-        self.assertTrue(roles.isDriver(productseries))
+        self.assertTrue(roles.isOneOfDrivers(productseries))
+
+    def test_isOneOfDrivers_no_drivers(self):
+        # If the object does not implement IHasDrivers, False is returned.
+        sprint = self.factory.makeSprint()
+        roles = IPersonRoles(self.person)
+        self.assertFalse(roles.isOneOfDrivers(sprint))
 
     def test_isOneOf(self):
         # Objects may have multiple roles that a person can fulfill.

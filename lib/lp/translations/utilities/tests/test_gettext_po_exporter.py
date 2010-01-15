@@ -263,33 +263,9 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
         for pofile in pofiles:
             compare(self, pofile)
 
-
-    def testBrokenEncodingExport(self):
-        """Test what happens when the content and the encoding don't agree.
-
-        If a pofile fails to encode using the character set specified in the
-        header, the header should be changed to specify to UTF-8 and the
-        pofile exported accordingly.
-        """
-
-        pofile = dedent('''
-            msgid ""
-            msgstr ""
-            "Project-Id-Version: foo\\n"
-            "Report-Msgid-Bugs-To: \\n"
-            "POT-Creation-Date: 2007-07-09 03:39+0100\\n"
-            "PO-Revision-Date: 2001-09-09 01:46+0000\\n"
-            "Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"
-            "Language-Team: LANGUAGE <LL@li.org>\\n"
-            "MIME-Version: 1.0\\n"
-            "Content-Type: text/plain; charset=%s\\n"
-            "Content-Transfer-Encoding: 8bit\\n"
-
-            msgid "a"
-            msgstr "%s"
-            ''')
+    def _testBrokenEncoding(self, pofile_content):
         translation_file = self.parser.parse(
-            pofile % ('ISO-8859-15', '\xe1'))
+            pofile_content % {'charset': 'ISO-8859-15', 'special': '\xe1'})
         translation_file.is_template = False
         translation_file.language_code = 'es'
         translation_file.path = 'po/es.po'
@@ -302,8 +278,64 @@ class GettextPOExporterTestCase(TestCaseWithFactory):
             [translation_file])
 
         self._compareImportAndExport(
-            pofile.strip() % ('UTF-8', '\xc3\xa1'),
+            pofile_content.strip() % {
+                'charset': 'UTF-8', 'special': '\xc3\xa1'},
             exported_file.read().strip())
+
+    def testBrokenEncodingExport(self):
+        """Test what happens when the content and the encoding don't agree.
+
+        If a pofile fails to encode using the character set specified in the
+        header, the header should be changed to specify to UTF-8 and the
+        pofile exported accordingly.
+        """
+
+        pofile_content = dedent('''
+            msgid ""
+            msgstr ""
+            "Project-Id-Version: foo\\n"
+            "Report-Msgid-Bugs-To: \\n"
+            "POT-Creation-Date: 2007-07-09 03:39+0100\\n"
+            "PO-Revision-Date: 2001-09-09 01:46+0000\\n"
+            "Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\\n"
+            "Language-Team: LANGUAGE <LL@li.org>\\n"
+            "MIME-Version: 1.0\\n"
+            "Content-Type: text/plain; charset=%(charset)s\\n"
+            "Content-Transfer-Encoding: 8bit\\n"
+
+            msgid "a"
+            msgstr "%(special)s"
+            ''')
+        self._testBrokenEncoding(pofile_content)
+
+    def testBrokenEncodingHeader(self):
+        """A header field might require a different encoding, too.
+
+        This usually happens if the Last-Translator name contains non-ascii
+        characters.
+
+        If a pofile fails to encode using the character set specified in the
+        header, the header should be changed to specify to UTF-8 and the
+        pofile exported accordingly.
+        """
+
+        pofile_content = dedent('''
+            msgid ""
+            msgstr ""
+            "Project-Id-Version: foo\\n"
+            "Report-Msgid-Bugs-To: \\n"
+            "POT-Creation-Date: 2007-07-09 03:39+0100\\n"
+            "PO-Revision-Date: 2001-09-09 01:46+0000\\n"
+            "Last-Translator: Kubla K%(special)shn <kk@pleasure-dome.com>\\n"
+            "Language-Team: LANGUAGE <LL@li.org>\\n"
+            "MIME-Version: 1.0\\n"
+            "Content-Type: text/plain; charset=%(charset)s\\n"
+            "Content-Transfer-Encoding: 8bit\\n"
+
+            msgid "a"
+            msgstr "b"
+            ''')
+        self._testBrokenEncoding(pofile_content)
 
     def testIncompletePluralMessage(self):
         """Test export correctness for partial plural messages."""
