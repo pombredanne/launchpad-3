@@ -130,7 +130,7 @@ class BuildBase:
             out_file = open(out_file_name, "wb")
             copy_and_close(slave_file, out_file)
 
-        uploader_argv = self.getUploaderCommand()
+        uploader_argv = self.getUploaderCommand(upload_leaf)
         # XXX: Duplicated from getUploaderCommand
         uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
         logger.debug("Saving uploader log at '%s'" % uploader_logfilename)

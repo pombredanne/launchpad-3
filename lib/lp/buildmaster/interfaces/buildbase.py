@@ -66,7 +66,7 @@ class IBuildBase(Interface):
     policy_name = Attribute(
         "The upload policy to use for handling these builds.")
 
-    def getUploaderCommand():
+    def getUploaderCommand(upload_leaf):
         """Get the command to run as the uploader.
 
         :return: A list of command line arguments, beginning with the
