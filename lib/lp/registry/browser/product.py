@@ -979,11 +979,24 @@ class ProductPackagesView(PackagingDeleteView):
         return results
 
 
+class SeriesReleasePair:
+    """Class for holding a series and release.
+
+    Replaces the use of a (series, release) tuple so that it can be more
+    clearly addressed in the view class.
+    """
+    def __init__(self, series, release):
+        self.series = series
+        self.release = release
+
+
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
                                ProductDownloadFileMixin):
     """View class for the product's file downloads page."""
     __used_for__ = IProduct
+
+    batch_size = 4
 
     @property
     def page_title(self):
@@ -1003,16 +1016,20 @@ class ProductDownloadFilesView(LaunchpadView,
         return releases
 
     @cachedproperty
-    def series_and_releases_batched(self):
+    def series_and_releases_batch(self):
         """Get a batch of series and release
 
         Each entry returned is a tuple of (series, release).
         """
-        series_and_releases = set()
-        for series in self.product.series:
+        series_and_releases = []
+        for series in self.sorted_series_list:
             for release in series.releases:
-                series_and_releases.update((series, release))
-        return BatchNavigator(series_and_releases, self.request, size=5)
+                if len(release.files) > 0:
+                    pair = SeriesReleasePair(series, release)
+                    if pair not in series_and_releases:
+                        series_and_releases.append(pair)
+        return BatchNavigator(list(series_and_releases), self.request,
+                              size=self.batch_size)
 
     @cachedproperty
     def has_download_files(self):

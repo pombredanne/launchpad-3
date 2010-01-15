@@ -76,7 +76,7 @@ from lp.blueprints.interfaces.specification import (
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translator import ITranslatorSet
-from lp.translations.interfaces.translationsperson import ITranslationsPerson 
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -526,25 +526,32 @@ class LaunchpadObjectFactory(ObjectFactory):
                          productseries=productseries,
                          name=name)
 
-    def makeProductRelease(self, milestone=None, product=None):
+    def makeProductRelease(self, milestone=None, product=None,
+                           productseries=None):
         if milestone is None:
-            milestone = self.makeMilestone(product=product)
+            milestone = self.makeMilestone(product=product,
+                                           productseries=productseries)
         return milestone.createProductRelease(
             milestone.product.owner, datetime.now(pytz.UTC))
 
-    def makeProductReleaseFile(self, signed=True):
+    def makeProductReleaseFile(self, signed=True,
+                               product=None, productseries=None,
+                               milestone=None,
+                               description="test file"):
         signature_filename = None
         signature_content = None
         if signed:
             signature_filename = 'test.txt.asc'
             signature_content = '123'
-        release = self.makeProductRelease()
+        release = self.makeProductRelease(product=product,
+                                          productseries=productseries,
+                                          milestone=milestone)
         return release.addReleaseFile(
             'test.txt', 'test', 'text/plain',
             uploader=release.milestone.product.owner,
             signature_filename=signature_filename,
             signature_content=signature_content,
-            description="test file")
+            description=description)
 
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an explicit transaction commit.

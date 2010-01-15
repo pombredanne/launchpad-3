@@ -1,0 +1,46 @@
+ Product Download Files Page
+=============================
+
+Test for the product/+download page.
+
+    >>> from canonical.lazr.testing.menus import make_fake_request
+    >>> product = factory.makeProduct(name='alfajore')
+    >>> productseries = factory.makeSeries(product=product, name="sammy")
+    >>> milestone = factory.makeMilestone(productseries=productseries,
+    ...                                   name="apple")
+    >>> release_file = factory.makeProductReleaseFile(
+    ...     product=product, productseries=productseries, milestone=milestone)
+    >>> view = create_initialized_view(product, '+download')
+
+    >>> view.batch_size
+    4
+
+    >>> batch = view.series_and_releases_batch.currentBatch()
+    >>> print len(list(batch))
+    1
+
+    >>> def print_series_release(sr):
+    ...     print "%s from the %s series" % (sr.release.name_with_codename, sr.series.series.name)
+
+    >>> for sr in batch:
+    ...     print_series_release(sr)
+    apple from the sammy series
+
+    >>> product = factory.makeProduct(name='bombilla')
+    >>> for i in range(5):
+    ...     productseries = factory.makeSeries(product=product, name="s%d"%i)
+    ...     for j in range(5):
+    ...         milestone = factory.makeMilestone(productseries=productseries,
+    ...                                           name="%d.%d"%(i,j))
+    ...         release_file = factory.makeProductReleaseFile(
+    ...             product=product, productseries=productseries, milestone=milestone)
+    >>> view = create_initialized_view(product, '+download')
+    >>> batch = view.series_and_releases_batch.currentBatch()
+    >>> print len(batch)
+    4
+    >>> for sr in batch:
+    ...     print_series_release(sr)
+
+    >>> batch = batch.nextBatch()
+    >>> for sr in batch:
+    ...     print_series_release(sr)

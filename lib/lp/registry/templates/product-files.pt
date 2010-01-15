@@ -36,14 +36,16 @@
     </div>
 
     <div
-      tal:repeat="series view/sorted_series_list"
-      tal:attributes="id series/name/fmt:css-id/series-">
+      tal:repeat="batch_item view/series_and_releases_batch/currentBatch">
+    <div tal:define="series batch_item/series;
+                     release batch_item/release"
+         tal:attributes="id series/name/fmt:css-id/series-">
 
       <tal:seriesfilesexist condition="series/has_release_files">
-        <div tal:condition="not: repeat/series/start" class="portlet-border" />
-        <tal:releases repeat="release series/releases">
+        <div tal:condition="not: repeat/batch_item/start" class="portlet-border" />
+
           <tal:releasefilesexist condition="release/files">
-            <div tal:condition="not: repeat/release/start" class="portlet-border" />
+
             <div class="top-portlet">
               <h2 style="font-size: 1.2em;">
                 <a tal:attributes="href release/fmt:url">
@@ -95,7 +97,7 @@
                   <tbody>
                     <tr tal:repeat="file release/files">
                       <tal:define-vars
-                         tal:define="checkbox_index string:${repeat/series/index}_${repeat/release/index}_${repeat/file/index}">
+                         tal:define="checkbox_index string:${repeat/batch_item/index}">
                         <tal:release-file
                            metal:use-macro="file/@@+macros/detailed_display" />
                   </tal:define-vars>
@@ -129,10 +131,14 @@
               </tal:linkexists>
             </div>
           </tal:releasefilesexist>
-        </tal:releases>
+
         <br />
       </tal:seriesfilesexist>
 
+
+    </div>
+    </div>
+    <div tal:repeat="series view/sorted_series_list">
       <tal:releases condition="series/releases">
         <p tal:condition="has_edit" class="add-files">
           Add download file to the
@@ -145,8 +151,7 @@
           </tal:release>
         </p>
       </tal:releases>
-
-    </div> <!-- series -->
+    </div>
     <input tal:condition="python: has_edit and view.has_download_files"
         type="submit"
         name="delete_files"
@@ -155,5 +160,4 @@
   </form>
 </div>
 </body>
-</html
->
+</html>
