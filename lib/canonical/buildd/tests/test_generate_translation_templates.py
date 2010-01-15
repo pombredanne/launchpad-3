@@ -18,6 +18,8 @@ class TestGenerateTranslationTemplates(TestCaseWithFactory):
 
     def test_checkout(self):
 # XXX: Test branch checkout.
+        #branch_url = 'a branch URL'
+        #generator = GenerateTranslationTemplates(branch_url)
         pass
 
     def test_script(self):
