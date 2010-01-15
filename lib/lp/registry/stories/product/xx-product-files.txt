@@ -407,8 +407,9 @@ Delete the file foo2.txt.
     >>> firefox_owner.open('http://launchpad.dev/firefox/+download')
     >>> firefox_owner.url
     'http://launchpad.dev/firefox/+download'
+
     >>> checkbox = firefox_owner.getControl(
-    ...     name="checkbox_2_0_1")
+    ...     name="checkbox_2_1")
     >>> checkbox.value = checkbox.options
     >>> firefox_owner.getControl("Delete Files").click()
     >>> get_feedback_messages(firefox_owner.contents)

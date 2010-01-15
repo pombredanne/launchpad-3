@@ -97,7 +97,7 @@
                   <tbody>
                     <tr tal:repeat="file release/files">
                       <tal:define-vars
-                         tal:define="checkbox_index string:${repeat/batch_item/index}">
+                         tal:define="checkbox_index string:${repeat/batch_item/index}_${repeat/file/index}">
                         <tal:release-file
                            metal:use-macro="file/@@+macros/detailed_display" />
                   </tal:define-vars>
