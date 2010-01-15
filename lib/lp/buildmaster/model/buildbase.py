@@ -50,9 +50,27 @@ class BuildBase:
         """Return the directory that things will be stored in."""
         return os.path.join(config.builddmaster.root, 'incoming', upload_leaf)
 
-    def getUploaderCommand(self):
+    def getUploaderCommand(self, upload_leaf):
         """See `IBuildBase`."""
-        return list(config.builddmaster.uploader.split())
+        root = os.path.abspath(config.builddmaster.root)
+        uploader_argv = list(config.builddmaster.uploader.split())
+        upload_dir = self.getUploadDir(upload_leaf)
+        uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
+
+        # add extra arguments for processing a binary upload
+        extra_args = [
+            "--log-file", "%s" % uploader_logfilename,
+            "-d", "%s" % self.distribution.name,
+            "-s", "%s" % (self.distroseries.name +
+                          pocketsuffix[self.pocket]),
+            "-b", "%s" % self.id,
+            "-J", "%s" % upload_leaf,
+            '--policy=%s' % self.policy_name,
+            "%s" % root,
+            ]
+
+        uploader_argv.extend(extra_args)
+        return uploader_argv
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
@@ -113,23 +131,9 @@ class BuildBase:
             copy_and_close(slave_file, out_file)
 
         uploader_argv = self.getUploaderCommand()
+        # XXX: Duplicated from getUploaderCommand
         uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
-        logger.debug("Saving uploader log at '%s'"
-                     % uploader_logfilename)
-
-        # add extra arguments for processing a binary upload
-        extra_args = [
-            "--log-file", "%s" % uploader_logfilename,
-            "-d", "%s" % self.distribution.name,
-            "-s", "%s" % (self.distroseries.name +
-                          pocketsuffix[self.pocket]),
-            "-b", "%s" % self.id,
-            "-J", "%s" % upload_leaf,
-            '--policy=%s' % self.policy_name,
-            "%s" % root,
-            ]
-
-        uploader_argv.extend(extra_args)
+        logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
 
         logger.debug("Invoking uploader on %s" % root)
         logger.debug("%s" % uploader_argv)

@@ -10,9 +10,11 @@ import os
 import unittest
 
 from canonical.config import config
+from canonical.testing.layers import DatabaseFunctionalLayer
 from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.buildmaster.model.buildbase import BuildBase
-from lp.testing import TestCase
+from lp.registry.interfaces.pocket import pocketsuffix
+from lp.testing import TestCase, TestCaseWithFactory
 
 
 class TestBuildBase(TestCase):
@@ -23,14 +25,6 @@ class TestBuildBase(TestCase):
         # Since it's not the focus of the branch, we'll postpone the work.
         build_base = BuildBase()
         self.assertProvides(build_base, IBuildBase)
-
-    def test_getUploaderCommand_begins_with_configuration(self):
-        # getUploaderCommand returns the command to execute the uploader,
-        # which is mostly set in the Launchpad configuration.
-        config_args = list(config.builddmaster.uploader.split())
-        build_base = BuildBase()
-        uploader_command = build_base.getUploaderCommand()
-        self.assertEqual(config_args, uploader_command[:len(config_args)])
 
     def test_getUploadLeaf(self):
         # getUploadLeaf returns the current time, followed by the build id.
@@ -51,6 +45,36 @@ class TestBuildBase(TestCase):
         self.assertEqual(
             os.path.join(config.builddmaster.root, 'incoming', upload_leaf),
             upload_dir)
+
+
+class TestBuildBaseHarder(TestCaseWithFactory):
+    """Tests for `IBuildBase` that need objects from the rest of Launchpad."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_getUploaderCommand(self):
+        build_base = BuildBase()
+        upload_leaf = self.factory.getUniqueString('upload-leaf')
+        build_base.distroseries = self.factory.makeDistroSeries()
+        build_base.distribution = build_base.distroseries.distribution
+        build_base.pocket = self.factory.getAnyPocket()
+        build_base.id = self.factory.getUniqueInteger()
+        build_base.policy_name = self.factory.getUniqueString('policy-name')
+        config_args = list(config.builddmaster.uploader.split())
+        log_file = os.path.join(
+            build_base.getUploadDir(upload_leaf), 'uploader.log')
+        config_args.extend(
+            ['--log-file', log_file,
+             '-d', build_base.distribution.name,
+             '-s', (build_base.distroseries.name
+                    + pocketsuffix[build_base.pocket]),
+             '-b', str(build_base.id),
+             '-J', upload_leaf,
+             '--policy=%s' % build_base.policy_name,
+             os.path.abspath(config.builddmaster.root),
+             ])
+        uploader_command = build_base.getUploaderCommand(upload_leaf)
+        self.assertEqual(config_args, uploader_command)
 
 
 def test_suite():
