@@ -73,7 +73,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
-    # XXX: Need a DB field for this.
+    # XXX wgrant 2009-01-15 bug=507751: Need a DB field for this.
     dependencies = None
 
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
