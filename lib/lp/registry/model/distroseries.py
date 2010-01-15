@@ -361,7 +361,42 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         The prioritization is a heuristic rule using  the branch, bug hotness,
         translatable messages, and the source package release's component.
         """
-        return "and thanks for all the fish."
+        # Avoid circular import failures.
+        # We join to SourcePackageName, ProductSeries, and Product to cache
+        # the objects that are implcitly needed to work with a
+        # Packaging object.
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        find_spec = (
+            Packaging, SourcePackageName, ProductSeries, Product,
+            SQL("""
+                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END +
+                    CASE WHEN Product.bugtracker IS NULL
+                        THEN coalesce(heat, 10) ELSE 0 END +
+                    CASE WHEN ProductSeries.translations_autoimport_mode = 1
+                        THEN coalesce(po_messages, 10) ELSE 0 END +
+                    CASE WHEN ProductSeries.branch IS NULL THEN 500
+                        ELSE 0 END AS score"""))
+        origin = SQL(
+            self._current_sourcepackagename_sql +
+            self._sourcepackagename_heat_score_sql +
+            self._sourcepackagename_message_score_sql + """
+            JOIN ProductSeries
+                ON Packaging.productseries = ProductSeries.id
+            JOIN Product
+                ON ProductSeries.product = Product.id
+            """)
+        condition = SQL("""
+            DistroSeries.id = %s
+            AND spph.status IN %s
+            AND archive.purpose = %s
+            AND packaging.id IS NOT NULL
+            """ % sqlvalues(
+                self, active_publishing_status, ArchivePurpose.PRIMARY))
+        results = IStore(self).using(origin).find(find_spec, condition)
+        results = results.order_by('score DESC')
+        return [packaging
+                for (packaging, spn, series, product, score) in results]
 
     @property
     def _current_sourcepackagename_sql(self):
