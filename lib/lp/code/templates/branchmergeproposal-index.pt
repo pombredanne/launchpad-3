@@ -213,9 +213,9 @@
                 return;
             }
 
-            Y.code.codereview.connect_links();
             Y.code.branchmergeproposal.connect_status(conf);
         }
+        Y.code.codereview.connect_links();
         (new Y.codereview.NumberToggle()).render();
       }, window);
   });
