@@ -24,6 +24,9 @@ class TestVocabularies(TestCase):
         """Our vocabularies should be registered with <securedutility>."""
         vocabularies = getUtilitiesFor(IVocabularyFactory)
         for name, vocab in vocabularies:
+            # If the vocabulary is not in a security proxy, check
+            # whether it is a vocabulary defined by zope, which are
+            # not registered with <securedutility> and can be ignored.
             if not isProxy(vocab) and vocab.__module__[:5] != 'zope.':
                 raise AssertionError(
                     '%s.%s vocabulary is not wrapped in a security proxy.' % (
