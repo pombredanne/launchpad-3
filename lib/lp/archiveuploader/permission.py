@@ -9,6 +9,7 @@ __all__ = [
     'CannotUploadToPPA',
     'can_upload_to_archive',
     'check_upload_to_archive',
+    'check_upload_to_pocket',
     'components_valid_for',
     'verify_upload',
     ]
@@ -164,7 +165,9 @@ def check_upload_to_archive(person, distroseries, sourcepackagename, archive,
         uploaded to.
     :return: The reason for not being able to upload, None otherwise.
     """
-    check_upload_to_pocket(archive, distroseries, pocket)
+    reason = check_upload_to_pocket(archive, distroseries, pocket)
+    if reason is not None:
+        return reason
     return verify_upload(
         person, sourcepackagename, archive, component, distroseries,
         strict_component)

@@ -131,7 +131,12 @@ class RecipeBuildBehavior(BuildFarmJobBehaviorBase):
 
         # This should already have been checked earlier, but just check again
         # here in case of programmer errors.
-        check_upload_to_pocket(build.archive, build.distroseries, build.pocket)
+        reason = check_upload_to_pocket(build.archive, build.distroseries, build.pocket)
+        assert reason is None, (
+                "%s (%s) can not be built for pocket %s: invalid pocket due "
+                "to the series status of %s." % 
+                    (build.title, build.id, build.pocket.name,
+                     build.distroseries.name))
 
     def slaveStatus(self, raw_slave_status):
         """Parse and return the binary build specific status info.
