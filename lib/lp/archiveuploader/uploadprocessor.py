@@ -339,7 +339,9 @@ class UploadProcessor:
 
         # Reject source upload to buildd upload paths.
         first_path = relative_path.split(os.path.sep)[0]
-        if first_path.isdigit() and policy.name != 'buildd':
+        # XXX: JonathanLange 2010-01-15: We should not be re-using magical
+        # string literals. Zombie Dijkstra will come and kill us in our sleep.
+        if first_path.isdigit() and policy.name not in ('buildd', 'recipe'):
             error_message = (
                 "Invalid upload path (%s) for this policy (%s)" %
                 (relative_path, policy.name))
