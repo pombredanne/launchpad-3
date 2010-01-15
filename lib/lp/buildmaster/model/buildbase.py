@@ -14,7 +14,6 @@ import logging
 import os
 import pytz
 import subprocess
-import time
 
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
@@ -46,6 +45,10 @@ class BuildBase:
         if now is None:
             now = datetime.datetime.now()
         return '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_id)
+
+    def getUploadDir(self, upload_leaf):
+        """Return the directory that things will be stored in."""
+        return os.path.join(config.builddmaster.root, 'incoming', upload_leaf)
 
     def getUploaderCommand(self):
         """See `IBuildBase`."""
@@ -86,11 +89,10 @@ class BuildBase:
         # ensure we have the correct build root as:
         # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]
         root = os.path.abspath(config.builddmaster.root)
-        incoming = os.path.join(root, 'incoming')
 
         # create a single directory to store build result files
         upload_leaf = self.getUploadLeaf(buildid)
-        upload_dir = os.path.join(incoming, upload_leaf)
+        upload_dir = self.getUploadDir(upload_leaf)
         logger.debug("Storing build result at '%s'" % upload_dir)
 
         # Build the right UPLOAD_PATH so the distribution and archive

@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 from datetime import datetime
+import os
 import unittest
 
 from canonical.config import config
@@ -39,6 +40,17 @@ class TestBuildBase(TestCase):
         upload_leaf = build_base.getUploadLeaf(build_id, now=now)
         self.assertEqual(
             '%s-%s' % (now.strftime("%Y%m%d-%H%M%S"), build_id), upload_leaf)
+
+    def test_getUploadDir(self):
+        # getUploadDir is the absolute path to the directory in which things
+        # are uploaded to.
+        build_base = BuildBase()
+        build_id = self.factory.getUniqueInteger()
+        upload_leaf = build_base.getUploadLeaf(build_id)
+        upload_dir = build_base.getUploadDir(upload_leaf)
+        self.assertEqual(
+            os.path.join(config.builddmaster.root, 'incoming', upload_leaf),
+            upload_dir)
 
 
 def test_suite():
