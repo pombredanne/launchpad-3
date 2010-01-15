@@ -51,23 +51,23 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     archive_id = Int(name='archive', allow_none=False)
     archive = Reference(archive_id, 'Archive.id')
 
-    build_duration = TimeDelta(name='build_duration', default=None)
+    buildduration = TimeDelta(name='build_duration', default=None)
 
     builder_id = Int(name='builder', allow_none=True)
     builder = Reference(builder_id, 'Builder.id')
 
-    build_log_id = Int(name='build_log', allow_none=True)
-    build_log = Reference(build_log_id, 'LibraryFileAlias.id')
+    buildlog_id = Int(name='build_log', allow_none=True)
+    buildlog = Reference(buildlog_id, 'LibraryFileAlias.id')
 
-    build_state = EnumCol(
+    buildstate = EnumCol(
         dbName='build_state', notNull=True, schema=BuildStatus)
 
     @property
     def current_component(self):
         return getUtility(IComponentSet)[default_component_dependency_name]
 
-    date_created = UtcDateTimeCol(notNull=True)
-    date_built = UtcDateTimeCol(notNull=False)
+    datecreated = UtcDateTimeCol(notNull=True, dbName='date_created')
+    datebuilt = UtcDateTimeCol(notNull=False, dbName='date_built')
     date_first_dispatched = UtcDateTimeCol(notNull=False)
 
     distroseries_id = Int(name='distroseries', allow_none=True)
@@ -116,12 +116,12 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
         self.archive = archive
-        self.build_duration = build_duration
-        self.build_log = build_log
+        self.buildduration = build_duration
+        self.buildlog = build_log
         self.builder = builder
-        self.build_state = build_state
-        self.date_built = date_built
-        self.date_created = date_created
+        self.buildstate = build_state
+        self.datebuilt = date_built
+        self.datecreated = date_created
         self.date_first_dispatched = date_first_dispatched
         self.distroseries = distroseries
         self.recipe = recipe

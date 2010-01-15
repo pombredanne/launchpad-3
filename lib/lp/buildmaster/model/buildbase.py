@@ -42,9 +42,9 @@ class BuildBase:
     @property
     def build_log_url(self):
         """See `IBuildBase`."""
-        if self.build_log is None:
+        if self.buildlog is None:
             return None
-        return self._getProxiedFileURL(self.build_log)
+        return self._getProxiedFileURL(self.buildlog)
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""

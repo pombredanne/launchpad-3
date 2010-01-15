@@ -23,13 +23,13 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad import _
 
 class IBuildBase(Interface):
-    date_created = exported(
+    datecreated = exported(
         Datetime(
             title=_('Date created'), required=True, readonly=True,
             description=_("The time when the build request was created.")))
 
     # Really BuildStatus. Patched in _schema_circular_imports.
-    build_state = exported(
+    buildstate = exported(
         Choice(
             title=_('State'), required=True, vocabulary=DBEnumeratedType,
             description=_("The current build state.")))
@@ -45,17 +45,17 @@ class IBuildBase(Interface):
         title=_("Builder"), schema=IBuilder, required=False,
         description=_("The Builder which address this build request."))
 
-    date_built = exported(
+    datebuilt = exported(
         Datetime(
             title=_('Date built'), required=False,
             description=_("The time when the build result got collected.")))
 
-    build_duration = Timedelta(
+    buildduration = Timedelta(
         title=_("Build Duration"), required=False,
         description=_("Build duration interval, calculated when the "
                       "build result gets collected."))
 
-    build_log = Object(
+    buildlog = Object(
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the entire buildlog."))
 

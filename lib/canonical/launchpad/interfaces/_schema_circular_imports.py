@@ -308,4 +308,4 @@ patch_reference_property(
     IStructuralSubscriptionTarget, 'parent_subscription_target',
     IStructuralSubscriptionTarget)
 
-IBuildBase['build_state'].vocabulary = BuildStatus
+IBuildBase['buildstate'].vocabulary = BuildStatus
