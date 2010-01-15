@@ -997,7 +997,7 @@ class ProductDownloadFilesView(LaunchpadView,
     """View class for the product's file downloads page."""
     __used_for__ = IProduct
 
-    batch_size = 4
+    batch_size = config.launchpad.download_batch_size
 
     @property
     def page_title(self):
