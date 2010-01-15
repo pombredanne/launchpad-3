@@ -14,6 +14,8 @@ __all__ = [
 from zope.interface import implements
 
 from canonical.launchpad.webapp import urlappend
+
+from lp.archiveuploader.permission import check_upload_to_pocket
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import (
@@ -118,19 +120,9 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
                     build.distroseries.name,
                     build.distroarchseries.architecturetag))
 
-        # The main distribution has policies to prevent uploads to some
-        # pockets (e.g. security) during different parts of the distribution
-        # series lifecycle. These do not apply to PPA builds nor any archive
-        # that allows release pocket updates.
-        if (build.archive.purpose != ArchivePurpose.PPA and
-            not build.archive.allowUpdatesToReleasePocket()):
-            # XXX Robert Collins 2007-05-26: not an explicit CannotBuild
-            # exception yet because the callers have not been audited
-            assert build.distroseries.canUploadToPocket(build.pocket), (
-                "%s (%s) can not be built for pocket %s: invalid pocket due "
-                "to the series status of %s."
-                % (build.title, build.id, build.pocket.name,
-                   build.distroseries.name))
+        # This should already have been checked earlier, but just check again 
+        # here in case of programmer errors.
+        check_upload_to_pocket(build.archive, build.distroseries, build.pocket)
 
     def slaveStatus(self, raw_slave_status):
         """Parse and return the binary build specific status info.
@@ -216,14 +208,14 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             args['archive_purpose'] = ArchivePurpose.PRIMARY.name
             args["ogrecomponent"] = (
                 get_primary_current_component(build.archive, 
-                    build.sourcepackagerelease.name, build.distroseries))
+                    build.distroseries, build.sourcepackagerelease.name))
         else:
             args['archive_purpose'] = archive_purpose.name
             args["ogrecomponent"] = (
                 build.current_component.name)
 
         args['archives'] = get_sources_list_for_building(build, 
-            build.sourcepackagerelease.name, build.distroarchseries)
+            build.distroarchseries, build.sourcepackagerelease.name)
 
         # Let the build slave know whether this is a build in a private
         # archive.

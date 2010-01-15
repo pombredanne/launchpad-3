@@ -37,7 +37,6 @@ from lp.soyuz.model.buildqueue import BuildQueue
 
 
 class SourcePackageRecipeBuild(BuildBase, Storm):
-
     __storm_table__ = 'SourcePackageRecipeBuild'
 
     implements(ISourcePackageRecipeBuild)
@@ -174,7 +173,6 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
 
 class SourcePackageRecipeBuildJob(BuildFarmJob, Storm):
-
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 
