@@ -328,10 +328,6 @@ class TestBranch(TestCaseWithFactory):
         # A branch has a needs_upgrading attribute that returns whether or not
         # a branch needs to be upgraded or not.  If a branch is up to date, it
         # doesn't need to be upgraded.
-        #
-        # XXX: JonathanLange 2009-06-06: This test needs to be changed every
-        # time Bazaar adds a new branch format. Surely we can think of a
-        # better way of testing this?
         branch = self.factory.makePersonalBranch(
             branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_CHK_2A)
