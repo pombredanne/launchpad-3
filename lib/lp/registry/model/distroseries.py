@@ -397,11 +397,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                         ON bugtask.bug = Bug.id
                 WHERE
                     BugTask.sourcepackagename is not NULL
+                    AND BugTask.distribution = %s
                     AND BugTask.status in %s
                 GROUP BY BugTask.sourcepackagename
                 ) bugs
                 ON SourcePackageName.id = bugs.sourcepackagename
-            """ % sqlvalues(UNRESOLVED_BUGTASK_STATUSES))
+            """ % sqlvalues(self.distribution, UNRESOLVED_BUGTASK_STATUSES))
         message_score = ("""
             LEFT JOIN (
                 SELECT
@@ -411,14 +412,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 FROM POTemplate
                 WHERE
                     POTemplate.sourcepackagename is not NULL
-                    AND POTemplate.distroseries is not NULL
+                    AND POTemplate.distroseries = %s
                 GROUP BY
                     POTemplate.sourcepackagename,
                     POTemplate.distroseries
                 ) messages
                 ON SourcePackageName.id = messages.sourcepackagename
                 AND DistroSeries.id = messages.distroseries
-            """)
+            """ % sqlvalues(self))
         joins = ("""
             SourcePackageName
             JOIN SourcePackageRelease spr

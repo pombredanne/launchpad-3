@@ -10,12 +10,15 @@ import unittest
 import transaction
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
+from canonical.database.sqlbase import cursor
 from canonical.launchpad.ftests import ANONYMOUS, login
 from lp.soyuz.interfaces.archive import ArchivePurpose, IArchiveSet
 from lp.registry.interfaces.distroseries import (
     IDistroSeriesSet, NoSuchDistroSeries)
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease)
 from lp.soyuz.interfaces.publishing import (
@@ -170,6 +173,71 @@ class TestDistroSeries(TestCaseWithFactory):
         self.assertEqual(suite, distroseries.getSuite(pocket))
 
 
+class TestDistroSeriesPackaging(TestCaseWithFactory):
+
+    layer = DatabaseFunctionalLayer
+
+    def setUp(self):
+        super(TestDistroSeriesPackaging, self).setUp()
+        self.series = self.factory.makeDistroRelease()
+        self.user = self.series.distribution.owner
+        login('admin@canonical.com')
+        component_set = getUtility(IComponentSet)
+        self.main_component = component_set['main']
+        self.universe_component = component_set['universe']
+        self.makeSeriesPackage('normal')
+        self.makeSeriesPackage('translatable', messages=120)
+        self.makeSeriesPackage('hot', hotness=100)
+        self.makeSeriesPackage('hot-translatable', hotness=80, messages=60)
+        self.makeSeriesPackage('main', is_main=True)
+        package = self.makeSeriesPackage('linked')
+        self.product_series = self.factory.makeProductSeries()
+        self.product_series.setPackaging(
+            self.series, package.sourcepackagename, self.user)
+        transaction.commit()
+        login(ANONYMOUS)
+
+    def makeSeriesPackage(self, name,
+                          is_main=False, hotness=None, messages=None):
+        # Make a published source package.
+        if is_main:
+            component = self.main_component
+        else:
+            component = self.universe_component
+        sourcepackagename = self.factory.makeSourcePackageName(name)
+        self.factory.makeSourcePackagePublishingHistory(
+            sourcepackagename=sourcepackagename, distroseries=self.series,
+            component=component)
+        source_package = self.factory.makeSourcePackage(
+            sourcepackagename=sourcepackagename, distroseries=self.series)
+        if hotness is not None:
+            bugtask = self.factory.makeBugTask(
+                target=source_package, owner=self.user)
+            # hotness is not exposed in the model yet.
+            # bugtask.bug.hotness = hotness
+            cur = cursor()
+            cur.execute("UPDATE Bug SET hotness = %d WHERE id = %d" % (
+                (hotness, bugtask.bug.id)))
+        if messages is not None:
+            template = self.factory.makePOTemplate(
+                distroseries=self.series, sourcepackagename=sourcepackagename,
+                owner=self.user)
+            removeSecurityProxy(template).messagecount = messages
+        return source_package
+
+    def test_getPriorizedUnlinkedSourcePackages(self):
+        # Verify the ordering of source packages that need linking.
+        source_packages = self.series.getPriorizedUnlinkedSourcePackages()
+        names = [package.name for package in source_packages]
+        expected = [
+            u'main', u'hot-translatable', u'hot', u'translatable', u'normal']
+        self.assertEqual(expected, names)
+
+    def test_getPriorizedlPackagings(self):
+        # Verify the ordering of packagings that need more upstream info.
+        pass
+
+
 class TestDistroSeriesSet(TestCaseWithFactory):
 
     layer = DatabaseFunctionalLayer
@@ -203,8 +271,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             translatables, self._ref_translatables(),
             "A newly created distroseries should not be translatable but "
             "translatables() returns %r instead of %r." % (
-                translatables, self._ref_translatables())
-            )
+                translatables, self._ref_translatables()))
 
         new_sourcepackagename = self.factory.makeSourcePackageName()
         new_potemplate = self.factory.makePOTemplate(
@@ -217,8 +284,7 @@ class TestDistroSeriesSet(TestCaseWithFactory):
             "After assigning a PO template, a distroseries should be "
             "translatable but translatables() returns %r instead of %r." % (
                 translatables,
-                self._ref_translatables(u"sampleseries"))
-            )
+                self._ref_translatables(u"sampleseries")))
 
         new_distroseries.hide_all_translations = True
         transaction.commit()
