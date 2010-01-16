@@ -27,9 +27,9 @@ class TranslationTemplatesBuildManager(BuildManager):
     latter runs on the master server; TranslationTemplatesBuildManager
     runs on the build slave.
     """
-    def __init__(self, slave, buildid):
-        super(TranslationTemplatesBuildManager, self).__init__(slave, buildid)
-        self.build_id = buildid
+    def __init__(self, *args, **kwargs):
+        super(TranslationTemplatesBuildManager, self).__init__(
+            *args, **kwargs)
         self._state = TranslationTemplatesBuildState.INIT
         self.alreadyfailed = False
 
