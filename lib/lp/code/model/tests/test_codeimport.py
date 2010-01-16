@@ -310,6 +310,7 @@ class TestCodeImportResultsAttribute(TestCaseWithFactory):
         self.code_import = self.factory.makeCodeImport()
 
     def tearDown(self):
+        super(TestCodeImportResultsAttribute, self).tearDown()
         logout()
 
     def test_no_results(self):

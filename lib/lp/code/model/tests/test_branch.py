@@ -1433,6 +1433,18 @@ class TestPendingWrites(TestCaseWithFactory):
         branch.mirrorComplete(rev_id)
         self.assertEqual(True, branch.pending_writes)
 
+    def test_mirrorComplete_creates_scan_job(self):
+        # After a branch has been pulled, it should have created a
+        # BranchScanJob to complete the process.
+        branch = self.factory.makeAnyBranch()
+        branch.startMirroring()
+        rev_id = self.factory.getUniqueString('rev-id')
+        branch.mirrorComplete(rev_id)
+
+        store = Store.of(branch)
+        scan_jobs = store.find(BranchJob, job_type=BranchJobType.SCAN_BRANCH)
+        self.assertEqual(scan_jobs.count(), 1)
+
     def test_pulled_and_scanned(self):
         # If a branch has been pulled and scanned, then there are no pending
         # writes.
