@@ -350,10 +350,7 @@ class ParallelLimitedTaskConsumer:
         self._log_state('_taskEnded')
         self._worker_count -= 1
         self._log_state('_taskEnded', 'Decremented')
-        if self._worker_count == 0:
-            self._log_state('_taskEnded', 'No workers, stopping.')
-            self._stop()
-        elif self._worker_count < self._worker_limit:
+        if self._worker_count < self._worker_limit:
             self._log_state('_taskEnded', 'Too few workers, asking for more.')
             self._task_source.start(self)
         else:
