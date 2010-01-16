@@ -42,7 +42,8 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 from lp.code.bzr import (
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
+    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat,
+    CURRENT_BRANCH_FORMATS, CURRENT_REPOSITORY_FORMATS, RepositoryFormat,
     REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus,
@@ -991,10 +992,9 @@ class Branch(SQLBase):
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
-        if (REPOSITORY_FORMAT_UPGRADE_PATH.get(self.repository_format, None)
-            or BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
-            return True
-        return False
+        return not (
+            self.branch_format in CURRENT_BRANCH_FORMATS and
+            self.repository_format in CURRENT_REPOSITORY_FORMATS)
 
     def requestUpgrade(self):
         """See `IBranch`."""

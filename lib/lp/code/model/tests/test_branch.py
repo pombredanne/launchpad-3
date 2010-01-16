@@ -320,7 +320,8 @@ class TestBranch(TestCaseWithFactory):
         # a branch needs to be upgraded or not.  If the format is
         # unrecognized, we don't try to upgrade it.
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.UNRECOGNIZED)
+            branch_format=BranchFormat.UNRECOGNIZED,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_branch_format_upgrade_not_needed(self):
@@ -332,7 +333,8 @@ class TestBranch(TestCaseWithFactory):
         # time Bazaar adds a new branch format. Surely we can think of a
         # better way of testing this?
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_8)
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_branch_format_upgrade_needed(self):
@@ -340,7 +342,8 @@ class TestBranch(TestCaseWithFactory):
         # a branch needs to be upgraded or not.  If a branch doesn't support
         # stacking, it needs to be upgraded.
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_6)
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertTrue(branch.needs_upgrading)
 
     def test_needsUpgrading_repository_format_unrecognized(self):
@@ -348,6 +351,7 @@ class TestBranch(TestCaseWithFactory):
         # a branch needs to be upgraded or not.  In the repo format is
         # unrecognized, we don't try to upgrade it.
         branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.UNRECOGNIZED)
         self.assertFalse(branch.needs_upgrading)
 
@@ -356,6 +360,7 @@ class TestBranch(TestCaseWithFactory):
         # branch needs to be upgraded or not.  If the repo format is up to
         # date, there's no need to upgrade it.
         branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_KNITPACK_6)
         self.assertFalse(branch.needs_upgrading)
 
@@ -364,6 +369,7 @@ class TestBranch(TestCaseWithFactory):
         # branch needs to be upgraded or not.  If the format doesn't support
         # stacking, it needs to be upgraded.
         branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         self.assertTrue(branch.needs_upgrading)
 
