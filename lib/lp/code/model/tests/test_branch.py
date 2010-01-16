@@ -380,6 +380,14 @@ class TestBranch(TestCaseWithFactory):
             jobs,
             [job,])
 
+    def test_requestUpgrade_raisesException(self):
+        # If a branch doesn't need to be upgraded, requestUpgrade raises an
+        # AssertionError.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        self.assertRaises(AssertionError, branch.requestUpgrade)
+
 
 class TestBzrIdentity(TestCaseWithFactory):
     """Test IBranch.bzr_identity."""
