@@ -676,11 +676,10 @@ class TestBuilddManagerScan(TrialTestCase):
         login('foo.bar@canonical.com')
         builder.builderok = True
         builder.setSlaveForTesting(SaneBuildingSlave())
-        job = builder.currentjob
-        job.job.start()
         transaction.commit()
         login(ANONYMOUS)
 
+        job = builder.currentjob
         self.assertBuildingJob(job, builder)
 
         # Run 'scan' and check its result.
