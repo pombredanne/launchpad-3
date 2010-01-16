@@ -96,9 +96,9 @@ stagingsetup:
 	# Create the DB with the desired default tablespace.
 	createdb --encoding UTF8 --tablespace ${STAGING_TABLESPACE} \
 	    lpmain_staging_new
-	# Restore the DB schema. Don't restore permissions - it will blow
-	# up when roles don't exist in this cluster, and we rebuild it later
-	# with security.py anyway.
+	# Restore the DB schema. We need to restore permissions, despite
+	# later running security.py, to pull in permissions granted on
+	# production to users not maintained by security.py.
 	pg_restore --dbname=lpmain_staging_new \
 	    --no-owner --exit-on-error ${STAGING_DUMP}
 	psql -q -d lpmain_staging_new -f authdb_drop.sql
@@ -110,6 +110,7 @@ stagingsetup:
 		--no-acl --no-owner --disable-triggers --data-only \
 		--table=$$table ${STAGING_DUMP}; \
 	done
+	psql -q -d lpmain_staging_new -f authdb_sequences.sql
 	# Uninstall Slony-I if it is installed - a pg_dump of a DB with
 	# Slony-I installed isn't usable without this step.
 	LPCONFIG=${NEW_STAGING_CONFIG} ./repair-restored-db.py

@@ -39,6 +39,7 @@ from lp.code.interfaces.codeimport import (
     ICodeImport, ICodeImportSet)
 from lp.code.interfaces.codeimportmachine import ICodeImportMachineSet
 from lp.code.interfaces.branch import BranchExists, IBranch
+from lp.registry.interfaces.product import IProduct
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView,
     Navigation, stepto)
@@ -249,7 +250,6 @@ class CodeImportNewView(CodeImportBaseView):
 
     schema = NewCodeImportForm
     for_input = True
-    label = 'Request a code import'
 
     custom_widget('rcs_type', LaunchpadRadioWidget)
 
@@ -259,9 +259,25 @@ class CodeImportNewView(CodeImportBaseView):
         }
 
     @property
+    def context_is_product(self):
+        return IProduct.providedBy(self.context)
+
+    @property
+    def label(self):
+        if self.context_is_product:
+            return 'Request a code import for %s' % self.context.displayname
+        else:
+            return 'Request a code import'
+
+    @property
     def cancel_url(self):
         """Cancel should take the user back to the root site."""
         return '/'
+
+    def setUpFields(self):
+        CodeImportBaseView.setUpFields(self)
+        if self.context_is_product:
+            self.form_fields = self.form_fields.omit('product')
 
     def setUpWidgets(self):
         CodeImportBaseView.setUpWidgets(self)
@@ -301,10 +317,11 @@ class CodeImportNewView(CodeImportBaseView):
 
     def _create_import(self, data, status):
         """Create the code import."""
+        product = self.getProduct(data)
         cvs_root, cvs_module, url = self._getImportLocation(data)
         return getUtility(ICodeImportSet).new(
             registrant=self.user,
-            product=data['product'],
+            product=product,
             branch_name=data['branch_name'],
             rcs_type=data['rcs_type'],
             url=url,
@@ -369,12 +386,19 @@ class CodeImportNewView(CodeImportBaseView):
         self.request.response.addNotification(
             "New reviewed code import created.")
 
+    def getProduct(self, data):
+        """If the context is a product, use that, otherwise get from data."""
+        if self.context_is_product:
+            return self.context
+        else:
+            return data.get('product')
+
     def validate(self, data):
         """See `LaunchpadFormView`."""
         # Make sure that the user is able to create branches for the specified
         # namespace.
         celebs = getUtility(ILaunchpadCelebrities)
-        product = data.get('product')
+        product = self.getProduct(data)
         if product is not None:
             namespace = get_branch_namespace(celebs.vcs_imports, product)
             policy = IBranchNamespacePolicy(namespace)

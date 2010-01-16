@@ -68,10 +68,6 @@ class IBuildQueue(Interface):
         title=_('The builder behavior required to run this job.'),
         required=False, readonly=True)
 
-    specific_job_classes = Field(
-        title=_('Job classes that may run on the build farm.'),
-        required=True, readonly=True)
-
     estimated_duration = Timedelta(
         title=_("Estimated Job Duration"), required=True,
         description=_("Estimated job duration interval."))

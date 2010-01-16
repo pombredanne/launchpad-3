@@ -25,8 +25,6 @@ from zope.schema import Bool, Choice, Field, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
 from lp.registry.interfaces.role import IHasOwner
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
 
@@ -142,8 +140,6 @@ class IBuilder(IHasOwner):
     slave = Attribute("xmlrpclib.Server instance corresponding to builder.")
 
     currentjob = Attribute("BuildQueue instance for job being processed.")
-
-    status = Attribute("Generated status information")
 
     is_available = Bool(
         title=_("Whether or not a builder is available for building "

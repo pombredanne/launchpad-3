@@ -139,6 +139,7 @@ class TestCodeImportDeletion(TestCaseWithFactory):
     def test_deleteIncludesJob(self):
         """Ensure deleting CodeImport objects deletes associated jobs."""
         code_import = self.factory.makeCodeImport()
+        login_person(getUtility(ILaunchpadCelebrities).vcs_imports.teamowner)
         code_import_job = self.factory.makeCodeImportJob(code_import)
         job_id = code_import_job.id
         CodeImportJobSet().getById(job_id)
@@ -309,6 +310,7 @@ class TestCodeImportResultsAttribute(TestCaseWithFactory):
         self.code_import = self.factory.makeCodeImport()
 
     def tearDown(self):
+        super(TestCodeImportResultsAttribute, self).tearDown()
         logout()
 
     def test_no_results(self):

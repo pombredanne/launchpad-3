@@ -15,6 +15,16 @@ SET client_min_messages=ERROR;
 ALTER TABLE ONLY buildqueue ADD COLUMN processor integer;
 ALTER TABLE ONLY buildqueue ADD COLUMN virtualized boolean;
 
+-- Replicate the processor/require_virtualized values of the (binary) builds
+-- associated with the existing BuildQueue records.
+UPDATE BuildQueue
+SET processor = Build.processor, virtualized = Archive.require_virtualized
+FROM Archive, Build, BuildPackageJob
+WHERE
+    BuildPackageJob.job = BuildQueue.job
+    AND BuildPackageJob.build = Build.id
+    AND Build.archive = Archive.id;
+
 CREATE INDEX buildqueue__processor__virtualized__idx ON buildqueue USING btree (processor, virtualized) WHERE (processor IS NOT NULL);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 24, 0);
