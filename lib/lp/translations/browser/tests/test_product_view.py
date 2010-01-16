@@ -36,7 +36,8 @@ class TestProduct(TestCaseWithFactory):
         pot = self.factory.makePOTemplate(
             distroseries=sourcepackage.distroseries,
             sourcepackagename=sourcepackage.sourcepackagename)
-        self.assertEquals(self.view.primary_translatable, {})
+        self.assertEquals(None, self.view.primary_translatable)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
+
