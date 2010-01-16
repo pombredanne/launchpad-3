@@ -1057,6 +1057,8 @@ class IBranch(IHasOwner, IPrivacy, IHasBranchTarget, IHasMergeProposals):
         """
 
     needs_upgrading = Attribute("Whether the branch needs to be upgraded.")
+    upgrade_pending = Attribute(
+        "Whether a branch has had an upgrade requested.")
 
     def requestUpgrade():
         """Create an IBranchUpgradeJob to upgrade this branch."""

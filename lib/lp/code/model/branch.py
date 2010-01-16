@@ -996,6 +996,11 @@ class Branch(SQLBase):
             self.branch_format in CURRENT_BRANCH_FORMATS and
             self.repository_format in CURRENT_REPOSITORY_FORMATS)
 
+    @property
+    def upgrade_pending(self):
+        """See `IBranch`."""
+        return False
+
     def requestUpgrade(self):
         """See `IBranch`."""
         from lp.code.interfaces.branchjob import IBranchUpgradeJobSource

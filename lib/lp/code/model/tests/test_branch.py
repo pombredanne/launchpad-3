@@ -388,6 +388,21 @@ class TestBranch(TestCaseWithFactory):
             repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertRaises(AssertionError, branch.requestUpgrade)
 
+    def test_upgradePending(self):
+        # If there is a BranchUpgradeJob pending for the branch, return True.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        branch.requestUpgrade()
+
+        self.assertTrue(branch.upgrade_pending)
+
+    def test_upgradePending_no_upgrade_requested(self):
+        # If the branch never had an upgrade requested, return False.
+        branch = self.factory.makeAnyBranch()
+        branch.requestUpgrade()
+
+        self.assertFalse(branch.upgrade_pending)
+
 
 class TestBzrIdentity(TestCaseWithFactory):
     """Test IBranch.bzr_identity."""
