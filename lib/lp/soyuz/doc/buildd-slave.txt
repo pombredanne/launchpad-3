@@ -87,6 +87,9 @@ Scan active builders looking for information about current jobs,
 collect result of finished jobs, everything is stored directly in
 the Launchpad DB. (simply check if it doesn't explode)
 
+    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+    >>> bq = getUtility(IBuildQueueSet).get(1)
+    >>> bq.job.start()
     >>> bm.scanActiveBuilders()
     WARNING:...:Builder http://localhost:8221/ forgot about
     buildqueue 1 -- resetting buildqueue record
