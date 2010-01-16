@@ -158,6 +158,10 @@ class BuildPackageJob(Storm, BuildFarmJob):
         """See `IBuildPackageJob`."""
         return self.build.sourcepackagerelease.name
 
+    def getTitle(self):
+        """See `IBuildPackageJob`."""
+        return self.build.title
+
     def jobStarted(self):
         """See `IBuildPackageJob`."""
         self.build.buildstate = BuildStatus.BUILDING

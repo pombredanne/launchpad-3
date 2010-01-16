@@ -41,7 +41,7 @@ class MockBuilder:
         self.name = name
         self.virtualized = True
 
-    def failbuilder(self, reason):
+    def failBuilder(self, reason):
         self.builderok = False
         self.failnotes = reason
 

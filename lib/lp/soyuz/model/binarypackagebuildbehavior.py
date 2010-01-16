@@ -11,7 +11,8 @@ __all__ = [
     'BinaryPackageBuildBehavior',
     ]
 
-from canonical.cachedproperty import cachedproperty
+from zope.interface import implements
+
 from canonical.launchpad.webapp import urlappend
 
 from lp.archiveuploader.permission import check_upload_to_pocket
@@ -25,17 +26,11 @@ from lp.soyuz.adapters.archivedependencies import (
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.buildmaster.interfaces.builder import CannotBuild
 
-from zope.interface import implements
-
 
 class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
     """Define the behavior of binary package builds."""
 
     implements(IBuildFarmJobBehavior)
-
-    @cachedproperty
-    def build(self):
-        return self.buildfarmjob.build
 
     def logStartBuild(self, logger):
         """See `IBuildFarmJobBehavior`."""
