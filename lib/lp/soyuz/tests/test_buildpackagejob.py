@@ -383,3 +383,8 @@ class TestBuildPackageJob(TestBuildJobBase):
 
     def test_provides_dispatch_estimation_interface(self):
         verifyObject(IBuildFarmJobDispatchEstimation, BuildPackageJob)
+
+    def test_getTitle(self):
+        # Test that BuildPackageJob returns the title of the build.
+        build, bq = find_job(self, 'gcc', '386')
+        self.assertEqual(bq.specific_job.getTitle(), build.title)

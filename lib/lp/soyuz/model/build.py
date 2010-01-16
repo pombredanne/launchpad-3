@@ -12,6 +12,9 @@ from cStringIO import StringIO
 import datetime
 import logging
 import operator
+import os
+import subprocess
+import time
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -28,7 +31,8 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
-    cursor, quote_like, SQLBase, sqlvalues)
+    clear_current_connection_cache, flush_database_updates, cursor,
+    quote_like, SQLBase, sqlvalues)
 from canonical.launchpad.components.decoratedresultset import (
     DecoratedResultSet)
 from canonical.launchpad.database.librarian import (
@@ -44,9 +48,12 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
+from canonical.librarian.utils import copy_and_close
 from lp.archivepublisher.utils import get_ppa_reference
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
-from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.buildmaster.model.buildbase import BuildBase
+from lp.registry.interfaces.pocket import (PackagePublishingPocket,
+    pocketsuffix)
 from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import get_components_for_building
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -64,7 +71,7 @@ from lp.soyuz.model.queue import (
     PackageUpload, PackageUploadBuild)
 
 
-class Build(SQLBase):
+class Build(BuildBase, SQLBase):
     implements(IBuild)
     _table = 'Build'
     _defaultOrder = 'id'
@@ -217,6 +224,11 @@ class Build(SQLBase):
     def is_virtualized(self):
         """See `IBuild`"""
         return self.archive.require_virtualized
+
+    @property
+    def is_private(self):
+        """See `IBuildBase`"""
+        return self.archive.private
 
     @property
     def title(self):
@@ -688,7 +700,23 @@ class Build(SQLBase):
         return queue_entry
 
     def notify(self, extra_info=None):
-        """See `IBuild`"""
+        """See `IBuildBase`.
+
+        If config.buildmaster.build_notification is disable, simply
+        return.
+
+        If config.builddmaster.notify_owner is enabled and SPR.creator
+        has preferredemail it will send an email to the creator, Bcc:
+        to the config.builddmaster.default_recipient. If one of the
+        conditions was not satisfied, no preferredemail found (autosync
+        or untouched packages from debian) or config options disabled,
+        it will only send email to the specified default recipient.
+
+        This notification will contain useful information about
+        the record in question (all states are supported), see
+        doc/build-notification.txt for further information.
+        """
+
         if not config.builddmaster.send_build_notification:
             return
 
@@ -866,6 +894,181 @@ class Build(SQLBase):
             return file_object
 
         raise NotFoundError(filename)
+
+    def _handleStatus_OK(self, librarian, slave_status, logger):
+        """Handle a package that built successfully.
+
+        Once built successfully, we pull the files, store them in a
+        directory, store build information and push them through the
+        uploader.
+        """
+        # XXX cprov 2007-07-11 bug=129487: untested code path.
+        buildid = slave_status['build_id']
+        filemap = slave_status['filemap']
+
+        logger.debug("Processing successful build %s" % buildid)
+        # Explode before collect a binary that is denied in this
+        # distroseries/pocket
+        if not self.archive.allowUpdatesToReleasePocket():
+            assert self.distroseries.canUploadToPocket(self.pocket), (
+                "%s (%s) can not be built for pocket %s: illegal status"
+                % (self.title, self.id, self.pocket.name))
+
+        # ensure we have the correct build root as:
+        # <BUILDMASTER_ROOT>/incoming/<UPLOAD_LEAF>/<TARGET_PATH>/[FILES]
+        root = os.path.abspath(config.builddmaster.root)
+        incoming = os.path.join(root, 'incoming')
+
+        # create a single directory to store build result files
+        # UPLOAD_LEAF: <TIMESTAMP>-<BUILD_ID>-<BUILDQUEUE_ID>
+        upload_leaf = "%s-%s" % (time.strftime("%Y%m%d-%H%M%S"), buildid)
+        upload_dir = os.path.join(incoming, upload_leaf)
+        logger.debug("Storing build result at '%s'" % upload_dir)
+
+        # Build the right UPLOAD_PATH so the distribution and archive
+        # can be correctly found during the upload:
+        #       <archive_id>/distribution_name
+        # for all destination archive types.
+        archive = self.archive
+        distribution_name = self.distribution.name
+        target_path = '%s/%s' % (archive.id, distribution_name)
+        upload_path = os.path.join(upload_dir, target_path)
+        os.makedirs(upload_path)
+
+        slave = removeSecurityProxy(self.buildqueue_record.builder.slave)
+        for filename in filemap:
+            slave_file = slave.getFile(filemap[filename])
+            out_file_name = os.path.join(upload_path, filename)
+            out_file = open(out_file_name, "wb")
+            copy_and_close(slave_file, out_file)
+
+        uploader_argv = list(config.builddmaster.uploader.split())
+        uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
+        logger.debug("Saving uploader log at '%s'"
+                     % uploader_logfilename)
+
+        # add extra arguments for processing a binary upload
+        extra_args = [
+            "--log-file", "%s" %  uploader_logfilename,
+            "-d", "%s" % self.distribution.name,
+            "-s", "%s" % (self.distroseries.name +
+                          pocketsuffix[self.pocket]),
+            "-b", "%s" % self.id,
+            "-J", "%s" % upload_leaf,
+            "%s" % root,
+            ]
+
+        uploader_argv.extend(extra_args)
+
+        logger.debug("Invoking uploader on %s" % root)
+        logger.debug("%s" % uploader_argv)
+
+        uploader_process = subprocess.Popen(
+            uploader_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        # Nothing should be written to the stdout/stderr.
+        upload_stdout, upload_stderr = uploader_process.communicate()
+
+        # XXX cprov 2007-04-17: we do not check uploader_result_code
+        # anywhere. We need to find out what will be best strategy
+        # when it failed HARD (there is a huge effort in process-upload
+        # to not return error, it only happen when the code is broken).
+        uploader_result_code = uploader_process.returncode
+        logger.debug("Uploader returned %d" % uploader_result_code)
+
+        # Quick and dirty hack to carry on on process-upload failures
+        if os.path.exists(upload_dir):
+            logger.debug("The upload directory did not get moved.")
+            failed_dir = os.path.join(root, "failed-to-move")
+            if not os.path.exists(failed_dir):
+                os.mkdir(failed_dir)
+            os.rename(upload_dir, os.path.join(failed_dir, upload_leaf))
+
+        # The famous 'flush_updates + clear_cache' will make visible
+        # the DB changes done in process-upload, considering that the
+        # transaction was set with ISOLATION_LEVEL_READ_COMMITED
+        # isolation level.
+        cur = cursor()
+        cur.execute('SHOW transaction_isolation')
+        isolation_str = cur.fetchone()[0]
+        assert isolation_str == 'read committed', (
+            'BuildMaster/BuilderGroup transaction isolation should be '
+            'ISOLATION_LEVEL_READ_COMMITTED (not "%s")' % isolation_str)
+
+        original_slave = self.buildqueue_record.builder.slave
+
+        # XXX Robert Collins, Celso Providelo 2007-05-26 bug=506256:
+        # 'Refreshing' objects  procedure  is forced on us by using a
+        # different process to do the upload, but as that process runs
+        # in the same unix account, it is simply double handling and we
+        # would be better off to do it within this process.
+        flush_database_updates()
+        clear_current_connection_cache()
+
+        # XXX cprov 2007-06-15: Re-issuing removeSecurityProxy is forced on
+        # us by sqlobject refreshing the builder object during the
+        # transaction cache clearing. Once we sort the previous problem
+        # this step should probably not be required anymore.
+        self.buildqueue_record.builder.setSlaveForTesting(
+            removeSecurityProxy(original_slave))
+
+        # Store build information, build record was already updated during
+        # the binary upload.
+        self.storeBuildInfo(librarian, slave_status)
+
+        # Retrive the up-to-date build record and perform consistency
+        # checks. The build record should be updated during the binary
+        # upload processing, if it wasn't something is broken and needs
+        # admins attention. Even when we have a FULLYBUILT build record,
+        # if it is not related with at least one binary, there is also
+        # a problem.
+        # For both situations we will mark the builder as FAILEDTOUPLOAD
+        # and the and update the build details (datebuilt, duration,
+        # buildlog, builder) in LP. A build-failure-notification will be
+        # sent to the lp-build-admin celebrity and to the sourcepackagerelease
+        # uploader about this occurrence. The failure notification will
+        # also contain the information required to manually reprocess the
+        # binary upload when it was the case.
+        if (self.buildstate != BuildStatus.FULLYBUILT or
+            self.binarypackages.count() == 0):
+            logger.debug("Build %s upload failed." % self.id)
+            self.buildstate = BuildStatus.FAILEDTOUPLOAD
+            # Retrieve log file content.
+            possible_locations = (
+                'failed', 'failed-to-move', 'rejected', 'accepted')
+            for location_dir in possible_locations:
+                upload_final_location = os.path.join(
+                    root, location_dir, upload_leaf)
+                if os.path.exists(upload_final_location):
+                    log_filepath = os.path.join(
+                        upload_final_location, 'uploader.log')
+                    uploader_log_file = open(log_filepath)
+                    try:
+                        uploader_log_content = uploader_log_file.read()
+                    finally:
+                        uploader_log_file.close()
+                    break
+            else:
+                uploader_log_content = 'Could not find upload log file'
+            # Store the upload_log_contents in librarian so it can be
+            # accessed by anyone with permission to see the build.
+            self.storeUploadLog(uploader_log_content)
+            # Notify the build failure.
+            self.notify(extra_info=uploader_log_content)
+        else:
+            logger.debug(
+                "Gathered build %s completely" %
+                self.sourcepackagerelease.name)
+
+        # Release the builder for another job.
+        self.buildqueue_record.builder.cleanSlave()
+        # Remove BuildQueue record.
+        self.buildqueue_record.destroySelf()
+
+    def storeBuildInfo(self, librarian, slave_status):
+        """See `IBuildBase`."""
+        super(Build, self).storeBuildInfo(librarian, slave_status)
+        self.dependencies = slave_status.get('dependencies')
 
 
 class BuildSet:
