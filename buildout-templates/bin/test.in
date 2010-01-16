@@ -223,7 +223,7 @@ if __name__ == '__main__':
     options.parser.defaults['tests_pattern'] = defaults['tests_pattern']
     local_options = options.get_options(args=args)
     subunit_formatter = os.getenv("SUBUNIT_FORMATTER")
-    if subunit_formatter is not None:
+    if subunit_formatter is not None and subunit_formatter != "":
         patch_zope_testresult(TestProtocolClient(os.popen(subunit_formatter, 'w')))
     # Set our default options, if the options aren't specified.
     for name, value in defaults.items():
