@@ -264,6 +264,8 @@ class BranchUpgradeJob(BranchJobDerived):
         """See `IBranchUpgradeJobSource`."""
         if not branch.needs_upgrading:
             raise AssertionError('Branch does not need upgrading.')
+        if branch.upgrade_pending:
+            raise AssertionError('Branch already has upgrade pending.')
         branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
         return cls(branch_job)
 
