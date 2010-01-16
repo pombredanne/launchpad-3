@@ -399,7 +399,6 @@ class TestBranch(TestCaseWithFactory):
     def test_upgradePending_no_upgrade_requested(self):
         # If the branch never had an upgrade requested, return False.
         branch = self.factory.makeAnyBranch()
-        branch.requestUpgrade()
 
         self.assertFalse(branch.upgrade_pending)
 

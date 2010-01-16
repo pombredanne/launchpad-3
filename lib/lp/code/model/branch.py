@@ -999,7 +999,13 @@ class Branch(SQLBase):
     @property
     def upgrade_pending(self):
         """See `IBranch`."""
-        return False
+        from lp.code.model.branchjob import BranchJob, BranchJobType
+        store = Store.of(self)
+        jobs = store.find(
+            BranchJob,
+            BranchJob.branch == self,
+            BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
+        return jobs.count() > 0
 
     def requestUpgrade(self):
         """See `IBranch`."""
