@@ -54,7 +54,74 @@ class PPABinaryExpirer(LaunchpadCronScript):
             help=("The number of days after which to expire binaries. "
                   "Must be specified."))
 
-    def determineExpirables(self, num_days):
+    def _exclusionClause(self, stay_of_execution):
+        """Don't expire files in any PPAs matching this clause."""
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.archive import ArchivePurpose
+        return """
+            p.name IN %s
+            OR a.private IS TRUE
+            OR a.purpose != %s
+            OR dateremoved >
+                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
+            OR dateremoved IS NULL)
+            """ % (self.blacklist, ArchivePurpose.PPA, stay_of_execution)
+
+    def determineSourceExpirables(self, num_days):
+        """Return expirable libraryfilealias IDs."""
+        # Avoid circular imports.
+        from lp.soyuz.interfaces.archive import ArchivePurpose
+
+        stay_of_execution = '%d days' % num_days
+
+        # The subquery here has to repeat the checks for privacy and
+        # blacklisting on *other* publications that are also done in
+        # the main loop for the archive being considered.
+        results = self.store.execute("""
+            SELECT lfa.id
+            FROM
+                LibraryFileAlias AS lfa,
+                Archive,
+                SourcePackageReleaseFile AS sprf,
+                SourcePackageRelease AS spr,
+                SourcePackagePublishingHistory AS spph
+            WHERE
+                lfa.id = sprf.libraryfile
+                AND spr.id = sprf.sourcepackagerelease
+                AND spph.sourcepackagerelease = spr.id
+                AND spph.dateremoved < (
+                    CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s)
+                AND spph.archive = archive.id
+                AND archive.purpose = %s
+                AND lfa.expires IS NULL
+            EXCEPT
+            SELECT sprf.libraryfile
+            FROM
+                SourcePackageRelease AS spr,
+                SourcePackageReleaseFile AS sprf,
+                SourcePackagePublishingHistory AS spph,
+                Archive AS a,
+                Person AS p
+            WHERE
+                spr.id = sprf.sourcepackagerelease
+                AND spph.sourcepackagerelease = spr.id
+                AND spph.archive = a.id
+                AND p.id = a.owner
+                AND (
+                    p.name IN %s
+                    OR a.private IS TRUE
+                    OR a.purpose != %s
+                    OR dateremoved >
+                        CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
+                    OR dateremoved IS NULL);
+            """ % sqlvalues(
+                stay_of_execution, ArchivePurpose.PPA, self.blacklist,
+                ArchivePurpose.PPA, stay_of_execution))
+
+        lfa_ids = results.get_all()
+        return lfa_ids
+
+    def determineBinaryExpirables(self, num_days):
         """Return expirable libraryfilealias IDs."""
         # Avoid circular imports.
         from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -116,7 +183,8 @@ class PPABinaryExpirer(LaunchpadCronScript):
         self.store = getUtility(IStoreSelector).get(
             MAIN_STORE, DEFAULT_FLAVOR)
 
-        lfa_ids = self.determineExpirables(num_days)
+        lfa_ids = self.determineSourceExpirables(num_days)
+        lfa_ids.extend(self.determineBinaryExpirables(num_days))
         batch_count = 0
         batch_limit = 500
         for id in lfa_ids:
