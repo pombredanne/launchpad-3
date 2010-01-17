@@ -93,11 +93,23 @@ We're redirected to the +members page
     >>> login(ANONYMOUS)
     >>> kamion_membership = teammembershipset.getByPersonAndTeam(
     ...     kamion, ubuntu_team)
-    >>> kamion_membership.status.title
-    'Approved'
+    >>> print kamion_membership.status.title
+    Approved
     >>> kamion_membership.dateexpires.date() == expire_date.date()
     True
+    >>> print kamion_membership.last_change_comment
+    Arfie
     >>> logout()
+
+If we revisit Colin's membership page we'll see the comment field is
+pre-populated with the last comment.
+
+    >>> url = '/~ubuntu-team/+member/kamion'
+    >>> browser.getLink(url=url).click()
+    >>> # Do not use 'print' for the following test as it will eliminate potential
+    >>> # leading and trailing whitespace, which we don't want.
+    >>> browser.getControl(name='comment').value
+    'Arfie'
 
 Jeff is also an administrator and his subscription never expires, but he can
 demote himself. He starts by paging though the memberships, then he deselects
