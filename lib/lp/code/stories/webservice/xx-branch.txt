@@ -233,3 +233,31 @@ As with projects, these can be filtered by the branch status.
 
     >>> print_branches(webservice, '/widgets', ('Experimental'))
     ~eric/fooix/feature-branch - Experimental
+
+Removing branches
+=================
+
+Branches may have dependencies so it may not necessarily be possible to
+delete them.
+
+    >>> deletable = webservice.named_get('/~eric/fooix/feature-branch',
+    ...                                  'canBeDeleted').jsonBody()
+    >>> print deletable
+    False
+
+    Deleting only works on branches that do not have anything else 
+    depending on them.
+
+    >>> response = webservice.delete('/~eric/fooix/feature-branch')
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> response = webservice.delete('/~mary/blob/bar')
+    >>> print response
+    HTTP/1.1 200 Ok
+    ...
+
+    >>> print_branches(webservice, '/widgets')
+    ~eric/fooix/trunk - Development
+
