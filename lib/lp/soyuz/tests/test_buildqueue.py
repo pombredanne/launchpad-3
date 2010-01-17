@@ -8,15 +8,19 @@ from datetime import datetime, timedelta
 from pytz import utc
 
 from zope.component import getUtility
+from zope.interface.verify import verifyObject
 
 from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
+from lp.services.job.model.job import Job
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+from lp.soyuz.model.buildqueue import BuildQueue
 from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus
 from lp.soyuz.model.build import Build
@@ -96,6 +100,28 @@ def set_remaining_time_for_running_job(bq, remainder):
     offset = bq.estimated_duration.seconds - remainder
     bq.setDateStarted(
         datetime.utcnow().replace(tzinfo=utc) - timedelta(seconds=offset))
+
+
+class TestBuildQueueSet(TestCaseWithFactory):
+    """Test for `BuildQueueSet`."""
+
+    layer = LaunchpadZopelessLayer
+
+    def setUp(self):
+        super(TestBuildQueueSet, self).setUp()
+        self.buildqueueset = getUtility(IBuildQueueSet)
+
+    def test_baseline(self):
+        verifyObject(IBuildQueueSet, self.buildqueueset)
+
+    def test_getByJob_none(self):
+        job = Job()
+        self.assertEquals(None, self.buildqueueset.getByJob(job))
+
+    def test_getByJob(self):
+        job = Job()
+        buildqueue = BuildQueue(job=job.id)
+        self.assertEquals(buildqueue, self.buildqueueset.getByJob(job))
 
 
 class TestBuildQueueBase(TestCaseWithFactory):

@@ -21,6 +21,7 @@ here = os.path.dirname(os.path.realpath(__file__))
 # that require something special like the librarian or mailman must run
 # on a layer that sets those services up.
 special_test_layer = {
+    'mailinglist-message-views.txt': LaunchpadFunctionalLayer,
     'milestone-views.txt': LaunchpadFunctionalLayer,
     'person-views.txt': LaunchpadFunctionalLayer,
     'user-to-user-views.txt': LaunchpadFunctionalLayer,

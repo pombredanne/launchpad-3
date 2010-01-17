@@ -19,12 +19,12 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 from zope.schema import (
-    Bool, Choice, Datetime, Int, Object, TextLine, Timedelta, Text)
+    Bool, Choice, Int, Object, TextLine, Text)
 from lazr.enum import DBEnumeratedType, DBItem, EnumeratedType, Item
 
 from canonical.launchpad import _
+from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.soyuz.interfaces.archive import IArchive
-from lp.soyuz.interfaces.builder import IBuilder
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
@@ -131,14 +131,9 @@ incomplete_building_status = (
     )
 
 
-class IBuildView(Interface):
+class IBuildView(IBuildBase):
     """A Build interface for items requiring launchpad.View."""
     id = Int(title=_('ID'), required=True, readonly=True)
-
-    datecreated = exported(
-        Datetime(
-            title=_('Date created'), required=True, readonly=True,
-            description=_("The time when the build request was created.")))
 
     processor = Object(
         title=_("Processor"), schema=IProcessor,
@@ -169,47 +164,11 @@ class IBuildView(Interface):
             vocabulary=PackagePublishingPocket,
             description=_("The build targeted pocket.")))
 
-    buildstate = exported(
-        Choice(
-            title=_('State'), required=True, vocabulary=BuildStatus,
-            description=_("The current build state.")))
-
-    date_first_dispatched = exported(
-        Datetime(
-            title=_('Date first dispatched'), required=False,
-            description=_("The actual build start time. Set when the build "
-                          "is dispatched the first time and not changed in "
-                          "subsequent build attempts.")))
-
     dependencies = exported(
         TextLine(
             title=_("Dependencies"), required=False,
             description=_("Debian-like dependency line that must be satisfied"
                           " before attempting to build this request.")))
-
-    builder = Object(
-        title=_("Builder"), schema=IBuilder, required=False,
-        description=_("The Builder which address this build request."))
-
-    datebuilt = exported(
-        Datetime(
-            title=_('Date built'), required=False,
-            description=_("The time when the build result got collected.")))
-
-    buildduration = Timedelta(
-        title=_("Build Duration"), required=False,
-        description=_("Build duration interval, calculated when the "
-                      "build result gets collected."))
-
-    buildlog = Object(
-        schema=ILibraryFileAlias, required=False,
-        title=_("The LibraryFileAlias containing the entire buildlog."))
-
-    build_log_url = exported(
-        TextLine(
-            title=_("Build Log URL"), required=False,
-            description=_("A URL for the build log. None if there is no "
-                          "log available.")))
 
     upload_log = Object(
         schema=ILibraryFileAlias, required=False,
@@ -236,7 +195,6 @@ class IBuildView(Interface):
         "published.")
     title = exported(Text(title=_("Build Title"), required=False))
     distroseries = Attribute("Direct parent needed by CanonicalURL")
-    buildqueue_record = Attribute("Corespondent BuildQueue record")
     was_built = Attribute("Whether or not modified by the builddfarm.")
     arch_tag = exported(
         Text(title=_("Architecture tag"), required=False))
@@ -307,24 +265,6 @@ class IBuildView(Interface):
 
     def createBuildQueueEntry():
         """Create a BuildQueue entry for this build record."""
-
-    def notify():
-        """Notify current build state to related people via email.
-
-        If config.buildmaster.build_notification is disable, simply
-        return.
-
-        If config.builddmaster.notify_owner is enabled and SPR.creator
-        has preferredemail it will send an email to the creator, Bcc:
-        to the config.builddmaster.default_recipient. If one of the
-        conditions was not satisfied, no preferredemail found (autosync
-        or untouched packages from debian) or config options disabled,
-        it will only send email to the specified default recipient.
-
-        This notification will contain useful information about
-        the record in question (all states are supported), see
-        doc/build-notification.txt for further information.
-        """
 
     def getEstimatedBuildStartTime():
         """Get the estimated build start time for a pending build job.
