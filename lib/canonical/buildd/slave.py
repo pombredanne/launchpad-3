@@ -95,13 +95,11 @@ class RunCapture(protocol.ProcessProtocol):
 class BuildManager(object):
     """Build Daemon slave build manager abstract parent"""
 
-    def __init__(self, slave, buildid, base_path=None):
+    def __init__(self, slave, buildid):
         """Create a BuildManager.
 
         :param slave: A `BuildDSlave`.
         :param buildid: Identifying string for this build.
-        :param base_path: Optional filesystem path where build tree
-            should go.  Defaults to home directory.
         """
         object.__init__(self)
         self._buildid = buildid
@@ -111,11 +109,7 @@ class BuildManager(object):
         self._mountpath = slave._config.get("allmanagers", "mountpath")
         self._umountpath = slave._config.get("allmanagers", "umountpath")
         self.is_archive_private = False
-
-        if base_path is None:
-            self.base_path = os.environ['HOME']
-        else:
-            self.base_path = base_path
+        self.home = os.environ['HOME']
 
     def runSubProcess(self, command, args):
         """Run a sub process capturing the results in the log."""
@@ -158,7 +152,7 @@ class BuildManager(object):
         value keyed under the 'archive_private' string. If that value
         evaluates to True the build at hand is for a private archive.
         """
-        os.mkdir("%s/build-%s" % (self.base_path, self._buildid))
+        os.mkdir("%s/build-%s" % (self.home, self._buildid))
         for f in files:
             os.symlink( self._slave.cachePath(files[f]),
                         "%s/build-%s/%s" % (os.environ["HOME"],

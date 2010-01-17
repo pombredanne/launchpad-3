@@ -13,9 +13,9 @@ class TranslationTemplatesBuildState(object):
     "States this kind of build goes through."""
     INIT = "INIT"
     UNPACK = "UNPACK"
-    INSTALL = "INSTALL"
     MOUNT = "MOUNT"
     UPDATE = "UPDATE"
+    INSTALL = "INSTALL"
     GENERATE = "GENERATE"
     CLEANUP = "CLEANUP"
 
@@ -36,14 +36,13 @@ class TranslationTemplatesBuildManager(BuildManager):
     def initiate(self, files, chroot, extra_args):
         """See `BuildManager`."""
         self.branch_url = extra_args['branch_url']
-        self.home = os.environ['HOME']
         self.username = pwd.getpwuid(os.getuid())[0]
 
         super(TranslationTemplatesBuildManager, self).initiate(
             files, chroot, extra_args)
 
         self.chroot_path = os.path.join(
-            self.home, 'build-' + self.build_id, 'chroot-autobuild')
+            self.home, 'build-' + self._buildid, 'chroot-autobuild')
 
     def iterate(self, success):
         func = getattr(self, 'iterate_' + self._state, None)
@@ -66,19 +65,8 @@ class TranslationTemplatesBuildManager(BuildManager):
 
     def iterate_UNPACK(self, success):
         if success == 0:
-            self._state = TranslationTemplatesBuildState.INSTALL
-            self.doInstall()
-        else:
-            if not self.alreadyfailed:
-                self._slave.chrootFail()
-                self.alreadyfailed = True
-            self._state = TranslationTemplatesBuildState.CLEANUP
-            self.doCleanup()
-
-    def iterate_INSTALL(self, success):
-        if success == 0:
             self._state = TranslationTemplatesBuildState.MOUNT
-            self.doMount()
+            self.doMounting()
         else:
             if not self.alreadyfailed:
                 self._slave.chrootFail()
@@ -98,6 +86,17 @@ class TranslationTemplatesBuildManager(BuildManager):
             self.doCleanup()
 
     def iterate_UPDATE(self, success):
+        if success == 0:
+            self._state = TranslationTemplatesBuildState.INSTALL
+            self.doInstall()
+        else:
+            if not self.alreadyfailed:
+                self._slave.chrootFail()
+                self.alreadyfailed = True
+            self._state = TranslationTemplatesBuildState.CLEANUP
+            self.doCleanup()
+
+    def iterate_INSTALL(self, success):
         if success == 0:
             self._state = TranslationTemplatesBuildState.GENERATE
             self.doGenerate()
@@ -136,25 +135,25 @@ class TranslationTemplatesBuildManager(BuildManager):
             'intltool-debian',
             ]
         command = ['apt-get', 'install', '-y'] + required_packages
-        self.runInChroot(self._updatepath, command, as_root=True)
+        self.runInChroot(self.home, command, as_root=True)
 
     def doUpdate(self):
         """Update chroot."""
         command = ['update-debian-chroot', self._buildid]
-        self.runInChroot(self._updatepath, command, as_root=True)
+        self.runInChroot(self.home, command, as_root=True)
 
     def doGenerate(self):
         """Generate templates."""
         command = ['generate-translation-templates.py', self.branch_url]
-        self.runInChroot(self.branch_path, command)
+        self.runInChroot(self.home, command)
 
     def runInChroot(self, path, command, as_root=False):
         """Run command in chroot."""
-        chroot = ['/usr/bin/sudo', '/usr/sbin/root', self.chroot_path]
+        chroot = ['/usr/bin/sudo', '/usr/sbin/chroot', self.chroot_path]
         if as_root:
             sudo = []
         else:
             # We have to sudo to chroot, so if the command should _not_
             # be run as root, we then need to sudo back to who we were.
-            sudo = ['/usr/bin/sudo', '-u', self.username] + command
-        return self.runSubprocess(path, chroot + sudo + command)
+            sudo = ['/usr/bin/sudo', '-u', self.username]
+        return self.runSubProcess(path, chroot + sudo + command)
