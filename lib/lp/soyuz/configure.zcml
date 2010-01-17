@@ -895,6 +895,8 @@
     <class
         class="lp.soyuz.model.buildpackagejob.BuildPackageJob">
         <allow
+            interface="lp.buildmaster.interfaces.buildfarmjob.IBuildFarmJob"/>
+        <allow
             interface="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"/>
     </class>
     <!-- 
