@@ -512,7 +512,7 @@ class POTemplateEditView(LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
     schema = IPOTemplate
-    field_names = ['name', 'translation_domain', 'description', 'priority',
+    field_names = ['translation_domain', 'description', 'priority',
         'path', 'owner', 'iscurrent']
     label = 'Edit translation template details'
     page_title = 'Edit details'

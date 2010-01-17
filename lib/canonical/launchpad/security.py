@@ -1666,9 +1666,7 @@ class EditPOTemplateSubset(AuthorizationBase):
             # The user is the owner of the product.
             return True
 
-        return (
-            AdminPOTemplateSubset(self.obj).checkAuthenticated(user) or
-            EditByOwnersOrAdmins(self.obj).checkAuthenticated(user))
+        return AdminPOTemplateSubset(self.obj).checkAuthenticated(user)
 
 
 class AdminDistroSeriesTranslations(AuthorizationBase):

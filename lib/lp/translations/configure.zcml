@@ -411,11 +411,11 @@
                 permission="launchpad.Edit"
                 set_attributes="
                     owner priority description translation_domain path
-                    iscurrent name"/>
+                    iscurrent"/>
             <require
                 permission="launchpad.TranslationsAdmin"
                 set_attributes="
-                    productseries distroseries sourcepackagename 
+                    name productseries distroseries sourcepackagename 
                     sourcepackageversion binarypackagename languagepack
                     source_file_format source_file date_last_updated
                     from_sourcepackagename header"/>
