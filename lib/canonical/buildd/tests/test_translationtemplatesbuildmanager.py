@@ -91,7 +91,7 @@ class TestTranslationTemplatesBuildManagerIteration(TestCaseWithFactory):
         expected_command = [
             '/usr/bin/sudo',
             '/usr/sbin/chroot', self.chrootdir,
-            'update-debian-chroot'
+            'update-debian-chroot',
             ]
         self.assertEqual(expected_command, self.buildmanager.commands[-1][:4])
 
@@ -103,7 +103,7 @@ class TestTranslationTemplatesBuildManagerIteration(TestCaseWithFactory):
         expected_command = [
             '/usr/bin/sudo',
             '/usr/sbin/chroot', self.chrootdir,
-            'apt-get'
+            'apt-get',
             ]
         self.assertEqual(expected_command, self.buildmanager.commands[-1][:4])
 
@@ -117,7 +117,7 @@ class TestTranslationTemplatesBuildManagerIteration(TestCaseWithFactory):
             '/usr/sbin/chroot', self.chrootdir,
             '/usr/bin/sudo', '-u', self.buildmanager.username,
             'generate-translation-templates.py',
-            url
+            url,
             ]
         self.assertEqual(expected_command, self.buildmanager.commands[-1])
 
