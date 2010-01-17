@@ -351,14 +351,11 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         return view
 
     def _getSourceProposal(self):
-        # There will only be one proposal and it will be in needs review
-        # state.
+        # There will only be one proposal.
         landing_targets = list(self.source_branch.landing_targets)
         self.assertEqual(1, len(landing_targets))
         proposal = landing_targets[0]
         self.assertEqual(self.target_branch, proposal.target_branch)
-        self.assertEqual(BranchMergeProposalStatus.NEEDS_REVIEW,
-                         proposal.queue_status)
         return proposal
 
     def assertNoComments(self, proposal):
@@ -393,10 +390,34 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         # This simplest case is where the user only specifies the target
         # branch, and not an initial comment or reviewer.
         view = self._createView()
-        view.register_action.success({'target_branch': self.target_branch})
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'needs_review': True})
         proposal = self._getSourceProposal()
         self.assertNoPendingReviews(proposal)
         self.assertNoComments(proposal)
+
+    def test_register_work_in_progress(self):
+        # The needs review checkbox can be unchecked to create a work in
+        # progress proposal.
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'needs_review': False})
+        proposal = self._getSourceProposal()
+        self.assertEqual(
+            BranchMergeProposalStatus.WORK_IN_PROGRESS,
+            proposal.queue_status)
+
+    def test_register_with_commit_message(self):
+        # A commit message can also be set during the register process.
+        view = self._createView()
+        view.register_action.success(
+            {'target_branch': self.target_branch,
+             'needs_review': True,
+             'commit_message': 'Fixed the bug!'})
+        proposal = self._getSourceProposal()
+        self.assertEqual('Fixed the bug!', proposal.commit_message)
 
     def test_register_initial_comment(self):
         # If the user specifies an initial comment, this is added to the
@@ -404,7 +425,8 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'comment': "This is the first comment."})
+             'comment': "This is the first comment.",
+             'needs_review': True})
 
         proposal = self._getSourceProposal()
         self.assertNoPendingReviews(proposal)
@@ -417,7 +439,8 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view = self._createView()
         view.register_action.success(
             {'target_branch': self.target_branch,
-             'reviewer': reviewer})
+             'reviewer': reviewer,
+             'needs_review': True})
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer)
@@ -431,7 +454,8 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
         view.register_action.success(
             {'target_branch': self.target_branch,
              'reviewer': reviewer,
-             'review_type': 'god-like'})
+             'review_type': 'god-like',
+             'needs_review': True})
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
@@ -446,7 +470,8 @@ class TestRegisterBranchMergeProposalView(TestCaseWithFactory):
             {'target_branch': self.target_branch,
              'reviewer': reviewer,
              'review_type': 'god-like',
-             'comment': "This is the first comment."})
+             'comment': "This is the first comment.",
+             'needs_review': True})
 
         proposal = self._getSourceProposal()
         self.assertOnePendingReview(proposal, reviewer, 'god-like')
