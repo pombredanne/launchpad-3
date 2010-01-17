@@ -72,11 +72,14 @@ Bugs and specifications targeted to the milestone are accessible too.
 The has_bugs_or_specs boolean property can be used to verify if the
 milestone has any bugs or specifications.
 
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+
     >>> view.has_bugs_or_specs
     False
 
     >>> bug = factory.makeBug(title="kiwi")
     >>> bugtask = factory.makeBugTask(bug=bug, target=milestone.product)
+    >>> bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED, person)
     >>> bugtask.transitionToAssignee(person)
     >>> bugtask.milestone = milestone
     >>> spec = factory.makeSpecification(
@@ -142,6 +145,7 @@ supports plural descriptions.
 
     >>> bug = factory.makeBug(title="emo")
     >>> bugtask = factory.makeBugTask(bug=bug, target=milestone.product)
+    >>> bugtask.transitionToAssignee(person)
     >>> bugtask.milestone = milestone
     >>> spec = factory.makeSpecification(
     ...     product=milestone.product, title='ostrich')
@@ -153,6 +157,15 @@ supports plural descriptions.
 
     >>> print view.specification_count_text
     <strong>2 blueprints</strong>
+
+Bugtasks are ordered by status (fix released last), and importance
+(critical first).
+
+    >>> for bugtask in view.bugtasks:
+    ...     assignee = bugtask.assignee
+    ...     print bugtask.bug.title, assignee.name, bugtask.status.title
+    emo   puffin-owner  New
+    kiwi  puffin-owner  Fix Committed
 
 The view provides a list of StatusCounts that summarise the targeted
 specifications and bugtasks.
@@ -174,7 +187,8 @@ specifications and bugtasks.
 
     >>> for status_count in view.bugtask_status_counts:
     ...     print '%s: %s' % (status_count.status.title, status_count.count)
-    New: 2
+    New: 1
+    Fix Committed: 1
 
 The assignment_counts property returns all the users and count of bugs and
 specifications assigned to them.
@@ -711,4 +725,3 @@ project owner or series driver..
     >>> view = create_initialized_view(milestone, '+delete')
     >>> check_permission('launchpad.Edit', view)
     False
-
