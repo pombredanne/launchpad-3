@@ -19,8 +19,7 @@ from lp.buildmaster.interfaces.buildfarmjob import (
 class BuildFarmJob:
     """Mix-in class for `IBuildFarmJob` implementations."""
     implements(IBuildFarmJob)
-    classProvides(IBuildFarmCandidateJobSelection)
-    classProvides(ISpecificBuildFarmJobClass)
+    classProvides(IBuildFarmCandidateJobSelection, ISpecificBuildFarmJobClass)
 
     def score(self):
         """See `IBuildFarmJob`."""
