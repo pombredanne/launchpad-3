@@ -323,19 +323,5 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
             [item.context for item in view.review_groups[view.OTHER]])
 
 
-class NoActiveReviewsForBranchTest(TestCaseWithFactory):
-    """A branch should not have +activereviews."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_no_active_reviews(self):
-        # 404 is more apt than an oops.
-        branch = self.factory.makeProductBranch()
-        self.assertRaises(
-            NotFound,
-            create_initialized_view,
-            branch, name='+activereviews')
-
-
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)
