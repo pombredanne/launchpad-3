@@ -1213,8 +1213,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             review_requests.append((reviewer, data.get('review_type')))
 
         try:
-            # Always default to needs review until we have the wonder of AJAX
-            # and an advanced expandable section.
             proposal = source_branch.addLandingTarget(
                 registrant=registrant, target_branch=target_branch,
                 prerequisite_branch=prerequisite_branch,
