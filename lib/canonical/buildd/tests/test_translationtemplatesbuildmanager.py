@@ -38,7 +38,7 @@ class MockBuildManager(TranslationTemplatesBuildManager):
 
 
 class TestTranslationTemplatesBuildManagerIteration(TestCaseWithFactory):
-    """Walk TranslationTemplatesBuildManager through its iteration steps."""
+    """Run TranslationTemplatesBuildManager through its iteration steps."""
     def setUp(self):
         self.working_dir = self.makeTemporaryDirectory()
         slave_dir = os.path.join(self.working_dir, 'slave')
