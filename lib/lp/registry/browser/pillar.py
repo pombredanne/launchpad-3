@@ -12,7 +12,7 @@ __all__ = [
 
 from operator import attrgetter
 
-from zope.component import provideAdapter
+from zope.component.globalregistry import provideAdapter
 from zope.interface import implements, Interface
 
 from canonical.launchpad.webapp.interfaces import INavigationMenu

@@ -20,9 +20,8 @@ from lp.bugs.browser.bugcomment import (
     should_display_remote_comments)
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.webapp.interfaces import ILaunchBag
-from lp.bugs.interfaces.bug import IBugWatch
 from lp.bugs.interfaces.bugwatch import (
-    IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+    IBugWatch, IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadFormView, LaunchpadView)

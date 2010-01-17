@@ -168,7 +168,7 @@ class FailDispatchResult(BaseDispatchResult):
         from lp.buildmaster.interfaces.builder import IBuilderSet
 
         builder = getUtility(IBuilderSet)[self.slave.name]
-        builder.failbuilder(self.info)
+        builder.failBuilder(self.info)
         self._cleanJob(builder.currentjob)
 
 
