@@ -96,6 +96,7 @@ from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.webapp.interfaces import NameLookupFailed
 from canonical.launchpad.webapp.authorization import check_permission
 
+
 PRIVATE_TEAM_PREFIX = 'private-'
 
 
@@ -333,7 +334,7 @@ class TeamSubscriptionPolicy(DBEnumeratedType):
     MODERATED = DBItem(1, """
         Moderated Team
 
-        All subscriptions for this team are subject to approval by one of 
+        All subscriptions for this team are subject to approval by one of
         the team's administrators.
         """)
 
@@ -366,17 +367,17 @@ class PersonVisibility(DBEnumeratedType):
     PRIVATE_MEMBERSHIP = DBItem(20, """
         Private Membership
 
-        Only Launchpad admins and team members can view the 
-        membership list for this team. The team is severely restricted in the 
+        Only Launchpad admins and team members can view the
+        membership list for this team. The team is severely restricted in the
         roles it can assume.
         """)
 
     PRIVATE = DBItem(30, """
         Private
 
-        Only Launchpad admins and team members can view the membership list 
-        for this team or its name.  The team roles are restricted to 
-        subscribing to bugs, being bug supervisor, owning code branches, and 
+        Only Launchpad admins and team members can view the membership list
+        for this team or its name.  The team roles are restricted to
+        subscribing to bugs, being bug supervisor, owning code branches, and
         having a PPA.
         """)
 
@@ -1421,6 +1422,8 @@ class IPersonEditRestricted(Interface):
 
         :param status: `TeamMembershipStatus` value must be either
             Approved, Proposed or Admin.
+            If the new member is a team, the status will be changed to
+            Invited unless the user is also an admin of that team.
 
         :param force_team_add: If the person is actually a team and
             force_team_add is False, the team will actually be invited to
@@ -1848,7 +1851,7 @@ class IPersonSet(Interface):
         While we don't have Full Text Indexes in the emailaddress table, we'll
         be trying to match the text only against the beginning of an email
         address.
-        
+
         If created_before or created_after are not None, they are used to
         restrict the search to the dates provided.
         """
