@@ -4,7 +4,9 @@
 """Implementation of the `SourcePackageRecipe` content type."""
 
 __metaclass__ = type
-__all__ = ['SourcePackageRecipe']
+__all__ = [
+    'SourcePackageRecipe',
+    ]
 
 from storm.locals import Int, Reference, Store, Storm, Unicode
 

@@ -9,7 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildFarmJobBehaviorBase',
-    'IdleBuildBehavior'
+    'IdleBuildBehavior',
     ]
 
 import logging

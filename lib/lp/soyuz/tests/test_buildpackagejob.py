@@ -99,6 +99,7 @@ class TestBuildPackageJob(TestBuildJobBase):
     farm job type) targetting a single processor architecture and the primary
     archive.
     """
+
     def setUp(self):
         """Set up some native x86 builds for the test archive."""
         super(TestBuildPackageJob, self).setUp()
@@ -235,7 +236,7 @@ class TestBuildPackageJob(TestBuildJobBase):
 
         # Processor == 1 -> Intel 386
         # SELECT id,name,title FROM processor
-        #  id | name  |     title      
+        #  id | name  |     title
         # ----+-------+----------------
         #   1 | 386   | Intel 386
         #   2 | amd64 | AMD 64bit
@@ -314,7 +315,7 @@ class TestBuildPackageJob(TestBuildJobBase):
 
         # Processor == 3 -> HPPA
         # SELECT id,name,title FROM processor
-        #  id | name  |     title      
+        #  id | name  |     title
         # ----+-------+----------------
         #   1 | 386   | Intel 386
         #   2 | amd64 | AMD 64bit

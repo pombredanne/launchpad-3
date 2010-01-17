@@ -14,7 +14,6 @@ __all__ = [
 from lazr.restful.fields import Reference
 
 from zope.interface import Attribute, Interface
-
 from zope.schema import Datetime, TextLine
 
 from canonical.launchpad import _
