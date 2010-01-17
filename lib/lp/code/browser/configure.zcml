@@ -519,7 +519,7 @@
         class="lp.code.browser.branch.RegisterBranchMergeProposalView"
         facet="branches"
         permission="launchpad.AnyPerson"
-        template="../../app/templates/generic-edit.pt"/>
+        template="../templates/branch-register-merge.pt"/>
     <browser:page
         name="+linkbug"
         for="lp.code.interfaces.branch.IBranch"
