@@ -448,16 +448,6 @@ class TestParallelLimitedTaskConsumer(TestCase):
         d.addCallback(log.append)
         self.assertEqual([], log)
 
-    def test_consumer_finishes_when_tasks_done(self):
-        # `consume` returns a Deferred that fires when no more tasks are
-        # running.
-        consumer = self.makeConsumer()
-        task_log = []
-        d = consumer.consume(LoggingSource([]))
-        d.addCallback(task_log.append)
-        consumer.taskStarted(lambda: None)
-        self.assertEqual([None], task_log)
-
     def test_consumer_finishes_if_no_tasks_found(self):
         # `consume` returns a Deferred that fires if no tasks are found when
         # no tasks are running.
@@ -519,15 +509,17 @@ class TestParallelLimitedTaskConsumer(TestCase):
         consumer.noTasksFound()
         self.assertEqual(0, log.count('stop'))
 
-    def test_source_stopped_when_tasks_done(self):
-        # When no more tasks are running, we stop the task source.
+    def test_source_started_when_all_tasks_done(self):
+        # When no more tasks are running, we start the task source so it has
+        # one more chance to give us work.
         consumer = self.makeConsumer()
         log = []
         consumer.consume(LoggingSource(log))
         del log[:]
         # Finishes immediately, all tasks are done.
         consumer.taskStarted(lambda: None)
-        self.assertEqual(1, log.count('stop'))
+        self.assertEqual(2, log.count(('start', consumer)))
+        self.assertEqual(0, log.count('stop'))
 
     def test_taskStarted_before_consume_raises_error(self):
         # taskStarted can only be called after we have started consuming. This
