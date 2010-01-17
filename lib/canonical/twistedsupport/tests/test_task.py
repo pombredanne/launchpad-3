@@ -1,5 +1,6 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
+# pylint: disable-msg=E0211,E0213
 
 """Tests for our task support."""
 
@@ -358,7 +359,7 @@ class TestPollingTaskSource(TestCase):
         class LoggingConsumer:
             def __init__(self):
                 self._task_production_failed_calls = []
-            def taskStarted(slf, task):
+            def taskStarted(self, task):
                 self.fail("taskStarted should not be called.")
             def taskProductionFailed(self, reason):
                 self._task_production_failed_calls.append(reason)
