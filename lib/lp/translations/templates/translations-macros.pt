@@ -133,7 +133,7 @@
     <script type="text/javascript"
         tal:content="
         structure string:<!-- 
-        var autofocus_field = '${view/autofocus_html_id}_new';
+        var autofocus_field = '${view/autofocus_html_id}';
         var translations_order = '${view/translations_order}';
         var plural_forms = ${context/plural_forms};
         // -->" />
