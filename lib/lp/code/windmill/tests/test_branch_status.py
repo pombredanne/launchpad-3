@@ -1,7 +1,7 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
-"""Test for the main branch page."""
+"""Tests for branch statuses."""
 
 __metaclass__ = type
 __all__ = []
@@ -20,11 +20,12 @@ from lp.testing import TestCaseWithFactory
 
 
 class TestBranchStatus(TestCaseWithFactory):
+    """Test setting branch status."""
 
     layer = CodeWindmillLayer
 
     def test_inline_branch_status_setting(self):
-        """Test branch bug links."""
+        """Set the status of a branch."""
         eric = self.factory.makePerson(
             name="eric", displayname="Eric the Viking", password="test",
             email="eric@example.com")

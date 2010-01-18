@@ -205,7 +205,8 @@ expected content for building the just-created source.
     ...     get_sources_list_for_building)
 
     >>> def print_building_sources_list(candidate):
-    ...     sources_list = get_sources_list_for_building(candidate)
+    ...     sources_list = get_sources_list_for_building(candidate,
+    ...         candidate.distroarchseries, candidate.sourcepackagerelease.name)
     ...     for line in sorted(sources_list):
     ...         print line
 
@@ -344,7 +345,7 @@ the primary archive.
     ...     get_primary_current_component)
 
     >>> print get_primary_current_component(a_build.archive,
-		a_build.sourcepackagerelease.name, a_build.distroseries)
+    ...     a_build.distroseries, a_build.sourcepackagerelease.name)
     universe
 
     >>> print_building_sources_list(a_build)
