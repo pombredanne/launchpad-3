@@ -23,6 +23,7 @@ __all__ = [
     'BugWithoutContextView',
     'DeprecatedAssignedBugsView',
     'MaloneView',
+    'MAX_HEAT',
     ]
 
 from datetime import datetime, timedelta

@@ -4,6 +4,7 @@ Bug heat is represented as four flame icons. The quantity of flames that are
 coloured is dependent on the value of the heat field. The view BugHeatView
 is used to render the flames.
 
+    >>> from lp.bugs.browser.bug import MAX_HEAT
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.webapp import canonical_url
     >>> from zope.security.proxy import removeSecurityProxy
@@ -15,11 +16,11 @@ is used to render the flames.
     >>> login('foo.bar@canonical.com')
     >>> bug = factory.makeBug()
 
-The maximum heat is 5000 (defined as a constant in browser/bug.py). A bug with
-a heat of 2500 will result in a display of two coloured flames and two
-black-and-white flames.
+The maximum heat is defined as a constant in browser/bug.py. A bug with
+a heat of half the maximum will result in a display of two coloured flames
+and two black-and-white flames.
 
-    >>> removeSecurityProxy(bug).heat = 2500
+    >>> removeSecurityProxy(bug).heat = MAX_HEAT / 2
     >>> bug_heat_view = create_initialized_view(bug, name='+bug-heat')
     >>> print_flames(bug_heat_view())
     /@@/flame-icon
@@ -27,9 +28,9 @@ black-and-white flames.
     /@@/flame-bw-icon
     /@@/flame-bw-icon
 
-A bug with a heat of 5000 will display all four flames coloured.
+A bug with a maximum heat will display all four flames coloured.
 
-    >>> removeSecurityProxy(bug).heat = 5000
+    >>> removeSecurityProxy(bug).heat = MAX_HEAT
     >>> bug_heat_view = create_initialized_view(bug, name='+bug-heat')
     >>> print_flames(bug_heat_view())
     /@@/flame-icon
@@ -37,9 +38,9 @@ A bug with a heat of 5000 will display all four flames coloured.
     /@@/flame-icon
     /@@/flame-icon
 
-A heat of less than 1250 will display no coloured flames.
+A heat of less than a quarter of the maximum will display no coloured flames.
 
-    >>> removeSecurityProxy(bug).heat = 666
+    >>> removeSecurityProxy(bug).heat = 0.1 * MAX_HEAT
     >>> bug_heat_view = create_initialized_view(bug, name='+bug-heat')
     >>> print_flames(bug_heat_view())
     /@@/flame-bw-icon
