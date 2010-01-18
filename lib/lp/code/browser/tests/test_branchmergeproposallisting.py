@@ -298,7 +298,7 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
         self.assertEqual(review_date, item.sort_key)
 
     def test_sort_key_wip(self):
-        # If the proposal is a work in probress, the date_created is used.
+        # If the proposal is a work in progress, the date_created is used.
         bmp = self.factory.makeBranchMergeProposal(
             date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
         login_person(bmp.target_branch.owner)
