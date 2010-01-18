@@ -68,7 +68,7 @@ class IBuildFarmJob(Interface):
         """An appropriate name for this job."""
 
     def getTitle():
-        """A string to identify and describe the job to users return None."""
+        """A string to identify and describe the job to users."""
 
     def jobStarted():
         """'Job started' life cycle event, handle as appropriate."""
@@ -165,22 +165,28 @@ class IBuildFarmCandidateJobSelection(Interface):
     """
 
     def addCandidateSelectionCriteria(processor, virtualized):
-        """Provide extra clauses that will refine the candidate job selection.
+        """Provide a sub-query to refine the candidate job selection.
 
-        Return a 2-tuple with extra tables and clauses to be used to
-        narrow down the list of candidate jobs.
+        Return a sub-query to narrow down the list of candidate jobs.
+        The sub-query will become part of an "outer query" and is free to
+        refer to the `BuildQueue` and `Job` tables already utilized in the
+        latter.
 
-        Example:
-            (('Build', 'BuildPackageJob'),
-             "BuildPackageJob.build = Build.id AND ..")
+        Example (please see the `BuildPackageJob` implementation for a
+        complete example):
+
+            SELECT TRUE
+            FROM Archive, Build, BuildPackageJob, DistroArchSeries
+            WHERE
+            BuildPackageJob.job = Job.id AND 
+            ..
 
         :param processor: the type of processor that the candidate jobs are
             expected to run on.
         :param virtualized: whether the candidate jobs are expected to run on
             the `processor` natively or inside a virtual machine.
-        :return: an (extra_tables, extra_query) tuple where `extra_tables` is
-            a collection of tables that need to appear in the FROM clause of
-            the combined query for `extra_query` to work. 
+        :return: a string containing a sub-query that narrows down the list of
+            candidate jobs.
         """
 
     def postprocessCandidate(job, logger):
