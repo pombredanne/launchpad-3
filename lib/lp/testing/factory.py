@@ -288,10 +288,11 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
         key_id = self.getUniqueHexString(digits=8).upper()
+        fingerprint = key_id + 'A' * 32
         return getUtility(IGPGKeySet).new(
             owner.id,
             keyid=key_id,
-            fingerprint='A' * 40,
+            fingerprint=fingerprint,
             keysize=self.getUniqueInteger(),
             algorithm=GPGKeyAlgorithm.R,
             active=True,
@@ -758,13 +759,6 @@ class LaunchpadObjectFactory(ObjectFactory):
         if product is None:
             product = self.makeProduct()
         return self.makeBranch(product=product, **kwargs)
-
-    def makeImportBranch(self, **kwargs):
-        """Make a in import branch on an arbitrary product.
-
-        See `makeBranch` for more information on arguments.
-        """
-        return self.makeBranch(branch_type=BranchType.IMPORTED, **kwargs)
 
     def makeAnyBranch(self, **kwargs):
         """Make a branch without caring about its container.

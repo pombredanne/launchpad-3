@@ -929,6 +929,8 @@ class Branch(SQLBase):
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC')) + increment)
         self.last_mirrored_id = last_revision_id
+        from lp.code.model.branchjob import BranchScanJob
+        BranchScanJob.create(self)
 
     def mirrorFailed(self, reason):
         """See `IBranch`."""
@@ -944,6 +946,10 @@ class Branch(SQLBase):
             self.next_mirror_time = (
                 datetime.now(pytz.timezone('UTC'))
                 + increment * 2 ** (self.mirror_failures - 1))
+
+    def destroySelfBreakReferences(self):
+        """See `IBranch`."""
+        return self.destroySelf(break_references=True)
 
     def destroySelf(self, break_references=False):
         """See `IBranch`."""

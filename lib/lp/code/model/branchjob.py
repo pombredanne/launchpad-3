@@ -3,6 +3,9 @@
 
 __all__ = [
     'BranchJob',
+    'BranchScanJob',
+    'BranchJobDerived',
+    'BranchJobType',
     'BranchUpgradeJob',
     'RevisionsAddedJob',
     'RevisionMailJob',
@@ -274,6 +277,16 @@ class BranchScanJob(BranchJobDerived):
         """See `IBranchScanJob`."""
         bzrsync = BzrSync(self.branch)
         bzrsync.syncBranchAndClose()
+
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        """See `IBranchScanJobSource`."""
+        errorlog.globalErrorUtility.configure('branchscanner')
+        server = get_multi_server()
+        server.setUp()
+        yield
+        server.tearDown()
 
 
 class BranchUpgradeJob(BranchJobDerived):
@@ -909,7 +922,7 @@ class RosettaUploadJob(BranchJobDerived):
                 BranchJob.job == Job.id,
                 BranchJob.branch == Branch.id,
                 Branch.last_mirrored_id == Branch.last_scanned_id,
-                Job.id.is_in(Job.ready_jobs)))
+                Job.id.is_in(Job.ready_jobs))).order_by(BranchJob.id)
         return (RosettaUploadJob(job) for job in jobs)
 
     @staticmethod
