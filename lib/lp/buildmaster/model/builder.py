@@ -437,7 +437,7 @@ class Builder(SQLBase):
         def qualify_subquery(job_type, sub_query):
             """Put the sub-query into a job type context."""
             qualified_query = """
-                ((BuildQueue.job_type != %s) OR (%%s))
+                ((BuildQueue.job_type != %s) OR EXISTS(%%s))
             """ % sqlvalues(job_type)
             qualified_query %= sub_query
             return qualified_query
@@ -445,9 +445,8 @@ class Builder(SQLBase):
         logger = self._getSlaveScannerLogger()
         candidate = None
 
-        query_tables = set(('buildqueue', 'job'))
         general_query = """
-            SELECT buildqueue.id FROM %%s
+            SELECT buildqueue.id FROM buildqueue, job
             WHERE
                 buildqueue.job = job.id
                 AND job.status = %s
@@ -474,20 +473,15 @@ class Builder(SQLBase):
         extra_queries = []
         job_classes = specific_job_classes()
         for job_type, job_class in job_classes.iteritems():
-            tables, query = job_class.addCandidateSelectionCriteria(
+            query = job_class.addCandidateSelectionCriteria(
                 self.processor, self.virtualized)
             if query == '':
                 # This job class does not need to refine candidate jobs
                 # further.
                 continue
 
-            # Table names are case-insensitive in SQL. All table names are in
-            # lower case in order to avoid duplicates in the FROM clause.
-            query_tables = query_tables.union(
-                set(table.lower() for table in tables))
             # The sub-query should only apply to jobs of the right type.
             extra_queries.append(qualify_subquery(job_type, query))
-        general_query = general_query % ', '.join(query_tables)
         query = ' AND '.join([general_query] + extra_queries) + order_clause
 
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
