@@ -54,7 +54,8 @@
                 <tal:bugtracker replace="structure view/bugtracker" />
               </span>
             </li>
-            <li tal:define="bug_supervisor context/bug_supervisor">
+            <li id="bug-supervisor"
+                tal:define="bug_supervisor context/bug_supervisor">
               Bug supervisor:<br />
               <span style="margin-left: 1em">
                 <tal:none condition="not:bug_supervisor">None set</tal:none>
@@ -70,7 +71,8 @@
                 </tal:edit-bug-supervisor>
               </span>
             </li>
-            <li tal:define="securitycontact context/security_contact">
+            <li id="bug-security"
+                tal:define="securitycontact context/security_contact">
               Security contact:<br />
               <span style="margin-left: 1em">
                 <tal:none condition="not:securitycontact">None set</tal:none>
@@ -138,16 +140,16 @@
       </tal:has_hot_bugs>
 
       <tal:no_hot_bugs condition="not: view/hot_bugtasks">
-        <p><strong>There are currently no bugs filed against
+        <p id="no-bugs-filed"><strong>There are currently no bugs filed against
           <span tal:content="context/title" />.</strong></p>
       </tal:no_hot_bugs>
     </tal:uses_malone>
 
     <tal:not_uses_malone condition="not: view/uses_launchpad_bugtracker">
-      <p><strong><span tal:content="context/title" /> does not use Launchpad for
+      <p id="no-malone"><strong><span tal:content="context/title" /> does not use Launchpad for
         bug tracking.</strong></p>
 
-      <p>To enable Launchpad for bug tracking,
+      <p id="no-malone-edit">To enable Launchpad for bug tracking,
         <a href="+edit">change details for
         <span tal:content="context/title" /></a>.</p>
     </tal:not_uses_malone>
