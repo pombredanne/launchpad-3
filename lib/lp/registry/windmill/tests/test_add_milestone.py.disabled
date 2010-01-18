@@ -87,6 +87,7 @@ class TestAddMilestone(TestCaseWithFactory):
     layer = RegistryWindmillLayer
 
     def setUp(self):
+        super(TestAddMilestone, self).setUp()
         self.client = WindmillTestClient('AddMilestone')
 
     def test_adding_milestone_on_addrelease_page(self):

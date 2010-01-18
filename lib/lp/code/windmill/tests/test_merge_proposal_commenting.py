@@ -11,9 +11,10 @@ import unittest
 import transaction
 from windmill.authoring import WindmillTestClient
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing import lpuser
 from canonical.uuid import generate_uuid
-from lp.code.windmill.testing import canonical_url, CodeWindmillLayer
+from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import login_person, TestCaseWithFactory
 
 WAIT_PAGELOAD = u'30000'

@@ -218,7 +218,7 @@ pull_branches: support_files
 
 scan_branches:
 	# Scan branches from the filesystem into the database.
-	$(PY) cronscripts/branch-scanner.py
+	$(PY) cronscripts/scan_branches.py
 
 
 sync_branches: pull_branches scan_branches mpcreationjobs
