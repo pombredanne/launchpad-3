@@ -115,9 +115,9 @@ tracking, and none of the bug lists or edit controls will be
 available.
 
     >>> sample_browser.getLink('Bugs').click()
-    >>> print sample_browser.contents
-    <!DOCTYPE...
-    ...does not use Launchpad for bug tracking...
+    >>> uses_malone_p = find_tag_by_id(sample_browser.contents, 'no-malone')
+    >>> print extract_text(uses_malone_p)
+    A product for testing things does not use Launchpad for bug tracking.
 
 We can change the settings to use Launchpad for bug tracking.
 
@@ -131,9 +131,11 @@ We can change the settings to use Launchpad for bug tracking.
 Now, information about bug tracking (bug supervisor, security contact)
 and their edit controls are available on the page.
 
-    >>> print sample_browser.contents
-    <!DOCTYPE...
-    ...Bug supervisor:...
+    >>> bug_supervisor = find_tag_by_id(
+    ...     sample_browser.contents, 'bug-supervisor')
+    >>> print extract_text(bug_supervisor)
+    Bug supervisor:
+    None set
 
 Sample Person is a member of "Warty Security Team".  However, he should not be
 able to set Warty Security Team as a bug supervisor for Test Project as he's
