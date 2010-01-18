@@ -45,6 +45,7 @@
          tal:define="search_url string:+bugs;
                      advanced_search_url string:+bugs?advanced=1">
 
+      <tal:uses_malone condition="view/uses_launchpad_bugtracker">
       <div class="portlet" style="float: right; border: none">
         <ul>
           <li id="bugtracker" tal:condition="not: view/uses_launchpad_bugtracker">
@@ -133,6 +134,7 @@
           </tr>
         </tbody>
       </table>
+    </tal:uses_malone>
 
     </div><!-- main -->
   </body>
