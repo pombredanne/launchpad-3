@@ -14,7 +14,7 @@
     <script type="text/javascript" src="/+icing/PlotKit_Packed.js"></script>
   </metal:block>
   <body>
-    <tal:side metal:fill-slot="side">
+    <tal:side metal:fill-slot="side" condition="view/uses_launchpad_bugtracker">
       <div id="involvement" class="portlet involvement">
         <ul>
           <li style="border: none">
