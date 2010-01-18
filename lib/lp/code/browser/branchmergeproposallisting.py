@@ -7,6 +7,7 @@ __metaclass__ = type
 
 __all__ = [
     'ActiveReviewsView',
+    'BranchActiveReviewsView',
     'BranchMergeProposalListingItem',
     'BranchMergeProposalListingView',
     'PersonActiveReviewsView',
@@ -17,7 +18,6 @@ from operator import attrgetter
 
 from zope.component import getUtility
 from zope.interface import implements, Interface
-from zope.publisher.interfaces import NotFound
 from zope.schema import Choice
 
 from lazr.delegates import delegates
@@ -27,11 +27,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.webapp import custom_widget, LaunchpadFormView
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
 
 from lp.code.enums import BranchMergeProposalStatus, CodeReviewVote
-from lp.code.interfaces.branch import IBranch
 from lp.code.interfaces.branchcollection import (
     IAllBranches, IBranchCollection)
 from lp.code.interfaces.branchmergeproposal import (
@@ -324,10 +324,6 @@ class ActiveReviewsView(BranchMergeProposalListingView):
         return self.user
 
     def initialize(self):
-        # Branches, despite implementing IHasMergeProposals, does not
-        # have an active reviews page.
-        if IBranch.providedBy(self.context):
-            raise NotFound(self.context, '+activereviews')
         # Work out the review groups
         self.review_groups = {}
         self.getter = getUtility(IBranchMergeProposalGetter)
@@ -399,6 +395,16 @@ class ActiveReviewsView(BranchMergeProposalListingView):
     def no_proposal_message(self):
         """Shown when there is no table to show."""
         return "%s has no active code reviews." % self.context.displayname
+
+
+class BranchActiveReviewsView(ActiveReviewsView):
+    """Branch merge proposals for a branch that are needing review."""
+
+    def getProposals(self):
+        """See `ActiveReviewsView`."""
+        candidates = self.context.landing_candidates
+        return [proposal for proposal in candidates
+                if check_permission('launchpad.View', proposal)]
 
 
 class PersonActiveReviewsView(ActiveReviewsView):
