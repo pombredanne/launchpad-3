@@ -24,8 +24,8 @@ from zope.interface import classProvides, implements
 from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
-from lp.services.job.model.job import Job
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,)
 from lp.soyuz.interfaces.build import BuildStatus
@@ -129,8 +129,8 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         self.sourcepackagename = sourcepackagename
 
     @classmethod
-    def new(cls, sourcepackage, recipe, requester, archive, 
-            date_created=None):
+    def new(
+        cls, sourcepackage, recipe, requester, archive, date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         if date_created is None:
@@ -202,3 +202,10 @@ class SourcePackageRecipeBuildJob(BuildFarmJob, Storm):
         store = IMasterStore(SourcePackageRecipeBuildJob)
         store.add(specific_job)
         return specific_job
+
+    def getTitle(self):
+        """See `IBuildFarmJob`."""
+        return "%s-%s-%s-recipe-build-job" % (
+            self.build.distroseries.displayname,
+            self.build.sourcepackagename.name,
+            self.build.archive.displayname)

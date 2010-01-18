@@ -62,7 +62,7 @@ class BuildFarmJob:
     @staticmethod
     def addCandidateSelectionCriteria(processor, virtualized):
         """See `IBuildFarmCandidateJobSelection`."""
-        return ([], '')
+        return ('')
 
     @classmethod
     def getByJob(cls, job):

@@ -57,6 +57,17 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertEqual(True, bq.virtualized)
         self.assertIs(None, bq.processor)
 
+    def test_getTitle(self):
+        # A build farm job implements getTitle().
+        spb = self.makeSourcePackageRecipeBuild()
+        job = spb.makeJob()
+        # The title describes the job and should be recognizable by users.
+        # Hence the choice of the "ingredients" below.
+        title = "%s-%s-%s-recipe-build-job" % (
+            job.build.distroseries.displayname, job.build.sourcepackagename,
+            job.build.archive.displayname)
+        self.assertEqual(job.getTitle(), title)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
