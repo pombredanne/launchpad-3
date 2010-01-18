@@ -3159,6 +3159,14 @@ class BugTasksAndNominationsView(LaunchpadView):
         else:
             return None
 
+    @property
+    def bug_heat_html(self):
+        """HTML representation of the bug heat."""
+        view = getMultiAdapter(
+            (self.context, self.request),
+            name='+bug-heat')
+        return view()
+
 
 class BugTaskTableRowView(LaunchpadView):
     """Browser class for rendering a bugtask row on the bug page."""

@@ -3,64 +3,72 @@
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   omit-tag="">
 
-<tal:affects-me-too
-    tal:condition="view/displayAlsoAffectsLinks">
-  <tal:editable
-      condition="context/menu:context/affectsmetoo/enabled">
-    <div class="actions">
-      <span id="affectsmetoo" style="display: inline"
-            tal:define="affected view/current_user_affected_status">
-        <tal:comment condition="nothing">
-          This .static section is shown in browsers with javascript
-          enabled, and before setup_me_too is run.
-        </tal:comment>
-        <span class="static">
-          <tal:affected condition="affected">
-            <img width="14" height="14" src="/@@/flame-icon" alt="" />
-            <tal:statement replace="view/affected_statement" />
-          </tal:affected>
-          <tal:not-affected condition="not:affected">
-            <tal:statement replace="view/affected_statement" />
-          </tal:not-affected>
-          <a href="+affectsmetoo">
-            <img class="editicon" src="/@@/edit" alt="Edit" />
-          </a>
-        </span>
-        <tal:comment condition="nothing">
-          This .dynamic section is used by setup_me_too to display
-          controls and information in the correct places.
-        </tal:comment>
-        <span class="dynamic unseen">
-          <img src="/@@/flame-icon" alt=""/>
-          <a href="+affectsmetoo" class="js-action"
-             ><span class="value" tal:content="view/affected_statement" /></a>
-          <a href="+affectsmetoo">
-            <img class="editicon" src="/@@/edit" alt="Edit" />
-          </a>
-        </span>
-        <script type="text/javascript" tal:content="string:
-          LPS.use('event', 'bugs.bugtask_index', function(Y) {
-              Y.on('load', function(e) {
-                  Y.bugs.setup_me_too(
-                      ${view/current_user_affected_js_status},
-                      ${view/other_users_affected_count});
-              }, window);
-          });
-          ">
-        </script>
-      </span>
-    </div>
-  </tal:editable>
-  <tal:not-editable
-      condition="not:context/menu:context/affectsmetoo/enabled">
-    <div class="actions"
-         tal:define="statement view/anon_affected_statement"
-         tal:condition="statement">
-      <span id="affectsmetoo" style="display: inline" tal:content="statement" />
-    </div>
-  </tal:not-editable>
-</tal:affects-me-too>
-
+<table style="width: 100%">
+  <tr>
+    <td>
+        <tal:affects-me-too
+            tal:condition="view/displayAlsoAffectsLinks">
+          <tal:editable
+              condition="context/menu:context/affectsmetoo/enabled">
+            <div class="actions">
+              <span id="affectsmetoo" style="display: inline"
+                    tal:define="affected view/current_user_affected_status">
+                <tal:comment condition="nothing">
+                  This .static section is shown in browsers with javascript
+                  enabled, and before setup_me_too is run.
+                </tal:comment>
+                <span class="static">
+                  <tal:affected condition="affected">
+                    <img width="14" height="14" src="/@@/flame-icon" alt="" />
+                    <tal:statement replace="view/affected_statement" />
+                  </tal:affected>
+                  <tal:not-affected condition="not:affected">
+                    <tal:statement replace="view/affected_statement" />
+                  </tal:not-affected>
+                  <a href="+affectsmetoo">
+                    <img class="editicon" src="/@@/edit" alt="Edit" />
+                  </a>
+                </span>
+                <tal:comment condition="nothing">
+                  This .dynamic section is used by setup_me_too to display
+                  controls and information in the correct places.
+                </tal:comment>
+                <span class="dynamic unseen">
+                  <img src="/@@/flame-icon" alt=""/>
+                  <a href="+affectsmetoo" class="js-action"
+                     ><span class="value" tal:content="view/affected_statement" /></a>
+                  <a href="+affectsmetoo">
+                    <img class="editicon" src="/@@/edit" alt="Edit" />
+                  </a>
+                </span>
+                <script type="text/javascript" tal:content="string:
+                  LPS.use('event', 'bugs.bugtask_index', function(Y) {
+                      Y.on('load', function(e) {
+                          Y.bugs.setup_me_too(
+                              ${view/current_user_affected_js_status},
+                              ${view/other_users_affected_count});
+                      }, window);
+                  });
+                  ">
+                </script>
+              </span>
+            </div>
+          </tal:editable>
+          <tal:not-editable
+              condition="not:context/menu:context/affectsmetoo/enabled">
+            <div class="actions"
+                 tal:define="statement view/anon_affected_statement"
+                 tal:condition="statement">
+              <span id="affectsmetoo" style="display: inline" tal:content="statement" />
+            </div>
+          </tal:not-editable>
+        </tal:affects-me-too>
+    </td>
+    <td id="bug-heat" style="text-align: right">
+      Heat: <tal:heat replace="structure view/bug_heat_html" />
+    </td>
+  </tr>
+</table>
 <script type="text/javascript">
   function toggleFormVisibility(row_id) {
     row = document.getElementById(row_id)
