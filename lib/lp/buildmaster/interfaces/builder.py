@@ -12,6 +12,7 @@ __all__ = [
     'BuildJobMismatch',
     'BuildSlaveFailure',
     'CannotBuild',
+    'CannotFetchFile',
     'CannotResumeHost',
     'IBuilder',
     'IBuilderSet',
@@ -24,14 +25,21 @@ from zope.schema import Bool, Choice, Field, Text, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Description
 from lp.registry.interfaces.role import IHasOwner
-from lp.buildmaster.interfaces.buildfarmjobbehavior import (
-    IBuildFarmJobBehavior)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.validators.url import builder_url_validator
 
 
 class BuildDaemonError(Exception):
     """The class of errors raised by the buildd classes"""
+
+
+class CannotFetchFile(BuildDaemonError):
+    """The slave was unable to fetch the file."""
+
+    def __init__(self, file_url, error_information):
+        super(CannotFetchFile, self).__init__()
+        self.file_url = file_url
+        self.error_information = error_information
 
 
 class ProtocolVersionMismatch(BuildDaemonError):
@@ -59,7 +67,7 @@ class BuildSlaveFailure(BuildDaemonError):
     """The build slave has suffered an error and cannot be used."""
 
 
-class IBuilder(IHasOwner, IBuildFarmJobBehavior):
+class IBuilder(IHasOwner):
     """Build-slave information and state.
 
     Builder instance represents a single builder slave machine within the
@@ -133,8 +141,6 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
 
     currentjob = Attribute("BuildQueue instance for job being processed.")
 
-    status = Attribute("Generated status information")
-
     is_available = Bool(
         title=_("Whether or not a builder is available for building "
                 "new jobs. "),
@@ -143,16 +149,6 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
     current_build_behavior = Field(
         title=u"The current behavior of the builder for the current job.",
         required=False)
-
-    def cacheFileOnSlave(logger, libraryfilealias):
-        """Ask the slave to cache a librarian file to its local disk.
-
-        This is used in preparation for a build.
-
-        :param logger: A logger used for providing debug information.
-        :param libraryfilealias: A library file alias representing the needed
-            file.
-        """
 
     def checkCanBuildForDistroArchSeries(distro_arch_series):
         """Check that the slave can compile for the given distro_arch_release.
@@ -179,7 +175,7 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
     def cleanSlave():
         """Clean any temporary files from the slave."""
 
-    def failbuilder(reason):
+    def failBuilder(reason):
         """Mark builder as failed for a given reason."""
 
     def requestAbort():
@@ -220,6 +216,12 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
             the status.
         """
 
+    def updateBuild(queueItem):
+        """Verify the current build job status.
+
+        Perform the required actions for each state.
+        """
+
     def startBuild(build_queue_item, logger):
         """Start a build on this builder.
 
@@ -247,7 +249,7 @@ class IBuilder(IHasOwner, IBuildFarmJobBehavior):
 
         In case of a virtualized/PPA buildd slave an attempt will be made
         to reset it first (using `resumeSlaveHost`). Only if that fails
-        will it be (marked as) failed (using `failbuilder`).
+        will it be (marked as) failed (using `failBuilder`).
 
         Conversely, a non-virtualized buildd slave will be (marked as)
         failed straightaway.

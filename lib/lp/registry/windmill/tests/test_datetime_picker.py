@@ -22,6 +22,7 @@ class TestDateTimeCalendarWidget(TestCaseWithFactory):
     layer = RegistryWindmillLayer
 
     def setUp(self):
+        super(TestDateTimeCalendarWidget, self).setUp()
         self.client = WindmillTestClient('DateTimeCalendarWidget')
 
     def test_datetime_calendar_widget(self):
