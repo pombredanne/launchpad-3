@@ -1171,7 +1171,8 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
                 continue
             token = '%s/%s' % (ppa.owner.name, ppa.name)
             terms.append(
-                SimpleTerm(ppa, token, ppa.displayname))
+                    SimpleTerm(ppa, token, '%s (%s)' % 
+                                            (ppa.displayname, token)))
 
         return form.Fields(
             Choice(__name__='destination_archive',
