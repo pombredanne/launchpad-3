@@ -184,8 +184,7 @@ class SourcePackageRecipeBuildJob(Storm):
 
     def getTitle(self):
         """See `IBuildFarmJob`."""
-        spb = self.build
         return "%s-%s-%s-recipe-build-job" % (
-            spb.distroseries.displayname, spb.sourcepackagename.name,
-            spb.archive.displayname)
-
+            self.build.distroseries.displayname,
+            self.build.sourcepackagename.name,
+            self.build.archive.displayname)
