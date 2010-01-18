@@ -494,12 +494,14 @@ class TestBuilddManagerScan(TrialTestCase):
 
     def assertBuildingJob(self, job, builder, logtail=None):
         """Assert the given job is building on the given builder."""
+        from lp.services.job.interfaces.job import JobStatus
         if logtail is None:
             logtail = 'Dummy sampledata entry, not processing'
 
         self.assertTrue(job is not None)
         self.assertEqual(job.builder, builder)
         self.assertTrue(job.date_started is not None)
+        self.assertEqual(job.job.status, JobStatus.RUNNING)
         build = getUtility(IBuildSet).getByQueueEntry(job)
         self.assertEqual(build.buildstate, BuildStatus.BUILDING)
         self.assertEqual(job.logtail, logtail)
