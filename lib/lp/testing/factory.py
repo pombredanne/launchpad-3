@@ -86,7 +86,8 @@ from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
-from canonical.launchpad.webapp.interfaces import IStoreSelector
+from canonical.launchpad.webapp.interfaces import (
+    IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 from lp.code.enums import (
     BranchMergeProposalStatus, BranchSubscriptionNotificationLevel,
     BranchType, CodeImportMachineState, CodeImportReviewStatus,
@@ -125,8 +126,10 @@ from lp.registry.interfaces.sourcepackagename import (
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from lp.services.worlddata.interfaces.language import ILanguageSet
 from lp.buildmaster.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
+from lp.soyuz.model.buildqueue import BuildQueue
 from lp.testing import run_with_login, time_counter
 
 SPACE = ' '
@@ -1614,6 +1617,19 @@ class LaunchpadObjectFactory(ObjectFactory):
             recipe=recipe,
             archive=archive,
             requester=requester)
+
+    def makeSourcePackageRecipeBuildJob(self, score=9876):
+        """Create a `SourcePackageRecipeBuildJob` and a `BuildQueue` for
+        testing."""
+        recipe_build = self.makeSourcePackageRecipeBuild()
+        recipe_build_job = recipe_build.makeJob()
+
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        bq = BuildQueue(
+            job=recipe_build_job.job, lastscore=score,
+            job_type=BuildFarmJobType.RECIPEBRANCHBUILD)
+        store.add(bq)
+        return bq
 
     def makePOTemplate(self, productseries=None, distroseries=None,
                        sourcepackagename=None, owner=None, name=None,
