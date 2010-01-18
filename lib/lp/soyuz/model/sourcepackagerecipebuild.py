@@ -19,8 +19,9 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
-from lp.services.job.model.job import Job
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.registry.interfaces.pocket import PackagePublishingPocket
+from lp.services.job.model.job import Job
 from lp.soyuz.adapters.archivedependencies import (
     default_component_dependency_name,)
 from lp.soyuz.interfaces.build import BuildStatus
@@ -65,7 +66,8 @@ class SourcePackageRecipeBuild(Storm):
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
-    sourcepackagename = Reference(sourcepackagename_id, 'SourcePackageName.id')
+    sourcepackagename = Reference(
+        sourcepackagename_id, 'SourcePackageName.id')
 
     @property
     def pocket(self):
@@ -101,7 +103,8 @@ class SourcePackageRecipeBuild(Storm):
         self.sourcepackagename = sourcepackagename
 
     @classmethod
-    def new(cls, sourcepackage, recipe, requester, archive, date_created=None):
+    def new(
+        cls, sourcepackage, recipe, requester, archive, date_created=None):
         """See `ISourcePackageRecipeBuildSource`."""
         store = IMasterStore(SourcePackageRecipeBuild)
         if date_created is None:
@@ -126,7 +129,7 @@ class SourcePackageRecipeBuild(Storm):
         return specific_job
 
 
-class SourcePackageRecipeBuildJob(Storm):
+class SourcePackageRecipeBuildJob(BuildFarmJob, Storm):
 
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
@@ -143,7 +146,7 @@ class SourcePackageRecipeBuildJob(Storm):
         source_package_build_id, 'SourcePackageRecipeBuild.id')
 
     processor = None
-    virtualized = False
+    virtualized = True
 
     def __init__(self, build, job):
         super(SourcePackageRecipeBuildJob, self).__init__()
