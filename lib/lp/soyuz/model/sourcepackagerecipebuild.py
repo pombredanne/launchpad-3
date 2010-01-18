@@ -181,3 +181,11 @@ class SourcePackageRecipeBuildJob(Storm):
         store = IMasterStore(SourcePackageRecipeBuildJob)
         store.add(specific_job)
         return specific_job
+
+    def getTitle(self):
+        """See `IBuildFarmJob`."""
+        spb = self.build
+        return "%s-%s-%s-recipe-build-job" % (
+            spb.distroseries.displayname, spb.sourcepackagename.name,
+            spb.archive.displayname)
+

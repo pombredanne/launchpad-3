@@ -48,6 +48,15 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         job = spb.makeJob()
         self.assertProvides(job, ISourcePackageRecipeBuildJob)
 
+    def test_getTitle(self):
+        # A build farm job implements getTitle().
+        spb = self.makeSourcePackageRecipeBuild()
+        job = spb.makeJob()
+        title_prefix = "%s-%s-%s" % (
+            job.build.distroseries.displayname, job.build.sourcepackagename,
+            job.build.archive.displayname)
+        self.assertTrue(job.getTitle().startswith(title_prefix))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
