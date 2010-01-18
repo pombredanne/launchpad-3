@@ -163,6 +163,10 @@ COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
 
+-- BugHeatJob
+COMMENT ON TABLE BugHeatJob IS 'A job for recalculating bug heat.';
+COMMENT ON COLUMN BugHeatJob.bug IS 'The bug for which heat should be recalculated';
+
 -- BugNomination
 COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distroseries or productseries';
 COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';
