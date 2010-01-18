@@ -22,6 +22,7 @@ class TestProjectLicenses(TestCaseWithFactory):
     layer = RegistryWindmillLayer
 
     def setUp(self):
+        TestCaseWithFactory.setUp(self)
         self.client = WindmillTestClient('TestProjectLicenses')
 
     def test_project_licenses(self):
