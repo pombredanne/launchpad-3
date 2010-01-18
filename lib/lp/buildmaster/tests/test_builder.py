@@ -234,7 +234,7 @@ class TestFindBuildCandidateDistroArchive(TestFindBuildCandidateBase):
         # Recipe builds with a higher score are selected first.
         # This test is run in a context with mixed recipe and binary builds.
 
-        self.assertTrue(self.frog_builder.processor is not None)
+        self.assertIsNot(self.frog_builder.processor, None)
         self.assertEqual(self.frog_builder.virtualized, True)
 
         self.assertEqual(self.gedit_build.buildqueue_record.lastscore, 2505)
@@ -254,12 +254,10 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
     # These tests operate in a "recipe builds only" setting.
     # Please see also bug #507782.
 
-    def deleteBinaryBuildJobs(self):
-        """Delete all `BuildQueue`, `BuildPackageJob` and `Job` instances
-        related to binary builds."""
+    def clearBuildQueue(self):
+        """Delete all `BuildQueue`, XXXJOb and `Job` instances."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        for bq in store.find(
-            BuildQueue, BuildQueue.job_type == BuildFarmJobType.PACKAGEBUILD):
+        for bq in store.find(BuildQueue):
             bq.destroySelf()
 
     def setUp(self):
@@ -270,15 +268,15 @@ class TestFindRecipeBuildCandidates(TestFindBuildCandidateBase):
         self.non_ppa = self.factory.makeArchive(
             name="primary", purpose=ArchivePurpose.PRIMARY)
 
+        self.clearBuildQueue()
         self.bq1 = self.factory.makeSourcePackageRecipeBuildJob(3333)
         self.bq2 = self.factory.makeSourcePackageRecipeBuildJob(4333)
-        self.deleteBinaryBuildJobs()
 
     def test_findBuildCandidate_with_highest_score(self):
         # The recipe build with the highest score is selected first.
         # This test is run in a "recipe builds only" context.
 
-        self.assertTrue(self.frog_builder.processor is not None)
+        self.assertIsNot(self.frog_builder.processor, None)
         self.assertEqual(self.frog_builder.virtualized, True)
 
         next_job = removeSecurityProxy(
