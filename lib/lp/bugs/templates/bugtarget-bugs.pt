@@ -136,6 +136,15 @@
         </table>
     </tal:uses_malone>
 
+    <tal:not_uses_malone condition="not: view/uses_launchpad_bugtracker">
+      <p><strong><span tal:content="context/title" /> does not use Launchpad for
+        bug tracking.</strong></p>
+
+      <p>To enable Launchpad for bug tracking,
+        <a href="+edit">change details for
+        <span tal:content="context/title" /></a>.</p>
+    </tal:not_uses_malone>
+
     </div><!-- main -->
   </body>
 </html>
