@@ -43,7 +43,9 @@ page.
 We should be sure that the edit form get only the non admin fields.
 
   >>> browser.getControl(name='field.name').value
-  'evolution-2.2'
+  Traceback (most recent call last):
+  ...
+  LookupError:...
   >>> browser.getControl(name='field.description').value
   'Template for evolution in hoary'
   >>> browser.getControl(name='field.header').value
