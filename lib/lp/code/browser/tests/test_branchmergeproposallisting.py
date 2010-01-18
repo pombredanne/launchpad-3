@@ -10,7 +10,6 @@ from unittest import TestLoader
 
 import pytz
 import transaction
-from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -297,6 +296,14 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
             bmp.target_branch.owner, 'rev-id', review_date)
         item = BranchMergeProposalListingItem(bmp, None, None)
         self.assertEqual(review_date, item.sort_key)
+
+    def test_sort_key_wip(self):
+        # If the proposal is a work in probress, the date_created is used.
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+        login_person(bmp.target_branch.owner)
+        item = BranchMergeProposalListingItem(bmp, None, None)
+        self.assertEqual(bmp.date_created, item.sort_key)
 
 
 class ActiveReviewSortingTest(TestCaseWithFactory):
