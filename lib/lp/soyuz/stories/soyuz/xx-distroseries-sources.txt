@@ -243,11 +243,8 @@ the profile page for that person:
   >>> user_browser.open(
   ...     "http://launchpad.dev/ubuntu/breezy-autotest/+source/"
   ...     "commercialpackage/1.0-1")
-  >>> changelog = find_tag_by_id(
-  ...     user_browser.contents, 'commercialpackage_1.0-1')
-  >>> print extract_text(changelog.find('a'))
-  foo.bar@canonical.com
-
+  >>> print user_browser.getLink('foo.bar@canonical.com').url
+  http://launchpad.dev/~name16
 
 Let's check how the page behaves if we no files are present:
 
