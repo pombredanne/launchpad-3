@@ -46,94 +46,94 @@
                      advanced_search_url string:+bugs?advanced=1">
 
       <tal:uses_malone condition="view/uses_launchpad_bugtracker">
-      <div class="portlet" style="float: right; border: none">
-        <ul>
-          <li id="bugtracker" tal:condition="not: view/uses_launchpad_bugtracker">
-            <strong>Bug tracker:</strong><br />
-            <span style="margin-left: 1em">
-              <tal:bugtracker replace="structure view/bugtracker" />
-            </span>
-          </li>
-          <li tal:define="bug_supervisor context/bug_supervisor">
-            Bug supervisor:<br />
-            <span style="margin-left: 1em">
-              <tal:none condition="not:bug_supervisor">None set</tal:none>
-              <a tal:condition="bug_supervisor"
-                 tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
-              <tal:edit-bug-supervisor
-                  condition="context/menu:bugs/bugsupervisor|nothing">
-                <a tal:define="link context/menu:bugs/bugsupervisor"
-                   tal:condition="link/enabled"
-                   tal:attributes="href link/url; title link/text">
-                  <img tal:attributes="alt link/text" src="/@@/edit" />
-                </a> 
-              </tal:edit-bug-supervisor>
-            </span>
-          </li>
-          <li tal:define="securitycontact context/security_contact">
-            Security contact:<br />
-            <span style="margin-left: 1em">
-              <tal:none condition="not:securitycontact">None set</tal:none>
-              <a tal:condition="securitycontact"
-                 tal:replace="structure securitycontact/fmt:link">
-                Billy Anderson
-              </a>
-              <tal:edit-securitycontact
-                  condition="context/menu:bugs/securitycontact|nothing">
-                <a tal:define="link context/menu:bugs/securitycontact"
-                   tal:condition="link/enabled"
-                   tal:attributes="href link/url; title link/text">
-                  <img tal:attributes="alt link/text" src="/@@/edit" />
+        <div class="portlet" style="float: right; border: none">
+          <ul>
+            <li id="bugtracker" tal:condition="not: view/uses_launchpad_bugtracker">
+              <strong>Bug tracker:</strong><br />
+              <span style="margin-left: 1em">
+                <tal:bugtracker replace="structure view/bugtracker" />
+              </span>
+            </li>
+            <li tal:define="bug_supervisor context/bug_supervisor">
+              Bug supervisor:<br />
+              <span style="margin-left: 1em">
+                <tal:none condition="not:bug_supervisor">None set</tal:none>
+                <a tal:condition="bug_supervisor"
+                   tal:replace="structure bug_supervisor/fmt:link">Bob Johnson</a>
+                <tal:edit-bug-supervisor
+                    condition="context/menu:bugs/bugsupervisor|nothing">
+                  <a tal:define="link context/menu:bugs/bugsupervisor"
+                     tal:condition="link/enabled"
+                     tal:attributes="href link/url; title link/text">
+                    <img tal:attributes="alt link/text" src="/@@/edit" />
+                  </a> 
+                </tal:edit-bug-supervisor>
+              </span>
+            </li>
+            <li tal:define="securitycontact context/security_contact">
+              Security contact:<br />
+              <span style="margin-left: 1em">
+                <tal:none condition="not:securitycontact">None set</tal:none>
+                <a tal:condition="securitycontact"
+                   tal:replace="structure securitycontact/fmt:link">
+                  Billy Anderson
                 </a>
-              </tal:edit-securitycontact>
-            </span>
-          </li>
-          <li>
-          </li>
-        </ul>
-      </div>
+                <tal:edit-securitycontact
+                    condition="context/menu:bugs/securitycontact|nothing">
+                  <a tal:define="link context/menu:bugs/securitycontact"
+                     tal:condition="link/enabled"
+                     tal:attributes="href link/url; title link/text">
+                    <img tal:attributes="alt link/text" src="/@@/edit" />
+                  </a>
+                </tal:edit-securitycontact>
+              </span>
+            </li>
+            <li>
+            </li>
+          </ul>
+        </div>
 
-      <div class="search-box">
-        <metal:search
-          use-macro="context/@@+bugtarget-macros-search/simple-search-form"
-        />
-      </div>
-      <script type="text/javascript"><!--
-           $('field.searchtext').focus();
-      --></script>
+        <div class="search-box">
+          <metal:search
+            use-macro="context/@@+bugtarget-macros-search/simple-search-form"
+          />
+        </div>
+        <script type="text/javascript"><!--
+             $('field.searchtext').focus();
+        --></script>
 
-      <h2 style="margin-top: 1em">Hot bugs</h2>
+        <h2 style="margin-top: 1em">Hot bugs</h2>
 
-      <table class="listing" id="hot-bugs">
-        <thead>
-          <tr>
-            <th colspan="3">Summary</th>
-            <th>Status</th>
-            <th>Importance</th>
-            <th>Last changed</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr tal:repeat="bugtask view/hot_bugtasks">
-            <td class="icon left">
-              <img alt="" src="/@@/bug" />
-            </td>
-            <td style="text-align: right">
-              #<span tal:replace="bugtask/bug/id" />
-            </td>
-            <td>
-              <a tal:attributes="href bugtask/fmt:url"
-                 tal:content="bugtask/bug/title" />
-            </td>
-            <td tal:attributes="class string:status${bugtask/status/name}"
-                tal:content="bugtask/status/title" />
-            <td tal:attributes="
-                  class string:importance${bugtask/importance/name}"
-                tal:content="bugtask/importance/title" />
-            <td tal:content="bugtask/bug/date_last_updated/fmt:displaydate" />
-          </tr>
-        </tbody>
-      </table>
+        <table class="listing" id="hot-bugs">
+          <thead>
+            <tr>
+              <th colspan="3">Summary</th>
+              <th>Status</th>
+              <th>Importance</th>
+              <th>Last changed</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr tal:repeat="bugtask view/hot_bugtasks">
+              <td class="icon left">
+                <img alt="" src="/@@/bug" />
+              </td>
+              <td style="text-align: right">
+                #<span tal:replace="bugtask/bug/id" />
+              </td>
+              <td>
+                <a tal:attributes="href bugtask/fmt:url"
+                   tal:content="bugtask/bug/title" />
+              </td>
+              <td tal:attributes="class string:status${bugtask/status/name}"
+                  tal:content="bugtask/status/title" />
+              <td tal:attributes="
+                    class string:importance${bugtask/importance/name}"
+                  tal:content="bugtask/importance/title" />
+              <td tal:content="bugtask/bug/date_last_updated/fmt:displaydate" />
+            </tr>
+          </tbody>
+        </table>
     </tal:uses_malone>
 
     </div><!-- main -->
