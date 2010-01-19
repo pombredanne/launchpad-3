@@ -307,7 +307,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         # Avoid circular import failures.
         # We join to SourcePackageName, ProductSeries, and Product to cache
-        # the objects that are implcitly needed to work with a
+        # the objects that are implicitly needed to work with a
         # Packaging object.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
@@ -386,7 +386,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def _current_sourcepackage_joins_and_conditions(self):
-        """The SQl joins and conditions to prioritise source packages."""
+        """The SQL joins and conditions to prioritise source packages."""
         heat_score = ("""
             LEFT JOIN (
                 SELECT
