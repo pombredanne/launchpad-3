@@ -1252,6 +1252,11 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         else:
             return 'None specified'
 
+    @property
+    def hot_bugs(self):
+        """Return the 10 hotest bugs according to IBug.heat."""
+        return []
+
 
 class BugTargetBugTagsView(LaunchpadView):
     """Helper methods for rendering the bug tags portlet."""

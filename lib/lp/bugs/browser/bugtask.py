@@ -2718,15 +2718,6 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
         return IDistributionSourcePackage(self.context, None)
 
     @property
-    def hot_bugtasks(self):
-        """Return the 10 most recently updated bugtasks for this target."""
-        params = BugTaskSearchParams(
-            orderby="-date_last_updated", omit_dupes=True, user=self.user,
-            status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        search = self.context.searchTasks(params)
-        return list(search[:10])
-
-    @property
     def addquestion_url(self):
         """Return the URL for the +addquestion view for the context."""
         if IQuestionTarget.providedBy(self.context):
