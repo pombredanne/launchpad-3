@@ -112,8 +112,10 @@ class BranchMergeProposalListingItem:
         """
         if self.context.date_review_requested is not None:
             return self.context.date_review_requested
-        else:
+        elif self.context.date_reviewed is not None:
             return self.context.date_reviewed
+        else:
+            return self.context.date_created
 
 
 class BranchMergeProposalListingBatchNavigator(TableBatchNavigator):

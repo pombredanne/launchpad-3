@@ -7,6 +7,7 @@
 __metaclass__ = type
 
 import os
+import re
 import sys
 import thread
 import threading
@@ -36,6 +37,7 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.config import config, dbconfig, DatabaseConfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.launchpad.interfaces import IMasterObject, IMasterStore
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp.dbpolicy import MasterDatabasePolicy
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, DEFAULT_FLAVOR, IStoreSelector,
@@ -277,11 +279,13 @@ class ReadOnlyModeConnection(PostgresConnection):
             # is raised when an attempt is made to make changes when
             # the connection has been put in read-only mode.
             if exception.pgcode == '25006':
-                raise ReadOnlyModeViolation, None, sys.exc_info()[2]
+                raise ReadOnlyModeViolation(None, sys.exc_info()[2])
             raise
 
 
 class LaunchpadDatabase(Postgres):
+
+    _dsn_user_re = re.compile('user=[^ ]*')
 
     def __init__(self, uri):
         # The uri is just a property name in the config, such as main_master
@@ -292,6 +296,13 @@ class LaunchpadDatabase(Postgres):
         self._uri = uri
         # A unique name for this database connection.
         self.name = uri.database
+
+    @property
+    def dsn_without_user(self):
+        """This database's dsn without the 'user=...' bit."""
+        assert self._dsn is not None, (
+            'Must not be called before self._dsn has been set.')
+        return self._dsn_user_re.sub('', self._dsn)
 
     def raw_connect(self):
         # Prevent database connections from the main thread if
@@ -359,7 +370,7 @@ class LaunchpadDatabase(Postgres):
         If we are running in read-only mode, returns a
         ReadOnlyModeConnection. Otherwise it returns the Storm default.
         """
-        if config.launchpad.read_only:
+        if is_read_only():
             return ReadOnlyModeConnection
         return super(LaunchpadDatabase, self).connection_factory
 
