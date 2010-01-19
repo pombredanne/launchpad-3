@@ -20,6 +20,7 @@ __all__ = [
     'BranchEditMenu',
     'BranchInProductView',
     'BranchSparkView',
+    'BranchUpgradeView',
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
@@ -881,6 +882,28 @@ class BranchDeletionView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
+
+
+class BranchUpgradeView(LaunchpadFormView):
+    """Used to upgrade a branch."""
+
+    schema = IBranch
+    field_names = []
+
+    @property
+    def page_title(self):
+        return smartquote('Upgrade branch "%s"' % self.context.displayname)
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+    cancel_url = next_url
+
+    @action('Upgrade', name='upgrade_branch')
+    def upgrade_branch_action(self, action, data):
+        from lp.code.model.branchjob import BranchUpgradeJob
+        job = BranchUpgradeJob(self.context)
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
