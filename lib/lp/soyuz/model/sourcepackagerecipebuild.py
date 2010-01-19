@@ -162,7 +162,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def estimateDuration(self):
         """See `IBuildBase`."""
-        # XXX wgrant 2009-01-15 bug=507764: Need a more useful value.
+        # XXX: wgrant 2009-01-19 bug=507764: Need proper implementation.
         return datetime.timedelta(minutes=2)
 
     def storeUploadLog(self, content):
