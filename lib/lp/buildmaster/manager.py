@@ -87,6 +87,10 @@ class RecordingSlave:
         self.ensurepresent(
             libraryfilealias.content.sha1, libraryfilealias.http_url, '', '')
 
+    def sendFileToSlave(self, *args):
+        """Helper to send a file to this builder."""
+        return self.ensurepresent(*args)
+
     def ensurepresent(self, *args):
         """Download files needed for the build."""
         self.calls.append(('ensurepresent', args))
