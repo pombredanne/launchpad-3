@@ -142,6 +142,8 @@
       <tal:no_hot_bugs condition="not: view/hot_bugtasks">
         <p id="no-bugs-filed"><strong>There are currently no bugs filed against
           <tal:project_title replace="context/title" />.</strong></p>
+
+        <p id="no-bugs-report"><a href="+filebug">Report a bug.</a></p>
       </tal:no_hot_bugs>
     </tal:uses_malone>
 
@@ -149,9 +151,7 @@
       <p id="no-malone"><strong><tal:project_title replace="context/title" /> does not use Launchpad for
         bug tracking.</strong></p>
 
-      <p id="no-malone-edit">To enable Launchpad for bug tracking,
-        <a href="+edit">change details for
-        <tal:project_title replace="context/title" /></a>.</p>
+      <p id="no-malone-edit"><a href="+edit">Enable bug tracking.</a></p>
     </tal:not_uses_malone>
 
     </div><!-- main -->
