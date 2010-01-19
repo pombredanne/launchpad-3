@@ -296,9 +296,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             value_type=Reference(schema=IPerson),
             readonly=True))
 
-    heat = Int(
-        title=_("The 'heat' of the bug"),
-        required=False, readonly=True)
+    heat = exported(
+        Int(title=_("The 'heat' of the bug"),
+        required=False, readonly=True))
 
     # Adding related BugMessages provides a hook for getting at
     # BugMessage.visible when building bug comments.
