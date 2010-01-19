@@ -32,9 +32,9 @@
 
     <browser:page
         for="canonical.launchpad.interfaces.launchpad.ITestOpenIDApplication"
-        class="canonical.launchpad.webapp.testopenid.TestOpenIDAuthView"
+        class="canonical.launchpad.webapp.testopenid.TestOpenIDView"
         permission="zope.Public"
-        name="+openid-auth"
+        name="+openid"
         />
     <browser:page
         for="canonical.launchpad.interfaces.launchpad.ITestOpenIDApplication"
@@ -42,5 +42,10 @@
         permission="zope.Public"
         name="+index"
         />
-
+    <browser:page
+        for="canonical.launchpad.interfaces.launchpad.ITestOpenIDApplication"
+        class="canonical.launchpad.webapp.testopenid.TestOpenIDLoginView"
+        permission="zope.Public"
+        name="+auth"
+        />
 </configure>

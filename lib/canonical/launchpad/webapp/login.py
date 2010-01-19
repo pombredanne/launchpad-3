@@ -211,7 +211,7 @@ class OpenIDLogin(LaunchpadView):
         consumer = self._getConsumer()
         self.openid_request = consumer.begin(
             #allvhosts.configs['openid'].rooturl)
-            'https://launchpad.dev/testopenid')
+            'https://testopenid.launchpad.dev/')
 
         return_to = self.return_to_url
         trust_root = self.request.getApplicationURL()
@@ -305,6 +305,8 @@ class OpenIDLoginErrorView(LaunchpadView):
 
     def __init__(self, context, request, openid_response):
         super(OpenIDLoginErrorView, self).__init__(context, request)
+        if self.account is not None:
+            raise Exception(openid_response)
         assert self.account is None, (
             "Don't try to render this page when the user is logged in.")
         if openid_response.status == CANCEL:
