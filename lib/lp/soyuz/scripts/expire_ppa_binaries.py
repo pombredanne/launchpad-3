@@ -54,19 +54,6 @@ class PPABinaryExpirer(LaunchpadCronScript):
             help=("The number of days after which to expire binaries. "
                   "Must be specified."))
 
-    def _exclusionClause(self, stay_of_execution):
-        """Don't expire files in any PPAs matching this clause."""
-        # Avoid circular imports.
-        from lp.soyuz.interfaces.archive import ArchivePurpose
-        return """
-            p.name IN %s
-            OR a.private IS TRUE
-            OR a.purpose != %s
-            OR dateremoved >
-                CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval %s
-            OR dateremoved IS NULL)
-            """ % (self.blacklist, ArchivePurpose.PPA, stay_of_execution)
-
     def determineSourceExpirables(self, num_days):
         """Return expirable libraryfilealias IDs."""
         # Avoid circular imports.
