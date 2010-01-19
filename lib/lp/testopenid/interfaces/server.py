@@ -2,8 +2,9 @@
 
 __metaclass__ = type
 __all__ = [
-    'ITestOpenIDLoginForm',
     'ITestOpenIDApplication',
+    'ITestOpenIDLoginForm',
+    'ITestOpenIDPersistentIdentity',
     ]
 
 from zope.interface import Interface
@@ -11,6 +12,8 @@ from zope.schema import TextLine
 
 from canonical.launchpad.fields import PasswordField
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+
+from lp.services.openid.interfaces.openid import IOpenIDPersistentIdentity
 
 
 class ITestOpenIDApplication(ILaunchpadApplication):
@@ -22,3 +25,8 @@ class ITestOpenIDLoginForm(Interface):
     password = PasswordField(title=u'Password', required=False)
     nonce = TextLine(
         title=u'Nonce', required=False, description=u'Unique value')
+
+
+class ITestOpenIDPersistentIdentity(IOpenIDPersistentIdentity):
+    pass
+

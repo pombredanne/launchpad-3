@@ -14,33 +14,15 @@
       <allow interface="lp.testopenid.interfaces.server.ITestOpenIDApplication"/>
     </securedutility>
 
-    <adapter
-        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
-        for="lp.testopenid.interfaces.server.ITestOpenIDApplication"
-        factory="lp.testopenid.browser.server.TestOpenIDRootUrlData"
-        />
+    <class class=".adapters.openid.TestOpenIDPersistentIdentity">
+      <allow interface=".interfaces.server.ITestOpenIDPersistentIdentity" />
+    </class>
 
-    <browser:defaultView
-        for="lp.testopenid.interfaces.server.ITestOpenIDApplication"
-        name="+index"
-        />
+    <adapter 
+      factory=".adapters.openid.TestOpenIDPersistentIdentity"
+      provides=".interfaces.server.ITestOpenIDPersistentIdentity" />
+      />
 
-    <browser:page
-        for="lp.testopenid.interfaces.server.ITestOpenIDApplication"
-        class="lp.testopenid.browser.server.TestOpenIDView"
-        permission="zope.Public"
-        name="+openid"
-        />
-    <browser:page
-        for="lp.testopenid.interfaces.server.ITestOpenIDApplication"
-        class="lp.testopenid.browser.server.TestOpenIDIndexView"
-        permission="zope.Public"
-        name="+index"
-        />
-    <browser:page
-        for="lp.testopenid.interfaces.server.ITestOpenIDApplication"
-        class="lp.testopenid.browser.server.TestOpenIDLoginView"
-        permission="zope.Public"
-        name="+auth"
-        />
+    <include package=".browser"/>
+
 </configure>

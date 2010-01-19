@@ -1,0 +1,65 @@
+<!-- Copyright 2009 Canonical Ltd.  This software is licensed under the
+     GNU Affero General Public License version 3 (see the file LICENSE).
+-->
+
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <browser:navigation
+        module=".server"
+        classes="TestOpenIDApplicationNavigation"
+        />
+
+    <adapter
+        provides="canonical.launchpad.webapp.interfaces.ICanonicalUrlData"
+        for="..interfaces.server.ITestOpenIDApplication"
+        factory="lp.testopenid.browser.server.TestOpenIDRootUrlData"
+        />
+
+    <browser:defaultView
+        for="..interfaces.server.ITestOpenIDApplication"
+        name="+index"
+        />
+
+    <browser:page
+        for="..interfaces.server.ITestOpenIDApplication"
+        class="lp.testopenid.browser.server.TestOpenIDView"
+        permission="zope.Public"
+        name="+openid"
+        />
+    <browser:page
+        for="..interfaces.server.ITestOpenIDApplication"
+        class=".server.TestOpenIDIndexView"
+        permission="zope.Public"
+        name="+index"
+        />
+    <browser:page
+        for="lp.testopenid.interfaces.server.ITestOpenIDApplication"
+        class="lp.testopenid.browser.server.TestOpenIDLoginView"
+        permission="zope.Public"
+        name="+auth"
+        />
+
+    <browser:url
+        for="..interfaces.server.ITestOpenIDPersistentIdentity"
+        path_expression="string:${openid_identifier}"
+        parent_utility="..interfaces.server.ITestOpenIDApplication"
+        />
+
+    <browser:defaultView
+        for="..interfaces.server.ITestOpenIDPersistentIdentity"
+        name="+index"
+        />
+
+    <browser:page
+        for="..interfaces.server.ITestOpenIDPersistentIdentity"
+        name="+index"
+        template="../templates/persistentidentity-index.pt"
+        permission="zope.Public"
+        class=".server.PersistentIdentityView"
+        />
+
+</configure>

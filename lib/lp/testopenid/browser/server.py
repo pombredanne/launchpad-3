@@ -4,10 +4,11 @@
 
 __metaclass__ = type
 __all__ = [
-    'TestOpenIDRootUrlData',
-    'TestOpenIDLoginView',
-    'TestOpenIDView',
+    'TestOpenIDApplicationNavigation',
     'TestOpenIDIndexView'
+    'TestOpenIDLoginView',
+    'TestOpenIDRootUrlData',
+    'TestOpenIDView',
     ]
 
 from datetime import timedelta
@@ -24,18 +25,21 @@ from openid.server.server import CheckIDRequest
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
+from canonical.launchpad.interfaces.account import AccountStatus, IAccountSet
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
     allowUnauthenticatedSession, logInPrincipal)
+from canonical.launchpad.webapp.publisher import Navigation, stepthrough
 from canonical.uuid import generate_uuid
 
 from lp.services.openid.browser.openiddiscovery import (
     XRDSContentNegotiationMixin)
-from lp.services.openid.adapters.openid import OpenIDPersistentIdentity
-from lp.testopenid.interfaces.server import ITestOpenIDLoginForm
+from lp.testopenid.interfaces.server import (
+    ITestOpenIDApplication, ITestOpenIDLoginForm,
+    ITestOpenIDPersistentIdentity)
 
 
 OPENID_REQUEST_TIMEOUT = 3600
@@ -56,15 +60,35 @@ class TestOpenIDRootUrlData:
         self.context = context
 
 
-class TestOpenIDIndexView(XRDSContentNegotiationMixin, LaunchpadView):
-    template = ViewPageTemplateFile("../templates/openidapplication-index.pt")
-    xrds_template = ViewPageTemplateFile(
-        "../templates/openidapplication-xrds.pt")
+class TestOpenIDApplicationNavigation(Navigation):
+    """Navigation for `ITestOpenIDApplication`"""
+    usedfor = ITestOpenIDApplication
+
+    @stepthrough('+id')
+    def traverse_id(self, name):
+        """Traverse to persistent OpenID identity URLs."""
+        try:
+            account = getUtility(IAccountSet).getByOpenIDIdentifier(name)
+        except LookupError:
+            account = None
+        if account is None or account.status != AccountStatus.ACTIVE:
+            return None
+        return ITestOpenIDPersistentIdentity(account)
+
+
+class TestOpenIDXRDSContentNegotiationMixin(XRDSContentNegotiationMixin):
+    """Custom XRDSContentNegotiationMixin that overrides openid_server_url."""
 
     @property
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
         return SERVER_URL
+
+
+class TestOpenIDIndexView(
+        TestOpenIDXRDSContentNegotiationMixin, LaunchpadView):
+    template = ViewPageTemplateFile("../templates/application-index.pt")
+    xrds_template = ViewPageTemplateFile("../templates/application-xrds.pt")
 
 
 class OpenIDMixin:
@@ -84,7 +108,7 @@ class OpenIDMixin:
 
     @property
     def user_identity_url(self):
-        return OpenIDPersistentIdentity(self.account).openid_identity_url
+        return ITestOpenIDPersistentIdentity(self.account).openid_identity_url
 
     def isIdentityOwner(self):
         """Return True if the user can authenticate as the given ID."""
@@ -323,3 +347,11 @@ class TestOpenIDLoginView(OpenIDMixin, LaunchpadFormView):
         # Update the attribute holding the cached user.
         self._account = principal.account
         return self.renderOpenIDResponse(self.createPositiveResponse())
+
+
+class PersistentIdentityView(
+        TestOpenIDXRDSContentNegotiationMixin, LaunchpadView):
+    """Render the OpenID identity page."""
+
+    xrds_template = ViewPageTemplateFile(
+        "../templates/persistentidentity-xrds.pt")
