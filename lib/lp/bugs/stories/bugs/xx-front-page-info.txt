@@ -2,7 +2,7 @@ A bugs home page for a project shows different information, depending
 on whether or not the project uses malone for bug tracking.
 
 By default, projects are created without using any bugtracker, malone
-or otherwise.  To demonstrate this, a new project must be created.
+or otherwise.  To demonstrate this, a new project is created.
 
     >>> from canonical.launchpad.ftests import login, logout
     >>> login('foo.bar@canonical.com')
@@ -10,7 +10,7 @@ or otherwise.  To demonstrate this, a new project must be created.
     ...     name='test-project', title='Simple Test Project')
     >>> logout()
 
-The bugs home page for the project will state that the project does
+The bugs home page for the project states that the project does
 not use Launchpad for bug tracking.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/test-project')
@@ -18,8 +18,8 @@ not use Launchpad for bug tracking.
     >>> print extract_text(uses_malone_p)
     Simple Test Project does not use Launchpad for bug tracking.
 
-When a project uses Launchpad for bug tracking, the bugs home page
-will show controls for setting bug supervisor and will list that no
+The bugs home page for a project using Launchpad for bug tracking
+shows controls for setting bug supervisor and states that no
 bugs have been filed.
 
     >>> login('foo.bar@canonical.com')
