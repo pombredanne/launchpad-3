@@ -24,11 +24,11 @@ UnparseableBugTrackerVersion is raised:
 
     >>> from canonical.testing import LaunchpadZopelessLayer
     >>> txn = LaunchpadZopelessLayer.txn
-    >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B4')
+    >>> external_bugzilla = Bugzilla('http://example.com/', version='A.B')
     Traceback (most recent call last):
       ...
     UnparseableBugTrackerVersion:
-    Failed to parse version 'A.B4' for http://...
+    Failed to parse version 'A.B' for http://...
 
 The version parsing is carried out by the Bugzilla._parseVersion()
 method, which takes a version string and returns a tuple of
@@ -51,7 +51,7 @@ And will also handle versions which contain the string 'rc'.
 + characters in the version string will be removed.
 
     >>> print external_bugzilla._parseVersion('3.2+1')
-    (3, 21)
+    (3, 2, 1)
 
 Since we don't want to depend on a working network connection, we use a
 slightly modified implementation.
@@ -200,6 +200,31 @@ getExternalBugTrackerToUse() will return a BugzillaLPPlugin instance.
     >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
     >>> isinstance(bugzilla_to_use, BugzillaLPPlugin)
     True
+
+Older versions of the Bugzilla API return tuples rather than mappings
+in response to XML-RPC calls. When something other than a mapping is
+returned, the standard non-API non-plugin external bug tracker is
+selected.
+
+    >>> class OldXMLRPCTransport(xmlrpclib.Transport):
+    ...     def request(self, host, handler, request, verbose=None):
+    ...         args, method_name = xmlrpclib.loads(request)
+    ...
+    ...         if method_name == 'Bugzilla.version':
+    ...             return ('versionResponse', {'version': '3.2.5+'})
+    ...         else:
+    ...             raise xmlrpclib.Fault('Client', 'No such method')
+    ...
+    >>> test_transport = OldXMLRPCTransport()
+
+    >>> bugzilla._test_xmlrpc_proxy = xmlrpclib.ServerProxy(
+    ...     'http://example.com/xmlrpc.cgi',
+    ...     transport=test_transport)
+
+    >>> bugzilla_to_use = bugzilla.getExternalBugTrackerToUse()
+    >>> (isinstance(bugzilla_to_use, BugzillaAPI) or
+    ...  isinstance(bugzilla_to_use, BugzillaLPPlugin))
+    False
 
 
 == Status Conversion ==
