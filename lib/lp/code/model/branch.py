@@ -992,6 +992,8 @@ class Branch(SQLBase):
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
+        if self.upgrade_pending:
+            return False
         return not (
             self.branch_format in CURRENT_BRANCH_FORMATS and
             self.repository_format in CURRENT_REPOSITORY_FORMATS)
