@@ -21,14 +21,18 @@ class GenerateTranslationTemplates:
             and check out the branch to there.
         """
         self.home = os.environ['HOME']
-        if ':' in branch_spec:
+        self.branch_spec = branch_spec
+
+    def _getBranch(self):
+        if ':' in self.branch_spec:
             # This is a branch URL.  Check out the branch.
-            self._checkout(branch_spec)
             self.branch_dir = os.path.join(self.home, 'source-tree')
+            self._checkout(self.branch_spec)
         else:
             # This is a local filesystem path.  Use the branch in-place.
-            self.branch_dir = branch_spec
+            self.branch_dir = self.branch_spec
 
+        
     def _checkout(self, branch_url):
         """Check out a source branch to generate from.
 
@@ -40,9 +44,14 @@ class GenerateTranslationTemplates:
 
     def generate(self):
         """Do It.  Generate templates."""
+        self._getBranch()
 # XXX: Actual payload goes here.
         return 0
 
 
 if __name__ == '__main__':
+    if len(sys.argv) != 2:
+        print "Usage: %s branch" % sys.argv[0]
+        print "Where 'branch' is a branch URL or directory."
+        sys.exit(1)
     sys.exit(GenerateTranslationTemplates(sys.argv[1]).generate())
