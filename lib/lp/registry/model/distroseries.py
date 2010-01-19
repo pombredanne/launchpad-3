@@ -48,6 +48,7 @@ from lp.bugs.model.bug import (
     get_bug_tags, get_bug_tags_open_count)
 from lp.bugs.model.bugtarget import BugTargetBase
 from lp.bugs.model.bugtask import BugTask
+from lp.bugs.interfaces.bugtask import UNRESOLVED_BUGTASK_STATUSES
 from lp.soyuz.model.component import Component
 from lp.soyuz.model.distroarchseries import (
     DistroArchSeries, DistroArchSeriesSet, PocketChroot)
@@ -306,7 +307,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistroSeries`."""
         # Avoid circular import failures.
         # We join to SourcePackageName, ProductSeries, and Product to cache
-        # the objects that are implcitly needed to work with a
+        # the objects that are implicitly needed to work with a
         # Packaging object.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
@@ -328,6 +329,118 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [
             packaging
             for (packaging, spn, product_series, product) in results]
+
+    def getPriorizedUnlinkedSourcePackages(self):
+        """See `IDistroSeries`.
+
+        The prioritization is a heuristic rule using bug hotness,
+        translatable messages, and the source package release's component.
+        """
+        find_spec = (
+            SourcePackageName,
+            SQL("""
+                coalesce(heat, 0) + coalesce(po_messages, 0) +
+                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END AS score"""))
+        joins, conditions = self._current_sourcepackage_joins_and_conditions
+        origin = SQL(joins)
+        condition = SQL(conditions + "AND packaging.id IS NULL")
+        results = IStore(self).using(origin).find(find_spec, condition)
+        results = results.order_by('score DESC')
+        return [SourcePackage(sourcepackagename=spn, distroseries=self)
+                for (spn, score) in results]
+
+    def getPriorizedlPackagings(self):
+        """See `IDistroSeries`.
+
+        The prioritization is a heuristic rule using  the branch, bug hotness,
+        translatable messages, and the source package release's component.
+        """
+        # Avoid circular import failures.
+        # We join to SourcePackageName, ProductSeries, and Product to cache
+        # the objects that are implcitly needed to work with a
+        # Packaging object.
+        from lp.registry.model.product import Product
+        from lp.registry.model.productseries import ProductSeries
+        find_spec = (
+            Packaging, SourcePackageName, ProductSeries, Product,
+            SQL("""
+                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END +
+                    CASE WHEN Product.bugtracker IS NULL
+                        THEN coalesce(heat, 10) ELSE 0 END +
+                    CASE WHEN ProductSeries.translations_autoimport_mode = 1
+                        THEN coalesce(po_messages, 10) ELSE 0 END +
+                    CASE WHEN ProductSeries.branch IS NULL THEN 500
+                        ELSE 0 END AS score"""))
+        joins, conditions = self._current_sourcepackage_joins_and_conditions
+        origin = SQL(joins + """
+            JOIN ProductSeries
+                ON Packaging.productseries = ProductSeries.id
+            JOIN Product
+                ON ProductSeries.product = Product.id
+            """)
+        condition = SQL(conditions + "AND packaging.id IS NOT NULL")
+        results = IStore(self).using(origin).find(find_spec, condition)
+        results = results.order_by('score DESC')
+        return [packaging
+                for (packaging, spn, series, product, score) in results]
+
+    @property
+    def _current_sourcepackage_joins_and_conditions(self):
+        """The SQL joins and conditions to prioritise source packages."""
+        heat_score = ("""
+            LEFT JOIN (
+                SELECT
+                    BugTask.sourcepackagename,
+                    sum(Bug.hotness) AS heat
+                FROM BugTask
+                    JOIN Bug
+                        ON bugtask.bug = Bug.id
+                WHERE
+                    BugTask.sourcepackagename is not NULL
+                    AND BugTask.distribution = %s
+                    AND BugTask.status in %s
+                GROUP BY BugTask.sourcepackagename
+                ) bugs
+                ON SourcePackageName.id = bugs.sourcepackagename
+            """ % sqlvalues(self.distribution, UNRESOLVED_BUGTASK_STATUSES))
+        message_score = ("""
+            LEFT JOIN (
+                SELECT
+                    POTemplate.sourcepackagename,
+                    POTemplate.distroseries,
+                    SUM(POTemplate.messagecount) / 2 AS po_messages
+                FROM POTemplate
+                WHERE
+                    POTemplate.sourcepackagename is not NULL
+                    AND POTemplate.distroseries = %s
+                GROUP BY
+                    POTemplate.sourcepackagename,
+                    POTemplate.distroseries
+                ) messages
+                ON SourcePackageName.id = messages.sourcepackagename
+                AND DistroSeries.id = messages.distroseries
+            """ % sqlvalues(self))
+        joins = ("""
+            SourcePackageName
+            JOIN SourcePackageRelease spr
+                ON SourcePackageName.id = spr.sourcepackagename
+            JOIN SourcePackagePublishingHistory spph
+                ON spr.id = spph.sourcepackagerelease
+            JOIN archive
+                ON spph.archive = Archive.id
+            JOIN DistroSeries
+                ON spph.distroseries = DistroSeries.id
+            LEFT JOIN Packaging
+                ON SourcePackageName.id = Packaging.sourcepackagename
+                AND Packaging.distroseries = DistroSeries.id
+            """ + heat_score + message_score)
+        conditions = ("""
+            DistroSeries.id = %s
+            AND spph.status IN %s
+            AND archive.purpose = %s
+            """ % sqlvalues(
+                self, active_publishing_status, ArchivePurpose.PRIMARY))
+        return (joins, conditions)
 
     @property
     def supported(self):
