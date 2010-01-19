@@ -282,9 +282,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
     number_of_duplicates = Int(
         title=_('The number of bugs marked as duplicates of this bug'),
         required=True, readonly=True)
-    message_count = Int(
-        title=_('The number of comments on this bug'),
-        required=True, readonly=True)
+    message_count = exported(
+        Int(title=_('The number of comments on this bug'),
+        required=True, readonly=True))
     users_affected_count = exported(
         Int(title=_('The number of users affected by this bug'),
             required=True, readonly=True))
