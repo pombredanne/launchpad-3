@@ -182,10 +182,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJob, Storm):
         """See `IBuildFarmJob`."""
         raise NotImplementedError()
 
-    def getTitle(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
     def jobStarted(self):
         """See `IBuildFarmJob`."""
         raise NotImplementedError()
