@@ -187,7 +187,7 @@ class BinaryPackageBuildBehavior(BuildFarmJobBehaviorBase):
             logger.debug("Asking builder on %s to ensure it has file %s "
                          "(%s, %s)" % (
                             self._builder.url, file_name, url, sha1))
-            self._builder.slave._sendFileToSlave(
+            self._builder.slave.sendFileToSlave(
                 url, sha1, "buildd", archive.buildd_secret)
 
     def _extraBuildArgs(self, build):
