@@ -6,7 +6,7 @@ special data needed for the layout.
 
     # The _get_day_of_year() method must be hacked to return a predicable day
     # to testing the view.
-    >>> from lp.registry.browser.root import LaunchpadRootIndexView
+    >>> from lp.app.browser.root import LaunchpadRootIndexView
     >>> def day():
     ...     return 4
     >>> LaunchpadRootIndexView._get_day_of_year = staticmethod(day)

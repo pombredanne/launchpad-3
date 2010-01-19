@@ -604,7 +604,7 @@ For example, the last batch of the 'bug' search contained 5 of the 25
 matching pages. The WindowList claims to be 25 items in length, but
 the first 20 items are None. Only the last 5 items are PageMatches.
 
-    >>> from lp.registry.browser.root import WindowedList
+    >>> from lp.app.browser.root import WindowedList
     >>> from canonical.launchpad.utilities.searchservice import (
     ...     GoogleSearchService)
 
@@ -626,7 +626,7 @@ parameter that comes from the URL is ignored. For example, setting
 the 'batch' parameter to 100 has no affect upon the Google search
 or on the navigator object.
 
-    >>> from lp.registry.browser.root import GoogleBatchNavigator
+    >>> from lp.app.browser.root import GoogleBatchNavigator
 
     >>> GoogleBatchNavigator.batch_variable_name
     'batch'

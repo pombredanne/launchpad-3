@@ -68,23 +68,6 @@
   <body>
     <div metal:fill-slot="main">
 
-      <div class="informational message" tal:condition="view/canRedirect">
-        <tal:redirect_inhibited condition="view/isRedirectInhibited">
-          <p>As a member of the Launchpad Beta Testers team, you would
-          normally be redirected to the beta site when viewing Launchpad
-          pages.  However, you currently have this disabled.</p>
-          <p><button onclick="setBetaRedirect(true)">Enable beta site
-          redirection</button></p>
-        </tal:redirect_inhibited>
-        <tal:redirect_enabled condition="not:view/isRedirectInhibited">
-          <p>As a member of the Launchpad Beta Testers team, you will be
-          redirected to the beta site when viewing Launchpad pages other
-          than the front page.</p>
-          <p><button onclick="setBetaRedirect(false)">Disable redirection
-          for 2 hours</button></p>
-        </tal:redirect_enabled>
-      </div>
-
       <tal:comment replace="nothing">
         Do not replace the line below: "Is your project registered yet?"
         without contacting the IS team. It's used by Nagios to verify
@@ -269,7 +252,7 @@
                     <tal:count content="view/project_count">42</tal:count>
                     projects</a>!</strong>
                 </li>
-                <li tal:condition="context/required:launchpad.Admin">
+                <li tal:condition="context/required:launchpad.Edit">
                   <a class="sprite edit" href="+featuredprojects">Manage
                   featured project list</a>
                 </li>

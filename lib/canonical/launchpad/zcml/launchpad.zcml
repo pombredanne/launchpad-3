@@ -279,27 +279,6 @@
       class="canonical.launchpad.browser.OAuthAccessTokenView"
       permission="zope.Public" />
 
-  <browser:page
-      for="canonical.launchpad.webapp.interfaces.ILaunchpadRoot"
-      name="+search"
-      class="lp.registry.browser.root.LaunchpadSearchView"
-      template="../templates/launchpad-search.pt"
-      permission="zope.Public" />
-
-  <browser:page
-      for="*"
-      name="+search-form"
-      class="lp.registry.browser.root.LaunchpadSearchFormView"
-      template="../templates/launchpad-search-form.pt"
-      permission="zope.Public" />
-
-  <browser:page
-      for="*"
-      name="+primary-search-form"
-      class="lp.registry.browser.root.LaunchpadPrimarySearchFormView"
-      template="../templates/launchpad-search-form.pt"
-      permission="zope.Public" />
-
   <!-- Declare robots.txt file for the root -->
   <browser:page
       for="canonical.launchpad.interfaces.ILaunchpadRoot"

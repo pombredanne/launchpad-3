@@ -214,7 +214,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """The list of non-conjoined bugtasks targeted to this milestone."""
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
-                    orderby=['-importance', 'datecreated', 'id'],
+                    orderby=['status', '-importance', 'id'],
                     omit_dupes=True)
         tasks = getUtility(IBugTaskSet).search(params)
         # We could replace all the code below with a simple

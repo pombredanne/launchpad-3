@@ -36,6 +36,11 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
 from lp.buildmaster.master import BuilddMaster
 from lp.buildmaster.model.buildfarmjobbehavior import IdleBuildBehavior
 from canonical.database.sqlbase import SQLBase, sqlvalues
+
+# XXX Michael Nelson 2010-01-13 bug=491330,506617
+# These dependencies on soyuz will be removed when getBuildRecords()
+# is moved, as well as when the generalisation of findBuildCandidate()
+# is completed.
 from lp.soyuz.model.buildqueue import BuildQueue
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -46,7 +51,7 @@ from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
-from lp.soyuz.interfaces.builder import (
+from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, BuildSlaveFailure, CannotBuild, CannotFetchFile,
     CannotResumeHost, IBuilder, IBuilderSet, ProtocolVersionMismatch)
 from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
@@ -310,7 +315,7 @@ class Builder(SQLBase):
                 build_queue_item.id, logger)
         except BuildSlaveFailure, e:
             logger.debug("Disabling builder: %s" % self.url, exc_info=1)
-            self.failbuilder(
+            self.failBuilder(
                 "Exception (%s) when setting up to new job" % (e,))
         except CannotFetchFile, e:
             message = """Slave '%s' (%s) was unable to fetch file.
@@ -326,26 +331,13 @@ class Builder(SQLBase):
             self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
-
-    # XXX cprov 2009-06-24: This code does not belong to the content
-    # class domain. Here we cannot make sensible decisions about what
-    # we are allowed to present according to the request user. Then
-    # bad things happens, see bug #391721.
-
-    @property
-    def status(self):
+    def failBuilder(self, reason):
         """See IBuilder"""
-        if not self.builderok:
-            if self.failnotes is not None:
-                return self.failnotes
-            return 'Disabled'
-
-        # If the builder is OK then we delegate the status
-        # to our current behavior.
-        return self.current_build_behavior.status
-
-    def failbuilder(self, reason):
-        """See IBuilder"""
+        # XXX cprov 2007-04-17: ideally we should be able to notify the
+        # the buildd-admins about FAILED builders. One alternative is to
+        # make the buildd_cronscript (slave-scanner, in this case) to exit
+        # with error, for those cases buildd-sequencer automatically sends
+        # an email to admins with the script output.
         self.builderok = False
         self.failnotes = reason
 
@@ -373,6 +365,10 @@ class Builder(SQLBase):
     def slaveStatusSentence(self):
         """See IBuilder."""
         return self.slave.status()
+
+    def updateBuild(self, queueItem):
+        """See `IBuilder`."""
+        self.current_build_behavior.updateBuild(queueItem)
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """See IBuilder."""
@@ -615,7 +611,7 @@ class Builder(SQLBase):
             logger.warn(
                 "Disabling builder: %s -- %s" % (self.url, error_message),
                 exc_info=True)
-            self.failbuilder(error_message)
+            self.failBuilder(error_message)
 
     def findAndStartJob(self, buildd_slave=None):
         """See IBuilder."""
