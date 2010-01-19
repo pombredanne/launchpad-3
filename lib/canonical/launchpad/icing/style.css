@@ -1232,6 +1232,11 @@ div#sub-unsub-spinner {
   font-size: 120%;
 }
 
+div.watermark-apps-portlet span img {
+    float: none;
+    margin: 0;
+}
+
 /* --- Blueprints --- */
 
 body.tab-specifications #actions, body.tab-specifications .results {
