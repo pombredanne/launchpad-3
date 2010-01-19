@@ -230,7 +230,7 @@ class BranchContextMenu(ContextMenu):
     links = [
         'add_subscriber', 'browse_revisions', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status']
+        'edit_status', 'upgrade_branch']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -296,6 +296,13 @@ class BranchContextMenu(ContextMenu):
         enabled = self.context.code_is_browseable
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
+
+    def upgrade_branch(self):
+        enabled = False
+        if self.context.needs_upgrading:
+            enabled = True
+        return Link(
+            '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
 
 
 class DecoratedBug:
