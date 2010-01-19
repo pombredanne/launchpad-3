@@ -10,4 +10,4 @@ ALTER table bugtask RENAME COLUMN hotness_rank to heat_rank;
 CREATE INDEX bug__heat_last_updated__idx ON bug USING btree (heat_last_updated);
 CREATE INDEX bug__heat__idx ON bug USING btree (heat);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (2207, 27, 0);
