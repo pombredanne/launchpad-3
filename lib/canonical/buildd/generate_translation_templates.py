@@ -24,6 +24,7 @@ class GenerateTranslationTemplates:
         self.branch_spec = branch_spec
 
     def _getBranch(self):
+        """Set `self.branch_dir`, and check out branch if needed."""
         if ':' in self.branch_spec:
             # This is a branch URL.  Check out the branch.
             self.branch_dir = os.path.join(self.home, 'source-tree')
@@ -32,7 +33,6 @@ class GenerateTranslationTemplates:
             # This is a local filesystem path.  Use the branch in-place.
             self.branch_dir = self.branch_spec
 
-        
     def _checkout(self, branch_url):
         """Check out a source branch to generate from.
 
