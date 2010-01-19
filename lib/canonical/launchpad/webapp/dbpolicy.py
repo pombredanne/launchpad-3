@@ -12,9 +12,11 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
+import logging
 from textwrap import dedent
 
 from storm.cache import Cache, GenerationalCache
+from storm.exceptions import TimeoutError
 from storm.zope.interfaces import IZStorm
 from zope.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
@@ -24,6 +26,7 @@ from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from canonical.config import config, dbconfig
 from canonical.database.sqlbase import StupidCache
 from canonical.launchpad.interfaces import IMasterStore, ISlaveStore
+from canonical.launchpad.readonly import is_read_only
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, DisallowedStore, IDatabasePolicy, IStoreSelector,
@@ -76,10 +79,6 @@ class BaseDatabasePolicy:
         config_section = self.config_section or dbconfig.getSectionName()
 
         store_name = '%s-%s-%s' % (config_section, name, flavor)
-        # XXX stub 2009-06-25 bug=392011: zstorm.get seems to be broken
-        # and does not return None if no Store is available. We have
-        # no way of knowing if the returned Store existed previously,
-        # which makes it difficult to do any post-instantiation setup.
         store = getUtility(IZStorm).get(
             store_name, 'launchpad:%s' % store_name)
         if not getattr(store, '_lp_store_initialized', False):
@@ -162,7 +161,7 @@ def LaunchpadDatabasePolicyFactory(request):
     # of test requests in our automated tests.
     if request.get('PATH_INFO') == u'/+opstats':
         return DatabaseBlockedPolicy(request)
-    elif config.launchpad.read_only:
+    elif is_read_only():
         return ReadOnlyLaunchpadDatabasePolicy(request)
     else:
         return LaunchpadDatabasePolicy(request)
@@ -291,14 +290,32 @@ class LaunchpadDatabasePolicy(BaseDatabasePolicy):
 
         # sl_status gives meaningful results only on the origin node.
         master_store = self.getStore(MAIN_STORE, MASTER_FLAVOR)
-        return master_store.execute(
-            "SELECT replication_lag(%d)" % slave_node_id).get_one()[0]
+        # If it takes more than (by default) 0.25 seconds to query the
+        # replication lag, assume we are lagged. Normally the query
+        # takes <20ms. This can happen during heavy updates, as the
+        # Slony-I tables can get slow with lots of events. We use a
+        # SAVEPOINT to conveniently reset the statement timeout.
+        master_store.execute("""
+            SAVEPOINT lag_check; SET LOCAL statement_timeout TO %d
+            """ % config.launchpad.lag_check_timeout)
+        try:
+            try:
+                return master_store.execute(
+                    "SELECT replication_lag(%d)" % slave_node_id).get_one()[0]
+            except TimeoutError:
+                logging.warn(
+                    'Gave up querying slave lag after %d ms',
+                    (config.launchpad.lag_check_timeout))
+                return timedelta(days=999) # A long, long time.
+        finally:
+            master_store.execute("ROLLBACK TO lag_check")
+
 
 
 def WebServiceDatabasePolicyFactory(request):
     """Return the Launchpad IDatabasePolicy for the current appserver state.
     """
-    if config.launchpad.read_only:
+    if is_read_only():
         return ReadOnlyLaunchpadDatabasePolicy(request)
     else:
         # If a session cookie was sent with the request, use the
