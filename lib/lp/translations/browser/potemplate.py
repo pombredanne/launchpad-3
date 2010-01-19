@@ -31,6 +31,7 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.lazr.utils import smartquote
 
@@ -291,7 +292,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 # SourcePackageName is needed to avoid hardcoding this URL.
                 url = (canonical_url(
                     self.context.distroseries, rootsite="translations") +
-                    "/+source/" + self.context.sourcepackagename.name + 
+                    "/+source/" + self.context.sourcepackagename.name +
                     "/+translations")
             else:
                 url = canonical_url(
@@ -533,7 +534,8 @@ class POTemplateEditView(LaunchpadEditFormView):
             # is changed because is the only significative change that,
             # somehow, affects the content of the potemplate.
             UTC = pytz.timezone('UTC')
-            context.date_last_updated = datetime.datetime.now(UTC)
+            date_last_updated = removeSecurityProxy(context.date_last_updated)
+            date_last_updated = datetime.datetime.now(UTC)
 
     @property
     def cancel_url(self):
