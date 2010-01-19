@@ -14,6 +14,7 @@ from bzrlib.branch import Branch
 from bzrlib.diff import show_diff_trees
 from bzrlib.patches import parse_patches, Patch
 from bzrlib.merge import Merge3Merger
+from bzrlib import trace
 from lazr.delegates import delegates
 import simplejson
 from sqlobject import ForeignKey, IntCol, StringCol
@@ -94,7 +95,7 @@ class Diff(SQLBase):
         :param target_branch: The branch that the source will merge into.
         :param prerequisite_branch: The branch that should be merged before
             merging the source.
-        :return: A `Diff` for a merge preview.
+        :return: A tuple of (`Diff`, `ConflictList`) for a merge preview.
         """
         cleanups = []
         try:
@@ -106,15 +107,15 @@ class Diff(SQLBase):
             if prerequisite_branch is not None:
                 prereq_revision = cls._getLCA(
                     source_branch, source_revision, prerequisite_branch)
-                from_tree = cls._getMergedTree(
+                from_tree, _ignored_conflicts = cls._getMergedTree(
                     prerequisite_branch, prereq_revision, target_branch,
                     merge_target, cleanups)
             else:
                 from_tree = merge_target
-            to_tree = cls._getMergedTree(
+            to_tree, conflicts = cls._getMergedTree(
                 source_branch, source_revision, target_branch,
                 merge_target, cleanups)
-            return cls.fromTrees(from_tree, to_tree)
+            return cls.fromTrees(from_tree, to_tree), conflicts
         finally:
             for cleanup in reversed(cleanups):
                 cleanup()
@@ -130,7 +131,7 @@ class Diff(SQLBase):
         :param merge_target: The tree to merge into.
         :param cleanups: A list of cleanup operations to run when all
             operations are complete.  This will be appended to.
-        :return: a tree.
+        :return: a tuple of a tree and the resulting conflicts.
         """
         lca = cls._getLCA(source_branch, source_revision, target_branch)
         merge_base = source_branch.repository.revision_tree(lca)
@@ -139,9 +140,16 @@ class Diff(SQLBase):
         merger = Merge3Merger(
             merge_target, merge_target, merge_base, merge_source,
             do_merge=False)
-        transform = merger.make_preview_transform()
+        def dummy_warning(self, *args, **kwargs):
+            pass
+        real_warning = trace.warning
+        trace.warning = dummy_warning
+        try:
+            transform = merger.make_preview_transform()
+        finally:
+            trace.warning = real_warning
         cleanups.append(transform.finalize)
-        return transform.get_preview_tree()
+        return transform.get_preview_tree(), merger.cooked_conflicts
 
     @staticmethod
     def _getLCA(source_branch, source_revision, target_branch):
@@ -321,9 +329,11 @@ class PreviewDiff(Storm):
                 bmp.prerequisite_branch.warehouse_url)
         else:
             prerequisite_branch = None
-        preview.diff = Diff.mergePreviewFromBranches(
+        preview.diff, conflicts = Diff.mergePreviewFromBranches(
             source_branch, source_revision, target_branch,
             prerequisite_branch)
+        preview.conflicts = u''.join(
+            unicode(conflict) + '\n' for conflict in conflicts)
         return preview
 
     @classmethod

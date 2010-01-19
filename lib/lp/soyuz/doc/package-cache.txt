@@ -723,6 +723,18 @@ First, we rebuild and examinate the caches for Celso's PPA.
     ...     for ppa in ubuntu.searchPPAs(text, user=user):
     ...         print ppa.displayname
     ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> def enable_archive(archive):
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...     archive.enable()
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> def disable_archive(archive):
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser('launchpad')
+    ...     archive.disable()
+    ...     commit()
+    ...     LaunchpadZopelessLayer.switchDbUser(test_dbuser)
 
     >>> rebuild_caches(cprov.archive)
 
@@ -735,7 +747,7 @@ First, we rebuild and examinate the caches for Celso's PPA.
 
 When Celso's PPA gets disabled, the indexes remain in the DB.
 
-    >>> cprov.archive.enabled = False
+    >>> disable_archive(cprov.archive)
 
     >>> print_caches(cprov.archive)
     3 sources cached [3]
@@ -771,7 +783,7 @@ If by any chance, the disabled PPA gets re-enabled, the cache records
 will be re-created when the indexes are rebuilt and the ppa becomes
 publicly searchable again.
 
-    >>> cprov.archive.enabled = True
+    >>> enable_archive(cprov.archive)
 
     >>> rebuild_caches(cprov.archive)
 
