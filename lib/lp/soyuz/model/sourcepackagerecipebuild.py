@@ -142,7 +142,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def estimateDuration(self):
         """See `IBuildBase`."""
-        # XXX: Do this properly.
+        # XXX: wgrant 2009-01-19 bug=507764: Need proper implementation.
         return datetime.timedelta(minutes=2)
 
 
