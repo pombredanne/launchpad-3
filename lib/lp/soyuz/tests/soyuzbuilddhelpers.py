@@ -26,7 +26,7 @@ import subprocess
 import xmlrpclib
 
 from canonical.config import config
-from lp.soyuz.interfaces.builder import CannotFetchFile
+from lp.buildmaster.interfaces.builder import CannotFetchFile
 
 
 class MockBuilder:
@@ -41,7 +41,7 @@ class MockBuilder:
         self.name = name
         self.virtualized = True
 
-    def failbuilder(self, reason):
+    def failBuilder(self, reason):
         self.builderok = False
         self.failnotes = reason
 

@@ -47,6 +47,15 @@ class PackagingAddView(LaunchpadFormView):
         if sourcepackagename is None:
             message = "You must choose the source package name."
             self.setFieldError('sourcepackagename', message)
+        # Do not allow users it create links to unpublished Ubuntu packages.
+        elif distroseries.distribution.full_functionality:
+            source_package = distroseries.getSourcePackage(sourcepackagename)
+            if source_package.currentrelease is None:
+                message = ("The source package is not published in %s." %
+                    distroseries.displayname)
+                self.setFieldError('sourcepackagename', message)
+        else:
+            pass
         packaging_util = getUtility(IPackagingUtil)
         if packaging_util.packagingEntryExists(
             productseries=productseries,

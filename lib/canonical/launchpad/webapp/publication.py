@@ -4,9 +4,8 @@
 __metaclass__ = type
 __all__ = [
     'LoginRoot',
-    'LaunchpadBrowserPublication'
+    'LaunchpadBrowserPublication',
     ]
-
 
 import gc
 import os
@@ -48,18 +47,20 @@ from zope.security.management import newInteraction
 import canonical.launchpad.layers as layers
 import canonical.launchpad.webapp.adapter as da
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.mem import (
     countsByType, deltaCounts, memory, mostRefs, printCounts, readCounts,
     resident)
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
+from canonical.launchpad.readonly import is_read_only
 from lp.registry.interfaces.person import (
     IPerson, IPersonSet, ITeam)
 from canonical.launchpad.webapp.interfaces import (
-    IDatabasePolicy, IPlacelessAuthUtility, IPrimaryContext,
-    ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
-    OffsiteFormPostError, IStoreSelector, MASTER_FLAVOR)
-from canonical.launchpad.webapp.dbpolicy import LaunchpadDatabasePolicy
+    IDatabasePolicy, ILaunchpadRoot, INotificationResponse, IOpenLaunchBag,
+    IPlacelessAuthUtility, IPrimaryContext, IStoreSelector, MAIN_STORE,
+    MASTER_FLAVOR, OffsiteFormPostError, SLAVE_FLAVOR)
+from canonical.launchpad.webapp.dbpolicy import (
+    DatabaseBlockedPolicy, LaunchpadDatabasePolicy)
 from canonical.launchpad.webapp.menu import structured
 from canonical.launchpad.webapp.opstats import OpStats
 from lazr.uri import URI, InvalidURIError
@@ -168,9 +169,29 @@ class LaunchpadBrowserPublication(
 
         transaction.begin()
 
+        db_policy = IDatabasePolicy(request)
+        if not isinstance(db_policy, DatabaseBlockedPolicy):
+            # Database access is not blocked, so make sure our stores point to
+            # the appropriate databases, according to the mode we're on.
+            main_master_store = getUtility(IStoreSelector).get(
+                MAIN_STORE, MASTER_FLAVOR)
+            # XXX: 2009-01-12, salgado, bug=506536: We shouldn't need to go
+            # through private attributes to get to the store's database.
+            dsn = main_master_store._connection._database.dsn_without_user
+            if dsn.strip() != dbconfig.main_master.strip():
+                # Remove the stores from zstorm to force them to be
+                # re-created, thus using the correct databases for the mode
+                # we're on right now.
+                main_slave_store = getUtility(IStoreSelector).get(
+                    MAIN_STORE, SLAVE_FLAVOR)
+                zstorm = getUtility(IZStorm)
+                for store in [main_master_store, main_slave_store]:
+                    zstorm.remove(store)
+                    store.close()
+
         # Now we are logged in, install the correct IDatabasePolicy for
         # this request.
-        getUtility(IStoreSelector).push(IDatabasePolicy(request))
+        getUtility(IStoreSelector).push(db_policy)
 
         getUtility(IOpenLaunchBag).clear()
 
@@ -188,7 +209,7 @@ class LaunchpadBrowserPublication(
 
     def maybeNotifyReadOnlyMode(self, request):
         """Hook to notify about read-only mode."""
-        if config.launchpad.read_only:
+        if is_read_only():
             try:
                 INotificationResponse(request).addWarningNotification(
                     structured("""
@@ -557,6 +578,7 @@ class LaunchpadBrowserPublication(
         We must restart the request timer.  Otherwise we can get OOPS errors
         from our exception views inappropriately.
         """
+        # pylint: disable-msg=E1002
         super(LaunchpadBrowserPublication,
               self).beginErrorHandlingTransaction(request, ob, note)
         # XXX: gary 2008-11-04 bug=293614: As the bug describes, we want to

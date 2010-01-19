@@ -11,10 +11,11 @@ import unittest
 
 from windmill.authoring import WindmillTestClient
 
+from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.windmill.testing.constants import (
     FOR_ELEMENT, PAGE_LOAD, SLEEP)
 from canonical.launchpad.windmill.testing.lpuser import login_person
-from lp.code.windmill.testing import canonical_url, CodeWindmillLayer
+from lp.code.windmill.testing import CodeWindmillLayer
 from lp.testing import TestCaseWithFactory
 
 
