@@ -76,7 +76,7 @@ from lp.services.worlddata.interfaces.language import ILanguageSet
 from canonical.launchpad.interfaces.launchpad import (
     IAppFrontPageSearchForm, IBazaarApplication, ILaunchpadCelebrities,
     IRosettaApplication, IStructuralHeaderPresentation,
-    IStructuralObjectPresentation, ITestOpenIDApplication)
+    IStructuralObjectPresentation)
 from canonical.launchpad.interfaces.launchpadstatistic import (
     ILaunchpadStatisticSet)
 from canonical.launchpad.interfaces.logintoken import ILoginTokenSet
@@ -96,6 +96,7 @@ from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translationimportqueue import (
     ITranslationImportQueue)
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 
 from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation,

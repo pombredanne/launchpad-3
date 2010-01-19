@@ -45,9 +45,9 @@ from lazr.restful.interfaces import IWebServiceConfiguration
 from lazr.restful.publisher import (
     WebServicePublicationMixin, WebServiceRequestTraversal)
 
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from canonical.launchpad.interfaces.launchpad import (
-    IFeedsApplication, IPrivateApplication, ITestOpenIDApplication,
-    IWebServiceApplication)
+    IFeedsApplication, IPrivateApplication, IWebServiceApplication)
 from canonical.launchpad.interfaces.oauth import (
     ClockSkew, IOAuthConsumerSet, NonceAlreadyUsed, TimestampOrderingError)
 import canonical.launchpad.layers
@@ -1130,6 +1130,8 @@ class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
 
 
 class TestOpenIDBrowserPublication(LaunchpadBrowserPublication):
+    # XXX: I don't remember why I need this, but if I remove it I end up at
+    # LP's home page when I load testopenid.lp.dev.
     root_object_interface = ITestOpenIDApplication
 
 

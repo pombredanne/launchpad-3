@@ -31,7 +31,8 @@ from canonical.launchpad.interfaces import (
     IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
     IMailingListApplication, IMaloneApplication,
     IPrivateMaloneApplication, IProductSet, IRosettaApplication,
-    ITestOpenIDApplication, IWebServiceApplication)
+    IWebServiceApplication)
+from lp.testopenid.interfaces.server import ITestOpenIDApplication
 from lp.translations.interfaces.translationgroup import ITranslationGroupSet
 from lp.translations.interfaces.translationsoverview import (
     ITranslationsOverview)

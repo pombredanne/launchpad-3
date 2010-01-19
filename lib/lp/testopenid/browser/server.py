@@ -3,7 +3,12 @@
 """Test OpenID server."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'TestOpenIDRootUrlData',
+    'TestOpenIDLoginView',
+    'TestOpenIDView',
+    'TestOpenIDIndexView'
+    ]
 
 from datetime import timedelta
 from time import time
@@ -11,42 +16,55 @@ from time import time
 from z3c.ptcompat import ViewPageTemplateFile
 from zope.app.security.interfaces import IUnauthenticatedPrincipal
 from zope.component import getUtility
-from zope.interface import Interface
-from zope.schema import TextLine
+from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
 from openid.server.server import CheckIDRequest
 
-from lp.services.openid.browser.openiddiscovery import (
-    XRDSContentNegotiationMixin)
-from lp.services.openid.adapters.openid import OpenIDPersistentIdentity
-
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.fields import PasswordField
 from canonical.launchpad.webapp import (
     action, LaunchpadFormView, LaunchpadView)
 from canonical.launchpad.webapp.interfaces import (
-    IPlacelessLoginSource, UnexpectedFormData)
+    ICanonicalUrlData, IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
     allowUnauthenticatedSession, logInPrincipal)
 from canonical.uuid import generate_uuid
 
+from lp.services.openid.browser.openiddiscovery import (
+    XRDSContentNegotiationMixin)
+from lp.services.openid.adapters.openid import OpenIDPersistentIdentity
+from lp.testopenid.interfaces.server import ITestOpenIDLoginForm
+
 
 OPENID_REQUEST_TIMEOUT = 3600
 SESSION_PKG_KEY = 'TestOpenID'
+SERVER_URL = 'https://testopenid.launchpad.dev/+openid'
+
+
+class TestOpenIDRootUrlData:
+    """`ICanonicalUrlData` for the test OpenID provider."""
+
+    implements(ICanonicalUrlData)
+
+    path = ''
+    inside = None
+    rootsite = 'testopenid'
+
+    def __init__(self, context):
+        self.context = context
 
 
 class TestOpenIDIndexView(XRDSContentNegotiationMixin, LaunchpadView):
-    template = ViewPageTemplateFile("../templates/null.pt")
+    template = ViewPageTemplateFile("../templates/openidapplication-index.pt")
     xrds_template = ViewPageTemplateFile(
         "../templates/openidapplication-xrds.pt")
 
     @property
     def openid_server_url(self):
         """The OpenID Server endpoint URL for Launchpad."""
-        return 'https://testopenid.launchpad.dev/+openid'
+        return SERVER_URL
 
 
 class OpenIDMixin:
@@ -56,13 +74,12 @@ class OpenIDMixin:
     def __init__(self, context, request):
         from openid.server.server import Server
         super(OpenIDMixin, self).__init__(context, request)
-        # XXX: Can't use this store as it's from c-i-p
+        # XXX: Can't use this store as it's from c-i-p, so need to create a
+        # new one here.  Probably using sqllite or something.
         from canonical.signon.interfaces.openidstore import (
             IProviderOpenIDStore)
         openid_store = getUtility(IProviderOpenIDStore)
-        #openid_store = MemoryStore()
-        # self.server_url = CurrentOpenIDEndPoint.getServiceURL()
-        self.server_url = 'https://testopenid.launchpad.dev/+openid'
+        self.server_url = SERVER_URL
         self.openid_server = Server(openid_store, self.server_url)
 
     @property
@@ -261,19 +278,12 @@ class TestOpenIDView(OpenIDMixin, LaunchpadView):
         return True
 
 
-class ITestOpenIDLoginForm(Interface):
-    email = TextLine(title=u'What is your e-mail address?', required=True)
-    password = PasswordField(title=u'Password', required=False)
-    nonce = TextLine(title=u'Nonce', required=False,
-                     description=u'Unique value')
-
-
 class TestOpenIDLoginView(OpenIDMixin, LaunchpadFormView):
 
     page_title = "Login"
     schema = ITestOpenIDLoginForm
     action_url = '+auth'
-    template = ViewPageTemplateFile("../templates/testopenid-login.pt")
+    template = ViewPageTemplateFile("../templates/auth.pt")
 
     def __init__(self, context, request, nonce=None):
         super(TestOpenIDLoginView, self).__init__(context, request)

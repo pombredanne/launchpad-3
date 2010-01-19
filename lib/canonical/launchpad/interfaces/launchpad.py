@@ -65,7 +65,6 @@ __all__ = [
     'IRosettaApplication',
     'IStructuralHeaderPresentation',
     'IStructuralObjectPresentation',
-    'ITestOpenIDApplication',
     'IWebServiceApplication',
     'IWriteZODBAnnotation',
     'IZODBAnnotation',
@@ -342,10 +341,6 @@ class IAuthApplication(Interface):
 
 class IFeedsApplication(ILaunchpadApplication):
     """Launchpad Feeds application root."""
-
-
-class ITestOpenIDApplication(ILaunchpadApplication):
-    """Launchpad's testing OpenID application root."""
 
 
 class IPasswordResets(IPersistent):
