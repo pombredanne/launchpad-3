@@ -129,9 +129,9 @@ class BuilderSlave(xmlrpclib.ServerProxy):
         logger.debug("Asking builder on %s to ensure it has file %s "
                      "(%s, %s)" % (self.urlbase, libraryfilealias.filename,
                                    url, libraryfilealias.content.sha1))
-        self.sendFileToSlave(url, libraryfilealias.content.sha1)
+        self.sendFileToSlave(libraryfilealias.content.sha1, url)
 
-    def sendFileToSlave(self, url, sha1, username="", password=""):
+    def sendFileToSlave(self, sha1, url, username="", password=""):
         """Helper to send the file at 'url' with 'sha1' to this builder."""
         present, info = self.ensurepresent(sha1, url, username, password)
         if not present:

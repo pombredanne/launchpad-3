@@ -186,14 +186,14 @@ class OkSlave:
 
         return (stdout, stderr, resume_process.returncode)
 
-    def sendFileToSlave(self, url, sha1, username="", password=""):
+    def sendFileToSlave(self, sha1, url, username="", password=""):
         present, info = self.ensurepresent(sha1, url, username, password)
         if not present:
             raise CannotFetchFile(url, info)
 
     def cacheFile(self, logger, libraryfilealias):
         self.sendFileToSlave(
-            libraryfilealias.http_url, libraryfilealias.content.sha1)
+            libraryfilealias.content.sha1, libraryfilealias.http_url)
 
 
 class BuildingSlave(OkSlave):
