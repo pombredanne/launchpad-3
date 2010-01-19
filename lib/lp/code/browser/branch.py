@@ -902,8 +902,7 @@ class BranchUpgradeView(LaunchpadFormView):
 
     @action('Upgrade', name='upgrade_branch')
     def upgrade_branch_action(self, action, data):
-        from lp.code.model.branchjob import BranchUpgradeJob
-        job = BranchUpgradeJob(self.context)
+        self.context.requestUpgrade()
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
