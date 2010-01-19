@@ -539,15 +539,17 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeProductReleaseFile(self, signed=True,
                                product=None, productseries=None,
                                milestone=None,
+                               release=None,
                                description="test file"):
         signature_filename = None
         signature_content = None
         if signed:
             signature_filename = 'test.txt.asc'
             signature_content = '123'
-        release = self.makeProductRelease(product=product,
-                                          productseries=productseries,
-                                          milestone=milestone)
+        if release is None:
+            release = self.makeProductRelease(product=product,
+                                              productseries=productseries,
+                                              milestone=milestone)
         return release.addReleaseFile(
             'test.txt', 'test', 'text/plain',
             uploader=release.milestone.product.owner,
