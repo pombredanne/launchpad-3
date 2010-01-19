@@ -166,9 +166,13 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         return datetime.timedelta(minutes=2)
 
     def storeUploadLog(self, content):
+        """See `IBuildBase`."""
+        # XXX: wgrant 2009-01-20 bug=509892: Store in the DB.
         return
 
     def notify(self, extra_info=None):
+        """See `IBuildBase`."""
+        # XXX: wgrant 2009-01-20 bug=509893: Implement this.
         return
 
 
