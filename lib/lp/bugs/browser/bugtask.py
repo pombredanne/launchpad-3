@@ -1075,6 +1075,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             title="Bug Description",
             value=description)
 
+    @property
+    def bug_heat_html(self):
+        """HTML representation of the bug heat."""
+        view = getMultiAdapter(
+            (self.context.bug, self.request),
+            name='+bug-heat')
+        return view()
+
 
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
@@ -3158,14 +3166,6 @@ class BugTasksAndNominationsView(LaunchpadView):
                 self.context.users_affected_count)
         else:
             return None
-
-    @property
-    def bug_heat_html(self):
-        """HTML representation of the bug heat."""
-        view = getMultiAdapter(
-            (self.context, self.request),
-            name='+bug-heat')
-        return view()
 
 
 class BugTaskTableRowView(LaunchpadView):

@@ -973,7 +973,7 @@ class BugHeatView(LaunchpadView):
     def __call__(self):
         """Render the bug heat representation."""
         heat_ratio = floor((self.context.heat / MAX_HEAT) * 4)
-        html = '<span>'
+        html = '<span class="bug-heat-flames">'
         for flame in range(1, 5):
             if flame <= heat_ratio:
                 html += '<img src="/@@/flame-icon" />'
