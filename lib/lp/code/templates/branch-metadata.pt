@@ -4,9 +4,6 @@
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
   tal:define="context_menu context/menu:context">
 
-  <div id="upgrade-pending" tal:condition="context/upgrade_pending">
-    An upgrade is pending.
-  </div>
   <div class="two-column-list">
     <dl id="branch-format" tal:condition="context/branch_format">
       <dt>Branch format:</dt>
