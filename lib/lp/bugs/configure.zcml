@@ -628,6 +628,9 @@
                     users_unaffected_count
                     readonly_duplicateof
                     users_affected
+                    users_unaffected
+                    users_affected_count_with_dups
+                    users_affected_with_dups
                     bug_messages
                     isUserAffected
                     getHWSubmissions"/>
