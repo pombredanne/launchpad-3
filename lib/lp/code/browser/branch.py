@@ -298,6 +298,7 @@ class BranchContextMenu(ContextMenu):
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
 
+    @enabled_with_permission('launchpad.Edit')
     def upgrade_branch(self):
         enabled = False
         if self.context.needs_upgrading:
