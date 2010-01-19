@@ -20,6 +20,7 @@ __all__ = [
     ]
 
 
+from copy import copy
 import errno
 import os
 import stat
@@ -319,6 +320,10 @@ class TransportSFTPServer:
         """
         for stat_result, filename in zip(stat_results, filenames):
             shortname = urlutils.unescape(filename).encode('utf-8')
+            stat_result = copy(stat_result)
+            for attribute in ['st_uid', 'st_gid', 'st_mtime', 'st_nlink']:
+                if getattr(stat_result, attribute, None) is None:
+                    setattr(stat_result, attribute, 0)
             longname = lsLine(shortname, stat_result)
             attr_dict = self._translate_stat(stat_result)
             yield (shortname, longname, attr_dict)

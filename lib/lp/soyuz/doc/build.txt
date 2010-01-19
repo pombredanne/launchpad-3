@@ -837,7 +837,7 @@ be filtered from the list returned:
     >>> buildd_admin = factory.makePerson()
     >>> buildd_admins = getUtility(
     ...     IPersonSet).getByName('launchpad-buildd-admins')
-    >>> buildd_admins.addMember(buildd_admin, buildd_admin)
+    >>> ignored = buildd_admins.addMember(buildd_admin, buildd_admin)
     >>> bob_builds = bob.getBuildRecords(user=buildd_admin)
     >>> print_build_details(bob_builds)
     ubuntu-team: hppa build of mozilla-firefox 0.9 in ubuntu warty RELEASE
@@ -845,9 +845,9 @@ be filtered from the list returned:
     ubuntu-team: i386 build of cdrkit 1.0 in ubuntu breezy-autotest RELEASE
     ...
     ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu warty RELEASE
-    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest 
+    ubuntu-team: i386 build of mozilla-firefox 0.9 in ubuntu breezy-autotest
     RELEASE
-    
+
     >>> bob_builds.count()
     13
 

@@ -710,7 +710,7 @@ The same is true for people not in the comment syncing team.
 People in the team get to see the comments.
 
     >>> login('foo.bar@canonical.com')
-    >>> syncing_team.addMember(no_priv, no_priv)
+    >>> ignored = syncing_team.addMember(no_priv, no_priv)
 
     >>> login('no-priv@canonical.com')
     >>> view = BugTaskView(bug.bugtasks[0], LaunchpadTestRequest())

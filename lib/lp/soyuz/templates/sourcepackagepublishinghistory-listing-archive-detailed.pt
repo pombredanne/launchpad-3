@@ -2,9 +2,11 @@
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
   xmlns:i18n="http://xml.zope.org/namespaces/i18n"
-  omit-tag="">
+  omit-tag=""
+  define="newer_version context/newer_distroseries_version">
 
-  <tr class="archive_package_row">
+  <tr tal:attributes="class python: ('archive_package_row ' + (
+                                     newer_version and 'superseded' or ''))">
     <td style="white-space: nowrap">
       <input
         name="field.selected_sources" type="checkbox"
@@ -21,6 +23,11 @@
           foo - 1.0
         </tal:source_name>
       </a>
+
+      <tal:newer_version tal:condition="newer_version">
+        (<a tal:attributes="href newer_version/fmt:url">Newer version</a>
+         available)
+      </tal:newer_version>
     </td>
     <td>
       <tal:view_changesfile

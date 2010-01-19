@@ -137,7 +137,7 @@ links are in the portlet "Filters"; its content is served in a separate
 request, issued by regular browsers via Javascript.
 
     >>> browser.open(
-    ...     "http://launchpad.dev/ubuntu/+bugtarget-portlet-bugfilters-content")
+    ...     "http://launchpad.dev/ubuntu/+bugtarget-portlet-bugfilters-info")
     >>> browser.getLink("New").click()
 
 The result set is filtered to show only New bugs.

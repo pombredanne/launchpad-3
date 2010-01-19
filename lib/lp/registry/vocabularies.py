@@ -994,7 +994,7 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
 
     displayname = 'Select a Release Series'
     _table = ProductSeries
-    _orderBy = [Product.q.name, ProductSeries.q.name]
+    _order_by = [Product.name, ProductSeries.name]
     _clauseTables = ['Product']
 
     def toTerm(self, obj):
@@ -1012,33 +1012,41 @@ class ProductSeriesVocabulary(SQLObjectVocabularyBase):
         except ValueError:
             raise LookupError(token)
 
-        result = ProductSeries.selectOne('''
-                    Product.id = ProductSeries.product AND
-                    Product.name = %s AND
-                    ProductSeries.name = %s
-                    ''' % sqlvalues(productname, productseriesname),
-                    clauseTables=['Product'])
+        result = IStore(self._table).find(
+            self._table,
+            ProductSeries.product == Product.id,
+            Product.name == productname,
+            ProductSeries.name == productseriesname).one()
         if result is not None:
             return self.toTerm(result)
         raise LookupError(token)
 
     def search(self, query):
-        """Return terms where query is a substring of the name"""
+        """Return terms where query is a substring of the name."""
         if not query:
             return self.emptySelectResults()
 
-        query = query.lower()
-        objs = self._table.select(
-                AND(
-                    Product.q.id == ProductSeries.q.productID,
-                    OR(
-                        CONTAINSSTRING(Product.q.name, query),
-                        CONTAINSSTRING(ProductSeries.q.name, query)
-                        )
-                    ),
-                orderBy=self._orderBy
-                )
-        return objs
+        query = query.lower().strip('/')
+        # If there is a slash splitting the product and productseries
+        # names, they must both match. If there is no slash, we don't
+        # know whether it is matching the product or the productseries
+        # so we search both for the same string.
+        if '/' in query:
+            product_query, series_query = query.split('/', 1)
+            substring_search = And(
+                CONTAINSSTRING(Product.name, product_query),
+                CONTAINSSTRING(ProductSeries.name, series_query))
+        else:
+            substring_search = Or(
+                CONTAINSSTRING(Product.name, query),
+                CONTAINSSTRING(ProductSeries.name, query))
+
+        result = IStore(self._table).find(
+            self._table,
+            Product.id == ProductSeries.productID,
+            substring_search)
+        result = result.order_by(self._order_by)
+        return result
 
 
 class FilteredDistroSeriesVocabulary(SQLObjectVocabularyBase):

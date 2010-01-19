@@ -1,3 +1,10 @@
+Administering POTemplates
+=========================
+
+
+Product templates
+-----------------
+
 The POTemplate admin page lets us to edit any aspect of that object, that's
 why we need to be a Rosetta Expert or a Launchpad admin to use it.
 
@@ -155,8 +162,29 @@ And now let's get back to renaming.
   >>> print admin_browser.url
   http://translations.launchpad.dev/evolution/trunk/+pots/evolution-renamed
 
+Administrators can disable and then make changes to a disabled template.
 
-== Distribution templates ==
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-renamed/+admin')
+  >>> admin_browser.getControl(name='field.iscurrent').value = False
+  >>> admin_browser.getControl('Change').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-renamed
+
+Now we will reenable the template.
+
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/evolution/trunk/+pots/'
+  ...     'evolution-renamed/+admin')
+  >>> admin_browser.getControl(name='field.iscurrent').value = True
+  >>> admin_browser.getControl('Change').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/evolution/trunk/+pots/evolution-renamed
+
+
+Distribution templates
+----------------------
 
 Distributions get slightly wider permissions to manage their templates
 autonomously.
@@ -214,3 +242,15 @@ can manage the distribution's translation templates as well.
 
     >>> print template.path
     splat.pot
+
+Distribution translation coordinators can disable and manage disabled
+templates.
+
+    >>> group_owner_browser.open(template_admin_url)
+    >>> group_owner_browser.getControl(name='field.iscurrent').value = False
+    >>> group_owner_browser.getControl('Change').click()
+    >>> group_owner_browser.open(template_admin_url)
+    >>> group_owner_browser.getControl(name='field.iscurrent').value = True
+    >>> group_owner_browser.getControl('Change').click()
+
+

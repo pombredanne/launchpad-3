@@ -32,13 +32,11 @@ __all__ = [
     'BranchMirrorer',
     'BranchLoopError',
     'BranchReferenceForbidden',
-    'BranchReferenceValueError',
     'get_canonical_url_for_branch_name',
     'install_worker_ui_factory',
     'PullerWorker',
     'PullerWorkerProtocol',
     'StackedOnBranchNotFound',
-    'URLChecker',
     ]
 
 
@@ -105,8 +103,8 @@ class PullerWorkerProtocol:
         # success or failure.
         self.sendEvent('mirrorDeferred')
 
-    def mirrorSucceeded(self, last_revision):
-        self.sendEvent('mirrorSucceeded', last_revision)
+    def mirrorSucceeded(self, revid_before, revid_after):
+        self.sendEvent('mirrorSucceeded', revid_before, revid_after)
 
     def mirrorFailed(self, message, oops_id):
         self.sendEvent('mirrorFailed', message, oops_id)
@@ -322,10 +320,11 @@ class BranchMirrorer(object):
         # over from previous puller worker runs. We will block on other
         # locks and fail if they are not broken before the timeout expires
         # (currently 5 minutes).
+        revid_before = branch.last_revision()
         if branch.get_physical_lock_status():
             branch.break_lock()
         self.updateBranch(source_branch, branch)
-        return branch
+        return branch, revid_before
 
 
 class PullerWorker:
@@ -362,8 +361,8 @@ class PullerWorker:
             stacked-on branch for the product of the branch we are mirroring.
             None or '' if there is no such branch.
         :param protocol: An instance of `PullerWorkerProtocol`.
-        :param branch_mirrorer: An instance of `BranchMirrorer`.  If not passed,
-            one will be chosen based on the value of `branch_type`.
+        :param branch_mirrorer: An instance of `BranchMirrorer`.  If not
+            passed, one will be chosen based on the value of `branch_type`.
         :param oops_prefix: An oops prefix to pass to `setOopsToken` on the
             global ErrorUtility.
         """
@@ -411,6 +410,10 @@ class PullerWorker:
         reporting protocol -- a "naked mirror", if you will. This is
         particularly useful for tests that want to mirror a branch and be
         informed immediately of any errors.
+
+        :return: ``(branch, revid_before)``, where ``branch`` is the
+            destination branch and ``revid_before`` was the tip revision
+            *before* the mirroring process ran.
         """
         # Avoid circular import
         from lp.codehosting.vfs import get_puller_server
@@ -429,7 +432,7 @@ class PullerWorker:
         """
         self.protocol.startMirroring()
         try:
-            dest_branch = self.mirrorWithoutChecks()
+            dest_branch, revid_before = self.mirrorWithoutChecks()
         # add further encountered errors from the production runs here
         # ------ HERE ---------
         #
@@ -500,8 +503,8 @@ class PullerWorker:
             raise
 
         else:
-            last_rev = dest_branch.last_revision()
-            self.protocol.mirrorSucceeded(last_rev)
+            revid_after = dest_branch.last_revision()
+            self.protocol.mirrorSucceeded(revid_before, revid_after)
 
     def __eq__(self, other):
         return self.source == other.source and self.dest == other.dest
@@ -513,6 +516,7 @@ class PullerWorker:
 
 WORKER_ACTIVITY_PROGRESS_BAR = 'progress bar'
 WORKER_ACTIVITY_NETWORK = 'network'
+
 
 class PullerWorkerUIFactory(SilentUIFactory):
     """An UIFactory that always says yes to breaking locks."""

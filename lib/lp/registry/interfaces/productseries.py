@@ -21,7 +21,7 @@ from zope.interface import Interface, Attribute
 from canonical.launchpad.fields import (
     ContentNameField, NoneableDescription, ParticipatingPersonChoice,
     PublicPersonChoice, Title)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.code.interfaces.branch import IBranch
 from lp.bugs.interfaces.bugtarget import IBugTarget

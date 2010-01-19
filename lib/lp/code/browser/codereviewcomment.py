@@ -204,7 +204,7 @@ class CodeReviewCommentAddView(LaunchpadFormView):
 
     class MyDropWidget(DropdownWidget):
         "Override the default no-value display name to -Select-."
-        _messageNoValue = '-Select-'
+        _messageNoValue = 'Comment only'
 
     schema = IEditCodeReviewComment
 
@@ -251,10 +251,11 @@ class CodeReviewCommentAddView(LaunchpadFormView):
     @action('Save Comment', name='add')
     def add_action(self, action, data):
         """Create the comment..."""
+        vote = data.get('vote')
+        review_type = data.get('review_type')
         comment = self.branch_merge_proposal.createComment(
             self.user, subject=None, content=data['comment'],
-            parent=self.reply_to, vote=data['vote'],
-            review_type=data['review_type'])
+            parent=self.reply_to, vote=vote, review_type=review_type)
 
     @property
     def next_url(self):

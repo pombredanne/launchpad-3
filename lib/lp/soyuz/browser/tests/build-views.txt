@@ -153,7 +153,7 @@ retry it.
     ...     "launchpad-buildd-admins")
     >>> nopriv = getUtility(IPersonSet).getByName("no-priv")
     >>> login("foo.bar@canonical.com")
-    >>> buildd_admins.addMember(nopriv, nopriv)
+    >>> ignored = buildd_admins.addMember(nopriv, nopriv)
 
     >>> login("no-priv@canonical.com")
     >>> failed_build_view = getMultiAdapter(
@@ -220,6 +220,35 @@ True.
 
     >>> print cprov_failed_build_view.has_published_binaries
     True
+
+The BuildIndex view also has a files helper which returns
+all the files from the related binary package releases.
+
+    >>> hoary_pmount_build = hoary.getBuildRecords(
+    ...     build_state=BuildStatus.FULLYBUILT, name='pmount',
+    ...     arch_tag='hppa')[0]
+    >>> hoary_pmount_build_view = create_initialized_view(
+    ...     hoary_pmount_build, '+index')
+    >>> len(hoary_pmount_build_view.files)
+    1
+    >>> deb_file = hoary_pmount_build_view.files[0]
+    >>> print deb_file.filename
+    pmount_1.9-1_all.deb
+
+Files that are still referenced by binary package releases but have
+been deleted will not be included in the view's files.
+
+    >>> deb_file.deleted
+    False
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(deb_file.context).content = None
+    >>> deb_file.deleted
+    True
+
+    >>> hoary_pmount_build_view = create_initialized_view(
+    ...     hoary_pmount_build, '+index')
+    >>> len(hoary_pmount_build_view.files)
+    0
 
 
 == BuildRescoringView ==

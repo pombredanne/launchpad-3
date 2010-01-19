@@ -16,7 +16,7 @@ polls.
     ...     server_url = 'http://launchpad.dev'
     ...     view = create_view(
     ...         team, name=name, principal=principal,
-    ...         server_url=server_url, PATH_INFO=path_info)
+    ...         server_url=server_url, path_info=path_info)
     ...     view.initialize()
     ...     return view
 

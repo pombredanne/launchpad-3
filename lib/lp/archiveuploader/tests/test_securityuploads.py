@@ -67,7 +67,7 @@ class TestStagedBinaryUploadBase(TestUploadProcessorBase):
         6. Clean log messages.
         7. Commit transaction, so the upload source can be seen.
         """
-        TestUploadProcessorBase.setUp(self)
+        super(TestStagedBinaryUploadBase, self).setUp()
         self.options.context = self.policy
         self.options.nomails = self.no_mails
         # Set up the uploadprocessor with appropriate options and logger
@@ -164,7 +164,7 @@ class TestStagedSecurityUploads(TestStagedBinaryUploadBase):
 
     def setUp(self):
         """Setup base class and create the required new distroarchseries."""
-        TestStagedBinaryUploadBase.setUp(self)
+        super(TestStagedSecurityUploads, self).setUp()
         distribution = getUtility(IDistributionSet).getByName(
             self.distribution_name)
         distroseries = distribution[self.distroseries.name]

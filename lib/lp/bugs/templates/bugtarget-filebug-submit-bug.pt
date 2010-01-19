@@ -1,4 +1,4 @@
-<filebug-submit
+<div
   xmlns="http://www.w3.org/1999/xhtml"
   xmlns:tal="http://xml.zope.org/namespaces/tal"
   xmlns:metal="http://xml.zope.org/namespaces/metal"
@@ -15,7 +15,9 @@
             tal:attributes="src string:${lp_js}/bugs/filebug-dupefinder.js"></script>
     <script type="text/javascript">
       LPS.use('base', 'node', 'oop', 'event', 'bugs.dupe_finder', function(Y) {
-        Y.bugs.setup_dupe_finder();
+          Y.on('domready', function() {
+              Y.bugs.setup_dupes();
+          });
       });
     </script>
   </metal:block>
@@ -62,4 +64,4 @@
     </div>
   </div>
 
-</filebug-submit>
+</div>

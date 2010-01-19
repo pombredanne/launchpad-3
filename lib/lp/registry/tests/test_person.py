@@ -26,13 +26,14 @@ from lp.registry.interfaces.person import (
     IPersonSet, ImmutableVisibilityError, NameAlreadyTaken,
     PersonCreationRationale, PersonVisibility)
 from canonical.launchpad.database import Bug, BugTask, BugSubscription
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from lp.registry.model.person import Person
 from lp.answers.model.answercontact import AnswerContact
 from lp.blueprints.model.specification import Specification
 from lp.testing import TestCaseWithFactory
 from lp.testing.views import create_initialized_view
+from lp.registry.interfaces.mailinglist import MailingListStatus
 from lp.registry.interfaces.person import PrivatePersonLinkageError
 from canonical.testing.layers import (
     DatabaseFunctionalLayer, LaunchpadFunctionalLayer)
@@ -287,6 +288,10 @@ class TestPerson(TestCaseWithFactory):
     def test_visibility_validator_team_mailinglist_public_purged(self):
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        mailinglist.startConstructing()
+        mailinglist.transitionToStatus(MailingListStatus.ACTIVE)
+        mailinglist.deactivate()
+        mailinglist.transitionToStatus(MailingListStatus.INACTIVE)
         mailinglist.purge()
         self.otherteam.visibility = PersonVisibility.PUBLIC
         self.assertEqual(self.otherteam.visibility, PersonVisibility.PUBLIC)
@@ -403,6 +408,10 @@ class TestPerson(TestCaseWithFactory):
 
     def test_visibility_validator_team_mailinglist_private_purged(self):
         mailinglist = getUtility(IMailingListSet).new(self.otherteam)
+        mailinglist.startConstructing()
+        mailinglist.transitionToStatus(MailingListStatus.ACTIVE)
+        mailinglist.deactivate()
+        mailinglist.transitionToStatus(MailingListStatus.INACTIVE)
         mailinglist.purge()
         self.otherteam.visibility = PersonVisibility.PRIVATE_MEMBERSHIP
         self.assertEqual(self.otherteam.visibility,

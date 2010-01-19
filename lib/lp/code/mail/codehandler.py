@@ -36,10 +36,10 @@ from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.interfaces import ILaunchBag
 from lazr.uri import URI
 from lp.code.enums import BranchType, CodeReviewVote
+from lp.code.errors import BranchMergeProposalExists, UserNotBranchReviewer
 from lp.code.interfaces.branchlookup import IBranchLookup
 from lp.code.interfaces.branchmergeproposal import (
-    BranchMergeProposalExists, IBranchMergeProposalGetter,
-    ICreateMergeProposalJobSource, UserNotBranchReviewer)
+    IBranchMergeProposalGetter, ICreateMergeProposalJobSource)
 from lp.code.interfaces.branchnamespace import (
     lookup_branch_namespace, split_unique_name)
 from lp.code.interfaces.branchtarget import check_default_stacked_on

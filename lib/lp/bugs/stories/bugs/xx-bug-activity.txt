@@ -277,3 +277,25 @@ bundled with that comment in the UI.
     status:
     Confirmed &#8594; New
     --------
+
+If a target of a bug task is changed the old and new value will be shown.
+
+    >>> admin_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/'
+    ...     '1/+editstatus')
+    >>> admin_browser.getControl(
+    ...     'Package').value = 'linux-source-2.6.15'
+    >>> admin_browser.getControl("Save Changes").click()
+    >>> print_comments(admin_browser.contents)
+    Sample Person
+    ...
+    Foo Bar
+    wrote
+    ...
+    --------
+    Foo Bar
+    ...
+    affects:
+    mozilla-firefox (Ubuntu) &#8594; linux-source-2.6.15 (Ubuntu)
+    --------
+

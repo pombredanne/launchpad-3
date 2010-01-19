@@ -76,9 +76,9 @@ def main():
 
     # Get the connection string for masters.
     lpmain_connection_string = get_master_connection_string(
-        source_connection, parser, AUTHDB_SET_ID) or source_connection_string
-    authdb_connection_string = get_master_connection_string(
         source_connection, parser, LPMAIN_SET_ID) or source_connection_string
+    authdb_connection_string = get_master_connection_string(
+        source_connection, parser, AUTHDB_SET_ID) or source_connection_string
 
     # Sanity check the target connection string.
     target_connection_string = ConnectionString(raw_target_connection_string)

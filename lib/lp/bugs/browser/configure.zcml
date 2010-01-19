@@ -24,15 +24,21 @@
             template="../templates/bugtarget-portlet-recently-touched-bugs.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtask.BugListingPortletView"
+            class="lp.bugs.browser.bugtask.BugListingPortletInfoView"
             permission="zope.Public"
             name="+portlet-bugfilters"
             template="../templates/bugtarget-portlet-bugfilters.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
-            class="lp.bugs.browser.bugtask.BugListingPortletView"
+            class="lp.bugs.browser.bugtask.BugListingPortletInfoView"
             permission="zope.Public"
-            name="+bugtarget-portlet-bugfilters-content"
+            name="+bugtarget-portlet-bugfilters-info"
+            template="../templates/bugtarget-portlet-bugfilters-content.pt"/>
+        <browser:page
+            for="lp.bugs.interfaces.bugtarget.IHasBugs"
+            class="lp.bugs.browser.bugtask.BugListingPortletStatsView"
+            permission="zope.Public"
+            name="+bugtarget-portlet-bugfilters-stats"
             template="../templates/bugtarget-portlet-bugfilters-content.pt"/>
         <browser:page
             for="lp.bugs.interfaces.bugtarget.IHasBugs"
@@ -86,6 +92,13 @@
             name="+filebug-advanced"
             for="lp.bugs.interfaces.bugtarget.IBugTarget"
             class="lp.bugs.browser.bugtarget.FileBugAdvancedView"
+            facet="bugs"
+            permission="launchpad.AnyPerson"/>
+        <browser:page
+            name="+filebug-inline-form"
+            for="lp.bugs.interfaces.bugtarget.IBugTarget"
+            class="lp.bugs.browser.bugtarget.FilebugShowSimilarBugsView"
+            template="../templates/bugtarget-filebug-inline-form.pt"
             facet="bugs"
             permission="launchpad.AnyPerson"/>
         <browser:page

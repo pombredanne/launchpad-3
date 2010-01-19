@@ -47,6 +47,10 @@ The archive mirrors display the "freshness", how far behind they are.
        (u'Archive-mirror',     u'http', u'128 Kbps', u'Last update unknown')]
     United Kingdom:
       [(u'Canonical-archive',  u'http', u'100 Mbps', u'Last update unknown')]
+    >>> find_tags_by_class(browser.contents, 'distromirrorstatusSIXHOURSBEHIND')
+    [<span class="distromirrorstatusSIXHOURSBEHIND">Six hours behind</span>]
+    >>> find_tags_by_class(browser.contents, 'distromirrorstatusUNKNOWN')[0]
+    <span class="distromirrorstatusUNKNOWN">Last update unknown</span>
 
 Freshness doesn't make sense for CD mirrors so it is not shown for them.
 

@@ -42,7 +42,6 @@ transaction, since it doesn't need DB access.
     ...     InitializingExternalBugTracker(), [])
     COMMIT
     initializeRemoteBugDB() called: []
-    BEGIN
 
 
 === Choosing another ExternalBugTracker instance ===
@@ -318,7 +317,6 @@ the time is.
     COMMIT
     getCurrentDBTime() called
     initializeRemoteBugDB() called: []
-    BEGIN
 
 If the difference between what we and the remote system think the time
 is, an error is raised.
@@ -370,7 +368,6 @@ If it's only a little skewed, it won't raise an error.
     >>> bug_watch_updater.updateBugWatches(
     ...     CorrectTimeExternalBugTracker(), [], now=utc_now)
     COMMIT
-    BEGIN
 
 If the timezone is known, the local time time should be returned, rather
 than the UTC time.
@@ -383,7 +380,6 @@ than the UTC time.
     >>> bug_watch_updater.updateBugWatches(
     ...     LocalTimeExternalBugTracker(), [], now=utc_now)
     COMMIT
-    BEGIN
 
 If the remote server time is unknown, we will refuse to import any
 comments from it. Bug watches will still be updated, but a warning is
@@ -399,7 +395,6 @@ logged saying that comments won't be imported.
     COMMIT
     getCurrentDBTime() called
     initializeRemoteBugDB() called: []
-    BEGIN
     WARNING:...:Comment importing supported, but server time can't be
                 trusted. No comments will be imported.
 
@@ -494,9 +489,16 @@ to the ExternalBugTracker's initializeRemoteBugDB() method.
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
     BEGIN
     getRemoteStatus() called: u'1'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'2'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'3'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'4'
+    COMMIT
 
 If the bug watches have the lastchecked attribute set, they will be
 passed to getModifiedRemoteBugs(). Only the bugs that have been modified
@@ -530,7 +532,12 @@ will then be passed on to initializeRemoteBugDB().
     initializeRemoteBugDB() called: [u'1', u'4']
     BEGIN
     getRemoteStatus() called: u'1'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'4'
+    COMMIT
+    BEGIN
+    BEGIN
 
 The bug watches that are deemed as not being modified are still marked
 as being checked.
@@ -580,9 +587,16 @@ initializeRemoteBugDB() since we do need to update them.
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
     BEGIN
     getRemoteStatus() called: u'1'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'2'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'3'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'4'
+    COMMIT
 
 As mentioned earlier, getModifiedRemoteBugs() is only called if we can
 get the current time of the remote system. If the time is unknown, we
@@ -600,9 +614,16 @@ always update all the bug watches.
     initializeRemoteBugDB() called: [u'1', u'2', u'3', u'4']
     BEGIN
     getRemoteStatus() called: u'1'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'2'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'3'
+    COMMIT
+    BEGIN
     getRemoteStatus() called: u'4'
+    COMMIT
 
 The only exception to the rule of only updating modified bugs is the set
 of bug watches which have comments that need to be pushed to the remote
@@ -1102,7 +1123,7 @@ thread.
     >>> bug_watch_updater.updateBugTrackers(
     ...     bug_tracker_names=[standard_bugzilla.name], batch_size=2)
     DEBUG Using a global batch size of 2
-    INFO Updating 4 watches for 2 bugs on http://example.com
+    INFO Updating 2 watches for 2 bugs on http://example.com
     initializeRemoteBugDB() called: [u'5', u'6']
     getRemoteStatus() called: u'5'
     getRemoteStatus() called: u'6'

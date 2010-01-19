@@ -75,10 +75,6 @@ def get_size(path):
 
 def review_list(list_name, status='approve'):
     """Helper for approving a mailing list."""
-    browser = Browser('foo.bar@canonical.com:test')
-    browser.open('http://launchpad.dev:8085/+mailinglists')
-    browser.getControl(name='field.' + list_name).value = [status]
-    browser.getControl('Submit').click()
     result = MailmanLayer.xmlrpc_watcher.wait_for_create(list_name)
     if result is not None:
         # The watch timed out.

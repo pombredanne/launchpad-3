@@ -1194,13 +1194,17 @@ number of users not affected by it.
     >>> affected_user = factory.makePerson(name='bruce-dickinson')
     >>> unaffected_user = factory.makePerson(name='blaze-bayley')
 
-Initially, only the bug reporter is marked as affected. Other users are neither
-marked as affected nor as unaffected.
+Initially, only the bug reporter is marked as affected. Other users,
+including the anonymous user, are neither marked as affected nor as
+unaffected.
 
     >>> print test_bug.isUserAffected(test_bug.owner)
     True
 
     >>> print test_bug.isUserAffected(affected_user)
+    None
+
+    >>> print test_bug.isUserAffected(None)
     None
 
 When we mark a bug as affecting a new user, the affected_users_count
@@ -1248,7 +1252,7 @@ We can also get the collection of users affected by a bug.
     paul-dianno
 
     >>> unaffecting_bug = factory.makeBug()
-    >>> print unaffecting_bug.users_affected
+    >>> print list(unaffecting_bug.users_affected)
     [<Person at ...>]
 
 

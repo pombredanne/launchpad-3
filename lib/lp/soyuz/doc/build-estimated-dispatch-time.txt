@@ -168,7 +168,7 @@ associated with it (i.e. the 'iceweasel' build) are ignored while
 calculating the estimated dispatch time and the latter becomes effectively
 "now" for the 'pmount' build.
 
-    >>> mark.archive.enabled = False
+    >>> mark.archive.disable()
     >>> syncUpdate(mark.archive)
     >>> estimate = pmount_build.getEstimatedBuildStartTime()
     >>> estimate > now

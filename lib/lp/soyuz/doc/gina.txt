@@ -187,7 +187,7 @@ We should have more source packages in the database:
     16
     >>> count = SourcePackageRelease.select().count()
     >>> count - orig_spr_count
-    16
+    17
 
 Check that x11proto-damage has its Build-Depends-Indep value correctly set:
 
@@ -317,13 +317,13 @@ successfully processed.
       util-linux (again, poor thing)
 
     >>> print SSPPH.select().count() - orig_sspph_count
-    19
+    20
 
     >>> print SSPPH.selectBy(
     ...     componentID=1,
     ...     pocket=PackagePublishingPocket.RELEASE).count() - \
     ...     orig_sspph_main_count
-    19
+    20
 
 === Testing Binary Package Results ===
 
@@ -441,11 +441,11 @@ that we imported exactly 9 people (13 packages with 3 being uploaded by Kamion,
     >>> print p.name
     cjwatson
     >>> print Person.select().count() - orig_person_count
-    12
+    13
     >>> print TeamParticipation.select().count() - orig_tp_count
-    12
+    13
     >>> print EmailAddress.select().count() - orig_email_count
-    12
+    13
 
 
 === Re-run Gina ===
@@ -515,13 +515,13 @@ Nothing should happen to most of our data -- no counts should have
 changed, etc.
 
     >>> SourcePackageRelease.select().count() - orig_spr_count
-    16
+    17
     >>> print Person.select().count() - orig_person_count
-    12
+    13
     >>> print TeamParticipation.select().count() - orig_tp_count
-    12
+    13
     >>> print EmailAddress.select().count() - orig_email_count
-    12
+    13
     >>> BinaryPackageRelease.select().count() - orig_bpr_count
     40
     >>> Build.select().count() - orig_build_count
@@ -532,7 +532,7 @@ But the overrides do generate extra publishing entries:
     >>> SBPPH.select().count() - orig_sbpph_count
     47
     >>> print SSPPH.select().count() - orig_sspph_count
-    21
+    22
 
 Check that the overrides we did were correctly issued. We can't use selectOneBy
 because, of course, there may be multiple rows published for that package --

@@ -101,7 +101,6 @@ such team pages read-only.
     >>> experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
     >>> admin = list(experts.allmembers)[0]
     >>> mailing_list = MailingListSet().get('landscape-developers')
-    >>> mailing_list.review(admin, MailingListStatus.APPROVED)
     >>> mailing_list.syncUpdate()
     >>> logout()
 

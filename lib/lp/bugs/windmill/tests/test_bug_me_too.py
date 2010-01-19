@@ -111,7 +111,7 @@ class TestMeToo(TestCaseWithFactory):
         def check_for_save_not_affects(client):
             client.asserts.assertText(
                 xpath=VALUE_LOCATION_XPATH,
-                validator=u"This bug doesn't affect me")
+                validator=u"This bug doesn't affect you")
 
         # Hah! But this bug does affect the logged-in user! The logged-in
         # user made a mistake, oh noes. Better fix that.
@@ -125,7 +125,7 @@ class TestMeToo(TestCaseWithFactory):
         def check_for_save_does_affect(client):
             client.asserts.assertText(
                 xpath=VALUE_LOCATION_XPATH,
-                validator=u"This bug affects me too")
+                validator=u"This bug affects you")
 
         # The flame icon is now visible.
         client.asserts.assertElemJS(

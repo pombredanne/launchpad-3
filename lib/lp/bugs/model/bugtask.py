@@ -950,7 +950,6 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def getPackageComponent(self):
         """See `IBugTask`."""
-        sourcepackage = None
         if ISourcePackage.providedBy(self.target):
             return self.target.latest_published_component
         if IDistributionSourcePackage.providedBy(self.target):

@@ -93,7 +93,7 @@ The signer can also be None for packages that were synced (e.g. from Debian):
     >>> print spph.package_signer
     None
 
-There is also a property that returns the changesfile URL.  This is proxied
+There is also a method that returns the .changes file URL. This is proxied
 through the webapp rather than being a librarian URL because the changesfile
 could be private and thus in the restricted librarian.
 
@@ -103,26 +103,45 @@ could be private and thus in the restricted librarian.
 
 The pmount source has no packageupload in the sampledata:
 
-    >>> print spph.changes_file_url
+    >>> print spph.changesFileUrl()
     None
 
 The iceweasel source has good data:
 
     >>> pub = spph.archive.getPublishedSources(name="iceweasel")[0]
-    >>> print pub.changes_file_url
+    >>> print pub.changesFileUrl()
     http://launchpad.dev/ubuntu/+archive/primary/+files/mozilla-firefox_0.9_i386.changes
+
+There is also a helper property to determine whether the current release for
+this package in the distroseries is newer than this publishing. Nothing is
+returned if there is no package in the distroseries primary archive with a
+later version.
+
+    >>> print pub.newer_distroseries_version
+    None
+
+If we publish iceweasel 1.1 in the same distroseries, then the distroseries
+source package release will be returned.
+
+    >>> from lp.soyuz.tests.test_publishing import (
+    ...     SoyuzTestPublisher)
+    >>> test_publisher = SoyuzTestPublisher()
+    >>> test_publisher.prepareBreezyAutotest()
+    >>> new_version = test_publisher.getPubSource(
+    ...     distroseries=pub.distroseries, version="1.1",
+    ...     sourcename='iceweasel')
+
+    >>> print pub.newer_distroseries_version.title
+    "iceweasel" 1.1 source package in The Warty Warthog Release
 
 A helper is also included to create a summary of the build statuses for
 the spph's related builds, getStatusSummaryForBuilds(), which just
 augments the IBuildSet.getStatusSummaryForBuilds() method to include the
 'pending' state when builds are fully built but not yet published.
 
-    >>> from lp.soyuz.tests.test_publishing import (
-    ...     SoyuzTestPublisher)
     >>> from lp.soyuz.interfaces.build import BuildStatus
-    >>> test_publisher = SoyuzTestPublisher()
-    >>> test_publisher.prepareBreezyAutotest()
-    >>> spph = test_publisher.getPubSource(architecturehintlist='any')
+    >>> spph = test_publisher.getPubSource(
+    ...     sourcename='abc', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
     >>> for build in builds:
     ...     build.buildstate = BuildStatus.FULLYBUILT
@@ -136,15 +155,15 @@ Create a helper for printing the build status summary:
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
     FULLYBUILT_PENDING
-    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
 The underlying method being used here is getUnpublishedBuilds():
 
     >>> for build in spph.getUnpublishedBuilds():
     ...     print build.title
-    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
 Note: if the related archive for this source package publishing is
 a rebuild archive then the status summary will always display
@@ -155,8 +174,8 @@ FULLY_BUILT.
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
     FULLYBUILT
-    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
     # Just set the purpose back before continuing on.
     >>> spph.archive.purpose = ArchivePurpose.PRIMARY
@@ -165,18 +184,18 @@ If one of the builds becomes published, it will not appear in the summary:
 
     >>> from lp.soyuz.interfaces.publishing import (
     ...     PackagePublishingStatus)
-    >>> bpr = test_publisher.uploadBinaryForBuild(builds[0], 'foo-bin')
+    >>> bpr = test_publisher.uploadBinaryForBuild(builds[0], 'abc-bin')
     >>> bpph = test_publisher.publishBinaryInArchive(bpr, spph.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT_PENDING
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
 Nor will it be included in the unpublished builds:
 
     >>> for build in spph.getUnpublishedBuilds():
     ...     print build.title
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
 By default, only FULLYBUILT builds are included in the returned
 unpublished builds:
@@ -192,7 +211,7 @@ But the returned build-states can be set explicitly:
     ...     BuildStatus.SUPERSEDED
     ...     ]):
     ...     print build.title
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
 Just switch it back to FULLYBUILT before continuing:
 
@@ -201,14 +220,14 @@ Just switch it back to FULLYBUILT before continuing:
 After publishing the second binary, the status changes to FULLYBUILT as
 per normal:
 
-    >>> bpr = test_publisher.uploadBinaryForBuild(builds[1], 'foo-bin')
+    >>> bpr = test_publisher.uploadBinaryForBuild(builds[1], 'abc-bin')
     >>> bpph = test_publisher.publishBinaryInArchive(
     ...     bpr, spph.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT
-    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
 There are no longer any unpublished builds for the source package:
 
@@ -224,41 +243,42 @@ If a build is deleted, it does not cause the build status summary to change:
     >>> transaction.commit()
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT
-    hppa build of foo 666 in ubuntutest breezy-autotest RELEASE
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    hppa build of abc 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of abc 666 in ubuntutest breezy-autotest RELEASE
 
 If a build of a SourcePackagePublishingHistory is manually set to
 superseded (just to cancel the build) even though the SPPH is itself
 not marked as superseded, the status summary will not include
 that build:
 
-    >>> spph = test_publisher.getPubSource(architecturehintlist='any')
+    >>> spph = test_publisher.getPubSource(
+    ...     sourcename='def', architecturehintlist='any')
     >>> builds = spph.createMissingBuilds()
     >>> builds[0].buildstate = BuildStatus.SUPERSEDED
     >>> builds[1].buildstate = BuildStatus.FULLYBUILT
     >>> build_status_summary = spph.getStatusSummaryForBuilds()
     >>> print_build_status_summary(build_status_summary)
     FULLYBUILT_PENDING
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of def 666 in ubuntutest breezy-autotest RELEASE
 
 And after publishing the other build, the normal FULLY_BUILT status
 is achieved (without the 'canceled' build):
 
-    >>> bpr = test_publisher.uploadBinaryForBuild(builds[1], 'foo-bin')
+    >>> bpr = test_publisher.uploadBinaryForBuild(builds[1], 'def-bin')
     >>> bpph = test_publisher.publishBinaryInArchive(bpr, spph.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> print_build_status_summary(spph.getStatusSummaryForBuilds())
     FULLYBUILT
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    i386 build of def 666 in ubuntutest breezy-autotest RELEASE
 
 IBinaryPackagePublishingHistory also contains similar API conveniences.
 
-    >>> bpph = test_publisher.getPubBinaries()[0]
+    >>> bpph = test_publisher.getPubBinaries(binaryname='def-bin')[0]
     >>> verifyObject(IBinaryPackagePublishingHistory, bpph)
     True
 
     >>> print bpph.binary_package_name
-    foo-bin
+    def-bin
 
     >>> print bpph.binary_package_version
     666
@@ -344,13 +364,14 @@ removal_comment argument.
 
     >>> from zope.component import getUtility
     >>> mark = getUtility(IPersonSet).getByName('mark')
-    >>> modified_spph = spph.requestDeletion(mark, "testing deletion")
+    >>> spph.requestDeletion(mark, "testing deletion")
 
 Inspecting the modified record shows it's ready for domination:
 
     >>> from canonical.database.sqlbase import get_transaction_timestamp
     >>> transaction_timestamp = get_transaction_timestamp()
 
+    >>> modified_spph = spph.secure_record
     >>> modified_spph.status
     <DBItem PackagePublishingStatus.DELETED, (4) Deleted>
 
@@ -390,23 +411,25 @@ test this feature. We will create a publication for a source (foo) and
 two architecture-specific binaries in ubuntu/breezy-autotest.
 
     >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-    >>> source = test_publisher.getPubSource(
+    >>> source = test_publisher.getPubSource( 
+    ...     sourcename='ghi',
     ...     architecturehintlist='any',
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.PROPOSED)
 
     >>> binaries = test_publisher.getPubBinaries(
+    ...     binaryname='ghi-bin',
     ...     pub_source=source,
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     pocket=PackagePublishingPocket.PROPOSED)
 
     >>> print source.displayname
-    foo 666 in breezy-autotest
+    ghi 666 in breezy-autotest
 
     >>> for bin in binaries:
     ...     print bin.displayname
-    foo-bin 666 in breezy-autotest i386
-    foo-bin 666 in breezy-autotest hppa
+    ghi-bin 666 in breezy-autotest i386
+    ghi-bin 666 in breezy-autotest hppa
 
 Using the source publication, ISecureSourcePackagePublishingHistory, we
 can obtain the published binaries.
@@ -421,8 +444,8 @@ without retrieving its binaries.
 
     >>> for build in source.getBuilds():
     ...     print build.title
-    hppa build of foo 666 in ubuntutest breezy-autotest PROPOSED
-    i386 build of foo 666 in ubuntutest breezy-autotest PROPOSED
+    hppa build of ghi 666 in ubuntutest breezy-autotest PROPOSED
+    i386 build of ghi 666 in ubuntutest breezy-autotest PROPOSED
 
 Now that we know how to retrieve generated binary publication related
 to a source publication we can exercise the API provided to copy
@@ -494,13 +517,13 @@ previous broken implementation in this area.
 
     >>> for bin in source.getPublishedBinaries():
     ...     print bin.displayname, bin.pocket.name, bin.status.name
-    foo-bin 666 in breezy-autotest hppa PROPOSED PUBLISHED
-    foo-bin 666 in breezy-autotest i386 PROPOSED PUBLISHED
+    ghi-bin 666 in breezy-autotest hppa PROPOSED PUBLISHED
+    ghi-bin 666 in breezy-autotest i386 PROPOSED PUBLISHED
 
     >>> for bin in copied_source.getPublishedBinaries():
     ...     print bin.displayname, bin.pocket.name, bin.status.name
-    foo-bin 666 in breezy-autotest hppa UPDATES PENDING
-    foo-bin 666 in breezy-autotest i386 UPDATES PENDING
+    ghi-bin 666 in breezy-autotest hppa UPDATES PENDING
+    ghi-bin 666 in breezy-autotest i386 UPDATES PENDING
 
 Note that even PENDING binary publications are returned by
 getPublishedBinaries(), it considers both PENDING and PUBLISHED status
@@ -535,8 +558,9 @@ getBuiltBinaries() result.
 The same happens when we delete the i386 binary, so no binaries are
 published in the original location.
 
-    >>> deleted = source.getPublishedBinaries()[0].requestDeletion(
-    ...     mark, "go")
+    >>> deletable = source.getPublishedBinaries()[0]
+    >>> deletable.requestDeletion(mark, "go")
+    >>> deleted = deletable.secure_record
     >>> syncUpdate(deleted)
 
     >>> len(source.getPublishedBinaries())
@@ -589,9 +613,9 @@ but also the override just done.
 
     >>> for pub in copied_source.getPublishedBinaries():
     ...     print pub.displayname, pub.component.name
-    foo-bin 666 in breezy-autotest hppa universe
-    foo-bin 666 in breezy-autotest hppa main
-    foo-bin 666 in breezy-autotest i386 main
+    ghi-bin 666 in breezy-autotest hppa universe
+    ghi-bin 666 in breezy-autotest hppa main
+    ghi-bin 666 in breezy-autotest i386 main
 
 The publication duplication is solved in the publishing pipeline,
 specifically in the 'domination' state. See
@@ -602,8 +626,8 @@ publications and the hppa one is the overridden one.
 
     >>> for pub in copied_source.getBuiltBinaries():
     ...     print pub.displayname, pub.component.name
-    foo-bin 666 in breezy-autotest hppa universe
-    foo-bin 666 in breezy-autotest i386 main
+    ghi-bin 666 in breezy-autotest hppa universe
+    ghi-bin 666 in breezy-autotest i386 main
 
 We have to re-publish the superseded and the deleted publications above
 because it's used below.
@@ -705,19 +729,21 @@ suite. To simulate this we will create a publication in Celso's PPA.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
 
     >>> ppa_source = test_publisher.getPubSource(
+    ...     sourcename='jkl',
     ...     archive=cprov.archive,
     ...     status=PackagePublishingStatus.PUBLISHED)
     >>> ppa_binaries = test_publisher.getPubBinaries(
+    ...     binaryname='jkl-bin',
     ...     pub_source=ppa_source,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> print ppa_source.displayname, ppa_source.archive.displayname
-    foo 666 in breezy-autotest PPA for Celso Providelo
+    jkl 666 in breezy-autotest PPA for Celso Providelo
 
     >>> for bin in ppa_binaries:
     ...     print bin.displayname, bin.archive.displayname
-    foo-bin 666 in breezy-autotest i386 PPA for Celso Providelo
-    foo-bin 666 in breezy-autotest hppa PPA for Celso Providelo
+    jkl-bin 666 in breezy-autotest i386 PPA for Celso Providelo
+    jkl-bin 666 in breezy-autotest hppa PPA for Celso Providelo
 
 Now we will copy only the source from Celso's PPA breezy-autotest to
 hoary-test.
@@ -744,7 +770,7 @@ builds.
 
     >>> for build in builds:
     ...     print build.title
-    i386 build of foo 666 in ubuntutest hoary-test RELEASE
+    i386 build of jkl 666 in ubuntutest hoary-test RELEASE
 
 If createMissingBuilds get called again on either sources no builds
 will get created.
@@ -788,10 +814,12 @@ distroseries within the same PPA. That's usually the case for
 architecture-independent sources.
 
     >>> ppa_source = test_publisher.getPubSource(
+    ...     sourcename='mno',
     ...     archive=cprov.archive, version="999",
     ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> ppa_binaries = test_publisher.getPubBinaries(
+    ...     binaryname='mno-bin',
     ...     pub_source=ppa_source,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
@@ -805,7 +833,7 @@ Let's perform the copy of the source and its i386 binary.
 
     >>> ppa_binary_i386 = ppa_binaries[0]
     >>> print ppa_binary_i386.displayname
-    foo-bin 999 in breezy-autotest i386
+    mno-bin 999 in breezy-autotest i386
 
     >>> copied_binary = ppa_binary_i386.copyTo(series, pocket, archive)
 
@@ -813,12 +841,12 @@ The source and binary are present in hoary-test:
 
     >>> copied_source = SourcePackagePublishingHistory.get(copied_source.id)
     >>> print copied_source.displayname
-    foo 999 in hoary-test
+    mno 999 in hoary-test
 
     >>> for bin in copied_source.getPublishedBinaries():
     ...     print bin.displayname
-    foo-bin 999 in hoary-test amd64
-    foo-bin 999 in hoary-test i386
+    mno-bin 999 in hoary-test amd64
+    mno-bin 999 in hoary-test i386
 
 So, no builds are created.
 
@@ -836,23 +864,25 @@ Using the same Ubuntu source publishing example as above:
 
     >>> for file in source.getSourceAndBinaryLibraryFiles():
     ...     print file.filename
-    foo-bin_666_hppa.deb
-    foo-bin_666_i386.deb
-    foo_666.dsc
+    ghi-bin_666_hppa.deb
+    ghi-bin_666_i386.deb
+    ghi_666.dsc
 
 We can also publish a package in a PPA and query on its files:
 
     >>> ppa_source = test_publisher.getPubSource(
+    ...     sourcename='pqr',
     ...     status=PackagePublishingStatus.PUBLISHED,
     ...     archive=cprov.archive)
     >>> ppa_binaries= test_publisher.getPubBinaries(
+    ...     binaryname='pqr-bin',
     ...     pub_source=ppa_source,
     ...     status=PackagePublishingStatus.PUBLISHED)
 
     >>> for file in ppa_source.getSourceAndBinaryLibraryFiles():
     ...     print file.filename
-    foo-bin_666_all.deb
-    foo_666.dsc
+    pqr-bin_666_all.deb
+    pqr_666.dsc
 
 
 Publishing records age
@@ -1044,6 +1074,16 @@ ever published in Celso's PPA.
     >>> cprov_sources = list(cprov.archive.getPublishedSources())
     >>> len(cprov_sources)
     8
+    >>> for spph in cprov_sources:
+    ...     print spph.displayname
+    cdrkit 1.0 in breezy-autotest
+    iceweasel 1.0 in warty
+    jkl 666 in hoary-test
+    jkl 666 in breezy-autotest
+    mno 999 in hoary-test
+    mno 999 in breezy-autotest
+    pmount 0.1-1 in warty
+    pqr 666 in breezy-autotest
 
 Now that we have a set of source publications let's get the builds in
 its context.
@@ -1055,22 +1095,61 @@ It returns a `ResultSet` and it contains 3-element tuples as
 each build found.
 
     >>> cprov_builds.count()
-    7
+    8
 
 The `ResultSet` is ordered by ascending
 `SourcePackagePublishingHistory.id` and ascending
 `DistroArchseries.architecturetag` in this order.
 
-    >>> source_pub, build, arch = cprov_builds.last()
+    # The easiest thing we can do here (without printing ids)
+    # is to show that sorting a list of the resulting ids+tags does not
+    # modify the list.
+    >>> ids_and_tags = [(pub.id, arch.architecturetag)
+    ...     for pub, build, arch in cprov_builds]
+    >>> ids_and_tags == sorted(ids_and_tags)
+    True
 
-    >>> print source_pub.displayname
-    foo 666 in breezy-autotest
+If a source package is copied from another archive (including the
+binaries), then the related builds for that source package will
+also be retrievable via the copied source publication.
+For example, if a package is built in a private security PPA, and then
+later copied out into the primary archive, the builds will then
+be available when looking at the copied source package in the primary
+archive.
 
-    >>> print build.title
-    i386 build of foo 666 in ubuntutest breezy-autotest RELEASE
+    # Create a new PPA and publish a source with some builds
+    # and binaries.
+    >>> other_ppa = factory.makeArchive(name="otherppa")
+    >>> binaries = test_publisher.getPubBinaries(archive=other_ppa)
 
-    >>> print arch.displayname
-    ubuntutest Breezy Badger Autotest i386
+The associated builds and binaries will be created in the context of the
+other PPA.
+
+    >>> build = binaries[0].binarypackagerelease.build
+    >>> source_pub = build.sourcepackagerelease.publishings[0]
+    >>> print build.archive.name
+    otherppa
+
+    # Copy the source into Celso's PPA, ensuring that the binaries
+    # are alse published there.
+    >>> source_pub_cprov = source_pub.copyTo(
+    ...     source_pub.distroseries, source_pub.pocket,
+    ...     cprov.archive)
+    >>> binaries_cprov = test_publisher.publishBinaryInArchive(
+    ...     binaries[0].binarypackagerelease, cprov.archive)
+
+Now we will see an extra source in Celso's PPA as well as an extra
+build - even though the build's context is not Celso's PPA. Previously
+there were 8 sources and builds.
+
+    >>> cprov_sources_new = cprov.archive.getPublishedSources()
+    >>> cprov_sources_new.count()
+    9
+
+    >>> cprov_builds_new = publishing_set.getBuildsForSources(
+    ...     cprov_sources_new)
+    >>> cprov_builds_new.count()
+    9
 
 Next we'll create two sources with two builds each (the SoyuzTestPublisher
 default) and show that the number of unpublished builds for these sources
@@ -1079,7 +1158,8 @@ is correct:
     >>> sources = []
     >>> builds = []
     >>> for count in range(2):
-    ...     spph = test_publisher.getPubSource(architecturehintlist='any')
+    ...     spph = test_publisher.getPubSource(
+    ...     sourcename='stu', architecturehintlist='any')
     ...     missing_builds = spph.createMissingBuilds()
     ...     for build in missing_builds:
     ...         build.buildstate = BuildStatus.FULLYBUILT
@@ -1125,16 +1205,16 @@ ascending `DistroArchSeries.architecturetag and descending
     ...  arch) = cprov_binaries.last()
 
     >>> print source_pub.displayname
-    foo 666 in breezy-autotest
+    pqr 666 in breezy-autotest
 
     >>> print binary_pub.displayname
-    foo-bin 666 in breezy-autotest i386
+    pqr-bin 666 in breezy-autotest i386
 
     >>> print binary.title
-    foo-bin-666
+    pqr-bin-666
 
     >>> print binary_name.name
-    foo-bin
+    pqr-bin
 
     >>> print arch.displayname
     ubuntutest Breezy Badger Autotest i386
@@ -1175,14 +1255,18 @@ publications.
 Please note how the result set is ordered by the id of `LibraryFileAlias`
 (second element of the triple):
 
+    >>> file_ids = [file.id for source, file, content in binary_files]
+    >>> file_ids == sorted(file_ids)
+    True
+
     >>> for source, file, content in binary_files:
-    ...     print file.id, file.filename
-    40 mozilla-firefox_0.9_i386.deb
-    124 foo-bin_666_all.deb
-    124 foo-bin_666_all.deb
-    130 foo-bin_999_all.deb
-    130 foo-bin_999_all.deb
-    135 foo-bin_666_all.deb
+    ...     print file.filename
+    mozilla-firefox_0.9_i386.deb
+    jkl-bin_666_all.deb
+    jkl-bin_666_all.deb
+    mno-bin_999_all.deb
+    mno-bin_999_all.deb
+    pqr-bin_666_all.deb
 
 getPackageDiffsForSources() is also provided by `IPublishingSet`, it
 allows callsites to retrieve all related `PackageDiff` records based
@@ -1200,11 +1284,11 @@ returned for the Celso's sources.
 For testing purposes we will create a `PackageDiff` for Celso's
 'pmount' and another for Celso's 'iceweasel' sources.
 
-    >>> a_source = cprov_sources[-2]
+    >>> a_source = cprov_sources[1]
     >>> print a_source.displayname
     iceweasel 1.0 in warty
 
-    >>> to_source = cprov_sources[-1]
+    >>> to_source = cprov_sources[-2]
     >>> print to_source.displayname
     pmount 0.1-1 in warty
 
@@ -1284,7 +1368,7 @@ requests. On pending diffs, `LibraryFileAlias` and
     None
 
 getChangesFilesForSources(), provided by IPublishingSet, allows
-call sites to retrieve all changesfiles related to a set of source
+call sites to retrieve all .changes files related to a set of source
 publications.
 
     >>> cprov_changes = publishing_set.getChangesFilesForSources(
@@ -1398,6 +1482,12 @@ We will use all published sources in Celso's PPA as our initial set.
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
     >>> cprov_published_sources = cprov.archive.getPublishedSources(
     ...     status=PackagePublishingStatus.PUBLISHED)
+    >>> for spph in cprov_published_sources:
+    ...     print spph.displayname
+    jkl 666 in breezy-autotest
+    mno 999 in breezy-autotest
+    pmount 0.1-1 in warty
+    pqr 666 in breezy-autotest
 
 We use the source publications to initialise
 `ArchiveSourcePublications`.
@@ -1479,7 +1569,7 @@ corresponding `IPublishingSet` methods and group the wanted results as
 a dictionary, keyed by `SourcePackagePublishingHistory `, in way they
 can be quickly looked up when building `ArchiveSourcePublications`.
 
-    >>> real_pub = cprov_published_sources[0]
+    >>> real_pub = cprov_published_sources[1]
 
 Builds by source.
 
@@ -1500,15 +1590,26 @@ Unpublished builds by source.
     Matches
 
 getChangesFileBySources() returns a dictionary mapping each individual
-source package publication to its corresponding changesfile (as a
+source package publication to its corresponding .changes file (as a
 LibraryFileAlias).
 
     >>> all_cprov_sources = cprov.archive.getPublishedSources()
+    >>> for spph in all_cprov_sources:
+    ...     print spph.displayname
+    cdrkit 1.0 in breezy-autotest
+    foo 666 in breezy-autotest
+    iceweasel 1.0 in warty
+    jkl 666 in hoary-test
+    jkl 666 in breezy-autotest
+    mno 999 in hoary-test
+    mno 999 in breezy-autotest
+    pmount 0.1-1 in warty
+    pqr 666 in breezy-autotest
 
 We select the only available publication in Celso's PPA with a valid
-changesfile in the sampledata.
+.changes file in the sampledata.
 
-    >>> pub_with_changes = all_cprov_sources[-2]
+    >>> pub_with_changes = all_cprov_sources[2]
     >>> the_source = pub_with_changes.sourcepackagerelease
     >>> the_change = the_source.upload_changesfile
     >>> print the_change.filename
@@ -1530,7 +1631,7 @@ expensive references for other objects already cached. This makes the
 whole difference when rendering PPA pages with many source
 publications.
 
-    >>> decorated_pub = list(decorated_set)[0]
+    >>> decorated_pub = list(decorated_set)[1]
 
     >>> print decorated_pub
     <...ArchiveSourcePublication ...>
@@ -1563,17 +1664,17 @@ We select an arbitrary source publication from Celso's PPA added by
 `PackageUpload.changesfile` in both, the real and the decorated
 objects.
 
-    >>> pub_with_changes = cprov_published_sources[0]
+    >>> pub_with_changes = cprov_published_sources[1]
     >>> the_source = pub_with_changes.sourcepackagerelease
     >>> changesfile = the_source.upload_changesfile
     >>> print '%s (%s)' % (changesfile.filename, changesfile.content.md5)
-    foo_999_source.changes (6168e17ba012fc3db6dc77e255243bd1)
+    mno_999_source.changes (6168e17ba012fc3db6dc77e255243bd1)
 
-    >>> decorated_pub_with_changes = list(decorated_set)[0]
+    >>> decorated_pub_with_changes = list(decorated_set)[1]
     >>> decorated_source = decorated_pub_with_changes.sourcepackagerelease
     >>> changesfile = decorated_source.upload_changesfile
     >>> print '%s (%s)' % (changesfile.filename, changesfile.content.md5)
-    foo_999_source.changes (6168e17ba012fc3db6dc77e255243bd1)
+    mno_999_source.changes (6168e17ba012fc3db6dc77e255243bd1)
 
 `ArchiveSourcePublication` also has a decorated version of the
 getStatusSummaryForBuilds() method.
@@ -1581,7 +1682,7 @@ getStatusSummaryForBuilds() method.
     >>> print_build_status_summary(
     ...     decorated_pub.getStatusSummaryForBuilds())
     FULLYBUILT
-    i386 build of foo 999 in ubuntutest breezy-autotest RELEASE
+    i386 build of mno 999 in ubuntutest breezy-autotest RELEASE
 
 We can verify that this decorated version is in fact using the cached
 builds by explicitly modifying the cached builds on the delegate. We'll
@@ -1591,8 +1692,8 @@ modify the cached builds by appending the same build to the cached builds.
     >>> print_build_status_summary(
     ...     decorated_pub.getStatusSummaryForBuilds())
     FULLYBUILT
-    i386 build of foo 999 in ubuntutest breezy-autotest RELEASE
-    i386 build of foo 999 in ubuntutest breezy-autotest RELEASE
+    i386 build of mno 999 in ubuntutest breezy-autotest RELEASE
+    i386 build of mno 999 in ubuntutest breezy-autotest RELEASE
 
 
 IPublishingSet.getBuildStatusSummariesForSourceIdsAndArchive()
@@ -1655,7 +1756,7 @@ And then grab the build summaries for firefox and foo:
     Relevant builds:
      - i386 build of foobar-test 666 in ubuntutest breezy-autotest RELEASE
 
-Any of the source ids passed into 
+Any of the source ids passed into
 getBuildStatusSummariesForSourceIdsAndArchive that do not belong to the
 required archive parameter will be ignored:
 

@@ -35,7 +35,7 @@ from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.milestone import (
     IMilestone, IMilestoneSet, IProjectMilestone)
 from lp.registry.interfaces.product import IProduct
-from canonical.launchpad.browser.structuralsubscription import (
+from lp.registry.browser.structuralsubscription import (
     StructuralSubscriptionMenuMixin,
     StructuralSubscriptionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
@@ -214,7 +214,7 @@ class MilestoneView(LaunchpadView, ProductDownloadFileMixin):
         """The list of non-conjoined bugtasks targeted to this milestone."""
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
-                    orderby=['-importance', 'datecreated', 'id'],
+                    orderby=['status', '-importance', 'id'],
                     omit_dupes=True)
         tasks = getUtility(IBugTaskSet).search(params)
         # We could replace all the code below with a simple

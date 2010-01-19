@@ -27,14 +27,14 @@
       <span tal:content="context/date_created/fmt:displaydate" />
     </p>
 
-    <tal:is-admin condition="context/required:launchpad.Admin">
+    <tal:is-admin condition="context/required:launchpad.Edit">
     </tal:is-admin>
     </div>
     <h2>Archive information</h2>
     <div class="yui-g">
       <div class="yui-u first">
         <div class="top-portlet">
-          <tal:is-admin condition="context/required:launchpad.Admin">
+          <tal:is-admin condition="context/required:launchpad.Edit">
           <dl id="whiteboard">
             <dt>
               Whiteboard

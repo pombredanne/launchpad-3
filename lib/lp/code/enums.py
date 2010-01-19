@@ -388,7 +388,7 @@ class RevisionControlSystems(DBEnumeratedType):
         """)
 
     SVN = DBItem(2, """
-        Subversion
+        Subversion via CSCVS
 
         Imports from SVN using CSCVS.
         """)

@@ -76,6 +76,7 @@ from lp.blueprints.interfaces.specification import (
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translator import ITranslatorSet
+from lp.translations.interfaces.translationsperson import ITranslationsPerson 
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -107,7 +108,7 @@ from lp.registry.interfaces.mailinglist import (
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
-    IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
+    IPerson, IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
 from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
 from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
@@ -118,7 +119,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.testing import run_with_login, time_counter
@@ -225,10 +226,10 @@ class LaunchpadObjectFactory(ObjectFactory):
     """
 
     def makeCopyArchiveLocation(self, distribution=None, owner=None,
-        name=None):
+        name=None, enabled=True):
         """Create and return a new arbitrary location for copy packages."""
         copy_archive = self.makeArchive(distribution, owner, name,
-                                        ArchivePurpose.COPY)
+                                        ArchivePurpose.COPY, enabled)
 
         distribution = copy_archive.distribution
         distroseries = distribution.currentseries
@@ -276,10 +277,11 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
         key_id = self.getUniqueHexString(digits=8).upper()
+        fingerprint = key_id + 'A' * 32
         return getUtility(IGPGKeySet).new(
             owner.id,
             keyid=key_id,
-            fingerprint='A' * 40,
+            fingerprint=fingerprint,
             keysize=self.getUniqueInteger(),
             algorithm=GPGKeyAlgorithm.R,
             active=True,
@@ -502,13 +504,15 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(ITranslationGroupSet).new(
             name, title, summary, url, owner)
 
-    def makeTranslator(self, language_code, group=None, person=None):
+    def makeTranslator(
+        self, language_code, group=None, person=None, license=True):
         """Create a new, arbitrary `Translator`."""
         language = getUtility(ILanguageSet).getLanguageByCode(language_code)
         if group is None:
             group = self.makeTranslationGroup()
         if person is None:
             person = self.makePerson()
+        ITranslationsPerson(person).translations_relicensing_agreement = license
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(
@@ -744,13 +748,6 @@ class LaunchpadObjectFactory(ObjectFactory):
             product = self.makeProduct()
         return self.makeBranch(product=product, **kwargs)
 
-    def makeImportBranch(self, **kwargs):
-        """Make a in import branch on an arbitrary product.
-
-        See `makeBranch` for more information on arguments.
-        """
-        return self.makeBranch(branch_type=BranchType.IMPORTED, **kwargs)
-
     def makeAnyBranch(self, **kwargs):
         """Make a branch without caring about its container.
 
@@ -897,10 +894,12 @@ class LaunchpadObjectFactory(ObjectFactory):
             CodeReviewNotificationLevel.NOEMAIL)
 
     def makeRevision(self, author=None, revision_date=None, parent_ids=None,
-                     rev_id=None, log_body=None):
+                     rev_id=None, log_body=None, date_created=None):
         """Create a single `Revision`."""
         if author is None:
             author = self.getUniqueString('author')
+        elif IPerson.providedBy(author):
+            author = author.preferredemail.email
         if revision_date is None:
             revision_date = datetime.now(pytz.UTC)
         if parent_ids is None:
@@ -912,7 +911,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IRevisionSet).new(
             revision_id=rev_id, log_body=log_body,
             revision_date=revision_date, revision_author=author,
-            parent_ids=parent_ids, properties={})
+            parent_ids=parent_ids, properties={},
+            _date_created=date_created)
 
     def makeRevisionsForBranch(self, branch, count=5, author=None,
                                date_generator=None):
@@ -1486,7 +1486,7 @@ class LaunchpadObjectFactory(ObjectFactory):
         return getUtility(IComponentSet).ensure(name)
 
     def makeArchive(self, distribution=None, owner=None, name=None,
-                    purpose=None):
+                    purpose=None, enabled=True):
         """Create and return a new arbitrary archive.
 
         :param distribution: Supply IDistribution, defaults to a new one
@@ -1495,6 +1495,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             makePerson().
         :param name: Name of the archive, defaults to a random string.
         :param purpose: Supply ArchivePurpose, defaults to PPA.
+        :param enabled: Whether the archive should be enabled.
         """
         if distribution is None:
             distribution = self.makeDistribution()
@@ -1515,7 +1516,7 @@ class LaunchpadObjectFactory(ObjectFactory):
 
         return getUtility(IArchiveSet).new(
             owner=owner, purpose=purpose,
-            distribution=distribution, name=name)
+            distribution=distribution, name=name, enabled=enabled)
 
     def makeBuilder(self, processor=None, url=None, name=None, title=None,
                     description=None, owner=None, active=True,
@@ -1700,12 +1701,7 @@ class LaunchpadObjectFactory(ObjectFactory):
                 owner, displayname=display_name, name=team_name,
                 visibility=visibility,
                 subscription_policy=subscription_policy)
-        # Any member of the mailing-list-experts team can review a list
-        # registration.  It doesn't matter which one.
-        experts = getUtility(ILaunchpadCelebrities).mailing_list_experts
-        reviewer = list(experts.allmembers)[0]
         team_list = getUtility(IMailingListSet).new(team, owner)
-        team_list.review(reviewer, MailingListStatus.APPROVED)
         team_list.startConstructing()
         team_list.transitionToStatus(MailingListStatus.ACTIVE)
         return team, team_list

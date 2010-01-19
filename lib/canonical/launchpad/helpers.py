@@ -26,9 +26,7 @@ from zope.security.interfaces import ForbiddenAttribute
 
 import canonical
 from canonical.launchpad.interfaces import (
-    BinaryPackageFormat, BinaryPackageFileType, ILaunchBag,
-    IRequestPreferredLanguages, IRequestLocalLanguages,
-    SourcePackageFileType)
+    ILaunchBag, IRequestPreferredLanguages, IRequestLocalLanguages)
 
 
 # pylint: disable-msg=W0102
@@ -465,67 +463,6 @@ def get_filename_from_message_id(message_id):
     return '%s.msg' % (
             canonical.base.base(
                 long(sha.new(message_id).hexdigest(), 16), 62))
-
-
-def getFileType(fname):
-    if fname.endswith(".deb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".udeb"):
-        return BinaryPackageFileType.DEB
-    if fname.endswith(".dsc"):
-        return SourcePackageFileType.DSC
-    if fname.endswith(".diff.gz"):
-        return SourcePackageFileType.DIFF
-    if fname.endswith(".orig.tar.gz"):
-        return SourcePackageFileType.ORIG_TARBALL
-    if fname.endswith(".tar.gz"):
-        return SourcePackageFileType.NATIVE_TARBALL
-
-
-BINARYPACKAGE_EXTENSIONS = {
-    BinaryPackageFormat.DEB: '.deb',
-    BinaryPackageFormat.UDEB: '.udeb',
-    BinaryPackageFormat.RPM: '.rpm'}
-
-
-class UnrecognizedBinaryFormat(Exception):
-
-    def __init__(self, fname, *args):
-        Exception.__init__(self, *args)
-        self.fname = fname
-
-    def __str__(self):
-        return '%s is not recognized as a binary file.' % self.fname
-
-
-def getBinaryPackageFormat(fname):
-    """Return the BinaryPackageFormat for the given filename.
-
-    >>> getBinaryPackageFormat('mozilla-firefox_0.9_i386.deb').name
-    'DEB'
-    >>> getBinaryPackageFormat('debian-installer.9_all.udeb').name
-    'UDEB'
-    >>> getBinaryPackageFormat('network-manager.9_i386.rpm').name
-    'RPM'
-    """
-    for key, value in BINARYPACKAGE_EXTENSIONS.items():
-        if fname.endswith(value):
-            return key
-
-    raise UnrecognizedBinaryFormat(fname)
-
-
-def getBinaryPackageExtension(format):
-    """Return the file extension for the given BinaryPackageFormat.
-
-    >>> getBinaryPackageExtension(BinaryPackageFormat.DEB)
-    '.deb'
-    >>> getBinaryPackageExtension(BinaryPackageFormat.UDEB)
-    '.udeb'
-    >>> getBinaryPackageExtension(BinaryPackageFormat.RPM)
-    '.rpm'
-    """
-    return BINARYPACKAGE_EXTENSIONS[format]
 
 
 def intOrZero(value):

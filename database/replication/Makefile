@@ -182,11 +182,11 @@ _replicate:
 	# Setup the slave
 	./new-slave.py 2 "dbname=${_SLAVE}"
 	# Upgrade all databases in the cluster and reset security.
-	@echo Running upgrade.py
+	@echo Running upgrade.py `date`
 	${SHHH} ../schema/upgrade.py
-	@echo Running fti.py
+	@echo Running fti.py `date`
 	${SHHH} ../schema/fti.py
-	@echo Running security.py
+	@echo Running security.py `date`
 	${SHHH} ../schema/security.py --cluster -U slony
 	# Migrate tables to the authdb replication set, creating the set
 	# and subscribing nodes to it as necessary.

@@ -38,7 +38,7 @@ from canonical.launchpad.fields import (
     Description, IconImageUpload, LogoImageUpload, MugshotImageUpload,
     ParticipatingPersonChoice, ProductBugTracker, ProductNameField,
     PublicPersonChoice, Summary, Title, URIField)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     IStructuralSubscriptionTarget)
 from lp.app.interfaces.headings import IRootContext
 from lp.code.interfaces.branchvisibilitypolicy import (

@@ -96,8 +96,8 @@ status is returned.
 
 
 >>> check("/codeofconduct")
->>> check("/codeofconduct/1.0")
->>> check("/codeofconduct/1.0/+download")
+>>> check("/codeofconduct/1.1")
+>>> check("/codeofconduct/1.1/+download")
 
 >>> check("/projectgroups", auth=True)
 >>> check("/projectgroups/+all", auth=True)

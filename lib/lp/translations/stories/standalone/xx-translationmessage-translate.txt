@@ -1,12 +1,20 @@
+
+Here is the story for translating a single message
+==================================================
+
 Here we are going to check the basic behaviour of the translation form when we
 render just one message with all available information for it.
+
+
+Getting there
+-------------
 
 First, we need to be sure that anonymous users are able to browse translations
 but are unable to actually change them.
 
-  >>> browser.open(
-  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
-  ...     '+pots/evolution-2.2/es/5')
+    >>> browser.open(
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/'
+    ...     'evolution/+pots/evolution-2.2/es/5')
 
 We are in read only mode, so there shouldn't be any textareas:
 
@@ -18,6 +26,22 @@ Neither any input widget:
 
   >>> for input in main_content.findAll('input'):
   ...     raise AssertionError, 'Found input:\n%s' % input
+
+As an anynoymous user you will have access to the download and details
+pages for the pofile this message belongs to. The link to upload page
+should not be in that list.
+
+  >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
+  >>> print extract_text(nav)
+  Download translation Translation details
+
+Download translations and Translation details should linked to the proper
+pages
+
+  >> print nav.getLink("Download translation").url
+  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export
+  >> print nav.getLink("Translation details").url
+  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+details
 
 Also, any anonymous POST submission should fail:
 
@@ -124,6 +148,22 @@ Let's test the ones at the end of the form.
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
   >>> print browser.getLink('Last').url
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/22/+translate
+
+As a translation admin you will have access to the download, upload
+and details pages for the pofile this message belongs to.
+
+  >>> nav = find_tag_by_id(browser.contents, 'nav-pofile-subpages')
+  >>> print extract_text(nav)
+  Download translation Upload translation Translation details
+
+All those links should linked the proper pages
+
+  >> print nav.getLink("Download translation").url
+  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+export
+  >> print nav.getLink("Upload translation").url
+  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+upload
+  >> print nav.getLink("Translation details").url
+  https://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+details
 
 Now, we are going to check a message submission.
 
@@ -384,7 +424,8 @@ But also, the new one should appear in the form.
   ...     'msgset_143_es_suggestion_703_0').renderContents()
   'foo!!'
 
-== Unreviewed translations ==
+Unreviewed translations
+-----------------------
 
 If there is a message which has a translation, but no reviewer (eg. uploaded
 from a package), it only shows the translator, and not reviewer.
@@ -399,7 +440,8 @@ from a package), it only shows the translator, and not reviewer.
   >>> print find_tag_by_id(browser.contents, "translated_and_reviewed_by")
   None
 
-== Translating context ==
+Translating context
+-------------------
 
 Going to a translation page for a message with the context displays the
 context.
@@ -431,7 +473,9 @@ And the translation is now updated.
     ...     find_tag_by_id(browser.contents, "msgset_198_sr_translation_0"))
     blah
 
-== Empty imported messages ==
+
+Empty imported messages
+-----------------------
 
 Empty messages coming from import are not shown as 'packaged' suggestions,
 even if we keep them to know when were they deactivated.
@@ -491,7 +535,9 @@ packaged translation anymore.
     >>> print packaged
     None
 
-== Shared and diverged translations ==
+
+Shared and diverged translations
+--------------------------------
 
 We create a POFile with one shared translation, which we want to diverge
 from.

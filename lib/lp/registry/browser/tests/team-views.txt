@@ -33,7 +33,7 @@ If new members are added/proposed, they'll show up at the top of the lists.
     >>> salgado = person_set.getByName('salgado')
     >>> mark = person_set.getByName('mark')
     >>> login('foo.bar@canonical.com')
-    >>> ubuntu_team.addMember(salgado, reviewer=mark)
+    >>> ignored = ubuntu_team.addMember(salgado, reviewer=mark)
 
     >>> team_home = create_initialized_view(ubuntu_team, '+index')
     >>> for member in team_home.recently_approved_members:
@@ -125,7 +125,7 @@ views number of times is incremented for each timezone the members reside in.
 
     >>> london_member = factory.makePerson(
     ...     latitude=51.49, longitude=-0.13, time_zone='Europe/London')
-    >>> context.addMember(london_member, mark)
+    >>> ignored = context.addMember(london_member, mark)
     >>> context.mapped_participants_count
     1
     >>> view = create_initialized_view(context, '+map')
@@ -139,7 +139,7 @@ views number of times is incremented for each timezone the members reside in.
 
     >>> brazil_member = factory.makePerson(
     ...     latitude=-23.60, longitude=-46.64, time_zone='America/Sao_Paulo')
-    >>> context.addMember(brazil_member, mark)
+    >>> ignored = context.addMember(brazil_member, mark)
     >>> context.mapped_participants_count
     2
     >>> view = create_initialized_view(context, '+map')
@@ -153,7 +153,7 @@ twice, for obvious reasons.
 
     >>> london_member2 = factory.makePerson(
     ...     latitude=51.49, longitude=-0.13, time_zone='Europe/London')
-    >>> context.addMember(london_member2, mark)
+    >>> ignored = context.addMember(london_member2, mark)
     >>> context.mapped_participants_count
     3
     >>> view = create_initialized_view(context, '+map')
@@ -274,6 +274,7 @@ Private teams are indicated as private.
     >>> from lp.registry.interfaces.person import PersonVisibility
     >>> login('admin@canonical.com')
     >>> private_team = factory.makeTeam(
+    ...     owner=sample_person,
     ...     name='private-team', displayname='Private Team',
     ...     visibility=PersonVisibility.PRIVATE)
 
@@ -286,6 +287,7 @@ Private teams are indicated as private.
 Private membership teams are also indicated as private.
 
     >>> private_membership_team = factory.makeTeam(
+    ...     owner=sample_person,
     ...     name='private-membership-team',
     ...     displayname='Private Membership Team',
     ...     visibility=PersonVisibility.PRIVATE_MEMBERSHIP)
@@ -294,3 +296,28 @@ Private membership teams are also indicated as private.
     Team membership is viewable by team members
     >>> print view.visibility_portlet_class
     portlet private
+
+== +add-my-teams ==
+
+This page lists the teams that you administer and can add as a member
+to the current team. Private teams cannot be added as members to another
+team.
+
+    >>> login_person(sample_person)
+    >>> view = create_initialized_view(guadamen, '+add-my-teams')
+    >>> for candidate in view.candidate_teams:
+    ...     print candidate.name, candidate.visibility.title
+    landscape-developers Public
+    launchpad-users Public
+
+Making one of the teams that sample person owns public will cause it
+to show up.
+
+    >>> removeSecurityProxy(private_membership_team).visibility = (
+    ...     PersonVisibility.PUBLIC)
+    >>> view = create_initialized_view(guadamen, '+add-my-teams')
+    >>> for candidate in view.candidate_teams:
+    ...     print candidate.name, candidate.visibility.title
+    landscape-developers Public
+    launchpad-users Public
+    private-membership-team Public

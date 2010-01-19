@@ -191,8 +191,10 @@ class BuildView(LaunchpadView):
         files = []
         for package in self.context.binarypackages:
             for file in package.files:
-                files.append(
-                    ProxiedLibraryFileAlias(file.libraryfile, self.context))
+                if file.libraryfile.deleted is False:
+                    alias = ProxiedLibraryFileAlias(
+                        file.libraryfile, self.context)
+                    files.append(alias)
 
         return files
 

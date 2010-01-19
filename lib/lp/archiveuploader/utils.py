@@ -9,6 +9,7 @@ __all__ = [
     're_taint_free',
     're_isadeb',
     're_issource',
+    're_is_component_orig_tar_ext',
     're_no_epoch',
     're_no_revision',
     're_valid_version',
@@ -16,6 +17,7 @@ __all__ = [
     're_changes_file_name',
     're_extract_src_version',
     'get_source_file_extension',
+    'determine_binary_file_type',
     'determine_source_file_type',
     'prefix_multi_line_string',
     'safe_fix_maintainer',
@@ -34,13 +36,15 @@ re_taint_free = re.compile(r"^[-+~/\.\w]+$")
 
 re_isadeb = re.compile(r"(.+?)_(.+?)_(.+)\.(u?d?deb)$")
 
-source_file_exts = ['orig.tar.gz', 'diff.gz', 'tar.gz', 'dsc']
+source_file_exts = [
+    'orig(?:-.+)?\.tar\.(?:gz|bz2)', 'diff.gz',
+    '(?:debian\.)?tar\.(?:gz|bz2)', 'dsc']
 re_issource = re.compile(
-    r"(.+)_(.+?)\.(%s)" % "|".join(
-        re.escape(ext) for ext in source_file_exts))
-
-re_is_orig_tar_ext = re.compile(r"^orig.tar.gz$")
-re_is_native_tar_ext = re.compile(r"^tar.gz$")
+    r"(.+)_(.+?)\.(%s)" % "|".join(ext for ext in source_file_exts))
+re_is_component_orig_tar_ext = re.compile(r"^orig-(.+).tar.(?:gz|bz2)$")
+re_is_orig_tar_ext = re.compile(r"^orig.tar.(?:gz|bz2)$")
+re_is_debian_tar_ext = re.compile(r"^debian.tar.(?:gz|bz2)$")
+re_is_native_tar_ext = re.compile(r"^tar.(?:gz|bz2)$")
 
 re_no_epoch = re.compile(r"^\d+\:")
 re_no_revision = re.compile(r"-[^-]+$")
@@ -75,8 +79,25 @@ def determine_source_file_type(filename):
         return SourcePackageFileType.DIFF
     elif re_is_orig_tar_ext.match(extension):
         return SourcePackageFileType.ORIG_TARBALL
+    elif re_is_component_orig_tar_ext.match(extension):
+        return SourcePackageFileType.COMPONENT_ORIG_TARBALL
+    elif re_is_debian_tar_ext.match(extension):
+        return SourcePackageFileType.DEBIAN_TARBALL
     elif re_is_native_tar_ext.match(extension):
         return SourcePackageFileType.NATIVE_TARBALL
+    else:
+        return None
+
+
+def determine_binary_file_type(filename):
+    """Determine the BinaryPackageFileType of the given filename."""
+    # Avoid circular imports.
+    from lp.soyuz.interfaces.binarypackagerelease import BinaryPackageFileType
+
+    if filename.endswith(".deb"):
+        return BinaryPackageFileType.DEB
+    elif filename.endswith(".udeb"):
+        return BinaryPackageFileType.UDEB
     else:
         return None
 

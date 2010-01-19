@@ -1769,6 +1769,15 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
     @action(_("Save"), name="save", validator="validate_save")
     def save_action(self, action, data):
+        # Archive is enabled and user wants it disabled.
+        if self.context.enabled == True and data['enabled'] == False:
+            self.context.disable()
+        # Archive is disabled and user wants it enabled.
+        if self.context.enabled == False and data['enabled'] == True:
+            self.context.enable()
+        # IArchive.enabled is a read-only property that cannot be set
+        # directly.
+        del(data['enabled'])
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 
@@ -1782,7 +1791,7 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
 class ArchiveEditView(BaseArchiveEditView):
 
-    field_names = ['displayname', 'description']
+    field_names = ['displayname', 'description', 'enabled']
     custom_widget(
         'description', TextAreaWidget, height=10, width=30)
 

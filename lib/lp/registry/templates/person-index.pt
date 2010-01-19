@@ -16,7 +16,7 @@
           title="FOAF" href="+rdf"
           />
     </tal:valid_person_or_team>
-    <meta tal:condition="not: context/is_valid_person_or_team"
+    <meta tal:condition="view/is_probationary_or_invalid_user"
           name="robots" content="noindex,nofollow" />
     <tal:openid_delegation condition="view/is_delegated_identity">
       <link rel="openid.server"
@@ -84,8 +84,8 @@
 
     <div
       class="description"
-      tal:condition="context/homepage_content"
-      tal:content="structure context/homepage_content/fmt:text-to-html"
+      tal:condition="view/homepage_content"
+      tal:content="structure view/homepage_content"
     />
     <ul class="horizontal">
       <tal:comment condition="nothing">

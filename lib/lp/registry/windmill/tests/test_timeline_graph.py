@@ -1,6 +1,11 @@
 # Copyright 2009 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
+"""Test for timeline graph widget."""
+
+__metaclass__ = type
+__all__ = []
+
 import unittest
 
 from windmill.authoring import WindmillTestClient
@@ -8,11 +13,14 @@ from windmill.authoring import WindmillTestClient
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import TestCaseWithFactory
 
+
 class TestTimelineGraph(TestCaseWithFactory):
+    """Test timeline graph widget."""
 
     layer = RegistryWindmillLayer
 
     def setUp(self):
+        super(TestTimelineGraph, self).setUp()
         self.client = WindmillTestClient('TimelineGraph')
 
     def test_timeline_graph(self):

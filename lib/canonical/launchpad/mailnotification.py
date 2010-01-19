@@ -39,7 +39,7 @@ from lp.bugs.interfaces.bugchange import IBugChange
 from canonical.launchpad.interfaces.launchpad import ILaunchpadRoot
 from canonical.launchpad.interfaces.message import (
     IDirectEmailAuthorization, QuotaReachedError)
-from canonical.launchpad.interfaces.structuralsubscription import (
+from lp.registry.interfaces.structuralsubscription import (
     BugNotificationLevel)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -953,10 +953,13 @@ def notify_team_join(event):
             'new-member-notification-for-admins.txt')
         subject = '%s joined %s' % (person.name, team.name)
     elif membership.status == proposed:
-        if person.isTeam():
+        # In the UI, a user can only propose himself or a team he
+        # admins. Some users of the REST API have a workflow, where
+        # they propose users that are designated as mentees (Bug 498181).
+        if reviewer != person:
             headers = {"Reply-To": reviewer.preferredemail.email}
             template = get_email_template(
-                'pending-membership-approval-for-teams.txt')
+                'pending-membership-approval-for-third-party.txt')
         else:
             headers = {"Reply-To": person.preferredemail.email}
             template = get_email_template('pending-membership-approval.txt')

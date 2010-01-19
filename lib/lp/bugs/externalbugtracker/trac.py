@@ -378,17 +378,17 @@ class TracLPPlugin(Trac):
 
         return [bug['id'] for bug in modified_bugs]
 
-    def getCommentIds(self, bug_watch):
+    def getCommentIds(self, remote_bug_id):
         """See `ISupportsCommentImport`."""
         try:
-            bug = self.bugs[int(bug_watch.remotebug)]
+            bug = self.bugs[int(remote_bug_id)]
         except KeyError:
-            raise BugNotFound(bug_watch.remotebug)
+            raise BugNotFound(remote_bug_id)
         else:
             return [comment_id for comment_id in bug['comments']]
 
     @needs_authentication
-    def fetchComments(self, bug_watch, comment_ids):
+    def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
         bug_comments = {}
 
@@ -402,11 +402,11 @@ class TracLPPlugin(Trac):
         # Finally, we overwrite the bug's comments field with the
         # bug_comments dict. The nice upshot of this is that we can
         # still loop over the dict and get IDs back.
-        self.bugs[int(bug_watch.remotebug)]['comments'] = bug_comments
+        self.bugs[int(remote_bug_id)]['comments'] = bug_comments
 
-    def getPosterForComment(self, bug_watch, comment_id):
+    def getPosterForComment(self, remote_bug_id, comment_id):
         """See `ISupportsCommentImport`."""
-        bug = self.bugs[int(bug_watch.remotebug)]
+        bug = self.bugs[int(remote_bug_id)]
         comment = bug['comments'][comment_id]
 
         display_name, email = parseaddr(comment['user'])
@@ -424,9 +424,9 @@ class TracLPPlugin(Trac):
         else:
             return display_name, email
 
-    def getMessageForComment(self, bug_watch, comment_id, poster):
+    def getMessageForComment(self, remote_bug_id, comment_id, poster):
         """See `ISupportsCommentImport`."""
-        bug = self.bugs[int(bug_watch.remotebug)]
+        bug = self.bugs[int(remote_bug_id)]
         comment = bug['comments'][comment_id]
 
         comment_datecreated = datetime.fromtimestamp(

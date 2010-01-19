@@ -28,7 +28,7 @@ class TestBranchRewriter(TestCaseWithFactory):
     layer = DatabaseFunctionalLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestBranchRewriter, self).setUp()
         self.fake_time = FakeTime(0)
 
     def makeRewriter(self):

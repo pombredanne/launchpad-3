@@ -8,9 +8,11 @@
 __metaclass__ = type
 
 
+from datetime import datetime
 import httplib
 import logging
 import os
+import re
 from StringIO import StringIO
 import unittest
 
@@ -36,7 +38,8 @@ from lp.registry.scripts.distributionmirror_prober import (
     RedirectAwareProberProtocol, probe_archive_mirror, probe_cdimage_mirror,
     should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
     MIN_REQUESTS_TO_CONSIDER_RATIO, _build_request_for_cdimage_file_list,
-    restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager)
+    restore_http_proxy, MultiLock, OVERALL_REQUESTS, RequestManager,
+    LoggingMixin)
 from lp.registry.tests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 from canonical.testing import LaunchpadZopelessLayer, TwistedLayer
@@ -792,6 +795,32 @@ class TestCDImageFileListFetching(unittest.TestCase):
         request = _build_request_for_cdimage_file_list(url)
         self.failUnlessEqual(request.headers['Pragma'], 'no-cache')
         self.failUnlessEqual(request.headers['Cache-control'], 'no-cache')
+
+
+class TestLoggingMixin(unittest.TestCase):
+
+    def _fake_gettime(self):
+        # Fake the current time.
+        fake_time = datetime(2004, 10, 20, 12, 00, 00, 000000)
+        return fake_time
+
+    def test_logMessage_output(self):
+        logger = LoggingMixin()
+        logger.log_file = StringIO()
+        logger._getTime = self._fake_gettime
+        logger.logMessage("Ubuntu Warty Released")
+        logger.log_file.seek(0)
+        message = logger.log_file.read()
+        self.failUnlessEqual('Wed Oct 20 12:00:00 2004: Ubuntu Warty Released',
+            message)
+
+    def test_logMessage_integration(self):
+        logger = LoggingMixin()
+        logger.log_file = StringIO()
+        logger.logMessage("Probing...")
+        logger.log_file.seek(0)
+        message = logger.log_file.read()
+        self.assertNotEqual(None, message)
 
 
 def test_suite():

@@ -48,12 +48,8 @@ class TestBugAlsoAffects(TestCaseWithFactory):
             id=choose_link_id, timeout=constants.FOR_ELEMENT)
         client.click(id=choose_link_id)
         search_picker_widget(client, 'nonexistant')
-        client.asserts.assertProperty(
-            xpath=(u"//table[contains(@class, 'yui-picker') "
-                    "and not(contains(@class, 'yui-picker-hidden'))]"
-                    "//div[contains(@class, 'yui-picker-footer-slot')]"
-                    "//a"),
-            validator=u'href|/tomcat/+bug/3/+affects-new-product')
+        client.waits.forElement(
+            link=u'Register it', timeout=constants.FOR_ELEMENT)
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

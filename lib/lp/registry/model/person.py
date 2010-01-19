@@ -66,7 +66,7 @@ from lp.services.worlddata.model.language import Language
 from canonical.launchpad.database.oauth import (
     OAuthAccessToken, OAuthRequestToken)
 from lp.registry.model.personlocation import PersonLocation
-from canonical.launchpad.database.structuralsubscription import (
+from lp.registry.model.structuralsubscription import (
     StructuralSubscription)
 from canonical.launchpad.event.interfaces import (
     IJoinTeamEvent, ITeamInvitationEvent)
@@ -124,7 +124,6 @@ from lp.registry.interfaces.teammembership import (
 from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, ILaunchBag, IStoreSelector, MASTER_FLAVOR)
-
 
 from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
@@ -1050,7 +1049,7 @@ class Person(
             return False
 
     def assignKarma(self, action_name, product=None, distribution=None,
-                    sourcepackagename=None):
+                    sourcepackagename=None, datecreated=None):
         """See `IPerson`."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
         # The system user and janitor, does not get karma.
@@ -1074,9 +1073,12 @@ class Person(
             raise AssertionError(
                 "No KarmaAction found with name '%s'." % action_name)
 
+        if datecreated is None:
+            datecreated = UTC_NOW
         karma = Karma(
             person=self, action=action, product=product,
-            distribution=distribution, sourcepackagename=sourcepackagename)
+            distribution=distribution, sourcepackagename=sourcepackagename,
+            datecreated=datecreated)
         notify(KarmaAssignedEvent(self, karma))
         return karma
 
@@ -1231,11 +1233,15 @@ class Person(
             # By default, teams can only be invited as members, meaning that
             # one of the team's admins will have to accept the invitation
             # before the team is made a member. If force_team_add is True,
-            # though, then we'll add a team as if it was a person.
-            if not force_team_add:
+            # or the user is also an admin of the proposed member, then
+            # we'll add a team as if it was a person.
+            is_reviewer_admin_of_new_member = (
+                person in reviewer.getAdministratedTeams())
+            if not force_team_add and not is_reviewer_admin_of_new_member:
                 status = TeamMembershipStatus.INVITED
                 event = TeamInvitationEvent
 
+        status_changed = True
         expires = self.defaultexpirationdate
         tm = TeamMembership.selectOneBy(person=person, team=self)
         if tm is None:
@@ -1250,11 +1256,12 @@ class Person(
             # We can't use tm.setExpirationDate() here because the reviewer
             # here will be the member themselves when they join an OPEN team.
             tm.dateexpires = expires
-            tm.setStatus(status, reviewer, comment)
+            status_changed = tm.setStatus(status, reviewer, comment)
 
         if not person.is_team and may_subscribe_to_list:
             person.autoSubscribeToMailingList(self.mailing_list,
                                               requester=reviewer)
+        return (status_changed, tm.status)
 
     # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
@@ -1319,8 +1326,6 @@ class Person(
         :param reviewer: Person who made the change.
         """
         assert self.is_team, "This method is only available for teams."
-        assert reviewer.inTeam(getUtility(ILaunchpadCelebrities).admin), (
-            "Only Launchpad admins can deactivate all members of a team")
         now = datetime.now(pytz.timezone('UTC'))
         store = Store.of(self)
         cur = cursor()
@@ -2611,7 +2616,7 @@ class PersonSet:
             )
         return team_name_query
 
-    def find(self, text):
+    def find(self, text=""):
         """See `IPersonSet`."""
         if not text:
             # Return an empty result set.
@@ -2665,7 +2670,7 @@ class PersonSet:
 
     def findPerson(
             self, text="", exclude_inactive_accounts=True,
-            must_have_email=False):
+            must_have_email=False, created_after=None, created_before=None):
         """See `IPersonSet`."""
         orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
@@ -2693,12 +2698,21 @@ class PersonSet:
                 base_query,
                 EmailAddress.person == Person.id
                 )
+        if created_after is not None:
+            base_query = And(
+                base_query,
+                Person.datecreated > created_after
+                )
+        if created_before is not None:
+            base_query = And(
+                base_query,
+                Person.datecreated < created_before
+                )
 
         # Short circuit for returning all users in order
         if not text:
-            #query = SQL(' AND '.join(base_query), tables=clause_tables)
-            results = store.find(Person, base_query).order_by(orderBy)
-            return results
+            results = store.find(Person, base_query)
+            return results.order_by(Person._storm_sortingColumns)
 
         # We use a UNION here because this makes things *a lot* faster
         # than if we did a single SELECT with the two following clauses

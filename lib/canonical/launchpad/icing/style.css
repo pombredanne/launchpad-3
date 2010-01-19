@@ -241,9 +241,11 @@ margin for Internet Explorer, and up to a reasonable maximum: */
 textarea {width: 90%; max-width: 60em;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
-table.form {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
+table.form, table.extra-options {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
 table.form th {font-weight: normal;}
-table.form th, table.form td {padding-bottom: 1em;}
+table.form th, table.form td,
+table.form table.extra-options td,
+table.form table.extra-options th {padding-bottom: 1em;}
 table.form td td {padding-bottom: 0;}
 
 /* === Tables === */
@@ -428,8 +430,6 @@ fieldset .collapsed {display: none;}
 fieldset .expanded {display: block;}
 fieldset.collapsible legend {font-weight: normal;}
 
-.unseen {display: none;}
-
 form.primary.search {
   margin-bottom: 2em;
 }
@@ -471,13 +471,6 @@ hr {
 }
 
 /* === Universal page layout === */
-
-/* All pages include the sitemessage in the footer if one is defined
-   in the config. */
-.sitemessage {
-    font-size: 13px;
-    text-align: right;
-}
 
 /* === Login control === */
 /* At the top right of the page is a link to log in or a button to log out: */
@@ -822,15 +815,6 @@ div#branch-description {
     margin-top: 1em;
 }
 
-/* Timeline Graph */
-div.yui-timelinegraph-content .yui-timelinegraph-zoom-box {
-  visibility: hidden;
-}
-
-div.yui-timelinegraph-content:hover .yui-timelinegraph-zoom-box {
-  visibility: visible;
-}
-
 .product.series, .series {margin-bottom: 1em;}
 #packages h1, #projects h1 {margin-top: 1.2em;}
 
@@ -1104,7 +1088,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   height: 2.5em;
 }
 
-#branch-pending-writes {
+.pending-update {
   background: #FFF59C;
   width: 40em;
   margin: 1em auto;
@@ -1117,7 +1101,7 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
   -webkit-border-radius: 5px;
 }
 
-#branch-pending-writes h3 {
+.pending-update h3{
   color: black;
   font-weight: bold;
   text-align: center;
@@ -1434,12 +1418,12 @@ ul.cross-reference {font-size: 1.25em;}
 
 #project-cloud-preview a {
   padding-left: 0.5em;
-  padding-right: 0.5em,
+  padding-right: 0.5em;
 }
 
 #project-tags a {
   padding-left: 0.5em;
-  padding-right: 0.5em,
+  padding-right: 0.5em;
 }
 
 /* Clouds of links. */

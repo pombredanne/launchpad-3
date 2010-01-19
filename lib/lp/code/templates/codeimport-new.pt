@@ -30,9 +30,11 @@
 
       <table class="form">
 
-        <tal:widget define="widget nocall:view/widgets/product">
-          <metal:block use-macro="context/@@launchpad_form/widget_row" />
-        </tal:widget>
+        <tal:show-product condition="not: view/context_is_product">
+          <tal:widget define="widget nocall:view/widgets/product">
+            <metal:block use-macro="context/@@launchpad_form/widget_row" />
+          </tal:widget>
+        </tal:show-product>
         <tal:widget define="widget nocall:view/widgets/branch_name">
           <metal:block use-macro="context/@@launchpad_form/widget_row" />
         </tal:widget>
@@ -112,7 +114,7 @@
           updateField(form['field.cvs_root'], rcs_type == 'CVS');
           updateField(form['field.cvs_module'], rcs_type == 'CVS');
           // SVN
-          updateField(form['field.svn_branch_url'], rcs_type == 'SVN');
+          updateField(form['field.svn_branch_url'], rcs_type == 'BZR_SVN');
         }
         registerLaunchpadFunction(updateWidgets);
         //]]>
