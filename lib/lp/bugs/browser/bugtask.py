@@ -1935,12 +1935,13 @@ class BugTaskListingItem:
     delegates(IBugTask, 'bugtask')
 
     def __init__(self, bugtask, has_mentoring_offer, has_bug_branch,
-                 has_specification):
+                 has_specification, request=None):
         self.bugtask = bugtask
         self.review_action_widget = None
         self.has_mentoring_offer = has_mentoring_offer
         self.has_bug_branch = has_bug_branch
         self.has_specification = has_specification
+        self.request = request
 
     @property
     def last_significant_change_date(self):
@@ -1949,6 +1950,14 @@ class BugTaskListingItem:
                 self.bugtask.date_inprogress or self.bugtask.date_left_new or
                 self.bugtask.datecreated)
 
+    @property
+    def bug_heat_html(self):
+        """Returns the bug heat flames HTML."""
+        view = getMultiAdapter(
+            (self.bugtask.bug, self.request),
+            name='+bug-heat')
+        return view()
+
 
 class BugListingBatchNavigator(TableBatchNavigator):
     """A specialised batch navigator to load smartly extra bug information."""
@@ -1956,6 +1965,7 @@ class BugListingBatchNavigator(TableBatchNavigator):
     # to a mixin so that MilestoneView and others can use it.
 
     def __init__(self, tasks, request, columns_to_show, size):
+        self.request = request
         TableBatchNavigator.__init__(
             self, tasks, request, columns_to_show=columns_to_show, size=size)
 
@@ -1971,7 +1981,8 @@ class BugListingBatchNavigator(TableBatchNavigator):
             bugtask,
             badge_property['has_mentoring_offer'],
             badge_property['has_branch'],
-            badge_property['has_specification'])
+            badge_property['has_specification'],
+            request=self.request)
 
     def getBugListingItems(self):
         """Return a decorated list of visible bug tasks."""
@@ -2191,11 +2202,11 @@ class BugTaskSearchListingView(LaunchpadFormView, FeedsMixin, BugsInfoMixin):
 
         if (upstream_context or productseries_context or
             distrosourcepackage_context or sourcepackage_context):
-            return ["id", "summary", "importance", "status"]
+            return ["id", "summary", "importance", "status", "heat"]
         elif distribution_context or distroseries_context:
-            return ["id", "summary", "packagename", "importance", "status"]
+            return ["id", "summary", "packagename", "importance", "status", "heat"]
         elif project_context:
-            return ["id", "summary", "productname", "importance", "status"]
+            return ["id", "summary", "productname", "importance", "status", "heat"]
         else:
             raise AssertionError(
                 "Unrecognized context; don't know which report "
@@ -3370,7 +3381,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     """Search all bug reports."""
 
     columns_to_show = ["id", "summary", "bugtargetdisplayname",
-                       "importance", "status"]
+                       "importance", "status", "heat"]
     schema = IFrontPageBugTaskSearch
     custom_widget('scope', ProjectScopeWidget)
     page_title = 'Search'
@@ -3579,9 +3590,9 @@ class BugTaskExpirableListingView(LaunchpadView):
         """Show the columns that summarise expirable bugs."""
         if (IDistribution.providedBy(self.context)
             or IDistroSeries.providedBy(self.context)):
-            return ['id', 'summary', 'packagename', 'date_last_updated']
+            return ['id', 'summary', 'packagename', 'date_last_updated', 'heat']
         else:
-            return ['id', 'summary', 'date_last_updated']
+            return ['id', 'summary', 'date_last_updated', 'heat']
 
     @property
     def search(self):
