@@ -6,7 +6,7 @@ as a member of launchpad-buildd-admin:
 
     >>> from canonical.launchpad.ftests import login
     >>> login('celso.providelo@canonical.com')
-    >>> from canonical.launchpad.interfaces import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> builder_set = getUtility(IBuilderSet)
 
 Do we have two builders?
@@ -168,7 +168,7 @@ associated with it (i.e. the 'iceweasel' build) are ignored while
 calculating the estimated dispatch time and the latter becomes effectively
 "now" for the 'pmount' build.
 
-    >>> mark.archive.enabled = False
+    >>> mark.archive.disable()
     >>> syncUpdate(mark.archive)
     >>> estimate = pmount_build.getEstimatedBuildStartTime()
     >>> estimate > now

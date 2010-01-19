@@ -57,3 +57,4 @@ lazr-js
 .cache
 .subversion
 lib/canonical/buildd/launchpad-files
+.testrepository
