@@ -45,7 +45,7 @@ class GenerateTranslationTemplates:
     def generate(self):
         """Do It.  Generate templates."""
         self._getBranch()
-# XXX: Actual payload goes here.
+        # XXX JeroenVermeulen 2010-01-19 bug=509557: Actual payload goes here.
         return 0
 
 
