@@ -469,7 +469,7 @@ class EditSpecificationSubscription(AuthorizationBase):
         return (user.inTeam(self.obj.person) or
                 user.isOneOf(
                     self.obj.specification,
-                    ['owner','drafter', 'assignee', 'approver']) or
+                    ['owner', 'drafter', 'assignee', 'approver']) or
                 user.in_admin)
 
 
@@ -530,6 +530,7 @@ class EditMilestoneByTargetOwnerOrAdmins(AuthorizationBase):
             return True
         return user.isOwner(self.obj.target)
 
+
 class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
     permission = 'launchpad.Admin'
     usedfor = IMilestone
@@ -574,7 +575,7 @@ class ModerateTeam(ReviewByRegistryExpertsOrAdmins):
 
     def checkAuthenticated(self, user):
         """Is the user a privileged team member or Launchpad staff?
-        
+
         Return true when the user is a member of Launchpad admins,
         registry experts, team admins, or the team owners.
         """
@@ -1431,7 +1432,6 @@ class ViewBuildRecord(EditBuildRecord):
 
     # This code MUST match the logic in IBuildSet.getBuildsForBuilder()
     # otherwise users are likely to get 403 errors, or worse.
-
     def checkAuthenticated(self, user):
         """Private restricts to admins and archive members."""
         if not self.obj.archive.private:

@@ -533,9 +533,8 @@ class POTemplateEditView(LaunchpadEditFormView):
             # We only change date_last_updated when the translation_domain
             # field is changed because it is the only relevant field we
             # care about regarding the date of last update.
-            UTC = pytz.timezone('UTC')
             naked_context = removeSecurityProxy(context)
-            naked_context.date_last_updated = datetime.datetime.now(UTC)
+            naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
 
     @property
     def cancel_url(self):

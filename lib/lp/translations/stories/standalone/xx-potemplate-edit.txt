@@ -109,7 +109,7 @@ after updating the template.
 The visible fields can be changed and saved.
 
   >>> browser.getControl(name='field.translation_domain').value = u'evo'
-  >>> browser.getControl(name='field.priority').value = '100'                    
+  >>> browser.getControl(name='field.priority').value = '100'
   >>> browser.getControl(name='field.iscurrent').value = False
   >>> browser.getControl(name='field.path').value = 'po/evolution.pot'
   >>> browser.getControl(name='field.owner').value = u'name12'
@@ -127,7 +127,7 @@ edit page.
   >>> browser.getControl(name='field.translation_domain').value
   'evo'
   >>> browser.getControl(name='field.priority').value
-  '100'                    
+  '100'
   >>> browser.getControl(name='field.iscurrent').value
   False
   >>> browser.getControl(name='field.path').value
