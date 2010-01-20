@@ -31,7 +31,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.interfaces import (
     ICanonicalUrlData, IPlacelessLoginSource, UnexpectedFormData)
 from canonical.launchpad.webapp.login import (
-    allowUnauthenticatedSession, logInPrincipal)
+    allowUnauthenticatedSession, logInPrincipal, logoutPerson)
 from canonical.launchpad.webapp.publisher import Navigation, stepthrough
 from canonical.uuid import generate_uuid
 
@@ -238,14 +238,12 @@ class TestOpenIDView(OpenIDMixin, LaunchpadView):
     This class implements an OpenID endpoint using the python-openid
     library.  In addition to the normal modes of operation, it also
     implements the OpenID 2.0 identifier select mode.
+    
+    Note that the checkid_immediate mode is not supported.
     """
 
     def render(self):
-        """Handle all OpenID requests and form submissions
-
-        Returns the page contents after setting all relevant headers in
-        self.request.response
-        """
+        """Handle all OpenID requests and form submissions."""
         # NB: Will be None if there are no parameters in the request.
         self.openid_request = self.openid_server.decodeRequest(
             self.openid_parameters)
@@ -255,23 +253,17 @@ class TestOpenIDView(OpenIDMixin, LaunchpadView):
             if referer:
                 self.request.response.setCookie("openid_referer", referer)
 
-            if self.account is None:
-                return self.showLoginPage()
-            if not self.isIdentityOwner():
-                openid_response = self.createFailedResponse()
-            else:
-                assert self.isAuthorized()
-                # User is logged in and the site is authorized.
-                openid_response = self.createPositiveResponse()
-
+            # Log the user out and present the login page so that they can
+            # authenticate as somebody else if they want.
+            logoutPerson(self.request)
+            return self.showLoginPage()
+        elif self.openid_request.mode == 'checkid_immediate':
+            raise UnexpectedFormData(
+                'We do not handle checkid_immediate requests.')
         else:
-            openid_response = self.openid_server.handleRequest(
-                    self.openid_request)
+            return self.renderOpenIDResponse(
+                self.openid_server.handleRequest(self.openid_request))
 
-        # If the above code has not already returned or raised an exception,
-        # openid_response is filled out ready for the openid library to
-        # render.
-        return self.renderOpenIDResponse(openid_response)
 
     def storeOpenIDRequestInSession(self):
         # To ensure that the user has seen this page and it was actually the
