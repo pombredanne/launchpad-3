@@ -927,7 +927,7 @@
         for="lp.soyuz.interfaces.buildpackagejob.IBuildPackageJob"
         provides="lp.buildmaster.interfaces.buildfarmjobbehavior.IBuildFarmJobBehavior"
         factory="lp.soyuz.model.binarypackagebuildbehavior.BinaryPackageBuildBehavior"
-        permission="launchpad.Admin" />
+        permission="zope.Public" />
 
     <!-- SourcePackageRecipe -->
 
@@ -960,7 +960,7 @@
     </securedutility>
 
     <adapter factory="lp.soyuz.model.recipebuilder.RecipeBuildBehavior"
-             permission="launchpad.Admin" />
+             permission="zope.Public" />
 
     <!-- SourcePackageRecipe -->
     <class
