@@ -534,8 +534,8 @@ class POTemplateEditView(LaunchpadEditFormView):
             # is changed because is the only significative change that,
             # somehow, affects the content of the potemplate.
             UTC = pytz.timezone('UTC')
-            date_last_updated = removeSecurityProxy(context.date_last_updated)
-            date_last_updated = datetime.datetime.now(UTC)
+            naked_context = removeSecurityProxy(context)
+            naked_context.date_last_updated = datetime.datetime.now(UTC)
 
     @property
     def cancel_url(self):
