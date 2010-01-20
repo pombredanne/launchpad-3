@@ -230,11 +230,11 @@ class BuildPackageJob(Storm, BuildFarmJob):
             PackagePublishingStatus.SUPERSEDED,
             PackagePublishingStatus.DELETED,
             )
-        extra_tables = [
-            'Archive', 'Build', 'BuildPackageJob', 'DistroArchSeries']
-        extra_clauses = """
-            BuildPackageJob.job = Job.id AND 
-            BuildPackageJob.build = Build.id AND 
+        sub_query = """
+            SELECT TRUE FROM Archive, Build, BuildPackageJob, DistroArchSeries
+            WHERE
+            BuildPackageJob.job = Job.id AND
+            BuildPackageJob.build = Build.id AND
             Build.distroarchseries = DistroArchSeries.id AND
             Build.archive = Archive.id AND
             ((Archive.private IS TRUE AND
@@ -269,7 +269,7 @@ class BuildPackageJob(Storm, BuildFarmJob):
         num_arch_builders = Builder.selectBy(
             processor=processor, manual=False, builderok=True).count()
         if num_arch_builders > 1:
-            extra_clauses += """
+            sub_query += """
                 AND EXISTS (SELECT true
                 WHERE ((
                     SELECT COUNT(build2.id)
@@ -287,7 +287,7 @@ class BuildPackageJob(Storm, BuildFarmJob):
                 ArchivePurpose.PPA, processor.family,
                 BuildStatus.BUILDING, num_arch_builders)
 
-        return(extra_tables, extra_clauses)
+        return sub_query
 
     @staticmethod
     def postprocessCandidate(job, logger):

@@ -3,6 +3,7 @@
 
 __all__ = [
     'BranchJob',
+    'BranchScanJob',
     'BranchJobDerived',
     'BranchJobType',
     'BranchUpgradeJob',
@@ -276,6 +277,16 @@ class BranchScanJob(BranchJobDerived):
         """See `IBranchScanJob`."""
         bzrsync = BzrSync(self.branch)
         bzrsync.syncBranchAndClose()
+
+    @staticmethod
+    @contextlib.contextmanager
+    def contextManager():
+        """See `IBranchScanJobSource`."""
+        errorlog.globalErrorUtility.configure('branchscanner')
+        server = get_multi_server()
+        server.setUp()
+        yield
+        server.tearDown()
 
 
 class BranchUpgradeJob(BranchJobDerived):

@@ -68,8 +68,7 @@ class BuildQueue(SQLBase):
     lastscore = IntCol(dbName='lastscore', default=0)
     manual = BoolCol(dbName='manual', default=False)
     estimated_duration = IntervalCol()
-    processor = ForeignKey(
-        dbName='processor', foreignKey='Processor', notNull=True)
+    processor = ForeignKey(dbName='processor', foreignKey='Processor')
     virtualized = BoolCol(dbName='virtualized')
 
     @property
@@ -80,7 +79,7 @@ class BuildQueue(SQLBase):
     @property
     def specific_job(self):
         """See `IBuildQueue`."""
-        specific_class = self.specific_job_classes[self.job_type]
+        specific_class = specific_job_classes()[self.job_type]
         return specific_class.getByJob(self.job)
 
     @property
