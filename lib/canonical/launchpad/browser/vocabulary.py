@@ -23,6 +23,7 @@ from zope.component import adapter
 from zope.component.interfaces import ComponentLookupError
 from zope.interface import Attribute, implements, Interface
 from zope.app.form.interfaces import MissingInputError
+from zope.security.interfaces import Unauthorized
 
 from lazr.restful.interfaces import IWebServiceClientRequest
 
@@ -83,7 +84,10 @@ def person_to_pickerentry(person):
     """Adapts IPerson to IPickerEntry."""
     extra = default_pickerentry_adapter(person)
     if person.preferredemail is not None:
-        extra.description = person.preferredemail.email
+        try:
+            extra.description = person.preferredemail.email
+        except Unauthorized:
+            extra.description = '<email address hidden>'
     return extra
 
 @implementer(IPickerEntry)

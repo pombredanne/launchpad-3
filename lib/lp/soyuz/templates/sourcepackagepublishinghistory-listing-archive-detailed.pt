@@ -35,7 +35,7 @@
         <a tal:condition="changesfile"
            tal:attributes="href changesfile/http_url;
                            title changesfile/filename"
-          >(changesfile)</a>
+          >(sources.changes)</a>
       </tal:view_changesfile>
     </td>
     <td tal:condition="context/archive/owner/isTeam"
