@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BugJobType',
     'IBugJob',
+    'ICalculateBugHeatJob',
     ]
 
 from zope.interface import Attribute, Interface
@@ -16,7 +17,7 @@ from canonical.launchpad import _
 
 from lazr.enum import DBEnumeratedType, DBItem
 from lp.bugs.interfaces.bug import IBug
-from lp.services.job.interfaces.job import IJob
+from lp.services.job.interfaces.job import IJob, IRunnableJob
 
 
 class BugJobType(DBEnumeratedType):
@@ -47,3 +48,7 @@ class IBugJob(Interface):
 
     def destroySelf():
         """Destroy this object."""
+
+
+class ICalculateBugHeatJob(IRunnableJob):
+    """A Job to calculate bug heat."""

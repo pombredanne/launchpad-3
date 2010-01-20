@@ -26,8 +26,10 @@ from canonical.launchpad.webapp.interfaces import (
 
 from lazr.delegates import delegates
 
-from lp.bugs.interfaces.bugjob import BugJobType, IBugJob
+from lp.bugs.interfaces.bugjob import (
+    BugJobType, IBugJob, ICalculateBugHeatJob)
 from lp.bugs.model.bug import Bug
+from lp.bugs.scripts.bugheat import BugHeatCalculator
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
 
@@ -163,3 +165,15 @@ class BugJobDerived(BaseRunnableJob):
             ('target_branch', bmp.target_branch.unique_name)])
         return vars
 
+
+class CalculateBugHeatJob(BugJobDerived):
+    """A Job to calculate bug heat."""
+    implements(ICalculateBugHeatJob)
+
+    class_job_type = BugJobType.UPDATE_HEAT
+
+    def run(self):
+        """See `IRunnableJob`."""
+        calculator = BugHeatCalculator(self.bug)
+        calculated_heat = calculator.getBugHeat()
+        self.bug.setHeat(calculated_heat)
