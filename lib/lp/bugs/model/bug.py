@@ -254,10 +254,7 @@ class Bug(SQLBase):
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
-
-    # This is called 'hotness' in the database but the canonical name in
-    # the code is 'heat', so we use that name here.
-    heat = IntCol(dbName='hotness', notNull=True, default=0)
+    heat = IntCol(notNull=True, default=0)
 
     @property
     def comment_count(self):
