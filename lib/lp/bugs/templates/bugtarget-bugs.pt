@@ -113,23 +113,23 @@
           </tr>
         </thead>
         <tbody>
-          <tr tal:repeat="bugtask view/hot_bugtasks">
+          <tr tal:repeat="bug view/hot_bugs">
             <td class="icon left">
               <img alt="" src="/@@/bug" />
             </td>
             <td style="text-align: right">
-              #<span tal:replace="bugtask/bug/id" />
+              #<span tal:replace="bug/default_bugtask/bug/id" />
             </td>
             <td>
-              <a tal:attributes="href bugtask/fmt:url"
-                 tal:content="bugtask/bug/title" />
+              <a tal:attributes="href bug/default_bugtask/fmt:url"
+                 tal:content="bug/default_bugtask/bug/title" />
             </td>
-            <td tal:attributes="class string:status${bugtask/status/name}"
-                tal:content="bugtask/status/title" />
+            <td tal:attributes="class string:status${bug/default_bugtask/status/name}"
+                tal:content="bug/default_bugtask/status/title" />
             <td tal:attributes="
-                  class string:importance${bugtask/importance/name}"
-                tal:content="bugtask/importance/title" />
-            <td tal:content="bugtask/bug/date_last_updated/fmt:displaydate" />
+                  class string:importance${bug/default_bugtask/importance/name}"
+                tal:content="bug/default_bugtask/importance/title" />
+            <td tal:content="bug/default_bugtask/bug/date_last_updated/fmt:displaydate" />
           </tr>
         </tbody>
       </table>

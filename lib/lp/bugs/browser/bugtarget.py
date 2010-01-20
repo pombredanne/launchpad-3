@@ -40,6 +40,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugtask import BugTaskSearchParams
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
@@ -1255,7 +1256,20 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
     @property
     def hot_bugs(self):
         """Return the 10 hotest bugs according to IBug.heat."""
-        return []
+        params = BugTaskSearchParams(
+            orderby=['-heat', '-date_last_updated'], omit_dupes=True,
+            user=self.user)
+        bugtasks = self.context.searchTasks(params)
+        hot_bugs = []
+        count = 0
+        for task in bugtasks:
+            if task.bug not in hot_bugs:
+                if count < 10:
+                    hot_bugs.append(task.bug)
+                    count += 1
+                elif count == 10:
+                    return hot_bugs
+        return hot_bugs
 
 
 class BugTargetBugTagsView(LaunchpadView):
