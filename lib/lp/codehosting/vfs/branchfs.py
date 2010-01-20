@@ -439,7 +439,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
     def destroy(self):
         """Delete the on-disk branches and tear down."""
         self._transport_dispatch.base_transport.delete_tree('.')
-        self.tear_down()
+        self.stop_server()
 
 
 class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
@@ -458,7 +458,7 @@ class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
     def destroy(self):
         """Delete the on-disk branches and tear down."""
         self._transport_dispatch.base_transport.delete_tree('.')
-        self.tear_down()
+        self.stop_server()
 
     def translateVirtualPath(self, virtual_url_fragment):
         """See `AsyncVirtualServer.translateVirtualPath`.

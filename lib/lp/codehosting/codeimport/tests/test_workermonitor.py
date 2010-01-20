@@ -325,6 +325,8 @@ class TestWorkerMonitorRunNoProcess(TrialTestCase, BzrTestCase):
     """Tests for `CodeImportWorkerMonitor.run` that don't launch a subprocess.
     """
 
+    skip = None
+
     class WorkerMonitor(CodeImportWorkerMonitor):
         """See `CodeImportWorkerMonitor`.
 
@@ -439,6 +441,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
 
     layer = TwistedLaunchpadZopelessLayer
 
+    skip = None
+
     def setUp(self):
         BzrTestCase.setUp(self)
         login('no-priv@canonical.com')
@@ -456,8 +460,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
     def makeCVSCodeImport(self):
         """Make a `CodeImport` that points to a real CVS repository."""
         cvs_server = CVSServer(self.repo_path)
-        cvs_server.setUp()
-        self.addCleanup(cvs_server.tearDown)
+        cvs_server.start_server()
+        self.addCleanup(cvs_server.stop_server)
 
         cvs_server.makeModule('trunk', [('README', 'original\n')])
         self.foreign_commit_count = 2
@@ -468,8 +472,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
     def makeSVNCodeImport(self):
         """Make a `CodeImport` that points to a real Subversion repository."""
         self.subversion_server = SubversionServer(self.repo_path)
-        self.subversion_server.setUp()
-        self.addCleanup(self.subversion_server.tearDown)
+        self.subversion_server.start_server()
+        self.addCleanup(self.subversion_server.stop_server)
         svn_branch_url = self.subversion_server.makeBranch(
             'trunk', [('README', 'contents')])
         self.foreign_commit_count = 2
@@ -481,8 +485,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         """Make a `CodeImport` that points to a real Subversion repository."""
         self.subversion_server = SubversionServer(
             self.repo_path, use_svn_serve=True)
-        self.subversion_server.setUp()
-        self.addCleanup(self.subversion_server.tearDown)
+        self.subversion_server.start_server()
+        self.addCleanup(self.subversion_server.stop_server)
         svn_branch_url = self.subversion_server.makeBranch(
             'trunk', [('README', 'contents')])
         self.foreign_commit_count = 2
@@ -495,8 +499,8 @@ class TestWorkerMonitorIntegration(TrialTestCase, BzrTestCase):
         """Make a `CodeImport` that points to a real Git repository."""
         load_optional_plugin('git')
         self.git_server = GitServer(self.repo_path)
-        self.git_server.setUp()
-        self.addCleanup(self.git_server.tearDown)
+        self.git_server.start_server()
+        self.addCleanup(self.git_server.stop_server)
 
         self.git_server.makeRepo([('README', 'contents')])
         self.foreign_commit_count = 1
