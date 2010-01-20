@@ -315,7 +315,7 @@ class Builder(SQLBase):
                 build_queue_item.id, logger)
         except BuildSlaveFailure, e:
             logger.debug("Disabling builder: %s" % self.url, exc_info=1)
-            self.failbuilder(
+            self.failBuilder(
                 "Exception (%s) when setting up to new job" % (e,))
         except CannotFetchFile, e:
             message = """Slave '%s' (%s) was unable to fetch file.
@@ -331,8 +331,13 @@ class Builder(SQLBase):
             self.handleTimeout(logger, error_message)
             raise BuildSlaveFailure
 
-    def failbuilder(self, reason):
+    def failBuilder(self, reason):
         """See IBuilder"""
+        # XXX cprov 2007-04-17: ideally we should be able to notify the
+        # the buildd-admins about FAILED builders. One alternative is to
+        # make the buildd_cronscript (slave-scanner, in this case) to exit
+        # with error, for those cases buildd-sequencer automatically sends
+        # an email to admins with the script output.
         self.builderok = False
         self.failnotes = reason
 
@@ -360,6 +365,10 @@ class Builder(SQLBase):
     def slaveStatusSentence(self):
         """See IBuilder."""
         return self.slave.status()
+
+    def updateBuild(self, queueItem):
+        """See `IBuilder`."""
+        self.current_build_behavior.updateBuild(queueItem)
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename, private):
         """See IBuilder."""
@@ -602,7 +611,7 @@ class Builder(SQLBase):
             logger.warn(
                 "Disabling builder: %s -- %s" % (self.url, error_message),
                 exc_info=True)
-            self.failbuilder(error_message)
+            self.failBuilder(error_message)
 
     def findAndStartJob(self, buildd_slave=None):
         """See IBuilder."""
