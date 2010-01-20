@@ -12,8 +12,7 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, IBuildFarmCandidateJobSelection,
-    ISpecificBuildFarmJobClass)
+    IBuildFarmJob, ISpecificBuildFarmJobClass)
 
 
 class BuildFarmJob:
