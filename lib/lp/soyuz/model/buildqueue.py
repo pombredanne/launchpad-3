@@ -80,11 +80,8 @@ class BuildQueue(SQLBase):
     @property
     def specific_job(self):
         """See `IBuildQueue`."""
-        specific_class = specific_job_classes()[self.job_type]
-        store = Store.of(self)
-        result_set = store.find(
-            specific_class, specific_class.job == self.job)
-        return result_set.one()
+        specific_class = self.specific_job_classes[self.job_type]
+        return specific_class.getByJob(self.job)
 
     @property
     def date_started(self):
@@ -295,16 +292,21 @@ class BuildQueueSet(object):
         """See `IBuildQueueSet`."""
         return iter(BuildQueue.select())
 
-    def __getitem__(self, job_id):
+    def __getitem__(self, buildqueue_id):
         """See `IBuildQueueSet`."""
         try:
-            return BuildQueue.get(job_id)
+            return BuildQueue.get(buildqueue_id)
         except SQLObjectNotFound:
-            raise NotFoundError(job_id)
+            raise NotFoundError(buildqueue_id)
 
-    def get(self, job_id):
+    def get(self, buildqueue_id):
         """See `IBuildQueueSet`."""
-        return BuildQueue.get(job_id)
+        return BuildQueue.get(buildqueue_id)
+
+    def getByJob(self, job):
+        """See `IBuildQueueSet`."""
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        return store.find(BuildQueue, BuildQueue.job == job).one()
 
     def count(self):
         """See `IBuildQueueSet`."""

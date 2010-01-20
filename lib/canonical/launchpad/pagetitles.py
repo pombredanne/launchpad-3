@@ -526,10 +526,6 @@ def people_list(context, view):
 
 people_mergerequest_sent = 'Merge request sent'
 
-people_requestmerge = 'Merge Launchpad accounts'
-
-people_requestmerge_multiple = 'Merge Launchpad accounts'
-
 person_answer_contact_for = ContextDisplayName(
     'Projects for which %s is an answer contact')
 
