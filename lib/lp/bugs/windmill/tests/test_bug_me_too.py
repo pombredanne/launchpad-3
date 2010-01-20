@@ -68,8 +68,7 @@ class TestMeToo(TestCaseWithFactory):
         # edit the "me too" status. However, we won't click it with
         # Windmill because the widget actually responds to mouse-down, and
         # Windmill seems to do something funny instead.
-        client.mouseDown(xpath=EDIT_ICON_XPATH)
-        client.mouseUp(xpath=EDIT_ICON_XPATH)
+        client.click(xpath=EDIT_ICON_XPATH)
 
         # Wait for the modal dialog to appear.
         client.waits.forElement(id=u'yui-pretty-overlay-modal')
