@@ -18,6 +18,9 @@ BASE_URL = "http://people.canonical.com/~ubuntu-archive/germinate-output/"
 # support timeframe tag used in the Packages file
 SUPPORT_TAG = "Supported"
 
+# architectures that are supported 
+SUPPORTED_ARCHES = ["i386", "amd64"]
+
 # codename of the lts releases
 LTS_RELEASES = [ "dapper", "hardy", "lucid" ]
 
@@ -151,4 +154,6 @@ if __name__ == "__main__":
     
     # output suitable for the extra-override file
     for pkgname in sorted(pkg_support_time.keys()):
-        print "%s %s %s" % (pkgname, SUPPORT_TAG, pkg_support_time[pkgname])
+        for arch in SUPPORTED_ARCHES:
+            print "%s/%s %s %s" % (
+                pkgname, arch, SUPPORT_TAG, pkg_support_time[pkgname])
