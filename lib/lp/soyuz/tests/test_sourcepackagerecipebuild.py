@@ -76,6 +76,5 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             datetime.timedelta(minutes=2), spb.estimateDuration())
 
 
-
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
