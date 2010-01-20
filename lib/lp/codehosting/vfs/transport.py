@@ -57,7 +57,7 @@ def get_chrooted_transport(url, mkdir=False):
     if mkdir:
         transport.create_prefix()
     chroot_server = chroot.ChrootServer(transport)
-    chroot_server.set_up()
+    chroot_server.start_server()
     return get_transport(chroot_server.get_url())
 
 

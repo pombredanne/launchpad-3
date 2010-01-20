@@ -161,6 +161,8 @@ class TestSFTPFile(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
 
     layer = TwistedLayer
 
+    skip = None
+
     def setUp(self):
         TrialTestCase.setUp(self)
         TestCaseInTempDir.setUp(self)
@@ -412,6 +414,8 @@ class TestSFTPServer(TrialTestCase, TestCaseInTempDir, SFTPTestMixin):
     """Tests for `TransportSFTPServer` and `TransportSFTPFile`."""
 
     layer = TwistedLayer
+
+    skip = None
 
     def setUp(self):
         TrialTestCase.setUp(self)
