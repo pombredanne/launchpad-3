@@ -501,4 +501,4 @@ index page.
 And we are redirected to the index page, as expected:
 
     >>> print pofile_view.request.response.getHeader('Location')
-    http://.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es
+    http://trans.../ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es
