@@ -52,3 +52,13 @@ class IBugJob(Interface):
 
 class ICalculateBugHeatJob(IRunnableJob):
     """A Job to calculate bug heat."""
+
+
+class ICalculateBugHeatJobSource(Interface):
+    """Interface for acquiring CalculateBugHeatJobs."""
+
+    def create(bug):
+        """Create a new ICalculateBugHeatJob for a bug."""
+
+    def iterReady():
+        """Iterate through all ready CalculateBugHeatJobs."""

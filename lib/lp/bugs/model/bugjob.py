@@ -17,7 +17,7 @@ from storm.locals import Int, Reference, Unicode
 from storm.store import Store
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import classProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
@@ -27,7 +27,7 @@ from canonical.launchpad.webapp.interfaces import (
 from lazr.delegates import delegates
 
 from lp.bugs.interfaces.bugjob import (
-    BugJobType, IBugJob, ICalculateBugHeatJob)
+    BugJobType, IBugJob, ICalculateBugHeatJob, ICalculateBugHeatJobSource)
 from lp.bugs.model.bug import Bug
 from lp.bugs.scripts.bugheat import BugHeatCalculator
 from lp.services.job.model.job import Job
@@ -161,8 +161,7 @@ class BugJobDerived(BaseRunnableJob):
         vars.extend([
             ('bug_job_id', self.context.id),
             ('bug_job_type', self.context.job_type.title),
-            ('source_branch', bmp.source_branch.unique_name),
-            ('target_branch', bmp.target_branch.unique_name)])
+            ])
         return vars
 
 
@@ -171,6 +170,7 @@ class CalculateBugHeatJob(BugJobDerived):
     implements(ICalculateBugHeatJob)
 
     class_job_type = BugJobType.UPDATE_HEAT
+    classProvides(ICalculateBugHeatJobSource)
 
     def run(self):
         """See `IRunnableJob`."""
