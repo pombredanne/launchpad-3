@@ -402,6 +402,14 @@ class Bug(SQLBase):
         """See `IBug`."""
         return 'Re: '+ self.title
 
+    @property
+    def has_patches(self):
+        """See `IBug`."""
+        for attachment in self.attachments:
+            if attachment.is_patch:
+                return True
+        return False
+
     def subscribe(self, person, subscribed_by):
         """See `IBug`."""
         # first look for an existing subscription

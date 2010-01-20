@@ -778,7 +778,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         ])
 
     icon_template = (
-        '<span alt="%s" title="%s" class="%s" />')
+        '<span alt="%s" title="%s" class="%s"></span>')
 
     linked_icon_template = (
         '<a href="%s" alt="%s" title="%s" class="%s"></a>')
@@ -828,6 +828,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         """Return whether the bug is linked to a specification."""
         return self._context.bug.specifications.count() > 0
 
+    def _hasPatch(self):
+        """Return whether the bug has a patch."""
+        return self._context.bug.has_patches
+
+
     def badges(self):
 
         badges = []
@@ -853,6 +858,10 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
                 canonical_url(self._context.milestone),
                 milestone_text , "Linked to %s" % milestone_text,
                 "sprite milestone"))
+
+        if self._hasPatch():
+            badges.append(self.icon_template % (
+                "haspatch", "Has a patch", "sprite haspatch-icon"))
 
         # Join with spaces to avoid the icons smashing into each other
         # when multiple ones are presented.
