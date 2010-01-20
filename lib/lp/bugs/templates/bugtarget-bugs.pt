@@ -107,10 +107,16 @@
 
         <h2 style="margin-top: 1em">Hot bugs</h2>
 
-        <table class="listing" id="hot-bugs">
+        <table class="listing" id="hot-bugs"
+          tal:define="show_package python: 'packagename' in view.columns_to_show
+          ">
           <thead>
             <tr>
               <th colspan="3">Summary</th>
+              <th
+                tal:condition="show_package">
+                Package
+              </th>
               <th>Status</th>
               <th>Importance</th>
               <th>Last changed</th>
@@ -128,6 +134,9 @@
                 <a tal:attributes="href bugtask/fmt:url"
                    tal:content="bugtask/bug/title" />
               </td>
+              <td tal:content="structure bugtask/sourcepackagename/name|default"
+                tal:condition="show_package"
+              >&mdash;</td>
               <td tal:attributes="class string:status${bugtask/status/name}"
                   tal:content="bugtask/status/title" />
               <td tal:attributes="
