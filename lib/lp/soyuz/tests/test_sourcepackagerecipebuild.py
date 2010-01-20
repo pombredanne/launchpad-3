@@ -50,9 +50,9 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         job = spb.makeJob()
         self.assertProvides(job, ISourcePackageRecipeBuildJob)
 
-    def test_createBuildQueueEntry(self):
+    def test_queueBuild(self):
         spb = self.makeSourcePackageRecipeBuild()
-        bq = spb.createBuildQueueEntry()
+        bq = spb.queueBuild()
         self.assertProvides(bq, IBuildQueue)
         self.assertProvides(bq.specific_job, ISourcePackageRecipeBuildJob)
         self.assertEqual(True, bq.virtualized)

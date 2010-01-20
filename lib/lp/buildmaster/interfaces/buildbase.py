@@ -110,7 +110,7 @@ class IBuildBase(Interface):
         Invoke getFileFromSlave method with 'buildlog' identifier.
         """
 
-    def createBuildQueueEntry():
+    def queueBuild():
         """Create a BuildQueue entry for this build."""
 
     def estimateDuration():
