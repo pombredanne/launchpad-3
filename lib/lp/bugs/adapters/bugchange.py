@@ -523,12 +523,18 @@ class BugAttachmentChange(AttributeChange):
 
     def getBugNotification(self):
         if self.old_value is None:
-            attachment_str = 'Patch' if self.new_value.is_patch else 'Attachment'
+            if self.new_value.is_patch:
+                attachment_str = 'Patch'
+            else:
+                attachment_str = 'Attachment'
             message = '** %s added: "%s"\n   %s' % (
                 attachment_str, self.new_value.title,
                 self.new_value.libraryfile.http_url)
         else:
-            attachment_str = 'Patch' if self.old_value.is_patch else 'Attachment'
+            if self.old_value.is_patch:
+                attachment_str = 'Patch'
+            else:
+                attachment_str = 'Attachment'
             message = '** %s removed: "%s"\n   %s' % (
                 attachment_str, self.old_value.title,
                 self.old_value.libraryfile.http_url)
