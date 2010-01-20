@@ -562,6 +562,21 @@ class BugWatchUpdater(object):
             abs(server_time - now) > self.ACCEPTABLE_TIME_SKEW):
             raise TooMuchTimeSkew(abs(server_time - now))
 
+        # We limit the number of watches we're updating by the
+        # ExternalBugTracker's batch_size. In an ideal world we'd just
+        # slice the bug_watches list but for the sake of testing we need
+        # to ensure that the list of bug watches is ordered by remote
+        # bug id before we do so.
+        if batch_size is None:
+            # If a batch_size hasn't been passed, use the one specified
+            # by the ExternalBugTracker.
+            batch_size = remotesystem.batch_size
+
+        if batch_size == 0:
+            # A batch_size of 0 means that there's no batch size limit
+            # for this bug tracker.
+            batch_size = None
+
         old_bug_watches = [
             bug_watch for bug_watch in bug_watches
             if bug_watch.lastchecked is not None]
@@ -581,8 +596,22 @@ class BugWatchUpdater(object):
         # are actually some bugs that we're interested in so as to
         # avoid unnecessary network traffic.
         if server_time is not None and len(remote_old_ids) > 0:
-            old_ids_to_check = remotesystem.getModifiedRemoteBugs(
-                remote_old_ids, oldest_lastchecked)
+            if batch_size is None:
+                old_ids_to_check = remotesystem.getModifiedRemoteBugs(
+                    remote_old_ids, oldest_lastchecked)
+            else:
+                # Don't ask the remote system about more than
+                # batch_size bugs at once, but keep asking until we
+                # run out of bugs to ask about or we have batch_size
+                # bugs to check.
+                old_ids_to_check = []
+                for index in xrange(0, len(remote_old_ids), batch_size):
+                    old_ids_to_check.extend(
+                        remotesystem.getModifiedRemoteBugs(
+                            remote_old_ids[index : index + batch_size],
+                            oldest_lastchecked))
+                    if len(old_ids_to_check) >= batch_size:
+                        break
         else:
             old_ids_to_check = list(remote_old_ids)
 
@@ -600,21 +629,6 @@ class BugWatchUpdater(object):
         # them anyway.
         old_ids_to_check = sorted(
             set(old_ids_to_check).difference(set(remote_ids_to_check)))
-
-        # We limit the number of watches we're updating by the
-        # ExternalBugTracker's batch_size. In an ideal world we'd just
-        # slice the bug_watches list but for the sake of testing we need
-        # to ensure that the list of bug watches is ordered by remote
-        # bug id before we do so.
-        if batch_size is None:
-            # If a batch_size hasn't been passed, use the one specified
-            # by the ExternalBugTracker.
-            batch_size = remotesystem.batch_size
-
-        if batch_size == 0:
-            # A batch_size of 0 means that there's no batch size limit
-            # for this bug tracker.
-            batch_size = None
 
         if batch_size is not None:
             # We'll recreate our remote_ids_to_check list so that it's
