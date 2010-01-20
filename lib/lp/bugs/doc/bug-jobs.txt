@@ -4,3 +4,18 @@ BugJobs
 The IBugJob interface defines how we can interact with a BugJob.
 
     >>> from lp.bugs.interfaces.bugjob import IBugJob
+
+The BugJob model class implements IBugJob.
+
+    >>> from lp.bugs.model.bugjob import BugJob
+    >>> IBugJob.implementedBy(BugJob)
+
+A BugJob represents a job related to a bug, and it can carry some
+additional metadata along with it.
+
+    >>> from lp.bugs.interfaces.bugjob import BugJobType
+
+    >>> bug = factory.makeBug()
+    >>> bug_job = BugJob(
+    ...     bug, BugJobType.UPDATE_HEAT,
+    ...     ('some', 'arbitrary', 'metadata'))

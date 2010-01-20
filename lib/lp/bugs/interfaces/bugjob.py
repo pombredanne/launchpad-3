@@ -15,8 +15,7 @@ from canonical.launchpad import _
 
 from lazr.enum import DBEnumeratedType, DBItem
 from lp.bugs.interfaces.bug import IBug
-from lp.services.job.interfaces.job import IJob, IRunnableJob
-
+from lp.services.job.interfaces.job import IJob
 
 
 class BugJobType(DBEnumeratedType):
@@ -47,5 +46,3 @@ class IBugJob(Interface):
 
     def destroySelf():
         """Destroy this object."""
-
-
