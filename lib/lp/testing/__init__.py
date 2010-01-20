@@ -518,18 +518,18 @@ class TestCaseWithFactory(TestCase):
             server = get_multi_server(
                 write_hosted=True, write_mirrored=True,
                 direct_database=direct_database)
-            server.setUp()
+            server.start_server()
             self.addCleanup(server.destroy)
         else:
             os.mkdir('lp-mirrored')
             mirror_server = FakeTransportServer(get_transport('lp-mirrored'))
-            mirror_server.setUp()
-            self.addCleanup(mirror_server.tearDown)
+            mirror_server.start_server()
+            self.addCleanup(mirror_server.stop_server)
             os.mkdir('lp-hosted')
             hosted_server = FakeTransportServer(
                 get_transport('lp-hosted'), url_prefix='lp-hosted:///')
-            hosted_server.setUp()
-            self.addCleanup(hosted_server.tearDown)
+            hosted_server.start_server()
+            self.addCleanup(hosted_server.stop_server)
 
 
 def capture_events(callable_obj, *args, **kwargs):
