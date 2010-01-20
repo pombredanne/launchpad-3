@@ -103,36 +103,41 @@ class IExternalBugTracker(Interface):
 class ISupportsCommentImport(IExternalBugTracker):
     """An external bug tracker that supports comment imports."""
 
-    def fetchComments(bug_watch, comment_ids):
+    def fetchComments(remote_bug_id, comment_ids):
         """Load a given set of remote comments, ready for parsing.
 
-        :param bug_watch: The bug watch for which to fetch the comments.
+        :param remote_bug_id: The ID of the remote bug from which to
+            fetch comments.
+        :type remote_bug_id: See `IBugWatch.remotebug`.
         :param comment_ids: A list of the IDs of the comments to load.
         """
 
-    def getCommentIds(bug_watch):
+    def getCommentIds(remote_bug_id):
         """Return all the comment IDs for a given remote bug.
 
-        :param bug_watch: An `IBugWatch` pointing to the remote bug from
-            which comments should be imported.
+        :param remote_bug_id: The ID of the remote bug from which
+            comments should be imported.
+        :type remote_bug_id: See `IBugWatch.remotebug`.
         :return: A list of strings, each of which is the ID of one
             comment on the remote bug.
         """
 
-    def getPosterForComment(bug_watch, comment_id):
+    def getPosterForComment(remote_bug_id, comment_id):
         """Return a tuple of (name, emailaddress) for a comment's poster.
 
-        :param bug_watch: An `IBugWatch` pointing to the remote bug from
-            which comments should be imported.
+        :param remote_bug_id: The ID of the remote bug from which
+            comments have been imported.
+        :type remote_bug_id: See `IBugWatch.remotebug`.
         :param comment_id: A string representing the remote comment ID
             from which the poster's details should be extracted.
         """
 
-    def getMessageForComment(bug_watch, comment_id, poster):
+    def getMessageForComment(remote_bug_id, comment_id, poster):
         """Return an `IMessage` instance for a comment.
 
-        :param bug_watch: An `IBugWatch` pointing to the remote bug from
-            which comments should be imported.
+        :param remote_bug_id: The ID of the remote bug from which
+            comments have been imported.
+        :type remote_bug_id: See `IBugWatch.remotebug`.
         :param comment_id: A string representing the remote comment ID
             from which the returned `IMessage` should be created.
         """

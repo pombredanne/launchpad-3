@@ -10,7 +10,6 @@ from unittest import TestLoader
 
 import pytz
 import transaction
-from zope.publisher.interfaces import NotFound
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
@@ -298,6 +297,14 @@ class TestBranchMergeProposalListingItem(TestCaseWithFactory):
         item = BranchMergeProposalListingItem(bmp, None, None)
         self.assertEqual(review_date, item.sort_key)
 
+    def test_sort_key_wip(self):
+        # If the proposal is a work in progress, the date_created is used.
+        bmp = self.factory.makeBranchMergeProposal(
+            date_created=datetime(2009,6,1,tzinfo=pytz.UTC))
+        login_person(bmp.target_branch.owner)
+        item = BranchMergeProposalListingItem(bmp, None, None)
+        self.assertEqual(bmp.date_created, item.sort_key)
+
 
 class ActiveReviewSortingTest(TestCaseWithFactory):
     """Test the sorting of the active review groups."""
@@ -321,20 +328,6 @@ class ActiveReviewSortingTest(TestCaseWithFactory):
         self.assertEqual(
             [bmp3, bmp2, bmp1],
             [item.context for item in view.review_groups[view.OTHER]])
-
-
-class NoActiveReviewsForBranchTest(TestCaseWithFactory):
-    """A branch should not have +activereviews."""
-
-    layer = DatabaseFunctionalLayer
-
-    def test_no_active_reviews(self):
-        # 404 is more apt than an oops.
-        branch = self.factory.makeProductBranch()
-        self.assertRaises(
-            NotFound,
-            create_initialized_view,
-            branch, name='+activereviews')
 
 
 def test_suite():

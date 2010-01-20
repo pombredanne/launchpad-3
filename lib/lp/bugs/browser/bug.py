@@ -49,9 +49,8 @@ from lazr.restful.interfaces import (
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces._schema_circular_imports import IBug
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
-from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, IBugTask, IFrontPageBugTaskSearch)

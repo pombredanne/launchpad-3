@@ -587,20 +587,21 @@ they'll get a 404.
     NotFound: ...
 
 
-Displaying a review diff
-------------------------
+Displaying a preview diff
+-------------------------
 
-Create merge proposal with a review diff, and go to its index page.
+Create merge proposal with a preview diff, and go to its index page.
 
     >>> login('admin@canonical.com')
-    >>> from lp.code.model.diff import StaticDiff
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from lp.code.model.diff import PreviewDiff
     >>> from difflib import unified_diff
     >>> diff_text = ''.join(
     ...     unified_diff('', ['Fake Diff' + u'\u1010'.encode('utf-8')]))
-    >>> review_diff = StaticDiff.acquireFromText(
-    ...     'a', 'b', diff_text)
+    >>> preview_diff = PreviewDiff.create(diff_text, u'a', u'b', None, u'')
     >>> transaction.commit()
-    >>> bmp = factory.makeBranchMergeProposal(review_diff=review_diff)
+    >>> bmp = factory.makeBranchMergeProposal()
+    >>> removeSecurityProxy(bmp).preview_diff = preview_diff
     >>> url = canonical_url(bmp)
     >>> logout()
     >>> def get_review_diff():
@@ -613,7 +614,7 @@ The text of the review diff is in the page.
 
 If no diff is present, nothing is shown.
     >>> login('admin@canonical.com')
-    >>> bmp.review_diff = None
+    >>> removeSecurityProxy(bmp).preview_diff = None
     >>> logout()
     >>> print get_review_diff()
     None
@@ -621,11 +622,28 @@ If no diff is present, nothing is shown.
 If the review diff is empty, then we say it is empty.
 
     >>> login('admin@canonical.com')
-    >>> bmp.review_diff = StaticDiff.acquireFromText('c', 'd', '')
+    >>> removeSecurityProxy(bmp).preview_diff = PreviewDiff.create(
+    ...     '', u'c', u'd', None, u'')
     >>> logout()
     >>> print extract_text(get_review_diff())
     Preview Diff
     Empty
+
+
+Preview diff generation status
+------------------------------
+
+    >>> update = find_tag_by_id(nopriv_browser.contents, 'diff-pending-update')
+    >>> print extract_text(update)
+    Updating diff...
+    An updated diff will be available in a few minutes.  Reload to see the
+    changes.
+    >>> bmp.next_preview_diff_job.start()
+    >>> bmp.next_preview_diff_job.complete()
+    >>> transaction.commit()
+    >>> nopriv_browser.open(url)
+    >>> print find_tag_by_id(nopriv_browser.contents, 'diff-pending-update')
+    None
 
 
 Merge proposal details shown on the branch page

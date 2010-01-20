@@ -343,15 +343,15 @@ class IPOFileSet(Interface):
     def getDummy(potemplate, language):
         """Return a dummy pofile for the given po template and language."""
 
-    def getPOFileByPathAndOrigin(path, productseries=None,
+    def getPOFilesByPathAndOrigin(path, productseries=None,
         distroseries=None, sourcepackagename=None):
-        """Return an `IPOFile` that is stored at 'path' in source code.
+        """Find `IPOFile`s with 'path' in productseries or source package.
 
         We filter the `IPOFile` objects to check only the ones related to the
         given arguments 'productseries', 'distroseries' and
         'sourcepackagename'.
 
-        Return None if there is not such IPOFile.
+        :return: A Storm result set of matching `POFile`s.
         """
 
     def getBatch(starting_id, batch_size):

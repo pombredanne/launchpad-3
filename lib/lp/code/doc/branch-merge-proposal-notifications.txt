@@ -16,14 +16,11 @@ notification they would like to receive.
     ...     CodeReviewNotificationLevel)
     >>> from lp.code.interfaces.branchmergeproposal import (
     ...     IMergeProposalCreatedJobSource)
-    >>> from lp.code.interfaces.diff import IStaticDiffSource
     >>> from lp.code.model.diff import PreviewDiff
     >>> from lp.testing.mail_helpers import pop_notifications
     >>> import transaction
     >>> login('test@canonical.com')
     >>> diff_bytes = ''.join(unified_diff('', 'c'))
-    >>> review_diff = getUtility(IStaticDiffSource).acquireFromText(
-    ...     'a', 'b', diff_bytes)
     >>> preview_diff = PreviewDiff.create(diff_bytes, u'a', u'b', None, None)
     >>> # Make Librarian happy.
     >>> transaction.commit()
@@ -104,10 +101,10 @@ is created.  When those jobs are run, the email is sent from the registrant.
     ...     displayname="Eric", email="eric@example.com")
     >>> # To avoid needing to access branches, pre-populate diffs.
     >>> bmp = source_branch.addLandingTarget(
-    ...     registrant, target_branch, review_diff=review_diff)
+    ...     registrant, target_branch)
     >>> removeSecurityProxy(bmp).preview_diff = preview_diff
     >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
-    >>> _unused_diff = job.run(_create_preview=False)
+    >>> job.run(_create_preview=False)
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
 
@@ -156,11 +153,10 @@ in the email.
     >>> bmp.deleteProposal()
     >>> bmp = source_branch.addLandingTarget(
     ...     registrant, target_branch,
-    ...     initial_comment=initial_comment, review_requests=reviewers,
-    ...     review_diff=review_diff)
+    ...     initial_comment=initial_comment, review_requests=reviewers)
     >>> removeSecurityProxy(bmp).preview_diff = preview_diff
     >>> [job,] = list(getUtility(IMergeProposalCreatedJobSource).iterReady())
-    >>> _unused_diff = job.run(_create_preview=False)
+    >>> job.run(_create_preview=False)
     >>> notifications = pop_notifications(
     ...     sort_key=lambda n: n.get('X-Envelope-To'))
     >>> for notification in notifications:

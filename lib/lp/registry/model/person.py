@@ -125,7 +125,6 @@ from lp.registry.interfaces.wikiname import IWikiName, IWikiNameSet
 from canonical.launchpad.webapp.interfaces import (
     AUTH_STORE, ILaunchBag, IStoreSelector, MASTER_FLAVOR)
 
-
 from lp.soyuz.model.archive import Archive
 from lp.registry.model.codeofconduct import SignedCodeOfConduct
 from lp.bugs.model.bugtask import BugTask
@@ -1327,8 +1326,6 @@ class Person(
         :param reviewer: Person who made the change.
         """
         assert self.is_team, "This method is only available for teams."
-        assert reviewer.inTeam(getUtility(ILaunchpadCelebrities).admin), (
-            "Only Launchpad admins can deactivate all members of a team")
         now = datetime.now(pytz.timezone('UTC'))
         store = Store.of(self)
         cur = cursor()
@@ -1685,6 +1682,7 @@ class Person(
         for coc in self.signedcocs:
             coc.active = False
         for email in self.validatedemails:
+            email = IMasterObject(email)
             email.status = EmailAddressStatus.NEW
         params = BugTaskSearchParams(self, assignee=self)
         for bug_task in self.searchTasks(params):

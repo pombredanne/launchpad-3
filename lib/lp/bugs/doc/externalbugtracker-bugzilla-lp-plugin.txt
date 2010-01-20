@@ -377,7 +377,7 @@ ISupportsCommentImport.getCommentIds() is the method used to get all the
 comment IDs for a given bug on a remote bugtracker.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = True
-    >>> bug_comment_ids = bugzilla.getCommentIds(bug_watch)
+    >>> bug_comment_ids = bugzilla.getCommentIds(bug_watch.remotebug)
     CALLED Launchpad.comments({'bug_ids': [1], 'include_fields': ['id']})
 
     >>> print sorted(bug_comment_ids)
@@ -386,7 +386,7 @@ comment IDs for a given bug on a remote bugtracker.
 getCommentIds() can only be called if initializeRemoteBugDB() has been
 called and the bug exists locally.
 
-    >>> bugzilla.getCommentIds(bug_watch_broken)
+    >>> bugzilla.getCommentIds(bug_watch_broken.remotebug)
     Traceback (most recent call last):
       ...
     BugNotFound: 42
@@ -396,11 +396,11 @@ fetchComments()
 ---------------
 
 ISupportsCommentImport.fetchComments() is the method used to fetch a
-given set of comments from the remote bugtracker. It takes a bug watch
-and a list of the comment IDs to retrieve for that bug watch.
+given set of comments from the remote bugtracker. It takes a remote
+bug ID and a list of the comment IDs to retrieve for that bug watch.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> bugzilla.fetchComments(bug_watch, ['1', '3'])
+    >>> bugzilla.fetchComments(bug_watch.remotebug, ['1', '3'])
 
 The comments will be stored in the bugs dict as a dict of comment id =>
 comment dict mappings under the key 'comments'.
@@ -466,11 +466,12 @@ authorization cookie so that it gets regenerated.
 The comment will be stored on the remote server with the other comments.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> print sorted(bugzilla.getCommentIds(bug_watch))
+    >>> print sorted(bugzilla.getCommentIds(bug_watch.remotebug))
     ['1', '3', '5']
 
-    >>> bugzilla.fetchComments(bug_watch, ['5'])
-    >>> message = bugzilla.getMessageForComment(bug_watch, '5', sample_person)
+    >>> bugzilla.fetchComments(bug_watch.remotebug, ['5'])
+    >>> message = bugzilla.getMessageForComment(
+    ...     bug_watch.remotebug, '5', sample_person)
     >>> print message.text_contents
     This is a new remote comment.
     <BLANKLINE>

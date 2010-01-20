@@ -127,12 +127,13 @@ class TestCodeHandler(TestCaseWithFactory):
     layer = ZopelessAppServerLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+        super(TestCodeHandler, self).setUp(user='test@canonical.com')
         self.code_handler = CodeHandler()
         self._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
 
     def tearDown(self):
         setSecurityPolicy(self._old_policy)
+        super(TestCodeHandler, self).tearDown()
 
     def switchDbUser(self, user):
         """Commit the transactionand switch to the new user."""
@@ -1060,6 +1061,7 @@ class TestVoteEmailCommand(TestCase):
     # We don't need no stinking layer.
 
     def setUp(self):
+        super(TestVoteEmailCommand, self).setUp()
         class FakeExecutionContext:
             vote = None
             vote_tags = None
@@ -1149,7 +1151,8 @@ class TestUpdateStatusEmailCommand(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+        super(TestUpdateStatusEmailCommand, self).setUp(
+            user='test@canonical.com')
         self._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
         self.merge_proposal = self.factory.makeBranchMergeProposal()
         # Default the user to be the target branch owner, so they are
@@ -1161,6 +1164,7 @@ class TestUpdateStatusEmailCommand(TestCaseWithFactory):
 
     def tearDown(self):
         setSecurityPolicy(self._old_policy)
+        super(TestUpdateStatusEmailCommand, self).tearDown()
 
     def test_numberOfArguments(self):
         # The command needs one and only one arg.
@@ -1257,7 +1261,8 @@ class TestAddReviewerEmailCommand(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self, user='test@canonical.com')
+        super(TestAddReviewerEmailCommand, self).setUp(
+            user='test@canonical.com')
         self._old_policy = setSecurityPolicy(LaunchpadSecurityPolicy)
         self.merge_proposal = self.factory.makeBranchMergeProposal()
         # Default the user to be the target branch owner, so they are
@@ -1270,6 +1275,7 @@ class TestAddReviewerEmailCommand(TestCaseWithFactory):
 
     def tearDown(self):
         setSecurityPolicy(self._old_policy)
+        super(TestAddReviewerEmailCommand, self).tearDown()
 
     def test_numberOfArguments(self):
         # The command needs at least one arg.

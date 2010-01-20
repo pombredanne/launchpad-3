@@ -107,7 +107,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        TestCaseWithFactory.setUp(self)
+        super(TestUploadProcessorBase, self).setUp()
 
         self.queue_folder = tempfile.mkdtemp()
         os.makedirs(os.path.join(self.queue_folder, "incoming"))
@@ -134,6 +134,7 @@ class TestUploadProcessorBase(TestCaseWithFactory):
 
     def tearDown(self):
         shutil.rmtree(self.queue_folder)
+        super(TestUploadProcessorBase, self).tearDown()
 
     def assertLogContains(self, line):
         """Assert if a given line is present in the log messages."""

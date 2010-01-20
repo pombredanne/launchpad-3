@@ -12,6 +12,7 @@ __all__ = [
     ]
 
 import pytz
+import re
 import xml.parsers.expat
 import xmlrpclib
 
@@ -69,7 +70,7 @@ class Bugzilla(ExternalBugTracker):
         try:
             # We try calling Bugzilla.version() on the remote
             # server because it's the most lightweight method there is.
-            remote_version_dict = proxy.Bugzilla.version()
+            remote_version = proxy.Bugzilla.version()
         except xmlrpclib.Fault, fault:
             if fault.faultCode == 'Client':
                 return False
@@ -88,10 +89,12 @@ class Bugzilla(ExternalBugTracker):
             # The server returned an unparsable response.
             return False
         else:
-            if remote_version_dict['version'] >= '3.4':
-                return True
-            else:
-                return False
+            # Older versions of the Bugzilla API return tuples. We
+            # consider anything other than a mapping to be unsupported.
+            if isinstance(remote_version, dict):
+                if remote_version['version'] >= '3.4':
+                    return True
+            return False
 
     def _remoteSystemHasPluginAPI(self):
         """Return True if the remote host has the Launchpad plugin installed.
@@ -191,25 +194,13 @@ class Bugzilla(ExternalBugTracker):
         if version is None:
             return None
 
-        try:
-            # XXX 2008-09-15 gmb bug 270695:
-            #     We can clean this up by just stripping out anything
-            #     not in [0-9\.].
-            # Get rid of trailing -rh, -debian, etc.
-            version = version.split("-")[0]
-            # Ignore plusses in the version.
-            version = version.replace("+", "")
-            # Ignore the 'rc' string in release candidate versions.
-            version = version.replace("rc", "")
-            # We need to convert the version to a tuple of integers if
-            # we are to compare it correctly.
-            version = tuple(int(x) for x in version.split("."))
-        except ValueError:
+        version_numbers = re.findall('[0-9]+', version)
+        if len(version_numbers) == 0:
             raise UnparseableBugTrackerVersion(
                 'Failed to parse version %r for %s' %
                 (version, self.baseurl))
 
-        return version
+        return tuple(int(number) for number in version_numbers)
 
     def convertRemoteImportance(self, remote_importance):
         """See `ExternalBugTracker`.
@@ -626,13 +617,13 @@ class BugzillaAPI(Bugzilla):
 
         return bug_products
 
-    def getCommentIds(self, bug_watch):
+    def getCommentIds(self, remote_bug_id):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # Check that the bug exists, first.
         if actual_bug_id not in self._bugs:
-            raise BugNotFound(bug_watch.remotebug)
+            raise BugNotFound(remote_bug_id)
 
         # Get only the remote comment IDs and store them in the
         # 'comments' field of the bug.
@@ -648,9 +639,9 @@ class BugzillaAPI(Bugzilla):
 
         return [str(comment['id']) for comment in bug_comments]
 
-    def fetchComments(self, bug_watch, comment_ids):
+    def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_ids to integers, since
         # BugWatchUpdater.importBugComments() will pass us a list of
@@ -664,7 +655,7 @@ class BugzillaAPI(Bugzilla):
         comments = return_dict['comments']
 
         # As a sanity check, drop any comments that don't belong to the
-        # bug in bug_watch.
+        # bug in remote_bug_id.
         for comment_id, comment in comments.items():
             if int(comment['bug_id']) != actual_bug_id:
                 del comments[comment_id]
@@ -674,9 +665,9 @@ class BugzillaAPI(Bugzilla):
             (int(id), comments[id]) for id in comments)
         self._bugs[actual_bug_id]['comments'] = comments_with_int_ids
 
-    def getPosterForComment(self, bug_watch, comment_id):
+    def getPosterForComment(self, remote_bug_id, comment_id):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_id to integers, since
         # BugWatchUpdater.importBugComments() will pass us a string (see
@@ -693,9 +684,9 @@ class BugzillaAPI(Bugzilla):
 
         return (display_name, email)
 
-    def getMessageForComment(self, bug_watch, comment_id, poster):
+    def getMessageForComment(self, remote_bug_id, comment_id, poster):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_id to integers, since
         # BugWatchUpdater.importBugComments() will pass us a string (see
@@ -845,13 +836,13 @@ class BugzillaLPPlugin(BugzillaAPI):
         server_utc_time = time_dict['utc_time']
         return server_utc_time.replace(tzinfo=pytz.timezone('UTC'))
 
-    def getCommentIds(self, bug_watch):
+    def getCommentIds(self, remote_bug_id):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # Check that the bug exists, first.
         if actual_bug_id not in self._bugs:
-            raise BugNotFound(bug_watch.remotebug)
+            raise BugNotFound(remote_bug_id)
 
         # Get only the remote comment IDs and store them in the
         # 'comments' field of the bug.
@@ -871,9 +862,9 @@ class BugzillaLPPlugin(BugzillaAPI):
         # bug 248938).
         return [str(comment['id']) for comment in bug_comments]
 
-    def fetchComments(self, bug_watch, comment_ids):
+    def fetchComments(self, remote_bug_id, comment_ids):
         """See `ISupportsCommentImport`."""
-        actual_bug_id = self._getActualBugId(bug_watch.remotebug)
+        actual_bug_id = self._getActualBugId(remote_bug_id)
 
         # We need to cast comment_ids to integers, since
         # BugWatchUpdater.importBugComments() will pass us a list of

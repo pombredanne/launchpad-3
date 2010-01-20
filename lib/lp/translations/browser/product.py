@@ -11,14 +11,12 @@ __all__ = [
     'ProductView',
     ]
 
-from zope.security.proxy import removeSecurityProxy
-
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     LaunchpadView, Link, canonical_url, enabled_with_permission)
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.registry.interfaces.product import IProduct
-from lp.registry.model.productseries import ProductSeries
+from lp.registry.interfaces.product import IProduct, IProductSeries
 from lp.registry.browser.product import ProductEditView
 from lp.translations.browser.translations import TranslationsMixin
 
@@ -86,32 +84,31 @@ class ProductView(LaunchpadView):
     @cachedproperty
     def uses_translations(self):
         """Whether this product has translatable templates."""
-        return (self.context.official_rosetta and self.primary_translatable)
+        return (self.context.official_rosetta and 
+                self.primary_translatable is not None)
+
+    @cachedproperty
+    def no_translations_available(self):
+        """Has no translation templates but does support translations."""
+        return (self.context.official_rosetta and
+                self.primary_translatable is None)
+
+    @cachedproperty
+    def show_page_content(self):
+        """Whether the main content of the page should be shown."""
+        return (self.context.official_rosetta or
+                check_permission("launchpad.TranslationsAdmin", self.context))
 
     @cachedproperty
     def primary_translatable(self):
-        """Return a dictionary with the info for a primary translatable.
-
-        If there is no primary translatable object, returns an empty
-        dictionary.
-
-        The dictionary has the keys:
-         * 'title': The title of the translatable object.
-         * 'potemplates': a set of PO Templates for this object.
-         * 'base_url': The base URL to reach the base URL for this object.
+        """Return the context's primary translatable if it's a product series.
         """
         translatable = self.context.primary_translatable
-        naked_translatable = removeSecurityProxy(translatable)
 
-        if (translatable is None or
-            not isinstance(naked_translatable, ProductSeries)):
-            return {}
+        if not IProductSeries.providedBy(translatable):
+            return None
 
-        return {
-            'title': translatable.title,
-            'potemplates': translatable.getCurrentTranslationTemplates(),
-            'base_url': canonical_url(translatable)
-            }
+        return translatable
 
     @cachedproperty
     def untranslatable_series(self):

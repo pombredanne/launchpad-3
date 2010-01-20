@@ -18,12 +18,12 @@
       in a publicly accessible location,
       Launchpad can act as a mirror of the branch by registering a
       <em>Mirrored</em> branch.
-      <a href="https://help.launchpad.net/CreatingAMirroredBranch">Read more.</a>
+      <a href="https://help.launchpad.net/Code/MirroredBranches">Read more.</a>
       </li>
       <li>Launchpad can also act as a primary
       location for Bazaar branches of
       <tal:project-name replace="context/displayname"/>.
-      <a href="https://help.launchpad.net/CreatingAHostedBranch">Read more.</a>
+      <a href="https://help.launchpad.net/Code/UploadingABranch">Read more.</a>
       </li>
 
       <li>Launchpad can import code from CVS or Subversion into Bazaar

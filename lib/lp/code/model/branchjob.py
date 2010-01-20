@@ -3,6 +3,8 @@
 
 __all__ = [
     'BranchJob',
+    'BranchJobDerived',
+    'BranchJobType',
     'BranchUpgradeJob',
     'RevisionsAddedJob',
     'RevisionMailJob',
@@ -119,6 +121,12 @@ class BranchJobType(DBEnumeratedType):
         from disk.
         """)
 
+    TRANSLATION_TEMPLATES_BUILD = DBItem(6, """
+        Generate translation templates
+
+        This job generates translations templates from a source branch.
+        """)
+
 
 class BranchJob(SQLBase):
     """Base class for jobs related to branches."""
@@ -190,7 +198,7 @@ class BranchJobDerived(BaseRunnableJob):
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
-        vars =  BaseRunnableJob.getOopsVars(self)
+        vars = BaseRunnableJob.getOopsVars(self)
         vars.extend([
             ('branch_job_id', self.context.id),
             ('branch_job_type', self.context.job_type.title)])
@@ -203,8 +211,8 @@ class BranchDiffJob(BranchJobDerived):
     """A Job that calculates the a diff related to a Branch."""
 
     implements(IBranchDiffJob)
-
     classProvides(IBranchDiffJobSource)
+
     @classmethod
     def create(cls, branch, from_revision_spec, to_revision_spec):
         """See `IBranchDiffJobSource`."""
@@ -439,7 +447,7 @@ class RevisionsAddedJob(BranchJobDerived):
         history = self.bzr_branch.revision_history()
         for num, revid in enumerate(history):
             if revid in added_revisions:
-                yield repository.get_revision(revid), num+1
+                yield repository.get_revision(revid), num + 1
 
     def generateDiffs(self):
         """Determine whether to generate diffs."""
@@ -876,7 +884,7 @@ class RosettaUploadJob(BranchJobDerived):
                 BranchJob.job == Job.id,
                 BranchJob.branch == Branch.id,
                 Branch.last_mirrored_id == Branch.last_scanned_id,
-                Job.id.is_in(Job.ready_jobs)))
+                Job.id.is_in(Job.ready_jobs))).order_by(BranchJob.id)
         return (RosettaUploadJob(job) for job in jobs)
 
     @staticmethod
@@ -930,4 +938,3 @@ class ReclaimBranchSpaceJob(BranchJobDerived):
             shutil.rmtree(mirrored_path)
         if os.path.exists(hosted_path):
             shutil.rmtree(hosted_path)
-

@@ -1236,6 +1236,7 @@ class CopyPackageTestCase(TestCase):
         The records annotated will be excluded during the operation checks,
         see checkCopies().
         """
+        super(CopyPackageTestCase, self).setUp()
         pending_sources = SecureSourcePackagePublishingHistory.selectBy(
             status=PackagePublishingStatus.PENDING)
         self.sources_pending_ids = [pub.id for pub in pending_sources]

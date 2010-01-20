@@ -26,6 +26,7 @@ import subprocess
 import xmlrpclib
 
 from canonical.config import config
+from lp.buildmaster.interfaces.builder import CannotFetchFile
 
 
 class MockBuilder:
@@ -40,7 +41,7 @@ class MockBuilder:
         self.name = name
         self.virtualized = True
 
-    def failbuilder(self, reason):
+    def failBuilder(self, reason):
         self.builderok = False
         self.failnotes = reason
 
@@ -184,6 +185,16 @@ class OkSlave:
         stdout, stderr = resume_process.communicate()
 
         return (stdout, stderr, resume_process.returncode)
+
+    def _sendFileToSlave(self, url, sha1, username="", password=""):
+        present, info = self.ensurepresent(sha1, url, username, password)
+        if not present:
+            raise CannotFetchFile(url, info)
+
+    def cacheFile(self, logger, libraryfilealias):
+        self._sendFileToSlave(
+            libraryfilealias.http_url, libraryfilealias.content.sha1)
+
 
 class BuildingSlave(OkSlave):
     """A mock slave that looks like it's currently building."""
