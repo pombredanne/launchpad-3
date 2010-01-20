@@ -34,11 +34,11 @@ class BugJob(Storm):
 
     id = Int(primary=True)
 
-    jobID = Int('job')
-    job = Reference(jobID, Job.id)
+    job_id = Int(name='job')
+    job = Reference(job_id, Job.id)
 
-    bugID = Int('bug', allow_none=False)
-    bug = Reference(bugID, Bug.id)
+    bug_id = Int(name='bug')
+    bug = Reference(bug_id, Bug.id)
 
     job_type = EnumCol(enum=BugJobType, notNull=True)
 
