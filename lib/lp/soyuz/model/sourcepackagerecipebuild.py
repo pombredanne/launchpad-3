@@ -73,7 +73,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
-    # XXX wgrant 2009-01-15 bug=507751: Need a DB field for this.
+    # XXX wgrant 2010-01-15 bug=507751: Need a DB field for this.
     dependencies = None
 
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
@@ -162,17 +162,17 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
 
     def estimateDuration(self):
         """See `IBuildBase`."""
-        # XXX: wgrant 2009-01-19 bug=507764: Need proper implementation.
+        # XXX: wgrant 2010-01-19 bug=507764: Need proper implementation.
         return datetime.timedelta(minutes=2)
 
     def storeUploadLog(self, content):
         """See `IBuildBase`."""
-        # XXX: wgrant 2009-01-20 bug=509892: Store in the DB.
+        # XXX: wgrant 2010-01-20 bug=509892: Store in the DB.
         return
 
     def notify(self, extra_info=None):
         """See `IBuildBase`."""
-        # XXX: wgrant 2009-01-20 bug=509893: Implement this.
+        # XXX: wgrant 2010-01-20 bug=509893: Implement this.
         return
 
 

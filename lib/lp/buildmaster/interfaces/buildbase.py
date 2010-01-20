@@ -24,7 +24,7 @@ from canonical.launchpad import _
 
 class IBuildBase(Interface):
     """Common interface shared by farm jobs that build a package."""
-    # XXX: wgrant 2009-01-20 bug=507712: Most of these attribute names
+    # XXX: wgrant 2010-01-20 bug=507712: Most of these attribute names
     # are bad.
     datecreated = exported(
         Datetime(
