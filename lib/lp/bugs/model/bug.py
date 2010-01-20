@@ -305,15 +305,7 @@ class Bug(SQLBase):
     @property
     def users_affected_count_with_dupes(self):
         """See `IBug`."""
-        person_ids = Store.of(self).execute(
-            Select(Person.id,
-                   In(Person.id,
-                      self.user_ids_affected_with_dupes)))
-        # XXX kfogel 2010-01-20 There's apparently a way to do this
-        # more efficiently in SQL (using COUNT and/or UNION and/or
-        # DISTINCT).  I think abel figured out how before we closed up
-        # shop yesterday, in fact.  We should fix this up soon.
-        return len(set(person_ids))
+        return self.users_affected_with_dupes.count()
 
     @property
     def indexed_messages(self):
