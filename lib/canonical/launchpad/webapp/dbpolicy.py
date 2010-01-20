@@ -6,9 +6,12 @@
 __metaclass__ = type
 __all__ = [
     'BaseDatabasePolicy',
+    'DatabaseBlockedPolicy',
     'LaunchpadDatabasePolicy',
-    'SlaveDatabasePolicy',
     'MasterDatabasePolicy',
+    'ReadOnlyLaunchpadDatabasePolicy',
+    'SlaveDatabasePolicy',
+    'SlaveOnlyDatabasePolicy',
     ]
 
 from datetime import datetime, timedelta
