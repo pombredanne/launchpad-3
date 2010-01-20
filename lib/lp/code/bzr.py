@@ -228,20 +228,15 @@ class ControlFormat(DBEnumeratedType):
 CURRENT_BRANCH_FORMATS = (
     BranchFormat.UNRECOGNIZED,
     BranchFormat.BRANCH_REFERENCE,
+    BranchFormat.BZR_BRANCH_7,
     BranchFormat.BZR_BRANCH_8,
     BranchFormat.BZR_LOOM_1,
     BranchFormat.BZR_LOOM_2,
-    BranchFormat.BZR_LOOM_3,
-)
+    BranchFormat.BZR_LOOM_3)
 
 # A tuple of repository formats that should not suggest upgrading.
 CURRENT_REPOSITORY_FORMATS = (
     RepositoryFormat.UNRECOGNIZED,
-    RepositoryFormat.BZR_KNITPACK_3,
-    RepositoryFormat.BZR_KNITPACK_5,
-    RepositoryFormat.BZR_KNITPACK_5_RR,
-    RepositoryFormat.BZR_KNITPACK_6,
-    RepositoryFormat.BZR_KNITPACK_6_RR,
     RepositoryFormat.BZR_PACK_DEV_0,
     RepositoryFormat.BZR_PACK_DEV_0_SUBTREE,
     RepositoryFormat.BZR_DEV_1,
@@ -250,9 +245,7 @@ CURRENT_REPOSITORY_FORMATS = (
     RepositoryFormat.BZR_DEV_2_SUBTREE,
     RepositoryFormat.BZR_CHK1,
     RepositoryFormat.BZR_CHK2,
-    RepositoryFormat.BZR_CHK_2A
-
-)
+    RepositoryFormat.BZR_CHK_2A)
 
 BRANCH_FORMAT_UPGRADE_PATH = {
     BranchFormat.UNRECOGNIZED: None,

@@ -290,7 +290,7 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
             # Perform the upgrade.
-            upgrade(upgrade_branch.base, self.upgrade_format)
+            upgrade(upgrade_branch.base)
 
             # Re-open the branch, since its format has changed.
             upgrade_branch = BzrBranch.open_from_transport(
@@ -309,24 +309,6 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_transport.copy_tree_to_transport(source_branch_transport)
         finally:
             shutil.rmtree(upgrade_branch_path)
-
-    @property
-    def upgrade_format(self):
-        """See `IBranch`."""
-        format = BzrDirMetaFormat1()
-        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(
-            self.branch.branch_format)
-        repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
-            self.branch.repository_format)
-        if branch_format is None or repository_format is None:
-            branch = BzrBranch.open(self.branch.getPullURL())
-            if branch_format is None:
-                branch_format = type(branch._format)
-            if repository_format is None:
-                repository_format = type(branch.repository._format)
-        format.set_branch_format(branch_format())
-        format._set_repository_format(repository_format())
-        return format
 
 
 class RevisionMailJob(BranchDiffJob):
