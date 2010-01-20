@@ -12,7 +12,7 @@ LOCKROOT=$ARCHIVEROOT/..
 GERMINATEROOT=$ARCHIVEROOT/../ubuntu-germinate
 
 LAUNCHPADROOT=/srv/launchpad.net/codelines/current
-MAINTAINCE_CHECK=$LAUNCHPADROOT/lib/lp/soyuz/scripts/maintenance-check.py
+MAINTAINCE_CHECK=$LAUNCHPADROOT/cronscripts/publishing/maintenance-check.py
 
 ## Check to see if another germinate run is in progress
 
