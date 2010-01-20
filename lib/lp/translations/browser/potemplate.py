@@ -530,9 +530,9 @@ class POTemplateEditView(LaunchpadEditFormView):
                 product=context.product, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
         if old_translation_domain != context.translation_domain:
-            # We only update date_last_updated when translation_domain field
-            # is changed because is the only significative change that,
-            # somehow, affects the content of the potemplate.
+            # We only change date_last_updated when the translation_domain
+            # field is changed because it is the only relevant field we
+            # care about regarding the date of last update.
             UTC = pytz.timezone('UTC')
             naked_context = removeSecurityProxy(context)
             naked_context.date_last_updated = datetime.datetime.now(UTC)
