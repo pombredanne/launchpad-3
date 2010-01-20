@@ -81,7 +81,7 @@ class BugJob(Storm):
         Store.of(self).remove(self)
 
     @classmethod
-    def selectBy(klass, **kwargs):
+    def selectBy(cls, **kwargs):
         """Return selected instances of this class.
 
         At least one pair of keyword arguments must be supplied.
@@ -90,16 +90,16 @@ class BugJob(Storm):
         """
         assert len(kwargs) > 0
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(klass, **kwargs)
+        return store.find(cls, **kwargs)
 
     @classmethod
-    def get(klass, key):
+    def get(cls, key):
         """Return the instance of this class whose key is supplied."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        instance = store.get(klass, key)
+        instance = store.get(cls, key)
         if instance is None:
             raise SQLObjectNotFound(
-                'No occurrence of %s has key %s' % (klass.__name__, key))
+                'No occurrence of %s has key %s' % (cls.__name__, key))
         return instance
 
 
@@ -128,8 +128,8 @@ class BugJobDerived(BaseRunnableJob):
     def get(cls, job_id):
         """Get a job by id.
 
-        :return: the BugJob with the specified id, as the
-                 current BugJobDerived subclass.
+        :return: the BugJob with the specified id, as the current
+                 BugJobDerived subclass.
         :raises: SQLObjectNotFound if there is no job with the specified id,
                  or its job_type does not match the desired subclass.
         """
@@ -141,16 +141,16 @@ class BugJobDerived(BaseRunnableJob):
         return cls(job)
 
     @classmethod
-    def iterReady(klass):
+    def iterReady(cls):
         """Iterate through all ready BugJobs."""
         store = getUtility(IStoreSelector).get(MAIN_STORE, MASTER_FLAVOR)
         jobs = store.find(
             BugJob,
-            And(BugJob.job_type == klass.class_job_type,
+            And(BugJob.job_type == cls.class_job_type,
                 BugJob.job == Job.id,
                 Job.id.is_in(Job.ready_jobs),
                 BugJob.bug == Bug.id))
-        return (klass(job) for job in jobs)
+        return (cls(job) for job in jobs)
 
     def getOopsVars(self):
         """See `IRunnableJob`."""
