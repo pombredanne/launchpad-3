@@ -412,6 +412,9 @@ is 200.
     >>> batch_navigator.default_size
     200
 
+    >>> print batch_navigator.heading
+    packagings
+
     >>> for packaging in batch_navigator.batch:
     ...     print packaging.sourcepackagename.name
     evolution
@@ -435,7 +438,27 @@ links to an upstream project.
 
     >>> view = create_initialized_view(hoary, name='+needs-packaging')
     >>> print view.label
-    Packages in Hoary (05.04) that need upstream packaging links
+    Packages in Hoary (5.04) that need upstream packaging links
 
     >>> print view.page_title
     Packages that need upstream packaging links
+
+The view provides the cached_unlinked_packages property to access a
+`BatchNavigator` of `ISourcePackages`.
+
+    >>> batch_navigator = view.cached_unlinked_packages
+    >>> batch_navigator.default_size
+    200
+
+    >>> print batch_navigator.heading
+    packages
+
+    >>> for package in batch_navigator.batch:
+    ...     print package.name
+    pmount
+    alsa-utils
+    cnews
+    libstdc++
+    linux-source-2.6.15
+    thunderbird
+    hot

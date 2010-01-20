@@ -486,7 +486,9 @@ class DistroSeriesPackagesView(DistroSeriesView):
     def cached_packagings(self):
         """The batched upstream packaging links."""
         packagings = self.context.packagings
-        return BatchNavigator(packagings, self.request, size=200)
+        navigator = BatchNavigator(packagings, self.request, size=200)
+        navigator.setHeadings('packaging', 'packagings')
+        return navigator
 
 
 class DistroSeriesNeedsPackagesView(DistroSeriesView):
@@ -496,6 +498,15 @@ class DistroSeriesNeedsPackagesView(DistroSeriesView):
 
     @property
     def label(self):
+        """See `LaunchpadFormView`."""
         return (
             'Packages in %s that need upstream packaging links' %
             self.context.named_version)
+
+    @cachedproperty
+    def cached_unlinked_packages(self):
+        """The batched `ISourcePackage`s that needs packaging links."""
+        packages = self.context.getPriorizedUnlinkedSourcePackages()
+        navigator = BatchNavigator(packages, self.request, size=200)
+        navigator.setHeadings('package', 'packages')
+        return navigator
