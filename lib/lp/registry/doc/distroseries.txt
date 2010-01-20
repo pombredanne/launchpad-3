@@ -508,8 +508,8 @@ a prioritized list of `ISourcePackage` that need a packaging link to an
 `IProductSeries` to provide the the upstream information to share bugs,
 translations, and code.
 
-    >>> for source_package in hoary.getPriorizedUnlinkedSourcePackages():
-    ...     print source_package.name
+    >>> for package_summary in hoary.getPriorizedUnlinkedSourcePackages():
+    ...     print package_summary['package'].name
     pmount
     alsa-utils
     cnews

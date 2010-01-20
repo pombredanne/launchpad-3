@@ -234,8 +234,8 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
 
     def test_getPriorizedUnlinkedSourcePackages(self):
         # Verify the ordering of source packages that need linking.
-        source_packages = self.series.getPriorizedUnlinkedSourcePackages()
-        names = [package.name for package in source_packages]
+        package_summaries = self.series.getPriorizedUnlinkedSourcePackages()
+        names = [summary['package'].name for summary in package_summaries]
         expected = [
             u'main', u'hot-translatable', u'hot', u'translatable', u'normal']
         self.assertEqual(expected, names)
