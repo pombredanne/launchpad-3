@@ -38,9 +38,7 @@ from canonical.launchpad.testing.librarianhelpers import (
 from lp.testing.mail_helpers import pop_notifications
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.model.job import Job
-from lp.code.bzr import (
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, RepositoryFormat,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+from lp.code.bzr import BranchFormat, RepositoryFormat
 from lp.code.enums import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     CodeReviewNotificationLevel)

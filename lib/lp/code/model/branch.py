@@ -42,9 +42,8 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 from lp.code.bzr import (
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat,
-    CURRENT_BRANCH_FORMATS, CURRENT_REPOSITORY_FORMATS, RepositoryFormat,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+    BranchFormat, ControlFormat, CURRENT_BRANCH_FORMATS,
+    CURRENT_REPOSITORY_FORMATS, RepositoryFormat)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus,
     BranchMergeProposalStatus, BranchType)
