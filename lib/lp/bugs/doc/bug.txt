@@ -1341,7 +1341,7 @@ exactly once, of course.
     sheila-shakespeare
 
 If the user marks the master bug as not affecting her, but the master
-bugs still has a duplicate that she claims affects her, then that
+bug still has a duplicate that she claims affects her, then that
 duplicate is also marked as not affecting her either.
 
     >>> dupe_one.users_affected_count

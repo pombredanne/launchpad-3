@@ -303,7 +303,7 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             value_type=Reference(schema=IPerson),
             readonly=True))
     users_unaffected = exported(CollectionField(
-            title=_('Users explicitly marked as affected '
+            title=_('Users explicitly marked as unaffected '
                     '(not including duplicates)'),
             value_type=Reference(schema=IPerson),
             readonly=True))
