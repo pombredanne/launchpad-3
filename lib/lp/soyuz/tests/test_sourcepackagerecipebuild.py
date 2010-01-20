@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import datetime
 import unittest
 
 import transaction
@@ -67,6 +68,13 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             job.build.distroseries.displayname, job.build.sourcepackagename,
             job.build.archive.displayname)
         self.assertEqual(job.getTitle(), title)
+
+    def test_estimateDuration(self):
+        # The duration estimate is currently hard-coded as two minutes.
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertEqual(
+            datetime.timedelta(minutes=2), spb.estimateDuration())
+
 
 
 def test_suite():
