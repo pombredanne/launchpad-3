@@ -34,6 +34,8 @@
         </span>.
       </p>
     </div>
+
+    <div class="freeform-batch">
     <tal:batch condition="view/has_download_files"
                define="batch view/series_and_releases_batch">
       <tal:multipage tal:condition="batch/has_multiple_pages">
@@ -122,7 +124,7 @@
                   </table>
                 </div>
                 <div tal:condition="not: release/total_downloads"
-                     style="margin-top: 2em;" />
+                     style="margin-bottom: 1em;" />
 
                 <tal:linkexists
                    define="link release/menu:context/add_file"
@@ -146,8 +148,9 @@
            replace="structure batch/@@+navigation-links-lower"/>
       </tal:multipage>
     </tal:batch>
+    </div>
     <div id="admin-links">
-      <div tal:repeat="series view/sorted_series_list">
+      <tal:series repeat="series view/sorted_series_list">
         <tal:releases condition="series/releases">
           <p tal:condition="has_edit" class="add-files">
             Add download file to the
@@ -160,7 +163,7 @@
             </tal:release>
           </p>
         </tal:releases>
-      </div>
+      </tal:series>
     </div>
     <input tal:condition="python: has_edit and view.has_download_files"
         type="submit"

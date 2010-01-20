@@ -1029,8 +1029,10 @@ class ProductDownloadFilesView(LaunchpadView,
                     pair = SeriesReleasePair(series, release)
                     if pair not in series_and_releases:
                         series_and_releases.append(pair)
-        return BatchNavigator(series_and_releases, self.request,
-                              size=self.batch_size)
+        batch = BatchNavigator(series_and_releases, self.request,
+                               size=self.batch_size)
+        batch.setHeadings("release", "releases")
+        return batch
 
     @cachedproperty
     def has_download_files(self):

@@ -8,10 +8,11 @@
     total context/batch/total;
     size context/batch/size"
   style="width: 100%;"
+  tal:attributes="class view/css_class"
 >
   <tbody>
     <tr>
-      <td style="white-space: nowrap" 
+      <td style="white-space: nowrap"
           class="batch-navigation-index">
         <strong tal:content="context/batch/startNumber">1</strong>
         <tal:block condition="python: size > 1">
@@ -22,7 +23,7 @@
         <tal:total replace="total">42</tal:total>
         <tal:heading content="context/heading">results</tal:heading>
       </td>
-      <td style="text-align: right; white-space: nowrap" 
+      <td style="text-align: right; white-space: nowrap"
           class="batch-navigation-links">
         <a
           tal:condition="first_page_url"
