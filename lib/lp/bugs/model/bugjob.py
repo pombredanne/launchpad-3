@@ -157,8 +157,8 @@ class BugJobDerived(BaseRunnableJob):
     def getOopsVars(self):
         """See `IRunnableJob`."""
         vars =  BaseRunnableJob.getOopsVars(self)
-        bmp = self.context.branch_merge_proposal
         vars.extend([
+            ('bug_id', self.context.bug.id),
             ('bug_job_id', self.context.id),
             ('bug_job_type', self.context.job_type.title),
             ])
