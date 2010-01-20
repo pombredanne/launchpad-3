@@ -323,7 +323,7 @@ class Build(BuildBase, SQLBase):
         self.buildlog = None
         self.upload_log = None
         self.dependencies = None
-        self.createBuildQueueEntry()
+        self.queueBuild()
 
     def rescore(self, score):
         """See `IBuild`."""

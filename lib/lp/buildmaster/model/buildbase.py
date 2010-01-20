@@ -309,7 +309,7 @@ class BuildBase:
         self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
         self.dependencies = slave_status.get('dependencies')
 
-    def createBuildQueueEntry(self):
+    def queueBuild(self):
         """See `IBuildBase`"""
         specific_job = self.makeJob()
         duration_estimate = self.estimateDuration()
