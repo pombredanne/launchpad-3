@@ -164,6 +164,12 @@ COMMENT ON COLUMN BugBranch.revision_hint IS 'An optional revision at which this
 COMMENT ON COLUMN BugBranch.whiteboard IS 'Additional information about the status of the bugfix in this branch.';
 COMMENT ON COLUMN BugBranch.registrant IS 'The person who linked the bug to the branch.';
 
+-- BugJob
+COMMENT ON TABLE BugJob IS 'Contains references to jobs to be run against Bugs.';
+COMMENT ON COLUMN BugJob.bug IS 'The bug on which the job is to be run.';
+COMMENT ON COLUMN BugJob.job_type IS 'The type of job (enumeration value). Allows us to query the database for a given subset of BugJobs.';
+COMMENT ON COLUMN BugJob.json_data IS 'A JSON struct containing data for the job.';
+
 -- BugNomination
 COMMENT ON TABLE BugNomination IS 'A bug nominated for fixing in a distroseries or productseries';
 COMMENT ON COLUMN BugNomination.bug IS 'The bug being nominated.';
