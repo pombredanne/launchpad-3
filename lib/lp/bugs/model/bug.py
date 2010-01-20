@@ -277,8 +277,9 @@ class Bug(SQLBase):
             Not(BugAffectsPerson.affected),
             BugAffectsPerson.bug == self)
 
-    def _user_ids_affected_with_dups(self):
-        """Return all IDs of Persons affected by this bug and its dups.
+    @property
+    def user_ids_affected_with_dupes(self):
+        """Return all IDs of Persons affected by this bug and its dupes.
         The return value is a Storm expression.  Running a query with
         this expression returns a result that may contain the same ID
         multiple times, for example if that person is affected via
@@ -295,19 +296,23 @@ class Bug(SQLBase):
                        Bug.duplicateof == self.id)))
 
     @property
-    def users_affected_with_dups(self):
+    def users_affected_with_dupes(self):
         """See `IBug`."""
         return Store.of(self).find(
             Person,
-            In(Person.id, self._user_ids_affected_with_dups()))
+            In(Person.id, self.user_ids_affected_with_dupes))
 
     @property
-    def users_affected_count_with_dups(self):
+    def users_affected_count_with_dupes(self):
         """See `IBug`."""
         person_ids = Store.of(self).execute(
             Select(Person.id,
                    In(Person.id,
-                      self._user_ids_affected_with_dups())))
+                      self.user_ids_affected_with_dupes)))
+        # XXX kfogel 2010-01-20 There's apparently a way to do this
+        # more efficiently in SQL (using COUNT and/or UNION and/or
+        # DISTINCT).  I think abel figured out how before we closed up
+        # shop yesterday, in fact.  We should fix this up soon.
         return len(set(person_ids))
 
     @property
@@ -1383,10 +1388,10 @@ class Bug(SQLBase):
             if bap.affected != affected:
                 bap.affected = affected
                 self._flushAndInvalidate()
-        # Loop over dups.
-        for dup in self.duplicates:
-            if dup._getAffectedUser(user) is not None:
-                dup.markUserAffected(user, affected)
+        # Loop over dupes.
+        for dupe in self.duplicates:
+            if dupe._getAffectedUser(user) is not None:
+                dupe.markUserAffected(user, affected)
 
     @property
     def readonly_duplicateof(self):

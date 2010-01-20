@@ -307,11 +307,11 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
                     '(not including duplicates)'),
             value_type=Reference(schema=IPerson),
             readonly=True))
-    users_affected_count_with_dups = exported(
+    users_affected_count_with_dupes = exported(
       Int(title=_('The number of users affected by this bug '
                   '(including duplicates)'),
           required=True, readonly=True))
-    users_affected_with_dups = exported(CollectionField(
+    users_affected_with_dupes = exported(CollectionField(
             title=_('Users affected (including duplicates)'),
             value_type=Reference(schema=IPerson),
             readonly=True))
