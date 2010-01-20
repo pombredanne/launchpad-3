@@ -56,6 +56,7 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         self.assertProvides(bq.specific_job, ISourcePackageRecipeBuildJob)
         self.assertEqual(True, bq.virtualized)
         self.assertIs(None, bq.processor)
+        self.assertEqual(bq, spb.buildqueue_record)
 
     def test_getTitle(self):
         # A build farm job implements getTitle().
@@ -67,6 +68,17 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
             job.build.distroseries.displayname, job.build.sourcepackagename,
             job.build.archive.displayname)
         self.assertEqual(job.getTitle(), title)
+
+    def test_distribution(self):
+        # A source package recipe build has a distribution derived from
+        # its series.
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertEqual(spb.distroseries.distribution, spb.distribution)
+
+    def test_is_private(self):
+        # A source package recipe build is currently always public.
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertEqual(False, spb.is_private)
 
 
 def test_suite():
