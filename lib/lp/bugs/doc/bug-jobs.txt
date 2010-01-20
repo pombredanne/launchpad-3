@@ -1,0 +1,6 @@
+BugJobs
+=======
+
+The IBugJob interface defines how we can interact with a BugJob.
+
+    >>> from lp.bugs.interfaces.bugjob import IBugJob
