@@ -16,7 +16,8 @@ from canonical.launchpad.webapp import (
     LaunchpadView, Link, canonical_url, enabled_with_permission)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.menu import NavigationMenu
-from lp.registry.interfaces.product import IProduct, IProductSeries
+from lp.registry.interfaces.product import IProduct
+from lp.registry.interfaces.productseries import IProductSeries
 from lp.registry.browser.product import ProductEditView
 from lp.translations.browser.translations import TranslationsMixin
 
