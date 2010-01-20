@@ -10,17 +10,5 @@
         https://testopenid.launchpad.dev/+openid
       </URI>
     </Service>
-    <Service priority="1">
-      <Type>http://openid.net/signon/1.1</Type>
-      <URI tal:content="view/openid_server_url">
-        https://testopenid.launchpad.dev/+openid
-      </URI>
-    </Service>
-    <Service priority="2">
-      <Type>http://openid.net/signon/1.0</Type>
-      <URI tal:content="view/openid_server_url">
-        https://testopenid.launchpad.dev/+openid
-      </URI>
-    </Service>
   </XRD>
 </xrds:XRDS>

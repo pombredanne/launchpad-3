@@ -33,6 +33,8 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.login import (
     allowUnauthenticatedSession, logInPrincipal, logoutPerson)
 from canonical.launchpad.webapp.publisher import Navigation, stepthrough
+from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 
 from lp.services.openid.browser.openiddiscovery import (
@@ -44,7 +46,7 @@ from lp.testopenid.interfaces.server import (
 
 OPENID_REQUEST_TIMEOUT = 3600
 SESSION_PKG_KEY = 'TestOpenID'
-SERVER_URL = 'https://testopenid.launchpad.dev/+openid'
+SERVER_URL = urlappend(allvhosts.configs['testopenid'].rooturl, '+openid')
 
 
 class TestOpenIDRootUrlData:
@@ -281,17 +283,6 @@ class TestOpenIDView(OpenIDMixin, LaunchpadView):
         """Render the login dialog."""
         self.storeOpenIDRequestInSession()
         return TestOpenIDLoginView(self.context, self.request, self.nonce)()
-
-    def isAuthorized(self):
-        """Check if the identity is authorized for the trust_root"""
-        # Can't be authorized if we are not logged in, or logged in as a
-        # user other than the identity owner.
-        if self.account is None or not self.isIdentityOwner():
-            return False
-
-        # User is logged in and is identity owner, so we assume it's
-        # authorized.
-        return True
 
 
 class TestOpenIDLoginView(OpenIDMixin, LaunchpadFormView):

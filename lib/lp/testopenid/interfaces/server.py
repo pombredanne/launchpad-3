@@ -28,5 +28,4 @@ class ITestOpenIDLoginForm(Interface):
 
 
 class ITestOpenIDPersistentIdentity(IOpenIDPersistentIdentity):
-    pass
-
+    """Marker interface for IOpenIDPersistentIdentity on testopenid."""

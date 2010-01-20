@@ -43,6 +43,7 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp.metazcml import ILaunchpadPermission
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.url import urlappend
+from canonical.launchpad.webapp.vhosts import allvhosts
 
 
 class UnauthorizedView(SystemErrorView):
@@ -210,8 +211,7 @@ class OpenIDLogin(LaunchpadView):
         allowUnauthenticatedSession(self.request)
         consumer = self._getConsumer()
         self.openid_request = consumer.begin(
-            #allvhosts.configs['openid'].rooturl)
-            'https://testopenid.launchpad.dev/')
+            allvhosts.configs['testopenid'].rooturl)
 
         return_to = self.return_to_url
         trust_root = self.request.getApplicationURL()
@@ -230,38 +230,6 @@ class OpenIDLogin(LaunchpadView):
     def return_to_url(self):
         url = self.request.getURL(1)
         return urlappend(url, '+openid-callback')
-
-    # XXX: Copied here from the old login view; currently unused here.
-    def iter_form_items(self):
-        """Iterate over keys and single values, excluding stuff we don't
-        want such as '-C' and things starting with self.form_prefix.
-        """
-        for name, value in self.request.form.items():
-            # XXX SteveAlexander 2005-04-11: Exclude '-C' because this is
-            #     left in from sys.argv in Zope3 using python's
-            #     cgi.FieldStorage to process requests.
-            if name == '-C' or name == 'loggingout':
-                continue
-            if name.startswith(self.form_prefix):
-                continue
-            if isinstance(value, list):
-                value_list = value
-            else:
-                value_list = [value]
-            for value_list_item in value_list:
-                yield (name, value_list_item)
-
-    # XXX: Copied here from the old login view; currently unused here.
-    def preserve_query(self):
-        """Return zero or more hidden inputs that preserve the URL's query."""
-        L = []
-        html = u'<input type="hidden" name="%s" value="%s" />'
-        for name, value in self.iter_form_items():
-            # Thanks to apport (https://launchpad.net/bugs/61171), we need to
-            # do this here.
-            value = UnicodeDammit(value).markup
-            L.append(html % (name, cgi.escape(value, quote=True)))
-        return '\n'.join(L)
 
 
 class OpenIDCallbackView(OpenIDLogin):
@@ -300,7 +268,7 @@ class OpenIDCallbackView(OpenIDLogin):
 
 class OpenIDLoginErrorView(LaunchpadView):
 
-    page_title = 'Foo'
+    page_title = 'Error logging in'
     template = ViewPageTemplateFile("../templates/login-error.pt")
 
     def __init__(self, context, request, openid_response):
