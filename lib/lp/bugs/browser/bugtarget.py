@@ -56,6 +56,7 @@ from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.temporaryblobstorage import (
     ITemporaryStorageManager)
+from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
@@ -1258,7 +1259,7 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         """Return the 10 hotest bugs according to IBug.heat."""
         params = BugTaskSearchParams(
             orderby=['-heat', '-date_last_updated'], omit_dupes=True,
-            user=self.user)
+            user=self.user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
         bugtasks = self.context.searchTasks(params)
         hot_bugs = []
         count = 0
