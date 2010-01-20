@@ -13,7 +13,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.ftests import login_person, logout
 from lp.registry.interfaces.distribution import NoPartnerArchive
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
@@ -145,9 +145,9 @@ class TestSourcePackage(TestCaseWithFactory):
         # the source package.
         distribution = self.factory.makeDistribution()
         dev_series = self.factory.makeDistroRelease(
-            distribution=distribution, status=DistroSeriesStatus.DEVELOPMENT)
+            distribution=distribution, status=SeriesStatus.DEVELOPMENT)
         other_series = self.factory.makeDistroRelease(
-            distribution=distribution, status=DistroSeriesStatus.OBSOLETE)
+            distribution=distribution, status=SeriesStatus.OBSOLETE)
         self.assertEqual(dev_series, distribution.currentseries)
         dev_sourcepackage = self.factory.makeSourcePackage(
             distroseries=dev_series)
