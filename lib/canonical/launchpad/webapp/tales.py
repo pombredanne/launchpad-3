@@ -778,7 +778,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         ])
 
     icon_template = (
-        '<span alt="%s" title="%s" class="%s"></span>')
+        '<span alt="%s" title="%s" class="%s">&nbsp;</span>')
 
     linked_icon_template = (
         '<a href="%s" alt="%s" title="%s" class="%s"></a>')
