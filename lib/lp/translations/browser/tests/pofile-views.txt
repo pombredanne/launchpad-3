@@ -145,6 +145,18 @@ Which is the one we wanted.
     >>> translationmessage_view.context.translations
     [u'libreta de direcciones de Evolution']
 
+To help the JavaScript key navigation the view is exposing the autofocus
+field and a list of all translation fields ordered by the way they are
+listed in the page.
+
+    >>> for translationmessage_view in (
+    ...     pofile_view.translationmessage_views):
+    ...     translationmessage_view.initialize()
+    >>> print pofile_view.autofocus_html_id
+    msgset_130_es_translation_0_new
+    >>> print pofile_view.translations_order
+    msgset_130_es_translation_0_new msgset_131_es_translation_0_new msgset_132_es_translation_0_new msgset_133_es_translation_0_new msgset_134_es_translation_0_new msgset_135_es_translation_0_new msgset_136_es_translation_0_new msgset_137_es_translation_0_new msgset_138_es_translation_0_new msgset_139_es_translation_0_new msgset_130_es_translation_0_new
+
 It's time to check the submission of translations and the IPOFile statistics
 update.
 
