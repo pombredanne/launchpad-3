@@ -8,6 +8,8 @@ __all__ = [
     'SourcePackageRecipeBuild',
     ]
 
+import datetime
+
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -19,6 +21,7 @@ from storm.store import Store
 from zope.component import getUtility
 from zope.interface import classProvides, implements
 
+from lp.buildmaster.interfaces.buildfarmjob import BuildFarmJobType
 from lp.buildmaster.model.buildbase import BuildBase
 from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.registry.interfaces.pocket import PackagePublishingPocket
@@ -30,10 +33,10 @@ from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.sourcepackagerecipebuild import (
     ISourcePackageRecipeBuildJob, ISourcePackageRecipeBuildJobSource,
     ISourcePackageRecipeBuild, ISourcePackageRecipeBuildSource)
+from lp.soyuz.model.buildqueue import BuildQueue
 
 
 class SourcePackageRecipeBuild(BuildBase, Storm):
-
     __storm_table__ = 'SourcePackageRecipeBuild'
 
     policy_name = 'recipe'
@@ -41,36 +44,48 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     implements(ISourcePackageRecipeBuild)
     classProvides(ISourcePackageRecipeBuildSource)
 
+    build_farm_job_type = BuildFarmJobType.RECIPEBRANCHBUILD
+
     id = Int(primary=True)
+
+    is_private = False
 
     archive_id = Int(name='archive', allow_none=False)
     archive = Reference(archive_id, 'Archive.id')
 
-    build_duration = TimeDelta(name='build_duration', default=None)
+    buildduration = TimeDelta(name='build_duration', default=None)
 
     builder_id = Int(name='builder', allow_none=True)
     builder = Reference(builder_id, 'Builder.id')
 
-    build_log_id = Int(name='build_log', allow_none=True)
-    build_log = Reference(build_log_id, 'LibraryFileAlias.id')
+    buildlog_id = Int(name='build_log', allow_none=True)
+    buildlog = Reference(buildlog_id, 'LibraryFileAlias.id')
 
-    build_state = EnumCol(
+    buildstate = EnumCol(
         dbName='build_state', notNull=True, schema=BuildStatus)
 
     @property
     def current_component(self):
         return getUtility(IComponentSet)[default_component_dependency_name]
 
-    date_created = UtcDateTimeCol(notNull=True)
-    date_built = UtcDateTimeCol(notNull=False)
+    datecreated = UtcDateTimeCol(notNull=True, dbName='date_created')
+    datebuilt = UtcDateTimeCol(notNull=False, dbName='date_built')
     date_first_dispatched = UtcDateTimeCol(notNull=False)
 
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
+    # XXX wgrant 2010-01-15 bug=507751: Need a DB field for this.
+    dependencies = None
+
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
     sourcepackagename = Reference(
         sourcepackagename_id, 'SourcePackageName.id')
+
+    @property
+    def distribution(self):
+        """See `IBuildBase`."""
+        return self.distroseries.distribution
 
     @property
     def pocket(self):
@@ -85,6 +100,16 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     requester_id = Int(name='requester', allow_none=False)
     requester = Reference(requester_id, 'Person.id')
 
+    @property
+    def buildqueue_record(self):
+        """See `IBuildBase`."""
+        store = Store.of(self)
+        results = store.find(
+            BuildQueue,
+            SourcePackageRecipeBuildJob.job == BuildQueue.jobID,
+            SourcePackageRecipeBuildJob.build == self.id)
+        return results.one()
+
     def __init__(self, distroseries, sourcepackagename, recipe, requester,
                  archive, date_created=None, date_first_dispatched=None,
                  date_built=None, builder=None,
@@ -93,12 +118,12 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         """Construct a SourcePackageRecipeBuild."""
         super(SourcePackageRecipeBuild, self).__init__()
         self.archive = archive
-        self.build_duration = build_duration
-        self.build_log = build_log
+        self.buildduration = build_duration
+        self.buildlog = build_log
         self.builder = builder
-        self.build_state = build_state
-        self.date_built = date_built
-        self.date_created = date_created
+        self.buildstate = build_state
+        self.datebuilt = date_built
+        self.datecreated = date_created
         self.date_first_dispatched = date_first_dispatched
         self.distroseries = distroseries
         self.recipe = recipe
@@ -137,9 +162,23 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
             ISourcePackageRecipeBuildJobSource).new(self, job)
         return specific_job
 
+    def estimateDuration(self):
+        """See `IBuildBase`."""
+        # XXX: wgrant 2010-01-19 bug=507764: Need proper implementation.
+        return datetime.timedelta(minutes=2)
+
+    def storeUploadLog(self, content):
+        """See `IBuildBase`."""
+        # XXX: wgrant 2010-01-20 bug=509892: Store in the DB.
+        return
+
+    def notify(self, extra_info=None):
+        """See `IBuildBase`."""
+        # XXX: wgrant 2010-01-20 bug=509893: Implement this.
+        return
+
 
 class SourcePackageRecipeBuildJob(BuildFarmJob, Storm):
-
     classProvides(ISourcePackageRecipeBuildJobSource)
     implements(ISourcePackageRecipeBuildJob)
 
@@ -150,9 +189,9 @@ class SourcePackageRecipeBuildJob(BuildFarmJob, Storm):
     job_id = Int(name='job', allow_none=False)
     job = Reference(job_id, 'Job.id')
 
-    source_package_build_id = Int(name='build', allow_none=False)
-    source_package_build = Reference(
-        source_package_build_id, 'SourcePackageRecipeBuild.id')
+    build_id = Int(name='sourcepackage_recipe_build', allow_none=False)
+    build = Reference(
+        build_id, 'SourcePackageRecipeBuild.id')
 
     processor = None
     virtualized = True
@@ -161,30 +200,6 @@ class SourcePackageRecipeBuildJob(BuildFarmJob, Storm):
         super(SourcePackageRecipeBuildJob, self).__init__()
         self.build = build
         self.job = job
-
-    def score(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def getLogFileName(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def getName(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def jobStarted(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def jobReset(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
-
-    def jobAborted(self):
-        """See `IBuildFarmJob`."""
-        raise NotImplementedError()
 
     @classmethod
     def new(cls, build, job):

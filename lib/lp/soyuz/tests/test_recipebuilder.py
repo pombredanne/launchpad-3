@@ -18,8 +18,6 @@ from lp.buildmaster.manager import RecordingSlave
 from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
 from lp.soyuz.model.sourcepackagerecipebuild import (
     SourcePackageRecipeBuild)
-from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
-from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.soyuz.tests.soyuzbuilddhelpers import (MockBuilder,
     SaneBuildingSlave,)
 from lp.soyuz.tests.test_publishing import (

@@ -15,6 +15,7 @@ import os
 import pytz
 import subprocess
 
+from storm.store import Store
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
@@ -26,6 +27,7 @@ from canonical.librarian.utils import copy_and_close
 from lp.buildmaster.interfaces.buildbase import IBuildBase
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.interfaces.build import BuildStatus
+from lp.soyuz.model.buildqueue import BuildQueue
 
 
 class BuildBase:
@@ -71,6 +73,22 @@ class BuildBase:
 
         uploader_argv.extend(extra_args)
         return uploader_argv
+
+    def _getProxiedFileURL(self, library_file):
+        """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
+        # Avoiding circular imports.
+        from canonical.launchpad.browser.librarian import (
+            ProxiedLibraryFileAlias)
+
+        proxied_file = ProxiedLibraryFileAlias(library_file, self)
+        return proxied_file.http_url
+
+    @property
+    def build_log_url(self):
+        """See `IBuildBase`."""
+        if self.buildlog is None:
+            return None
+        return self._getProxiedFileURL(self.buildlog)
 
     def handleStatus(self, status, librarian, slave_status):
         """See `IBuildBase`."""
@@ -335,3 +353,16 @@ class BuildBase:
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
         self.dependencies = slave_status.get('dependencies')
+
+    def queueBuild(self):
+        """See `IBuildBase`"""
+        specific_job = self.makeJob()
+        duration_estimate = self.estimateDuration()
+        queue_entry = BuildQueue(
+            estimated_duration=duration_estimate,
+            job_type=self.build_farm_job_type,
+            job=specific_job.job, processor=specific_job.processor,
+            virtualized=specific_job.virtualized)
+        Store.of(self).add(queue_entry)
+        return queue_entry
+
