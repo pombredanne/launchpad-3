@@ -61,24 +61,6 @@ class IHasBugs(Interface):
         description=_("The list of bug tags defined as official."),
         value_type=Tag(),
         readonly=True))
-    patches = exported(List(
-        title=_("Patches Attached to Bugs"),
-        description=_("A list of patches attached to bugs for this target."),
-        ### FIXME: this now returns a list of tuples, so using Tag()
-        ### seems wrong below, even though it works as far as I can tell.
-        ### Back when this returned a list of IBugAttachment objects,
-        ### using IBugAttachment() below got this error on 'make run':
-        ###
-        ###    "NameError: name 'IBugAttachment' is not defined"
-        ###
-        ### So I'm not sure what's up; sticking with Tag() for now,
-        ### since it's working, albeit magically.
-        ###
-        ### Also, should the formal return type be documented in
-        ### 'lib/lp/bugs/model/bugtarget.py:HasBugsBase' (as it is
-        ### currently), or here in the 'description' above?
-        value_type=Tag(),
-        readonly=True))
 
     @call_with(search_params=None, user=REQUEST_USER)
     @operation_parameters(

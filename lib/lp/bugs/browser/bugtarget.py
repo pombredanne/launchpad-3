@@ -20,8 +20,10 @@ __all__ = [
 
 import cgi
 from cStringIO import StringIO
+from datetime import datetime
 from email import message_from_string
 from operator import itemgetter
+from pytz import timezone
 from simplejson import dumps
 import tempfile
 import urllib
@@ -41,6 +43,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from lp.bugs.browser.bugtask import BugTaskSearchListingView
 from lp.bugs.interfaces.bug import IBug
+from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from canonical.launchpad.browser.feeds import (
     BugFeedLink, BugTargetLatestBugsFeedLink, FeedsMixin,
     PersonLatestBugsFeedLink)
@@ -49,7 +52,8 @@ from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus, IBugTaskSet, BugTaskSearchParams,
+    UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet
@@ -1382,3 +1386,35 @@ class BugsPatchesView(LaunchpadView):
     def label(self):
         """The display label for the view."""
         return 'Patch attachments in %s' % self.context.title
+
+    @property
+    def patch_tasks(self):
+        """Return a list of bug tasks that have patch attachments."""
+        return self.context.searchTasks(
+            None, user=self.user, omit_duplicates=True, has_patch=True)
+        
+    @property
+    def context_can_have_different_bugtargets(self):
+        """Return True iff current context can have different bugtargets."""
+        return (IDistribution.providedBy(self.context)
+                or IProject.providedBy(self.context))
+
+    def youngest_patch(self, bug):
+        """Return the youngest patch attached to a bug, else error."""
+        youngest = None
+        # Loop over bugtasks, gathering youngest patch for each's bug.
+        for a in bug.attachments:
+            if a.type == BugAttachmentType.PATCH:
+                if youngest is None:
+                    youngest = a
+                else:
+                    if (a.message.datecreated > youngest.message.datecreated):
+                        youngest = a
+        if youngest is None:
+            raise AssertionError("bug %i has no patch attachments" % bug.id)
+        return youngest
+
+    def patch_age(self, patch):
+        """Return a timedelta object for the age of a patch attachment."""
+        now = datetime.now(timezone('UTC'))
+        return now - patch.message.datecreated
