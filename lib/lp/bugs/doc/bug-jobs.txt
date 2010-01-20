@@ -11,12 +11,3 @@ The BugJob model class implements IBugJob.
     >>> IBugJob.implementedBy(BugJob)
     True
 
-A BugJob represents a job related to a bug, and it can carry some
-additional metadata along with it.
-
-    >>> from lp.bugs.interfaces.bugjob import BugJobType
-
-    >>> bug = factory.makeBug()
-    >>> bug_job = BugJob(
-    ...     bug, BugJobType.UPDATE_HEAT,
-    ...     ('some', 'arbitrary', 'metadata'))
