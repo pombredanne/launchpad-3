@@ -172,8 +172,8 @@ requests a diff, since there is a suitable ancestry.
 We will release ubuntu/hoary so we can upload to post-RELEASE pockets
 and ubuntu/breezy-autotest.
 
-    >>> from canonical.launchpad.interfaces import DistroSeriesStatus
-    >>> hoary.status = DistroSeriesStatus.CURRENT
+    >>> from canonical.launchpad.interfaces import SeriesStatus
+    >>> hoary.status = SeriesStatus.CURRENT
 
 We upload version '1.0-9' to hoary-updates and get the diff against
 the last published version in the RELEASE pocket.

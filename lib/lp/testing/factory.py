@@ -14,11 +14,11 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
-from email.Encoders import encode_base64
-from email.Utils import make_msgid, formatdate
-from email.Message import Message as EmailMessage
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
+from email.encoders import encode_base64
+from email.utils import make_msgid, formatdate
+from email.message import Message as EmailMessage
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
 import os.path
@@ -100,8 +100,8 @@ from lp.registry.model.distributionsourcepackage import (
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
@@ -512,7 +512,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             group = self.makeTranslationGroup()
         if person is None:
             person = self.makePerson()
-        ITranslationsPerson(person).translations_relicensing_agreement = license
+        ITranslationsPerson(person).translations_relicensing_agreement = (
+            license)
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(
@@ -1436,7 +1437,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             members, owner)
 
     def makeDistroRelease(self, distribution=None, version=None,
-                          status=DistroSeriesStatus.DEVELOPMENT,
+                          status=SeriesStatus.DEVELOPMENT,
                           parent_series=None, name=None):
         """Make a new distro release."""
         if distribution is None:
