@@ -112,7 +112,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         # authservers and the like.
         server = FakeTransportServer(self.get_transport())
         server.start_server()
-        self.addCleanup(server.tearDown)
+        self.addCleanup(server.stop_server)
 
     def makeFixtures(self):
         """Makes test fixtures before we switch to the scanner db user."""
