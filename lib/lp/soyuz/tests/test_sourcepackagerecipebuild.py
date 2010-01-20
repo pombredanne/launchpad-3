@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import datetime
 import unittest
 
 import transaction
@@ -79,6 +80,12 @@ class TestSourcePackageRecipeBuild(TestCaseWithFactory):
         # A source package recipe build is currently always public.
         spb = self.makeSourcePackageRecipeBuild()
         self.assertEqual(False, spb.is_private)
+
+    def test_estimateDuration(self):
+        # The duration estimate is currently hard-coded as two minutes.
+        spb = self.makeSourcePackageRecipeBuild()
+        self.assertEqual(
+            datetime.timedelta(minutes=2), spb.estimateDuration())
 
 
 def test_suite():
