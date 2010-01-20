@@ -9,8 +9,8 @@ When not set, launchpad recommends the development focus to translate.
     ...     fooproject, rootsite="translations")
     >>> logout()
 
-Only admin users are able to change the translation focus of a product. 
-Unprivileged users visualize the recommended series for translation, 
+Only admin users are able to change the translation focus of a product.
+Unprivileged users can see the recommended series for translation,
 but have no access to the 'Change permissions' menu.
 
     >>> admin_browser.open(fooproject_url)
@@ -24,7 +24,6 @@ but have no access to the 'Change permissions' menu.
     Traceback (most recent call last):
     ...
     IndexError: list index out of range
-    
 
 == Setting the translation focus ==
 
@@ -37,7 +36,7 @@ but have no access to the 'Change permissions' menu.
     >>> logout()
 
 When the translation focus is not set, Launchpad suggests the 
-development focus as the current series to be translated. 
+development focus as the current series to be translated.
 It needs to be translatable.
 
     >>> print fooproject.translation_focus
@@ -86,4 +85,3 @@ We need to create a translatable series so we can set it as translation focus.
     Translation details...
     Launchpad currently recommends translating... Fooproject other-series series.
     ...
-
