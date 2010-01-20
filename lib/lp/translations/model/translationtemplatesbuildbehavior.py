@@ -11,9 +11,6 @@ __all__ = [
     'TranslationTemplatesBuildBehavior',
     ]
 
-import socket
-import xmlrpclib
-
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -23,9 +20,6 @@ from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
 from lp.buildmaster.model.buildfarmjobbehavior import (
     BuildFarmJobBehaviorBase)
-from lp.buildmaster.interfaces.builder import BuildSlaveFailure
-from lp.translations.interfaces.translationtemplatesbuildjob import (
-    ITranslationTemplatesBuildJobSource)
 
 
 class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
@@ -37,43 +31,21 @@ class TranslationTemplatesBuildBehavior(BuildFarmJobBehaviorBase):
 
     def dispatchBuildToSlave(self, build_queue_item, logger):
         """See `IBuildFarmJobBehavior`."""
-        # XXX JeroenVermeulen 2009-12-24 bug=500110: This method is not
-        # covered by tests yet.  Either unify it with Soyuz code into a
-        # generalised method, or test it.
-        templatesbuildjob = self._findTranslationTemplatesBuildJob(
-            build_queue_item)
         chroot = self._getChroot()
         chroot_sha1 = chroot.content.sha1
-        self._builder.cacheFileOnSlave(logger, chroot)
-        buildid = templatesbuildjob.getName()
+        self._builder.slave.cacheFile(logger, chroot)
+        buildid = self.buildfarmjob.getName()
 
-        args = { 'branch_url': build_queue_item.branch.url }
+        args = { 'branch_url': self.buildfarmjob.branch.url }
         filemap = {}
 
-        try:
-            status, info = self._builder.slave.build(
-                buildid, self.build_type, chroot_sha1, filemap, args)
-        except xmlrpclib.Fault, info:
-            # Mark builder as 'failed'.
-            logger.debug(
-                "Disabling builder: %s" % self._builder.url, exc_info=1)
-            self._builder.failbuilder(
-                "Exception (%s) when setting up to new job" % info)
-            raise BuildSlaveFailure
-        except socket.error, info:
-            error_message = "Exception (%s) when setting up new job" % info
-            self._builder.handleTimeout(logger, error_message)
-            raise BuildSlaveFailure
+        status, info = self._builder.slave.build(
+            buildid, self.build_type, chroot_sha1, filemap, args)
 
     def _getChroot(self):
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         return ubuntu.currentseries.nominatedarchindep.getChroot()
 
-    def _findTranslationTemplatesBuildJob(self, build_queue_item):
-        """Find the `TranslationTemplatesBuildJob` for a job.
-
-        :param build_queue_item: A `BuildQueue` entry.
-        :return: The matching `TranslationTemplatesBuildJob`.
-        """
-        jobsource = getUtility(ITranslationTemplatesBuildJobSource)
-        return jobsource.getForJob(build_queue_item.job)
+    def logStartBuild(self, logger):
+        """See `IBuildFarmJobBehavior`."""
+        logger.info("Starting templates build.")

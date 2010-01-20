@@ -17,6 +17,7 @@ from canonical.database.sqlbase import sqlvalues
 
 from lp.buildmaster.interfaces.buildfarmjob import (
     BuildFarmJobType, IBuildFarmJobDispatchEstimation)
+from lp.buildmaster.model.buildfarmjob import BuildFarmJob
 from lp.registry.interfaces.sourcepackage import SourcePackageUrgency
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.services.job.interfaces.job import JobStatus
@@ -25,7 +26,7 @@ from lp.soyuz.interfaces.build import BuildStatus
 from lp.soyuz.interfaces.buildpackagejob import IBuildPackageJob
 
 
-class BuildPackageJob(Storm):
+class BuildPackageJob(Storm, BuildFarmJob):
     """See `IBuildPackageJob`."""
     implements(IBuildPackageJob)
     classProvides(IBuildFarmJobDispatchEstimation)
@@ -152,6 +153,10 @@ class BuildPackageJob(Storm):
     def getName(self):
         """See `IBuildPackageJob`."""
         return self.build.sourcepackagerelease.name
+
+    def getTitle(self):
+        """See `IBuildPackageJob`."""
+        return self.build.title
 
     def jobStarted(self):
         """See `IBuildPackageJob`."""

@@ -241,9 +241,11 @@ margin for Internet Explorer, and up to a reasonable maximum: */
 textarea {width: 90%; max-width: 60em;}
 
 /* Many forms are laid out using tables, with appropriate spacing: */
-table.form {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
+table.form, table.extra-options {margin: 1em 0; width: 100%;} /* http://launchpad.dev/firefox/+edit */
 table.form th {font-weight: normal;}
-table.form th, table.form td {padding-bottom: 1em;}
+table.form th, table.form td,
+table.form table.extra-options td,
+table.form table.extra-options th {padding-bottom: 1em;}
 table.form td td {padding-bottom: 0;}
 
 /* === Tables === */
