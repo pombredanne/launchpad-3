@@ -425,3 +425,17 @@ first batch.
     ...     hoary, name='+packaging', query_string='start=2')
     >>> view.show_unlinked_translatables
     False
+
+
+Distro series +needs-packaging view
+-----------------------------------
+
+The +needs-packaging view lists the source packages that needs packaging
+links to an upstream project.
+
+    >>> view = create_initialized_view(hoary, name='+needs-packaging')
+    >>> print view.label
+    Packages in Hoary (05.04) that need upstream packaging links
+
+    >>> print view.page_title
+    Packages that need upstream packaging links

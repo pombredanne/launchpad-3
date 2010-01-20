@@ -487,3 +487,15 @@ class DistroSeriesPackagesView(DistroSeriesView):
         """The batched upstream packaging links."""
         packagings = self.context.packagings
         return BatchNavigator(packagings, self.request, size=200)
+
+
+class DistroSeriesNeedsPackagesView(DistroSeriesView):
+    """A View to show series package to upstream package relationships."""
+
+    page_title = 'Packages that need upstream packaging links'
+
+    @property
+    def label(self):
+        return (
+            'Packages in %s that need upstream packaging links' %
+            self.context.named_version)

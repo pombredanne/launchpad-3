@@ -1,0 +1,49 @@
+<html
+  xmlns="http://www.w3.org/1999/xhtml"
+  xmlns:tal="http://xml.zope.org/namespaces/tal"
+  xmlns:metal="http://xml.zope.org/namespaces/metal"
+  xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+  metal:use-macro="view/macro:page/main_only"
+  i18n:domain="launchpad">
+  <body>
+    <div metal:fill-slot="main"
+      tal:define="packages view/cached_unlinked_packages;">
+      <div class="top-portlet">
+        <p>
+          Links from distribution packages to upstream project series let
+          distribution and upstream maintainers share bugs, patches, and
+          translations efficiently.
+        </p>
+      </div>
+
+      <tal:known_links condition="packages/batch">
+        <h2>Source packages listed by priority</h2>
+
+        <div class="results"
+          tal:content="structure packages/@@+navigation-links-upper" />
+
+        <table id="packages" class="listing">
+          <thead>
+            <tr>
+              <th>Source Package</th>
+              <th>Upstream Project Series</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            <tr tal:repeat="package packages/batch">
+              <td>
+                <a class="sprite package-source"
+                  tal:attributes="href package/fmt:url"
+                  tal:content="package/name">evolution</a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div class="results"
+          tal:content="structure packages/@@+navigation-links-lower" />
+      </tal:known_links>
+    </div>
+  </body>
+</html>
