@@ -556,6 +556,21 @@ class POTemplateAdminView(POTemplateEditView):
     label = 'Administer translation template'
     page_title = "Administer"
 
+    def validate(self, data):
+        distroseries = data['distroseries']
+        productseries = data['productseries']
+        if distroseries is not None and productseries is not None:
+            message = ("Choose a distribution release series or a project "
+                "release series, but not both.")
+        elif distroseries is None and productseries is None:
+            message = ("Choose either a distribution release series or a "
+                "project release series.")
+        else:
+            message = None
+
+        if message is not None:
+            self.addError(message)
+
 
 class POTemplateExportView(BaseExportView):
     """Request downloads of a `POTemplate` and its translations."""
