@@ -78,6 +78,7 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, action,
     canonical_url, custom_widget, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.tales import BugTrackerFormatterAPI
 from canonical.launchpad.validators.name import valid_name_pattern
 from canonical.launchpad.webapp.menu import structured
@@ -1387,11 +1388,12 @@ class BugsPatchesView(LaunchpadView):
         """The display label for the view."""
         return 'Patch attachments in %s' % self.context.title
 
-    @property
-    def patch_tasks(self):
-        """Return a list of bug tasks that have patch attachments."""
-        return self.context.searchTasks(
-            None, user=self.user, omit_duplicates=True, has_patch=True)
+    def batchedPatchTasks(self):
+        """Return a BatchNavigator for bug tasks with patch attachments."""
+        return BatchNavigator(
+            self.context.searchTasks(None, user=self.user,
+                                     omit_duplicates=True, has_patch=True),
+            self.request)
         
     @property
     def context_can_have_different_bugtargets(self):

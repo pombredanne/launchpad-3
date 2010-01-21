@@ -10,7 +10,9 @@
   i18n:domain="malone"
 >
   <body>
-    <div metal:fill-slot="main" class="tab-bugs">
+    <div metal:fill-slot="main" class="tab-bugs"
+         tal:define="batchnav view/batchedPatchTasks;
+                     batch batchnav/currentBatch">
     <table><thead>
              <tr>
                <th style="padding-right: 1em;"
@@ -26,7 +28,7 @@
                    >Patch Age</th>
              </tr>
            </thead>
-           <tr tal:repeat="patch_task view/patch_tasks">
+           <tr tal:repeat="patch_task batch">
              <td style="padding-right: 1em;"
               ><a tal:replace="structure patch_task/bug/fmt:link" /></td>
              <td style="padding-right: 1em;"
@@ -48,6 +50,7 @@
                   tal:content="age/fmt:approximateduration/use-digits"
                   ></a></td>
              </tr></table>
+    <div tal:replace="structure batchnav/@@+navigation-links-lower" />
     </div><!-- main -->
   </body>
 </html>
