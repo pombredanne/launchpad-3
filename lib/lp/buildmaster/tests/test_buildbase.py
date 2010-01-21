@@ -21,8 +21,9 @@ class TestBuildBase(TestCase):
     """Tests for `IBuildBase`."""
 
     def disabled_test_build_base_provides_interface(self):
-        # XXX: BuildBase is supposed to implement IBuildBase, but doesn't atm.
-        # Since it's not the focus of the branch, we'll postpone the work.
+        # XXX: JonathanLange 2010-01-22 bug=510919: BuildBase is supposed to
+        # implement IBuildBase, but doesn't atm. Since it's not the focus of
+        # the branch, we'll postpone the work.
         build_base = BuildBase()
         self.assertProvides(build_base, IBuildBase)
 
