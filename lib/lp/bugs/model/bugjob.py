@@ -14,7 +14,6 @@ from sqlobject import SQLObjectNotFound
 from storm.base import Storm
 from storm.expr import And
 from storm.locals import Int, Reference, Unicode
-from storm.store import Store
 
 from zope.component import getUtility
 from zope.interface import classProvides, implements
