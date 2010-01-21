@@ -271,11 +271,12 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             "a message was sent to the bug reporter, and the bug is "
             "associated with pillars that have enabled bug expiration."),
         readonly=True)
-    can_expire = Bool(
+    can_expire = exported(
+        Bool(
         title=_("Can the Incomplete bug expire if it becomes inactive? "
                 "Expiration may happen when the bug permits expiration, "
                 "and a bugtask cannot be confirmed."),
-        readonly=True)
+        readonly=True))
     date_last_message = exported(
         Datetime(title=_('Date of last bug message'),
                  required=False, readonly=True))
