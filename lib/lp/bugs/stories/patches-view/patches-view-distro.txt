@@ -1,0 +1,4 @@
+We have a view listing patches attached to bugs that target a given
+distribution.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/ubuntu/+patches')
