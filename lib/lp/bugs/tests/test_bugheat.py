@@ -5,14 +5,17 @@
 
 __metaclass__ = type
 
+import pytz
 import transaction
 import unittest
+from datetime import datetime
 
 from zope.component import getUtility
 
 from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import LaunchpadZopelessLayer
 
+from lp.bugs.adapters.bugchange import BugDescriptionChange
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.model.bugheat import CalculateBugHeatJob
 from lp.bugs.scripts.bugheat import BugHeatCalculator
@@ -27,6 +30,18 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
     def setUp(self):
         super(CalculateBugHeatJobTestCase, self).setUp()
         self.bug = self.factory.makeBug()
+
+        # Make sure that all the CalculateBugHeatJobs are marked complete.
+        # NB: This looks like it should go in the teardown, however
+        # creating the bug causes a job to be added for it. We clear
+        # this out so that our tests are consistent.
+        for bug_job in getUtility(ICalculateBugHeatJobSource).iterReady():
+            bug_job.job.start()
+            bug_job.job.complete()
+
+    def _getJobCount(self):
+        """Return the number of CalculateBugHeatJobs in the queue."""
+        return len(list(CalculateBugHeatJob.iterReady()))
 
     def test_run(self):
         # CalculateBugHeatJob.run() sets calculates and sets the heat
@@ -51,8 +66,7 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
         job = CalculateBugHeatJob.create(self.bug)
 
         # There will now be one job in the queue.
-        self.assertEqual(
-            1, len(list(CalculateBugHeatJob.iterReady())))
+        self.assertEqual(1, self._getJobCount())
 
         new_job = CalculateBugHeatJob.create(self.bug)
 
@@ -60,8 +74,7 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
         self.assertEqual(job, new_job)
 
         # And the queue will still have a length of 1.
-        self.assertEqual(
-            1, len(list((CalculateBugHeatJob.iterReady()))))
+        self.assertEqual(1, self._getJobCount())
 
     def test_cronscript_succeeds(self):
         # The calculate-bug-heat cronscript will run all pending
@@ -89,6 +102,73 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
         self.assertIn(('bug_id', self.bug.id), vars)
         self.assertIn(('bug_job_id', job.context.id), vars)
         self.assertIn(('bug_job_type', job.context.job_type.title), vars)
+
+    def test_bug_changes_adds_job(self):
+        # Calling addChange() on a Bug will add a CalculateBugHeatJob
+        # for that bug to the queue.
+        self.assertEqual(0, self._getJobCount())
+
+        change = BugDescriptionChange(
+            when=datetime.now().replace(tzinfo=pytz.timezone('UTC')),
+            person=self.bug.owner, what_changed='description',
+            old_value=self.bug.description, new_value='Some text')
+        self.bug.addChange(change)
+
+        # There will now be a job in the queue.
+        self.assertEqual(1, self._getJobCount())
+
+    def test_subscribing_adds_job(self):
+        # Calling Bug.subscribe() will add a CalculateBugHeatJob for the
+        # Bug.
+        self.assertEqual(0, self._getJobCount())
+
+        person = self.factory.makePerson()
+        self.bug.subscribe(person, person)
+        transaction.commit()
+
+        # There will now be a job in the queue.
+        self.assertEqual(1, self._getJobCount())
+
+    def test_unsubscribing_adds_job(self):
+        # Calling Bug.unsubscribe() will add a CalculateBugHeatJob for the
+        # Bug.
+        self.assertEqual(0, self._getJobCount())
+
+        self.bug.unsubscribe(self.bug.owner, self.bug.owner)
+        transaction.commit()
+
+        # There will now be a job in the queue.
+        self.assertEqual(1, self._getJobCount())
+
+    def test_marking_affected_adds_job(self):
+        # Marking a user as affected by a bug adds a CalculateBugHeatJob
+        # for the bug.
+        self.assertEqual(0, self._getJobCount())
+
+        person = self.factory.makePerson()
+        self.bug.markUserAffected(person)
+
+        # There will now be a job in the queue.
+        self.assertEqual(1, self._getJobCount())
+
+    def test_marking_unaffected_adds_job(self):
+        # Marking a user as unaffected by a bug adds a CalculateBugHeatJob
+        # for the bug.
+        self.assertEqual(0, self._getJobCount())
+
+        self.bug.markUserAffected(self.bug.owner, False)
+
+        # There will now be a job in the queue.
+        self.assertEqual(1, self._getJobCount())
+
+    def test_bug_creation_creates_job(self):
+        # Creating a bug adds a CalculateBugHeatJob for the new bug.
+        self.assertEqual(0, self._getJobCount())
+
+        new_bug = self.factory.makeBug()
+
+        # There will now be a job in the queue.
+        self.assertEqual(1, self._getJobCount())
 
 
 def test_suite():

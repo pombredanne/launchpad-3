@@ -68,6 +68,7 @@ from lp.bugs.interfaces.bug import (
 from lp.bugs.interfaces.bugactivity import IBugActivitySet
 from lp.bugs.interfaces.bugattachment import (
     BugAttachmentType, IBugAttachmentSet)
+from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 from lp.bugs.interfaces.bugmessage import IBugMessageSet
 from lp.bugs.interfaces.bugnomination import (
     NominationError, NominationSeriesObsoleteError)
@@ -412,6 +413,10 @@ class Bug(SQLBase):
 
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
+
+        # Add a job to recalculate the bug's heat.
+        getUtility(ICalculateBugHeatJobSource).create(self)
+
         # Ensure that the subscription has been flushed.
         Store.of(sub).flush()
         return sub
@@ -718,6 +723,9 @@ class Bug(SQLBase):
             self.addChangeNotification(
                 notification_data['text'], change.person, recipients,
                 when)
+
+        # Create a job to update this bug's heat.
+        getUtility(ICalculateBugHeatJobSource).create(self)
 
     def expireNotifications(self):
         """See `IBug`."""
@@ -1341,6 +1349,7 @@ class Bug(SQLBase):
             if bap.affected != affected:
                 bap.affected = affected
                 self._flushAndInvalidate()
+        getUtility(ICalculateBugHeatJobSource).create(self)
 
     @property
     def readonly_duplicateof(self):
