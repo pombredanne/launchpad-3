@@ -162,11 +162,11 @@ class BugJobDerived(BaseRunnableJob):
             ])
         return vars
 
-    @staticmethod
+    @classmethod
     @contextlib.contextmanager
-    def contextManager():
+    def contextManager(cls):
         """See `ICalculateBugHeatJobSource`."""
-        errorlog.globalErrorUtility.configure('calculate_bug_heat')
+        errorlog.globalErrorUtility.configure(cls.config_section_name)
         yield
 
 
@@ -175,6 +175,7 @@ class CalculateBugHeatJob(BugJobDerived):
     implements(ICalculateBugHeatJob)
 
     class_job_type = BugJobType.UPDATE_HEAT
+    config_section_name = 'calculate_bug_heat'
     classProvides(ICalculateBugHeatJobSource)
 
     def run(self):
