@@ -10,8 +10,8 @@ package within a distribution.
     >>> publisher = SoyuzTestPublisher()
     >>> publisher.prepareBreezyAutotest()
     >>> ubuntutest = publisher.ubuntutest
-    >>> from lp.registry.interfaces.distroseries import DistroSeriesStatus
-    >>> publisher.distroseries.status = DistroSeriesStatus.DEVELOPMENT
+    >>> from lp.registry.interfaces.series import SeriesStatus
+    >>> publisher.distroseries.status = SeriesStatus.DEVELOPMENT
 
     # Publish the source 'gedit' in the ubuntutest main archive.
     >>> from datetime import datetime
