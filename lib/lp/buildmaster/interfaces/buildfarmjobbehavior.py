@@ -62,8 +62,7 @@ class IBuildFarmJobBehavior(Interface):
 
         :param slave_build_id: The slave's build ID, as specified in
            dispatchBuildToSlave.
-        :return: a string describing the problem if the given ID is invalid,
-           or None if it seems fine.
+        :raises CorruptBuildID: if the build ID is determined to be corrupt.
         """
 
     def updateBuild(queueItem):

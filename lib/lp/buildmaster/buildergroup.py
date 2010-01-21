@@ -15,6 +15,7 @@ from zope.component import getUtility
 
 from lp.buildmaster.interfaces.builder import (
     BuildDaemonError, IBuilderSet)
+from lp.buildmaster.interfaces.builder import CorruptBuildID
 
 
 class BuilderGroup:
@@ -105,9 +106,10 @@ class BuilderGroup:
             return
 
         slave_build_id = status_sentence[ident_position[status]]
-        reason = builder.verifySlaveBuildID(slave_build_id)
 
-        if reason is not None:
+        try:
+            builder.verifySlaveBuildID(slave_build_id)
+        except CorruptBuildID, reason:
             if status == 'BuilderStatus.WAITING':
                 builder.cleanSlave()
             else:

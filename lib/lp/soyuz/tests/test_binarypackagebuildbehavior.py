@@ -10,6 +10,7 @@ import unittest
 from canonical.testing import LaunchpadZopelessLayer
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     IBuildFarmJobBehavior)
+from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.soyuz.tests.test_build import BaseTestCaseWithThreeBuilds
 
 
@@ -28,37 +29,33 @@ class BaseTestVerifySlaveBuildID:
         # ID pair reported by the slave are associated in the database.
         buildfarmjob = self.build.buildqueue_record.specific_job
         behavior = IBuildFarmJobBehavior(buildfarmjob)
-        self.assertEqual(
-            None,
-            behavior.verifySlaveBuildID(
-                '%d-%d' % (self.build.id, self.build.buildqueue_record.id)))
+        behavior.verifySlaveBuildID(
+            '%d-%d' % (self.build.id, self.build.buildqueue_record.id))
 
     def test_mismatched_build_id(self):
         # verifySlaveBuildID returns an error if the build and
         # buildqueue exist, but are not associated in the database.
         buildfarmjob = self.build.buildqueue_record.specific_job
         behavior = IBuildFarmJobBehavior(buildfarmjob)
-        self.assertEqual(
-            'Job build entry mismatch',
-            behavior.verifySlaveBuildID(
-                '%d-%d' % (
-                    self.other_build.id, self.build.buildqueue_record.id)))
+        self.assertRaises(
+            CorruptBuildID, behavior.verifySlaveBuildID,
+            '%d-%d' % (self.other_build.id, self.build.buildqueue_record.id))
 
     def test_build_id_without_separator(self):
         # verifySlaveBuildID returns an error if the build ID does not
         # contain a build and build queue ID separated by a hyphen.
         buildfarmjob = self.build.buildqueue_record.specific_job
         behavior = IBuildFarmJobBehavior(buildfarmjob)
-        self.assertEqual(
-            'Malformed build ID', behavior.verifySlaveBuildID('foo'))
+        self.assertRaises(
+            CorruptBuildID, behavior.verifySlaveBuildID, 'foo')
 
     def test_build_id_with_missing_build(self):
         # verifySlaveBuildID returns an error if either the build or
         # build queue specified do not exist.
         buildfarmjob = self.build.buildqueue_record.specific_job
         behavior = IBuildFarmJobBehavior(buildfarmjob)
-        self.assertEqual(
-            'Object not found', behavior.verifySlaveBuildID('98-99'))
+        self.assertRaises(
+            CorruptBuildID, behavior.verifySlaveBuildID, '98-99')
 
 
 class TestVerifySlaveBuildID(BaseTestVerifySlaveBuildID,

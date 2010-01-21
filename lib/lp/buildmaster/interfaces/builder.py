@@ -9,7 +9,7 @@ __metaclass__ = type
 
 __all__ = [
     'BuildDaemonError',
-    'BuildJobMismatch',
+    'CorruptBuildID',
     'BuildSlaveFailure',
     'CannotBuild',
     'CannotFetchFile',
@@ -46,7 +46,7 @@ class ProtocolVersionMismatch(BuildDaemonError):
     """The build slave had a protocol version. This is a serious error."""
 
 
-class BuildJobMismatch(BuildDaemonError):
+class CorruptBuildID(BuildDaemonError):
     """The build slave is working with mismatched information.
 
     It needs to be rescued.
