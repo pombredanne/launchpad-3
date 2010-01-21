@@ -16,7 +16,7 @@ from storm.expr import And
 from storm.locals import Int, Reference, Unicode
 
 from zope.component import getUtility
-from zope.interface import implements
+from zope.interface import classProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
@@ -25,7 +25,7 @@ from canonical.launchpad.webapp.interfaces import (
 
 from lazr.delegates import delegates
 
-from lp.bugs.interfaces.bugjob import BugJobType, IBugJob
+from lp.bugs.interfaces.bugjob import BugJobType, IBugJob, IBugJobSource
 from lp.bugs.model.bug import Bug
 from lp.services.job.model.job import Job
 from lp.services.job.runner import BaseRunnableJob
@@ -85,6 +85,7 @@ class BugJob(Storm):
 class BugJobDerived(BaseRunnableJob):
     """Intermediate class for deriving from BugJob."""
     delegates(IBugJob)
+    classProvides(IBugJobSource)
 
     def __init__(self, job):
         self.context = job
@@ -102,22 +103,10 @@ class BugJobDerived(BaseRunnableJob):
 
     @classmethod
     def create(cls, bug):
-        """See `ICalculateBugHeatJobSource`."""
+        """See `IBugJob`."""
         # If there's already a job for the bug, don't create a new one.
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        job_for_bug = store.find(
-            BugJob,
-            BugJob.bug == bug,
-            BugJob.job_type == cls.class_job_type,
-            BugJob.job == Job.id,
-            Job.id.is_in(Job.ready_jobs)
-            ).any()
-
-        if job_for_bug is not None:
-            return cls(job_for_bug)
-        else:
-            job = BugJob(bug, cls.class_job_type, {})
-            return cls(job)
+        job = BugJob(bug, cls.class_job_type, {})
+        return cls(job)
 
     @classmethod
     def get(cls, job_id):

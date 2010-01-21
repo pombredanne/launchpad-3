@@ -51,12 +51,16 @@ class IBugJob(Interface):
         """Destroy this object."""
 
 
+class IBugJobSource(IJobSource):
+    """An interface for acquiring IBugJobs."""
+
+    def create(bug):
+        """Create a new IBugJob for a bug."""
+
+
 class ICalculateBugHeatJob(IRunnableJob):
     """A Job to calculate bug heat."""
 
 
-class ICalculateBugHeatJobSource(IJobSource):
+class ICalculateBugHeatJobSource(IBugJobSource):
     """Interface for acquiring CalculateBugHeatJobs."""
-
-    def create(bug):
-        """Create a new ICalculateBugHeatJob for a bug."""

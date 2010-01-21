@@ -8,12 +8,17 @@ __all__ = [
     'CalculateBugHeatJob',
     ]
 
+from zope.component import getUtility
 from zope.interface import classProvides, implements
+
+from canonical.launchpad.webapp.interfaces import (
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
 from lp.bugs.interfaces.bugjob import (
     BugJobType, ICalculateBugHeatJob, ICalculateBugHeatJobSource)
-from lp.bugs.model.bugjob import BugJobDerived
+from lp.bugs.model.bugjob import BugJob, BugJobDerived
 from lp.bugs.scripts.bugheat import BugHeatCalculator
+from lp.services.job.model.job import Job
 
 
 class CalculateBugHeatJob(BugJobDerived):
@@ -28,3 +33,22 @@ class CalculateBugHeatJob(BugJobDerived):
         calculator = BugHeatCalculator(self.bug)
         calculated_heat = calculator.getBugHeat()
         self.bug.setHeat(calculated_heat)
+
+    @classmethod
+    def create(cls, bug):
+        """See `ICalculateBugHeatJobSource`."""
+        # If there's already a job for the bug, don't create a new one.
+        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
+        job_for_bug = store.find(
+            BugJob,
+            BugJob.bug == bug,
+            BugJob.job_type == cls.class_job_type,
+            BugJob.job == Job.id,
+            Job.id.is_in(Job.ready_jobs)
+            ).any()
+
+        if job_for_bug is not None:
+            return cls(job_for_bug)
+        else:
+            return super(CalculateBugHeatJob, cls).create(bug)
+
