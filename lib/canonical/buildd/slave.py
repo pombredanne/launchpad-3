@@ -118,7 +118,7 @@ class BuildManager(object):
         childfds = {0: devnull.fileno(), 1: "r", 2: "r"}
         reactor.spawnProcess(
             self._subprocess, command, args, env=os.environ,
-            path=os.environ["HOME"], childFDs=childfds)
+            path=self.home, childFDs=childfds)
 
     def doUnpack(self):
         """Unpack the build chroot."""
@@ -155,7 +155,7 @@ class BuildManager(object):
         os.mkdir("%s/build-%s" % (self.home, self._buildid))
         for f in files:
             os.symlink( self._slave.cachePath(files[f]),
-                        "%s/build-%s/%s" % (os.environ["HOME"],
+                        "%s/build-%s/%s" % (self.home,
                                             self._buildid, f))
         self._chroottarfile = self._slave.cachePath(chroot)
 
