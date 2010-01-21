@@ -8,7 +8,7 @@ Productseries linking packages
 ------------------------------
 
 Distro series sourcepackages can be linked to product series using the
-+addpackage named view.
++ubuntupkg named view.
 
     >>> from canonical.launchpad.interfaces.launchpad import (
     ...     ILaunchpadCelebrities)
@@ -25,31 +25,40 @@ Distro series sourcepackages can be linked to product series using the
     ...     product=product, name='hotter')
     >>> productseries.sourcepackages
     []
+    >>> transaction.commit()
 
 The view has a label and requires a distro series, source package name,
 and a packaging contents.
 
-    >>> view = create_view(productseries, '+addpackage')
+    >>> view = create_view(productseries, '+ubuntupkg')
     >>> print view.label
-    Packaging of hotter in distributions
+    Ubuntu source packaging
 
     >>> print view.page_title
-    Packaging of hotter in distributions
+    Ubuntu source packaging
 
     >>> print view.field_names
-    ['distroseries', 'sourcepackagename', 'packaging']
+    ['sourcepackagename', 'distroseries']
 
     >>> print view.cancel_url
     http://launchpad.dev/hot/hotter
 
+    >>> series_names = [series.name for series in ubuntu.series]
+    >>> view.setUpFields()
+    >>> vocabulary_tokens = [
+    ...     term.token
+    ...     for term in view.form_fields['distroseries'].field.vocabulary
+    ...     ]
+    >>> assert vocabulary_tokens == series_names
+
     >>> form = {
-    ...     'field.distroseries': 'ubuntu/hoary',
+    ...     'field.distroseries': 'hoary',
     ...     'field.sourcepackagename': 'hot',
     ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
-    ...     productseries, '+addpackage', form=form)
+    ...     productseries, '+ubuntupkg', form=form)
     >>> view.errors
     []
     >>> for package in productseries.sourcepackages:
@@ -58,33 +67,19 @@ and a packaging contents.
 
     >>> transaction.commit()
 
-It is an error to link a series to the same package and distro series twice.
-
-    >>> form = {
-    ...     'field.distroseries': 'ubuntu/hoary',
-    ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Project',
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-    >>> view = create_initialized_view(
-    ...     productseries, '+addpackage', form=form)
-    >>> for error in view.errors:
-    ...     print error
-    This series is already packaged in Hoary.
-
 Once a distro series sourcepackage is linked to a product series, no other
 product series can link to it.
 
     >>> other_productseries = factory.makeProductSeries(
     ...     product=product, name='hotest')
     >>> form = {
-    ...     'field.distroseries': 'ubuntu/hoary',
+    ...     'field.distroseries': 'hoary',
     ...     'field.sourcepackagename': 'hot',
     ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
-    ...     other_productseries, '+addpackage', form=form)
+    ...     other_productseries, '+ubuntupkg', form=form)
     >>> for error in view.errors:
     ...     print error
     The <a href=".../hoary/+source/hot">hot</a> package in Hoary is already
@@ -93,52 +88,42 @@ product series can link to it.
 A source package name must be provided.
 
     >>> form = {
-    ...     'field.distroseries': 'ubuntu/hoary',
+    ...     'field.distroseries': 'hoary',
     ...     'field.sourcepackagename': '',
     ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
-    ...     productseries, '+addpackage', form=form)
+    ...     productseries, '+ubuntupkg', form=form)
     >>> for error in view.errors:
     ...     print error
     ('sourcepackagename', u'Source Package Name', RequiredMissing())
     You must choose the source package name.
 
 In the case of full functionality distributions like Ubuntu, the source
-package must be published in the distro series. 
+package must be published in the distro series.
 
     >>> vapor_spn = factory.makeSourcePackageName('vapor')
     >>> form = {
-    ...     'field.distroseries': 'ubuntu/hoary',
+    ...     'field.distroseries': 'hoary',
     ...     'field.sourcepackagename': 'vapor',
     ...     'field.packaging': 'Primary Project',
     ...     'field.actions.continue': 'Continue',
     ...     }
     >>> view = create_initialized_view(
-    ...     productseries, '+addpackage', form=form)
+    ...     productseries, '+ubuntupkg', form=form)
     >>> for error in view.errors:
     ...     print error
     The source package is not published in Hoary.
-
-The +addpackage view provides the default_distroseries property. It is None
-by default, but subclasses may change it.
-
-    >>> print view.default_distroseries
-    None
 
 
 Productseries linking Ubuntu packages
 -------------------------------------
 
-The +ubuntupkg named view is a subclass of the +addpackage named view. It
-allows the user to update the current linked Ubuntu package.
-
-    >>> from lp.registry.browser.packaging import PackagingAddView
+The +ubuntupkg named view allows the user to update the current linked
+Ubuntu package.
 
     >>> view = create_initialized_view(productseries, '+ubuntupkg')
-    >>> isinstance(view, PackagingAddView)
-    True
 
     >>> print view.label
     Ubuntu source packaging
@@ -314,34 +299,10 @@ dictionaries for the distributions and their packaging.  The list is
 sorted by distribution with Ubuntu first and the rest in alphabetic
 order.
 
-    >>> form = {
-    ...     'field.distroseries': 'redhat/7.0',
-    ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Project',
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-
-    >>> view = create_initialized_view(
-    ...     productseries, '+addpackage', form=form)
-    >>> view.errors
-    []
-    >>> form = {
-    ...     'field.distroseries': 'debian/sarge',
-    ...     'field.sourcepackagename': 'hot',
-    ...     'field.packaging': 'Primary Project',
-    ...     'field.actions.continue': 'Continue',
-    ...     }
-
-    >>> view = create_initialized_view(
-    ...     productseries, '+addpackage', form=form)
-    >>> view.errors
-    []
     >>> view = create_initialized_view(product, name='+packages')
     >>> for distro_dict in view.distro_packaging:
     ...     print distro_dict['distribution'].name
     ubuntu
-    debian
-    redhat
 
 The +packages named view descends from PackagingDeleteView to provide remove
 link actions for the product's linked packages.
@@ -357,8 +318,6 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     >>> view = create_initialized_view(product, name='+packages')
     >>> for package in view.all_packaging:
     ...     print package.distroseries.name, package.productseries.name
-    sarge hotter
-    7.0 hotter
     grumpy hotter
     hoary hotter
 
@@ -373,8 +332,6 @@ package linked to hoary is wrong; thunderbird is the wrong sourcepackage.
     []
     >>> for package in view.all_packaging:
     ...     print package.distroseries.name, package.productseries.name
-    sarge hotter
-    7.0 hotter
     grumpy hotter
 
 

@@ -229,7 +229,10 @@ class MenuBase(UserAttributeCache):
         pass
 
     def _buildLink(self, name):
-        method = getattr(self, name)
+        method = getattr(self, name, None)
+        if method is None:
+            raise AssertionError(
+                '%r does not define %r method.' % (self, name))
         linkdata = method()
         # The link need only provide ILinkData.  We need an ILink so that
         # we can set attributes on it like 'name' and 'url' and 'linked'.
