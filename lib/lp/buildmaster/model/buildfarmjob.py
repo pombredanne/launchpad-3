@@ -12,13 +12,14 @@ from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 from lp.buildmaster.interfaces.buildfarmjob import (
-    IBuildFarmJob, ISpecificBuildFarmJobClass)
+    IBuildFarmJob, IBuildFarmCandidateJobSelection,
+    ISpecificBuildFarmJobClass)
 
 
 class BuildFarmJob:
     """Mix-in class for `IBuildFarmJob` implementations."""
     implements(IBuildFarmJob)
-    classProvides(ISpecificBuildFarmJobClass)
+    classProvides(ISpecificBuildFarmJobClass, IBuildFarmCandidateJobSelection)
 
     def score(self):
         """See `IBuildFarmJob`."""
