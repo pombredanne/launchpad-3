@@ -31,7 +31,7 @@ function hide_patch(id) {
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="batchnav view/batchedPatchTasks;
                      batch batchnav/currentBatch">
-    <table><thead>
+    <table class="listing"><thead>
              <tr>
                <th style="padding-right: 1em;"
                    >Bug</th>
