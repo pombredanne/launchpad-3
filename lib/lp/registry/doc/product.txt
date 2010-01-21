@@ -636,11 +636,10 @@ It is also possible to view just the set of sorted active series.
 Once the 1.0 series is made obsolete, it no longer shows up in the set of
 sorted active series.
 
-    >>> from lp.registry.interfaces.distroseries import (
-    ...     DistroSeriesStatus)
+    >>> from lp.registry.interfaces.series import SeriesStatus
     >>> sorted_series = firefox_view.sorted_active_series_list
     >>> last_series = firefox.getSeries(sorted_series[-1].name)
-    >>> last_series.status = DistroSeriesStatus.OBSOLETE
+    >>> last_series.status = SeriesStatus.OBSOLETE
     >>> firefox_view = create_initialized_view(firefox, '+index')
     >>> for series in firefox_view.sorted_active_series_list:
     ...     print series.name
@@ -649,7 +648,7 @@ sorted active series.
 It is possible for the development series to be obsolete, and in that case, it
 still shows up in the list.
 
-    >>> firefox.development_focus.status = DistroSeriesStatus.OBSOLETE
+    >>> firefox.development_focus.status = SeriesStatus.OBSOLETE
     >>> firefox_view = create_initialized_view(firefox, '+index')
     >>> for series in firefox_view.sorted_active_series_list:
     ...     print series.name
