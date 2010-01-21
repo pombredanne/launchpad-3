@@ -474,13 +474,6 @@
         permission="launchpad.Edit"
         template="../../app/templates/generic-edit.pt"/>
     <browser:page
-        name="+upgrade"
-        for="lp.code.interfaces.branch.IBranch"
-        class="lp.code.browser.branch.BranchUpgradeView"
-        facet="branches"
-        permission="launchpad.Edit"
-        template="../../app/templates/generic-edit.pt"/>
-    <browser:page
         name="+reviewer"
         for="lp.code.interfaces.branch.IBranch"
         class="lp.code.browser.branch.BranchReviewerEditView"

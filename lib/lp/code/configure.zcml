@@ -487,7 +487,7 @@
                     pending_writes
                     commitsForDays
                     needs_upgrading
-                    upgrade_pending
+                    requestUpgrade
                     getUpgradeFormat
                     isBranchMergeable
                     visibleByUser
@@ -495,7 +495,7 @@
     <require
         permission="launchpad.Edit"
         attributes="destroySelf destroySelfBreakReferences setPrivate 
-		            setOwner setTarget requestUpgrade"
+		            setOwner setTarget"
         set_attributes="name url mirror_status_message
                         description lifecycle_status
                         last_mirrored last_mirrored_id last_mirror_attempt
