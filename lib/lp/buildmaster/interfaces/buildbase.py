@@ -19,6 +19,7 @@ from lp.buildmaster.interfaces.builder import IBuilder
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import IArchive
+from lp.soyuz.interfaces.buildqueue import IBuildQueue
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
 from canonical.launchpad import _
 
@@ -64,12 +65,15 @@ class IBuildBase(Interface):
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the entire buildlog."))
 
-    buildqueue_record = Attribute("Corresponding BuildQueue record")
+    buildqueue_record = Object(
+        schema=IBuildQueue, required=True,
+        title=_("Corresponding BuildQueue record"))
 
     is_private = Attribute("Whether the build should be treated as private.")
 
-    policy_name = Attribute(
-        "The upload policy to use for handling these builds.")
+    policy_name = TextLine(
+        title=_("Policy name"), required=True,
+        description=_("The upload policy to use for handling these builds."))
 
     archive = exported(
         Reference(
