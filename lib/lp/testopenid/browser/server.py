@@ -21,7 +21,8 @@ from zope.interface import implements
 from zope.security.proxy import isinstance as zisinstance
 from zope.session.interfaces import ISession
 
-from openid.server.server import CheckIDRequest
+from openid.server.server import CheckIDRequest, Server
+from openid.store.memstore import MemoryStore
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -47,6 +48,7 @@ from lp.testopenid.interfaces.server import (
 OPENID_REQUEST_TIMEOUT = 3600
 SESSION_PKG_KEY = 'TestOpenID'
 SERVER_URL = urlappend(allvhosts.configs['testopenid'].rooturl, '+openid')
+openid_store = MemoryStore()
 
 
 class TestOpenIDRootUrlData:
@@ -98,13 +100,7 @@ class OpenIDMixin:
     openid_request = None
 
     def __init__(self, context, request):
-        from openid.server.server import Server
         super(OpenIDMixin, self).__init__(context, request)
-        # XXX: Can't use this store as it's from c-i-p, so need to create a
-        # new one here.  Probably using sqllite or something.
-        from canonical.signon.interfaces.openidstore import (
-            IProviderOpenIDStore)
-        openid_store = getUtility(IProviderOpenIDStore)
         self.server_url = SERVER_URL
         self.openid_server = Server(openid_store, self.server_url)
 
