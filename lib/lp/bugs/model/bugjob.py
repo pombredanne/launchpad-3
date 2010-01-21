@@ -76,26 +76,6 @@ class BugJob(Storm):
         # but the DB representation is unicode.
         self._json_data = json_data.decode('utf-8')
 
-    def sync(self):
-        store = Store.of(self)
-        store.flush()
-        store.autoreload(self)
-
-    def destroySelf(self):
-        Store.of(self).remove(self)
-
-    @classmethod
-    def selectBy(cls, **kwargs):
-        """Return selected instances of this class.
-
-        At least one pair of keyword arguments must be supplied.
-        foo=bar is interpreted as 'select all instances of
-        BugJob whose property "foo" is equal to "bar"'.
-        """
-        assert len(kwargs) > 0
-        store = getUtility(IStoreSelector).get(MAIN_STORE, DEFAULT_FLAVOR)
-        return store.find(cls, **kwargs)
-
     @classmethod
     def get(cls, key):
         """Return the instance of this class whose key is supplied."""
