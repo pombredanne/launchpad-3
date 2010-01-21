@@ -17,6 +17,6 @@ from lp.soyuz.scripts.expire_ppa_binaries import PPABinaryExpirer
 
 if __name__ == '__main__':
     script = PPABinaryExpirer(
-        'expire-ppa-binaries', dbuser=config.binaryfile_expire.dbuser)
+        'expire-ppa-files', dbuser=config.binaryfile_expire.dbuser)
     script.lock_and_run()
 
