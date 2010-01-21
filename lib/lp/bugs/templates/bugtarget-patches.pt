@@ -76,7 +76,7 @@ function hide_patch(id) {
                     <a tal:replace="structure submitter/fmt:link"></a><br/>
                     <strong>Link:</strong>
                     <a tal:attributes="href p/libraryfile/http_url"
-                       tal:content="p/title"
+                       tal:content="p/libraryfile/filename"
                        ></a></p>
                 <p tal:content="string:${p/title}"></p>
                </div>
