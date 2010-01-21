@@ -59,6 +59,3 @@ class ICalculateBugHeatJobSource(IJobSource):
 
     def create(bug):
         """Create a new ICalculateBugHeatJob for a bug."""
-
-    def iterReady():
-        """Iterate through all ready CalculateBugHeatJobs."""
