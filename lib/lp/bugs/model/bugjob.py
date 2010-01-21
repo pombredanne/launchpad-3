@@ -8,7 +8,6 @@ __all__ = [
     'BugJob',
     ]
 
-import contextlib
 import simplejson
 
 from sqlobject import SQLObjectNotFound
@@ -22,7 +21,6 @@ from zope.interface import classProvides, implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.enumcol import EnumCol
-from canonical.launchpad.webapp import errorlog
 from canonical.launchpad.webapp.interfaces import (
     DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
 
@@ -162,20 +160,12 @@ class BugJobDerived(BaseRunnableJob):
             ])
         return vars
 
-    @classmethod
-    @contextlib.contextmanager
-    def contextManager(cls):
-        """See `ICalculateBugHeatJobSource`."""
-        errorlog.globalErrorUtility.configure(cls.config_section_name)
-        yield
-
 
 class CalculateBugHeatJob(BugJobDerived):
     """A Job to calculate bug heat."""
     implements(ICalculateBugHeatJob)
 
     class_job_type = BugJobType.UPDATE_HEAT
-    config_section_name = 'calculate_bug_heat'
     classProvides(ICalculateBugHeatJobSource)
 
     def run(self):

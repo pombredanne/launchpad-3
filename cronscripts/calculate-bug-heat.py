@@ -11,6 +11,8 @@ __metaclass__ = type
 
 import _pythonpath
 
+from canonical.launchpad.webapp import errorlog
+
 from lp.services.job.runner import JobCronScript
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
 
@@ -20,6 +22,10 @@ class RunCalculateBugHeat(JobCronScript):
 
     config_name = 'calculate_bug_heat'
     source_interface = ICalculateBugHeatJobSource
+
+    def main(self):
+        errorlog.globalErrorUtility.configure(self.config_name)
+        return super(RunCalculateBugHeat, self).main()
 
 
 if __name__ == '__main__':
