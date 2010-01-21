@@ -1130,8 +1130,6 @@ class TestOpenIDBrowserRequest(LaunchpadBrowserRequest):
 
 
 class TestOpenIDBrowserPublication(LaunchpadBrowserPublication):
-    # XXX: I don't remember why I need this, but if I remove it I end up at
-    # LP's home page when I load testopenid.lp.dev.
     root_object_interface = ITestOpenIDApplication
 
 
