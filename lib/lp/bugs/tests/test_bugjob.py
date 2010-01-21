@@ -59,16 +59,19 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
 
     layer = LaunchpadZopelessLayer
 
+    def setUp(self):
+        super(CalculateBugHeatJobTestCase, self).setUp()
+        self.bug = self.factory.makeBug()
+
     def test_run(self):
         # CalculateBugHeatJob.run() sets calculates and sets the heat
         # for a bug.
-        bug = self.factory.makeBug()
-        job = CalculateBugHeatJob.create(bug)
-        bug_heat_calculator = BugHeatCalculator(bug)
+        job = CalculateBugHeatJob.create(self.bug)
+        bug_heat_calculator = BugHeatCalculator(self.bug)
 
         job.run()
         self.assertEqual(
-            bug_heat_calculator.getBugHeat(), bug.heat)
+            bug_heat_calculator.getBugHeat(), self.bug.heat)
 
     def test_utility(self):
         # CalculateBugHeatJobSource is a utility for acquiring
@@ -76,6 +79,24 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
         utility = getUtility(ICalculateBugHeatJobSource)
         self.assertTrue(
             ICalculateBugHeatJobSource.providedBy(utility))
+
+    def test_create_only_creates_one(self):
+        # If there's already a CalculateBugHeatJob for a bug,
+        # CalculateBugHeatJob.create() won't create a new one.
+        job = CalculateBugHeatJob.create(self.bug)
+
+        # There will now be one job in the queue.
+        self.assertEqual(
+            1, len(list(CalculateBugHeatJob.iterReady())))
+
+        new_job = CalculateBugHeatJob.create(self.bug)
+
+        # The two jobs will in fact be the same job.
+        self.assertEqual(job, new_job)
+
+        # And the queue will still have a length of 1.
+        self.assertEqual(
+            1, len(list((CalculateBugHeatJob.iterReady()))))
 
 
 def test_suite():
