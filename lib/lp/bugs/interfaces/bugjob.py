@@ -8,6 +8,7 @@ __all__ = [
     'BugJobType',
     'IBugJob',
     'ICalculateBugHeatJob',
+    'ICalculateBugHeatJobSource',
     ]
 
 from zope.interface import Attribute, Interface
