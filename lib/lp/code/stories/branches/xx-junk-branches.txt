@@ -34,7 +34,8 @@ branches.
 Junk branches do not support merge proposals, so the "Branch Merges" section of
 the page should not be shown.
 
-    >>> assert find_tag_by_id(browser.contents, 'branch-merges') is None
+    >>> print find_tag_by_id(browser.contents, 'branch-merges')
+    None
 
 
 Team Junk Branches
