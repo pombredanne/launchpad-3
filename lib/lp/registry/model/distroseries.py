@@ -306,10 +306,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def packagings(self):
         """See `IDistroSeries`."""
-        # Avoid circular import failures.
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implicitly needed to work with a
         # Packaging object.
+        # Avoid circular import failures.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
         find_spec = (Packaging, SourcePackageName, ProductSeries, Product)
@@ -340,7 +340,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
         find_spec = (
             SourcePackageName,
             SQL("""
-                coalesce(heat, 0) + coalesce(po_messages, 0) +
+                coalesce(total_heat, 0) + coalesce(po_messages, 0) +
                 CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END AS score"""),
             SQL("coalesce(total_bugs, 0) AS total_bugs"),
             SQL("coalesce(total_messages, 0) AS total_messages"))
@@ -359,13 +359,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getPriorizedlPackagings(self):
         """See `IDistroSeries`.
 
-        The prioritization is a heuristic rule using  the branch, bug hotness,
+        The prioritization is a heuristic rule using the branch, bug hotness,
         translatable messages, and the source package release's component.
         """
-        # Avoid circular import failures.
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implcitly needed to work with a
         # Packaging object.
+        # Avoid circular import failures.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
         find_spec = (
@@ -373,7 +373,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SQL("""
                 CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END +
                     CASE WHEN Product.bugtracker IS NULL
-                        THEN coalesce(heat, 10) ELSE 0 END +
+                        THEN coalesce(total_heat, 10) ELSE 0 END +
                     CASE WHEN ProductSeries.translations_autoimport_mode = 1
                         THEN coalesce(po_messages, 10) ELSE 0 END +
                     CASE WHEN ProductSeries.branch IS NULL THEN 500
@@ -398,19 +398,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             LEFT JOIN (
                 SELECT
                     BugTask.sourcepackagename,
-                    sum(Bug.hotness) AS heat,
+                    sum(Bug.hotness) AS total_heat,
                     count(Bug.id) AS total_bugs
                 FROM BugTask
                     JOIN Bug
                         ON bugtask.bug = Bug.id
                 WHERE
                     BugTask.sourcepackagename is not NULL
-                    AND BugTask.distribution = %s
-                    AND BugTask.status in %s
+                    AND BugTask.distribution = %(distribution)s
+                    AND BugTask.status in %(statuses)s
                 GROUP BY BugTask.sourcepackagename
                 ) bugs
                 ON SourcePackageName.id = bugs.sourcepackagename
-            """ % sqlvalues(self.distribution, UNRESOLVED_BUGTASK_STATUSES))
+            """ % sqlvalues(
+                distribution=self.distribution,
+                statuses=UNRESOLVED_BUGTASK_STATUSES))
         message_score = ("""
             LEFT JOIN (
                 SELECT
@@ -421,14 +423,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 FROM POTemplate
                 WHERE
                     POTemplate.sourcepackagename is not NULL
-                    AND POTemplate.distroseries = %s
+                    AND POTemplate.distroseries = %(distroseries)s
                 GROUP BY
                     POTemplate.sourcepackagename,
                     POTemplate.distroseries
                 ) messages
                 ON SourcePackageName.id = messages.sourcepackagename
                 AND DistroSeries.id = messages.distroseries
-            """ % sqlvalues(self))
+            """ % sqlvalues(distroseries=self))
         joins = ("""
             SourcePackageName
             JOIN SourcePackageRelease spr
@@ -444,11 +446,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 AND Packaging.distroseries = DistroSeries.id
             """ + heat_score + message_score)
         conditions = ("""
-            DistroSeries.id = %s
-            AND spph.status IN %s
-            AND archive.purpose = %s
+            DistroSeries.id = %(distroseries)s
+            AND spph.status IN %(active_status)s
+            AND archive.purpose = %(primary)s
             """ % sqlvalues(
-                self, active_publishing_status, ArchivePurpose.PRIMARY))
+                distroseries=self,
+                active_status=active_publishing_status,
+                primary=ArchivePurpose.PRIMARY))
         return (joins, conditions)
 
     @property

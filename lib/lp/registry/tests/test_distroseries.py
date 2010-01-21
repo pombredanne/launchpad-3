@@ -251,7 +251,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.assertEqual(expected, names)
 
     def test_getPriorizedlPackagings_bug_tracker(self):
-        # Verify the ordering of packagings without and without a bug tracker.
+        # Verify the ordering of packagings with and without a bug tracker.
         self.linkPackage('hot')
         self.makeSeriesPackage('cold')
         product_series = self.linkPackage('cold')
@@ -262,7 +262,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.assertEqual(expected, names)
 
     def test_getPriorizedlPackagings_branch(self):
-        # Verify the ordering of packagings without and without a branch.
+        # Verify the ordering of packagings with and without a branch.
         self.linkPackage('translatable')
         self.makeSeriesPackage('withbranch')
         product_series = self.linkPackage('withbranch')
