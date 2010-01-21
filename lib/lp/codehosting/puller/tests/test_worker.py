@@ -742,8 +742,8 @@ class TestWorkerProgressReporting(TestCaseWithTransport):
     def getHttpServerForCwd(self):
         """Get an `HttpServer` instance that serves from '.'."""
         server = HttpServer()
-        server.setUp()
-        self.addCleanup(server.tearDown)
+        server.start_server()
+        self.addCleanup(server.stop_server)
         # The gc.collect allows the threads behind any HTTP requests to exit.
         self.addCleanup(gc.collect)
         return server
