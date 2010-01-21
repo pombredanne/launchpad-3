@@ -254,6 +254,7 @@ class Bug(SQLBase):
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
+    heat = IntCol(notNull=True, default=0)
 
     @property
     def comment_count(self):
@@ -1425,6 +1426,10 @@ class Bug(SQLBase):
 
         return not subscriptions_from_dupes.is_empty()
 
+    def setHeat(self, heat):
+        """See `IBug`."""
+        self.heat = heat
+
 
 class BugSet:
     """See BugSet."""
@@ -1665,11 +1670,17 @@ class BugSet:
         return bugs
 
     def getByNumbers(self, bug_numbers):
-        """see `IBugSet`."""
+        """See `IBugSet`."""
         if bug_numbers is None or len(bug_numbers) < 1:
             return EmptyResultSet()
         store = IStore(Bug)
         result_set = store.find(Bug, In(Bug.id, bug_numbers))
+        return result_set.order_by('id')
+
+    def dangerousGetAllBugs(self):
+        """See `IBugSet`."""
+        store = IStore(Bug)
+        result_set = store.find(Bug)
         return result_set.order_by('id')
 
 
