@@ -62,4 +62,13 @@
         class=".server.PersistentIdentityView"
         />
 
+    <!-- A simple view used by the page tests. -->
+    <browser:page
+        for="..interfaces.server.ITestOpenIDApplication"
+        name="+echo"
+        permission="zope.Public"
+        class="..testing.helpers.EchoView"
+        layer="canonical.launchpad.layers.PageTestLayer"
+        />
+
 </configure>
