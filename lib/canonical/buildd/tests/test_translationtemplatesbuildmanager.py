@@ -7,7 +7,7 @@ import os
 
 from unittest import TestLoader
 
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCase
 
 from canonical.buildd.translationtemplates import (
     TranslationTemplatesBuildManager, TranslationTemplatesBuildState)
@@ -37,9 +37,10 @@ class MockBuildManager(TranslationTemplatesBuildManager):
         return 0
 
 
-class TestTranslationTemplatesBuildManagerIteration(TestCaseWithFactory):
+class TestTranslationTemplatesBuildManagerIteration(TestCase):
     """Run TranslationTemplatesBuildManager through its iteration steps."""
     def setUp(self):
+        super(TestTranslationTemplatesBuildManagerIteration, self).setUp()
         self.working_dir = self.makeTemporaryDirectory()
         slave_dir = os.path.join(self.working_dir, 'slave')
         home_dir = os.path.join(self.working_dir, 'home')
