@@ -50,6 +50,7 @@ __all__ = [
     'AsyncLaunchpadTransport',
     'BadUrl',
     'BadUrlLaunchpad',
+    'BadUrlScheme',
     'BadUrlSsh',
     'branch_id_to_path',
     'BranchPolicy',
@@ -108,6 +109,7 @@ class BadUrlLaunchpad(BadUrl):
 
 class BadUrlScheme(BadUrl):
     """Found a URL with an untrusted scheme."""
+
     def __init__(self, scheme, url):
         BadUrl.__init__(self, scheme, url)
         self.scheme = scheme
@@ -441,6 +443,7 @@ class LaunchpadInternalServer(_BaseLaunchpadServer):
 
 
 class DirectDatabaseLaunchpadServer(AsyncVirtualServer):
+
     def __init__(self, scheme, branch_transport):
         AsyncVirtualServer.__init__(self, scheme)
         self._transport_dispatch = BranchTransportDispatch(branch_transport)

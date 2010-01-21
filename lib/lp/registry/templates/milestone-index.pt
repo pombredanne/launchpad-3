@@ -147,11 +147,10 @@
             <dl>
               <dt>Assignees:</dt>
               <dd tal:define="count_statuses view/assignment_counts">
-                <tal:statuses repeat="count_status count_statuses">
-                  <strong tal:content="count_status/count">2</strong>&nbsp;<a
+                <span class="pre"
+                  tal:repeat="count_status count_statuses"><strong tal:content="count_status/count">2</strong> <a
                     tal:replace="structure count_status/status/fmt:link" /><tal:comma
-                    condition="not: repeat/count_status/end">,</tal:comma>
-                </tal:statuses>
+                    condition="not: repeat/count_status/end">,</tal:comma></span>
                 <tal:no-statuses condition="not: count_statuses">
                   No users assigned to blueprints and bugs.
                 </tal:no-statuses>

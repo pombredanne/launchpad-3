@@ -35,12 +35,11 @@ from lp.code.model.codeimportjob import CodeImportJobWorkflow
 from lp.registry.model.productseries import ProductSeries
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from lp.code.enums import (
-    BranchType, CodeImportResultStatus, CodeImportReviewStatus,
-    RevisionControlSystems)
+    BranchType, CodeImportJobState, CodeImportResultStatus,
+    CodeImportReviewStatus, RevisionControlSystems)
 from lp.code.interfaces.codeimport import ICodeImport, ICodeImportSet
 from lp.code.interfaces.codeimportevent import ICodeImportEventSet
-from lp.code.interfaces.codeimportjob import (
-    CodeImportJobState, ICodeImportJobWorkflow)
+from lp.code.interfaces.codeimportjob import ICodeImportJobWorkflow
 from lp.code.interfaces.branchnamespace import (
     get_branch_namespace)
 from lp.code.model.codeimportresult import CodeImportResult
@@ -126,6 +125,8 @@ class CodeImport(SQLBase):
             return self.svn_branch_url
         elif self.rcs_type == RevisionControlSystems.GIT:
             return self.git_repo_url
+        elif self.rcs_type == RevisionControlSystems.BZR_SVN:
+            return self.svn_branch_url
         else:
             raise AssertionError(
                 'Unknown rcs type: %s'% self.rcs_type.title)

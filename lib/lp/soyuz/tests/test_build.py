@@ -10,7 +10,7 @@ from zope.component import getUtility
 
 from canonical.testing import LaunchpadZopelessLayer
 from lp.services.job.model.job import Job
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.build import BuildStatus, IBuildSet
 from lp.soyuz.interfaces.publishing import PackagePublishingStatus

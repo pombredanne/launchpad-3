@@ -959,7 +959,8 @@ But if we add No Privileges Person to the Ubuntu Team, and because the Ubuntu
 Team *is* subscribed to the bug, No Privileges Person will see the private bug.
 
     >>> login("mark@example.com")
-    >>> ubuntu_team.addMember(no_priv, reviewer=ubuntu_team.teamowner)
+    >>> ignored = ubuntu_team.addMember(
+    ...     no_priv, reviewer=ubuntu_team.teamowner)
 
     >>> login("no-priv@canonical.com")
     >>> params = BugTaskSearchParams(

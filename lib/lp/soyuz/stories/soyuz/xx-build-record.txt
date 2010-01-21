@@ -9,7 +9,7 @@ sampledata builder.
     >>> import datetime
     >>> from zope.component import getUtility
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> from lp.soyuz.interfaces.builder import IBuilderSet
+    >>> from lp.buildmaster.interfaces.builder import IBuilderSet
     >>> from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 
     # Create a new build record.

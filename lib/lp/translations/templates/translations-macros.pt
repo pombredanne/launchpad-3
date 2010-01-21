@@ -129,6 +129,51 @@
       </ul>
 </metal:nav-pofile-subpages>
 
+<metal:pofile-js-footer define-macro="pofile-js-footer">
+    <script type="text/javascript"
+        tal:content="
+        structure string:<!-- 
+        var autofocus_field = '${view/autofocus_html_id}_new';
+        var translations_order = '${view/translations_order}';
+        var plural_forms = ${context/plural_forms};
+        // -->" />
+</metal:pofile-js-footer>
+
+<metal:translations-js define-macro="translations-js">
+      <script
+        type="text/javascript"
+        tal:condition="devmode"
+        tal:attributes="src string:${icingroot}/build/translations/translations.js">
+      </script>
+</metal:translations-js>
+
+
+<metal:languages-table-js define-macro="languages-table-js">
+      <script type="text/javascript">
+      LPS.use("node", "translations", function(Y) {
+          Y.on("click", function(e) {
+            Y.translations.toggle_languages_visibility(e);
+          }, "#toggle-languages-visibility");
+      });
+      LPS.use( 'translations', 'event', function(Y) {
+          Y.on('domready', function(e) {
+              Y.translations.initialize_languages_table(Y);
+          });
+      });
+      </script>
+</metal:languages-table-js>
+
+
+<metal:languages-table-actions define-macro="languages-table-actions">
+  <div align="right">
+    [ <a href="/+editmylanguages">Choose preferred languages...</a>
+      <tal:has-preferred condition="view/translatable_languages">&mdash;
+        <a href="#" id="toggle-languages-visibility">
+          View all languages</a>
+      </tal:has-preferred>
+    ]
+   </div>
+</metal:languages-table-actions>
 
 </tal:root>
 

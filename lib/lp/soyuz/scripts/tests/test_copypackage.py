@@ -23,7 +23,7 @@ from lp.bugs.interfaces.bug import (
     CreateBugParams, IBugSet)
 from lp.bugs.interfaces.bugtask import BugTaskStatus
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.adapters.packagelocation import PackageLocationError
@@ -947,7 +947,7 @@ class DoDelayedCopyTestCase(TestCaseWithFactory):
         # Make ubuntutest/breezy-autotest CURRENT so uploads to SECURITY
         # pocket can be accepted.
         self.test_publisher.breezy_autotest.status = (
-            DistroSeriesStatus.CURRENT)
+            SeriesStatus.CURRENT)
 
     def createDelayedCopyContext(self):
         """Create a context to allow delayed-copies test.
@@ -1236,6 +1236,7 @@ class CopyPackageTestCase(TestCase):
         The records annotated will be excluded during the operation checks,
         see checkCopies().
         """
+        super(CopyPackageTestCase, self).setUp()
         pending_sources = SecureSourcePackagePublishingHistory.selectBy(
             status=PackagePublishingStatus.PENDING)
         self.sources_pending_ids = [pub.id for pub in pending_sources]

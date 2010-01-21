@@ -49,9 +49,8 @@ from lazr.restful.interfaces import (
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces._schema_circular_imports import IBug
 from canonical.launchpad.webapp.interfaces import ILaunchBag, NotFoundError
-from lp.bugs.interfaces.bug import IBugSet
+from lp.bugs.interfaces.bug import IBug, IBugSet
 from lp.bugs.interfaces.bugattachment import BugAttachmentType
 from lp.bugs.interfaces.bugtask import (
     BugTaskSearchParams, BugTaskStatus, IBugTask, IFrontPageBugTaskSearch)
@@ -622,8 +621,7 @@ class BugEditView(BugEditViewBase):
                 confirm_action.label, confirm_action.__name__))
         for new_tag in newly_defined_tags:
             self.notifications.append(
-                'The tag "%s" hasn\'t yet been used by %s before.'
-                ' Is this a new tag? %s' % (
+                'The tag "%s" hasn\'t been used by %s before. %s' % (
                     new_tag, bugtarget.bugtargetdisplayname, confirm_button))
             self._confirm_new_tags = True
 
@@ -634,7 +632,7 @@ class BugEditView(BugEditViewBase):
             self.updateBugFromData(data)
             self.next_url = canonical_url(self.context)
 
-    @action('Yes, define new tag', name='confirm_tag')
+    @action('Create the new tag', name='confirm_tag')
     def confirm_tag_action(self, action, data):
         """Define a new tag."""
         self.actions['field.actions.change'].success(data)

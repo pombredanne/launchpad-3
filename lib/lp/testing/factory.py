@@ -14,11 +14,11 @@ __all__ = [
     ]
 
 from datetime import datetime, timedelta
-from email.Encoders import encode_base64
-from email.Utils import make_msgid, formatdate
-from email.Message import Message as EmailMessage
-from email.MIMEText import MIMEText
-from email.MIMEMultipart import MIMEMultipart
+from email.encoders import encode_base64
+from email.utils import make_msgid, formatdate
+from email.message import Message as EmailMessage
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 from itertools import count
 from StringIO import StringIO
 import os.path
@@ -76,7 +76,7 @@ from lp.blueprints.interfaces.specification import (
 from lp.translations.interfaces.translationgroup import (
     ITranslationGroupSet)
 from lp.translations.interfaces.translator import ITranslatorSet
-from lp.translations.interfaces.translationsperson import ITranslationsPerson 
+from lp.translations.interfaces.translationsperson import ITranslationsPerson
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from lp.services.mail.signedmessage import SignedMessage
 from lp.services.worlddata.interfaces.country import ICountrySet
@@ -100,15 +100,15 @@ from lp.registry.model.distributionsourcepackage import (
 from lp.registry.model.milestone import Milestone
 from lp.registry.model.suitesourcepackage import SuiteSourcePackage
 from lp.registry.interfaces.distribution import IDistributionSet
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.gpg import GPGKeyAlgorithm, IGPGKeySet
 from lp.registry.interfaces.mailinglist import (
     IMailingListSet, MailingListStatus)
 from lp.registry.interfaces.mailinglistsubscription import (
     MailingListAutoSubscribePolicy)
 from lp.registry.interfaces.person import (
-    IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
+    IPerson, IPersonSet, PersonCreationRationale, TeamSubscriptionPolicy)
 from lp.registry.interfaces.poll import IPollSet, PollAlgorithm, PollSecrecy
 from lp.registry.interfaces.product import IProductSet, License
 from lp.registry.interfaces.productseries import IProductSeries
@@ -119,7 +119,7 @@ from lp.registry.interfaces.sourcepackagename import (
     ISourcePackageNameSet)
 from lp.registry.interfaces.ssh import ISSHKeySet, SSHKeyType
 from lp.services.worlddata.interfaces.language import ILanguageSet
-from lp.soyuz.interfaces.builder import IBuilderSet
+from lp.buildmaster.interfaces.builder import IBuilderSet
 from lp.soyuz.interfaces.component import IComponentSet
 from lp.soyuz.interfaces.packageset import IPackagesetSet
 from lp.testing import run_with_login, time_counter
@@ -277,10 +277,11 @@ class LaunchpadObjectFactory(ObjectFactory):
     def makeGPGKey(self, owner):
         """Give 'owner' a crappy GPG key for the purposes of testing."""
         key_id = self.getUniqueHexString(digits=8).upper()
+        fingerprint = key_id + 'A' * 32
         return getUtility(IGPGKeySet).new(
             owner.id,
             keyid=key_id,
-            fingerprint='A' * 40,
+            fingerprint=fingerprint,
             keysize=self.getUniqueInteger(),
             algorithm=GPGKeyAlgorithm.R,
             active=True,
@@ -511,7 +512,8 @@ class LaunchpadObjectFactory(ObjectFactory):
             group = self.makeTranslationGroup()
         if person is None:
             person = self.makePerson()
-        ITranslationsPerson(person).translations_relicensing_agreement = license
+        ITranslationsPerson(person).translations_relicensing_agreement = (
+            license)
         return getUtility(ITranslatorSet).new(group, language, person)
 
     def makeMilestone(
@@ -526,25 +528,34 @@ class LaunchpadObjectFactory(ObjectFactory):
                          productseries=productseries,
                          name=name)
 
-    def makeProductRelease(self, milestone=None, product=None):
+    def makeProductRelease(self, milestone=None, product=None,
+                           productseries=None):
         if milestone is None:
-            milestone = self.makeMilestone(product=product)
+            milestone = self.makeMilestone(product=product,
+                                           productseries=productseries)
         return milestone.createProductRelease(
             milestone.product.owner, datetime.now(pytz.UTC))
 
-    def makeProductReleaseFile(self, signed=True):
+    def makeProductReleaseFile(self, signed=True,
+                               product=None, productseries=None,
+                               milestone=None,
+                               release=None,
+                               description="test file"):
         signature_filename = None
         signature_content = None
         if signed:
             signature_filename = 'test.txt.asc'
             signature_content = '123'
-        release = self.makeProductRelease()
+        if release is None:
+            release = self.makeProductRelease(product=product,
+                                              productseries=productseries,
+                                              milestone=milestone)
         return release.addReleaseFile(
             'test.txt', 'test', 'text/plain',
             uploader=release.milestone.product.owner,
             signature_filename=signature_filename,
             signature_content=signature_content,
-            description="test file")
+            description=description)
 
     def makeProduct(self, *args, **kwargs):
         """As makeProductNoCommit with an explicit transaction commit.
@@ -747,13 +758,6 @@ class LaunchpadObjectFactory(ObjectFactory):
             product = self.makeProduct()
         return self.makeBranch(product=product, **kwargs)
 
-    def makeImportBranch(self, **kwargs):
-        """Make a in import branch on an arbitrary product.
-
-        See `makeBranch` for more information on arguments.
-        """
-        return self.makeBranch(branch_type=BranchType.IMPORTED, **kwargs)
-
     def makeAnyBranch(self, **kwargs):
         """Make a branch without caring about its container.
 
@@ -904,6 +908,8 @@ class LaunchpadObjectFactory(ObjectFactory):
         """Create a single `Revision`."""
         if author is None:
             author = self.getUniqueString('author')
+        elif IPerson.providedBy(author):
+            author = author.preferredemail.email
         if revision_date is None:
             revision_date = datetime.now(pytz.UTC)
         if parent_ids is None:
@@ -1440,7 +1446,7 @@ class LaunchpadObjectFactory(ObjectFactory):
             members, owner)
 
     def makeDistroRelease(self, distribution=None, version=None,
-                          status=DistroSeriesStatus.DEVELOPMENT,
+                          status=SeriesStatus.DEVELOPMENT,
                           parent_series=None, name=None):
         """Make a new distro release."""
         if distribution is None:

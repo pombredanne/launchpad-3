@@ -80,6 +80,8 @@
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event/event.js"></script>
     <script type="text/javascript"
+            tal:attributes="src string:${yui}/event/event-key.js"></script>            
+    <script type="text/javascript"
             tal:attributes="src string:${yui}/event-custom/event-custom.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event-simulate/event-simulate.js"></script>
@@ -181,6 +183,8 @@
             tal:attributes="src string:${lp_js}/lp/comment.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${lp_js}/lp/errors.js"></script>
+    <script type="text/javascript"
+            tal:attributes="src string:${lp_js}/registry/team.js"></script>
 
   </tal:devmode>
   <tal:production condition="not:devmode">
@@ -315,7 +319,7 @@
 
 <metal:footer define-macro="footer">
   <div id="footer" class="footer">
-    <div class="lp-arcana">
+    <div class="lp-arcana" tal:condition="not:view/is_root_page|nothing">
         <div class="lp-branding">
           <a tal:attributes="href string:${rooturl}"><img src="/@@/launchpad-logo-and-name-hierarchy.png" alt="Launchpad"/></a>
           &nbsp;&bull;&nbsp;
@@ -335,7 +339,7 @@
     </div>
 
     <div class="colophon">
-      &copy; 2004-2009
+      &copy; 2004-2010
       <a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
       &nbsp;&bull;&nbsp;
       <a href="/legal">Terms of use</a>

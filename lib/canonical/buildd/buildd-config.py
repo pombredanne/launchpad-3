@@ -5,7 +5,7 @@
 
 import os
 
-archtag = os.popen("dpkg --print-installation-architecture").read().strip()
+archtag = os.popen("dpkg --print-architecture").read().strip()
 
 from optparse import OptionParser
 

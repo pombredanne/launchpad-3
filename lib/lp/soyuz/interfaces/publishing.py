@@ -13,6 +13,7 @@ __all__ = [
     'IBinaryPackagePublishingHistory',
     'ICanPublishPackages',
     'IFilePublishing',
+    'IPublishingEdit',
     'IPublishingSet',
     'ISecureBinaryPackagePublishingHistory',
     'ISecureSourcePackagePublishingHistory',
@@ -28,7 +29,7 @@ __all__ = [
     'name_priority_map',
     ]
 
-from zope.schema import Bool, Choice, Datetime, Int, List, TextLine, Text
+from zope.schema import Bool, Choice, Datetime, Int, TextLine, Text
 from zope.interface import Interface, Attribute
 from lazr.enum import DBEnumeratedType, DBItem
 
@@ -39,8 +40,9 @@ from lp.registry.interfaces.pocket import PackagePublishingPocket
 
 from lazr.restful.fields import Reference
 from lazr.restful.declarations import (
-    export_as_webservice_entry, export_read_operation, export_write_operation,
-    exported, operation_parameters, operation_returns_collection_of)
+    REQUEST_USER, call_with, export_as_webservice_entry,
+    export_read_operation, export_write_operation, exported,
+    operation_parameters, operation_returns_collection_of)
 
 #
 # Exceptions
@@ -230,8 +232,8 @@ class IArchiveSafePublisher(Interface):
         """
 
 
-class IPublishing(Interface):
-    """Base interface for all *Publishing classes"""
+class IPublishingView(Interface):
+    """Base interface for all Publishing classes"""
 
     files = Attribute("Files included in this publication.")
     secure_record = Attribute("Correspondent secure package history record.")
@@ -282,17 +284,6 @@ class IPublishing(Interface):
             `IBinaryPackagePublishingHistory`.
         """
 
-    @operation_parameters(
-        removed_by=Reference(schema=IPerson, title=_("Removed by")),
-        removal_comment=TextLine(title=_("Removal comment"), required=False))
-    @export_write_operation()
-    def requestDeletion(removed_by, removal_comment=None):
-        """Delete this publication.
-
-        :param removed_by: `IPerson` responsible for the removal.
-        :param removal_comment: optional text describing the removal reason.
-        """
-
     def requestObsolescence():
         """Make this publication obsolete.
 
@@ -327,6 +318,22 @@ class IPublishing(Interface):
 
         :raise: AssertionError if the context publishing record is not in
             PENDING status.
+        """
+
+
+class IPublishingEdit(Interface):
+    """Base interface for writeable Publishing classes."""
+    export_as_webservice_entry()
+
+    @call_with(removed_by=REQUEST_USER)
+    @operation_parameters(
+        removal_comment=TextLine(title=_("Removal comment"), required=False))
+    @export_write_operation()
+    def requestDeletion(removed_by, removal_comment=None):
+        """Delete this publication.
+
+        :param removed_by: `IPerson` responsible for the removal.
+        :param removal_comment: optional text describing the removal reason.
         """
 
 
@@ -392,7 +399,7 @@ class ISourcePackageFilePublishing(IFilePublishing):
             )
 
 
-class ISecureSourcePackagePublishingHistory(IPublishing):
+class ISecureSourcePackagePublishingHistory(IPublishingView):
     """A source package publishing history record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -527,26 +534,6 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
             title=_("Source Package Version"),
             required=False, readonly=True))
 
-    changes_file_url = exported(
-        Text(
-            title=_("Changes File URL"),
-            description=_("A URL for this source publication's changes file "
-                          "for the source upload.")))
-
-    source_file_urls = exported(
-        List(
-            value_type=Text(),
-            title=_("Source File URLs"),
-            description=_("URL list for this source publication's "
-                          "files from the source upload.")))
-
-    binary_file_urls = exported(
-        List(
-            value_type=Text(),
-            title=_("Binary File URLs"),
-            description=_("URL list for this source publication's "
-                          "files resulting from the build.")))
-
     package_creator = exported(
         Reference(
             IPerson,
@@ -610,6 +597,13 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
         The builds are ordered by `DistroArchSeries.architecturetag`.
 
         :return: a list of `IBuilds`.
+        """
+
+    @export_read_operation()
+    def changesFileUrl():
+        """The .changes file URL for this source publication.
+
+        :return: the .changes file URL for this source (a string).
         """
 
     def getUnpublishedBuilds(build_states=None):
@@ -682,6 +676,21 @@ class ISourcePackagePublishingHistory(ISecureSourcePackagePublishingHistory):
                 }
         """
 
+    @export_read_operation()
+    def sourceFileUrls():
+        """URLs for this source publication's uploaded source files.
+
+        :return: A collection of URLs for this source.
+        """
+
+    @export_read_operation()
+    def binaryFileUrls():
+        """URLs for this source publication's binary files.
+
+        :return: A collection of URLs for this source.
+        """
+
+
 #
 # Binary package publishing
 #
@@ -705,7 +714,7 @@ class IBinaryPackageFilePublishing(IFilePublishing):
             )
 
 
-class ISecureBinaryPackagePublishingHistory(IPublishing):
+class ISecureBinaryPackagePublishingHistory(IPublishingView):
     """A binary package publishing record."""
     id = Int(
             title=_('ID'), required=True, readonly=True,
@@ -1087,6 +1096,15 @@ class IPublishingSet(Interface):
         :return: a storm ResultSet containing tuples as
             (`SourcePackagePublishingHistory`, `PackageUpload`,
              `SourcePackageRelease`, `LibraryFileAlias`, `LibraryFileContent`)
+        """
+
+    def getChangesFileLFA(spr):
+        """The changes file for the given `SourcePackageRelease`.
+
+        :param spr: the `SourcePackageRelease` for which to return the
+            changes file `LibraryFileAlias`.
+
+        :return: a `LibraryFileAlias` instance or None
         """
 
     def requestDeletion(sources, removed_by, removal_comment=None):

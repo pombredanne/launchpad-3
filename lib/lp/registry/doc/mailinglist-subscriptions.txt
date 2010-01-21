@@ -293,7 +293,7 @@ mailing list.
     ...     'sub-team', team_owner)
     >>> team_names.extend((super_team.name, sub_team.name))
 
-    >>> super_team.addMember(sub_team, salgado, force_team_add=True)
+    >>> ignored = super_team.addMember(sub_team, salgado, force_team_add=True)
     >>> lars = factory.makePersonByName('Lars')
     >>> lars.join(super_team)
     >>> lars.join(sub_team)
@@ -333,7 +333,7 @@ allowed due to indirect membership in the superteam.
     ...     'team-three', team_owner)
     >>> team_names.append(team_three.name)
 
-    >>> team_one.addMember(team_three, salgado, force_team_add=True)
+    >>> ignored = team_one.addMember(team_three, salgado, force_team_add=True)
     >>> dirk = factory.makePersonByName('Dirk')
     >>> dirk.join(team_two)
     >>> dirk.join(team_three)
@@ -714,7 +714,7 @@ more than one subteam.
     >>> team_five = factory.makeTeam(name='team-five', owner=team_owner)
     >>> team_names.append(team_five.name)
 
-    >>> team_one.addMember(team_five, salgado, force_team_add=True)
+    >>> ignored = team_one.addMember(team_five, salgado, force_team_add=True)
     >>> gwen = factory.makePersonByName('Gwen')
     >>> hank = factory.makePersonByName('Hank')
     >>> iona = factory.makePersonByName('Iona')

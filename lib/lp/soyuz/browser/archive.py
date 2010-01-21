@@ -66,7 +66,7 @@ from lp.soyuz.interfaces.build import (
     BuildStatus, BuildSetStatus, IBuildSet)
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.component import IComponentSet
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import (
     ILaunchpadCelebrities, NotFoundError)
 from lp.soyuz.interfaces.packagecopyrequest import (
@@ -1190,7 +1190,7 @@ class ArchivePackageCopyingView(ArchiveSourceSelectionFormView):
         # it will be probably simpler to use the DistroSeries vocabulary
         # and validate the selected value before copying.
         for series in self.context.distribution.series:
-            if series.status == DistroSeriesStatus.OBSOLETE:
+            if series.status == SeriesStatus.OBSOLETE:
                 continue
             terms.append(
                 SimpleTerm(series, str(series.name), series.displayname))
@@ -1769,6 +1769,15 @@ class BaseArchiveEditView(LaunchpadEditFormView, ArchiveViewBase):
 
     @action(_("Save"), name="save", validator="validate_save")
     def save_action(self, action, data):
+        # Archive is enabled and user wants it disabled.
+        if self.context.enabled == True and data['enabled'] == False:
+            self.context.disable()
+        # Archive is disabled and user wants it enabled.
+        if self.context.enabled == False and data['enabled'] == True:
+            self.context.enable()
+        # IArchive.enabled is a read-only property that cannot be set
+        # directly.
+        del(data['enabled'])
         self.updateContextFromData(data)
         self.next_url = canonical_url(self.context)
 

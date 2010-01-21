@@ -70,7 +70,7 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
 
         real_policy = self.policy
         self.policy = 'insecure'
-        TestStagedBinaryUploadBase.setUp(self)
+        super(TestBuilddUploads, self).setUp()
         self.policy = real_policy
 
     def _publishBuildQueueItem(self, queue_item):
@@ -125,6 +125,6 @@ class TestBuilddUploads(TestStagedBinaryUploadBase):
             build_used.title)
         self.assertEqual('FULLYBUILT', build_used.buildstate.name)
 
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-

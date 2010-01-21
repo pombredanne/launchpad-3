@@ -57,6 +57,7 @@ from lp.registry.interfaces.productseries import IProductSeries
 
 class ProductSeriesTranslationsMenuMixIn:
     """Translation menu for `IProductSeries`."""
+
     def overview(self):
         """Return a link to the overview page."""
         return Link('', 'Overview')
@@ -275,7 +276,7 @@ class ProductSeriesUploadView(LaunchpadView, TranslationsMixin):
                         warning = (
                             "A file could not be uploaded because its "
                             "name matched multiple existing uploads, for "
-                            "different templates." )
+                            "different templates.")
                         ul_conflicts = (
                             "The conflicting file name was:<br /> "
                             "<ul><li>%s</li></ul>" % cgi.escape(conflicts[0]))
@@ -378,6 +379,14 @@ class ProductSeriesView(LaunchpadView, ProductSeriesTranslationsMixin):
         return sorted(productserieslangs,
                       key=lambda a: a.language.englishname)
 
+    def isPreferredLanguage(self, language):
+        # if there are no preferred languages, mark all
+        # languages as preferred
+        if (len(self.translatable_languages) == 0):
+            return True
+        else:
+            return language in self.translatable_languages
+
     @property
     def has_translation_documentation(self):
         """Are there translation instructions for this product."""
@@ -421,8 +430,7 @@ class ProductSeriesTranslationsSettingsView(LaunchpadEditFormView,
     def change_settings_action(self, action, data):
         """Change the translation settings."""
         if (self.context.translations_autoimport_mode !=
-            data['translations_autoimport_mode']
-            ):
+            data['translations_autoimport_mode']):
             self.updateContextFromData(data)
             # Request an initial upload of translation files.
             getUtility(IRosettaUploadJobSource).create(

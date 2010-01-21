@@ -139,8 +139,8 @@ The bug data is stored as a list of dicts:
     >>> def print_bugs(bugs):
     ...     for bug in sorted(bugs):
     ...         print "Bug %s:" % bug
-    ...         for key in sorted(bugzilla._bugs[bug]):
-    ...             print "    %s: %s" % (key, bugzilla._bugs[bug][key])
+    ...         for key in sorted(bugs[bug]):
+    ...             print "    %s: %s" % (key, bugs[bug][key])
     ...         print "\n"
 
     >>> print_bugs(bugzilla._bugs)
@@ -148,11 +148,11 @@ The bug data is stored as a list of dicts:
         alias:
         assigned_to: test@canonical.com
         component: GPPSystems
-        creation_time: 20080610T16:19:53
+        creation_time: 2008-06-10 16:19:53
         id: 1
         internals:...
         is_open: True
-        last_change_time: 20080610T16:19:53
+        last_change_time: 2008-06-10 16:19:53
         priority: P1
         product: Marvin
         resolution: FIXED
@@ -165,11 +165,11 @@ The bug data is stored as a list of dicts:
         alias: bug-two
         assigned_to: marvin@heartofgold.ship
         component: Crew
-        creation_time: 20080611T09:23:12
+        creation_time: 2008-06-11 09:23:12
         id: 2
         internals:...
         is_open: True
-        last_change_time: 20080611T09:24:29
+        last_change_time: 2008-06-11 09:24:29
         priority: P1
         product: HeartOfGold
         resolution:
@@ -194,20 +194,16 @@ dicts to demonstrate this.
     >>> bugzilla.initializeRemoteBugDB([2, 'bug-two'])
     CALLED Bug.get({'ids': [2, 'bug-two'], 'permissive': True})
 
-    >>> for bug in sorted(bugzilla._bugs):
-    ...     print "Bug %r:" % bug
-    ...     for key in sorted(bugzilla._bugs[bug]):
-    ...         print "    %s: %s" % (key, bugzilla._bugs[bug][key])
-    ...     print "\n"
+    >>> print_bugs(bugzilla._bugs)
     Bug 2:
         alias: bug-two
         assigned_to: marvin@heartofgold.ship
         component: Crew
-        creation_time: 20080611T09:23:12
+        creation_time: 2008-06-11 09:23:12
         id: 2
         internals:...
         is_open: True
-        last_change_time: 20080611T09:24:29
+        last_change_time: 2008-06-11 09:24:29
         priority: P1
         product: HeartOfGold
         resolution:
@@ -410,7 +406,7 @@ BugzillaAPI.getCommentIds() returns all the IDs for all the comments on
 a given remote bug.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = True
-    >>> bug_comment_ids = bugzilla.getCommentIds(bug_watch)
+    >>> bug_comment_ids = bugzilla.getCommentIds(bug_watch.remotebug)
     CALLED Bug.comments({'ids': [1], 'include_fields': ['id']})
 
     >>> print sorted(bug_comment_ids)
@@ -419,7 +415,7 @@ a given remote bug.
 getCommentIds() can only be called if initializeRemoteBugDB() has been
 called and the bug exists locally.
 
-    >>> bugzilla.getCommentIds(bug_watch_broken)
+    >>> bugzilla.getCommentIds(bug_watch_broken.remotebug)
     Traceback (most recent call last):
       ...
     BugNotFound: 42
@@ -429,11 +425,11 @@ fetchComments()
 ---------------
 
 ISupportsCommentImport.fetchComments() is the method used to fetch a
-given set of comments from the remote bugtracker. It takes a bug watch
-and a list of the comment IDs to retrieve for that bug watch.
+given set of comments from the remote bugtracker. It takes a remote
+bug ID and a list of the comment IDs to retrieve for that bug watch.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> bugzilla.fetchComments(bug_watch, ['1', '3'])
+    >>> bugzilla.fetchComments(bug_watch.remotebug, ['1', '3'])
 
 The comments will be stored in the bugs dict as a dict of comment id =>
 comment dict mappings under the key 'comments'.
@@ -450,20 +446,20 @@ comment dict mappings under the key 'comments'.
         id: 1
         is_private: False
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
     Comment 3:
         author: marvin
         bug_id: 1
         id: 3
         is_private: False
         text: Life? Don't talk to me about life.
-        time: 20080616T13:22:29
+        time: 2008-06-16 13:22:29
 
 If we try to fetch comments that don't belong to the current bug
 fetchComments() will silently ignore them.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> bugzilla.fetchComments(bug_watch, ['1', '4'])
+    >>> bugzilla.fetchComments(bug_watch.remotebug, ['1', '4'])
 
     >>> comments = bugzilla._bugs[1]['comments']
     >>> for comment_id in sorted(comments):
@@ -477,7 +473,7 @@ fetchComments() will silently ignore them.
         id: 1
         is_private: False
         text: I'd really appreciate it if Marvin would enjoy life a bit.
-        time: 20080616T12:44:29
+        time: 2008-06-16 12:44:29
 
 
 getPosterForComment()
@@ -486,8 +482,9 @@ getPosterForComment()
 ISupportsCommentImport.getPosterForComment() returns a tuple of
 (displayname, email) for the author of a remote comment.
 
-    >>> bugzilla.fetchComments(bug_watch_two, ['2', '4'])
-    >>> displayname, email = bugzilla.getPosterForComment(bug_watch_two, '4')
+    >>> bugzilla.fetchComments(bug_watch_two.remotebug, ['2', '4'])
+    >>> displayname, email = bugzilla.getPosterForComment(
+    ...     bug_watch_two.remotebug, '4')
     >>> print displayname, email
     Ford Prefect ford.prefect@h2g2.com
 
@@ -495,7 +492,8 @@ If the author's name as stored in the comment isn't a valid email
 address then the method will return displayname = None and will return
 the whole of the author's name in the email field.
 
-    >>> displayname, email = bugzilla.getPosterForComment(bug_watch_two, '2')
+    >>> displayname, email = bugzilla.getPosterForComment(
+    ...     bug_watch_two.remotebug, '2')
     >>> print displayname, email
     None trillian
 
@@ -504,13 +502,13 @@ getMessageForComment()
 ----------------------
 
 ISupportsCommentImport.getMessageForComment() returns a Launchpad
-IMessage instance for a given comment. It takes a bug watch, a comment
-ID and a Person object generated from the return value of
+IMessage instance for a given comment. It takes a remote bug ID, a
+comment ID and a Person object generated from the return value of
 getPosterForComment(), above. For the sake of this test we'll use
 Sample Person as our poster.
 
     >>> message = bugzilla.getMessageForComment(
-    ...     bug_watch_two, '2', sample_person)
+    ...     bug_watch_two.remotebug, '2', sample_person)
     >>> print message.text_contents
     Bring the passengers to the bridge please Marvin.
 
@@ -521,7 +519,7 @@ The datecreated attribute of the Message will be the same as the 'time'
 field on the imported comment.
 
     >>> print bugzilla._bugs[2]['comments'][2]['time']
-    20080616T13:08:08
+    2008-06-16 13:08:08
 
     >>> print message.datecreated
     2008-06-16 13:08:08+00:00
@@ -564,12 +562,12 @@ which requires authentication.
 The comment will be stored on the remote server with the other comments.
 
     >>> bugzilla.xmlrpc_transport.print_method_calls = False
-    >>> print sorted(bugzilla.getCommentIds(bug_watch))
+    >>> print sorted(bugzilla.getCommentIds(bug_watch.remotebug))
     ['1', '3', '5']
 
-    >>> bugzilla.fetchComments(bug_watch, ['5'])
+    >>> bugzilla.fetchComments(bug_watch.remotebug, ['5'])
     >>> message = bugzilla.getMessageForComment(
-    ...     bug_watch, '5', sample_person)
+    ...     bug_watch.remotebug, '5', sample_person)
     >>> print message.text_contents
     This is a new remote comment.
     <BLANKLINE>
