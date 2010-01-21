@@ -315,6 +315,12 @@ class TestBranch(TestCaseWithFactory):
             SourcePackage(branch.sourcepackagename, branch.distroseries),
             branch.sourcepackage)
 
+
+class TestBranchUpgrade(TestCaseWithFactory):
+    """Test the upgrade functionalities of branches."""
+
+    layer = DatabaseFunctionalLayer
+
     def test_needsUpgrading_already_requested(self):
         # A branch has a needs_upgrading attribute that returns whether or not
         # a branch needs to be upgraded or not.  If the format is
@@ -322,6 +328,9 @@ class TestBranch(TestCaseWithFactory):
         branch = self.factory.makePersonalBranch(
             branch_format=BranchFormat.BZR_BRANCH_6,
             repository_format=RepositoryFormat.BZR_CHK_2A)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
         branch.requestUpgrade()
 
         self.assertFalse(branch.needs_upgrading)
@@ -384,6 +393,9 @@ class TestBranch(TestCaseWithFactory):
         # A BranchUpgradeJob can be created by calling IBranch.requestUpgrade.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
         job = removeSecurityProxy(branch.requestUpgrade())
 
         jobs = list(getUtility(IBranchUpgradeJobSource).iterReady())
@@ -397,6 +409,9 @@ class TestBranch(TestCaseWithFactory):
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_CHK_2A)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
         self.assertRaises(AssertionError, branch.requestUpgrade)
 
     def test_requestUpgrade_upgrade_pending(self):
@@ -404,6 +419,9 @@ class TestBranch(TestCaseWithFactory):
         # raises an AssertionError.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
         branch.requestUpgrade()
 
         self.assertRaises(AssertionError, branch.requestUpgrade)
@@ -412,6 +430,9 @@ class TestBranch(TestCaseWithFactory):
         # If there is a BranchUpgradeJob pending for the branch, return True.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
         branch.requestUpgrade()
 
         self.assertTrue(branch.upgrade_pending)
