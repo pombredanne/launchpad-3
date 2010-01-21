@@ -368,7 +368,7 @@ class TestBranch(TestCaseWithFactory):
         # date, there's no need to upgrade it.
         branch = self.factory.makePersonalBranch(
             branch_format=BranchFormat.BZR_BRANCH_8,
-            repository_format=RepositoryFormat.BZR_KNITPACK_6)
+            repository_format=RepositoryFormat.BZR_BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_repository_format_upgrade_needed(self):

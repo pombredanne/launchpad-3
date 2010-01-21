@@ -11,10 +11,8 @@ import shutil
 from unittest import TestLoader
 
 from bzrlib import errors as bzr_errors
-from bzrlib.branch import (Branch, BzrBranchFormat5, BzrBranchFormat7,
-    BzrBranchFormat8)
+from bzrlib.branch import Branch, BzrBranchFormat7
 from bzrlib.bzrdir import BzrDirMetaFormat1
-from bzrlib.repofmt.knitrepo import RepositoryFormatKnit1
 from bzrlib.repofmt.pack_repo import RepositoryFormatKnitPack6
 from bzrlib.revision import NULL_REVISION
 from canonical.testing import DatabaseFunctionalLayer, LaunchpadZopelessLayer

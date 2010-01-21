@@ -18,7 +18,6 @@ from StringIO import StringIO
 import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
-from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION

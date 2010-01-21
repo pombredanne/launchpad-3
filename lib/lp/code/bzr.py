@@ -17,24 +17,16 @@ __all__ = [
 import lp.codehosting
 from bzrlib.branch import (
     BranchReferenceFormat, BzrBranchFormat4, BzrBranchFormat5,
-    BzrBranchFormat6, BzrBranchFormat7, BzrBranchFormat8)
+    BzrBranchFormat6, BzrBranchFormat7)
 from bzrlib.bzrdir import (
     BzrDirFormat4, BzrDirFormat5, BzrDirFormat6, BzrDirMetaFormat1)
 from bzrlib.plugins.loom.branch import (
     BzrBranchLoomFormat1, BzrBranchLoomFormat6)
 from bzrlib.repofmt.knitrepo import (RepositoryFormatKnit1,
     RepositoryFormatKnit3, RepositoryFormatKnit4)
-try:
-    from bzrlib.repofmt.groupcompress_repo import RepositoryFormat2a
-    # Shut up, pyflakes.
-    RepositoryFormat2a
-except ImportError:
-    RepositoryFormat2a = None
 from bzrlib.repofmt.pack_repo import (
     RepositoryFormatKnitPack1, RepositoryFormatKnitPack3,
-    RepositoryFormatKnitPack4, RepositoryFormatKnitPack5,
-    RepositoryFormatKnitPack6, RepositoryFormatKnitPack6RichRoot
-    )
+    RepositoryFormatKnitPack4, RepositoryFormatKnitPack5)
 from bzrlib.repofmt.weaverepo import (
     RepositoryFormat4, RepositoryFormat5, RepositoryFormat6,
     RepositoryFormat7)
