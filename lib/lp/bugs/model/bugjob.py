@@ -112,17 +112,9 @@ class BugJobDerived(BaseRunnableJob):
     def __init__(self, job):
         self.context = job
 
-    def __eq__(self, job):
-        return (
-            self.__class__ is removeSecurityProxy(job.__class__)
-            and self.job == job.job)
-
-    def __ne__(self, job):
-        return not (self == job)
-
     @classmethod
     def create(cls, bug):
-        """See `XXX`."""
+        """See `ICalculateBugHeatJobSource`."""
         job = BugJob(bug, cls.class_job_type, {})
         return cls(job)
 
