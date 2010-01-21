@@ -6,8 +6,7 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="main"
-      tal:define="packages view/cached_unlinked_packages;">
+    <div metal:fill-slot="main">
       <div class="top-portlet">
         <p>
           Links from distribution packages to upstream project series let
@@ -16,13 +15,13 @@
         </p>
 
         <p>
-        The packages are listed by priority. Packages that greatest need to
-        forward bugs, sync translations, or need the latest development
-        branch are listed first. Can you help link these packages to
-        registered Launchpad projects?
+          The packages are listed by priority. Packages that greatest need to
+          forward bugs, sync translations, or need the latest development
+          branch are listed first. Can you help link these packages to
+          registered Launchpad projects?
         </p>
 
-        <ul class="horizontal">
+        <ul id="related-pages" class="horizontal">
           <li>
             <a tal:replace="structure context/menu:overview/needs_packaging/fmt:link" />
           </li>
@@ -33,9 +32,10 @@
       </div>
 
       <div class="narrow"
-        tal:condition="packages/batch">
-        <div class="results"
-          tal:content="structure packages/@@+navigation-links-upper" />
+        tal:define="summaries view/cached_unlinked_packages;"
+        tal:condition="summaries/batch">
+        <div id="listing-navigation"
+          tal:content="structure summaries/@@+navigation-links-upper" />
 
         <table id="packages" class="listing">
           <thead>
@@ -47,7 +47,7 @@
           </thead>
 
           <tbody>
-            <tr tal:repeat="summary packages/batch">
+            <tr tal:repeat="summary summaries/batch">
               <td>
                 <a class="sprite package-source"
                   tal:attributes="href summary/package/fmt:url"
@@ -69,7 +69,7 @@
         </table>
 
         <div class="results"
-          tal:content="structure packages/@@+navigation-links-lower" />
+          tal:content="structure summaries/@@+navigation-links-lower" />
       </div>
     </div>
   </body>

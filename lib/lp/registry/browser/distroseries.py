@@ -507,6 +507,6 @@ class DistroSeriesNeedsPackagesView(DistroSeriesView):
     def cached_unlinked_packages(self):
         """The batched `ISourcePackage`s that needs packaging links."""
         packages = self.context.getPriorizedUnlinkedSourcePackages()
-        navigator = BatchNavigator(packages, self.request, size=200)
+        navigator = BatchNavigator(packages, self.request, size=100)
         navigator.setHeadings('package', 'packages')
         return navigator

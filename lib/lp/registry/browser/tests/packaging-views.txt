@@ -448,7 +448,7 @@ The view provides the cached_unlinked_packages property to access a
 
     >>> batch_navigator = view.cached_unlinked_packages
     >>> batch_navigator.default_size
-    200
+    100
 
     >>> print batch_navigator.heading
     packages
