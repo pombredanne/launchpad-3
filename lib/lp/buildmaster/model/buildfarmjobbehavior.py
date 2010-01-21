@@ -71,10 +71,10 @@ class BuildFarmJobBehaviorBase:
         try:
             queue_item = getUtility(IBuildQueueSet).get(queue_item_id)
             # Check whether build and buildqueue are properly related.
-            if queue_item.specific_job.build.id != build_id:
-                return 'Job build entry mismatch'
         except SQLObjectNotFound, reason:
             return str(reason)
+        if queue_item.specific_job.build.id != build_id:
+            return 'Job build entry mismatch'
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
