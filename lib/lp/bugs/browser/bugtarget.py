@@ -1392,11 +1392,11 @@ class BugsPatchesView(LaunchpadView):
         """Return a BatchNavigator for bug tasks with patch attachments."""
         return BatchNavigator(
             self.context.searchTasks(None, user=self.user,
+                                     order_by=self.request.get("orderby"),
                                      omit_duplicates=True, has_patch=True),
             self.request)
         
-    @property
-    def context_can_have_different_bugtargets(self):
+    def shouldShowTargetName(self):
         """Return True iff current context can have different bugtargets."""
         return (IDistribution.providedBy(self.context)
                 or IProject.providedBy(self.context))

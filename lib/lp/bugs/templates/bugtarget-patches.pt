@@ -31,6 +31,13 @@ function hide_patch(id) {
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="batchnav view/batchedPatchTasks;
                      batch batchnav/currentBatch">
+
+  <form class="lesser" name="sort" method="get"
+        tal:attributes="action string:${context/fmt:url}/+patches">
+    <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
+    <input type="submit" value="sort" id="sort-button">
+  </form>
+
     <table class="listing"><thead>
              <tr>
                <th style="padding-right: 1em;"
@@ -40,7 +47,7 @@ function hide_patch(id) {
                <th style="padding-right: 1em;"
                    >Status</th>
                <th style="padding-right: 1em;"
-                   tal:condition="view/context_can_have_different_bugtargets"
+                   tal:condition="view/shouldShowTargetName"
                    >Package</th>
                <th style="padding-right: 1em;"
                    >Patch Age</th>
@@ -56,7 +63,7 @@ function hide_patch(id) {
                  tal:content="patch_task/status/title"
                  tal:attributes="class string:status${patch_task/status/name}"></td>
              <td style="padding-right: 1em;"
-                 tal:condition="view/context_can_have_different_bugtargets"
+                 tal:condition="view/shouldShowTargetName"
                  ><a tal:attributes="href patch_task/target/fmt:url"
                      tal:content="patch_task/target/name"
                   ></a></td>
