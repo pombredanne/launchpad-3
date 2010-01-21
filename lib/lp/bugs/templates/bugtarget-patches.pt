@@ -10,13 +10,6 @@
   i18n:domain="malone"
 >
 
-<metal:block fill-slot="head_epilogue">
-<script type="text/javascript"
-        tal:condition="devmode"
-        tal:define="lp_js string:${icingroot}/build"
-        tal:attributes="src string:${lp_js}/bugs/patches-view.js"></script>
-</metal:block>
-
   <body>
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="batchnav view/batchedPatchTasks;
@@ -60,12 +53,12 @@
              <td style="padding-right: 1em;"
                  tal:define="p python:view.youngest_patch(patch_task.bug);
                              age python:view.patch_age(p)"
-                 tal:attributes="id string:patch-row-anchor-${repeat/patch_task/index}"
+                 tal:attributes="id string:patch-cell-${repeat/patch_task/index}"
                   ><a tal:attributes="href p/libraryfile/http_url"
-                  tal:content="age/fmt:approximateduration/use-digits"
+                      tal:content="age/fmt:approximateduration/use-digits"
                   ></a>
                <div class="popupTitle"
-                    tal:attributes="id string:patch-row-${repeat/patch_task/index};">
+                    tal:attributes="id string:patch-popup-${repeat/patch_task/index};">
                 <p tal:define="submitter p/message/owner"
                    ><strong>From:</strong>
                     <a tal:replace="structure submitter/fmt:link"></a><br/>
@@ -76,16 +69,16 @@
                 <p tal:content="string:${p/title}"></p>
                </div>
                <script type="text/javascript" tal:content="string:
-                 YUI().use('bugs.bug_patches_view', 'event', function(Y) {
+                 YUI().use('base', 'node', 'event', function(Y) {
                    Y.on('domready', function(e) {
-                     var anchor_id = '#patch-row-anchor-${repeat/patch_task/index}';
-                     var target_id = '#patch-row-${repeat/patch_task/index}';
-                     var elt = Y.get(anchor_id);
+                     var cell_id = '#patch-cell-${repeat/patch_task/index}';
+                     var target_id = '#patch-popup-${repeat/patch_task/index}';
+                     var elt = Y.get(cell_id);
                      elt.on('mouseover', function(e) {
-                       Y.get(target_id).setStyle('display', 'block');
+                        Y.get(target_id).setStyle('display', 'block');
                       });
                      elt.on('mouseout', function(e) {
-                       Y.get(target_id).setStyle('display', 'none');
+                        Y.get(target_id).setStyle('display', 'none');
                       });
                    });
                  });"/>
