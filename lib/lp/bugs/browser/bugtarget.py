@@ -1264,12 +1264,13 @@ class BugTargetBugsView(BugTaskSearchListingView, FeedsMixin):
         hot_bugs = []
         count = 0
         for task in bugtasks:
-            if task.bug not in hot_bugs:
+            # Ensure we only represent a bug once in the list.
+            if task.bug not in [hot_task.bug for hot_task in hot_bugs]:
                 if count < 10:
-                    hot_bugs.append(task.bug)
+                    hot_bugs.append(task)
                     count += 1
-                elif count == 10:
-                    return hot_bugs
+                else:
+                    break
         return hot_bugs
 
 
