@@ -230,6 +230,8 @@ class MenuBase(UserAttributeCache):
 
     def _buildLink(self, name):
         method = getattr(self, name, None)
+        # Since Zope traversals hides the root cause of an AttributeError,
+        # an AssertionError is raised explaining what went wrong.
         if method is None:
             raise AssertionError(
                 '%r does not define %r method.' % (self, name))
