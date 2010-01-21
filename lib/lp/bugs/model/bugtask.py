@@ -1257,7 +1257,7 @@ class BugTaskSet:
         "number_of_duplicates": "Bug.number_of_duplicates",
         "message_count": "Bug.message_count",
         "users_affected_count": "Bug.users_affected_count",
-        "heat": "Bug.hotness",
+        "heat": "Bug.heat",
         }
 
     _open_resolved_upstream = """
