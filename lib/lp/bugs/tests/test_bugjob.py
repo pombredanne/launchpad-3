@@ -5,10 +5,12 @@
 
 __metaclass__ = type
 
+import transaction
 import unittest
 
 from zope.component import getUtility
 
+from canonical.launchpad.scripts.tests import run_script
 from canonical.testing import LaunchpadZopelessLayer
 
 from lp.bugs.interfaces.bugjob import BugJobType, ICalculateBugHeatJobSource
@@ -97,6 +99,19 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
         # And the queue will still have a length of 1.
         self.assertEqual(
             1, len(list((CalculateBugHeatJob.iterReady()))))
+
+    def test_cronscript_succeeds(self):
+        # The calculate-bug-heat cronscript will run all pending
+        # CalculateBugHeatJobs.
+        job = CalculateBugHeatJob.create(self.bug)
+        transaction.commit()
+
+        retcode, stdout, stderr = run_script(
+            'cronscripts/calculate-bug-heat.py', [],
+            expect_returncode=0)
+        self.assertEqual('', stdout)
+        self.assertIn(
+            'INFO    Ran 1 ICalculateBugHeatJobSource jobs.\n', stderr)
 
 
 def test_suite():
