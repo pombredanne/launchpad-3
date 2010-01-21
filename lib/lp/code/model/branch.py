@@ -42,8 +42,8 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, SLAVE_FLAVOR)
 
 from lp.code.bzr import (
-    BranchFormat, BRANCH_FORMAT_UPGRADE_PATH, ControlFormat, RepositoryFormat,
-    REPOSITORY_FORMAT_UPGRADE_PATH)
+    BranchFormat, ControlFormat, CURRENT_BRANCH_FORMATS,
+    CURRENT_REPOSITORY_FORMATS, RepositoryFormat)
 from lp.code.enums import (
     BranchLifecycleStatus, BranchMergeControlStatus,
     BranchMergeProposalStatus, BranchType)
@@ -944,6 +944,10 @@ class Branch(SQLBase):
                 datetime.now(pytz.timezone('UTC'))
                 + increment * 2 ** (self.mirror_failures - 1))
 
+    def destroySelfBreakReferences(self):
+        """See `IBranch`."""
+        return self.destroySelf(break_references=True)
+
     def destroySelf(self, break_references=False):
         """See `IBranch`."""
         from lp.code.model.branchjob import BranchJob
@@ -991,10 +995,22 @@ class Branch(SQLBase):
     @property
     def needs_upgrading(self):
         """See `IBranch`."""
-        if (REPOSITORY_FORMAT_UPGRADE_PATH.get(self.repository_format, None)
-            or BRANCH_FORMAT_UPGRADE_PATH.get(self.branch_format, None)):
-            return True
-        return False
+        if self.upgrade_pending:
+            return False
+        return not (
+            self.branch_format in CURRENT_BRANCH_FORMATS and
+            self.repository_format in CURRENT_REPOSITORY_FORMATS)
+
+    @property
+    def upgrade_pending(self):
+        """See `IBranch`."""
+        from lp.code.model.branchjob import BranchJob, BranchJobType
+        store = Store.of(self)
+        jobs = store.find(
+            BranchJob,
+            BranchJob.branch == self,
+            BranchJob.job_type == BranchJobType.UPGRADE_BRANCH)
+        return jobs.count() > 0
 
     def requestUpgrade(self):
         """See `IBranch`."""
