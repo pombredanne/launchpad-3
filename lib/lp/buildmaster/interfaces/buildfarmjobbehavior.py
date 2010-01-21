@@ -58,12 +58,12 @@ class IBuildFarmJobBehavior(Interface):
         """
 
     def verifySlaveBuildID(slave_build_id):
-        """Verify that a slave's build ID is consistent.
+        """Verify that a slave's build ID shows no signs of corruption.
 
         :param slave_build_id: The slave's build ID, as specified in
            dispatchBuildToSlave.
         :return: a string describing the problem if the given ID is invalid,
-           or None if it is consistent.
+           or None if it seems fine.
         """
 
     def updateBuild(queueItem):
