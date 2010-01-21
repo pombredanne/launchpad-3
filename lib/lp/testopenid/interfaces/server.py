@@ -23,8 +23,6 @@ class ITestOpenIDApplication(ILaunchpadApplication):
 class ITestOpenIDLoginForm(Interface):
     email = TextLine(title=u'What is your e-mail address?', required=True)
     password = PasswordField(title=u'Password', required=True)
-    nonce = TextLine(
-        title=u'Nonce', required=False, description=u'Unique value')
 
 
 class ITestOpenIDPersistentIdentity(IOpenIDPersistentIdentity):
