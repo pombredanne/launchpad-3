@@ -488,7 +488,6 @@
                     commitsForDays
                     needs_upgrading
                     upgrade_pending
-                    requestUpgrade
                     getUpgradeFormat
                     isBranchMergeable
                     visibleByUser
@@ -503,7 +502,7 @@
                         last_scanned last_scanned_id revision_count branch_type
                         reviewer branch_format repository_format
                         control_format stacked_on merge_queue
-                        merge_control_status"/>
+                        requestUpgrade merge_control_status"/>
     <require
         permission="launchpad.AnyPerson"
         set_attributes="whiteboard"/>
