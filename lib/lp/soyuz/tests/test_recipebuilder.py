@@ -50,7 +50,7 @@ class TestRecipeBuilder(TestCaseWithFactory):
             distribution=distro)
         processorfamily = ProcessorFamilySet().getByProcessorName('386')
         distroseries.newArch(
-            '386', processorfamily, True, self.factory.makePerson())
+            'i386', processorfamily, True, self.factory.makePerson())
         sourcepackage = self.factory.makeSourcePackage(spn, distroseries)
         requester = self.factory.makePerson(email="requester@ubuntu.com",
             name="joe", displayname="Joe User")
