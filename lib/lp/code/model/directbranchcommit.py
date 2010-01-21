@@ -56,12 +56,12 @@ class DirectBranchCommit:
         allows write access to lp-hosted:/// URLs:
 
         bzrserver = get_multi_server(write_hosted=True)
-        bzrserver.setUp()
+        bzrserver.start_server()
         try:
             branchcommit = DirectBranchCommit(branch)
             # ...
         finally:
-            bzrserver.tearDown()
+            bzrserver.stop_server()
 
         Or in tests, just call `useBzrBranches` before creating a
         `DirectBranchCommit`.

@@ -273,9 +273,9 @@ class BranchUpgradeJob(BranchJobDerived):
         """See `IBranchUpgradeJobSource`."""
         errorlog.globalErrorUtility.configure('upgrade_branches')
         server = get_multi_server(write_hosted=True)
-        server.setUp()
+        server.start_server()
         yield
-        server.tearDown()
+        server.stop_server()
 
     def run(self):
         """See `IBranchUpgradeJob`."""

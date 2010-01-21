@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2009, 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 # pylint: disable-msg=E0211
@@ -16,6 +16,7 @@ __all__ = [
     'IFixture',
     'make_zope_event_fixture',
     'run_with_fixture',
+    'ServerFixture',
     'with_fixture',
     ]
 
@@ -121,3 +122,18 @@ class ZopeEventHandlerFixture(FixtureWithCleanup):
 
 def make_zope_event_fixture(*handlers):
     return Fixtures(map(ZopeEventHandlerFixture, handlers))
+
+
+class ServerFixture:
+    """XXX."""
+
+    implements(IFixture)
+
+    def __init__(self, server):
+        self.server = server
+
+    def setUp(self):
+        self.server.start_server()
+
+    def tearDown(self):
+        self.server.stop_server()

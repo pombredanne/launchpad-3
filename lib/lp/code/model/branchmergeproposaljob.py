@@ -272,9 +272,9 @@ class UpdatePreviewDiffJob(BranchMergeProposalJobDerived):
         """See `IUpdatePreviewDiffJobSource`."""
         errorlog.globalErrorUtility.configure('update_preview_diffs')
         server = get_scanner_server()
-        server.setUp()
+        server.start_server()
         yield
-        server.tearDown()
+        server.stop_server()
 
     def run(self):
         """See `IRunnableJob`"""
@@ -347,11 +347,11 @@ class CreateMergeProposalJob(BaseRunnableJob):
         setupInteraction(principal, email_addr)
 
         server = get_multi_server(write_hosted=True)
-        server.setUp()
+        server.start_server()
         try:
             return CodeHandler().processMergeProposal(message)
         finally:
-            server.tearDown()
+            server.stop_server()
 
     def getOopsRecipients(self):
         message = self.getMessage()
