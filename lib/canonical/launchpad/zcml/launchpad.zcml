@@ -185,6 +185,20 @@
       layer="canonical.launchpad.layers.DebugLayer"
       />
 
+  <!-- OpenID RP views -->
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      class="canonical.launchpad.webapp.login.OpenIDLogin"
+      permission="zope.Public"
+      name="+login-openid"
+      />
+  <browser:page
+      for="*"
+      class="canonical.launchpad.webapp.login.OpenIDCallbackView"
+      permission="zope.Public"
+      name="+openid-callback"
+      />
+
   <browser:page
       for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
       template="../templates/launchpad-login.pt"
