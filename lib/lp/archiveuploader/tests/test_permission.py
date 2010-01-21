@@ -14,7 +14,7 @@ from canonical.testing import DatabaseFunctionalLayer
 
 from lp.archiveuploader.permission import (
     check_upload_to_archive, components_valid_for)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.soyuz.interfaces.archive import ArchivePurpose
 from lp.soyuz.interfaces.archivepermission import IArchivePermissionSet
@@ -131,7 +131,7 @@ class TestPermission(TestCaseWithFactory):
             purpose=ArchivePurpose.PPA, owner=person)
         spn = self.factory.makeSourcePackageName()
         distroseries = self.factory.makeDistroSeries(
-            status=DistroSeriesStatus.CURRENT)
+            status=SeriesStatus.CURRENT)
         self.assertCanUpload(
             person, spn, ppa, None, distroseries=distroseries)
 

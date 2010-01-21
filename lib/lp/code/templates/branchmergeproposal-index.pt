@@ -181,7 +181,7 @@
   </div>
 
   <div class="yui-g" tal:condition="view/pending_diff">
-    <div class="portlet pending-update" id="diff-pending-update">
+    <div class="pending-update" id="diff-pending-update">
       <h3>Updating diff...</h3>
       <p>
         An updated diff will be available in a few minutes.  Reload to see the

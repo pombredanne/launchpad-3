@@ -640,6 +640,11 @@ class TestPullerMasterIntegration(TrialTestCase, PullerBranchTestCase):
 
     layer = TwistedAppServerLayer
 
+    # XXX: Hacky workaround for Trial. It interprets the skip method as a
+    # reason to skip the tests, but the default test result object doesn't
+    # support skipping, hence errors.
+    skip = None
+
     def setUp(self):
         TrialTestCase.setUp(self)
         PullerBranchTestCase.setUp(self)

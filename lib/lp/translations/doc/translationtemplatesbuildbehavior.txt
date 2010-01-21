@@ -1,0 +1,82 @@
+= TranslationTemplatesBuildJobBehavior =
+
+== Setup ==
+
+Set up build environment.
+
+    >>> import transaction
+    >>> import logging
+    >>> logger = logging.getLogger()
+    >>> logger.setLevel(logging.CRITICAL)
+
+    >>> from lp.buildmaster.master import BuilddMaster
+    >>> from canonical.buildd.tests import BuilddSlaveTestSetup
+    >>> bm = BuilddMaster(logger, transaction)
+    >>> BuilddSlaveTestSetup().setUp()
+
+    >>> from canonical.librarian.interfaces import ILibrarianClient
+    >>> from StringIO import StringIO
+    >>> from canonical.launchpad.interfaces import ILibraryFileAliasSet
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+
+Choose an arbitrary file as the chroot tarball for the build slave.  It
+won't actually build, so it doesn't matter what's in there.
+
+The build slave uses the nominated architecture for the current Ubuntu
+release.
+
+    >>> ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
+    >>> librarian_client = getUtility(ILibrarianClient)
+    >>> content = 'arbitrary chroot file content'
+    >>> alias_id = librarian_client.addFile(
+    ...    'foo.tar.gz', len(content), StringIO(content), 'text/plain')
+    >>> archdistroseries = ubuntu.currentseries.nominatedarchindep
+    >>> chroot = getUtility(ILibraryFileAliasSet)[alias_id]
+    >>> pc = archdistroseries.addOrUpdateChroot(chroot=chroot)
+    >>> bm.addDistroArchSeries(archdistroseries)
+    >>> bm.setupBuilders(archdistroseries)
+    >>> processor = archdistroseries.processorfamily.processors[0]
+
+Make a builder to process our build request.
+
+    >>> builder = factory.makeBuilder(virtualized=False, processor=processor)
+
+
+== Get a job! ==
+
+Use the ITranslationTemplatesBuildJobSource to create a
+TranslationTemplatesBuildJob.
+
+    >>> from lp.translations.interfaces.translationtemplatesbuildjob import (
+    ...     ITranslationTemplatesBuildJobSource)
+    >>> from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
+    >>> branch = factory.makeBranch()
+    >>> specific_job_source = getUtility(ITranslationTemplatesBuildJobSource)
+    >>> specific_job = specific_job_source.create(branch)
+    >>> buildqueue = getUtility(IBuildQueueSet).getByJob(specific_job.job)
+
+The build has no start date yet.
+
+    >>> print buildqueue.date_started
+    None
+
+Dispatch the job to the build slave.  The proper method to call here
+would have been Builder.findAndStartJob, but it has not been generalised
+to handle new job types yet.
+
+# XXX JeroenVermeulen bug=506617: call findAndStartJob instead.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> removeSecurityProxy(builder)._dispatchBuildCandidate(buildqueue)
+
+The build is now marked as started.
+
+    >>> buildqueue.date_started is None
+    False
+
+
+== Teardown ==
+
+Clean up after this test.
+
+    >>> BuilddSlaveTestSetup().tearDown()

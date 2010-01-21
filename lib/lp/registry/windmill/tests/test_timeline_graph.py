@@ -13,12 +13,14 @@ from windmill.authoring import WindmillTestClient
 from lp.registry.windmill.testing import RegistryWindmillLayer
 from lp.testing import TestCaseWithFactory
 
+
 class TestTimelineGraph(TestCaseWithFactory):
     """Test timeline graph widget."""
 
     layer = RegistryWindmillLayer
 
     def setUp(self):
+        super(TestTimelineGraph, self).setUp()
         self.client = WindmillTestClient('TimelineGraph')
 
     def test_timeline_graph(self):

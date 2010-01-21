@@ -56,18 +56,29 @@ class TestRecordingSlaves(TrialTestCase):
         """
         self.assertEqual('<foo:http://foo:8221/rpc>', repr(self.slave))
 
+    def assert_ensurepresent(self, func):
+        """Helper function to test results from calling ensurepresent."""
+        self.assertEqual(
+            [True, 'Download'],
+            func('boing', 'bar', 'baz'))
+        self.assertEqual(
+            [('ensurepresent', ('boing', 'bar', 'baz'))],
+            self.slave.calls)
+
     def test_ensurepresent(self):
         """`RecordingSlave.ensurepresent` always succeeds.
 
         It returns the expected succeed code and records the interaction
         information for later use.
         """
-        self.assertEqual(
-            [True, 'Download'],
-            self.slave.ensurepresent('boing', 'bar', 'baz'))
-        self.assertEqual(
-            [('ensurepresent', ('boing', 'bar', 'baz'))],
-            self.slave.calls)
+        self.assert_ensurepresent(self.slave.ensurepresent)
+
+    def test_sendFileToSlave(self):
+        """RecordingSlave.sendFileToSlave always succeeeds.
+
+        It calls ensurepresent() and hence returns the same results.
+        """
+        self.assert_ensurepresent(self.slave.sendFileToSlave)
 
     def test_build(self):
         """`RecordingSlave.build` always succeeds.
