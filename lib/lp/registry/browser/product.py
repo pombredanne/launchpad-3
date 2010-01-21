@@ -712,10 +712,11 @@ class ProductDownloadFileMixin:
     def processDeleteFiles(self):
         """If the 'delete_files' button was pressed, process the deletions."""
         del_count = None
-        self.delete_ids = [int(value) for key, value in self.form.items()
-                           if key.startswith('checkbox')]
         if 'delete_files' in self.form:
             if self.request.method == 'POST':
+                self.delete_ids = [
+                    int(value) for key, value in self.form.items()
+                    if key.startswith('checkbox')]
                 del(self.form['delete_files'])
                 releases = self.getReleases()
                 del_count = self.deleteFiles(releases)
@@ -979,11 +980,24 @@ class ProductPackagesView(PackagingDeleteView):
         return results
 
 
+class SeriesReleasePair:
+    """Class for holding a series and release.
+
+    Replaces the use of a (series, release) tuple so that it can be more
+    clearly addressed in the view class.
+    """
+    def __init__(self, series, release):
+        self.series = series
+        self.release = release
+
+
 class ProductDownloadFilesView(LaunchpadView,
                                SortSeriesMixin,
                                ProductDownloadFileMixin):
     """View class for the product's file downloads page."""
     __used_for__ = IProduct
+
+    batch_size = config.launchpad.download_batch_size
 
     @property
     def page_title(self):
@@ -1001,6 +1015,24 @@ class ProductDownloadFilesView(LaunchpadView,
         for series in self.product.series:
             releases.update(series.releases)
         return releases
+
+    @cachedproperty
+    def series_and_releases_batch(self):
+        """Get a batch of series and release
+
+        Each entry returned is a tuple of (series, release).
+        """
+        series_and_releases = []
+        for series in self.sorted_series_list:
+            for release in series.releases:
+                if len(release.files) > 0:
+                    pair = SeriesReleasePair(series, release)
+                    if pair not in series_and_releases:
+                        series_and_releases.append(pair)
+        batch = BatchNavigator(series_and_releases, self.request,
+                               size=self.batch_size)
+        batch.setHeadings("release", "releases")
+        return batch
 
     @cachedproperty
     def has_download_files(self):
