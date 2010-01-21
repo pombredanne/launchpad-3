@@ -1367,6 +1367,17 @@ class Bug(SQLBase):
         except LaunchpadValidationError, validation_error:
             raise InvalidDuplicateValue(validation_error)
 
+        if duplicate_of is not None:
+            # Create a job to update the heat of the master bug and set
+            # this bug's heat to 0 (since it's a duplicate, it shouldn't
+            # have any heat at all).
+            getUtility(ICalculateBugHeatJobSource).create(duplicate_of)
+            self.setHeat(0)
+        else:
+            # Otherwise, create a job to recalculate this bug's heat,
+            # since it will be 0 from having been a duplicate.
+            getUtility(ICalculateBugHeatJobSource).create(self)
+
     def setCommentVisibility(self, user, comment_number, visible):
         """See `IBug`."""
         bug_message_set = getUtility(IBugMessageSet)

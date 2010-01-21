@@ -31,17 +31,25 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
         super(CalculateBugHeatJobTestCase, self).setUp()
         self.bug = self.factory.makeBug()
 
-        # Make sure that all the CalculateBugHeatJobs are marked complete.
         # NB: This looks like it should go in the teardown, however
         # creating the bug causes a job to be added for it. We clear
         # this out so that our tests are consistent.
+        self._completeJobsAndAssertQueueEmpty()
+
+    def _completeJobsAndAssertQueueEmpty(self):
+        """Make sure that all the CalculateBugHeatJobs are completed."""
         for bug_job in getUtility(ICalculateBugHeatJobSource).iterReady():
             bug_job.job.start()
             bug_job.job.complete()
+        self.assertEqual(0, self._getJobCount())
 
     def _getJobCount(self):
         """Return the number of CalculateBugHeatJobs in the queue."""
-        return len(list(CalculateBugHeatJob.iterReady()))
+        return len(self._getJobs())
+
+    def _getJobs(self):
+        """Return the pending CalculateBugHeatJobs as a list."""
+        return list(CalculateBugHeatJob.iterReady())
 
     def test_run(self):
         # CalculateBugHeatJob.run() sets calculates and sets the heat
@@ -169,6 +177,41 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
 
         # There will now be a job in the queue.
         self.assertEqual(1, self._getJobCount())
+
+    def test_marking_dupe_creates_job(self):
+        # Marking a bug as a duplicate of another bug creates a job to
+        # update the master bug.
+        new_bug = self.factory.makeBug()
+        new_bug.setHeat(42)
+        self._completeJobsAndAssertQueueEmpty()
+
+        new_bug.markAsDuplicate(self.bug)
+
+        # There will now be a job in the queue.
+        self.assertEqual(1, self._getJobCount())
+
+        # And the job will be for the master bug.
+        bug_job = self._getJobs()[0]
+        self.assertEqual(bug_job.bug, self.bug)
+
+        # Also, the duplicate bug's heat will have been set to zero.
+        self.assertEqual(0, new_bug.heat)
+
+    def test_unmarking_dupe_creates_job(self):
+        # Unmarking a bug as a duplicate will create a
+        # CalculateBugHeatJob for the bug, since its heat will be 0 from
+        # having been marked as a duplicate.
+        new_bug = self.factory.makeBug()
+        new_bug.markAsDuplicate(self.bug)
+        self._completeJobsAndAssertQueueEmpty()
+        new_bug.markAsDuplicate(None)
+
+        # There will now be a job in the queue.
+        self.assertEqual(1, self._getJobCount())
+
+        # And the job will be for the master bug.
+        bug_job = self._getJobs()[0]
+        self.assertEqual(bug_job.bug, new_bug)
 
 
 def test_suite():
