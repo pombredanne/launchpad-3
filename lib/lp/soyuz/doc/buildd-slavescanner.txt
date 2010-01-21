@@ -84,7 +84,7 @@ A insane WAITING slave, with wrong BuildQueue/Build relation:
     >>> insanewaiting_builder = MockBuilder(
     ...     'Insane Waiting Slave', InsaneWaitingSlave())
     >>> buildergroup.rescueBuilderIfLost(insanewaiting_builder)
-    WARNING:root:Builder 'Insane Waiting Slave' rescued from '7-1: Job build entry mismatch'
+    WARNING:root:Builder 'Insane Waiting Slave' rescued from '7-1': 'Job build entry mismatch'
 
 It was rescued because the BuildQueue.id == 1 isn't related to
 Build.id == 7, so this pair relation is wrong.
@@ -96,14 +96,14 @@ Build/BuildQueue entries. first a lost slave in status 'BUILDING':
     ...     'Lost Building Slave', LostBuildingSlave())
     >>> buildergroup.rescueBuilderIfLost(lostbuilding_builder)
     WARNING:root:Builder 'Lost Building Slave' rescued from
-    '1000-10000: 'Object not found''
+    '1000-10000': 'Object not found'
 
 Then a lost slave in status 'WAITING':
 
     >>> lostwaiting_builder = MockBuilder(
     ...     'Lost Waiting Slave', LostWaitingSlave())
     >>> buildergroup.rescueBuilderIfLost(lostwaiting_builder)
-    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000: 'Object not found''
+    WARNING:root:Builder 'Lost Waiting Slave' rescued from '1000-10000': 'Object not found'
 
 Both got rescued, as expected.
 
