@@ -950,6 +950,18 @@ private submission.
     >>> ubuntu.searchTasks(search_params).count()
     0
 
+== Searching for bugs affecting me ==
+
+The user searching for bugs can search for bugs affecting him.
+
+    >>> search_params = BugTaskSearchParams(
+    ...     user=foo_bar, affects_me=True)
+    >>> print reduce(
+    ...     lambda x, y: x and y,
+    ...     [task.bug.isUserAffected(foo_bar)
+    ...      for task in firefox.searchTasks(search_params)]) 
+    True
+
 
 == Ordering search results ==
 

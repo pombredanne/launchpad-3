@@ -1617,6 +1617,8 @@ class BugTaskSet:
             """ % sqlvalues(bug_commenter=params.bug_commenter)
             extra_clauses.append(bug_commenter_clause)
 
+        if params.affects_me:
+            params.affected_user = params.user
         if params.affected_user:
             affected_user_clause = """
             BugTask.id IN (
