@@ -4,7 +4,7 @@
 import os
 from unittest import TestLoader
 
-from lp.testing import TestCaseWithFactory
+from lp.testing import TestCase
 
 from canonical.buildd.generate_translation_templates import (
     GenerateTranslationTemplates)
@@ -21,10 +21,8 @@ class MockGenerateTranslationTemplates(GenerateTranslationTemplates):
         self.checked_out_branch = branch_url
 
 
-class TestGenerateTranslationTemplates(TestCaseWithFactory):
+class TestGenerateTranslationTemplates(TestCase):
     """Test slave-side generate-translation-templates script."""
-    layer = ZopelessDatabaseLayer
-
     def test_getBranch_url(self):
         # If passed a branch URL, the template generation script will
         # check out that branch into a directory called "source-tree."
