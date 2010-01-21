@@ -62,6 +62,14 @@
         class=".server.PersistentIdentityView"
         />
 
+    <browser:page
+        name=""
+        for="..interfaces.server.ITestOpenIDApplication"
+        class="canonical.launchpad.browser.launchpad.LaunchpadImageFolder"
+        permission="zope.Public"
+        layer="canonical.launchpad.layers.TestOpenIDLayer"
+        />
+
     <!-- A simple view used by the page tests. -->
     <browser:page
         for="..interfaces.server.ITestOpenIDApplication"
