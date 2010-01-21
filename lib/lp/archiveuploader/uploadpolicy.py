@@ -5,7 +5,11 @@
 
 __metaclass__ = type
 
-__all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
+__all__ = [
+    "findPolicyByName",
+    "findPolicyByOptions",
+    "UploadPolicyError",
+    ]
 
 from zope.component import getUtility
 
@@ -173,8 +177,8 @@ class AbstractUploadPolicy:
     @classmethod
     def _registerPolicy(cls, policy_type):
         """Register the given policy type as belonging to its given name."""
-        # XXX: JonathanLange 2010-01-15: This shouldn't instantiate policy
-        # types. They should instead have names as class variables.
+        # XXX: JonathanLange 2010-01-15 bug=510892: This shouldn't instantiate
+        # policy types. They should instead have names as class variables.
         policy_name = policy_type().name
         cls.policies[policy_name] = policy_type
 
@@ -348,9 +352,9 @@ class SourcePackageRecipeUploadPolicy(BuildDaemonUploadPolicy):
 
     def __init__(self):
         super(SourcePackageRecipeUploadPolicy, self).__init__()
-        # XXX: JonathanLange 2010-01-15: This has to be exactly the same
-        # string as the one in SourcePackageRecipeBuild.policy_name. Factor
-        # out a shared constant.
+        # XXX: JonathanLange 2010-01-15 bug=510894: This has to be exactly the
+        # same string as the one in SourcePackageRecipeBuild.policy_name.
+        # Factor out a shared constant.
         self.name = 'recipe'
         self.can_upload_source = True
         self.can_upload_binaries = False
