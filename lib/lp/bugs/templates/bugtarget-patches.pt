@@ -9,6 +9,24 @@
   metal:use-macro="view/macro:page/main_only"
   i18n:domain="malone"
 >
+
+<metal:block fill-slot="head_epilogue">
+<script type="text/javascript">
+function show_patch(id) {
+    var div = document.getElementById('patch-row-' + id);
+    if (div) {
+        div.style.display = "block";
+    }
+}
+function hide_patch(id) {
+    var div = document.getElementById('patch-row-' + id);
+    if (div) {
+        div.style.display = "none";
+    }
+}
+</script>
+</metal:block>
+
   <body>
     <div metal:fill-slot="main" class="tab-bugs"
          tal:define="batchnav view/batchedPatchTasks;
@@ -45,10 +63,24 @@
              <td style="padding-right: 1em;"
                  tal:define="p python:view.youngest_patch(patch_task.bug);
                              age python:view.patch_age(p)"
-                 tal:attributes="title string:${p/title}"
+                 tal:attributes="onmouseover string:show_patch(${repeat/patch_task/index});
+                                 onmouseout string:hide_patch(${repeat/patch_task/index});"
               ><a tal:attributes="href p/libraryfile/http_url"
                   tal:content="age/fmt:approximateduration/use-digits"
-                  ></a></td>
+                  ></a>
+               <div class="popupTitle"
+                    tal:attributes="id string:patch-row-${repeat/patch_task/index};
+                                    onmouseover string:hide_patch(${repeat/patch_task/index});">
+                <p tal:define="submitter p/message/owner"
+                   ><strong>From:</strong>
+                    <a tal:replace="structure submitter/fmt:link"></a><br/>
+                    <strong>Link:</strong>
+                    <a tal:attributes="href p/libraryfile/http_url"
+                       tal:content="p/title"
+                       ></a></p>
+                <p tal:content="string:${p/title}"></p>
+               </div>
+             </td>
              </tr></table>
     <div tal:replace="structure batchnav/@@+navigation-links-lower" />
     </div><!-- main -->
