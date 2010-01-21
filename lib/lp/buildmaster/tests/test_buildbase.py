@@ -61,8 +61,7 @@ class TestBuildBaseHarder(TestCaseWithFactory):
         build_base.id = self.factory.getUniqueInteger()
         build_base.policy_name = self.factory.getUniqueString('policy-name')
         config_args = list(config.builddmaster.uploader.split())
-        log_file = os.path.join(
-            build_base.getUploadDir(upload_leaf), 'uploader.log')
+        log_file = self.factory.getUniqueString('logfile')
         config_args.extend(
             ['--log-file', log_file,
              '-d', build_base.distribution.name,
@@ -73,7 +72,8 @@ class TestBuildBaseHarder(TestCaseWithFactory):
              '--context=%s' % build_base.policy_name,
              os.path.abspath(config.builddmaster.root),
              ])
-        uploader_command = build_base.getUploaderCommand(upload_leaf)
+        uploader_command = build_base.getUploaderCommand(
+            upload_leaf, log_file)
         self.assertEqual(config_args, uploader_command)
 
 

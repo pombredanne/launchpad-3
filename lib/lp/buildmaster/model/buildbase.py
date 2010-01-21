@@ -52,12 +52,10 @@ class BuildBase:
         """Return the directory that things will be stored in."""
         return os.path.join(config.builddmaster.root, 'incoming', upload_leaf)
 
-    def getUploaderCommand(self, upload_leaf):
+    def getUploaderCommand(self, upload_leaf, uploader_logfilename):
         """See `IBuildBase`."""
         root = os.path.abspath(config.builddmaster.root)
-        uploader_argv = list(config.builddmaster.uploader.split())
-        upload_dir = self.getUploadDir(upload_leaf)
-        uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
+        uploader_command = list(config.builddmaster.uploader.split())
 
         # add extra arguments for processing a binary upload
         extra_args = [
@@ -71,8 +69,8 @@ class BuildBase:
             "%s" % root,
             ]
 
-        uploader_argv.extend(extra_args)
-        return uploader_argv
+        uploader_command.extend(extra_args)
+        return uploader_command
 
     def _getProxiedFileURL(self, library_file):
         """Return the 'http_url' of a `ProxiedLibraryFileAlias`."""
@@ -148,16 +146,16 @@ class BuildBase:
             out_file = open(out_file_name, "wb")
             copy_and_close(slave_file, out_file)
 
-        uploader_argv = self.getUploaderCommand(upload_leaf)
-        # XXX: Duplicated from getUploaderCommand
         uploader_logfilename = os.path.join(upload_dir, 'uploader.log')
+        uploader_command = self.getUploaderCommand(
+            upload_leaf, uploader_logfilename)
         logger.debug("Saving uploader log at '%s'" % uploader_logfilename)
 
         logger.debug("Invoking uploader on %s" % root)
-        logger.debug("%s" % uploader_argv)
+        logger.debug("%s" % uploader_command)
 
         uploader_process = subprocess.Popen(
-            uploader_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            uploader_command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
         # Nothing should be written to the stdout/stderr.
         upload_stdout, upload_stderr = uploader_process.communicate()
