@@ -20,7 +20,6 @@ __all__ = [
     'BranchEditMenu',
     'BranchInProductView',
     'BranchSparkView',
-    'BranchUpgradeView',
     'BranchURL',
     'BranchView',
     'BranchSubscriptionsView',
@@ -188,7 +187,7 @@ class BranchEditMenu(NavigationMenu):
     facet = 'branches'
     title = 'Edit branch'
     links = (
-        'edit', 'reviewer', 'edit_import', 'edit_whiteboard', 'delete')
+        'edit', 'reviewer', 'edit_whiteboard', 'delete')
 
     def branch_is_import(self):
         return self.context.branch_type == BranchType.IMPORTED
@@ -210,14 +209,6 @@ class BranchEditMenu(NavigationMenu):
         return Link(
             '+whiteboard', text, icon='edit', enabled=enabled)
 
-    def edit_import(self):
-        text = 'Edit import source or review import'
-        enabled = (
-            self.branch_is_import() and
-            check_permission('launchpad.Edit', self.context.code_import))
-        return Link(
-            '+edit-import', text, icon='edit', enabled=enabled)
-
     @enabled_with_permission('launchpad.Edit')
     def reviewer(self):
         text = 'Set branch reviewer'
@@ -232,7 +223,7 @@ class BranchContextMenu(ContextMenu):
     links = [
         'add_subscriber', 'browse_revisions', 'link_bug',
         'link_blueprint', 'register_merge', 'source', 'subscription',
-        'edit_status', 'upgrade_branch']
+        'edit_status', 'edit_import']
 
     @enabled_with_permission('launchpad.Edit')
     def edit_status(self):
@@ -299,13 +290,14 @@ class BranchContextMenu(ContextMenu):
         url = self.context.codebrowse_url('files')
         return Link(url, text, icon='info', enabled=enabled)
 
-    @enabled_with_permission('launchpad.Edit')
-    def upgrade_branch(self):
-        enabled = False
-        if self.context.needs_upgrading:
-            enabled = True
+    def edit_import(self):
+        text = 'Edit import source or review import'
+        enabled = True
+        enabled = (
+            self.context.branch_type == BranchType.IMPORTED and
+            check_permission('launchpad.Edit', self.context.code_import))
         return Link(
-            '+upgrade', 'Upgrade this branch', icon='edit', enabled=enabled)
+            '+edit-import', text, icon='edit', enabled=enabled)
 
 
 class DecoratedBug:
@@ -884,27 +876,6 @@ class BranchDeletionView(LaunchpadFormView):
     @property
     def cancel_url(self):
         return canonical_url(self.context)
-
-
-class BranchUpgradeView(LaunchpadFormView):
-    """Used to upgrade a branch."""
-
-    schema = IBranch
-    field_names = []
-
-    @property
-    def page_title(self):
-        return smartquote('Upgrade branch "%s"' % self.context.displayname)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    cancel_url = next_url
-
-    @action('Upgrade', name='upgrade_branch')
-    def upgrade_branch_action(self, action, data):
-        self.context.requestUpgrade()
 
 
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
