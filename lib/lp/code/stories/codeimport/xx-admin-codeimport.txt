@@ -53,6 +53,7 @@ import:
     Import Status: Pending Review
     This branch is an import of the Subversion branch
     from svn://svn.example.com/fooix/trunk.
+    Edit import source or review import
 
 
 Editing details
@@ -157,6 +158,7 @@ When a code import is approved, a pending job is created for it.
     Import Status: Reviewed
     ...
     The next import is scheduled to run as soon as possible.
+    Edit import source or review import
 
     >>> for message in get_feedback_messages(import_browser.contents):
     ...     print extract_text(message)
@@ -214,6 +216,7 @@ says how long ago since it started.
     Import Status: Reviewed
     ...
     The next import is scheduled to run as soon as possible.
+    Edit import source or review import
 
 Now set the job as running.
 
@@ -242,6 +245,7 @@ should show this as 2 hours.
     ago.  The last few lines of the job's output were:
         Changeset 1
         Changeset 2
+    Edit import source or review import
 
 
 Import details for a import that has been imported successfully
