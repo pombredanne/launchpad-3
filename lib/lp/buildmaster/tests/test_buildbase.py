@@ -47,7 +47,7 @@ class TestBuildBase(TestCase):
             upload_dir)
 
 
-class TestBuildBaseHarder(TestCaseWithFactory):
+class TestBuildBaseWithDatabase(TestCaseWithFactory):
     """Tests for `IBuildBase` that need objects from the rest of Launchpad."""
 
     layer = DatabaseFunctionalLayer
