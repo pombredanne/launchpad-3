@@ -150,9 +150,9 @@ class DistroSeriesOverviewMenu(
 
     usedfor = IDistroSeries
     facet = 'overview'
-    links = ['edit', 'reassign', 'driver', 'answers', 'packaging',
-             'add_port', 'create_milestone', 'admin', 'builds', 'queue',
-             'subscribe']
+    links = ['edit', 'reassign', 'driver', 'answers',
+             'packaging', 'needs_packaging', 'builds', 'queue',
+             'add_port', 'create_milestone', 'subscribe', 'admin']
 
     @enabled_with_permission('launchpad.Admin')
     def edit(self):
@@ -178,7 +178,13 @@ class DistroSeriesOverviewMenu(
 
     def packaging(self):
         text = 'Upstream links'
-        return Link('+packaging', text, icon='info')
+        summary = 'A listing of source pakages and their upstream projects'
+        return Link('+packaging', text, summary=summary, icon='info')
+
+    def needs_packaging(self):
+        text = 'Needs upstream links'
+        summary = 'A listing of source pakages without upstream projects'
+        return Link('+needs-packaging', text, summary=summary, icon='info')
 
     # A search link isn't needed because the distro series overview
     # has a search form.
@@ -494,14 +500,8 @@ class DistroSeriesPackagesView(DistroSeriesView):
 class DistroSeriesNeedsPackagesView(DistroSeriesView):
     """A View to show series package to upstream package relationships."""
 
-    page_title = 'Packages that need upstream packaging links'
-
-    @property
-    def label(self):
-        """See `LaunchpadFormView`."""
-        return (
-            'Packages in %s that need upstream packaging links' %
-            self.context.named_version)
+    label = 'Packages that need upstream packaging links'
+    page_title = 'Needs upstream links'
 
     @cachedproperty
     def cached_unlinked_packages(self):

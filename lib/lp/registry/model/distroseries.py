@@ -340,14 +340,20 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackageName,
             SQL("""
                 coalesce(heat, 0) + coalesce(po_messages, 0) +
-                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END AS score"""))
+                CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END AS score"""),
+            SQL("coalesce(total_bugs, 0) AS total_bugs"),
+            SQL("coalesce(total_messages, 0) AS total_messages"))
         joins, conditions = self._current_sourcepackage_joins_and_conditions
         origin = SQL(joins)
         condition = SQL(conditions + "AND packaging.id IS NULL")
         results = IStore(self).using(origin).find(find_spec, condition)
         results = results.order_by('score DESC')
-        return [SourcePackage(sourcepackagename=spn, distroseries=self)
-                for (spn, score) in results]
+        return [{
+                 'package': SourcePackage(
+                    sourcepackagename=spn, distroseries=self),
+                 'total_bugs': total_bugs,
+                 'total_messages': total_messages}
+                for (spn, score, total_bugs, total_messages) in results]
 
     def getPriorizedlPackagings(self):
         """See `IDistroSeries`.
@@ -391,7 +397,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             LEFT JOIN (
                 SELECT
                     BugTask.sourcepackagename,
-                    sum(Bug.hotness) AS heat
+                    sum(Bug.hotness) AS heat,
+                    count(Bug.id) AS total_bugs
                 FROM BugTask
                     JOIN Bug
                         ON bugtask.bug = Bug.id
@@ -408,7 +415,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 SELECT
                     POTemplate.sourcepackagename,
                     POTemplate.distroseries,
-                    SUM(POTemplate.messagecount) / 2 AS po_messages
+                    SUM(POTemplate.messagecount) / 2 AS po_messages,
+                    SUM(POTemplate.messagecount) AS total_messages
                 FROM POTemplate
                 WHERE
                     POTemplate.sourcepackagename is not NULL
