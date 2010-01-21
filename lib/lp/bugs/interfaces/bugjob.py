@@ -17,7 +17,7 @@ from canonical.launchpad import _
 
 from lazr.enum import DBEnumeratedType, DBItem
 from lp.bugs.interfaces.bug import IBug
-from lp.services.job.interfaces.job import IJob, IRunnableJob
+from lp.services.job.interfaces.job import IJob, IJobSource, IRunnableJob
 
 
 class BugJobType(DBEnumeratedType):
@@ -54,7 +54,7 @@ class ICalculateBugHeatJob(IRunnableJob):
     """A Job to calculate bug heat."""
 
 
-class ICalculateBugHeatJobSource(Interface):
+class ICalculateBugHeatJobSource(IJobSource):
     """Interface for acquiring CalculateBugHeatJobs."""
 
     def create(bug):

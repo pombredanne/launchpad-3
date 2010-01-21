@@ -10,28 +10,18 @@
 __metaclass__ = type
 
 import _pythonpath
-from zope.component import getUtility
 
-from canonical.config import config
-from lp.services.job.runner import JobRunner
+from lp.services.job.runner import JobCronScript
 from lp.bugs.interfaces.bugjob import ICalculateBugHeatJobSource
-from lp.services.scripts.base import LaunchpadCronScript
-from canonical.launchpad.webapp.errorlog import globalErrorUtility
 
 
-class RunCalculateBugHeatJobs(LaunchpadCronScript):
-    """Run calculate bug heat jobs."""
+class RunCalculateBugHeat(JobCronScript):
+    """Run BranchScanJob jobs."""
 
-    def main(self):
-        globalErrorUtility.configure('calculate_bug_heat')
-        job_source = getUtility(ICalculateBugHeatJobSource)
-        runner = JobRunner.fromReady(job_source, self.logger)
-        runner.runAll()
-        self.logger.info(
-            'Ran %d CalculateBugHeatJobs.' % len(runner.completed_jobs))
+    config_name = 'calculate_bug_heat'
+    source_interface = ICalculateBugHeatJobSource
 
 
 if __name__ == '__main__':
-    script = RunCalculateBugHeatJobs(
-        'calculate_bug_heat', config.calculate_bug_heat.dbuser)
+    script = RunCalculateBugHeat()
     script.lock_and_run()
