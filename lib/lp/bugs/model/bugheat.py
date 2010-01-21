@@ -1,4 +1,4 @@
-# Copyright 2009 Canonical Ltd.  This software is licensed under the
+# Copyright 2010 Canonical Ltd.  This software is licensed under the
 # GNU Affero General Public License version 3 (see the file LICENSE).
 
 """Job classes related to BugJobs are in here."""
@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.interface import classProvides, implements
 
 from canonical.launchpad.webapp.interfaces import (
-    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE, MASTER_FLAVOR)
+    DEFAULT_FLAVOR, IStoreSelector, MAIN_STORE)
 
 from lp.bugs.interfaces.bugjob import (
     BugJobType, ICalculateBugHeatJob, ICalculateBugHeatJobSource)
