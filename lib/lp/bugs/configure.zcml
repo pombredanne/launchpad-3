@@ -897,11 +897,11 @@
         permission="zope.Public"/>
 
     <!-- CalculateBugHeatJobs -->
-    <class class="lp.bugs.model.bugjob.CalculateBugHeatJob">
+    <class class="lp.bugs.model.bugheat.CalculateBugHeatJob">
         <allow interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJob"/>
     </class>
     <securedutility
-        component="lp.bugs.model.bugjob.CalculateBugHeatJob"
+        component="lp.bugs.model.bugheat.CalculateBugHeatJob"
         provides="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource">
         <allow
             interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource"/>
