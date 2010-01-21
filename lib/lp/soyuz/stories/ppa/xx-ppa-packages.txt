@@ -96,7 +96,7 @@ The detailed Packages list
     Source              Published   Status     Series      Section  Build
         Status
     cdrkit - 1.0        2007-07-09  Published  Breezy-a... Editors  i386
-    ice...(changesfile) 2007-07-09  Published  Warty       Editors  i386
+    ice...(sources.changes) 2007-07-09  Published  Warty       Editors  i386
     pmount - 0.1-1      2007-07-09  Published  Warty       Editors
 
 Each data row is expandable to contain some sections containing:
@@ -289,7 +289,7 @@ result will only contain packages SUPERSEDED or DELETED.
     >>> print_archive_package_rows(anon_browser.contents)
     Source            Published    Status        Series   Section  Build
         Status
-    i...(changesfile) 2007-07-09   Superseded    Warty    Editors
+    i...(sources.changes) 2007-07-09   Superseded    Warty    Editors
     pmount - 0.1-1    2007-07-09   Deleted       Warty    Editors
 
 The 'Any Status' filter is also available, so the user can search over
@@ -301,7 +301,7 @@ any package ever published in the context PPA.
     Source             Published    Status     Series      Section  Build
         Status
     cdrkit - 1.0       2007-07-09   Published  Breezy-a... Editors  i386
-    ic...(changesfile) 2007-07-09   Superseded Warty       Editors
+    ic...(sources.changes) 2007-07-09   Superseded Warty       Editors
     pmount - 0.1-1     2007-07-09   Deleted    Warty       Editors
 
 

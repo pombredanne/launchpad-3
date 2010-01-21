@@ -18,7 +18,6 @@ from StringIO import StringIO
 import tempfile
 
 from bzrlib.branch import Branch as BzrBranch
-from bzrlib.bzrdir import BzrDirMetaFormat1
 from bzrlib.log import log_formatter, show_log
 from bzrlib.diff import show_diff_trees
 from bzrlib.revision import NULL_REVISION
@@ -44,8 +43,6 @@ from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.webapp import canonical_url, errorlog
-from lp.code.bzr import (
-    BRANCH_FORMAT_UPGRADE_PATH, REPOSITORY_FORMAT_UPGRADE_PATH)
 from lp.code.model.branch import Branch
 from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
@@ -264,6 +261,8 @@ class BranchUpgradeJob(BranchJobDerived):
         """See `IBranchUpgradeJobSource`."""
         if not branch.needs_upgrading:
             raise AssertionError('Branch does not need upgrading.')
+        if branch.upgrade_pending:
+            raise AssertionError('Branch already has upgrade pending.')
         branch_job = BranchJob(branch, BranchJobType.UPGRADE_BRANCH, {})
         return cls(branch_job)
 
@@ -288,7 +287,7 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_branch = BzrBranch.open_from_transport(upgrade_transport)
 
             # Perform the upgrade.
-            upgrade(upgrade_branch.base, self.upgrade_format)
+            upgrade(upgrade_branch.base)
 
             # Re-open the branch, since its format has changed.
             upgrade_branch = BzrBranch.open_from_transport(
@@ -307,24 +306,6 @@ class BranchUpgradeJob(BranchJobDerived):
             upgrade_transport.copy_tree_to_transport(source_branch_transport)
         finally:
             shutil.rmtree(upgrade_branch_path)
-
-    @property
-    def upgrade_format(self):
-        """See `IBranch`."""
-        format = BzrDirMetaFormat1()
-        branch_format = BRANCH_FORMAT_UPGRADE_PATH.get(
-            self.branch.branch_format)
-        repository_format = REPOSITORY_FORMAT_UPGRADE_PATH.get(
-            self.branch.repository_format)
-        if branch_format is None or repository_format is None:
-            branch = BzrBranch.open(self.branch.getPullURL())
-            if branch_format is None:
-                branch_format = type(branch._format)
-            if repository_format is None:
-                repository_format = type(branch.repository._format)
-        format.set_branch_format(branch_format())
-        format._set_repository_format(repository_format())
-        return format
 
 
 class RevisionMailJob(BranchDiffJob):
