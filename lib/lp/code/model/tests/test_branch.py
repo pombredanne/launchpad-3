@@ -337,7 +337,7 @@ class TestBranch(TestCaseWithFactory):
 
     def test_needsUpgrading_branch_format_upgrade_not_needed(self):
         # A branch has a needs_upgrading attribute that returns whether or not
-        # a branch needs to be upgraded or not.  If a branch is up to date, it
+        # a branch needs to be upgraded or not.  If a branch is up-to-date, it
         # doesn't need to be upgraded.
         branch = self.factory.makePersonalBranch(
             branch_format=BranchFormat.BZR_BRANCH_8,
