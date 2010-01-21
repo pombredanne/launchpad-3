@@ -173,7 +173,7 @@ added.
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
     >>> admin_browser.getControl("Tags").value = "tag1 tag2 tag3"
     >>> admin_browser.getControl("Change").click()
-    >>> admin_browser.getControl('Yes, define new tag', index=0).click()
+    >>> admin_browser.getControl('Create the new tag', index=0).click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
@@ -188,7 +188,7 @@ added.
     ...     'http://bugs.launchpad.dev/redfish/+bug/15/+edit')
     >>> admin_browser.getControl("Tags").value = "tag1 tag2 tag4"
     >>> admin_browser.getControl("Change").click()
-    >>> admin_browser.getControl('Yes, define new tag', index=0).click()
+    >>> admin_browser.getControl('Create the new tag', index=0).click()
 
     >>> admin_browser.open('http://launchpad.dev/bugs/15')
     >>> print_comments(admin_browser.contents)
