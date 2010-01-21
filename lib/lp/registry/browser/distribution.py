@@ -70,7 +70,7 @@ from lp.registry.interfaces.distribution import (
     IDistributionSet)
 from lp.registry.interfaces.distributionmirror import (
     IDistributionMirrorSet, MirrorContent, MirrorSpeed)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.product import IProduct
 from lp.soyuz.interfaces.publishedpackage import (
     IPublishedPackageSet)
@@ -812,9 +812,9 @@ class DistributionSeriesView(LaunchpadView):
 
     def getCssClass(self, series):
         """The highlighted, unhighlighted, or dimmed CSS class."""
-        if series.status == DistroSeriesStatus.DEVELOPMENT:
+        if series.status == SeriesStatus.DEVELOPMENT:
             return 'highlighted'
-        elif series.status == DistroSeriesStatus.OBSOLETE:
+        elif series.status == SeriesStatus.OBSOLETE:
             return 'dimmed'
         else:
             return 'unhighlighted'
