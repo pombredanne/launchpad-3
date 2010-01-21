@@ -216,6 +216,15 @@ class IBuilder(IHasOwner):
             the status.
         """
 
+    def verifySlaveBuildID(slave_build_id):
+        """Verify that a slave's build ID is consistent.
+
+        :param slave_build_id: The slave's build ID, as specified in
+           dispatchBuildToSlave.
+        :return: a string describing the problem if the given ID is invalid,
+           or None if it is consistent.
+        """
+
     def updateBuild(queueItem):
         """Verify the current build job status.
 

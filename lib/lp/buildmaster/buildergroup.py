@@ -11,15 +11,10 @@ __metaclass__ = type
 import socket
 import xmlrpclib
 
-from sqlobject import SQLObjectNotFound
-
 from zope.component import getUtility
 
-from lp.soyuz.interfaces.build import IBuildSet
 from lp.buildmaster.interfaces.builder import (
-    BuildDaemonError, BuildJobMismatch, IBuilderSet)
-from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
-from canonical.launchpad.interfaces import NotFoundError
+    BuildDaemonError, IBuilderSet)
 
 
 class BuilderGroup:
@@ -109,26 +104,16 @@ class BuilderGroup:
         if status not in ident_position.keys():
             return
 
-        # Extract information from the identifier.
-        build_id, queue_item_id = status_sentence[
-            ident_position[status]].split('-')
+        slave_build_id = status_sentence[ident_position[status]]
+        reason = builder.verifySlaveBuildID(slave_build_id)
 
-        # Check if build_id and queue_item_id exist.
-        try:
-            build = getUtility(IBuildSet).getByBuildID(int(build_id))
-            queue_item = getUtility(IBuildQueueSet).get(int(queue_item_id))
-            queued_build = getUtility(IBuildSet).getByQueueEntry(queue_item)
-            # Also check whether build and buildqueue are properly related.
-            if queued_build.id != build.id:
-                raise BuildJobMismatch('Job build entry mismatch')
-
-        except (SQLObjectNotFound, NotFoundError, BuildJobMismatch), reason:
+        if reason is not None:
             if status == 'BuilderStatus.WAITING':
                 builder.cleanSlave()
             else:
                 builder.requestAbort()
-            self.logger.warn("Builder '%s' rescued from '%s-%s: %s'" % (
-                builder.name, build_id, queue_item_id, reason))
+            self.logger.warn("Builder '%s' rescued from '%s': '%s'" % (
+                builder.name, slave_build_id, reason))
 
     def updateBuild(self, queueItem):
         """Verify the current build job status.

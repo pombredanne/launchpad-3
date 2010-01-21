@@ -57,6 +57,9 @@ class IBuildFarmJobBehavior(Interface):
             of IBuilder.slaveStatus().
         """
 
+    def verifySlaveBuildID(slave_build_id):
+        """See `IBuilder`."""
+
     def updateBuild(queueItem):
         """Verify the current build job status.
 

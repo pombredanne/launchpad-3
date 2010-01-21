@@ -365,6 +365,10 @@ class Builder(SQLBase):
         """See IBuilder."""
         return self.slave.status()
 
+    def verifySlaveBuildID(self, slave_build_id):
+        """See `IBuilder`."""
+        return self.current_build_behavior.verifySlaveBuildID(slave_build_id)
+
     def updateBuild(self, queueItem):
         """See `IBuilder`."""
         self.current_build_behavior.updateBuild(queueItem)
