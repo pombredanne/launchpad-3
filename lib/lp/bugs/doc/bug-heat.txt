@@ -1,0 +1,54 @@
+Calculating bug heat
+====================
+
+Launchpad bugs each have a 'heat' rating. This is an indicator of how
+problematic a given bug is to the community and can be used to determine
+which bugs should be tackled first.
+
+A new bug will have a heat of zero.
+
+    >>> bug_owner = factory.makePerson()
+    >>> bug = factory.makeBug(owner=bug_owner)
+    >>> bug.heat
+    0
+
+The bug's heat can be set by calling its setHeat() method.
+
+    >>> bug.setHeat(42)
+    >>> bug.heat
+    42
+
+
+The BugHeatUpdater class
+---------------------------
+
+In order to calculate bug heat we need to use the BugHeatUpdater
+class, which is designed precisely for that task. It's part of the garbo
+module and runs as part of the garbo-daily cronjob.
+
+    >>> from canonical.launchpad.scripts.garbo import BugHeatUpdater
+    >>> from canonical.launchpad.scripts import FakeLogger
+
+    >>> update_bug_heat = BugHeatUpdater(FakeLogger())
+
+BugHeatUpdater implements ITunableLoop and as such is callable. Calling
+it as a method will update the heat for all the bugs currently held in
+Launchpad.
+
+Before update_bug_heat is called, bug 1 will have no heat.
+
+    >>> from zope.component import getUtility
+    >>> from lp.bugs.interfaces.bug import IBugSet
+    >>> bug_1 = getUtility(IBugSet).get(1)
+
+    >>> bug_1.heat
+    0
+
+    >>> update_bug_heat(chunk_size=1)
+    DEBUG Updating 1 Bugs (starting id: ...)
+    ...
+
+Bug 1's heat will now be greater than 0.
+
+    >>> bug_1.heat > 0
+    True

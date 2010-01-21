@@ -7,7 +7,8 @@ __metaclass__ = type
 
 __all__ = [
     'BuildQueue',
-    'BuildQueueSet'
+    'BuildQueueSet',
+    'specific_job_classes',
     ]
 
 import logging
@@ -37,6 +38,22 @@ from canonical.launchpad.webapp.interfaces import (
     IStoreSelector, MAIN_STORE, DEFAULT_FLAVOR)
 
 
+def specific_job_classes():
+    """Job classes that may run on the build farm."""
+    job_classes = dict()
+    # Get all components that implement the `IBuildFarmJob` interface.
+    components = getSiteManager()
+    implementations = sorted(components.getUtilitiesFor(IBuildFarmJob))
+    # The above yields a collection of 2-tuples where the first element
+    # is the name of the `BuildFarmJobType` enum and the second element
+    # is the implementing class respectively.
+    for job_enum_name, job_class in implementations:
+        job_enum = getattr(BuildFarmJobType, job_enum_name)
+        job_classes[job_enum] = job_class
+
+    return job_classes
+
+
 class BuildQueue(SQLBase):
     implements(IBuildQueue)
     _table = "BuildQueue"
@@ -51,6 +68,8 @@ class BuildQueue(SQLBase):
     lastscore = IntCol(dbName='lastscore', default=0)
     manual = BoolCol(dbName='manual', default=False)
     estimated_duration = IntervalCol()
+    processor = ForeignKey(dbName='processor', foreignKey='Processor')
+    virtualized = BoolCol(dbName='virtualized')
 
     @property
     def required_build_behavior(self):
@@ -58,25 +77,9 @@ class BuildQueue(SQLBase):
         return IBuildFarmJobBehavior(self.specific_job)
 
     @property
-    def specific_job_classes(self):
-        """See `IBuildQueue`."""
-        job_classes = dict()
-        # Get all components that implement the `IBuildFarmJob` interface.
-        components = getSiteManager()
-        implementations = sorted(components.getUtilitiesFor(IBuildFarmJob))
-        # The above yields a collection of 2-tuples where the first element
-        # is the name of the `BuildFarmJobType` enum and the second element
-        # is the implementing class respectively.
-        for job_enum_name, job_class in implementations:
-            job_enum = getattr(BuildFarmJobType, job_enum_name)
-            job_classes[job_enum] = job_class
-
-        return job_classes
-
-    @property
     def specific_job(self):
         """See `IBuildQueue`."""
-        specific_class = self.specific_job_classes[self.job_type]
+        specific_class = specific_job_classes()[self.job_type]
         return specific_class.getByJob(self.job)
 
     @property

@@ -170,7 +170,7 @@ not, according the distroseries status and the upload target pocket.
    >>> hoary = ubuntu['hoary']
 
    >>> from lp.registry.interfaces.pocket import PackagePublishingPocket
-   >>> from canonical.launchpad.interfaces import DistroSeriesStatus
+   >>> from canonical.launchpad.interfaces import SeriesStatus
 
    >>> warty.status.name
    'CURRENT'
@@ -190,7 +190,7 @@ The FROZEN status is special.  Uploads are allowed for all pockets as
 the upload will have to wait for manual approval anyway:
 
    >>> from zope.security.proxy import removeSecurityProxy
-   >>> removeSecurityProxy(hoary).status = DistroSeriesStatus.FROZEN
+   >>> removeSecurityProxy(hoary).status = SeriesStatus.FROZEN
 
    >>> hoary.status.name
    'FROZEN'
@@ -430,35 +430,35 @@ But when translations are hidden, it raises TranslationUnavailable.
 
 Exactly what message is displayed depends on the series' status.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.EXPERIMENTAL
+    >>> untranslatable_series.status = SeriesStatus.EXPERIMENTAL
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not available yet.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.DEVELOPMENT
+    >>> untranslatable_series.status = SeriesStatus.DEVELOPMENT
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not available yet.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.FROZEN
+    >>> untranslatable_series.status = SeriesStatus.FROZEN
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not currently available.
     Please come back soon.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.CURRENT
+    >>> untranslatable_series.status = SeriesStatus.CURRENT
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not currently available.
     Please come back soon.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.SUPPORTED
+    >>> untranslatable_series.status = SeriesStatus.SUPPORTED
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not currently available.
     Please come back soon.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.OBSOLETE
+    >>> untranslatable_series.status = SeriesStatus.OBSOLETE
     >>> print get_visibility_notice(untranslatable_series)
     This release series is obsolete.  Its translations are no longer
     available.
 
-    >>> untranslatable_series.status = DistroSeriesStatus.FUTURE
+    >>> untranslatable_series.status = SeriesStatus.FUTURE
     >>> print get_visibility_notice(untranslatable_series)
     Translations for this release series are not available yet.
 
@@ -503,21 +503,23 @@ netapplet are translatable in Hoary.
 Packages that need linking and packagings that need upstream information
 -----------------------------------------------------------------------
 
-A distroseries a getPriorizedUnlinkedSourcePackages() method that returns
-a prioritized list of `ISourcePackage` that need a packaging link to an
-`IProductSeries` to provide the the upstream information to share bugs,
-translations, and code.
+The distroseries getPriorizedUnlinkedSourcePackages() method that returns
+a prioritized list of `ISourcePackage` objects that need a packaging link to
+an `IProductSeries` to provide the the upstream information to share bugs,
+translations, and code. Each item in the list is a dict with the 'package',
+total_bugs, and total_messages (translatable messages).
 
-    >>> for source_package in hoary.getPriorizedUnlinkedSourcePackages():
-    ...     print source_package.name
-    pmount
-    alsa-utils
-    cnews
-    libstdc++
-    linux-source-2.6.15
+    >>> for summary in hoary.getPriorizedUnlinkedSourcePackages():
+    ...     print  summary['package'].name
+    ...     print '%(total_bugs)s %(total_messages)s' % summary
+    pmount  0  64
+    alsa-utils  0  0
+    cnews  0  0
+    libstdc++  0  0
+    linux-source-2.6.15  1  0
 
 
-A distroseries a getPriorizedlPackagings() method that returns a prioritized
+The distroseries getPriorizedlPackagings() method that returns a prioritized
 list of `IPackaging` that need more information about the upstream project to
 share bugs, translations, and code.
 

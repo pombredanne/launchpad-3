@@ -224,7 +224,8 @@ def main():
             fails += 1
     for sequence in all_sequences_in_schema(cur, 'public'):
         times_seen = 0
-        for sequence_set in [authdb_sequences, lpmain_sequences]:
+        for sequence_set in [
+            authdb_sequences, lpmain_sequences, helpers.IGNORED_SEQUENCES]:
             if sequence in sequence_set:
                 times_seen += 1
         if times_seen == 0:

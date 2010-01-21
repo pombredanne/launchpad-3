@@ -96,8 +96,9 @@ from lp.soyuz.interfaces.build import IBuildSet
 from lp.soyuz.interfaces.buildrecords import IHasBuildRecords
 from lp.soyuz.interfaces.binarypackagename import (
     IBinaryPackageName)
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries, IDistroSeriesSet, ISeriesMixin)
+    IDistroSeries, IDistroSeriesSet, ISeriesMixin)
 from lp.translations.interfaces.languagepack import LanguagePackType
 from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from lp.soyuz.interfaces.queue import PackageUploadStatus
@@ -130,10 +131,10 @@ class SeriesMixin:
     @property
     def active(self):
         return self.status in [
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.FROZEN,
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED
+            SeriesStatus.DEVELOPMENT,
+            SeriesStatus.FROZEN,
+            SeriesStatus.CURRENT,
+            SeriesStatus.SUPPORTED
             ]
 
 
@@ -158,7 +159,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     description = StringCol(notNull=True)
     version = StringCol(notNull=True)
     status = EnumCol(
-        dbName='releasestatus', notNull=True, schema=DistroSeriesStatus)
+        dbName='releasestatus', notNull=True, schema=SeriesStatus)
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
     datereleased = UtcDateTimeCol(notNull=False, default=None)
     parent_series =  ForeignKey(
@@ -240,6 +241,18 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 archtag, self.distribution.name, self.name))
         return item
 
+    def getDistroArchSeriesByProcessor(self, processor):
+        """See `IDistroSeries`."""
+        # XXX: JRV 2010-01-14: This should ideally use storm to find the
+        # distroarchseries rather than iterating over all of them, but
+        # I couldn't figure out how to do that - and a trivial for loop
+        # isn't expensive given there's generally less than a dozen
+        # architectures.
+        for architecture in self.architectures:
+            if architecture.processorfamily == processor.family:
+                return architecture
+        return None
+
     @property
     def enabled_architectures(self):
         store = Store.of(self)
@@ -305,10 +318,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def packagings(self):
         """See `IDistroSeries`."""
-        # Avoid circular import failures.
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implicitly needed to work with a
         # Packaging object.
+        # Avoid circular import failures.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
         find_spec = (Packaging, SourcePackageName, ProductSeries, Product)
@@ -333,13 +346,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getPriorizedUnlinkedSourcePackages(self):
         """See `IDistroSeries`.
 
-        The prioritization is a heuristic rule using bug hotness,
+        The prioritization is a heuristic rule using bug heat,
         translatable messages, and the source package release's component.
         """
         find_spec = (
             SourcePackageName,
             SQL("""
-                coalesce(heat, 0) + coalesce(po_messages, 0) +
+                coalesce(total_heat, 0) + coalesce(po_messages, 0) +
                 CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END AS score"""),
             SQL("coalesce(total_bugs, 0) AS total_bugs"),
             SQL("coalesce(total_messages, 0) AS total_messages"))
@@ -358,13 +371,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def getPriorizedlPackagings(self):
         """See `IDistroSeries`.
 
-        The prioritization is a heuristic rule using  the branch, bug hotness,
+        The prioritization is a heuristic rule using the branch, bug heat,
         translatable messages, and the source package release's component.
         """
-        # Avoid circular import failures.
         # We join to SourcePackageName, ProductSeries, and Product to cache
         # the objects that are implcitly needed to work with a
         # Packaging object.
+        # Avoid circular import failures.
         from lp.registry.model.product import Product
         from lp.registry.model.productseries import ProductSeries
         find_spec = (
@@ -372,7 +385,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SQL("""
                 CASE WHEN spr.component = 1 THEN 1000 ELSE 0 END +
                     CASE WHEN Product.bugtracker IS NULL
-                        THEN coalesce(heat, 10) ELSE 0 END +
+                        THEN coalesce(total_heat, 10) ELSE 0 END +
                     CASE WHEN ProductSeries.translations_autoimport_mode = 1
                         THEN coalesce(po_messages, 10) ELSE 0 END +
                     CASE WHEN ProductSeries.branch IS NULL THEN 500
@@ -397,19 +410,21 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             LEFT JOIN (
                 SELECT
                     BugTask.sourcepackagename,
-                    sum(Bug.hotness) AS heat,
+                    sum(Bug.heat) AS total_heat,
                     count(Bug.id) AS total_bugs
                 FROM BugTask
                     JOIN Bug
                         ON bugtask.bug = Bug.id
                 WHERE
                     BugTask.sourcepackagename is not NULL
-                    AND BugTask.distribution = %s
-                    AND BugTask.status in %s
+                    AND BugTask.distribution = %(distribution)s
+                    AND BugTask.status in %(statuses)s
                 GROUP BY BugTask.sourcepackagename
                 ) bugs
                 ON SourcePackageName.id = bugs.sourcepackagename
-            """ % sqlvalues(self.distribution, UNRESOLVED_BUGTASK_STATUSES))
+            """ % sqlvalues(
+                distribution=self.distribution,
+                statuses=UNRESOLVED_BUGTASK_STATUSES))
         message_score = ("""
             LEFT JOIN (
                 SELECT
@@ -420,14 +435,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 FROM POTemplate
                 WHERE
                     POTemplate.sourcepackagename is not NULL
-                    AND POTemplate.distroseries = %s
+                    AND POTemplate.distroseries = %(distroseries)s
                 GROUP BY
                     POTemplate.sourcepackagename,
                     POTemplate.distroseries
                 ) messages
                 ON SourcePackageName.id = messages.sourcepackagename
                 AND DistroSeries.id = messages.distroseries
-            """ % sqlvalues(self))
+            """ % sqlvalues(distroseries=self))
         joins = ("""
             SourcePackageName
             JOIN SourcePackageRelease spr
@@ -443,18 +458,20 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 AND Packaging.distroseries = DistroSeries.id
             """ + heat_score + message_score)
         conditions = ("""
-            DistroSeries.id = %s
-            AND spph.status IN %s
-            AND archive.purpose = %s
+            DistroSeries.id = %(distroseries)s
+            AND spph.status IN %(active_status)s
+            AND archive.purpose = %(primary)s
             """ % sqlvalues(
-                self, active_publishing_status, ArchivePurpose.PRIMARY))
+                distroseries=self,
+                active_status=active_publishing_status,
+                primary=ArchivePurpose.PRIMARY))
         return (joins, conditions)
 
     @property
     def supported(self):
         return self.status in [
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED
+            SeriesStatus.CURRENT,
+            SeriesStatus.SUPPORTED
             ]
 
     @property
@@ -498,12 +515,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def canUploadToPocket(self, pocket):
         """See `IDistroSeries`."""
         # Allow everything for distroseries in FROZEN state.
-        if self.status == DistroSeriesStatus.FROZEN:
+        if self.status == SeriesStatus.FROZEN:
             return True
 
         # Define stable/released states.
-        stable_states = (DistroSeriesStatus.SUPPORTED,
-                         DistroSeriesStatus.CURRENT)
+        stable_states = (SeriesStatus.SUPPORTED,
+                         SeriesStatus.CURRENT)
 
         # Deny uploads for RELEASE pocket in stable states.
         if (pocket == PackagePublishingPocket.RELEASE and
@@ -848,14 +865,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return
 
         future = [
-            DistroSeriesStatus.EXPERIMENTAL,
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.FUTURE,
+            SeriesStatus.EXPERIMENTAL,
+            SeriesStatus.DEVELOPMENT,
+            SeriesStatus.FUTURE,
             ]
         if self.status in future:
             raise TranslationUnavailable(
                 "Translations for this release series are not available yet.")
-        elif self.status == DistroSeriesStatus.OBSOLETE:
+        elif self.status == SeriesStatus.OBSOLETE:
             raise TranslationUnavailable(
                 "This release series is obsolete.  Its translations are no "
                 "longer available.")
@@ -951,9 +968,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
     def isUnstable(self):
         """See `IDistroSeries`."""
         return self.status in [
-            DistroSeriesStatus.FROZEN,
-            DistroSeriesStatus.DEVELOPMENT,
-            DistroSeriesStatus.EXPERIMENTAL,
+            SeriesStatus.FROZEN,
+            SeriesStatus.DEVELOPMENT,
+            SeriesStatus.EXPERIMENTAL,
         ]
 
     def getAllPublishedSources(self):
@@ -1855,7 +1872,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return True
 
         # FROZEN state also allow all pockets to be published.
-        if self.status == DistroSeriesStatus.FROZEN:
+        if self.status == SeriesStatus.FROZEN:
             return True
 
         # If we're not republishing, we want to make sure that
@@ -1996,14 +2013,14 @@ class DistroSeriesSet:
             if isreleased:
                 # The query is filtered on released releases.
                 where_clause += "releasestatus in (%s, %s)" % sqlvalues(
-                    DistroSeriesStatus.CURRENT,
-                    DistroSeriesStatus.SUPPORTED)
+                    SeriesStatus.CURRENT,
+                    SeriesStatus.SUPPORTED)
             else:
                 # The query is filtered on unreleased releases.
                 where_clause += "releasestatus in (%s, %s, %s)" % sqlvalues(
-                    DistroSeriesStatus.EXPERIMENTAL,
-                    DistroSeriesStatus.DEVELOPMENT,
-                    DistroSeriesStatus.FROZEN)
+                    SeriesStatus.EXPERIMENTAL,
+                    SeriesStatus.DEVELOPMENT,
+                    SeriesStatus.FROZEN)
         if orderBy is not None:
             return DistroSeries.select(where_clause, orderBy=orderBy)
         else:

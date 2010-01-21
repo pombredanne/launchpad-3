@@ -23,6 +23,7 @@ from lp.soyuz.interfaces.distroseriessourcepackagerelease import (
     IDistroSeriesSourcePackageRelease)
 from lp.soyuz.interfaces.publishing import (
     active_publishing_status, PackagePublishingStatus)
+from lp.soyuz.model.processor import ProcessorFamilySet
 from lp.testing import TestCase, TestCaseWithFactory
 from lp.soyuz.tests.test_publishing import SoyuzTestPublisher
 from lp.translations.interfaces.translations import (
@@ -174,6 +175,26 @@ class TestDistroSeries(TestCaseWithFactory):
         suite = '%s-%s' % (distroseries.name, pocket.name.lower())
         self.assertEqual(suite, distroseries.getSuite(pocket))
 
+    def test_getDistroArchSeriesByProcessor(self):
+        # A IDistroArchSeries can be retrieved by processor
+        distroseries = self.factory.makeDistroRelease()
+        processorfamily = ProcessorFamilySet().getByName('x86')
+        distroarchseries = self.factory.makeDistroArchSeries(
+            distroseries=distroseries, architecturetag='i386',
+            processorfamily=processorfamily)
+        self.assertEquals(distroarchseries,
+            distroseries.getDistroArchSeriesByProcessor(
+                processorfamily.processors[0]))
+
+    def test_getDistroArchSeriesByProcessor_none(self):
+        # getDistroArchSeriesByProcessor returns None when no distroarchseries
+        # is found
+        distroseries = self.factory.makeDistroRelease()
+        processorfamily = ProcessorFamilySet().getByName('x86')
+        self.assertIs(None,
+            distroseries.getDistroArchSeriesByProcessor(
+                processorfamily.processors[0]))
+
 
 class TestDistroSeriesPackaging(TestCaseWithFactory):
 
@@ -217,7 +238,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
             # hotness is not exposed in the model yet.
             # bugtask.bug.hotness = hotness
             cur = cursor()
-            cur.execute("UPDATE Bug SET hotness = %d WHERE id = %d" % (
+            cur.execute("UPDATE Bug SET heat = %d WHERE id = %d" % (
                 (hotness, bugtask.bug.id)))
         if messages is not None:
             template = self.factory.makePOTemplate(
@@ -234,8 +255,8 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
 
     def test_getPriorizedUnlinkedSourcePackages(self):
         # Verify the ordering of source packages that need linking.
-        source_packages = self.series.getPriorizedUnlinkedSourcePackages()
-        names = [package.name for package in source_packages]
+        package_summaries = self.series.getPriorizedUnlinkedSourcePackages()
+        names = [summary['package'].name for summary in package_summaries]
         expected = [
             u'main', u'hot-translatable', u'hot', u'translatable', u'normal']
         self.assertEqual(expected, names)
@@ -251,7 +272,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.assertEqual(expected, names)
 
     def test_getPriorizedlPackagings_bug_tracker(self):
-        # Verify the ordering of packagings without and without a bug tracker.
+        # Verify the ordering of packagings with and without a bug tracker.
         self.linkPackage('hot')
         self.makeSeriesPackage('cold')
         product_series = self.linkPackage('cold')
@@ -262,7 +283,7 @@ class TestDistroSeriesPackaging(TestCaseWithFactory):
         self.assertEqual(expected, names)
 
     def test_getPriorizedlPackagings_branch(self):
-        # Verify the ordering of packagings without and without a branch.
+        # Verify the ordering of packagings with and without a branch.
         self.linkPackage('translatable')
         self.makeSeriesPackage('withbranch')
         product_series = self.linkPackage('withbranch')

@@ -572,7 +572,8 @@
                     userCanView
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
-                    personIsSubscribedToDuplicate"/>
+                    personIsSubscribedToDuplicate
+                    heat"/>
             <require
                 permission="launchpad.View"
                 attributes="
@@ -668,7 +669,8 @@
             <require
                 permission="launchpad.Admin"
                 attributes="
-                    setCommentVisibility"/>
+                    setCommentVisibility
+                    setHeat"/>
         </class>
         <adapter
             for="lp.bugs.interfaces.bug.IBug"
