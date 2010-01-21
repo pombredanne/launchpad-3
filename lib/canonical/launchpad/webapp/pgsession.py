@@ -115,9 +115,9 @@ class PGSessionData(PGSessionBase):
             if IUnauthenticatedPrincipal.providedBy(request.principal):
                 # it would be nice if this could be a monitored, logged
                 # message instead of an instant-OOPS.
-                assert (client_id_manager.namespace in request.cookies or
-                        request.response.getCookie(
-                            client_id_manager.namespace) is not None), (
+                namespace = client_id_manager.getNamespace(request)
+                assert (namespace in request.cookies or
+                        request.response.getCookie(namespace) is not None), (
                     'Session data should generally only be stored for '
                     'authenticated users, and for users who have just logged '
                     'out.  If an unauthenticated user has just logged out, '

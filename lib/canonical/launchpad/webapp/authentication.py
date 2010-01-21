@@ -22,6 +22,7 @@ from contrib.oauth import OAuthRequest
 from zope.interface import implements
 from zope.component import getUtility
 from zope.event import notify
+from zope.session.interfaces import IClientIdManager
 
 from zope.security.proxy import removeSecurityProxy
 
@@ -29,7 +30,6 @@ from zope.session.interfaces import ISession
 from zope.app.security.interfaces import ILoginPassword
 from zope.app.security.principalregistry import UnauthenticatedPrincipal
 
-from canonical.config import config
 from canonical.launchpad.interfaces.account import IAccountSet
 from canonical.launchpad.interfaces.launchpad import IPasswordEncryptor
 from canonical.launchpad.interfaces.oauth import OAUTH_CHALLENGE
@@ -119,7 +119,7 @@ class PlacelessAuthUtility:
             # Hack to make us not even think of using a session if there
             # isn't already a cookie in the request, or one waiting to be
             # set in the response.
-            cookie_name = config.launchpad_session.cookie
+            cookie_name = getUtility(IClientIdManager).getNamespace(request)
             if (request.cookies.get(cookie_name) is not None or
                 request.response.getCookie(cookie_name) is not None):
                 return self._authenticateUsingCookieAuth(request)
