@@ -170,7 +170,6 @@ overview of the project.
 To demonstrate this, we create 10 bugs and adjust their heat values manually.
 
     >>> from zope.component import getUtility
-    >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.launchpad.ftests import login, logout
     >>> from lp.registry.interfaces.product import IProductSet
     >>> import transaction
@@ -180,7 +179,7 @@ To demonstrate this, we create 10 bugs and adjust their heat values manually.
     >>> for count in range(1, 11):
     ...     summary = 'Summary for new bug %d' % count
     ...     bug = factory.makeBug(title=summary, product=firefox)
-    ...     removeSecurityProxy(bug).heat = heat_values[count]
+    ...     bug.setHeat(heat_values[count])
     >>> transaction.commit()
     >>> logout()
 
