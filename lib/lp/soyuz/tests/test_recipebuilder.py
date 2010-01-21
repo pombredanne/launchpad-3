@@ -170,6 +170,7 @@ class BaseTestCaseWithBuilds(TestCaseWithFactory):
 
 class TestVerifySlaveBuildID(BaseTestVerifySlaveBuildID,
                              BaseTestCaseWithBuilds):
+    """Run the tests from BaseTestVerifySlaveBuildID against recipe builds."""
     pass
 
 
