@@ -5,6 +5,7 @@
 
 __metaclass__ = type
 
+import transaction
 import unittest
 
 from canonical.testing import LaunchpadFunctionalLayer
@@ -17,8 +18,12 @@ from lp.buildmaster.manager import RecordingSlave
 from lp.soyuz.adapters.archivedependencies import get_sources_list_for_building
 from lp.soyuz.model.recipebuilder import RecipeBuildBehavior
 from lp.soyuz.model.processor import ProcessorFamilySet
+from lp.soyuz.model.sourcepackagerecipebuild import (
+    SourcePackageRecipeBuild)
 from lp.soyuz.tests.soyuzbuilddhelpers import (MockBuilder,
     SaneBuildingSlave,)
+from lp.soyuz.tests.test_binarypackagebuildbehavior import (
+    BaseTestVerifySlaveBuildID)
 from lp.soyuz.tests.test_publishing import (
     SoyuzTestPublisher,)
 from lp.testing import TestCaseWithFactory
@@ -140,6 +145,33 @@ class TestRecipeBuilder(TestCaseWithFactory):
         logger = BufferLogger()
         self.assertRaises(CannotBuild, job.dispatchBuildToSlave, 
             "someid", logger)
+
+    def test_getById(self):
+        job = self.makeJob()
+        transaction.commit()
+        self.assertEquals(
+            job.build, SourcePackageRecipeBuild.getById(job.build.id))
+
+
+class BaseTestCaseWithBuilds(TestCaseWithFactory):
+    def setUp(self):
+        super(BaseTestCaseWithBuilds, self).setUp()
+
+        self.builds = []
+
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.queueBuild()
+        self.builds.append(build)
+
+        build = self.factory.makeSourcePackageRecipeBuild()
+        build.queueBuild()
+        self.builds.append(build)
+
+
+class TestVerifySlaveBuildID(BaseTestVerifySlaveBuildID,
+                             BaseTestCaseWithBuilds):
+    """Run the tests from BaseTestVerifySlaveBuildID against recipe builds."""
+    pass
 
 
 def test_suite():

@@ -45,7 +45,7 @@
             <tal:not-merged condition="not: contributor/merged">
               <a tal:replace="structure contributor/fmt:link" />
               (<a tal:attributes="
-                 href string:${context/fmt:url}/+filter?person=${contributor/name}"
+                href string:${context/fmt:url}/+filter?person=${contributor/name}"
                 >filter</a>)
             </tal:not-merged>
           </li>

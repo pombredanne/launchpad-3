@@ -14,8 +14,7 @@
   </div>
 
     <div metal:fill-slot="main"
-         tal:define="uses_translations view/uses_translations;
-                     admin_user context/required:launchpad.TranslationsAdmin">
+         tal:define="admin_user context/required:launchpad.TranslationsAdmin">
       <div class="translation-help-links">
         <a href="https://help.launchpad.net/Translations"
            id="link-to-translations-help"
@@ -23,26 +22,27 @@
         </a>
         <div></div><!-- to clear-up all floats -->
       </div>
-      <div class="top-portlet">
+      <div class="top-portlet notice">
         <tal:official_use replace="
             structure
             context/@@+portlet-not-using-launchpad"/>
+        <div tal:condition="view/no_translations_available">
+        There are no translations for this project.
+        </div>
       </div>
 
-      <tal:uses-translations
-         condition="python:uses_translations or admin_user">
-        <tal:translatable define="target context/primary_translatable">
+      <tal:page_content condition="view/show_page_content">
+        <tal:translatable define="target view/primary_translatable">
 
           <div class="yui-g">
             <div class="yui-u first">
               <div class="portlet">
                 <h3>Translation details</h3>
-                <p tal:condition="target">
+                <p tal:condition="target" id="translation-recommendation">
                   Launchpad currently recommends translating
                   <tal:target replace="structure target/fmt:link"
                               >trunk</tal:target>.
-                  <span id="downloadupload"
-                       tal:condition="context/required:launchpad.AnyPerson">
+                  <span tal:condition="context/required:launchpad.AnyPerson">
                     You can also
                     <a tal:attributes="href target/fmt:url/+export"
                        >download</a>
@@ -98,7 +98,7 @@
             <div tal:replace="structure context/@@+rosetta-status-legend" />
           </div>
         </tal:translatable>
-      </tal:uses-translations>
+      </tal:page_content>
     </div>
   </body>
 </html>

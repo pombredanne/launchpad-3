@@ -21,7 +21,7 @@ from zope.security.proxy import isinstance as zisinstance
 
 from lp.code.interfaces.seriessourcepackagebranch import (
     IMakeOfficialBranchLinks)
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from lp.registry.interfaces.pocket import PackagePublishingPocket
 from lp.testing import time_counter
 
@@ -185,14 +185,14 @@ def make_mint_distro_with_branches(factory):
     mint = factory.makeDistribution(
         name='mint', displayname='Mint', owner=albert, members=mint_team)
     series = [
-        ("wild", "5.5", DistroSeriesStatus.EXPERIMENTAL),
-        ("dev", "4.0", DistroSeriesStatus.DEVELOPMENT),
-        ("stable", "3.0", DistroSeriesStatus.CURRENT),
-        ("old", "2.0", DistroSeriesStatus.SUPPORTED),
-        ("very-old", "1.5", DistroSeriesStatus.SUPPORTED),
-        ("ancient", "1.0", DistroSeriesStatus.SUPPORTED),
-        ("mouldy", "0.6", DistroSeriesStatus.SUPPORTED),
-        ("dead", "0.1", DistroSeriesStatus.OBSOLETE),
+        ("wild", "5.5", SeriesStatus.EXPERIMENTAL),
+        ("dev", "4.0", SeriesStatus.DEVELOPMENT),
+        ("stable", "3.0", SeriesStatus.CURRENT),
+        ("old", "2.0", SeriesStatus.SUPPORTED),
+        ("very-old", "1.5", SeriesStatus.SUPPORTED),
+        ("ancient", "1.0", SeriesStatus.SUPPORTED),
+        ("mouldy", "0.6", SeriesStatus.SUPPORTED),
+        ("dead", "0.1", SeriesStatus.OBSOLETE),
         ]
     for name, version, status in series:
         factory.makeDistroRelease(

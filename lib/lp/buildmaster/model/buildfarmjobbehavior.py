@@ -16,15 +16,18 @@ import logging
 import socket
 import xmlrpclib
 
+from sqlobject import SQLObjectNotFound
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 
 from canonical import encoding
 from canonical.librarian.interfaces import ILibrarianClient
+from lp.buildmaster.interfaces.builder import CorruptBuildID
 from lp.buildmaster.interfaces.buildfarmjobbehavior import (
     BuildBehaviorMismatch, IBuildFarmJobBehavior)
 from lp.services.job.interfaces.job import JobStatus
+from lp.soyuz.interfaces.buildqueue import IBuildQueueSet
 
 
 class BuildFarmJobBehaviorBase:
@@ -55,6 +58,24 @@ class BuildFarmJobBehaviorBase:
 
         The default behavior is that we don't add any extra values."""
         return {}
+
+    def verifySlaveBuildID(self, slave_build_id):
+        """See `IBuildFarmJobBehavior`."""
+        # Extract information from the identifier.
+        try:
+            build_id, queue_item_id = slave_build_id.split('-')
+            build_id = int(build_id)
+            queue_item_id = int(queue_item_id)
+        except ValueError:
+            raise CorruptBuildID('Malformed build ID')
+
+        try:
+            queue_item = getUtility(IBuildQueueSet).get(queue_item_id)
+            # Check whether build and buildqueue are properly related.
+        except SQLObjectNotFound, reason:
+            raise CorruptBuildID(str(reason))
+        if queue_item.specific_job.build.id != build_id:
+            raise CorruptBuildID('Job build entry mismatch')
 
     def updateBuild(self, queueItem):
         """See `IBuildFarmJobBehavior`."""
@@ -193,3 +214,7 @@ class IdleBuildBehavior(BuildFarmJobBehaviorBase):
     def status(self):
         """See `IBuildFarmJobBehavior`."""
         return "Idle"
+
+    def verifySlaveBuildID(self, slave_build_id):
+        """See `IBuildFarmJobBehavior`."""
+        raise AssertionError('Should not be called for an idle builder.')

@@ -35,8 +35,8 @@ from lp.soyuz.browser.build import BuildRecordsView
 from canonical.launchpad.browser.packagesearch import PackageSearchViewBase
 from lp.soyuz.browser.queue import QueueItemsView
 from lp.services.worlddata.interfaces.country import ICountry
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.translations.interfaces.distroserieslanguage import (
     IDistroSeriesLanguageSet)
 from lp.services.worlddata.interfaces.language import ILanguageSet
@@ -244,7 +244,7 @@ class DistroSeriesPackageSearchView(PackageSearchViewBase):
     label = 'Search packages'
 
 
-class DistroSeriesStatusMixin:
+class SeriesStatusMixin:
     """A mixin that provides status field support."""
 
     def createStatusField(self):
@@ -256,15 +256,15 @@ class DistroSeriesStatusMixin:
          * unstable -> EXPERIMENTAL, DEVELOPMENT, FROZEN, FUTURE, CURRENT
         """
         stable_status = (
-            DistroSeriesStatus.CURRENT,
-            DistroSeriesStatus.SUPPORTED,
-            DistroSeriesStatus.OBSOLETE,
+            SeriesStatus.CURRENT,
+            SeriesStatus.SUPPORTED,
+            SeriesStatus.OBSOLETE,
             )
 
         if self.context.status not in stable_status:
-            terms = [status for status in DistroSeriesStatus.items
+            terms = [status for status in SeriesStatus.items
                      if status not in stable_status]
-            terms.append(DistroSeriesStatus.CURRENT)
+            terms.append(SeriesStatus.CURRENT)
         else:
             terms = stable_status
 
@@ -282,7 +282,7 @@ class DistroSeriesStatusMixin:
     def updateDateReleased(self, status):
         """Update the datereleased field if the status is set to CURRENT."""
         if (self.context.datereleased is None and
-            status == DistroSeriesStatus.CURRENT):
+            status == SeriesStatus.CURRENT):
             self.context.datereleased = UTC_NOW
 
 
@@ -328,7 +328,7 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView,
     milestone_can_release = False
 
 
-class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
+class DistroSeriesEditView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class that lets you edit a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.
@@ -375,7 +375,7 @@ class DistroSeriesEditView(LaunchpadEditFormView, DistroSeriesStatusMixin):
         self.next_url = canonical_url(self.context)
 
 
-class DistroSeriesAdminView(LaunchpadEditFormView, DistroSeriesStatusMixin):
+class DistroSeriesAdminView(LaunchpadEditFormView, SeriesStatusMixin):
     """View class for administering a DistroSeries object.
 
     It redirects to the main distroseries page after a successful edit.

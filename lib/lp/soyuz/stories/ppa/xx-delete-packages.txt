@@ -371,7 +371,7 @@ overview page.
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0  (changesfile)     Superseded Hoary           Base
+    foo - 1.0  (sources.changes)     Superseded Hoary           Base
 
 We don't show the publishing details for binary packages, but the
 presence of 'Built packages' and the binary filename in the 'Files'
@@ -401,7 +401,7 @@ available for deletion because it contains a PUBLISHED binary.
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0  (changesfile)     Superseded Hoary           Base
+    foo - 1.0  (sources.changes)     Superseded Hoary           Base
 
     >>> expander_url = user_browser.getLink(
     ...     id='pub%s-expander' % foo_pub_src.id).url
@@ -440,7 +440,7 @@ When he selects 'Superseded' the SUPERSEDED source shows up again.
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0  (changesfile)     Superseded Hoary           Base
+    foo - 1.0  (sources.changes)     Superseded Hoary           Base
 
 The deletion works exactly as it does for PUBLISHED sources, both,
 source and binaries are marked as DELETED and the corresponding
@@ -479,7 +479,7 @@ opposed to being truncated after the fisrt 20 characters.
     >>> print_ppa_packages(user_browser.contents)
     Source           Published   Status     Series          Section  Build
         Status
-    foo - 1.0 (changesfile)      Deleted    Hoary           Base
+    foo - 1.0 (sources.changes)      Deleted    Hoary           Base
 
     >>> expander_url = user_browser.getLink(
     ...     id='pub%s-expander' % foo_pub_src.id).url
