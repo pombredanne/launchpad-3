@@ -113,6 +113,20 @@ class CalculateBugHeatJobTestCase(TestCaseWithFactory):
         self.assertIn(
             'INFO    Ran 1 ICalculateBugHeatJobSource jobs.\n', stderr)
 
+    def test_getOopsVars(self):
+        # BugJobDerived.getOopsVars() returns the variables to be used
+        # when logging an OOPS for a bug job. We test this using
+        # CalculateBugHeatJob because BugJobDerived doesn't let us
+        # create() jobs.
+        job = CalculateBugHeatJob.create(self.bug)
+        vars = job.getOopsVars()
+
+        # The Bug ID, BugJob ID and BugJob type will be returned by
+        # getOopsVars().
+        self.assertIn(('bug_id', self.bug.id), vars)
+        self.assertIn(('bug_job_id', job.context.id), vars)
+        self.assertIn(('bug_job_type', job.context.job_type.title), vars)
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
