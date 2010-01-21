@@ -24,6 +24,8 @@ class BaseTestVerifySlaveBuildID:
         self.builder = self.factory.makeBuilder(name='builder')
 
     def test_consistent_build_id(self):
+        # verifySlaveBuildID returns None if the build and buildqueue
+        # ID pair reported by the slave are associated in the database.
         buildfarmjob = self.build.buildqueue_record.specific_job
         behavior = IBuildFarmJobBehavior(buildfarmjob)
         self.assertEqual(
@@ -32,6 +34,8 @@ class BaseTestVerifySlaveBuildID:
                 '%d-%d' % (self.build.id, self.build.buildqueue_record.id)))
 
     def test_mismatched_build_id(self):
+        # verifySlaveBuildID returns an error if the build and
+        # buildqueue exist, but are not associated in the database.
         buildfarmjob = self.build.buildqueue_record.specific_job
         behavior = IBuildFarmJobBehavior(buildfarmjob)
         self.assertEqual(
@@ -41,12 +45,16 @@ class BaseTestVerifySlaveBuildID:
                     self.other_build.id, self.build.buildqueue_record.id)))
 
     def test_build_id_without_separator(self):
+        # verifySlaveBuildID returns an error if the build ID does not
+        # contain a build and build queue ID separated by a hyphen.
         buildfarmjob = self.build.buildqueue_record.specific_job
         behavior = IBuildFarmJobBehavior(buildfarmjob)
         self.assertEqual(
             'Malformed build ID', behavior.verifySlaveBuildID('foo'))
 
     def test_build_id_with_missing_build(self):
+        # verifySlaveBuildID returns an error if either the build or
+        # build queue specified do not exist.
         buildfarmjob = self.build.buildqueue_record.specific_job
         behavior = IBuildFarmJobBehavior(buildfarmjob)
         self.assertEqual(
