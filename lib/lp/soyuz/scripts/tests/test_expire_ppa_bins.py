@@ -74,54 +74,76 @@ class TestPPABinaryExpiry(unittest.TestCase):
         self.layer.switchDbUser(self.dbuser)
         script.main()
 
-    def assertExpired(self, publication):
+    def assertBinaryExpired(self, publication):
         self.assertNotEqual(
             publication.binarypackagerelease.files[0].libraryfile.expires,
             None,
             "lfa.expires should be set, but it's not.")
 
-    def assertNotExpired(self, publication):
+    def assertBinaryNotExpired(self, publication):
         self.assertEqual(
             publication.binarypackagerelease.files[0].libraryfile.expires,
+            None,
+            "lfa.expires should be None, but it's not.")
+
+    def assertSourceExpired(self, publication):
+        self.assertNotEqual(
+            publication.sourcepackagerelease.files[0].libraryfile.expires,
+            None,
+            "lfa.expires should be set, but it's not.")
+
+    def assertSourceNotExpired(self, publication):
+        self.assertEqual(
+            publication.sourcepackagerelease.files[0].libraryfile.expires,
             None,
             "lfa.expires should be None, but it's not.")
 
     def testNoExpirationWithNoDateremoved(self):
         """Test that no expiring happens if no dateremoved set."""
         pkg1 = self.stp.getPubSource(
-            sourcename="pkg1", architecturehintlist="i386", archive=self.ppa)
+            sourcename="pkg1", architecturehintlist="i386", archive=self.ppa,
+            dateremoved=None)
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg1, dateremoved=None, archive=self.ppa)
 
         self.runScript()
-        self.assertNotExpired(pub)
+        self.assertSourceNotExpired(pkg1)
+        self.assertBinaryNotExpired(pub)
 
     def testNoExpirationWithDateUnderThreshold(self):
         """Test no expiring if dateremoved too recent."""
         pkg2 = self.stp.getPubSource(
-            sourcename="pkg2", architecturehintlist="i386", archive=self.ppa)
+            sourcename="pkg2", architecturehintlist="i386", archive=self.ppa,
+            dateremoved=self.under_threshold_date)
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg2, dateremoved=self.under_threshold_date,
             archive=self.ppa)
 
         self.runScript()
-        self.assertNotExpired(pub)
+        self.assertSourceNotExpired(pkg2)
+        self.assertBinaryNotExpired(pub)
 
     def testExpirationWithDateOverThreshold(self):
         """Test expiring works if dateremoved old enough."""
         pkg3 = self.stp.getPubSource(
-            sourcename="pkg3", architecturehintlist="i386", archive=self.ppa)
+            sourcename="pkg3", architecturehintlist="i386", archive=self.ppa,
+            dateremoved=self.over_threshold_date)
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg3, dateremoved=self.over_threshold_date,
             archive=self.ppa)
 
         self.runScript()
-        self.assertExpired(pub)
+        self.assertSourceExpired(pkg3)
+        self.assertBinaryExpired(pub)
 
     def testNoExpirationWithDateOverThresholdAndOtherValidPublication(self):
         """Test no expiry if dateremoved old enough but other publication."""
         pkg4 = self.stp.getPubSource(
-            sourcename="pkg4", architecturehintlist="i386", archive=self.ppa)
+            sourcename="pkg4", architecturehintlist="i386", archive=self.ppa,
+            dateremoved=self.over_threshold_date)
+        other_source = pkg4.copyTo(
+            pkg4.distroseries, pkg4.pocket, self.ppa2)
+        other_source.secure_record.dateremoved = None
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg4, dateremoved=self.over_threshold_date,
             archive=self.ppa)
@@ -130,16 +152,21 @@ class TestPPABinaryExpiry(unittest.TestCase):
         other_binary.secure_record.dateremoved = None
 
         self.runScript()
-        self.assertNotExpired(pub)
+        self.assertSourceNotExpired(pkg4)
+        self.assertBinaryNotExpired(pub)
 
     def testNoExpirationWithDateOverThresholdAndOtherPubUnderThreshold(self):
         """Test no expiring.
-        
+
         Test no expiring if dateremoved old enough but other publication
         not over date threshold.
         """
         pkg5 = self.stp.getPubSource(
-            sourcename="pkg5", architecturehintlist="i386", archive=self.ppa)
+            sourcename="pkg5", architecturehintlist="i386", archive=self.ppa,
+            dateremoved=self.over_threshold_date)
+        other_source = pkg5.copyTo(
+            pkg5.distroseries, pkg5.pocket, self.ppa2)
+        other_source.secure_record.dateremoved = self.under_threshold_date
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg5, dateremoved=self.over_threshold_date,
             archive=self.ppa)
@@ -148,67 +175,77 @@ class TestPPABinaryExpiry(unittest.TestCase):
         other_binary.secure_record.dateremoved = self.under_threshold_date
 
         self.runScript()
-        self.assertNotExpired(pub)
+        self.assertSourceNotExpired(pkg5)
+        self.assertBinaryNotExpired(pub)
 
     def _setUpExpirablePublications(self, archive=None):
         """Helper to set up two publications that are both expirable."""
         if archive is None:
             archive = self.ppa
         pkg5 = self.stp.getPubSource(
-            sourcename="pkg5", architecturehintlist="i386", archive=archive)
+            sourcename="pkg5", architecturehintlist="i386", archive=archive,
+            dateremoved=self.over_threshold_date)
+        other_source = pkg5.copyTo(
+            pkg5.distroseries, pkg5.pocket, self.ppa2)
+        other_source.secure_record.dateremoved = self.over_threshold_date
         [pub] = self.stp.getPubBinaries(
             pub_source=pkg5, dateremoved=self.over_threshold_date,
             archive=archive)
         [other_binary] = pub.copyTo(
             pub.distroarchseries.distroseries, pub.pocket, self.ppa2)
         other_binary.secure_record.dateremoved = self.over_threshold_date
-        return pub
+        return pkg5, pub
 
     def testNoExpirationWithDateOverThresholdAndOtherPubOverThreshold(self):
         """Test expiring works.
-        
+
         Test expiring works if dateremoved old enough and other publication
         is over date threshold.
         """
-        pub = self._setUpExpirablePublications()
+        source, binary = self._setUpExpirablePublications()
         self.runScript()
-        self.assertExpired(pub)
+        self.assertSourceExpired(source)
+        self.assertBinaryExpired(binary)
 
     def testBlacklistingWorks(self):
         """Test that blacklisted PPAs are not expired."""
-        pub = self._setUpExpirablePublications()
+        source, binary = self._setUpExpirablePublications()
         script = self.getScript()
         script.blacklist = ["cprov",]
         self.layer.txn.commit()
         self.layer.switchDbUser(self.dbuser)
         script.main()
-        self.assertNotExpired(pub)
+        self.assertSourceNotExpired(source)
+        self.assertBinaryNotExpired(binary)
 
     def testPrivatePPAsNotExpired(self):
         """Test that private PPAs are not expired."""
         self.ppa.private = True
         self.ppa.buildd_secret = "foo"
-        pub = self._setUpExpirablePublications()
+        source, binary = self._setUpExpirablePublications()
         self.runScript()
-        self.assertNotExpired(pub)
+        self.assertSourceNotExpired(source)
+        self.assertBinaryNotExpired(binary)
 
     def testDryRun(self):
         """Test that when dryrun is specified, nothing is expired."""
-        pub = self._setUpExpirablePublications()
+        source, binary = self._setUpExpirablePublications()
         # We have to commit here otherwise when the script aborts it
         # will remove the test publications we just created.
         self.layer.txn.commit()
         script = self.getScript(['--dry-run'])
         self.layer.switchDbUser(self.dbuser)
         script.main()
-        self.assertNotExpired(pub)
+        self.assertSourceNotExpired(source)
+        self.assertBinaryNotExpired(binary)
 
     def testDoesNotAffectNonPPA(self):
         """Test that expiry does not happen for non-PPA publications."""
         ubuntu_archive = getUtility(IDistributionSet)['ubuntu'].main_archive
-        pub = self._setUpExpirablePublications(ubuntu_archive)
+        source, binary = self._setUpExpirablePublications(ubuntu_archive)
         self.runScript()
-        self.assertNotExpired(pub)
+        self.assertSourceNotExpired(source)
+        self.assertBinaryNotExpired(binary)
 
 
 def test_suite():

@@ -126,7 +126,6 @@ jsbuild: jsbuild_lazr
 		-n launchpad \
 		-s lib/canonical/launchpad/javascript \
 		-b $(LP_BUILT_JS_ROOT) \
-		lib/canonical/launchpad/icing/MochiKit.js \
 		$(shell $(HERE)/utilities/yui-deps.py) \
 		lib/canonical/launchpad/icing/lazr/build/lazr.js
 
