@@ -142,9 +142,12 @@ class BaseTestRunner:
                     subject = 'Test results: %s' % (
                         result and 'FAILURE' or 'SUCCESS')
                     summary_file = open(self.logger.summary_filename, 'r')
+                    out_file = open(self.logger.out_filename, 'r')
                     bzrlib.email_message.EmailMessage.send(
                         config, self.email[0], self.email,
-                        subject, summary_file.read())
+                        subject, summary_file.read(),
+                        attachment=out_file.read(),
+                        attachment_mime_subtype='subunit')
                     summary_file.close()
             finally:
                 # we do this at the end because this is a trigger to
