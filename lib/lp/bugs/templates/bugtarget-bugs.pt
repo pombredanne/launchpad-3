@@ -95,7 +95,7 @@
           </ul>
         </div>
 
-      <tal:has_hot_bugs condition="view/hot_bugtasks">
+      <tal:has_hot_bugs condition="view/hot_bugs">
         <div class="search-box">
           <metal:search
             use-macro="context/@@+bugtarget-macros-search/simple-search-form"
@@ -123,7 +123,7 @@
             </tr>
           </thead>
           <tbody>
-            <tr tal:repeat="bugtask view/hot_bugtasks">
+            <tr tal:repeat="bugtask view/hot_bugs">
               <td class="icon left">
                 <span tal:replace="structure bugtask/image:icon" />
               </td>
@@ -148,7 +148,7 @@
         </table>
       </tal:has_hot_bugs>
 
-      <tal:no_hot_bugs condition="not: view/hot_bugtasks">
+      <tal:no_hot_bugs condition="not: view/hot_bugs">
         <p id="no-bugs-filed"><strong>There are currently no bugs filed against
           <tal:project_title replace="context/title" />.</strong></p>
 
