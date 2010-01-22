@@ -10,7 +10,7 @@ from zope.interface import implements
 
 from canonical.database.sqlbase import quote
 
-from lp.registry.interfaces.distroseries import DistroSeriesStatus
+from lp.registry.interfaces.series import SeriesStatus
 from canonical.launchpad.interfaces.launchpad import ILaunchpadCelebrities
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 
@@ -174,7 +174,7 @@ class TranslationsStatusChecker:
                      ON POTemplate.distroseries=DistroSeries.id
                    WHERE DistroSeries.releasestatus=%s AND
                          DistroSeries.distribution=%s""" % (
-            quote(DistroSeriesStatus.OBSOLETE),
+            quote(SeriesStatus.OBSOLETE),
             quote(getUtility(ILaunchpadCelebrities).ubuntu))
         result = self.store.execute(query)
         count = result.get_one()
@@ -200,7 +200,7 @@ class TranslationsStatusChecker:
                      WHERE DistroSeries.releasestatus != %s
                      GROUP BY DistroSeries.id
                      ORDER BY DistroSeries.id""" % quote(
-            DistroSeriesStatus.OBSOLETE)
+            SeriesStatus.OBSOLETE)
         result = self.store.execute(query)
         return result.get_all()
 
@@ -216,7 +216,7 @@ class TranslationsStatusChecker:
                            productseries IS NOT NULL
                      GROUP BY POTemplate.id
                      ORDER BY POTemplate.id""" % quote(
-            DistroSeriesStatus.OBSOLETE)
+            SeriesStatus.OBSOLETE)
         result = self.store.execute(query)
         return result.get_all()
 
@@ -232,7 +232,7 @@ class TranslationsStatusChecker:
                            productseries IS NOT NULL
                      GROUP BY POTemplate.id
                      ORDER BY POTemplate.id""" % quote(
-            DistroSeriesStatus.OBSOLETE)
+            SeriesStatus.OBSOLETE)
         result = self.store.execute(query)
         return result.get_all()
 
@@ -250,7 +250,7 @@ class TranslationsStatusChecker:
                            productseries IS NOT NULL
                      GROUP BY POFile.id
                      ORDER BY POFile.id""" % quote(
-            DistroSeriesStatus.OBSOLETE)
+            SeriesStatus.OBSOLETE)
         result = self.store.execute(query)
         return result.get_all()
 
@@ -316,7 +316,7 @@ class RemoveObsoleteTranslations(LaunchpadScript):
                   'join_column' : 'distroseries',
                   'distribution' :
                     quote(getUtility(ILaunchpadCelebrities).ubuntu),
-                  'releasestatus' : quote(DistroSeriesStatus.OBSOLETE),
+                  'releasestatus' : quote(SeriesStatus.OBSOLETE),
                   'collection_sql' : collect_obsolete_potemplates_query,
                   },
             }

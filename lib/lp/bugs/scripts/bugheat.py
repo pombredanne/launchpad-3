@@ -4,7 +4,9 @@
 """The innards of the Bug Heat cronscript."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'BugHeatCalculator',
+    ]
 
 
 from zope.component import getUtility

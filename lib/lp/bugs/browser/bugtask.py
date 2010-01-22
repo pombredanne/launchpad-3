@@ -1075,6 +1075,14 @@ class BugTaskView(LaunchpadView, BugViewMixin, CanBeMentoredView, FeedsMixin):
             title="Bug Description",
             value=description)
 
+    @property
+    def bug_heat_html(self):
+        """HTML representation of the bug heat."""
+        view = getMultiAdapter(
+            (self.context.bug, self.request),
+            name='+bug-heat')
+        return view()
+
 
 class BugTaskPortletView:
     """A portlet for displaying a bug's bugtasks."""
