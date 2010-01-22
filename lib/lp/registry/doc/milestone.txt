@@ -506,3 +506,26 @@ If a milestone has a structural subscription, it cannot be deleted.
     ...
     AssertionError: You cannot delete a milestone which has structural
                     subscriptions.
+
+
+Creating a release from a milestone with targeted bugs
+------------------------------------------------------
+
+When a milestone with bug tasks creates a release, those bug tasks in fix
+committed status are updated to fix released.
+
+    >>> from lp.bugs.interfaces.bugtask import BugTaskStatus
+
+    >>> milestone = ff_onedotzero.newMilestone('kia')
+    >>> fixed_bugtask = factory.makeBugTask(target=upstream_firefox)
+    >>> fixed_bugtask.transitionToMilestone(milestone, owner)
+    >>> fixed_bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED, owner)
+    >>> triaged_bugtask = factory.makeBugTask(target=upstream_firefox)
+    >>> triaged_bugtask.transitionToMilestone(milestone, owner)
+    >>> triaged_bugtask.transitionToStatus(BugTaskStatus.TRIAGED, owner)
+    >>> release = milestone.createProductRelease(owner, datetime.now(UTC))
+    >>> fixed_bugtask.status
+    <DBItem BugTaskStatus.FIXRELEASED, (30) Fix Released>
+
+    >>> triaged_bugtask.status
+    <DBItem BugTaskStatus.TRIAGED, (21) Triaged>

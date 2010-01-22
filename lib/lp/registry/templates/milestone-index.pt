@@ -67,7 +67,7 @@
                 </dd>
               </dl>
 
-              <dl>
+              <dl tal:condition="not: view/release">
                 <dt>Expected:</dt>
                 <dd><span
                   tal:attributes="title context/dateexpected/fmt:datetime"
