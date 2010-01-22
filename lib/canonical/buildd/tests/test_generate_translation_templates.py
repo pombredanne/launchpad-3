@@ -15,10 +15,13 @@ from canonical.testing.layers import ZopelessDatabaseLayer
 
 class MockGenerateTranslationTemplates(GenerateTranslationTemplates):
     """A GenerateTranslationTemplates with mocked _checkout."""
-    checked_out_branch = None
+    # Records, for testing purposes, whether this object checked out a
+    # branch.
+    checked_out_branch = False
 
     def _checkout(self, branch_url):
-        self.checked_out_branch = branch_url
+        assert not self.checked_out_branch, "Checking out branch again!"
+        self.checked_out_branch = True
 
 
 class TestGenerateTranslationTemplates(TestCase):
@@ -31,7 +34,7 @@ class TestGenerateTranslationTemplates(TestCase):
         generator = MockGenerateTranslationTemplates(branch_url)
         generator._getBranch()
 
-        self.assertEqual(branch_url, generator.checked_out_branch)
+        self.assertTrue(generator.checked_out_branch)
         self.assertTrue(generator.branch_dir.endswith('source-tree'))
 
     def test_getBranch_dir(self):
@@ -42,7 +45,7 @@ class TestGenerateTranslationTemplates(TestCase):
         generator = MockGenerateTranslationTemplates(branch_dir)
         generator._getBranch()
 
-        self.assertEqual(None, generator.checked_out_branch)
+        self.assertFalse(generator.checked_out_branch)
         self.assertEqual(branch_dir, generator.branch_dir)
 
     def test_script(self):
