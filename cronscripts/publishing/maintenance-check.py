@@ -33,7 +33,7 @@ SUPPORTED_ARCHES = PRIMARY_ARCHES + ["armel"]
 # what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
 SERVER_SEEDS = [ "supported-server"]
 DESKTOP_SEEDS = ["ship", "supported-desktop"]
-SUPPORTED_SEEDS = ["supported", "supported.build-depends"]
+SUPPORTED_SEEDS = [ "all" ]
 
 # normal support timeframe
 # time, seeds, arches
