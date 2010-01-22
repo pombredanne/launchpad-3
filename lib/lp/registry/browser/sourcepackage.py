@@ -6,6 +6,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'SourcePackageAssociationPortletView',
     'SourcePackageBreadcrumb',
     'SourcePackageChangeUpstreamView',
     'SourcePackageFacets',
@@ -18,9 +19,13 @@ __all__ = [
 from apt_pkg import ParseSrcDepends
 from zope.component import getUtility, getMultiAdapter
 from zope.app.form.interfaces import IInputWidget
-from zope.formlib.form import FormFields
+from zope.formlib.form import Fields, FormFields
+from zope.schema import Choice
+from zope.schema.vocabulary import getVocabularyRegistry, SimpleVocabulary, SimpleTerm
 
 from lazr.restful.interface import copy_field
+
+from canonical.widgets import LaunchpadRadioWidget
 
 from canonical.launchpad import helpers
 from lp.bugs.browser.bugtask import BugTargetTraversalMixin
@@ -35,8 +40,9 @@ from lp.registry.interfaces.sourcepackage import ISourcePackage
 from lp.translations.interfaces.potemplate import IPOTemplateSet
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, GetitemNavigation, LaunchpadEditFormView, Link,
-    redirection, StandardLaunchpadFacets, stepto)
+    action, ApplicationMenu, custom_widget, GetitemNavigation,
+    LaunchpadEditFormView, LaunchpadFormView, Link, redirection,
+    StandardLaunchpadFacets, stepto)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.breadcrumb import Breadcrumb
@@ -294,3 +300,45 @@ class SourcePackageHelpView:
     """A View to show Answers help."""
 
     page_title = 'Help and support options'
+
+
+class SourcePackageAssociationPortletView(LaunchpadFormView):
+    """A view for linking to an upstream package."""
+
+    from zope.interface import Interface
+    schema = Interface
+    custom_widget(
+        'upstream', LaunchpadRadioWidget, orientation='vertical')
+    product_suggestions = None
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`."""
+        super(SourcePackageAssociationPortletView, self).setUpFields()
+        # Find registered products that are similarly named to the source
+        # package.
+        product_vocab = getVocabularyRegistry().get(None, 'Product')
+        matches = product_vocab.searchForTerms(self.context.name)
+        self.product_suggestions = []
+        vocab_terms = []
+        for item in matches:
+            product = item.value
+            self.product_suggestions.append(product)
+            item_url = canonical_url(product)
+            description = """%s <a href="%s">(view project)</a>""" % (
+                item.title, item_url)
+            vocab_terms.append(SimpleTerm(product, product.name, description))
+        upstream_vocabulary = SimpleVocabulary(vocab_terms)
+
+        self.form_fields = Fields(
+            Choice(__name__='upstream',
+                   title=_('Upstream project'),
+                   default=None,
+                   vocabulary=upstream_vocabulary,
+                   #description=_("Select the upstream project"),
+                   required=True))
+
+    @action('Link to Upstream Project', name='link')
+    def link(self, action, data):
+        self.request.response.addInfoNotification(
+            'The project was linked.')
+        self.next_url = canonical_url(self.context)
