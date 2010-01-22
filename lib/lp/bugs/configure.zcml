@@ -572,7 +572,8 @@
                     userCanView
                     personIsDirectSubscriber
                     personIsAlsoNotifiedSubscriber
-                    personIsSubscribedToDuplicate"/>
+                    personIsSubscribedToDuplicate
+                    has_patches"/>
             <require
                 permission="launchpad.View"
                 attributes="

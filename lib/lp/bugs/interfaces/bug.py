@@ -319,6 +319,8 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
 
     followup_subject = Attribute("The likely subject of the next message.")
 
+    has_patches = Attribute("Does this bug have any patches?")
+
     @operation_parameters(
         subject=optional_message_subject_field(),
         content=copy_field(IMessage['content']))
