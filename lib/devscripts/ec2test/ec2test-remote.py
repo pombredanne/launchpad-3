@@ -106,41 +106,37 @@ class BaseTestRunner:
         call = self.build_test_command()
 
         try:
+            popen = subprocess.Popen(
+                call, bufsize=-1,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                cwd=self.test_dir)
+
+            self._gather_test_output(popen.stdout, summary_file, out_file)
+
+            # Grab the testrunner exit status
+            result = popen.wait()
+
+            if self.pqm_message is not None:
+                subject = self.pqm_message.get('Subject')
+                if result:
+                    # failure
+                    summary_file.write(
+                        '\n\n**NOT** submitted to PQM:\n%s\n' % (subject,))
+                else:
+                    # success
+                    conn = bzrlib.smtp_connection.SMTPConnection(config)
+                    conn.send_email(self.pqm_message)
+                    summary_file.write(
+                        '\n\nSUBMITTED TO PQM:\n%s\n' % (subject,))
+        except:
+            summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
+            traceback.print_exc(file=summary_file)
+            result = 1
+            raise
+        finally:
+            # It probably isn't safe to close the log files ourselves,
+            # since someone else might try to write to them later.
             try:
-                try:
-                    popen = subprocess.Popen(
-                        call, bufsize=-1,
-                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                        cwd=self.test_dir)
-
-                    self._gather_test_output(
-                        popen.stdout, summary_file, out_file)
-
-                    # Grab the testrunner exit status
-                    result = popen.wait()
-
-                    if self.pqm_message is not None:
-                        subject = self.pqm_message.get('Subject')
-                        if result:
-                            # failure
-                            summary_file.write(
-                                '\n\n**NOT** submitted to PQM:\n%s\n' %
-                                (subject,))
-                        else:
-                            # success
-                            conn = bzrlib.smtp_connection.SMTPConnection(
-                                config)
-                            conn.send_email(self.pqm_message)
-                            summary_file.write('\n\nSUBMITTED TO PQM:\n%s\n' %
-                                               (subject,))
-                except:
-                    summary_file.write('\n\nERROR IN TESTRUNNER\n\n')
-                    traceback.print_exc(file=summary_file)
-                    result = 1
-                    raise
-            finally:
-                # It probably isn't safe to close the log files ourselves,
-                # since someone else might try to write to them later.
                 summary_file.close()
                 if self.email is not None:
                     subject = 'Test results: %s' % (
@@ -150,12 +146,12 @@ class BaseTestRunner:
                         config, self.email[0], self.email,
                         subject, summary_file.read())
                     summary_file.close()
-        finally:
-            # we do this at the end because this is a trigger to ec2test.py
-            # back at home that it is OK to kill the process and take control
-            # itself, if it wants to.
-            out_file.close()
-            self.logger.close_logs()
+            finally:
+                # we do this at the end because this is a trigger to
+                # ec2test.py back at home that it is OK to kill the process
+                # and take control itself, if it wants to.
+                out_file.close()
+                self.logger.close_logs()
 
     def _gather_test_output(self, input_stream, summary_file, out_file):
         """Write the testrunner output to the logs."""
