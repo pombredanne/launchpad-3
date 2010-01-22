@@ -65,6 +65,12 @@ class IBuildBase(Interface):
         schema=ILibraryFileAlias, required=False,
         title=_("The LibraryFileAlias containing the entire buildlog."))
 
+    build_log_url = exported(
+        TextLine(
+            title=_("Build Log URL"), required=False,
+            description=_("A URL for the build log. None if there is no "
+                          "log available.")))
+
     buildqueue_record = Object(
         schema=IBuildQueue, required=True,
         title=_("Corresponding BuildQueue record"))
