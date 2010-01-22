@@ -12,34 +12,56 @@ import urllib2
 
 from optparse import OptionParser
 
+# This is fun! We have a bunch of cases for 10.04 LTS
+#
+#  - distro "ubuntu" follows SUPPORT_TIMEFRAME_LTS but only for
+#    amd64/i386
+#  - distros "kubuntu", "edubuntu" and "netbook" need to be
+#    considered *but* only follow SUPPORT_TIMEFRAME
+#  - anything that is in armel follows SUPPORT_TIMEFRAME
+#  
+
+# codename of the lts releases
+LTS_RELEASES = [ "dapper", "hardy", "lucid" ]
+
+# architectures that are full supported (including LTS time)
+PRIMARY_ARCHES =  ["i386", "amd64"]
+
+# architectures we support (but not for LTS time)
+SUPPORTED_ARCHES = PRIMARY_ARCHES + ["armel"]
+
+# what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
+SERVER_SEEDS = [ "supported-server"]
+DESKTOP_SEEDS = ["ship", "supported-desktop"]
+SUPPORTED_SEEDS = ["supported", "supported.build-depends"]
+
+# normal support timeframe
+# time, seeds, arches
+SUPPORT_TIMEFRAME = [
+    ("18m", SUPPORTED_SEEDS),
+]
+
+# lts support timeframe
+# time, seeds, arches
+SUPPORT_TIMEFRAME_LTS = [
+    ("5y", SERVER_SEEDS),
+    ("3y", DESKTOP_SEEDS),
+    ("18m", SUPPORTED_SEEDS),
+]
+
+# distro names and if they get LTS support (order is important)
+DISTRO_NAMES_AND_LTS_SUPPORT = [ ("ubuntu",   True),
+                                 ("kubuntu",  False),
+                                 ("edubuntu", False),
+                                 ("netbook",  False),
+                               ]
+
 # germinate output base directory
 BASE_URL = "http://people.canonical.com/~ubuntu-archive/germinate-output/"
 
 # support timeframe tag used in the Packages file
 SUPPORT_TAG = "Supported"
 
-# architectures that are supported 
-SUPPORTED_ARCHES = ["i386", "amd64"]
-
-# codename of the lts releases
-LTS_RELEASES = [ "dapper", "hardy", "lucid" ]
-
-# what defines the seeds is documented in wiki.ubuntu.com/SeedManagement
-SERVER_SEEDS = [ "supported-server"]
-DESKTOP_SEEDS = ["ship", "supported-desktop"]
-SUPPORTED_SEEDS = ["supported"]
-
-# normal support timeframe
-SUPPORT_TIMEFRAME = [
-    ("18m", SUPPORTED_SEEDS)
-]
-
-# lts support timeframe
-SUPPORT_TIMEFRAME_LTS = [
-    ("5y", SERVER_SEEDS),
-    ("3y", DESKTOP_SEEDS),
-    ("18m", SUPPORTED_SEEDS),
-]
 
 def get_structure(name, version):
     """ 
@@ -100,12 +122,11 @@ def what_seeds(pkgname, seeds):
             in_seeds.add(s)
     return in_seeds
 
-def get_packages_support_time(structure, support_timeframe_list):
+def get_packages_support_time(structure, name, pkg_support_time, support_timeframe_list):
     """
     input a structure file and a list of pair<timeframe, seedlist>
     return a dict of pkgnames -> support timeframe string
     """
-    pkg_support_time = {}
     for (timeframe, seedlist) in support_timeframe_list:
         expanded = set()
         for s in seedlist:
@@ -132,7 +153,6 @@ if __name__ == "__main__":
     (options, args) = parser.parse_args()
 
     # init
-    name = "ubuntu"
     if len(args) > 0:
         distro = args[0]
         if distro[0] < 'h':
@@ -141,19 +161,34 @@ if __name__ == "__main__":
     else:
         distro = "lucid"
         
-    # get basic structure file
-    structure = get_structure(name, distro)
+    # go over the distros we need to check
+    pkg_support_time = {}
+    for (name, lts_supported) in DISTRO_NAMES_AND_LTS_SUPPORT:
+
+        # get basic structure file
+        structure = get_structure(name, distro)
     
-    # get dicts of pkgname -> support timeframe string
-    if distro in LTS_RELEASES:
-        pkg_support_time = get_packages_support_time(structure, 
-                                                     SUPPORT_TIMEFRAME_LTS)
-    else:
-        pkg_support_time = get_packages_support_time(structure, 
-                                                     SUPPORT_TIMEFRAME)
+        # get dicts of pkgname -> support timeframe string
+        support_timeframe = SUPPORT_TIMEFRAME
+        if lts_supported and distro in LTS_RELEASES:
+            support_timeframe =  SUPPORT_TIMEFRAME_LTS
+        else:
+            support_timeframe = SUPPORT_TIMEFRAME
+        get_packages_support_time(structure, name, pkg_support_time, support_timeframe)
     
     # output suitable for the extra-override file
     for pkgname in sorted(pkg_support_time.keys()):
+        # go over the supported arches, they are divided in 
+        # first-class (PRIMARY) and second-class with different
+        # support levels
         for arch in SUPPORTED_ARCHES:
-            print "%s/%s %s %s" % (
-                pkgname, arch, SUPPORT_TAG, pkg_support_time[pkgname])
+            # full LTS support
+            if arch in PRIMARY_ARCHES:
+                print "%s/%s %s %s" % (
+                    pkgname, arch, SUPPORT_TAG, pkg_support_time[pkgname])
+            else:
+                # not a LTS supported architecture, gets only regular
+                # support_timeframe
+                print "%s/%s %s %s" % (
+                    pkgname, arch, SUPPORT_TAG, SUPPORT_TIMEFRAME[0][0])
+                
