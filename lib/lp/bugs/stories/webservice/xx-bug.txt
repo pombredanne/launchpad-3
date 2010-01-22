@@ -21,6 +21,7 @@ At the top level we provide a collection of bugs.
   attachments_collection_link: u'http://.../bugs/11/attachments'
   bug_tasks_collection_link: u'http://.../bugs/11/bug_tasks'
   bug_watches_collection_link: u'http://.../bugs/11/bug_watches'
+  can_expire: False
   cves_collection_link: u'http://.../bugs/11/cves'
   date_created: u'2007-03-15T20:33:56.678930+00:00'
   date_last_message: None
