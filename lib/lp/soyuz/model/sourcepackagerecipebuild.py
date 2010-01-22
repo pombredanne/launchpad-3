@@ -12,10 +12,10 @@ import datetime
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.enumcol import EnumCol
+from canonical.database.enumcol import DBEnum
 from canonical.launchpad.interfaces.lpstorm import IMasterStore
 
-from storm.locals import Int, Reference, Storm, TimeDelta
+from storm.locals import Int, Reference, Storm, TimeDelta, Unicode
 from storm.store import Store
 
 from zope.component import getUtility
@@ -59,8 +59,12 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     buildlog_id = Int(name='build_log', allow_none=True)
     buildlog = Reference(buildlog_id, 'LibraryFileAlias.id')
 
-    buildstate = EnumCol(
-        dbName='build_state', notNull=True, schema=BuildStatus)
+    buildstate = DBEnum(enum=BuildStatus, name='build_state')
+
+    dependencies = Unicode(allow_none=True)
+
+    upload_log_id = Int(name='upload_log', allow_none=True)
+    upload_log = Reference(upload_log_id, 'LibraryFileAlias.id')
 
     @property
     def current_component(self):
@@ -73,9 +77,6 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
     distroseries_id = Int(name='distroseries', allow_none=True)
     distroseries = Reference(distroseries_id, 'DistroSeries.id')
 
-    # XXX wgrant 2010-01-15 bug=507751: Need a DB field for this.
-    dependencies = None
-
     sourcepackagename_id = Int(name='sourcepackagename', allow_none=True)
     sourcepackagename = Reference(
         sourcepackagename_id, 'SourcePackageName.id')
@@ -85,12 +86,7 @@ class SourcePackageRecipeBuild(BuildBase, Storm):
         """See `IBuildBase`."""
         return self.distroseries.distribution
 
-    @property
-    def pocket(self):
-        # JRV 2010-01-15: The database table really should have a pocket 
-        # column, although this is not a big problem at the moment 
-        # as recipe builds only happen for PPA's (so far). (bug 507307)
-        return PackagePublishingPocket.RELEASE
+    pocket = DBEnum(enum=PackagePublishingPocket)
 
     recipe_id = Int(name='recipe', allow_none=False)
     recipe = Reference(recipe_id, 'SourcePackageRecipe.id')
