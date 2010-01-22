@@ -160,26 +160,18 @@ class BaseTestRunner:
         """Write the testrunner output to the logs."""
         # Only write to stdout if we are running as the foreground process.
         echo_to_stdout = not self.daemonized
-
-        last_line = ''
         while 1:
-            data = input_stream.read(256)
-            if data:
-                out_file.write(data)
-                out_file.flush()
-                if echo_to_stdout:
-                    sys.stdout.write(data)
-                    sys.stdout.flush()
-                lines = data.split('\n')
-                lines[0] = last_line + lines[0]
-                last_line = lines.pop()
-                for line in lines:
-                    if not self.ignore_line(line):
-                        summary_file.write(line + '\n')
-                summary_file.flush()
-            else:
-                summary_file.write(last_line)
+            line = input_stream.readline()
+            if not line:
                 break
+            out_file.write(line)
+            out_file.flush()
+            if echo_to_stdout:
+                sys.stdout.write(line)
+                sys.stdout.flush()
+            if not self.ignore_line(line):
+                summary_file.write(line)
+                summary_file.flush()
 
 
 class TestOnMergeRunner(BaseTestRunner):
