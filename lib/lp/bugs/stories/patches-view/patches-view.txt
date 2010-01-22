@@ -1,3 +1,9 @@
+Patches View
+============
+
+Patches View by Product
+-----------------------
+
 We have a view listing patches attached to bugs that target a given
 product.  At first, the product is new and has no bugs.
 
@@ -149,3 +155,37 @@ We can sort patches by importance and status.
     Bug #18: bug_c title                  Wishlist  Fix Committed ...second...
     From: Patchy Person
     Link: patch_f.diff description of patch f
+
+Patches View by Distro
+----------------------
+
+The patches view also works for distributions, and it shows the target
+package when viewed via a distribution.
+
+    >>> from zope.component import getUtility
+    >>> from lp.registry.interfaces.distribution import IDistributionSet
+    >>> def make_bugtask(
+    ...     bug, source_package_name,
+    ...     importance=BugTaskImportance.UNDECIDED,
+    ...     status=BugTaskStatus.NEW):
+    ...     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ...     spkg = ubuntu.getSourcePackage(source_package_name)
+    ...     bugtask = factory.makeBugTask(bug=bug, target=spkg)
+    ...     bugtask.transitionToImportance(importance, ubuntu.owner)
+    ...     bugtask.transitionToStatus(status, ubuntu.owner)
+    >>> make_thing(
+    ...     make_bugtask, bug=bug_a, source_package_name='evolution',
+    ...     importance=BugTaskImportance.MEDIUM, status=BugTaskStatus.NEW)
+    >>> make_thing(
+    ...     make_bugtask, bug=bug_c, source_package_name='a52dec',
+    ...     importance=BugTaskImportance.HIGH, status=BugTaskStatus.TRIAGED)
+
+    >>> user_browser.open('http://bugs.launchpad.dev/ubuntu/+patches')
+    >>> show_patches_view(user_browser.contents)
+    Bug                       Importance   Status    Package    Patch Age
+    Bug #18: bug_c title       High       Triaged    a52dec ...second...
+    From: Patchy Person
+    Link: patch_f.diff description of patch f
+    Bug #16: bug_a title       Medium     New     evolution  ...second...
+    From: Patchy Person
+    Link: patch_a.diff description of patch a
