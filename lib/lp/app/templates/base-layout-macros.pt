@@ -80,7 +80,7 @@
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event/event.js"></script>
     <script type="text/javascript"
-            tal:attributes="src string:${yui}/event/event-key.js"></script>            
+            tal:attributes="src string:${yui}/event/event-key.js"></script>
     <script type="text/javascript"
             tal:attributes="src string:${yui}/event-custom/event-custom.js"></script>
     <script type="text/javascript"
@@ -381,4 +381,15 @@
   </div>
 </metal:site-message>
 
+<metal:plural define-macro="plural"><tal:comment condition="nothing">
+  This macro requires the call site to define `count` in a containing
+  tag or as a global. The plural `suffix` can also be defined by the
+  containing tag or as a global, the default is 's'.
+  </tal:comment><tal:if
+    define="
+      l_default string:s;
+      l_suffix suffix | l_default;"
+    condition="python: count != 1"
+    replace="l_suffix" />
+</metal:plural>
 </macros>
