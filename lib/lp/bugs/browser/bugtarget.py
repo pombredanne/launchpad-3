@@ -52,8 +52,7 @@ from lp.bugs.interfaces.bugtarget import (
     IBugTarget, IOfficialBugTagTargetPublic, IOfficialBugTagTargetRestricted)
 from lp.bugs.interfaces.bug import IBugSet
 from lp.bugs.interfaces.bugtask import (
-    BugTaskStatus, IBugTaskSet, BugTaskSearchParams,
-    UNRESOLVED_BUGTASK_STATUSES)
+    BugTaskStatus, IBugTaskSet, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.interfaces.launchpad import (
     IHasExternalBugTracker, ILaunchpadUsage)
 from canonical.launchpad.interfaces.hwdb import IHWSubmissionSet

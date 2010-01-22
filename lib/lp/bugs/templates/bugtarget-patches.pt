@@ -55,7 +55,7 @@
         tal:attributes="selected python:orderby == '-datecreated'"
       >newest first</option>
     </select>
-    <input type="submit" value="sort" id="sort-button">
+    <input type="submit" value="sort" id="sort-button"/>
   </form>
 
     <table class="listing"><thead>
