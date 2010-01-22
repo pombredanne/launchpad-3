@@ -66,12 +66,24 @@ packages with the greatest need are listed first.
 
     >>> content = find_main_content(anon_browser.contents)
     >>> print extract_text(find_tag_by_id(content, 'packages'))
-    Source Package       Bugs  Translations
-    pmount               0     64
-    alsa-utils           0     &mdash;
-    cnews                0     &mdash;
-    libstdc++            0     &mdash;
-    linux-source-2.6.15  1     &mdash;
+    Source Package       Bugs     Translations
+    pmount               No bugs  64 strings
+    alsa-utils           No bugs  No strings
+    cnews                No bugs  No strings
+    libstdc++            No bugs  No strings
+    linux-source-2.6.15  1 bug    No strings
+
+The counts in the listing link to their respect bugs and translations
+pages.
+
+    >>> anon_browser.getLink('64 strings')
+    <Link text='64 strings'
+      url='http://translations.launchpad.dev/ubuntu/hoary/+source/pmount'>
+
+    >>> anon_browser.getLink('1 bug')
+    <Link text='1 bug'
+      url='http://bugs.launchpad.dev/ubuntu/+source/linux-source-2.6.15'>
+
 
 The listing is batched so that the user can visit the next page listings.
 
