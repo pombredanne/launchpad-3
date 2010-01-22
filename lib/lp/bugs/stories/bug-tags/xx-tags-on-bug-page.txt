@@ -37,7 +37,7 @@ Since they are new tags, we have to confirm them.
 
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1/+edit'
-    >>> user_browser.getControl('Yes, define new tag', index=0).click()
+    >>> user_browser.getControl('Create the new tag', index=0).click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/1'
 
@@ -106,9 +106,9 @@ Using official tags for the first time does not require confirmation.
     >>> user_browser.open('http://bugs.launchpad.dev/firefox/+bug/1/+edit')
     >>> user_browser.getControl('Tags').value = 'an-official-tag'
     >>> user_browser.getControl('Change').click()
-    >>> user_browser.getControl('Yes, define new tag')
+    >>> user_browser.getControl('Create the new tag')
     Traceback (most recent call last):
     ...
-    LookupError: label 'Yes, define new tag'
+    LookupError: label 'Create the new tag'
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1

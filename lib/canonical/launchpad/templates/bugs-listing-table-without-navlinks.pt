@@ -28,7 +28,7 @@
     <tbody>
       <tr tal:repeat="bugtask context/getBugListingItems">
         <td class="icon right">
-          <span tal:attributes="class bugtask/image:sprite_css" />
+          <span tal:replace="structure bugtask/image:icon" />
         </td>
         <td
           class="amount"
