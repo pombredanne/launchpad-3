@@ -113,7 +113,8 @@ class BaseTestRunner:
                         stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
                         cwd=self.test_dir)
 
-                    self._gather_test_output(popen, summary_file, out_file)
+                    self._gather_test_output(
+                        popen.stdout, summary_file, out_file)
 
                     # Grab the testrunner exit status
                     result = popen.wait()
@@ -156,14 +157,14 @@ class BaseTestRunner:
             out_file.close()
             self.logger.close_logs()
 
-    def _gather_test_output(self, test_process, summary_file, out_file):
+    def _gather_test_output(self, input_stream, summary_file, out_file):
         """Write the testrunner output to the logs."""
         # Only write to stdout if we are running as the foreground process.
         echo_to_stdout = not self.daemonized
 
         last_line = ''
         while 1:
-            data = test_process.stdout.read(256)
+            data = input_stream.read(256)
             if data:
                 out_file.write(data)
                 out_file.flush()
