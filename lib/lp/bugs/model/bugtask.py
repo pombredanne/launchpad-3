@@ -526,6 +526,11 @@ class BugTask(SQLBase, BugTaskMixin):
 
         return now - self.datecreated
 
+    @property
+    def task_age(self):
+        """See `IBugTask`."""
+        return self.age.seconds
+
     # Several other classes need to generate lists of bug tasks, and
     # one thing they often have to filter for is completeness. We maintain
     # this single canonical query string here so that it does not have to be

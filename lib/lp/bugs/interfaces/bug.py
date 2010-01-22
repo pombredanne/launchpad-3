@@ -271,17 +271,18 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             "a message was sent to the bug reporter, and the bug is "
             "associated with pillars that have enabled bug expiration."),
         readonly=True)
-    can_expire = Bool(
+    can_expire = exported(
+        Bool(
         title=_("Can the Incomplete bug expire if it becomes inactive? "
                 "Expiration may happen when the bug permits expiration, "
                 "and a bugtask cannot be confirmed."),
-        readonly=True)
+        readonly=True))
     date_last_message = exported(
         Datetime(title=_('Date of last bug message'),
                  required=False, readonly=True))
-    number_of_duplicates = Int(
-        title=_('The number of bugs marked as duplicates of this bug'),
-        required=True, readonly=True)
+    number_of_duplicates = exported(
+        Int(title=_('The number of bugs marked as duplicates of this bug'),
+            required=True, readonly=True))
     message_count = Int(
         title=_('The number of comments on this bug'),
         required=True, readonly=True)
@@ -296,9 +297,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             value_type=Reference(schema=IPerson),
             readonly=True))
 
-    heat = Int(
-        title=_("The 'heat' of the bug"),
-        required=False, readonly=True)
+    heat = exported(
+        Int(title=_("The 'heat' of the bug"),
+        required=False, readonly=True))
 
     # Adding related BugMessages provides a hook for getting at
     # BugMessage.visible when building bug comments.
