@@ -895,4 +895,15 @@
         for="lp.bugs.interfaces.bugtarget.IBugTarget"
         factory="lp.bugs.browser.bugtarget.BugsVHostBreadcrumb"
         permission="zope.Public"/>
+
+    <!-- CalculateBugHeatJobs -->
+    <class class="lp.bugs.model.bugheat.CalculateBugHeatJob">
+        <allow interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJob"/>
+    </class>
+    <securedutility
+        component="lp.bugs.model.bugheat.CalculateBugHeatJob"
+        provides="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource">
+        <allow
+            interface="lp.bugs.interfaces.bugjob.ICalculateBugHeatJobSource"/>
+    </securedutility>
 </configure>
