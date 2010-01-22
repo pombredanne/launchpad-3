@@ -35,6 +35,7 @@ At the top level we provide a collection of bugs.
   linked_branches_collection_link: u'http://.../bugs/11/linked_branches'
   messages_collection_link: u'http://.../bugs/11/messages'
   name: None
+  number_of_duplicates: 0
   owner_link: u'http://.../~name16'
   private: False
   resource_type_link: u'http://.../#bug'
