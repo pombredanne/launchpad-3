@@ -1,4 +1,30 @@
 We have a view listing patches attached to bugs that target a given
-product.
+product.  At first, the product is new and has no bugs.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/firefox/+patches')
+    >>> def make_thing(factory_method, **thing_args):
+    ...    login('foo.bar@canonical.com')
+    ...    result = factory_method(**thing_args)
+    ...    transaction.commit()
+    ...    logout()
+    ...    return result
+
+    >>> product1 = make_thing(factory.makeProduct, name='patchy-product-1')
+
+We don't see any patches when we open the patches view.
+
+    >>> def show_patches_view(expected_contents):
+    ...     for tag in find_tags_by_class(
+    ...         expected_contents, 'listing'):
+    ...         print extract_text(tag)
+
+    >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
+    >>> show_patches_view(user_browser.contents)
+    Bug Importance Status Patch Age
+
+After the product has a bug, it still doesn't show up in the patches
+view, because that bug has no patch attachments.
+
+    >>> bug1 = make_thing(factory.makeBug, product=product1)
+    >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
+    >>> show_patches_view(user_browser.contents)
+    Bug Importance Status Patch Age
