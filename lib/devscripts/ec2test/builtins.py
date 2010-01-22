@@ -109,6 +109,10 @@ postmortem_option = Option(
           'and/or of this script.'))
 
 
+attached_option = Option(
+    'attached', help="Remain attached, i.e. do not go headless."),
+
+
 def filename_type(filename):
     """An option validator for filenames.
 
@@ -329,9 +333,7 @@ class cmd_land(EC2Command):
         Option(
             'force',
             help="Land the branch even if the proposal is not approved."),
-        Option(
-            'attached',
-            help="Remain attached, i.e. do not go headless."),
+        attached_option,
         ]
 
     takes_args = ['merge_proposal?']
