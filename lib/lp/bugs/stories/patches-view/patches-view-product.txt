@@ -24,8 +24,20 @@ We don't see any patches when we open the patches view.
 After the product has a bug, it still doesn't show up in the patches
 view, because that bug has no patch attachments.
 
+    >>> from lp.bugs.interfaces.bugtask import (
+    ...     BugTaskImportance, BugTaskStatus)
+    >>> def make_bug(
+    ...     title, product, importance=BugTaskImportance.UNDECIDED,
+    ...     status=BugTaskStatus.NEW):
+    ...     bug = factory.makeBug(title=title, product=product)
+    ...     bug.default_bugtask.transitionToImportance(
+    ...         importance, product.owner)
+    ...     bug.default_bugtask.transitionToStatus(
+    ...         status, product.owner)
+    ...     return bug
+
     >>> bug_a = make_thing(
-    ...     factory.makeBug, title="bug_a title", product=product1)
+    ...     make_bug, title="bug_a title", product=product1)
     >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug Importance Status Patch Age
@@ -60,9 +72,13 @@ After creating some more bugs, with some non-patch and some patch
 attachments...
 
     >>> bug_b = make_thing(
-    ...     factory.makeBug, title="bug_b title", product=product1)
+    ...     make_bug, title="bug_b title", product=product1,
+    ...     importance=BugTaskImportance.CRITICAL,      
+    ...     status=BugTaskStatus.CONFIRMED)
     >>> bug_c = make_thing(
-    ...     factory.makeBug, title="bug_c title", product=product1)
+    ...     make_bug, title="bug_c title", product=product1,
+    ...     importance=BugTaskImportance.WISHLIST,
+    ...     status=BugTaskStatus.FIXCOMMITTED)
     >>> make_thing(
     ...     factory.makeBugAttachment, comment="comment about patch b",
     ...     filename="patch_b.diff", owner=patch_submitter,
@@ -90,12 +106,46 @@ attachments...
     >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug                                 Importance   Status    Patch Age
+    Bug #17: bug_b title                  Critical    Confirmed ...second...
+    From: Patchy Person
+    Link: patch_c.diff description of patch c
+    Bug #18: bug_c title                  Wishlist  Fix Committed ...second...
+    From: Patchy Person
+    Link: patch_f.diff description of patch f
     Bug #16: bug_a title                  Undecided     New     ...second...
     From: Patchy Person
     Link: patch_a.diff description of patch a
-    Bug #17: bug_b title                  Undecided     New     ...second...
+
+We can sort patches by importance and status.
+
+    >>> user_browser.getControl(name="orderby").value = ['-importance']
+    >>> user_browser.getControl("sort").click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/patchy-product-1/+patches?orderby=-importance'
+    >>> show_patches_view(user_browser.contents)
+    Bug                                 Importance   Status    Patch Age
+    Bug #17: bug_b title                  Critical    Confirmed ...second...
     From: Patchy Person
     Link: patch_c.diff description of patch c
-    Bug #18: bug_c title                  Undecided     New     ...second...
+    Bug #18: bug_c title                  Wishlist  Fix Committed ...second...
+    From: Patchy Person
+    Link: patch_f.diff description of patch f
+    Bug #16: bug_a title                  Undecided     New     ...second...
+    From: Patchy Person
+    Link: patch_a.diff description of patch a
+
+    >>> user_browser.getControl(name="orderby").value = ['status']
+    >>> user_browser.getControl("sort").click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/patchy-product-1/+patches?orderby=status'
+    >>> show_patches_view(user_browser.contents)
+    Bug                                 Importance   Status    Patch Age
+    Bug #16: bug_a title                  Undecided     New     ...second...
+    From: Patchy Person
+    Link: patch_a.diff description of patch a
+    Bug #17: bug_b title                  Critical    Confirmed ...second...
+    From: Patchy Person
+    Link: patch_c.diff description of patch c
+    Bug #18: bug_c title                  Wishlist  Fix Committed ...second...
     From: Patchy Person
     Link: patch_f.diff description of patch f
