@@ -182,6 +182,10 @@ def _get_branches_and_test_branch(trunk, branch, test_branch):
     return branches, test_branch
 
 
+
+DEFAULT_TEST_OPTIONS = '-vv'
+
+
 class cmd_test(EC2Command):
     """Run the test suite in ec2."""
 
@@ -256,8 +260,8 @@ class cmd_test(EC2Command):
 
     def run(self, test_branch=None, branch=None, trunk=False, machine=None,
             instance_type=DEFAULT_INSTANCE_TYPE,
-            file=None, email=None, test_options='-vv', noemail=False,
-            submit_pqm_message=None, pqm_public_location=None,
+            file=None, email=None, test_options=DEFAULT_TEST_OPTIONS,
+            noemail=False, submit_pqm_message=None, pqm_public_location=None,
             pqm_submit_location=None, pqm_email=None, postmortem=False,
             headless=False, debug=False, open_browser=False,
             include_download_cache_changes=False):
@@ -284,7 +288,8 @@ class cmd_test(EC2Command):
                 'You have specified no way to get the results '
                 'of your headless test run.')
 
-        if test_options != '-vv' and submit_pqm_message is not None:
+        if (test_options != DEFAULT_TEST_OPTIONS
+            and submit_pqm_message is not None):
             raise BzrCommandError(
                 "Submitting to PQM with non-default test options isn't "
                 "supported")
