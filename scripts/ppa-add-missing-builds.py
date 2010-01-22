@@ -16,7 +16,6 @@ from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.webapp.interfaces import NotFoundError
 from canonical.lp import initZopeless
-from lp.services.scripts.base import LaunchpadScriptFailure
 
 def add_missing_ppa_builds(ppa, required_arches, distroseries):
     # Listify the architectures to avoid hitting this MultipleJoin
@@ -61,7 +60,6 @@ def add_missing_ppa_builds(ppa, required_arches, distroseries):
             architectures_available=doable_arch_set, logger=log)
         if len(builds) > 0:
             log.info("Created %s builds" % len(builds))
-            txn.commit()
 
 
 if __name__ == "__main__":
@@ -123,6 +121,6 @@ if __name__ == "__main__":
     # I'm tired of parsing options.  Let's do it.
     try:
         add_missing_ppa_builds(ppa, arches, distroseries);
-        txn.abort()
-    except LaunchpadScriptFailure, err:
+        txn.commit()
+    except Exception, err:
         log.error(err)
