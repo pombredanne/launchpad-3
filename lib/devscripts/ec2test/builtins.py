@@ -183,7 +183,7 @@ def _get_branches_and_test_branch(trunk, branch, test_branch):
 
 
 
-DEFAULT_TEST_OPTIONS = '-vv'
+DEFAULT_TEST_OPTIONS = '--subunit'
 
 
 class cmd_test(EC2Command):
