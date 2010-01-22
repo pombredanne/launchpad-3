@@ -119,10 +119,6 @@ class ProductReleaseAddViewBase(LaunchpadFormView):
             milestone.active = False
             milestone_link = '<a href="%s">%s milestone</a>' % (
                 canonical_url(milestone), cgi.escape(milestone.name))
-            self.request.response.addWarningNotification(structured(
-                _("The %s for this project release was deactivated "
-                  "so that bugs and blueprints cannot be associated with "
-                  "this release." % milestone_link)))
         self.next_url = canonical_url(newrelease.milestone)
         notify(ObjectCreatedEvent(newrelease))
 
