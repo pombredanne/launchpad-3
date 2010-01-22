@@ -315,24 +315,42 @@ class TestBranch(TestCaseWithFactory):
             SourcePackage(branch.sourcepackagename, branch.distroseries),
             branch.sourcepackage)
 
+
+class TestBranchUpgrade(TestCaseWithFactory):
+    """Test the upgrade functionalities of branches."""
+
+    layer = DatabaseFunctionalLayer
+
+    def test_needsUpgrading_already_requested(self):
+        # A branch has a needs_upgrading attribute that returns whether or not
+        # a branch needs to be upgraded or not.  If the format is
+        # unrecognized, we don't try to upgrade it.
+        branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade()
+
+        self.assertFalse(branch.needs_upgrading)
+
     def test_needsUpgrading_branch_format_unrecognized(self):
         # A branch has a needs_upgrading attribute that returns whether or not
         # a branch needs to be upgraded or not.  If the format is
         # unrecognized, we don't try to upgrade it.
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.UNRECOGNIZED)
+            branch_format=BranchFormat.UNRECOGNIZED,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_branch_format_upgrade_not_needed(self):
         # A branch has a needs_upgrading attribute that returns whether or not
-        # a branch needs to be upgraded or not.  If a branch is up to date, it
+        # a branch needs to be upgraded or not.  If a branch is up-to-date, it
         # doesn't need to be upgraded.
-        #
-        # XXX: JonathanLange 2009-06-06: This test needs to be changed every
-        # time Bazaar adds a new branch format. Surely we can think of a
-        # better way of testing this?
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_8)
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_branch_format_upgrade_needed(self):
@@ -340,7 +358,8 @@ class TestBranch(TestCaseWithFactory):
         # a branch needs to be upgraded or not.  If a branch doesn't support
         # stacking, it needs to be upgraded.
         branch = self.factory.makePersonalBranch(
-            branch_format=BranchFormat.BZR_BRANCH_6)
+            branch_format=BranchFormat.BZR_BRANCH_6,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertTrue(branch.needs_upgrading)
 
     def test_needsUpgrading_repository_format_unrecognized(self):
@@ -348,6 +367,7 @@ class TestBranch(TestCaseWithFactory):
         # a branch needs to be upgraded or not.  In the repo format is
         # unrecognized, we don't try to upgrade it.
         branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.UNRECOGNIZED)
         self.assertFalse(branch.needs_upgrading)
 
@@ -356,7 +376,8 @@ class TestBranch(TestCaseWithFactory):
         # branch needs to be upgraded or not.  If the repo format is up to
         # date, there's no need to upgrade it.
         branch = self.factory.makePersonalBranch(
-            repository_format=RepositoryFormat.BZR_KNITPACK_6)
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
         self.assertFalse(branch.needs_upgrading)
 
     def test_needsUpgrading_repository_format_upgrade_needed(self):
@@ -364,6 +385,7 @@ class TestBranch(TestCaseWithFactory):
         # branch needs to be upgraded or not.  If the format doesn't support
         # stacking, it needs to be upgraded.
         branch = self.factory.makePersonalBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
             repository_format=RepositoryFormat.BZR_REPOSITORY_4)
         self.assertTrue(branch.needs_upgrading)
 
@@ -371,12 +393,55 @@ class TestBranch(TestCaseWithFactory):
         # A BranchUpgradeJob can be created by calling IBranch.requestUpgrade.
         branch = self.factory.makeAnyBranch(
             branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
         job = removeSecurityProxy(branch.requestUpgrade())
 
         jobs = list(getUtility(IBranchUpgradeJobSource).iterReady())
         self.assertEqual(
             jobs,
             [job,])
+
+    def test_requestUpgrade_no_upgrade_needed(self):
+        # If a branch doesn't need to be upgraded, requestUpgrade raises an
+        # AssertionError.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_8,
+            repository_format=RepositoryFormat.BZR_CHK_2A)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        self.assertRaises(AssertionError, branch.requestUpgrade)
+
+    def test_requestUpgrade_upgrade_pending(self):
+        # If there is a pending upgrade already requested, requestUpgrade
+        # raises an AssertionError.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade()
+
+        self.assertRaises(AssertionError, branch.requestUpgrade)
+
+    def test_upgradePending(self):
+        # If there is a BranchUpgradeJob pending for the branch, return True.
+        branch = self.factory.makeAnyBranch(
+            branch_format=BranchFormat.BZR_BRANCH_6)
+        owner = removeSecurityProxy(branch).owner
+        login_person(owner)
+        self.addCleanup(logout)
+        branch.requestUpgrade()
+
+        self.assertTrue(branch.upgrade_pending)
+
+    def test_upgradePending_no_upgrade_requested(self):
+        # If the branch never had an upgrade requested, return False.
+        branch = self.factory.makeAnyBranch()
+
+        self.assertFalse(branch.upgrade_pending)
 
 
 class TestBzrIdentity(TestCaseWithFactory):

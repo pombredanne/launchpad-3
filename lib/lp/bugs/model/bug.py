@@ -90,8 +90,8 @@ from lp.bugs.model.bugwatch import BugWatch
 from lp.registry.interfaces.distribution import IDistribution
 from lp.registry.interfaces.distributionsourcepackage import (
     IDistributionSourcePackage)
-from lp.registry.interfaces.distroseries import (
-    DistroSeriesStatus, IDistroSeries)
+from lp.registry.interfaces.series import SeriesStatus
+from lp.registry.interfaces.distroseries import IDistroSeries
 from lp.registry.interfaces.person import IPersonSet
 from lp.registry.interfaces.person import validate_public_person
 from lp.registry.interfaces.product import IProduct
@@ -254,10 +254,7 @@ class Bug(SQLBase):
     message_count = IntCol(notNull=True, default=0)
     users_affected_count = IntCol(notNull=True, default=0)
     users_unaffected_count = IntCol(notNull=True, default=0)
-
-    # This is called 'hotness' in the database but the canonical name in
-    # the code is 'heat', so we use that name here.
-    heat = IntCol(dbName='hotness', notNull=True, default=0)
+    heat = IntCol(notNull=True, default=0)
 
     @property
     def comment_count(self):
@@ -1090,7 +1087,7 @@ class Bug(SQLBase):
         productseries = None
         if IDistroSeries.providedBy(target):
             distroseries = target
-            if target.status == DistroSeriesStatus.OBSOLETE:
+            if target.status == SeriesStatus.OBSOLETE:
                 raise NominationSeriesObsoleteError(
                     "%s is an obsolete series." % target.bugtargetdisplayname)
         else:
