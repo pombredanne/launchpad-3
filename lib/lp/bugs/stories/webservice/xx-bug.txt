@@ -325,7 +325,14 @@ data in a bug task is derived from the bug.
   self_link: u'http://api.../debian/+source/mozilla-firefox/+bug/1'
   status: u'Confirmed'
   target_link: u'http://api.../debian/+source/mozilla-firefox'
+  task_age: ...
   title: u'Bug #1 in mozilla-firefox (Debian): "Firefox does not support SVG"'
+
+Because task age is a dynamic calculation between now and the date_created
+we will just verify that an integer is returned.
+
+  >>> print type(bug_one_bugtasks[0]['task_age'])
+  <type 'int'>
 
   >>> bugtask_path = bug_one_bugtasks[0]['self_link']
   >>> bugtask = webservice.get(bugtask_path).jsonBody()

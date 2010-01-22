@@ -184,6 +184,7 @@
                     date_fix_released
                     date_left_closed
                     date_closed
+                    task_age
                     bug_subscribers
                     is_complete
                     canTransitionToStatus
