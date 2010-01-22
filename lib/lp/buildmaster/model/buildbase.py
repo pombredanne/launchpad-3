@@ -15,14 +15,18 @@ import os
 import pytz
 import subprocess
 import time
+from cStringIO import StringIO
 
 from storm.store import Store
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     clear_current_connection_cache, cursor, flush_database_updates)
+from canonical.launchpad.helpers import filenameToContentType
+from canonical.launchpad.interfaces.librarian import ILibraryFileAliasSet
 from canonical.librarian.utils import copy_and_close
 from lp.registry.interfaces.pocket import pocketsuffix
 from lp.soyuz.interfaces.build import BuildStatus
@@ -324,6 +328,27 @@ class BuildBase:
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         self.buildduration = RIGHT_NOW - self.buildqueue_record.date_started
         self.dependencies = slave_status.get('dependencies')
+
+    def storeUploadLog(self, content):
+        """See `IBuildBase`."""
+        # The given content is stored in the librarian, restricted as
+        # necessary according to the targeted archive's privacy.  The content
+        # object's 'upload_log' attribute will point to the
+        # `LibrarianFileAlias`.
+
+        assert self.upload_log is None, (
+            "Upload log information already exist and cannot be overridden.")
+
+        filename = 'upload_%s_log.txt' % self.id
+        contentType = filenameToContentType(filename)
+        file_size = len(content)
+        file_content = StringIO(content)
+        restricted = self.is_private
+
+        library_file = getUtility(ILibraryFileAliasSet).create(
+            filename, file_size, file_content, contentType=contentType,
+            restricted=restricted)
+        self.upload_log = library_file
 
     def queueBuild(self):
         """See `IBuildBase`"""
