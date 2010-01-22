@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'BugJobType',
     'IBugJob',
+    'IBugJobSource',
     'ICalculateBugHeatJob',
     'ICalculateBugHeatJobSource',
     ]
