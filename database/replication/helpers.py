@@ -287,7 +287,7 @@ def get_all_cluster_nodes(con):
         assert len(node_ids) == 1, "Multiple nodes but no paths."
         master_node_id = node_ids[0]
         master_connection_string = ConnectionString(
-            config.database.main_master)
+            config.database.rw_main_master)
         master_connection_string.user = 'slony'
         return [Node(
             master_node_id, 'node%d_node' % master_node_id,

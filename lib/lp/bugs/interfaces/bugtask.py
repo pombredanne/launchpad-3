@@ -470,6 +470,11 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
                    description=_("The age of this task, expressed as the "
                                  "length of time between the creation date "
                                  "and now."))
+    task_age = exported(
+        Int(title=_("Age of the bug task"),
+            description=_("The age of this task in seconds, a delta between "
+                         "now and the date the bug task was created."),
+            readonly=True))
     owner = exported(
         Reference(title=_("The owner"), schema=IPerson, readonly=True))
     target = exported(Reference(
