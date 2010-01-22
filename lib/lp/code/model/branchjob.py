@@ -52,7 +52,8 @@ from lp.code.model.branchmergeproposal import BranchMergeProposal
 from lp.code.model.diff import StaticDiff
 from lp.code.model.revision import RevisionSet
 from lp.codehosting.scanner.bzrsync import BzrSync
-from lp.codehosting.vfs import branch_id_to_path, get_multi_server
+from lp.codehosting.vfs import (branch_id_to_path, get_multi_server,
+    get_scanner_server)
 from lp.services.job.model.job import Job
 from lp.services.job.interfaces.job import JobStatus
 from lp.services.job.runner import BaseRunnableJob
@@ -283,7 +284,7 @@ class BranchScanJob(BranchJobDerived):
     def contextManager():
         """See `IBranchScanJobSource`."""
         errorlog.globalErrorUtility.configure('branchscanner')
-        server = get_multi_server()
+        server = get_scanner_server()
         server.setUp()
         yield
         server.tearDown()
