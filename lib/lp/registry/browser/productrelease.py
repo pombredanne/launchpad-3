@@ -39,7 +39,6 @@ from canonical.launchpad.webapp import (
     action, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, LaunchpadFormView,
     LaunchpadView, Link, Navigation, stepthrough)
-from canonical.launchpad.webapp.menu import structured
 from canonical.widgets import DateTimeWidget
 
 from lp.registry.browser import MilestoneOverlayMixin, RegistryDeleteViewMixin
