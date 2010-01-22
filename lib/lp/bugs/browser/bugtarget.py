@@ -1385,7 +1385,7 @@ class BugsPatchesView(LaunchpadView):
     @property
     def label(self):
         """The display label for the view."""
-        return 'Patch attachments in %s' % self.context.title
+        return 'Patch attachments in %s' % self.context.displayname
 
     def batchedPatchTasks(self):
         """Return a BatchNavigator for bug tasks with patch attachments."""
@@ -1399,7 +1399,7 @@ class BugsPatchesView(LaunchpadView):
             self.request)
         
     def shouldShowTargetName(self):
-        """Return True iff current context can have different bugtargets."""
+        """Return True if current context can have different bugtargets."""
         return (IDistribution.providedBy(self.context)
                 or IProject.providedBy(self.context))
 
@@ -1415,6 +1415,8 @@ class BugsPatchesView(LaunchpadView):
                     if (a.message.datecreated > youngest.message.datecreated):
                         youngest = a
         if youngest is None:
+            # This is the patches view, so every bug under
+            # consideration should have at least one patch attachment.
             raise AssertionError("bug %i has no patch attachments" % bug.id)
         return youngest
 
