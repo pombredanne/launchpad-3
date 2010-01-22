@@ -414,7 +414,6 @@ class Bug(SQLBase):
         sub = BugSubscription(
             bug=self, person=person, subscribed_by=subscribed_by)
 
-        # Add a job to recalculate the bug's heat.
         getUtility(ICalculateBugHeatJobSource).create(self)
 
         # Ensure that the subscription has been flushed.
@@ -724,7 +723,6 @@ class Bug(SQLBase):
                 notification_data['text'], change.person, recipients,
                 when)
 
-        # Create a job to update this bug's heat.
         getUtility(ICalculateBugHeatJobSource).create(self)
 
     def expireNotifications(self):
