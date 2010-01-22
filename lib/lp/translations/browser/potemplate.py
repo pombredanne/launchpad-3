@@ -31,6 +31,7 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.lazr.utils import smartquote
 
@@ -291,7 +292,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                 # SourcePackageName is needed to avoid hardcoding this URL.
                 url = (canonical_url(
                     self.context.distroseries, rootsite="translations") +
-                    "/+source/" + self.context.sourcepackagename.name + 
+                    "/+source/" + self.context.sourcepackagename.name +
                     "/+translations")
             else:
                 url = canonical_url(
@@ -512,7 +513,7 @@ class POTemplateEditView(LaunchpadEditFormView):
     """View class that lets you edit a POTemplate object."""
 
     schema = IPOTemplate
-    field_names = ['name', 'translation_domain', 'description', 'priority',
+    field_names = ['translation_domain', 'description', 'priority',
         'path', 'owner', 'iscurrent']
     label = 'Edit translation template details'
     page_title = 'Edit details'
@@ -529,11 +530,11 @@ class POTemplateEditView(LaunchpadEditFormView):
                 product=context.product, distribution=context.distribution,
                 sourcepackagename=context.sourcepackagename)
         if old_translation_domain != context.translation_domain:
-            # We only update date_last_updated when translation_domain field
-            # is changed because is the only significative change that,
-            # somehow, affects the content of the potemplate.
-            UTC = pytz.timezone('UTC')
-            context.date_last_updated = datetime.datetime.now(UTC)
+            # We only change date_last_updated when the translation_domain
+            # field is changed because it is the only relevant field we
+            # care about regarding the date of last update.
+            naked_context = removeSecurityProxy(context)
+            naked_context.date_last_updated = datetime.datetime.now(pytz.UTC)
 
     @property
     def cancel_url(self):
@@ -713,7 +714,7 @@ class POTemplateSubsetNavigation(Navigation):
             raise AssertionError('Unknown context for %s' % potemplate.title)
 
         if ((official_rosetta and potemplate.iscurrent) or
-            check_permission('launchpad.Edit', self.context)):
+            check_permission('launchpad.Edit', potemplate)):
             # The target is using officially Launchpad Translations and the
             # template is available to be translated, or the user is a is a
             # Launchpad administrator in which case we show everything.
