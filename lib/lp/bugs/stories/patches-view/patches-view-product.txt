@@ -24,8 +24,8 @@ We don't see any patches when we open the patches view.
 After the product has a bug, it still doesn't show up in the patches
 view, because that bug has no patch attachments.
 
-    >>> bug1 = make_thing(
-    ...     factory.makeBug, title="bug1 title", product=product1)
+    >>> bug_a = make_thing(
+    ...     factory.makeBug, title="bug_a title", product=product1)
     >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug Importance Status Patch Age
@@ -33,7 +33,7 @@ view, because that bug has no patch attachments.
 After we add a non-patch attachment to that bug, the patches view
 still shows no patches.
 
-    >>> non_patch_attachment = make_thing(factory.makeBugAttachment, bug=bug1)
+    >>> make_thing(factory.makeBugAttachment, bug=bug_a, is_patch=False)
     >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug Importance Status Patch Age
@@ -44,16 +44,58 @@ in the patches view.
     >>> patch_submitter = make_thing(
     ...    factory.makePerson, name="patchy-person",
     ...    displayname="Patchy Person")
-    >>> patch_attachment = make_thing(factory.makeBugAttachment,
-    ...                               comment="comment about patch",
-    ...                               filename="patch1.diff",
-    ...                               owner=patch_submitter,
-    ...                               description="description of patch",
-    ...                               bug=bug1, is_patch=True)
+    >>> make_thing(
+    ...     factory.makeBugAttachment, comment="comment about patch a",
+    ...     filename="patch_a.diff", owner=patch_submitter,
+    ...     description="description of patch a", bug=bug_a, is_patch=True)
     >>> 
     >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug                                 Importance   Status    Patch Age
-    Bug #16: bug1 title                  Undecided     New     ...second...
+    Bug #16: bug_a title                  Undecided     New     ...second...
     From: Patchy Person
-    Link: patch1.diff description of patch
+    Link: patch_a.diff description of patch a
+
+After creating some more bugs, with some non-patch and some patch
+attachments...
+
+    >>> bug_b = make_thing(
+    ...     factory.makeBug, title="bug_b title", product=product1)
+    >>> bug_c = make_thing(
+    ...     factory.makeBug, title="bug_c title", product=product1)
+    >>> make_thing(
+    ...     factory.makeBugAttachment, comment="comment about patch b",
+    ...     filename="patch_b.diff", owner=patch_submitter,
+    ...     description="description of patch b", bug=bug_b, is_patch=True)
+    >>> make_thing(
+    ...     factory.makeBugAttachment, comment="comment about patch c",
+    ...     filename="patch_c.diff", owner=patch_submitter,
+    ...     description="description of patch c", bug=bug_b, is_patch=True)
+    >>> make_thing(factory.makeBugAttachment, bug=bug_c, is_patch=False)
+    >>> make_thing(
+    ...     factory.makeBugAttachment, comment="comment about patch d",
+    ...     filename="patch_d.diff", owner=patch_submitter,
+    ...     description="description of patch d", bug=bug_c, is_patch=True)
+    >>> make_thing(
+    ...     factory.makeBugAttachment, comment="comment about patch e",
+    ...     filename="patch_e.diff", owner=patch_submitter,
+    ...     description="description of patch e", bug=bug_c, is_patch=True)
+    >>> make_thing(
+    ...     factory.makeBugAttachment, comment="comment about patch f",
+    ...     filename="patch_f.diff", owner=patch_submitter,
+    ...     description="description of patch f", bug=bug_c, is_patch=True)
+
+...the youngest patch on each bug is visible is the patch report.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
+    >>> show_patches_view(user_browser.contents)
+    Bug                                 Importance   Status    Patch Age
+    Bug #16: bug_a title                  Undecided     New     ...second...
+    From: Patchy Person
+    Link: patch_a.diff description of patch a
+    Bug #17: bug_b title                  Undecided     New     ...second...
+    From: Patchy Person
+    Link: patch_c.diff description of patch c
+    Bug #18: bug_c title                  Undecided     New     ...second...
+    From: Patchy Person
+    Link: patch_f.diff description of patch f
