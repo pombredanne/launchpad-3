@@ -27,8 +27,9 @@ Distro series sourcepackages can be linked to product series using the
     []
     >>> transaction.commit()
 
-The view has a label and requires a distro series, source package name,
-and a packaging contents.
+The view has a label and requires a distro series and a source package name.
+The distroseries field's vocabulary is the same as the ubuntu.series
+attribute.
 
     >>> view = create_view(productseries, '+ubuntupkg')
     >>> print view.label
@@ -43,13 +44,19 @@ and a packaging contents.
     >>> print view.cancel_url
     http://launchpad.dev/hot/hotter
 
-    >>> series_names = [series.name for series in ubuntu.series]
+    >>> for series in ubuntu.series:
+    ...     print series.name
+    breezy-autotest
+    grumpy
+    hoary
+    warty
     >>> view.setUpFields()
-    >>> vocabulary_tokens = [
-    ...     term.token
-    ...     for term in view.form_fields['distroseries'].field.vocabulary
-    ...     ]
-    >>> assert vocabulary_tokens == series_names
+    >>> for term in view.form_fields['distroseries'].field.vocabulary:
+    ...     print term.token
+    breezy-autotest
+    grumpy
+    hoary
+    warty
 
     >>> form = {
     ...     'field.distroseries': 'hoary',
