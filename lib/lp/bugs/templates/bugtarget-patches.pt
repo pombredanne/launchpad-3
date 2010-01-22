@@ -17,7 +17,30 @@
 
   <form class="lesser" name="sort" method="get"
         tal:attributes="action string:${context/fmt:url}/+patches">
-    <metal:widget use-macro="context/@@+bugtarget-macros-search/sortwidget" />
+    <select name="orderby" id="orderby" size="1"
+            tal:define="orderby request/orderby|string:-importance">
+      <option
+        value="-importance"
+        tal:attributes="selected python:orderby == '-importance'"
+      >by importance</option>
+      <option
+        value="status"
+        tal:attributes="selected python:orderby == 'status'"
+      >by status</option>
+      <option
+        tal:condition="view/shouldShowTargetName"
+        tal:attributes="selected python:orderby == 'targetname'"
+        value="targetname"
+      >by package</option>
+      <option
+        value="datecreated"
+        tal:attributes="selected python:orderby == 'datecreated'"
+      >oldest first</option>
+      <option
+        value="-datecreated"
+        tal:attributes="selected python:orderby == '-datecreated'"
+      >newest first</option>
+    </select>
     <input type="submit" value="sort" id="sort-button">
   </form>
 
