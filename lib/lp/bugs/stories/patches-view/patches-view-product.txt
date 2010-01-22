@@ -24,7 +24,36 @@ We don't see any patches when we open the patches view.
 After the product has a bug, it still doesn't show up in the patches
 view, because that bug has no patch attachments.
 
-    >>> bug1 = make_thing(factory.makeBug, product=product1)
+    >>> bug1 = make_thing(
+    ...     factory.makeBug, title="bug1 title", product=product1)
     >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug Importance Status Patch Age
+
+After we add a non-patch attachment to that bug, the patches view
+still shows no patches.
+
+    >>> non_patch_attachment = make_thing(factory.makeBugAttachment, bug=bug1)
+    >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
+    >>> show_patches_view(user_browser.contents)
+    Bug Importance Status Patch Age
+
+After we add a patch attachment that's one day old, we should see it
+in the patches view.
+
+    >>> patch_submitter = make_thing(
+    ...    factory.makePerson, name="patchy-person",
+    ...    displayname="Patchy Person")
+    >>> patch_attachment = make_thing(factory.makeBugAttachment,
+    ...                               comment="comment about patch",
+    ...                               filename="patch1.diff",
+    ...                               owner=patch_submitter,
+    ...                               description="description of patch",
+    ...                               bug=bug1, is_patch=True)
+    >>> 
+    >>> user_browser.open('http://bugs.launchpad.dev/patchy-product-1/+patches')
+    >>> show_patches_view(user_browser.contents)
+    Bug                                 Importance   Status    Patch Age
+    Bug #16: bug1 title                  Undecided     New     ...second...
+    From: Patchy Person
+    Link: patch1.diff description of patch
