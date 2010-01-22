@@ -429,6 +429,16 @@ class IDistroSeriesPublic(IHasAppointedDriver, IHasDrivers, IHasOwner,
         that can be translated.
         """
 
+    def getPriorizedUnlinkedSourcePackages():
+        """Return a list of package summaries that need packaging links.
+
+        A summary is a dict of package (`ISourcePackage`), total_bugs,
+        and total_messages (translatable messages).
+        """
+
+    def getPriorizedlPackagings():
+        """Return a list of packagings that need more upstream information."""
+
     @operation_parameters(
         created_since_date=Datetime(
             title=_("Created Since Timestamp"),

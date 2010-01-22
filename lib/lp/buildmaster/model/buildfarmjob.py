@@ -27,7 +27,7 @@ class BuildFarmJob:
 
     def getLogFileName(self):
         """See `IBuildFarmJob`."""
-        raise NotImplementedError
+        return 'buildlog.txt'
 
     def getName(self):
         """See `IBuildFarmJob`."""
