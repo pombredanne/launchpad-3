@@ -175,17 +175,19 @@ package when viewed via a distribution.
     ...     bugtask.transitionToStatus(status, ubuntu.owner)
     >>> make_thing(
     ...     make_bugtask, bug=bug_a, source_package_name='evolution',
-    ...     importance=BugTaskImportance.MEDIUM, status=BugTaskStatus.NEW)
+    ...     importance=BugTaskImportance.MEDIUM,
+    ...     status=BugTaskStatus.FIXRELEASED)
     >>> make_thing(
     ...     make_bugtask, bug=bug_c, source_package_name='a52dec',
-    ...     importance=BugTaskImportance.HIGH, status=BugTaskStatus.TRIAGED)
+    ...     importance=BugTaskImportance.HIGH,
+    ...     status=BugTaskStatus.TRIAGED)
 
     >>> user_browser.open('http://bugs.launchpad.dev/ubuntu/+patches')
     >>> show_patches_view(user_browser.contents)
     Bug                       Importance   Status    Package    Patch Age
-    Bug #18: bug_c title       High       Triaged    a52dec ...second...
+    Bug #18: bug_c title       High       Triaged    a52dec  ...second...
     From: Patchy Person
     Link: patch_f.diff description of patch f
-    Bug #16: bug_a title       Medium     New     evolution  ...second...
+    Bug #16: bug_a title       Medium   Fix Released   evolution  ...second...
     From: Patchy Person
     Link: patch_a.diff description of patch a
