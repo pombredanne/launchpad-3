@@ -251,12 +251,9 @@ class IBug(ICanBeMentored, IPrivacy, IHasLinkedBranches):
             readonly=True))
     questions = Attribute("List of questions related to this bug.")
     specifications = Attribute("List of related specifications.")
-    linked_branches = exported(
-        CollectionField(
-            title=_("Branches associated with this bug, usually "
-            "branches on which this bug is being fixed."),
-            value_type=Reference(schema=IHasLinkedBranches),
-            readonly=True))
+    linked_branches = Attribute(
+        "Branches associated with this bug, usually "
+        "branches on which this bug is being fixed.")
     tags = exported(
         List(title=_("Tags"), description=_("Separated by whitespace."),
              value_type=Tag(), required=False))
