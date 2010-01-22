@@ -427,6 +427,17 @@ Let's make our attachment a patch and search again:
     >>> bugs[0].id
     1
 
+An easy way to determine whether an attachment is a patch is to read its
+`is_patch` attribute.
+
+    >>> attachment.type = BugAttachmentType.PATCH
+    >>> attachment.is_patch
+    True
+
+    >>> attachment.type = BugAttachmentType.UNSPECIFIED
+    >>> attachment.is_patch
+    False
+
 
 == Deleting attachments ==
 
