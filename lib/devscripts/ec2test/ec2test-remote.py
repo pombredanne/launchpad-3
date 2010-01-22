@@ -201,21 +201,6 @@ class TestOnMergeRunner(BaseTestRunner):
         r'  Ran \d+ tests with .+)$').match
 
 
-class JSCheckTestRunner(BaseTestRunner):
-    """Executes the Launchpad JavaScript integration test suite."""
-
-    def build_test_command(self):
-        """See BaseTestRunner.build_test_command()."""
-        # We use the xvfb server's convenience script, xvfb-run, to
-        # automagically set the display, start the command, shut down the
-        # display, and return the exit code.  (See the xvfb-run man page for
-        # details.)
-        return [
-            'xvfb-run',
-            '-s', '-screen 0 1024x768x24',
-            'make', 'jscheck']
-
-
 class WebTestLogger:
     """Logs test output to disk and a simple web page."""
 
@@ -429,9 +414,6 @@ if __name__ == '__main__':
         '--public-branch-revno', dest='public_branch_revno',
         type="int", default=None,
         help=('The revision number of the public branch being tested.'))
-    parser.add_option(
-        '--jscheck', dest='jscheck', default=False, action='store_true',
-        help=('Run the JavaScript integration test suite.'))
 
     options, args = parser.parse_args()
 
@@ -443,19 +425,12 @@ if __name__ == '__main__':
     else:
         pqm_message = None
 
-    if options.jscheck:
-        runner_type = JSCheckTestRunner
-    else:
-        # Use the default testrunner.
-        runner_type = TestOnMergeRunner
-
-    runner = runner_type(
+    runner = TestOnMergeRunner(
        options.email,
        pqm_message,
        options.public_branch,
        options.public_branch_revno,
-       ' '.join(args)
-    )
+       ' '.join(args))
 
     try:
         try:
