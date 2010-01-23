@@ -174,6 +174,8 @@ class BaseTestRunner:
                         config, self.email[0], self.email,
                         subject, summary_file.read(),
                         attachment=out_file.read(),
+                        attachment_filename='%s.log' % (
+                            self.public_branch.nick,),
                         attachment_mime_subtype='subunit')
                     summary_file.close()
             finally:
